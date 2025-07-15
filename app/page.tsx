@@ -1,6 +1,9 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { Footer } from '../src/components/layout/Footer';
+import { FloatingCard } from '../src/components/ui/FloatingCard';
 
 export default function HomePage() {
   return (
@@ -11,15 +14,36 @@ export default function HomePage() {
           🌉 SoundBridge
         </div>
         <nav className="nav">
-          <a href="#" className="active">For You</a>
-          <a href="#">Discover</a>
-          <a href="#">Events</a>
+          <Link href="/" className="active" style={{ textDecoration: 'none', color: 'white' }}>
+            For You
+          </Link>
+          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>
+            Discover
+          </Link>
+          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+            Events
+          </Link>
           <a href="#">Creators</a>
+          <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
+            Upload
+          </Link>
+          <Link href="/player-demo" style={{ textDecoration: 'none', color: 'white' }}>
+            Player Demo
+          </Link>
+          <Link href="/dashboard" style={{ textDecoration: 'none', color: 'white' }}>
+            Dashboard
+          </Link>
         </nav>
-        <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
+        <Link href="/search?q=" style={{ textDecoration: 'none', flex: 1, maxWidth: '400px' }}>
+          <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." readOnly style={{ cursor: 'pointer' }} />
+        </Link>
         <div className="auth-buttons">
-          <button className="btn-secondary">Login</button>
-          <button className="btn-primary">Sign Up</button>
+          <Link href="/login" style={{ textDecoration: 'none' }}>
+            <button className="btn-secondary">Login</button>
+          </Link>
+          <Link href="/signup" style={{ textDecoration: 'none' }}>
+            <button className="btn-primary">Sign Up</button>
+          </Link>
         </div>
       </header>
 
@@ -27,18 +51,20 @@ export default function HomePage() {
       <main className="main-container">
         {/* Hero Section */}
         <section className="hero-section">
-          <div className="featured-creator">
-            <div className="featured-creator-content">
-              <h2>Featured Creator: Kwame Asante</h2>
-              <p>Afrobeats sensation taking UK by storm</p>
-              <div className="waveform"></div>
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button className="btn-primary">▶ Play Latest</button>
-                <button className="btn-secondary">Follow</button>
-                <button className="btn-secondary">Message</button>
+          <Link href="/creator/kwame-asante" style={{ textDecoration: 'none' }}>
+            <div className="featured-creator">
+              <div className="featured-creator-content">
+                <h2>Featured Creator: Kwame Asante</h2>
+                <p>Afrobeats sensation taking UK by storm</p>
+                <div className="waveform"></div>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button className="btn-primary">▶ Play Latest</button>
+                  <button className="btn-secondary">Follow</button>
+                  <button className="btn-secondary">Message</button>
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
           <div className="trending-panel">
             <h3 style={{ marginBottom: '1rem', color: '#EC4899' }}>Trending Now</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -133,18 +159,20 @@ export default function HomePage() {
             <a href="#" className="view-all">View All</a>
           </div>
           <div className="grid grid-3">
-            <div className="card">
-              <div className="card-image">
-                Creator Photo
-                <div className="play-button">▶</div>
+            <Link href="/creator/adunni-adebayo" style={{ textDecoration: 'none' }}>
+              <div className="card">
+                <div className="card-image">
+                  Creator Photo
+                  <div className="play-button">▶</div>
+                </div>
+                <div style={{ fontWeight: '600' }}>Adunni Adebayo</div>
+                <div style={{ color: '#999', fontSize: '0.9rem' }}>Afrobeats • Lagos</div>
+                <div className="stats">
+                  <span>125K followers</span>
+                  <span>45 tracks</span>
+                </div>
               </div>
-              <div style={{ fontWeight: '600' }}>Adunni Adebayo</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Afrobeats • Lagos</div>
-              <div className="stats">
-                <span>125K followers</span>
-                <span>45 tracks</span>
-              </div>
-            </div>
+            </Link>
             <div className="card">
               <div className="card-image">
                 Creator Photo
@@ -267,13 +295,17 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Footer */}
+        <Footer />
       </main>
 
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <h3 style={{ marginBottom: '1rem', color: '#EC4899' }}>Quick Actions</h3>
+      {/* Floating Quick Actions Card */}
+      <FloatingCard title="Quick Actions">
         <div className="quick-actions">
-          <div className="quick-action">🎵 Upload Music</div>
+          <Link href="/upload" style={{ textDecoration: 'none' }}>
+            <div className="quick-action">🎵 Upload Music</div>
+          </Link>
           <div className="quick-action">🎙️ Start Podcast</div>
           <div className="quick-action">📅 Create Event</div>
           <div className="quick-action">💬 Find Collaborators</div>
@@ -285,7 +317,7 @@ export default function HomePage() {
           <div>Sarah posted a new track</div>
           <div>Mike joined Gospel Night event</div>
         </div>
-      </aside>
+      </FloatingCard>
     </>
   );
 }
