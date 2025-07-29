@@ -155,8 +155,8 @@ export default function DashboardPage() {
                     key={item.id}
                     onClick={() => setActiveTab(item.id as any)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === item.id
-                        ? 'bg-accent-pink text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                      ? 'bg-accent-pink text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
                       }`}
                   >
                     <Icon size={16} />
