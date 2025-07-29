@@ -4,16 +4,19 @@ import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
-import { 
-  Upload, 
-  Music, 
-  Mic, 
-  FileAudio, 
-  Image, 
-  Tag, 
-  Globe, 
-  Users, 
-  Lock, 
+import { ImageUpload } from '../../src/components/ui/ImageUpload';
+import { useAudioUpload } from '../../src/hooks/useAudioUpload';
+import { useAuth } from '../../src/contexts/AuthContext';
+import {
+  Upload,
+  Music,
+  Mic,
+  FileAudio,
+  Image,
+  Tag,
+  Globe,
+  Users,
+  Lock,
   Calendar,
   Save,
   Play,
@@ -22,30 +25,30 @@ import {
   X,
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 
 export default function UploadPage() {
+  const { user } = useAuth();
+  const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  
+
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [genre, setGenre] = useState('');
   const [tags, setTags] = useState('');
-  const [coverArt, setCoverArt] = useState<File | null>(null);
   const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverArtInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const genres = [
@@ -81,44 +84,26 @@ export default function UploadPage() {
   };
 
   const handleFileUpload = (file: File) => {
-    // Validate file type
-    const validTypes = ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac', 'audio/aac'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid audio file (MP3, WAV, M4A, FLAC, AAC)');
-      return;
-    }
+    uploadActions.setAudioFile(file);
 
-    // Validate file size (50MB limit)
-    if (file.size > 50 * 1024 * 1024) {
-      alert('File size must be less than 50MB');
-      return;
-    }
-
-    setUploadedFile(file);
-    setUploadStatus('idle');
-    setUploadProgress(0);
-    
     // Auto-fill title from filename
     const fileName = file.name.replace(/\.[^/.]+$/, '');
     setTitle(fileName);
   };
 
-  const simulateUpload = () => {
-    setIsUploading(true);
-    setUploadStatus('uploading');
-    setUploadProgress(0);
+  const handleCoverArtUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      uploadActions.setCoverArtFile(file);
+    }
+  };
 
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setUploadStatus('success');
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
+  const handleCoverArtSelect = (file: File) => {
+    uploadActions.setCoverArtFile(file);
+  };
+
+  const handleCoverArtRemove = () => {
+    uploadActions.setCoverArtFile(null);
   };
 
   const handlePlayPause = () => {
@@ -145,20 +130,16 @@ export default function UploadPage() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handleCoverArtUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setCoverArt(file);
-      } else {
-        alert('Please upload a valid image file');
-      }
+  const handlePublish = async () => {
+    // Validate form
+    const validation = uploadActions.validateFiles();
+    if (!validation.isValid) {
+      alert(validation.errors.join('\n'));
+      return;
     }
-  };
 
-  const handlePublish = () => {
-    if (!uploadedFile || !title.trim()) {
-      alert('Please upload a file and add a title');
+    if (!title.trim()) {
+      alert('Please add a title for your track');
       return;
     }
 
@@ -167,8 +148,59 @@ export default function UploadPage() {
       return;
     }
 
-    simulateUpload();
+    // Prepare track data
+    const trackData = {
+      title: title.trim(),
+      description: description.trim(),
+      genre: genre || undefined,
+      tags: tags ? tags.split(',').map(tag => tag.trim()) : undefined,
+      privacy,
+      publishOption,
+      scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined
+    };
+
+    // Upload track
+    const success = await uploadActions.uploadTrack(trackData);
+
+    if (success) {
+      // Reset form on success
+      setTitle('');
+      setDescription('');
+      setGenre('');
+      setTags('');
+      setPrivacy('public');
+      setPublishOption('now');
+      setScheduleDate('');
+      uploadActions.resetUpload();
+    }
   };
+
+  const handleCancelUpload = () => {
+    uploadActions.cancelUpload();
+  };
+
+  // Redirect if not authenticated
+  if (!user) {
+    return (
+      <div className="main-container" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+        <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+          <AlertTriangle size={48} style={{ color: '#EC4899', marginBottom: '1rem' }} />
+          <h2 style={{ marginBottom: '1rem' }}>Authentication Required</h2>
+          <p style={{ color: '#999', marginBottom: '2rem' }}>
+            You need to be logged in to upload tracks to SoundBridge.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Login</button>
+            </Link>
+            <Link href="/signup" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary">Sign Up</button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -205,6 +237,33 @@ export default function UploadPage() {
           </p>
         </div>
 
+        {/* Error/Success Messages */}
+        {uploadState.error && (
+          <div className="card" style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#EF4444' }}>
+              <AlertCircle size={20} />
+              <span>{uploadState.error}</span>
+            </div>
+          </div>
+        )}
+
+        {uploadState.successMessage && (
+          <div className="card" style={{
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22C55E' }}>
+              <CheckCircle size={20} />
+              <span>{uploadState.successMessage}</span>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-2" style={{ gap: '2rem' }}>
           {/* Upload Area */}
           <div className="card">
@@ -229,8 +288,8 @@ export default function UploadPage() {
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
               />
-              
-              {!uploadedFile ? (
+
+              {!uploadState.audioFile ? (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>
                   <FileAudio size={48} style={{ color: '#EC4899', marginBottom: '1rem' }} />
                   <h4 style={{ marginBottom: '0.5rem' }}>Drag & Drop Audio File</h4>
@@ -246,15 +305,15 @@ export default function UploadPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                     <FileAudio size={24} style={{ color: '#EC4899' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '600' }}>{uploadedFile.name}</div>
+                      <div style={{ fontWeight: '600' }}>{uploadState.audioFile.name}</div>
                       <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                        {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                        {(uploadState.audioFile.size / 1024 / 1024).toFixed(2)} MB
                       </div>
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setUploadedFile(null);
+                        uploadActions.setAudioFile(null);
                       }}
                       style={{
                         background: 'none',
@@ -272,7 +331,7 @@ export default function UploadPage() {
                   <div style={{ marginBottom: '1rem' }}>
                     <audio
                       ref={audioRef}
-                      src={uploadedFile ? URL.createObjectURL(uploadedFile) : ''}
+                      src={uploadState.audioFile ? URL.createObjectURL(uploadState.audioFile.file) : ''}
                       onTimeUpdate={handleTimeUpdate}
                       onLoadedMetadata={handleTimeUpdate}
                     />
@@ -308,22 +367,25 @@ export default function UploadPage() {
                   </div>
 
                   {/* Upload Progress */}
-                  {isUploading && (
+                  {uploadState.isUploading && (
                     <div style={{ marginBottom: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <Clock size={16} style={{ color: '#EC4899' }} />
-                        <span style={{ fontSize: '0.9rem' }}>Uploading...</span>
+                        <Loader2 size={16} style={{ color: '#EC4899', animation: 'spin 1s linear infinite' }} />
+                        <span style={{ fontSize: '0.9rem' }}>Uploading audio...</span>
+                        <span style={{ fontSize: '0.8rem', color: '#999' }}>
+                          {Math.round(uploadState.uploadProgress.audio)}%
+                        </span>
                       </div>
-                      <div style={{ 
-                        background: 'rgba(255, 255, 255, 0.1)', 
-                        borderRadius: '10px', 
+                      <div style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        borderRadius: '10px',
                         height: '8px',
                         overflow: 'hidden'
                       }}>
                         <div style={{
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           height: '100%',
-                          width: `${uploadProgress}%`,
+                          width: `${uploadState.uploadProgress.audio}%`,
                           transition: 'width 0.3s ease'
                         }}></div>
                       </div>
@@ -331,7 +393,7 @@ export default function UploadPage() {
                   )}
 
                   {/* Upload Status */}
-                  {uploadStatus === 'success' && (
+                  {uploadState.uploadStatus === 'success' && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10B981' }}>
                       <CheckCircle size={16} />
                       <span>Upload complete!</span>
@@ -404,38 +466,19 @@ export default function UploadPage() {
               {/* Cover Art */}
               <div>
                 <label className="form-label">Cover Art</label>
-                <div
-                  onClick={() => document.getElementById('cover-art-input')?.click()}
-                  style={{
-                    border: '2px dashed rgba(255, 255, 255, 0.2)',
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#EC4899'}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
-                >
-                  <input
-                    id="cover-art-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverArtUpload}
-                    style={{ display: 'none' }}
-                  />
-                  {coverArt ? (
-                    <div>
-                      <Image size={24} style={{ color: '#EC4899', marginBottom: '0.5rem' }} />
-                      <div style={{ fontSize: '0.9rem' }}>{coverArt.name}</div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Image size={24} style={{ color: '#999', marginBottom: '0.5rem' }} />
-                      <div style={{ color: '#999', fontSize: '0.9rem' }}>Click to upload cover art</div>
-                    </div>
-                  )}
-                </div>
+                <ImageUpload
+                  onImageSelect={handleCoverArtSelect}
+                  onImageRemove={handleCoverArtRemove}
+                  selectedFile={uploadState.coverArtFile}
+                  isUploading={uploadState.isUploading && !!uploadState.coverArtFile}
+                  uploadProgress={uploadState.uploadProgress.cover}
+                  uploadStatus={uploadState.uploadStatus}
+                  error={uploadState.error}
+                  title="Upload Cover Art"
+                  subtitle="Square image recommended (1200x1200px)"
+                  aspectRatio={1}
+                  disabled={uploadState.isUploading}
+                />
               </div>
             </div>
           </div>
@@ -539,16 +582,29 @@ export default function UploadPage() {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'center' }}>
-          <button className="btn-secondary" style={{ padding: '1rem 2rem' }}>
-            Save Draft
-          </button>
-          <button 
-            className="btn-primary" 
+          {uploadState.isUploading && (
+            <button
+              className="btn-secondary"
+              style={{ padding: '1rem 2rem' }}
+              onClick={handleCancelUpload}
+            >
+              Cancel Upload
+            </button>
+          )}
+          <button
+            className="btn-primary"
             style={{ padding: '1rem 2rem' }}
             onClick={handlePublish}
-            disabled={!uploadedFile || isUploading}
+            disabled={!uploadState.audioFile || uploadState.isUploading}
           >
-            {isUploading ? 'Uploading...' : 'Publish Track'}
+            {uploadState.isUploading ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                Uploading...
+              </div>
+            ) : (
+              'Publish Track'
+            )}
           </button>
         </div>
 
@@ -564,7 +620,7 @@ export default function UploadPage() {
           <div>🏷️ Use relevant tags to reach your audience</div>
           <div>🖼️ Upload cover art to make your track stand out</div>
         </div>
-        
+
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Recent Uploads</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
           <div>Lagos Nights - Kwame Asante</div>
@@ -572,6 +628,13 @@ export default function UploadPage() {
           <div>UK Drill Mix - Tommy B</div>
         </div>
       </FloatingCard>
+
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 } 

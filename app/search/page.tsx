@@ -2,19 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
-import { 
-  Search, 
-  Filter, 
-  X, 
-  MapPin, 
-  Music, 
-  Users, 
-  Calendar, 
-  Mic, 
+import { useSearch } from '../../src/hooks/useSearch';
+import {
+  Search,
+  Filter,
+  X,
+  MapPin,
+  Music,
+  Users,
+  Calendar,
+  Mic,
   Play,
   Heart,
   Share2,
@@ -23,13 +24,16 @@ import {
   Clock,
   TrendingUp,
   ArrowLeft,
-  Sliders
+  Sliders,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function SearchResultsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const query = searchParams.get('q') || '';
-  
+
   const [searchQuery, setSearchQuery] = useState(query);
   const [activeTab, setActiveTab] = useState('music');
   const [showFilters, setShowFilters] = useState(false);
@@ -40,37 +44,34 @@ export default function SearchResultsPage() {
   const [sortBy, setSortBy] = useState('relevance');
   const [appliedFilters, setAppliedFilters] = useState<string[]>([]);
 
-  // Mock search results
-  const searchResults = {
-    music: [
-      { id: 1, title: 'Lagos Nights', artist: 'Kwame Asante', genre: 'Afrobeats', plays: '12K', duration: '3:45', match: 'title' },
-      { id: 2, title: 'Gospel Fusion', artist: 'Sarah Johnson', genre: 'Gospel', plays: '8K', duration: '4:12', match: 'artist' },
-      { id: 3, title: 'UK Drill Mix', artist: 'Tommy B', genre: 'UK Drill', plays: '15K', duration: '3:28', match: 'genre' },
-      { id: 4, title: 'Afro Fusion', artist: 'Michael Okafor', genre: 'Afrobeats', plays: '9K', duration: '3:55', match: 'title' },
-      { id: 5, title: 'Praise & Worship', artist: 'Grace Community', genre: 'Gospel', plays: '6K', duration: '4:30', match: 'artist' },
-      { id: 6, title: 'Lagos Anthem', artist: 'Wizkid Jr', genre: 'Afrobeats', plays: '18K', duration: '3:15', match: 'title' }
-    ],
-    creators: [
-      { id: 1, name: 'Kwame Asante', genre: 'Afrobeats', location: 'London, UK', followers: '125K', tracks: 45, match: 'name' },
-      { id: 2, name: 'Sarah Johnson', genre: 'Gospel', location: 'Birmingham, UK', followers: '89K', tracks: 32, match: 'name' },
-      { id: 3, name: 'Tommy B', genre: 'UK Drill', location: 'Manchester, UK', followers: '67K', tracks: 28, match: 'name' },
-      { id: 4, name: 'Ada Grace', genre: 'Gospel', location: 'Lagos, Nigeria', followers: '156K', tracks: 52, match: 'name' },
-      { id: 5, name: 'DJ Emeka', genre: 'Afrobeats', location: 'Abuja, Nigeria', followers: '98K', tracks: 38, match: 'name' },
-      { id: 6, name: 'Grace Community', genre: 'Gospel', location: 'London, UK', followers: '112K', tracks: 41, match: 'name' }
-    ],
-    events: [
-      { id: 1, title: 'Gospel Night Live', creator: 'Royal Festival Hall', date: 'Tonight • 8PM', location: 'London, UK', price: '£25-45', attendees: 1200, featured: true, match: 'title' },
-      { id: 2, title: 'Afrobeats Carnival', creator: 'Tafawa Balewa Square', date: 'Friday • 7PM', location: 'Lagos, Nigeria', price: '₦5000-15000', attendees: 5000, featured: true, match: 'title' },
-      { id: 3, title: 'UK Drill Showcase', creator: 'O2 Academy', date: 'Saturday • 6PM', location: 'Birmingham, UK', price: '£15-35', attendees: 800, featured: false, match: 'title' },
-      { id: 4, title: 'Worship Experience', creator: 'House on the Rock', date: 'Sunday • 4PM', location: 'Abuja, Nigeria', price: 'Free Entry', attendees: 2000, featured: false, match: 'title' }
-    ],
-    podcasts: [
-      { id: 1, title: 'The Lagos Life', host: 'Ada Grace', episode: 'Episode 45: Music Industry', duration: '42 min', plays: '12K', match: 'title' },
-      { id: 2, title: 'Faith & Beats', host: 'Sarah Johnson', episode: 'Gospel in Modern Music', duration: '35 min', plays: '8K', match: 'title' },
-      { id: 3, title: 'UK Underground', host: 'Tommy B', episode: 'Drill Scene Deep Dive', duration: '28 min', plays: '15K', match: 'title' },
-      { id: 4, title: 'Creator Stories', host: 'Kwame Asante', episode: 'From Bedroom to Billboard', duration: '52 min', plays: '9K', match: 'title' }
-    ]
-  };
+  // Use the search hook
+  const {
+    results,
+    loading,
+    error,
+    suggestions,
+    search,
+    updateFilters,
+    loadMore,
+    hasResults,
+    totalResults,
+    canLoadMore
+  } = useSearch();
+
+  // Initialize search when component mounts or query changes
+  useEffect(() => {
+    if (query.trim()) {
+      const filters = {
+        genre: selectedGenre !== 'all' ? selectedGenre : undefined,
+        location: selectedLocation !== 'all' ? selectedLocation : undefined,
+        date_range: selectedDate !== 'all' ? selectedDate : undefined,
+        price_range: selectedPrice !== 'all' ? selectedPrice : undefined,
+        sort_by: sortBy,
+        content_types: [activeTab as 'music' | 'creators' | 'events' | 'podcasts']
+      };
+      search(query, filters);
+    }
+  }, [query, selectedGenre, selectedLocation, selectedDate, selectedPrice, sortBy, activeTab, search]);
 
   const genres = [
     { value: 'all', label: 'All Genres' },
@@ -119,16 +120,72 @@ export default function SearchResultsPage() {
     setSelectedLocation('all');
     setSelectedDate('all');
     setSelectedPrice('all');
+    setSortBy('relevance');
+  };
+
+  const handleSearch = (newQuery: string) => {
+    setSearchQuery(newQuery);
+    if (newQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(newQuery)}`);
+    }
   };
 
   const getResultCount = (type: string) => {
-    return searchResults[type as keyof typeof searchResults]?.length || 0;
+    if (!results) return 0;
+    switch (type) {
+      case 'music':
+        return results.music.length;
+      case 'creators':
+        return results.creators.length;
+      case 'events':
+        return results.events.length;
+      case 'podcasts':
+        return results.podcasts.length;
+      default:
+        return 0;
+    }
   };
 
   const renderContent = () => {
-    const results = searchResults[activeTab as keyof typeof searchResults] || [];
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#999' }}>
+          <Loader2 size={64} style={{ marginBottom: '1rem', opacity: '0.5', animation: 'spin 1s linear infinite' }} />
+          <h3 style={{ marginBottom: '1rem', color: '#ccc' }}>Searching...</h3>
+          <p style={{ fontSize: '0.9rem' }}>
+            Finding the best matches for your search
+          </p>
+        </div>
+      );
+    }
 
-    if (results.length === 0) {
+    if (error) {
+      return (
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#999' }}>
+          <AlertCircle size={64} style={{ marginBottom: '1rem', opacity: '0.5', color: '#DC2626' }} />
+          <h3 style={{ marginBottom: '1rem', color: '#DC2626' }}>Search Error</h3>
+          <p style={{ marginBottom: '2rem', fontSize: '0.9rem' }}>
+            {error}
+          </p>
+          <button
+            onClick={() => search(query, {})}
+            style={{
+              background: '#EC4899',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+
+    if (!hasResults) {
       return (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#999' }}>
           <Search size={64} style={{ marginBottom: '1rem', opacity: '0.5' }} />
@@ -151,18 +208,38 @@ export default function SearchResultsPage() {
       case 'music':
         return (
           <div className="grid grid-6">
-            {(results as typeof searchResults.music).map((track) => (
+            {results?.music.map((track) => (
               <div key={track.id} className="card">
                 <div className="card-image">
-                  Album Cover
+                  {track.cover_art_url ? (
+                    <img
+                      src={track.cover_art_url}
+                      alt={track.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '2rem'
+                    }}>
+                      🎵
+                    </div>
+                  )}
                   <div className="play-button">▶</div>
                 </div>
                 <div style={{ fontWeight: '600' }}>{track.title}</div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>{track.artist}</div>
+                <div style={{ color: '#999', fontSize: '0.9rem' }}>{track.creator_name}</div>
                 <div className="waveform"></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                  <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>{track.duration}</span>
-                  <span style={{ color: '#999', fontSize: '0.8rem' }}>{track.plays} plays</span>
+                  <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>{track.formatted_duration}</span>
+                  <span style={{ color: '#999', fontSize: '0.8rem' }}>{track.formatted_play_count} plays</span>
                 </div>
               </div>
             ))}
@@ -172,18 +249,40 @@ export default function SearchResultsPage() {
       case 'creators':
         return (
           <div className="grid grid-3">
-            {(results as typeof searchResults.creators).map((creator) => (
-              <Link key={creator.id} href={`/creator/${creator.name.toLowerCase().replace(' ', '-')}`} style={{ textDecoration: 'none' }}>
+            {results?.creators.map((creator) => (
+              <Link key={creator.id} href={`/creator/${creator.username}`} style={{ textDecoration: 'none' }}>
                 <div className="card">
                   <div className="card-image">
-                    Creator Photo
+                    {creator.avatar_url ? (
+                      <img
+                        src={creator.avatar_url}
+                        alt={creator.display_name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '2rem'
+                      }}>
+                        {creator.display_name.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div className="play-button">▶</div>
                   </div>
-                  <div style={{ fontWeight: '600' }}>{creator.name}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{creator.genre} • {creator.location}</div>
+                  <div style={{ fontWeight: '600' }}>{creator.display_name}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>
+                    {creator.location || 'Location not set'}
+                  </div>
                   <div className="stats">
-                    <span>{creator.followers} followers</span>
-                    <span>{creator.tracks} tracks</span>
+                    <span>{creator.followers_count?.toLocaleString() || 0} followers</span>
+                    <span>{creator.tracks_count || 0} tracks</span>
                   </div>
                 </div>
               </Link>
@@ -194,47 +293,32 @@ export default function SearchResultsPage() {
       case 'events':
         return (
           <div className="grid grid-4">
-            {(results as typeof searchResults.events).map((event) => (
+            {results?.events.map((event) => (
               <Link key={event.id} href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
                 <div className="event-card">
                   <div className="event-card-content">
-                    {event.featured && (
-                      <div style={{ 
-                        position: 'absolute', 
-                        top: '0.5rem', 
-                        right: '0.5rem',
-                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                        color: 'white',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '10px',
-                        fontSize: '0.8rem',
-                        fontWeight: '600'
-                      }}>
-                        Featured
-                      </div>
-                    )}
-                    <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>{event.date}</div>
+                    <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>{event.formatted_date}</div>
                     <div style={{ fontWeight: '600', margin: '0.5rem 0', fontSize: '1.1rem' }}>{event.title}</div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{event.creator}</div>
+                    <div style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{event.creator_name}</div>
                     <div style={{ color: '#999', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
                       <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
                       {event.location}
                     </div>
                     <div style={{ marginBottom: '0.5rem' }}>
-                      <span style={{ 
-                        background: 'rgba(236, 72, 153, 0.2)', 
-                        color: '#EC4899', 
-                        padding: '0.25rem 0.5rem', 
-                        borderRadius: '15px', 
-                        fontSize: '0.8rem' 
+                      <span style={{
+                        background: 'rgba(236, 72, 153, 0.2)',
+                        color: '#EC4899',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '15px',
+                        fontSize: '0.8rem'
                       }}>
-                        {event.price}
+                        {event.formatted_price}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#999' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         <Users size={12} />
-                        {event.attendees.toLocaleString()}
+                        {event.attendee_count?.toLocaleString() || 0}
                       </div>
                     </div>
                   </div>
@@ -247,15 +331,37 @@ export default function SearchResultsPage() {
       case 'podcasts':
         return (
           <div className="grid grid-4">
-            {(results as typeof searchResults.podcasts).map((podcast) => (
+            {results?.podcasts.map((podcast) => (
               <div key={podcast.id} className="card">
                 <div className="card-image">
-                  Podcast Cover
+                  {podcast.cover_art_url ? (
+                    <img
+                      src={podcast.cover_art_url}
+                      alt={podcast.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '2rem'
+                    }}>
+                      🎙️
+                    </div>
+                  )}
                   <div className="play-button">▶</div>
                 </div>
                 <div style={{ fontWeight: '600' }}>{podcast.title}</div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.episode}</div>
-                <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>{podcast.duration} • {podcast.plays} plays</div>
+                <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.creator_name}</div>
+                <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  {podcast.formatted_duration} • {podcast.formatted_play_count} plays
+                </div>
               </div>
             ))}
           </div>
@@ -313,13 +419,13 @@ export default function SearchResultsPage() {
         <section className="section">
           <div style={{ marginBottom: '2rem' }}>
             <Link href="/discover" style={{ textDecoration: 'none' }}>
-              <button style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem', 
-                background: 'none', 
-                border: 'none', 
-                color: '#EC4899', 
+              <button style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'none',
+                border: 'none',
+                color: '#EC4899',
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 marginBottom: '1rem'
@@ -328,13 +434,18 @@ export default function SearchResultsPage() {
                 Back to Discover
               </button>
             </Link>
-            
+
             <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
               <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch(searchQuery);
+                  }
+                }}
                 placeholder="Search for music, creators, events, or podcasts..."
                 style={{
                   width: '100%',
@@ -354,10 +465,10 @@ export default function SearchResultsPage() {
           </div>
 
           {/* Search Results Summary */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: '2rem',
             flexWrap: 'wrap',
             gap: '1rem'
@@ -367,7 +478,7 @@ export default function SearchResultsPage() {
                 Search results for "{query}"
               </h2>
               <p style={{ color: '#999', fontSize: '0.9rem' }}>
-                Found {getResultCount(activeTab)} {activeTab} • Showing best matches
+                Found {totalResults} total results • Showing {getResultCount(activeTab)} {activeTab}
               </p>
             </div>
 
@@ -416,9 +527,9 @@ export default function SearchResultsPage() {
                   }}
                 >
                   {tab}
-                  <span style={{ 
-                    position: 'absolute', 
-                    top: '0.5rem', 
+                  <span style={{
+                    position: 'absolute',
+                    top: '0.5rem',
                     right: '0.5rem',
                     background: '#EC4899',
                     color: 'white',
@@ -439,6 +550,35 @@ export default function SearchResultsPage() {
 
           {/* Content */}
           {renderContent()}
+
+          {/* Load More Button */}
+          {canLoadMore && (
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <button
+                onClick={loadMore}
+                disabled={loading}
+                style={{
+                  background: '#EC4899',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2rem',
+                  borderRadius: '8px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '1rem',
+                  opacity: loading ? 0.7 : 1
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} style={{ marginRight: '0.5rem', animation: 'spin 1s linear infinite' }} />
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Results'
+                )}
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Footer */}
@@ -455,7 +595,7 @@ export default function SearchResultsPage() {
           <div className="quick-action">📅 Create Event</div>
           <div className="quick-action">💬 Find Collaborators</div>
         </div>
-        
+
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Search Tips</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
           <div>• Use quotes for exact phrases</div>

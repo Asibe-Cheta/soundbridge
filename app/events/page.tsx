@@ -1,29 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
-import { 
-  Search, 
-  MapPin, 
-  Calendar, 
-  Music, 
-  DollarSign, 
+import { useEvents } from '../../src/hooks/useEvents';
+import { useAuth } from '../../src/contexts/AuthContext';
+import {
+  Search,
+  MapPin,
+  Calendar,
+  Music,
+  DollarSign,
   Filter,
   Star,
   Users,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function EventsPage() {
+  const { user } = useAuth();
+  const [eventsState, eventsActions] = useEvents();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedDate, setSelectedDate] = useState('all');
   const [selectedPrice, setSelectedPrice] = useState('all');
-  const [sortBy, setSortBy] = useState('trending');
+  const [sortBy, setSortBy] = useState('date');
+  const [showFilters, setShowFilters] = useState(false);
 
   const locations = [
     { value: 'all', label: 'All Locations' },
@@ -36,12 +43,17 @@ export default function EventsPage() {
 
   const genres = [
     { value: 'all', label: 'All Genres' },
-    { value: 'afrobeats', label: 'Afrobeats' },
-    { value: 'gospel', label: 'Gospel' },
-    { value: 'uk-drill', label: 'UK Drill' },
-    { value: 'highlife', label: 'Highlife' },
-    { value: 'jazz', label: 'Jazz' },
-    { value: 'hip-hop', label: 'Hip Hop' }
+    { value: 'Gospel', label: 'Gospel' },
+    { value: 'Hip-Hop', label: 'Hip Hop' },
+    { value: 'Afrobeat', label: 'Afrobeat' },
+    { value: 'Jazz', label: 'Jazz' },
+    { value: 'Classical', label: 'Classical' },
+    { value: 'Rock', label: 'Rock' },
+    { value: 'Pop', label: 'Pop' },
+    { value: 'Christian', label: 'Christian' },
+    { value: 'Secular', label: 'Secular' },
+    { value: 'Carnival', label: 'Carnival' },
+    { value: 'Other', label: 'Other' }
   ];
 
   const dateRanges = [
@@ -60,141 +72,45 @@ export default function EventsPage() {
     { value: 'high', label: 'Over £50' }
   ];
 
-  const events = [
-    {
-      id: 1,
-      title: 'Gospel Night Live',
-      creator: 'Royal Festival Hall',
-      date: 'Tonight • 8PM',
-      location: 'London, UK',
-      price: '£25-45',
-      genre: 'Gospel',
-      image: 'https://picsum.photos/400/300?random=gospel',
-      attendees: 1200,
-      rating: 4.8,
-      featured: true
-    },
-    {
-      id: 2,
-      title: 'Afrobeats Carnival',
-      creator: 'Tafawa Balewa Square',
-      date: 'Friday • 7PM',
-      location: 'Lagos, Nigeria',
-      price: '₦5000-15000',
-      genre: 'Afrobeats',
-      image: 'https://picsum.photos/400/300?random=afrobeats',
-      attendees: 5000,
-      rating: 4.9,
-      featured: true
-    },
-    {
-      id: 3,
-      title: 'UK Drill Showcase',
-      creator: 'O2 Academy',
-      date: 'Saturday • 6PM',
-      location: 'Birmingham, UK',
-      price: '£15-35',
-      genre: 'UK Drill',
-      image: 'https://picsum.photos/400/300?random=drill',
-      attendees: 800,
-      rating: 4.6,
-      featured: false
-    },
-    {
-      id: 4,
-      title: 'Worship Experience',
-      creator: 'House on the Rock',
-      date: 'Sunday • 4PM',
-      location: 'Abuja, Nigeria',
-      price: 'Free Entry',
-      genre: 'Gospel',
-      image: 'https://picsum.photos/400/300?random=worship',
-      attendees: 2000,
-      rating: 4.7,
-      featured: false
-    },
-    {
-      id: 5,
-      title: 'Jazz Fusion Night',
-      creator: 'Blue Note Club',
-      date: 'Wednesday • 9PM',
-      location: 'Manchester, UK',
-      price: '£30-60',
-      genre: 'Jazz',
-      image: 'https://picsum.photos/400/300?random=jazz',
-      attendees: 300,
-      rating: 4.5,
-      featured: false
-    },
-    {
-      id: 6,
-      title: 'Highlife Festival',
-      creator: 'National Theatre',
-      date: 'Next Saturday • 5PM',
-      location: 'Lagos, Nigeria',
-      price: '₦3000-8000',
-      genre: 'Highlife',
-      image: 'https://picsum.photos/400/300?random=highlife',
-      attendees: 1500,
-      rating: 4.4,
-      featured: false
-    },
-    {
-      id: 7,
-      title: 'Hip Hop Battle',
-      creator: 'Underground Arena',
-      date: 'Friday • 10PM',
-      location: 'London, UK',
-      price: '£20-40',
-      genre: 'Hip Hop',
-      image: 'https://picsum.photos/400/300?random=hiphop',
-      attendees: 600,
-      rating: 4.3,
-      featured: false
-    },
-    {
-      id: 8,
-      title: 'Gospel Choir Competition',
-      creator: 'Cathedral Hall',
-      date: 'Sunday • 3PM',
-      location: 'Abuja, Nigeria',
-      price: '₦2000-5000',
-      genre: 'Gospel',
-      image: 'https://picsum.photos/400/300?random=choir',
-      attendees: 800,
-      rating: 4.6,
-      featured: false
+  // Apply filters when they change
+  useEffect(() => {
+    const filters = {
+      search: searchQuery || undefined,
+      category: selectedGenre !== 'all' ? selectedGenre as any : undefined,
+      location: selectedLocation !== 'all' ? selectedLocation : undefined,
+      dateRange: selectedDate !== 'all' ? selectedDate as any : undefined,
+      priceRange: selectedPrice !== 'all' ? selectedPrice as any : undefined,
+      sortBy: sortBy as any
+    };
+
+    eventsActions.updateFilters(filters);
+    eventsActions.fetchEvents(filters);
+  }, [searchQuery, selectedLocation, selectedGenre, selectedDate, selectedPrice, sortBy]);
+
+  const handleRSVP = async (eventId: string, status: 'attending' | 'interested' | 'not_going') => {
+    if (!user) {
+      // Redirect to login or show login modal
+      return;
     }
-  ];
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         event.creator.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = selectedLocation === 'all' || event.location.toLowerCase().includes(selectedLocation);
-    const matchesGenre = selectedGenre === 'all' || event.genre.toLowerCase().includes(selectedGenre);
-    const matchesPrice = selectedPrice === 'all' || 
-                        (selectedPrice === 'free' && event.price.includes('Free')) ||
-                        (selectedPrice === 'low' && event.price.includes('£') && parseInt(event.price.match(/\d+/)?.[0] || '0') < 20) ||
-                        (selectedPrice === 'medium' && event.price.includes('£') && parseInt(event.price.match(/\d+/)?.[0] || '0') >= 20 && parseInt(event.price.match(/\d+/)?.[0] || '0') <= 50) ||
-                        (selectedPrice === 'high' && event.price.includes('£') && parseInt(event.price.match(/\d+/)?.[0] || '0') > 50);
-
-    return matchesSearch && matchesLocation && matchesGenre && matchesPrice;
-  });
-
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
-    switch (sortBy) {
-      case 'trending':
-        return b.attendees - a.attendees;
-      case 'rating':
-        return b.rating - a.rating;
-      case 'date':
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      case 'price':
-        return a.price.localeCompare(b.price);
-      default:
-        return 0;
+    const result = await eventsActions.rsvpToEvent(eventId, status);
+    if (!result.success) {
+      console.error('RSVP failed:', result.error);
     }
-  });
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedLocation('all');
+    setSelectedGenre('all');
+    setSelectedDate('all');
+    setSelectedPrice('all');
+    setSortBy('date');
+  };
+
+  const filteredEvents = eventsState.events;
+  const hasActiveFilters = searchQuery || selectedLocation !== 'all' || selectedGenre !== 'all' ||
+    selectedDate !== 'all' || selectedPrice !== 'all';
 
   return (
     <>
@@ -208,7 +124,7 @@ export default function EventsPage() {
             For You
           </Link>
           <a href="#">Discover</a>
-          <Link href="/events" className="active" style={{ textDecoration: 'none', color: '#EC4899' }}>
+          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
             Events
           </Link>
           <a href="#">Creators</a>
@@ -248,216 +164,284 @@ export default function EventsPage() {
           <div className="trending-panel">
             <h3 style={{ marginBottom: '1rem', color: '#EC4899' }}>Trending Events</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {events.slice(0, 3).map((event) => (
+              {filteredEvents.slice(0, 3).map((event) => (
                 <div key={event.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ width: '50px', height: '50px', background: '#333', borderRadius: '8px' }}></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{event.title}</div>
-                    <div style={{ color: '#999', fontSize: '0.8rem' }}>{event.date}</div>
+                    <div style={{ color: '#999', fontSize: '0.8rem' }}>{event.formattedDate}</div>
                   </div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem' }}>{event.price}</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem' }}>
+                    {event.attendeeCount} attending
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Filters Section */}
+        {/* Search and Filters */}
         <section className="section">
-          <div className="card" style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <Filter size={20} style={{ color: '#EC4899' }} />
-              <h3 style={{ fontWeight: '600', color: '#EC4899' }}>Filters & Search</h3>
+          <div className="search-filters">
+            <div className="search-bar-container">
+              <Search size={20} style={{ color: '#999' }} />
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
+              />
             </div>
-            
-            <div className="grid grid-4" style={{ gap: '1rem' }}>
-              {/* Search */}
-              <div>
-                <label className="form-label">Search Events</label>
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search events, venues, artists..."
-                    className="form-input"
-                    style={{ paddingLeft: '2.5rem' }}
-                  />
-                </div>
-              </div>
 
-              {/* Location Filter */}
-              <div>
-                <label className="form-label">Location</label>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Filter size={16} />
+              Filters
+            </button>
+          </div>
+
+          {showFilters && (
+            <div className="filters-panel">
+              <div className="filter-group">
+                <label>Location</label>
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="form-input"
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
                   {locations.map((location) => (
-                    <option key={location.value} value={location.value}>{location.label}</option>
+                    <option key={location.value} value={location.value}>
+                      {location.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {/* Genre Filter */}
-              <div>
-                <label className="form-label">Genre</label>
+              <div className="filter-group">
+                <label>Genre</label>
                 <select
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
-                  className="form-input"
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
                   {genres.map((genre) => (
-                    <option key={genre.value} value={genre.value}>{genre.label}</option>
+                    <option key={genre.value} value={genre.value}>
+                      {genre.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {/* Date Filter */}
-              <div>
-                <label className="form-label">Date</label>
+              <div className="filter-group">
+                <label>Date</label>
                 <select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="form-input"
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
                   {dateRanges.map((date) => (
-                    <option key={date.value} value={date.value}>{date.label}</option>
+                    <option key={date.value} value={date.value}>
+                      {date.label}
+                    </option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="grid grid-3" style={{ gap: '1rem', marginTop: '1rem' }}>
-              {/* Price Filter */}
-              <div>
-                <label className="form-label">Price Range</label>
+              <div className="filter-group">
+                <label>Price</label>
                 <select
                   value={selectedPrice}
                   onChange={(e) => setSelectedPrice(e.target.value)}
-                  className="form-input"
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
                   {priceRanges.map((price) => (
-                    <option key={price.value} value={price.value}>{price.label}</option>
+                    <option key={price.value} value={price.value}>
+                      {price.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {/* Sort By */}
-              <div>
-                <label className="form-label">Sort By</label>
+              <div className="filter-group">
+                <label>Sort By</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="form-input"
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
-                  <option value="trending">Trending</option>
-                  <option value="rating">Highest Rated</option>
                   <option value="date">Date</option>
                   <option value="price">Price</option>
+                  <option value="attendees">Attendees</option>
+                  <option value="rating">Rating</option>
                 </select>
               </div>
 
-              {/* Clear Filters */}
-              <div style={{ display: 'flex', alignItems: 'end' }}>
+              {hasActiveFilters && (
                 <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedLocation('all');
-                    setSelectedGenre('all');
-                    setSelectedDate('all');
-                    setSelectedPrice('all');
-                    setSortBy('trending');
-                  }}
+                  onClick={clearFilters}
                   className="btn-secondary"
                   style={{ width: '100%' }}
                 >
                   Clear Filters
                 </button>
-              </div>
+              )}
             </div>
-          </div>
+          )}
         </section>
 
         {/* Events Grid */}
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">
-              {filteredEvents.length} Events Found
+              {eventsState.loading ? 'Loading events...' : `${filteredEvents.length} Events Found`}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ color: '#999', fontSize: '0.9rem' }}>
-                Showing {sortedEvents.length} of {events.length} events
-              </span>
+              {eventsState.error && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
+                  <AlertCircle size={16} />
+                  <span>{eventsState.error}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-4">
-            {sortedEvents.map((event) => (
-              <Link key={event.id} href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
-                <div className="event-card">
-                  <div className="event-card-content">
-                    {event.featured && (
-                      <div style={{ 
-                        position: 'absolute', 
-                        top: '0.5rem', 
-                        right: '0.5rem',
-                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                        color: 'white',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '10px',
-                        fontSize: '0.8rem',
-                        fontWeight: '600'
-                      }}>
-                        Featured
+          {eventsState.loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+              <Loader2 size={32} className="animate-spin" style={{ color: '#EC4899' }} />
+            </div>
+          ) : filteredEvents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+              <p>No events found matching your criteria.</p>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="btn-primary" style={{ marginTop: '1rem' }}>
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-4">
+              {filteredEvents.map((event) => (
+                <Link key={event.id} href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
+                  <div className="event-card">
+                    <div className="event-card-content">
+                      {event.isFeatured && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '10px',
+                          fontSize: '0.8rem',
+                          fontWeight: '600'
+                        }}>
+                          Featured
+                        </div>
+                      )}
+
+                      <div className="event-image">
+                        {event.image_url ? (
+                          <img src={event.image_url} alt={event.title} />
+                        ) : (
+                          <div style={{
+                            width: '100%',
+                            height: '200px',
+                            background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '2rem'
+                          }}>
+                            🎵
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>{event.date}</div>
-                    <div style={{ fontWeight: '600', margin: '0.5rem 0', fontSize: '1.1rem' }}>{event.title}</div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{event.creator}</div>
-                    <div style={{ color: '#999', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                      <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                      {event.location}
-                    </div>
-                    <div style={{ marginBottom: '0.5rem' }}>
-                      <span style={{ 
-                        background: 'rgba(236, 72, 153, 0.2)', 
-                        color: '#EC4899', 
-                        padding: '0.25rem 0.5rem', 
-                        borderRadius: '15px', 
-                        fontSize: '0.8rem' 
-                      }}>
-                        {event.price}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#999' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Users size={12} />
-                        {event.attendees.toLocaleString()}
+
+                      <div className="event-info">
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                          {event.title}
+                        </h3>
+                        <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                          {event.creator?.display_name || 'Unknown Creator'}
+                        </p>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                          <Calendar size={14} />
+                          <span>{event.formattedDate}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                          <MapPin size={14} />
+                          <span>{event.location}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                          <Music size={14} />
+                          <span>{event.category}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                          <DollarSign size={14} />
+                          <span>{event.formattedPrice}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#999' }}>
+                          <Users size={14} />
+                          <span>{event.attendeeCount || 0} attending</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                          <Star size={14} style={{ color: '#FFD700' }} />
+                          <span>{event.rating?.toFixed(1) || '4.5'}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Star size={12} style={{ color: '#FFD700' }} />
-                        {event.rating}
+
+                      <div className="event-actions">
+                        {user ? (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleRSVP(event.id, event.isAttending ? 'not_going' : 'attending');
+                            }}
+                            className={event.isAttending ? 'btn-secondary' : 'btn-primary'}
+                            style={{ width: '100%' }}
+                          >
+                            {event.isAttending ? 'Cancel RSVP' : 'RSVP'}
+                          </button>
+                        ) : (
+                          <Link href="/login" style={{ textDecoration: 'none', width: '100%' }}>
+                            <button className="btn-primary" style={{ width: '100%' }}>
+                              Login to RSVP
+                            </button>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
-          {sortedEvents.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
-              <Music size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
-              <h3>No events found</h3>
-              <p>Try adjusting your filters or search terms</p>
+          {eventsState.hasMore && !eventsState.loading && (
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <button
+                onClick={() => eventsActions.loadMore()}
+                className="btn-secondary"
+              >
+                Load More Events
+              </button>
             </div>
           )}
         </section>
 
-        {/* Footer */}
         <Footer />
       </main>
 
@@ -473,13 +457,25 @@ export default function EventsPage() {
           <div className="quick-action">🎵 Upload Music</div>
           <div className="quick-action">💬 Find Collaborators</div>
         </div>
-        
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Popular Locations</h3>
+
+        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Categories</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>London, UK - 45 events</div>
-          <div>Lagos, Nigeria - 32 events</div>
-          <div>Abuja, Nigeria - 18 events</div>
-          <div>Manchester, UK - 12 events</div>
+          {genres.slice(1).map((genre) => (
+            <button
+              key={genre.value}
+              onClick={() => setSelectedGenre(genre.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: selectedGenre === genre.value ? '#EC4899' : '#ccc',
+                textAlign: 'left',
+                cursor: 'pointer',
+                padding: '0.25rem 0'
+              }}
+            >
+              {genre.label}
+            </button>
+          ))}
         </div>
       </FloatingCard>
     </>

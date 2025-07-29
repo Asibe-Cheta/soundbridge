@@ -1,0 +1,32 @@
+# SoundBridge Environment Variables Template
+# Copy this content to a new file named .env.local in your project root
+
+# Supabase Configuration (REQUIRED)
+# Get these from your Supabase project dashboard: https://supabase.com/dashboard
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# Optional: Direct database URL (for advanced use cases)
+# SUPABASE_DATABASE_URL=postgresql://postgres:[password]@[host]:[port]/postgres
+
+# Development settings
+NODE_ENV=development
+
+# =============================================================================
+# HOW TO GET YOUR SUPABASE KEYS:
+# =============================================================================
+# 1. Go to https://supabase.com/dashboard
+# 2. Select your project
+# 3. Go to Settings → API
+# 4. Copy the Project URL (NEXT_PUBLIC_SUPABASE_URL)
+# 5. Copy the anon public key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+# 6. Copy the service_role key (SUPABASE_SERVICE_ROLE_KEY)
+# =============================================================================
+
+# IMPORTANT NOTES:
+# - No spaces around the = sign
+# - No quotes around the values
+# - File must be named .env.local (not env-template.txt)
+# - File must be in the project root (same level as package.json)
+# - Restart your development server after creating this file 

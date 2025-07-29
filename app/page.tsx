@@ -2,16 +2,36 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
+import { LogOut, User } from 'lucide-react';
 
 export default function HomePage() {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <>
       {/* Header */}
       <header className="header">
         <div className="logo">
-          🌉 SoundBridge
+          <Image
+            src="/images/logos/logo-trans-lockup.png"
+            alt="SoundBridge Logo"
+            width={150}
+            height={40}
+            priority
+            style={{ height: 'auto' }}
+          />
         </div>
         <nav className="nav">
           <Link href="/" className="active" style={{ textDecoration: 'none', color: 'white' }}>
@@ -33,17 +53,52 @@ export default function HomePage() {
           <Link href="/dashboard" style={{ textDecoration: 'none', color: 'white' }}>
             Dashboard
           </Link>
+          <Link href="/notifications" style={{ textDecoration: 'none', color: 'white' }}>
+            Notifications
+          </Link>
+          <Link href="/feed" style={{ textDecoration: 'none', color: 'white' }}>
+            Feed
+          </Link>
+          <Link href="/messaging" style={{ textDecoration: 'none', color: 'white' }}>
+            Messages
+          </Link>
         </nav>
         <Link href="/search?q=" style={{ textDecoration: 'none', flex: 1, maxWidth: '400px' }}>
           <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." readOnly style={{ cursor: 'pointer' }} />
         </Link>
         <div className="auth-buttons">
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <button className="btn-secondary">Login</button>
-          </Link>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <button className="btn-primary">Sign Up</button>
-          </Link>
+          {user ? (
+            // Authenticated user - show profile and logout
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                <button
+                  className="btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <User size={16} />
+                  Dashboard
+                </button>
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            // Unauthenticated user - show login/signup
+            <>
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <button className="btn-secondary">Login</button>
+              </Link>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <button className="btn-primary">Sign Up</button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -310,7 +365,7 @@ export default function HomePage() {
           <div className="quick-action">📅 Create Event</div>
           <div className="quick-action">💬 Find Collaborators</div>
         </div>
-        
+
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
           <div>John is listening to "Praise Medley"</div>

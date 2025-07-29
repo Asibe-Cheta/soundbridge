@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import React, { useState, use, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
-import { 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Users, 
-  Star, 
-  Heart, 
-  Share2, 
+import { useAuth } from '../../../src/contexts/AuthContext';
+import { eventService } from '../../../src/lib/event-service';
+import type { Event } from '../../../src/lib/types/event';
+import {
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
+  Star,
+  Heart,
+  Share2,
   MessageCircle,
   Phone,
   Mail,
@@ -26,79 +29,88 @@ import {
   User,
   Music,
   DollarSign,
-  Info
+  Info,
+  Loader2,
+  Edit,
+  Trash2
 } from 'lucide-react';
 
 export default function EventDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { user } = useAuth();
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isRSVPed, setIsRSVPed] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const [rsvpLoading, setRsvpLoading] = useState(false);
 
   const resolvedParams = use(params);
 
-  // Mock event data
-  const event = {
-    id: resolvedParams.id,
-    title: 'Gospel Night Live',
-    creator: 'Royal Festival Hall',
-    creatorId: 'royal-festival-hall',
-    date: 'Tonight • 8PM',
-    fullDate: 'December 15, 2024 • 8:00 PM',
-    location: 'London, UK',
-    address: 'Southbank Centre, Belvedere Rd, London SE1 8XX, UK',
-    price: '£25-45',
-    genre: 'Gospel',
-    image: 'https://picsum.photos/800/400?random=gospel-event',
-    attendees: 1200,
-    maxAttendees: 1500,
-    rating: 4.8,
-    featured: true,
-    description: 'Experience an unforgettable evening of gospel music featuring some of the most talented artists from across the UK and Nigeria. This special event brings together traditional gospel choirs with contemporary gospel fusion, creating a powerful and uplifting atmosphere.',
-    longDescription: `Join us for an extraordinary evening of gospel music that transcends boundaries and brings together communities through the power of music. 
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-This special event features:
-• Traditional gospel choirs from London and Birmingham
-• Contemporary gospel fusion artists
-• Special guest performances from Nigerian gospel stars
-• Interactive worship sessions
-• Community networking opportunities
+        const result = await eventService.getEventById(resolvedParams.id);
 
-The evening will include performances from:
-- London Community Gospel Choir
-- Birmingham Gospel Collective
-- Special guest: Ada Grace (Nigerian Gospel Sensation)
-- Manchester Gospel Fusion Band
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
 
-Food and refreshments will be available throughout the evening. Early arrival is recommended as seating is limited.`,
-    organizer: {
-      name: 'Royal Festival Hall',
-      bio: 'Leading venue for gospel and spiritual music events in London',
-      contact: '+44 20 7960 4200',
-      email: 'events@royalfestivalhall.co.uk',
-      website: 'www.royalfestivalhall.co.uk',
-      social: {
-        instagram: '@royalfestivalhall',
-        twitter: '@RFH_London',
-        youtube: 'Royal Festival Hall'
+        if (!result.data) {
+          setError('Event not found');
+          return;
+        }
+
+        setEvent(result.data);
+        setIsRSVPed(result.data.isAttending || false);
+      } catch (err) {
+        setError('Failed to load event');
+        console.error('Error fetching event:', err);
+      } finally {
+        setLoading(false);
       }
-    },
-    performers: [
-      { name: 'London Community Gospel Choir', type: 'Choir' },
-      { name: 'Birmingham Gospel Collective', type: 'Band' },
-      { name: 'Ada Grace', type: 'Solo Artist' },
-      { name: 'Manchester Gospel Fusion', type: 'Band' }
-    ],
-    schedule: [
-      { time: '7:00 PM', activity: 'Doors Open & Registration' },
-      { time: '7:30 PM', activity: 'Opening Prayer & Welcome' },
-      { time: '8:00 PM', activity: 'London Community Gospel Choir' },
-      { time: '8:30 PM', activity: 'Birmingham Gospel Collective' },
-      { time: '9:00 PM', activity: 'Special Guest: Ada Grace' },
-      { time: '9:30 PM', activity: 'Manchester Gospel Fusion' },
-      { time: '10:00 PM', activity: 'Community Worship Session' },
-      { time: '10:30 PM', activity: 'Networking & Refreshments' }
-    ],
-    coordinates: { lat: 51.5055, lng: -0.1168 }
+    };
+
+    fetchEvent();
+  }, [resolvedParams.id]);
+
+  const handleRSVP = async () => {
+    if (!user) {
+      // Redirect to login
+      return;
+    }
+
+    if (!event) return;
+
+    try {
+      setRsvpLoading(true);
+      const status = isRSVPed ? 'not_going' : 'attending';
+      const result = await eventService.rsvpToEvent(event.id, status);
+
+      if (result.success) {
+        setIsRSVPed(!isRSVPed);
+        // Update the event data
+        setEvent(prev => prev ? {
+          ...prev,
+          isAttending: !isRSVPed,
+          attendeeCount: isRSVPed ? (prev.attendeeCount || 1) - 1 : (prev.attendeeCount || 0) + 1
+        } : null);
+      } else {
+        console.error('RSVP failed:', result.error);
+      }
+    } catch (err) {
+      console.error('RSVP error:', err);
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
   };
 
   const tabs = [
@@ -108,44 +120,44 @@ Food and refreshments will be available throughout the evening. Early arrival is
     { id: 'location', label: 'Location', icon: MapPin }
   ];
 
-  const handleRSVP = () => {
-    setIsRSVPed(!isRSVPed);
-  };
-
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-  };
-
   const renderTabContent = () => {
+    if (!event) return null;
+
     switch (activeTab) {
       case 'details':
         return (
           <div className="card">
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Description</h3>
             <div style={{ lineHeight: '1.6', color: '#ccc', marginBottom: '2rem' }}>
-              {event.longDescription.split('\n').map((paragraph, index) => (
-                <p key={index} style={{ marginBottom: '1rem' }}>{paragraph}</p>
-              ))}
+              {event.description ? (
+                event.description.split('\n').map((paragraph, index) => (
+                  <p key={index} style={{ marginBottom: '1rem' }}>{paragraph}</p>
+                ))
+              ) : (
+                <p>No description available for this event.</p>
+              )}
             </div>
-            
-            <h4 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>What to Expect</h4>
+
+            <h4 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Information</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
                 <Music size={16} style={{ color: '#EC4899' }} />
-                <span>Live Gospel Music</span>
+                <span>{event.category}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
                 <Users size={16} style={{ color: '#EC4899' }} />
-                <span>Community Networking</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <Heart size={16} style={{ color: '#EC4899' }} />
-                <span>Interactive Worship</span>
+                <span>{event.attendeeCount || 0} attending</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
                 <DollarSign size={16} style={{ color: '#EC4899' }} />
-                <span>Food & Refreshments</span>
+                <span>{event.formattedPrice}</span>
               </div>
+              {event.max_attendees && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                  <Users size={16} style={{ color: '#EC4899' }} />
+                  <span>Max {event.max_attendees} attendees</span>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -154,45 +166,13 @@ Food and refreshments will be available throughout the evening. Early arrival is
         return (
           <div className="card">
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Schedule</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {event.schedule.map((item, index) => (
-                <div key={index} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem', 
-                  padding: '1rem', 
-                  background: 'rgba(255, 255, 255, 0.05)', 
-                  borderRadius: '8px',
-                  border: index === 2 ? '1px solid #EC4899' : '1px solid rgba(255, 255, 255, 0.1)'
-                }}>
-                  <div style={{ 
-                    minWidth: '80px', 
-                    textAlign: 'center', 
-                    fontWeight: '600', 
-                    color: index === 2 ? '#EC4899' : '#ccc'
-                  }}>
-                    {item.time}
-                  </div>
-                  <div style={{ 
-                    flex: 1, 
-                    color: index === 2 ? '#EC4899' : '#ccc',
-                    fontWeight: index === 2 ? '600' : 'normal'
-                  }}>
-                    {item.activity}
-                  </div>
-                  {index === 2 && (
-                    <div style={{ 
-                      background: 'linear-gradient(45deg, #DC2626, #EC4899)', 
-                      color: 'white', 
-                      padding: '0.25rem 0.5rem', 
-                      borderRadius: '10px', 
-                      fontSize: '0.8rem' 
-                    }}>
-                      Featured
-                    </div>
-                  )}
-                </div>
-              ))}
+            <div style={{ color: '#ccc' }}>
+              <p>Event starts at {new Date(event.event_date).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              })}</p>
+              <p>Please arrive 15-30 minutes before the event starts.</p>
             </div>
           </div>
         );
@@ -200,89 +180,62 @@ Food and refreshments will be available throughout the evening. Early arrival is
       case 'performers':
         return (
           <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Performers</h3>
-            <div className="grid grid-2">
-              {event.performers.map((performer, index) => (
-                <div key={index} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem', 
-                  padding: '1rem', 
-                  background: 'rgba(255, 255, 255, 0.05)', 
-                  borderRadius: '8px' 
-                }}>
-                  <div style={{ 
-                    width: '50px', 
-                    height: '50px', 
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)', 
-                    borderRadius: '50%', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold'
-                  }}>
-                    {performer.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{performer.name}</div>
-                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{performer.type}</div>
-                  </div>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Organizer</h3>
+            {event.creator ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
+                <div>
+                  <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
+                  <p style={{ color: '#ccc', fontSize: '0.9rem' }}>{event.creator.bio || 'Event organizer'}</p>
+                  {event.creator.location && (
+                    <p style={{ color: '#999', fontSize: '0.8rem' }}>
+                      <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                      {event.creator.location}
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <p style={{ color: '#ccc' }}>Organizer information not available.</p>
+            )}
           </div>
         );
 
       case 'location':
         return (
           <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Location & Directions</h3>
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <MapPin size={16} style={{ color: '#EC4899' }} />
-                <span style={{ fontWeight: '600' }}>{event.creator}</span>
-              </div>
-              <div style={{ color: '#ccc', marginBottom: '1rem' }}>{event.address}</div>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Location</h3>
+            <div style={{ color: '#ccc', marginBottom: '1rem' }}>
+              <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{event.venue || event.location}</p>
+              <p>{event.location}</p>
             </div>
-            
-            {/* Mock Map */}
-            <div style={{ 
-              width: '100%', 
-              height: '300px', 
-              background: 'linear-gradient(45deg, #333, #555)', 
-              borderRadius: '10px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              color: '#999',
-              marginBottom: '1rem'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <MapPin size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
-                <div>Interactive Map</div>
-                <div style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Coordinates: {event.coordinates.lat}, {event.coordinates.lng}</div>
+            {event.latitude && event.longitude ? (
+              <div style={{
+                width: '100%',
+                height: '200px',
+                background: '#333',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#999'
+              }}>
+                Map placeholder - Coordinates: {event.latitude}, {event.longitude}
               </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Getting There</div>
-                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
-                  • Waterloo Station (5 min walk)<br/>
-                  • Southwark Station (10 min walk)<br/>
-                  • Multiple bus routes
-                </div>
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '200px',
+                background: '#333',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#999'
+              }}>
+                Map not available
               </div>
-              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Parking</div>
-                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
-                  • On-site parking available<br/>
-                  • Street parking nearby<br/>
-                  • Disabled access
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         );
 
@@ -290,6 +243,91 @@ Food and refreshments will be available throughout the evening. Early arrival is
         return null;
     }
   };
+
+  if (loading) {
+    return (
+      <>
+        <header className="header">
+          <div className="logo">
+            🌉 SoundBridge
+          </div>
+          <nav className="nav">
+            <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
+              For You
+            </Link>
+            <a href="#">Discover</a>
+            <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+              Events
+            </Link>
+            <a href="#">Creators</a>
+            <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
+              Upload
+            </Link>
+          </nav>
+          <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
+          <div className="auth-buttons">
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary">Login</button>
+            </Link>
+            <Link href="/signup" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Sign Up</button>
+            </Link>
+          </div>
+        </header>
+
+        <main className="main-container">
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <Loader2 size={48} className="animate-spin" style={{ color: '#EC4899' }} />
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <>
+        <header className="header">
+          <div className="logo">
+            🌉 SoundBridge
+          </div>
+          <nav className="nav">
+            <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
+              For You
+            </Link>
+            <a href="#">Discover</a>
+            <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+              Events
+            </Link>
+            <a href="#">Creators</a>
+            <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
+              Upload
+            </Link>
+          </nav>
+          <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
+          <div className="auth-buttons">
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary">Login</button>
+            </Link>
+            <Link href="/signup" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Sign Up</button>
+            </Link>
+          </div>
+        </header>
+
+        <main className="main-container">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
+            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Event Not Found</h2>
+            <p style={{ color: '#999', marginBottom: '2rem' }}>{error || 'The event you are looking for does not exist.'}</p>
+            <Link href="/events" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Back to Events</button>
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -325,32 +363,23 @@ Food and refreshments will be available throughout the evening. Early arrival is
       {/* Main Content */}
       <main className="main-container">
         {/* Back Button */}
-        <div style={{ marginBottom: '1rem' }}>
+        <section className="section">
           <Link href="/events" style={{ textDecoration: 'none' }}>
-            <button style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              background: 'none', 
-              border: 'none', 
-              color: '#EC4899', 
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}>
+            <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ArrowLeft size={16} />
               Back to Events
             </button>
           </Link>
-        </div>
+        </section>
 
-        {/* Event Hero Section */}
-        <section className="hero-section" style={{ height: 'auto', minHeight: '400px' }}>
-          <div className="featured-creator" style={{ position: 'relative' }}>
+        {/* Event Header */}
+        <section className="hero-section">
+          <div className="featured-creator">
             <div className="featured-creator-content">
-              {event.featured && (
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '1rem', 
+              {event.isFeatured && (
+                <div style={{
+                  position: 'absolute',
+                  top: '1rem',
                   right: '1rem',
                   background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                   color: 'white',
@@ -363,11 +392,13 @@ Food and refreshments will be available throughout the evening. Early arrival is
                 </div>
               )}
               <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>{event.title}</h1>
-              <p style={{ fontSize: '1.2rem', color: '#ccc', marginBottom: '1rem' }}>{event.creator}</p>
+              <p style={{ fontSize: '1.2rem', color: '#ccc', marginBottom: '1rem' }}>
+                {event.creator?.display_name || 'Unknown Creator'}
+              </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Calendar size={20} />
-                  <span>{event.fullDate}</span>
+                  <span>{event.formattedDate}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <MapPin size={20} />
@@ -375,33 +406,45 @@ Food and refreshments will be available throughout the evening. Early arrival is
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Users size={20} />
-                  <span>{event.attendees.toLocaleString()} attending</span>
+                  <span>{(event.attendeeCount || 0).toLocaleString()} attending</span>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <button 
-                  className={isRSVPed ? 'btn-secondary' : 'btn-primary'}
-                  onClick={handleRSVP}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  {isRSVPed ? <CheckCircle size={16} /> : <Users size={16} />}
-                  {isRSVPed ? 'RSVPed' : 'RSVP Now'}
-                </button>
-                <button 
+                {user ? (
+                  <button
+                    className={isRSVPed ? 'btn-secondary' : 'btn-primary'}
+                    onClick={handleRSVP}
+                    disabled={rsvpLoading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    {rsvpLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : isRSVPed ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <Calendar size={16} />
+                    )}
+                    {isRSVPed ? 'Cancel RSVP' : 'RSVP Now'}
+                  </button>
+                ) : (
+                  <Link href="/login" style={{ textDecoration: 'none' }}>
+                    <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Calendar size={16} />
+                      Login to RSVP
+                    </button>
+                  </Link>
+                )}
+                <button
                   className="btn-secondary"
                   onClick={handleLike}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
                   <Heart size={16} style={{ color: isLiked ? '#EC4899' : 'white' }} />
-                  {isLiked ? 'Liked' : 'Like'}
+                  Like
                 </button>
                 <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Share2 size={16} />
                   Share
-                </button>
-                <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <MessageCircle size={16} />
-                  Contact
                 </button>
               </div>
             </div>
@@ -411,22 +454,22 @@ Food and refreshments will be available throughout the evening. Early arrival is
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Price</span>
-                <span style={{ color: '#EC4899', fontWeight: '600' }}>{event.price}</span>
+                <span style={{ color: '#EC4899', fontWeight: '600' }}>{event.formattedPrice}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Genre</span>
-                <span>{event.genre}</span>
+                <span>{event.category}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Rating</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <Star size={14} style={{ color: '#FFD700' }} />
-                  {event.rating}
+                  {event.rating?.toFixed(1) || '4.5'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Capacity</span>
-                <span>{event.attendees.toLocaleString()}/{event.maxAttendees.toLocaleString()}</span>
+                <span>{(event.attendeeCount || 0).toLocaleString()}/{event.max_attendees?.toLocaleString() || '∞'}</span>
               </div>
             </div>
           </div>
@@ -457,57 +500,41 @@ Food and refreshments will be available throughout the evening. Early arrival is
         {/* Organizer Info */}
         <section className="section">
           <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Organizer</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <div style={{ 
-                width: '60px', 
-                height: '60px', 
-                background: 'linear-gradient(45deg, #DC2626, #EC4899)', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                fontWeight: 'bold'
-              }}>
-                {event.organizer.name.charAt(0)}
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Organizer</h3>
+            {event.creator ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
+                  <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    {event.creator.bio || 'Event organizer'}
+                  </p>
+                  {event.creator.location && (
+                    <p style={{ color: '#999', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                      <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                      {event.creator.location}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}>
+                      <MessageCircle size={12} />
+                      Contact
+                    </button>
+                    <Link href={`/creator/${event.creator.username}`} style={{ textDecoration: 'none' }}>
+                      <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}>
+                        <User size={12} />
+                        View Profile
+                      </button>
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.organizer.name}</div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>{event.organizer.bio}</div>
-              </div>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Phone size={16} />
-                <span>{event.organizer.contact}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Mail size={16} />
-                <span>{event.organizer.email}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Globe size={16} />
-                <span>{event.organizer.website}</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <a href="#" style={{ color: '#999', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                <Instagram size={20} />
-              </a>
-              <a href="#" style={{ color: '#999', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                <Twitter size={20} />
-              </a>
-              <a href="#" style={{ color: '#999', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                <Youtube size={20} />
-              </a>
-            </div>
+            ) : (
+              <p style={{ color: '#ccc' }}>Organizer information not available.</p>
+            )}
           </div>
         </section>
 
-        {/* Footer */}
         <Footer />
       </main>
 
@@ -523,7 +550,7 @@ Food and refreshments will be available throughout the evening. Early arrival is
           <div className="quick-action">🎵 Upload Music</div>
           <div className="quick-action">💬 Find Collaborators</div>
         </div>
-        
+
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Similar Events</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
           <div>Gospel Choir Competition - Abuja</div>

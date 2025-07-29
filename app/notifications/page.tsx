@@ -1,0 +1,726 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { 
+  Bell, 
+  MapPin, 
+  Clock, 
+  Mail, 
+  Smartphone, 
+  Volume2, 
+  VolumeX,
+  Music,
+  Users,
+  Calendar,
+  Heart,
+  MessageCircle,
+  Settings,
+  Globe,
+  Zap,
+  Moon,
+  Sun,
+  Check,
+  X,
+  ChevronRight,
+  Map,
+  Location,
+  Radio,
+  Mic,
+  Guitar,
+  Drum,
+  Headphones,
+  Church,
+  PartyPopper,
+  TrendingUp,
+  UserPlus,
+  MessageSquare,
+  Share2,
+  Star
+} from 'lucide-react';
+
+interface NotificationSettings {
+  locationRadius: number;
+  eventCategories: string[];
+  notificationTiming: string;
+  deliveryMethods: string[];
+  quietHours: {
+    enabled: boolean;
+    start: string;
+    end: string;
+  };
+  creatorActivity: boolean;
+  socialNotifications: {
+    follows: boolean;
+    messages: boolean;
+    collaborations: boolean;
+    likes: boolean;
+    shares: boolean;
+  };
+}
+
+const eventCategories = [
+  { id: 'christian', name: 'Christian Events', icon: Church, color: '#059669' },
+  { id: 'secular', name: 'Secular Music', icon: Music, color: '#DC2626' },
+  { id: 'carnival', name: 'Carnival', icon: PartyPopper, color: '#EA580C' },
+  { id: 'gospel', name: 'Gospel', icon: Church, color: '#7C3AED' },
+  { id: 'afrobeats', name: 'Afrobeats', icon: Drum, color: '#EC4899' },
+  { id: 'uk-drill', name: 'UK Drill', icon: TrendingUp, color: '#1F2937' },
+  { id: 'highlife', name: 'Highlife', icon: Guitar, color: '#059669' },
+  { id: 'jazz', name: 'Jazz', icon: Headphones, color: '#7C3AED' },
+  { id: 'podcasts', name: 'Podcasts', icon: Mic, color: '#EA580C' },
+  { id: 'live-music', name: 'Live Music', icon: Radio, color: '#DC2626' }
+];
+
+const timingOptions = [
+  { id: 'immediate', label: 'Immediate', description: 'Get notified as soon as events are posted' },
+  { id: '1-day', label: '1 Day Before', description: 'Receive notifications 24 hours before events' },
+  { id: '3-days', label: '3 Days Before', description: 'Get notified 3 days in advance' },
+  { id: '1-week', label: '1 Week Before', description: 'Weekly digest of upcoming events' }
+];
+
+const deliveryMethods = [
+  { id: 'push', label: 'Push Notifications', icon: Bell, description: 'Instant notifications on your device' },
+  { id: 'email', label: 'Email', icon: Mail, description: 'Daily or weekly email summaries' },
+  { id: 'sms', label: 'SMS', icon: Smartphone, description: 'Text messages for urgent updates' }
+];
+
+export default function NotificationPreferencesPage() {
+  const [settings, setSettings] = useState<NotificationSettings>({
+    locationRadius: 10,
+    eventCategories: ['christian', 'gospel', 'afrobeats'],
+    notificationTiming: '1-day',
+    deliveryMethods: ['push', 'email'],
+    quietHours: {
+      enabled: true,
+      start: '22:00',
+      end: '08:00'
+    },
+    creatorActivity: true,
+    socialNotifications: {
+      follows: true,
+      messages: true,
+      collaborations: true,
+      likes: false,
+      shares: false
+    }
+  });
+
+  const [activeSection, setActiveSection] = useState('location');
+
+  const updateSettings = (key: keyof NotificationSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const updateSocialSettings = (key: keyof NotificationSettings['socialNotifications'], value: boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      socialNotifications: { ...prev.socialNotifications, [key]: value }
+    }));
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setSettings(prev => ({
+      ...prev,
+      eventCategories: prev.eventCategories.includes(categoryId)
+        ? prev.eventCategories.filter(id => id !== categoryId)
+        : [...prev.eventCategories, categoryId]
+    }));
+  };
+
+  const toggleDeliveryMethod = (methodId: string) => {
+    setSettings(prev => ({
+      ...prev,
+      deliveryMethods: prev.deliveryMethods.includes(methodId)
+        ? prev.deliveryMethods.filter(id => id !== methodId)
+        : [...prev.deliveryMethods, methodId]
+    }));
+  };
+
+  const renderLocationSettings = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '15px',
+        padding: '1.5rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <MapPin size={20} />
+          Location Radius
+        </h3>
+        <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+          Choose how far from your location to receive event notifications
+        </p>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {[1, 5, 10, 25].map((radius) => (
+            <button
+              key={radius}
+              onClick={() => updateSettings('locationRadius', radius)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem',
+                background: settings.locationRadius === radius 
+                  ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                  : 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                width: '100%',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => settings.locationRadius !== radius && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+              onMouseLeave={(e) => settings.locationRadius !== radius && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Location size={20} />
+                <span style={{ fontWeight: '600' }}>{radius}km radius</span>
+              </div>
+              {settings.locationRadius === radius && <Check size={20} />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Map Preview */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '15px',
+        padding: '1.5rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Map size={20} />
+          Coverage Area
+        </h3>
+        <div style={{
+          height: '200px',
+          background: 'linear-gradient(135deg, #1a1a1a, #2d2d2d)',
+          borderRadius: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: `${(settings.locationRadius / 25) * 200}px`,
+            height: `${(settings.locationRadius / 25) * 200}px`,
+            background: 'radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, rgba(220, 38, 38, 0.1) 70%, transparent 100%)',
+            borderRadius: '50%',
+            border: '2px solid rgba(236, 72, 153, 0.5)'
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '8px',
+            height: '8px',
+            background: '#EC4899',
+            borderRadius: '50%',
+            boxShadow: '0 0 10px rgba(236, 72, 153, 0.8)'
+          }} />
+          <div style={{ color: '#999', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Your Location</div>
+            <div style={{ fontSize: '0.8rem' }}>{settings.locationRadius}km coverage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEventCategories = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Music size={20} />
+        Event Categories
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+        Select which types of events you want to be notified about
+      </p>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+        {eventCategories.map((category) => {
+          const Icon = category.icon;
+          const isSelected = settings.eventCategories.includes(category.id);
+          
+          return (
+            <button
+              key={category.id}
+              onClick={() => toggleCategory(category.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '1rem',
+                background: isSelected 
+                  ? `linear-gradient(45deg, ${category.color}, ${category.color}dd)` 
+                  : 'rgba(255, 255, 255, 0.03)',
+                border: `1px solid ${isSelected ? category.color : 'rgba(255, 255, 255, 0.1)'}`,
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                width: '100%',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => !isSelected && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+              onMouseLeave={(e) => !isSelected && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
+            >
+              <Icon size={20} style={{ color: isSelected ? 'white' : category.color }} />
+              <span style={{ fontWeight: '600' }}>{category.name}</span>
+              {isSelected && <Check size={16} style={{ marginLeft: 'auto' }} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderTimingSettings = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Clock size={20} />
+        Notification Timing
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+        Choose when you want to receive event notifications
+      </p>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {timingOptions.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => updateSettings('notificationTiming', option.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem',
+              background: settings.notificationTiming === option.id 
+                ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                : 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '10px',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              width: '100%',
+              textAlign: 'left'
+            }}
+            onMouseEnter={(e) => settings.notificationTiming !== option.id && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+            onMouseLeave={(e) => settings.notificationTiming !== option.id && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
+          >
+            <div>
+              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{option.label}</div>
+              <div style={{ color: '#999', fontSize: '0.9rem' }}>{option.description}</div>
+            </div>
+            {settings.notificationTiming === option.id && <Check size={20} />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderDeliveryMethods = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Zap size={20} />
+        Delivery Methods
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+        Choose how you want to receive notifications
+      </p>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {deliveryMethods.map((method) => {
+          const Icon = method.icon;
+          const isSelected = settings.deliveryMethods.includes(method.id);
+          
+          return (
+            <button
+              key={method.id}
+              onClick={() => toggleDeliveryMethod(method.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem',
+                background: isSelected 
+                  ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                  : 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                width: '100%',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => !isSelected && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+              onMouseLeave={(e) => !isSelected && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Icon size={20} />
+                <div>
+                  <div style={{ fontWeight: '600' }}>{method.label}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{method.description}</div>
+                </div>
+              </div>
+              {isSelected && <Check size={20} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderQuietHours = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Moon size={20} />
+        Quiet Hours
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+        Set times when you don't want to receive notifications
+      </p>
+      
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+        <button
+          onClick={() => updateSettings('quietHours', { ...settings.quietHours, enabled: !settings.quietHours.enabled })}
+          style={{
+            width: '50px',
+            height: '24px',
+            background: settings.quietHours.enabled ? 'linear-gradient(45deg, #DC2626, #EC4899)' : '#333',
+            borderRadius: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            position: 'relative',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <div style={{
+            position: 'absolute',
+            top: '2px',
+            left: settings.quietHours.enabled ? '26px' : '2px',
+            width: '20px',
+            height: '20px',
+            background: 'white',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease'
+          }} />
+        </button>
+        <span style={{ color: 'white', fontWeight: '600' }}>
+          {settings.quietHours.enabled ? 'Enabled' : 'Disabled'}
+        </span>
+      </div>
+      
+      {settings.quietHours.enabled && (
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div>
+            <label style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'block' }}>
+              Start Time
+            </label>
+            <input
+              type="time"
+              value={settings.quietHours.start}
+              onChange={(e) => updateSettings('quietHours', { ...settings.quietHours, start: e.target.value })}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                padding: '0.5rem',
+                color: 'white',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+          <div style={{ color: '#999' }}>to</div>
+          <div>
+            <label style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'block' }}>
+              End Time
+            </label>
+            <input
+              type="time"
+              value={settings.quietHours.end}
+              onChange={(e) => updateSettings('quietHours', { ...settings.quietHours, end: e.target.value })}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                padding: '0.5rem',
+                color: 'white',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderSocialNotifications = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Users size={20} />
+        Social Notifications
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+        Manage notifications for social interactions
+      </p>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {[
+          { key: 'follows', label: 'New Followers', icon: UserPlus, description: 'When someone follows you' },
+          { key: 'messages', label: 'Messages', icon: MessageSquare, description: 'New messages and comments' },
+          { key: 'collaborations', label: 'Collaborations', icon: Share2, description: 'Collaboration requests and updates' },
+          { key: 'likes', label: 'Likes & Reactions', icon: Heart, description: 'When someone likes your content' },
+          { key: 'shares', label: 'Shares & Reposts', icon: Share2, description: 'When your content is shared' }
+        ].map((item) => {
+          const Icon = item.icon;
+          const isEnabled = settings.socialNotifications[item.key as keyof typeof settings.socialNotifications];
+          
+          return (
+            <div key={item.key} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Icon size={20} style={{ color: '#EC4899' }} />
+                <div>
+                  <div style={{ color: 'white', fontWeight: '600' }}>{item.label}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{item.description}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => updateSocialSettings(item.key as keyof typeof settings.socialNotifications, !isEnabled)}
+                style={{
+                  width: '50px',
+                  height: '24px',
+                  background: isEnabled ? 'linear-gradient(45deg, #DC2626, #EC4899)' : '#333',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: isEnabled ? '26px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'all 0.3s ease'
+                }} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderCreatorActivity = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Mic size={20} />
+        Creator Activity
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+        Get notified when creators you follow upload new content or create events
+      </p>
+      
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <button
+          onClick={() => updateSettings('creatorActivity', !settings.creatorActivity)}
+          style={{
+            width: '50px',
+            height: '24px',
+            background: settings.creatorActivity ? 'linear-gradient(45deg, #DC2626, #EC4899)' : '#333',
+            borderRadius: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            position: 'relative',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <div style={{
+            position: 'absolute',
+            top: '2px',
+            left: settings.creatorActivity ? '26px' : '2px',
+            width: '20px',
+            height: '20px',
+            background: 'white',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease'
+          }} />
+        </button>
+        <span style={{ color: 'white', fontWeight: '600' }}>
+          {settings.creatorActivity ? 'Enabled' : 'Disabled'}
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'location':
+        return renderLocationSettings();
+      case 'categories':
+        return renderEventCategories();
+      case 'timing':
+        return renderTimingSettings();
+      case 'delivery':
+        return renderDeliveryMethods();
+      case 'quiet-hours':
+        return renderQuietHours();
+      case 'creator-activity':
+        return renderCreatorActivity();
+      case 'social':
+        return renderSocialNotifications();
+      default:
+        return renderLocationSettings();
+    }
+  };
+
+  const navigationItems = [
+    { id: 'location', label: 'Location', icon: MapPin },
+    { id: 'categories', label: 'Event Categories', icon: Music },
+    { id: 'timing', label: 'Timing', icon: Clock },
+    { id: 'delivery', label: 'Delivery Methods', icon: Zap },
+    { id: 'quiet-hours', label: 'Quiet Hours', icon: Moon },
+    { id: 'creator-activity', label: 'Creator Activity', icon: Mic },
+    { id: 'social', label: 'Social', icon: Users }
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)' }}>
+      {/* Header */}
+      <header style={{
+        background: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        padding: '1rem 2rem',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <button style={{
+              background: 'none',
+              border: 'none',
+              color: '#999',
+              cursor: 'pointer',
+              fontSize: '1.2rem'
+            }}>
+              ←
+            </button>
+          </Link>
+          <div>
+            <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Notification Preferences</h1>
+            <p style={{ color: '#999', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+              Customize your event discovery experience
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 80px)' }}>
+        {/* Sidebar Navigation */}
+        <div style={{
+          width: '280px',
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '2rem 1.5rem'
+        }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '1rem',
+                    background: activeSection === item.id ? 'linear-gradient(45deg, #DC2626, #EC4899)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textAlign: 'left',
+                    width: '100%'
+                  }}
+                  onMouseEnter={(e) => activeSection !== item.id && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+                  onMouseLeave={(e) => activeSection !== item.id && (e.currentTarget.style.background = 'transparent')}
+                >
+                  <Icon size={20} />
+                  {item.label}
+                  <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Main Content */}
+        <div style={{ flex: 1, padding: '2rem' }}>
+          {renderContent()}
+        </div>
+      </div>
+    </div>
+  );
+} 

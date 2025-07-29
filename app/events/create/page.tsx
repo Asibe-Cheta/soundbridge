@@ -4,12 +4,17 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
-import { 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  DollarSign, 
-  Music, 
+import { ImageUpload } from '../../../src/components/ui/ImageUpload';
+import { useImageUpload } from '../../../src/hooks/useImageUpload';
+import { useAuth } from '../../../src/contexts/AuthContext';
+import { eventService } from '../../../src/lib/event-service';
+import type { EventCreateData } from '../../../src/lib/types/event';
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  DollarSign,
+  Music,
   Image as ImageIcon,
   Users,
   Globe,
@@ -19,15 +24,18 @@ import {
   ArrowLeft,
   Upload,
   X,
-  CheckCircle
+  CheckCircle,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function CreateEventPage() {
-  const [dragActive, setDragActive] = useState(false);
-  const [eventImage, setEventImage] = useState<File | null>(null);
+  const { user } = useAuth();
+  const [imageState, imageActions] = useImageUpload();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success' | 'error'>('idle');
-  
+  const [error, setError] = useState<string | null>(null);
+
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -42,8 +50,6 @@ export default function CreateEventPage() {
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
 
-  const imageInputRef = useRef<HTMLInputElement>(null);
-
   const genres = [
     'Afrobeats', 'Gospel', 'UK Drill', 'Highlife', 'Jazz', 'Hip Hop',
     'R&B', 'Pop', 'Rock', 'Electronic', 'Classical', 'Folk', 'Country'
@@ -54,61 +60,167 @@ export default function CreateEventPage() {
     'Birmingham, UK', 'Liverpool, UK', 'Port Harcourt, Nigeria', 'Kano, Nigeria'
   ];
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
+  const handleImageUpload = async () => {
+    if (!user) return;
+
+    try {
+      await imageActions.uploadImage();
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setError('Failed to upload image');
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      handleImageUpload(file);
+  const validateForm = () => {
+    if (!title.trim()) {
+      setError('Event title is required');
+      return false;
     }
+    if (!description.trim()) {
+      setError('Event description is required');
+      return false;
+    }
+    if (!genre) {
+      setError('Please select a genre');
+      return false;
+    }
+    if (!date) {
+      setError('Event date is required');
+      return false;
+    }
+    if (!time) {
+      setError('Event time is required');
+      return false;
+    }
+    if (!location) {
+      setError('Event location is required');
+      return false;
+    }
+    return true;
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleImageUpload(e.target.files[0]);
-    }
-  };
-
-  const handleImageUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload a valid image file');
+  const handlePublish = async () => {
+    if (!user) {
+      setError('Please log in to create events');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
+    if (!validateForm()) {
       return;
     }
 
-    setEventImage(file);
-  };
+    try {
+      setIsPublishing(true);
+      setError(null);
 
-  const simulatePublish = () => {
-    if (!title.trim() || !date || !time || !location) {
-      alert('Please fill in all required fields');
-      return;
-    }
+      // Combine date and time
+      const eventDateTime = new Date(`${date}T${time}`);
 
-    setIsPublishing(true);
-    setPublishStatus('publishing');
+      // Parse price
+      let priceGbp = null;
+      let priceNgn = null;
+      if (price && price !== '0') {
+        if (price.includes('£')) {
+          priceGbp = parseFloat(price.replace('£', ''));
+        } else if (price.includes('₦')) {
+          priceNgn = parseFloat(price.replace('₦', '').replace(',', ''));
+        } else {
+          // Assume GBP if no currency symbol
+          priceGbp = parseFloat(price);
+        }
+      }
 
-    setTimeout(() => {
+      const eventData: EventCreateData = {
+        title: title.trim(),
+        description: description.trim(),
+        event_date: eventDateTime.toISOString(),
+        location: location,
+        venue: address || undefined,
+        category: genre as any,
+        price_gbp: priceGbp,
+        price_ngn: priceNgn,
+        max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
+        image_url: imageState.uploadedUrl || undefined
+      };
+
+      const result = await eventService.createEvent(eventData);
+
+      if (result.error) {
+        setError(result.error);
+        setPublishStatus('error');
+      } else {
+        setPublishStatus('success');
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setGenre('');
+        setDate('');
+        setTime('');
+        setLocation('');
+        setAddress('');
+        setPrice('');
+        setMaxAttendees('');
+        imageActions.resetUpload();
+      }
+    } catch (err) {
+      setError('Failed to create event');
+      setPublishStatus('error');
+      console.error('Event creation error:', err);
+    } finally {
       setIsPublishing(false);
-      setPublishStatus('success');
-    }, 2000);
+    }
   };
+
+  const handleSaveDraft = async () => {
+    // For now, we'll just save as a regular event
+    // In a real implementation, you might want a separate draft status
+    await handlePublish();
+  };
+
+  if (!user) {
+    return (
+      <>
+        <header className="header">
+          <div className="logo">
+            🌉 SoundBridge
+          </div>
+          <nav className="nav">
+            <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
+              For You
+            </Link>
+            <a href="#">Discover</a>
+            <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+              Events
+            </Link>
+            <a href="#">Creators</a>
+            <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
+              Upload
+            </Link>
+          </nav>
+          <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
+          <div className="auth-buttons">
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary">Login</button>
+            </Link>
+            <Link href="/signup" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Sign Up</button>
+            </Link>
+          </div>
+        </header>
+
+        <main className="main-container">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
+            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Authentication Required</h2>
+            <p style={{ color: '#999', marginBottom: '2rem' }}>Please log in to create events.</p>
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Login</button>
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -144,394 +256,359 @@ export default function CreateEventPage() {
       {/* Main Content */}
       <main className="main-container">
         {/* Back Button */}
-        <div style={{ marginBottom: '1rem' }}>
+        <section className="section">
           <Link href="/events" style={{ textDecoration: 'none' }}>
-            <button style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              background: 'none', 
-              border: 'none', 
-              color: '#EC4899', 
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}>
+            <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ArrowLeft size={16} />
               Back to Events
             </button>
           </Link>
-        </div>
-
-        <div className="section-header">
-          <h1 className="section-title">Create Event</h1>
-          <p style={{ color: '#ccc', marginTop: '0.5rem' }}>
-            Share your music event with the SoundBridge community
-          </p>
-        </div>
-
-        <div className="grid grid-2" style={{ gap: '2rem' }}>
-          {/* Event Image Upload */}
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <ImageIcon size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Event Image
-            </h3>
-
-            <div
-              className={`upload-area ${dragActive ? 'drag-active' : ''}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => imageInputRef.current?.click()}
-            >
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                style={{ display: 'none' }}
-              />
-              
-              {!eventImage ? (
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <ImageIcon size={48} style={{ color: '#EC4899', marginBottom: '1rem' }} />
-                  <h4 style={{ marginBottom: '0.5rem' }}>Upload Event Image</h4>
-                  <p style={{ color: '#999', marginBottom: '1rem' }}>
-                    Drag & drop or click to browse
-                  </p>
-                  <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                    Recommended: 1200x600px, Max 5MB
-                  </div>
-                </div>
-              ) : (
-                <div style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                    <ImageIcon size={24} style={{ color: '#EC4899' }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '600' }}>{eventImage.name}</div>
-                      <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                        {(eventImage.size / 1024 / 1024).toFixed(2)} MB
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEventImage(null);
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#999',
-                        cursor: 'pointer',
-                        padding: '0.5rem'
-                      }}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Event Details Form */}
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <Calendar size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Event Details
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Title */}
-              <div>
-                <label className="form-label">Event Title *</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter event title"
-                  className="form-input"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="form-label">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your event..."
-                  rows={4}
-                  className="form-textarea"
-                />
-              </div>
-
-              {/* Genre */}
-              <div>
-                <label className="form-label">Genre</label>
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="form-input"
-                >
-                  <option value="">Select genre</option>
-                  {genres.map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Date, Time & Location */}
-        <div className="grid grid-3" style={{ gap: '2rem', marginTop: '2rem' }}>
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <Calendar size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Date & Time
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="form-label">Date *</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div>
-                <label className="form-label">Time *</label>
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <MapPin size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Location
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="form-label">City *</label>
-                <select
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="form-input"
-                >
-                  <option value="">Select city</option>
-                  {locations.map((loc) => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="form-label">Address</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Full address"
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <DollarSign size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Pricing & Capacity
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="form-label">Price</label>
-                <input
-                  type="text"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="e.g., £25-45 or Free Entry"
-                  className="form-input"
-                />
-              </div>
-              <div>
-                <label className="form-label">Max Attendees</label>
-                <input
-                  type="number"
-                  value={maxAttendees}
-                  onChange={(e) => setMaxAttendees(e.target.value)}
-                  placeholder="Maximum capacity"
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Privacy & Publishing Settings */}
-        <div className="grid grid-2" style={{ gap: '2rem', marginTop: '2rem' }}>
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <Lock size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Privacy Settings
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="privacy"
-                  value="public"
-                  checked={privacy === 'public'}
-                  onChange={(e) => setPrivacy(e.target.value as any)}
-                />
-                <Globe size={16} />
-                <span>Public - Anyone can view</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="privacy"
-                  value="followers"
-                  checked={privacy === 'followers'}
-                  onChange={(e) => setPrivacy(e.target.value as any)}
-                />
-                <Users size={16} />
-                <span>Followers Only</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="privacy"
-                  value="private"
-                  checked={privacy === 'private'}
-                  onChange={(e) => setPrivacy(e.target.value as any)}
-                />
-                <Lock size={16} />
-                <span>Private - Only you can view</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <Send size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Publishing Options
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="publish"
-                  value="now"
-                  checked={publishOption === 'now'}
-                  onChange={(e) => setPublishOption(e.target.value as any)}
-                />
-                <span>Publish Now</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="publish"
-                  value="schedule"
-                  checked={publishOption === 'schedule'}
-                  onChange={(e) => setPublishOption(e.target.value as any)}
-                />
-                <span>Schedule for Later</span>
-              </label>
-              {publishOption === 'schedule' && (
-                <input
-                  type="datetime-local"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="form-input"
-                  style={{ marginLeft: '1.5rem' }}
-                />
-              )}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="publish"
-                  value="draft"
-                  checked={publishOption === 'draft'}
-                  onChange={(e) => setPublishOption(e.target.value as any)}
-                />
-                <Save size={16} />
-                <span>Save as Draft</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'center' }}>
-          <button className="btn-secondary" style={{ padding: '1rem 2rem' }}>
-            Save Draft
-          </button>
-          <button 
-            className="btn-primary" 
-            style={{ padding: '1rem 2rem' }}
-            onClick={simulatePublish}
-            disabled={isPublishing}
-          >
-            {isPublishing ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '16px', height: '16px', border: '2px solid white', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                Publishing...
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Send size={16} />
-                Publish Event
-              </div>
-            )}
-          </button>
-        </div>
+        </section>
 
         {/* Success Message */}
         {publishStatus === 'success' && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.5rem', 
-            padding: '1rem', 
-            background: 'rgba(16, 185, 129, 0.1)', 
-            color: '#10B981', 
-            borderRadius: '8px', 
-            marginTop: '1rem',
-            justifyContent: 'center'
-          }}>
-            <CheckCircle size={16} />
-            Event published successfully!
-          </div>
+          <section className="section">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '1rem',
+              background: 'rgba(34, 197, 94, 0.1)',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              color: '#22c55e'
+            }}>
+              <CheckCircle size={16} />
+              <span>Event created successfully!</span>
+            </div>
+          </section>
         )}
 
-        {/* Footer */}
+        {/* Error Message */}
+        {error && (
+          <section className="section">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '1rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              color: '#ef4444'
+            }}>
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          </section>
+        )}
+
+        {/* Create Event Form */}
+        <section className="section">
+          <div className="card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+              <Calendar size={24} style={{ color: '#EC4899' }} />
+              <h2 style={{ fontWeight: '600', color: '#EC4899' }}>Create New Event</h2>
+            </div>
+
+            <div className="grid grid-2" style={{ gap: '2rem' }}>
+              {/* Left Column - Main Form */}
+              <div>
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Details</h3>
+
+                {/* Event Title */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Event Title *</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter event title..."
+                    className="form-input"
+                    style={{ fontSize: '1.1rem' }}
+                  />
+                </div>
+
+                {/* Event Description */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Event Description *</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe your event..."
+                    className="form-input"
+                    rows={6}
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Genre and Category */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Genre/Category *</label>
+                  <select
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Select a genre</option>
+                    {genres.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date and Time */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <label className="form-label">Event Date *</label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="form-input"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Event Time *</label>
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Location *</label>
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Select a location</option>
+                    {locations.map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Venue/Address */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Venue/Address</label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Enter venue or address details..."
+                    className="form-input"
+                  />
+                </div>
+
+                {/* Price and Capacity */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <label className="form-label">Price</label>
+                    <input
+                      type="text"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="£25 or ₦5000"
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Max Attendees</label>
+                    <input
+                      type="number"
+                      value={maxAttendees}
+                      onChange={(e) => setMaxAttendees(e.target.value)}
+                      placeholder="100"
+                      className="form-input"
+                      min="1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Image Upload and Settings */}
+              <div>
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Image</h3>
+
+                {/* Image Upload */}
+                <div style={{ marginBottom: '2rem' }}>
+                  <ImageUpload
+                    state={imageState}
+                    actions={imageActions}
+                    onUpload={handleImageUpload}
+                    placeholder="Upload event image..."
+                  />
+                </div>
+
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Publishing Options</h3>
+
+                {/* Privacy Settings */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Privacy</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="privacy"
+                        value="public"
+                        checked={privacy === 'public'}
+                        onChange={(e) => setPrivacy(e.target.value as any)}
+                      />
+                      <Globe size={16} />
+                      <span>Public - Anyone can see and RSVP</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="privacy"
+                        value="followers"
+                        checked={privacy === 'followers'}
+                        onChange={(e) => setPrivacy(e.target.value as any)}
+                      />
+                      <Users size={16} />
+                      <span>Followers only - Only your followers can see</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="privacy"
+                        value="private"
+                        checked={privacy === 'private'}
+                        onChange={(e) => setPrivacy(e.target.value as any)}
+                      />
+                      <Lock size={16} />
+                      <span>Private - Only you can see</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Publish Options */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label className="form-label">Publish Option</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="publishOption"
+                        value="now"
+                        checked={publishOption === 'now'}
+                        onChange={(e) => setPublishOption(e.target.value as any)}
+                      />
+                      <Send size={16} />
+                      <span>Publish Now</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="publishOption"
+                        value="schedule"
+                        checked={publishOption === 'schedule'}
+                        onChange={(e) => setPublishOption(e.target.value as any)}
+                      />
+                      <Clock size={16} />
+                      <span>Schedule for later</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="publishOption"
+                        value="draft"
+                        checked={publishOption === 'draft'}
+                        onChange={(e) => setPublishOption(e.target.value as any)}
+                      />
+                      <Save size={16} />
+                      <span>Save as draft</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Schedule Date (if scheduling) */}
+                {publishOption === 'schedule' && (
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label className="form-label">Schedule Date</label>
+                    <input
+                      type="datetime-local"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="form-input"
+                      min={new Date().toISOString().slice(0, 16)}
+                    />
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                  {publishOption === 'draft' ? (
+                    <button
+                      onClick={handleSaveDraft}
+                      disabled={isPublishing}
+                      className="btn-secondary"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                      {isPublishing ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Save size={16} />
+                      )}
+                      Save Draft
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handlePublish}
+                      disabled={isPublishing}
+                      className="btn-primary"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                      {isPublishing ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Send size={16} />
+                      )}
+                      {publishOption === 'now' ? 'Publish Event' : 'Schedule Event'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <Footer />
       </main>
 
-      {/* Floating Event Tips Card */}
-      <FloatingCard title="Event Tips">
+      {/* Floating Quick Actions Card */}
+      <FloatingCard title="Event Creation Tips">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>📅 Set realistic dates and times</div>
-          <div>📍 Choose accessible venues</div>
-          <div>💰 Price competitively for your market</div>
-          <div>📸 Use high-quality event images</div>
-          <div>📝 Write compelling descriptions</div>
+          <div>📝 Write a compelling description</div>
+          <div>📅 Choose a date at least 1 week ahead</div>
+          <div>📍 Be specific about the location</div>
+          <div>💰 Set a reasonable price</div>
+          <div>📸 Add an attractive image</div>
         </div>
-        
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Recent Events</h3>
+
+        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Categories</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>Gospel Night Live - London</div>
-          <div>Afrobeats Carnival - Lagos</div>
-          <div>UK Drill Showcase - Birmingham</div>
+          {genres.slice(0, 6).map((genre) => (
+            <div key={genre} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}>
+              <Music size={14} />
+              {genre}
+            </div>
+          ))}
         </div>
       </FloatingCard>
     </>

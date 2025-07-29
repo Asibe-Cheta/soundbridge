@@ -2,11 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { signIn, signInWithProvider } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,13 +20,29 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const { data, error: signInError } = await signIn(formData.email, formData.password);
+
+      if (signInError) {
+        setError(signInError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.user) {
+        // Redirect to the intended page or dashboard
+        const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+        router.push(redirectTo);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Handle login logic here
-    }, 2000);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,6 +50,23 @@ export default function LoginPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const { error } = await signInWithProvider(provider);
+      if (error) {
+        setError(error.message);
+      }
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      setError(`Failed to sign in with ${provider}. Please try again.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -97,6 +136,21 @@ export default function LoginPage() {
             Sign in to your SoundBridge account
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            background: 'rgba(220, 38, 38, 0.1)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            color: '#FCA5A5',
+            fontSize: '0.9rem'
+          }}>
+            {error}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -248,6 +302,8 @@ export default function LoginPage() {
         {/* Social Login */}
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
           <button
+            onClick={() => handleSocialLogin('google')}
+            disabled={isLoading}
             style={{
               flex: 1,
               background: 'rgba(255, 255, 255, 0.1)',
@@ -255,16 +311,19 @@ export default function LoginPage() {
               borderRadius: '12px',
               padding: '0.75rem',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
           >
             Google
           </button>
           <button
+            onClick={() => handleSocialLogin('facebook')}
+            disabled={isLoading}
             style={{
               flex: 1,
               background: 'rgba(255, 255, 255, 0.1)',
@@ -272,16 +331,19 @@ export default function LoginPage() {
               borderRadius: '12px',
               padding: '0.75rem',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
           >
             Facebook
           </button>
           <button
+            onClick={() => handleSocialLogin('apple')}
+            disabled={isLoading}
             style={{
               flex: 1,
               background: 'rgba(255, 255, 255, 0.1)',
@@ -289,12 +351,13 @@ export default function LoginPage() {
               borderRadius: '12px',
               padding: '0.75rem',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
           >
             Apple
           </button>

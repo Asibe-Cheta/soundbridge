@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
-import { 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Users, 
-  Star, 
-  Heart, 
-  Share2, 
+import { useAuth } from '../../../src/contexts/AuthContext';
+import { eventService } from '../../../src/lib/event-service';
+import type { Event } from '../../../src/lib/types/event';
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  Star,
+  Heart,
+  Share2,
   Edit,
   Trash2,
   Eye,
@@ -20,12 +23,22 @@ import {
   ArrowLeft,
   Plus,
   Filter,
-  Search
+  Search,
+  Loader2,
+  User,
+  Music,
+  DollarSign
 } from 'lucide-react';
 
 export default function EventDashboardPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('attending');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attendingEvents, setAttendingEvents] = useState<Event[]>([]);
+  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
+  const [pastEvents, setPastEvents] = useState<Event[]>([]);
 
   const tabs = [
     { id: 'attending', label: 'Attending', icon: Users },
@@ -33,140 +46,153 @@ export default function EventDashboardPage() {
     { id: 'past', label: 'Past Events', icon: Clock }
   ];
 
-  const attendingEvents = [
-    {
-      id: 1,
-      title: 'Gospel Night Live',
-      creator: 'Royal Festival Hall',
-      date: 'Tonight • 8PM',
-      location: 'London, UK',
-      price: '£25-45',
-      status: 'confirmed',
-      rsvpDate: '2024-12-10'
-    },
-    {
-      id: 2,
-      title: 'Afrobeats Carnival',
-      creator: 'Tafawa Balewa Square',
-      date: 'Friday • 7PM',
-      location: 'Lagos, Nigeria',
-      price: '₦5000-15000',
-      status: 'confirmed',
-      rsvpDate: '2024-12-08'
-    },
-    {
-      id: 3,
-      title: 'Jazz Fusion Night',
-      creator: 'Blue Note Club',
-      date: 'Wednesday • 9PM',
-      location: 'Manchester, UK',
-      price: '£30-60',
-      status: 'pending',
-      rsvpDate: '2024-12-12'
-    }
-  ];
+  useEffect(() => {
+    const fetchUserEvents = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-  const createdEvents = [
-    {
-      id: 4,
-      title: 'Worship Experience',
-      creator: 'House on the Rock',
-      date: 'Sunday • 4PM',
-      location: 'Abuja, Nigeria',
-      price: 'Free Entry',
-      status: 'published',
-      attendees: 2000,
-      views: 5000
-    },
-    {
-      id: 5,
-      title: 'Hip Hop Battle',
-      creator: 'Underground Arena',
-      date: 'Friday • 10PM',
-      location: 'London, UK',
-      price: '£20-40',
-      status: 'draft',
-      attendees: 0,
-      views: 0
-    }
-  ];
+      try {
+        setLoading(true);
+        setError(null);
 
-  const pastEvents = [
-    {
-      id: 6,
-      title: 'Gospel Choir Competition',
-      creator: 'Cathedral Hall',
-      date: 'December 1 • 3PM',
-      location: 'Abuja, Nigeria',
-      price: '₦2000-5000',
-      status: 'completed',
-      attendees: 800,
-      rating: 4.6
-    },
-    {
-      id: 7,
-      title: 'UK Drill Showcase',
-      creator: 'O2 Academy',
-      date: 'November 25 • 6PM',
-      location: 'Birmingham, UK',
-      price: '£15-35',
-      status: 'completed',
-      attendees: 600,
-      rating: 4.3
-    }
-  ];
+        // Fetch attending events
+        const attendingResult = await eventService.getUserAttendingEvents(user.id);
+        if (attendingResult.error) {
+          console.error('Error fetching attending events:', attendingResult.error);
+        } else {
+          setAttendingEvents(attendingResult.data);
+        }
 
-  const getFilteredEvents = () => {
-    let events: any[] = [];
+        // Fetch created events
+        const createdResult = await eventService.getEventsByCreator(user.id);
+        if (createdResult.error) {
+          console.error('Error fetching created events:', createdResult.error);
+        } else {
+          setCreatedEvents(createdResult.data);
+        }
+
+        // For past events, we'll filter from created events for now
+        // In a real implementation, you might want a separate endpoint
+        const now = new Date();
+        const past = createdResult.data?.filter(event => new Date(event.event_date) < now) || [];
+        setPastEvents(past);
+
+      } catch (err) {
+        setError('Failed to load events');
+        console.error('Error fetching events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserEvents();
+  }, [user]);
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!user) return;
+
+    try {
+      const result = await eventService.deleteEvent(eventId);
+      if (result.success) {
+        // Remove from created events
+        setCreatedEvents(prev => prev.filter(event => event.id !== eventId));
+        // Remove from past events
+        setPastEvents(prev => prev.filter(event => event.id !== eventId));
+      } else {
+        console.error('Failed to delete event:', result.error);
+      }
+    } catch (err) {
+      console.error('Error deleting event:', err);
+    }
+  };
+
+  const handleCancelRSVP = async (eventId: string) => {
+    if (!user) return;
+
+    try {
+      const result = await eventService.rsvpToEvent(eventId, 'not_going');
+      if (result.success) {
+        // Remove from attending events
+        setAttendingEvents(prev => prev.filter(event => event.id !== eventId));
+      } else {
+        console.error('Failed to cancel RSVP:', result.error);
+      }
+    } catch (err) {
+      console.error('Error canceling RSVP:', err);
+    }
+  };
+
+  const getCurrentEvents = () => {
     switch (activeTab) {
       case 'attending':
-        events = attendingEvents;
-        break;
+        return attendingEvents.filter(event =>
+          !searchQuery ||
+          event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          event.creator?.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
       case 'created':
-        events = createdEvents;
-        break;
+        return createdEvents.filter(event =>
+          !searchQuery ||
+          event.title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
       case 'past':
-        events = pastEvents;
-        break;
+        return pastEvents.filter(event =>
+          !searchQuery ||
+          event.title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
       default:
-        events = [];
+        return [];
     }
+  };
 
-    return events.filter(event => 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.creator.toLowerCase().includes(searchQuery.toLowerCase())
+  const currentEvents = getCurrentEvents();
+
+  if (!user) {
+    return (
+      <>
+        <header className="header">
+          <div className="logo">
+            🌉 SoundBridge
+          </div>
+          <nav className="nav">
+            <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
+              For You
+            </Link>
+            <a href="#">Discover</a>
+            <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+              Events
+            </Link>
+            <a href="#">Creators</a>
+            <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
+              Upload
+            </Link>
+          </nav>
+          <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
+          <div className="auth-buttons">
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary">Login</button>
+            </Link>
+            <Link href="/signup" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Sign Up</button>
+            </Link>
+          </div>
+        </header>
+
+        <main className="main-container">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
+            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Authentication Required</h2>
+            <p style={{ color: '#999', marginBottom: '2rem' }}>Please log in to view your event dashboard.</p>
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary">Login</button>
+            </Link>
+          </div>
+        </main>
+      </>
     );
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-      case 'published':
-      case 'completed':
-        return '#10B981';
-      case 'pending':
-        return '#F59E0B';
-      case 'draft':
-        return '#6B7280';
-      default:
-        return '#999';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-      case 'published':
-      case 'completed':
-        return <CheckCircle size={16} />;
-      case 'pending':
-        return <AlertCircle size={16} />;
-      case 'draft':
-        return <Eye size={16} />;
-      default:
-        return <Clock size={16} />;
-    }
-  };
+  }
 
   return (
     <>
@@ -202,65 +228,65 @@ export default function EventDashboardPage() {
       {/* Main Content */}
       <main className="main-container">
         {/* Back Button */}
-        <div style={{ marginBottom: '1rem' }}>
+        <section className="section">
           <Link href="/events" style={{ textDecoration: 'none' }}>
-            <button style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              background: 'none', 
-              border: 'none', 
-              color: '#EC4899', 
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}>
+            <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ArrowLeft size={16} />
               Back to Events
             </button>
           </Link>
-        </div>
+        </section>
 
-        <div className="section-header">
-          <h1 className="section-title">My Events</h1>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <Link href="/events/create" style={{ textDecoration: 'none' }}>
-              <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Plus size={16} />
-                Create Event
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
-        <section className="section">
-          <div className="card" style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <Filter size={20} style={{ color: '#EC4899' }} />
-              <h3 style={{ fontWeight: '600', color: '#EC4899' }}>Search Events</h3>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
-              <div style={{ flex: 1 }}>
-                <label className="form-label">Search</label>
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search your events..."
-                    className="form-input"
-                    style={{ paddingLeft: '2.5rem' }}
-                  />
-                </div>
+        {/* Dashboard Header */}
+        <section className="hero-section">
+          <div className="featured-creator">
+            <div className="featured-creator-content">
+              <h2>My Event Dashboard</h2>
+              <p>Manage your events and track your RSVPs</p>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <Link href="/events/create" style={{ textDecoration: 'none' }}>
+                  <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Plus size={16} />
+                    Create Event
+                  </button>
+                </Link>
+                <Link href="/events" style={{ textDecoration: 'none' }}>
+                  <button className="btn-secondary">Browse Events</button>
+                </Link>
               </div>
-              <button
-                onClick={() => setSearchQuery('')}
-                className="btn-secondary"
-              >
-                Clear
-              </button>
+            </div>
+          </div>
+          <div className="trending-panel">
+            <h3 style={{ marginBottom: '1rem', color: '#EC4899' }}>Quick Stats</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Attending</span>
+                <span style={{ color: '#EC4899', fontWeight: '600' }}>{attendingEvents.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Created</span>
+                <span style={{ color: '#EC4899', fontWeight: '600' }}>{createdEvents.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Past Events</span>
+                <span style={{ color: '#EC4899', fontWeight: '600' }}>{pastEvents.length}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Search and Filters */}
+        <section className="section">
+          <div className="search-filters">
+            <div className="search-bar-container">
+              <Search size={20} style={{ color: '#999' }} />
+              <input
+                type="text"
+                placeholder="Search your events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
+              />
             </div>
           </div>
         </section>
@@ -283,141 +309,188 @@ export default function EventDashboardPage() {
             })}
           </div>
 
-          {/* Events Grid */}
-          <div className="grid grid-4">
-            {getFilteredEvents().map((event) => (
-              <div key={event.id} className="event-card">
-                <div className="event-card-content">
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: '0.5rem', 
-                    right: '0.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    color: getStatusColor(event.status),
-                    fontSize: '0.8rem',
-                    fontWeight: '600'
-                  }}>
-                    {getStatusIcon(event.status)}
-                    {event.status}
-                  </div>
-                  
-                  <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>{event.date}</div>
-                  <div style={{ fontWeight: '600', margin: '0.5rem 0', fontSize: '1.1rem' }}>{event.title}</div>
-                  <div style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{event.creator}</div>
-                  <div style={{ color: '#999', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                    <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                    {event.location}
-                  </div>
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <span style={{ 
-                      background: 'rgba(236, 72, 153, 0.2)', 
-                      color: '#EC4899', 
-                      padding: '0.25rem 0.5rem', 
-                      borderRadius: '15px', 
-                      fontSize: '0.8rem' 
-                    }}>
-                      {event.price}
-                    </span>
-                  </div>
+          {/* Error Display */}
+          {error && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '1rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              color: '#ef4444'
+            }}>
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
 
-                  {/* Event-specific info */}
-                  {activeTab === 'attending' && (
-                    <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
-                      RSVP'd: {event.rsvpDate}
+          {/* Events List */}
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+              <Loader2 size={32} className="animate-spin" style={{ color: '#EC4899' }} />
+            </div>
+          ) : currentEvents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+              <Calendar size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
+              <h3>No events found</h3>
+              <p>
+                {activeTab === 'attending' && 'You are not attending any events yet.'}
+                {activeTab === 'created' && 'You have not created any events yet.'}
+                {activeTab === 'past' && 'You have no past events.'}
+              </p>
+              {activeTab === 'created' && (
+                <Link href="/events/create" style={{ textDecoration: 'none' }}>
+                  <button className="btn-primary" style={{ marginTop: '1rem' }}>
+                    Create Your First Event
+                  </button>
+                </Link>
+              )}
+              {activeTab === 'attending' && (
+                <Link href="/events" style={{ textDecoration: 'none' }}>
+                  <button className="btn-primary" style={{ marginTop: '1rem' }}>
+                    Browse Events
+                  </button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-4">
+              {currentEvents.map((event) => (
+                <div key={event.id} className="event-card">
+                  <div className="event-card-content">
+                    {event.isFeatured && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        right: '0.5rem',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        color: 'white',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '10px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600'
+                      }}>
+                        Featured
+                      </div>
+                    )}
+
+                    <div className="event-image">
+                      {event.image_url ? (
+                        <img src={event.image_url} alt={event.title} />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '200px',
+                          background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '2rem'
+                        }}>
+                          🎵
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {activeTab === 'created' && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
-                      <div>Views: {event.views}</div>
-                      <div>Attendees: {event.attendees}</div>
-                    </div>
-                  )}
+                    <div className="event-info">
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                        {event.title}
+                      </h3>
+                      <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                        {event.creator?.display_name || 'Unknown Creator'}
+                      </p>
 
-                  {activeTab === 'past' && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
-                      <div>Attendees: {event.attendees}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Star size={12} style={{ color: '#FFD700' }} />
-                        {event.rating}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                        <Calendar size={14} />
+                        <span>{event.formattedDate}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                        <MapPin size={14} />
+                        <span>{event.location}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                        <Music size={14} />
+                        <span>{event.category}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                        <DollarSign size={14} />
+                        <span>{event.formattedPrice}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#999' }}>
+                        <Users size={14} />
+                        <span>{event.attendeeCount || 0} attending</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                        <Star size={14} style={{ color: '#FFD700' }} />
+                        <span>{event.rating?.toFixed(1) || '4.5'}</span>
                       </div>
                     </div>
-                  )}
 
-                  {/* Action buttons */}
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                    <Link href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
-                      <button className="btn-secondary" style={{ padding: '0.5rem', fontSize: '0.8rem' }}>
-                        View
-                      </button>
-                    </Link>
-                    
-                    {activeTab === 'created' && event.status === 'draft' && (
-                      <>
-                        <button className="btn-secondary" style={{ padding: '0.5rem', fontSize: '0.8rem' }}>
-                          <Edit size={12} />
+                    <div className="event-actions">
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', flex: 1 }}>
+                          <button className="btn-secondary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                            <Eye size={14} />
+                            View
+                          </button>
+                        </Link>
+
+                        {activeTab === 'created' && (
+                          <Link href={`/events/${event.id}/edit`} style={{ textDecoration: 'none', flex: 1 }}>
+                            <button className="btn-secondary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                              <Edit size={14} />
+                              Edit
+                            </button>
+                          </Link>
+                        )}
+                      </div>
+
+                      {activeTab === 'attending' && (
+                        <button
+                          onClick={() => handleCancelRSVP(event.id)}
+                          className="btn-secondary"
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                        >
+                          <CheckCircle size={14} />
+                          Cancel RSVP
                         </button>
-                        <button className="btn-secondary" style={{ padding: '0.5rem', fontSize: '0.8rem' }}>
-                          <Trash2 size={12} />
+                      )}
+
+                      {activeTab === 'created' && (
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="btn-secondary"
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.25rem',
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            color: '#ef4444'
+                          }}
+                        >
+                          <Trash2 size={14} />
+                          Delete
                         </button>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {getFilteredEvents().length === 0 && (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
-              <Calendar size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
-              <h3>No {activeTab} events found</h3>
-              <p>Try adjusting your search or create a new event</p>
+              ))}
             </div>
           )}
         </section>
 
-        {/* Stats Summary */}
-        <section className="section">
-          <div className="grid grid-4">
-            <div className="card">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899', marginBottom: '0.5rem' }}>
-                  {attendingEvents.length}
-                </div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>Attending</div>
-              </div>
-            </div>
-            <div className="card">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899', marginBottom: '0.5rem' }}>
-                  {createdEvents.length}
-                </div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>Created</div>
-              </div>
-            </div>
-            <div className="card">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899', marginBottom: '0.5rem' }}>
-                  {pastEvents.length}
-                </div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>Past Events</div>
-              </div>
-            </div>
-            <div className="card">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899', marginBottom: '0.5rem' }}>
-                  {pastEvents.reduce((sum, event) => sum + (event.attendees || 0), 0).toLocaleString()}
-                </div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>Total Attendees</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
         <Footer />
       </main>
 
@@ -433,21 +506,13 @@ export default function EventDashboardPage() {
           <div className="quick-action">🎵 Upload Music</div>
           <div className="quick-action">💬 Find Collaborators</div>
         </div>
-        
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Status</h3>
+
+        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Management</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <CheckCircle size={12} style={{ color: '#10B981' }} />
-            Confirmed: 2 events
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <AlertCircle size={12} style={{ color: '#F59E0B' }} />
-            Pending: 1 event
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Eye size={12} style={{ color: '#6B7280' }} />
-            Draft: 1 event
-          </div>
+          <div>📊 Event Analytics</div>
+          <div>📧 Email Attendees</div>
+          <div>📱 Mobile App</div>
+          <div>🔔 Notifications</div>
         </div>
       </FloatingCard>
     </>

@@ -2,16 +2,23 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { createProfile, generateUsername } from '@/src/lib/profile';
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { signUp, signInWithProvider } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<'creator' | 'listener'>('listener');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     location: '',
     terms: false,
     marketing: false,
@@ -19,13 +26,74 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
       setIsLoading(false);
-      alert('Account created successfully! (This is just a demo)');
-    }, 2000);
+      return;
+    }
+
+    // Validate password strength
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Generate username from email and name
+      const username = generateUsername(formData.email, formData.firstName, formData.lastName);
+      
+      // Sign up with Supabase
+      const { data, error: signUpError } = await signUp(formData.email, formData.password, {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: selectedRole,
+        location: formData.location,
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.user) {
+        // Create profile in database
+        const profileData = {
+          username,
+          display_name: `${formData.firstName} ${formData.lastName}`,
+          role: selectedRole,
+          location: formData.location,
+          country: formData.location.includes('Nigeria') ? 'Nigeria' as const : 'UK' as const,
+          bio: '',
+        };
+
+        const { error: profileError } = await createProfile(data.user.id, profileData);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          // Don't fail the signup if profile creation fails
+          // The user can still sign in and complete their profile later
+        }
+
+        // Redirect to dashboard or email confirmation page
+        if (data.session) {
+          router.push('/dashboard');
+        } else {
+          // Email confirmation required
+          router.push('/verify-email');
+        }
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -38,8 +106,21 @@ export default function SignupPage() {
     });
   };
 
-  const handleSocialLogin = (provider: string) => {
-    alert(`${provider} login would be implemented here`);
+  const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const { error } = await signInWithProvider(provider);
+      if (error) {
+        setError(error.message);
+      }
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      setError(`Failed to sign in with ${provider}. Please try again.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -123,6 +204,21 @@ export default function SignupPage() {
             Connect with creators and discover amazing events
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            background: 'rgba(220, 38, 38, 0.1)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            color: '#FCA5A5',
+            fontSize: '0.9rem'
+          }}>
+            {error}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
@@ -283,6 +379,33 @@ export default function SignupPage() {
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#ccc' }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                padding: '1rem',
+                color: 'white',
+                fontSize: '1rem',
+                transition: 'all 0.3s ease',
+                outline: 'none'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#DC2626'}
+              onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+              placeholder="Confirm your password"
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#ccc' }}>
               Location
             </label>
             <select
@@ -402,6 +525,7 @@ export default function SignupPage() {
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
           <button
             onClick={() => handleSocialLogin('google')}
+            disabled={isLoading}
             style={{
               flex: 1,
               background: 'rgba(255, 255, 255, 0.1)',
@@ -409,17 +533,19 @@ export default function SignupPage() {
               borderRadius: '12px',
               padding: '0.75rem',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
           >
             Google
           </button>
           <button
             onClick={() => handleSocialLogin('facebook')}
+            disabled={isLoading}
             style={{
               flex: 1,
               background: 'rgba(255, 255, 255, 0.1)',
@@ -427,17 +553,19 @@ export default function SignupPage() {
               borderRadius: '12px',
               padding: '0.75rem',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
           >
             Facebook
           </button>
           <button
             onClick={() => handleSocialLogin('apple')}
+            disabled={isLoading}
             style={{
               flex: 1,
               background: 'rgba(255, 255, 255, 0.1)',
@@ -445,12 +573,13 @@ export default function SignupPage() {
               borderRadius: '12px',
               padding: '0.75rem',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
           >
             Apple
           </button>
