@@ -64,7 +64,7 @@ export default function CreateEventPage() {
     if (!user) return;
 
     try {
-      await imageActions.uploadImage();
+      await imageActions.uploadEventImage();
     } catch (err) {
       console.error('Image upload failed:', err);
       setError('Failed to upload image');
@@ -137,8 +137,8 @@ export default function CreateEventPage() {
         location: location,
         venue: address || undefined,
         category: genre as any,
-        price_gbp: priceGbp,
-        price_ngn: priceNgn,
+        price_gbp: priceGbp || undefined,
+        price_ngn: priceNgn || undefined,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
         image_url: imageState.uploadedUrl || undefined
       };
@@ -440,11 +440,67 @@ export default function CreateEventPage() {
                 {/* Image Upload */}
                 <div style={{ marginBottom: '2rem' }}>
                   <ImageUpload
-                    state={imageState}
-                    actions={imageActions}
-                    onUpload={handleImageUpload}
-                    placeholder="Upload event image..."
+                    onImageSelect={(file) => imageActions.setImageFile(file)}
+                    onImageRemove={() => imageActions.resetUpload()}
+                    selectedFile={imageState.imageFile?.file || null}
+                    previewUrl={imageState.previewUrl}
+                    isUploading={imageState.isUploading}
+                    uploadProgress={imageState.uploadProgress}
+                    uploadStatus={imageState.uploadStatus}
+                    error={imageState.error}
+                    title="Upload Event Image"
+                    subtitle="Drag & drop or click to browse (recommended: 1200x800px)"
+                    aspectRatio={1.5}
+                    disabled={imageState.isUploading}
                   />
+
+                  {/* Upload Button */}
+                  {imageState.imageFile && !imageState.uploadedUrl && (
+                    <button
+                      onClick={handleImageUpload}
+                      disabled={imageState.isUploading}
+                      className="btn-primary"
+                      style={{
+                        width: '100%',
+                        marginTop: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      {imageState.isUploading ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={16} />
+                          Upload Image
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Upload Success Message */}
+                  {imageState.uploadedUrl && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '0.75rem',
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderRadius: '8px',
+                      color: '#22c55e',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <CheckCircle size={16} />
+                      Image uploaded successfully!
+                    </div>
+                  )}
                 </div>
 
                 <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Publishing Options</h3>
