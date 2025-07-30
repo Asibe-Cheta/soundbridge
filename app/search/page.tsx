@@ -123,6 +123,19 @@ export default function SearchResultsPage() {
     setSortBy('relevance' as const);
   };
 
+  // Wrapper functions to handle type conversion for AdvancedFilters
+  const handleDateChange = (value: string) => {
+    setSelectedDate(value as 'all' | 'today' | 'week' | 'month' | 'next-month');
+  };
+
+  const handlePriceChange = (value: string) => {
+    setSelectedPrice(value as 'all' | 'free' | 'low' | 'medium' | 'high');
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value as 'relevance' | 'trending' | 'latest' | 'popular' | 'nearest');
+  };
+
   const handleSearch = (newQuery: string) => {
     setSearchQuery(newQuery);
     if (newQuery.trim()) {
@@ -484,21 +497,24 @@ export default function SearchResultsPage() {
 
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <AdvancedFilters
+                categories={[]}
                 genres={genres}
                 locations={locations}
                 dateRanges={dateRanges}
                 priceRanges={priceRanges}
                 sortOptions={sortOptions}
+                selectedCategory=""
                 selectedGenre={selectedGenre}
                 selectedLocation={selectedLocation}
                 selectedDate={selectedDate}
                 selectedPrice={selectedPrice}
                 sortBy={sortBy}
+                onCategoryChange={() => { }}
                 onGenreChange={setSelectedGenre}
                 onLocationChange={setSelectedLocation}
-                onDateChange={setSelectedDate}
-                onPriceChange={setSelectedPrice}
-                onSortChange={setSortBy}
+                onDateChange={handleDateChange}
+                onPriceChange={handlePriceChange}
+                onSortChange={handleSortChange}
                 onClearFilters={handleClearFilters}
                 showFilters={showFilters}
                 onToggleFilters={() => setShowFilters(!showFilters)}
