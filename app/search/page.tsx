@@ -40,8 +40,8 @@ export default function SearchResultsPage() {
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedDate, setSelectedDate] = useState<'all' | 'today' | 'week' | 'month' | 'next-month'>('all');
-  const [selectedPrice, setSelectedPrice] = useState('all');
-  const [sortBy, setSortBy] = useState('relevance');
+  const [selectedPrice, setSelectedPrice] = useState<'all' | 'free' | 'low' | 'medium' | 'high'>('all');
+  const [sortBy, setSortBy] = useState<'relevance' | 'trending' | 'latest' | 'popular' | 'nearest'>('relevance');
   const [appliedFilters, setAppliedFilters] = useState<string[]>([]);
 
   // Use the search hook
@@ -119,8 +119,8 @@ export default function SearchResultsPage() {
     setSelectedGenre('all');
     setSelectedLocation('all');
     setSelectedDate('all' as const);
-    setSelectedPrice('all');
-    setSortBy('relevance');
+    setSelectedPrice('all' as const);
+    setSortBy('relevance' as const);
   };
 
   const handleSearch = (newQuery: string) => {
