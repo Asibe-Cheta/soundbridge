@@ -39,7 +39,7 @@ export default function SearchResultsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
-  const [selectedDate, setSelectedDate] = useState('all');
+  const [selectedDate, setSelectedDate] = useState<'all' | 'today' | 'week' | 'month' | 'next-month'>('all');
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('relevance');
   const [appliedFilters, setAppliedFilters] = useState<string[]>([]);
@@ -118,7 +118,7 @@ export default function SearchResultsPage() {
   const handleClearFilters = () => {
     setSelectedGenre('all');
     setSelectedLocation('all');
-    setSelectedDate('all');
+    setSelectedDate('all' as const);
     setSelectedPrice('all');
     setSortBy('relevance');
   };
