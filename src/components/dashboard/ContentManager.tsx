@@ -227,6 +227,8 @@ export function ContentManager({
               {event.category}
             </div>
           </div>
+        </div>
+      </div>
     </div>
   );
 

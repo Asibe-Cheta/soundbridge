@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerComponentClient as createServerComponentClientHelper } from '@supabase/auth-helpers-nextjs';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import type { Database } from './types';
 
 // Environment variables with robust validation and fallbacks
@@ -95,7 +94,7 @@ export const createApiClient = () => {
   });
 };
 
-// Server component client (for server components)
+// Server component client (for server components) - only import cookies in server context
 export const createServerComponentClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Supabase environment variables not configured for server component client');
@@ -104,9 +103,17 @@ export const createServerComponentClient = () => {
     throw new Error('Supabase environment variables not configured for server component client. Check your .env.local file.');
   }
   
-  return createServerComponentClientHelper<Database>({
-    cookies,
-  });
+  // Only import cookies in server context
+  if (isServer) {
+    const { cookies } = require('next/headers');
+    return createServerComponentClientHelper<Database>({ cookies });
+  } else {
+    // Fallback for client context
+    return createClientComponentClient<Database>({
+      supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+    });
+  }
 };
 
 // Lazy default client creation to avoid environment variable issues
