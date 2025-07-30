@@ -329,7 +329,6 @@ export default function ProfileImageUploadPage() {
       </main>
 
       <Footer />
-      <FloatingCard />
 
       <style jsx>{`
         @keyframes spin {
