@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { createBrowserClient, auth } from '../../lib/supabase';
+import { createBrowserClient } from '../../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
 export default function AuthExample() {
@@ -14,7 +14,7 @@ export default function AuthExample() {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { session } = await auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setLoading(false);
     };
@@ -33,7 +33,7 @@ export default function AuthExample() {
   }, [supabase.auth]);
 
   const handleSignOut = async () => {
-    const { error } = await auth.signOut();
+    const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
     }
