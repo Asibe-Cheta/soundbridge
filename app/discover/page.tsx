@@ -466,6 +466,8 @@ export default function DiscoverPage() {
               onPriceChange={setSelectedPrice}
               onSortChange={setSortBy}
               onClearFilters={handleClearFilters}
+              showFilters={showFilters}
+              onToggleFilters={() => setShowFilters(!showFilters)}
             />
           </section>
         )}

@@ -19,38 +19,50 @@ interface FilterOption {
   label: string;
 }
 
+interface CategoryOption {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number }>;
+}
+
 interface AdvancedFiltersProps {
+  categories: CategoryOption[];
   genres: FilterOption[];
   locations: FilterOption[];
   dateRanges: FilterOption[];
   priceRanges: FilterOption[];
   sortOptions: FilterOption[];
+  selectedCategory: string;
   selectedGenre: string;
   selectedLocation: string;
   selectedDate: string;
   selectedPrice: string;
   sortBy: string;
+  onCategoryChange: (value: string) => void;
   onGenreChange: (value: string) => void;
   onLocationChange: (value: string) => void;
   onDateChange: (value: string) => void;
   onPriceChange: (value: string) => void;
   onSortChange: (value: string) => void;
   onClearFilters: () => void;
-  showFilters: boolean;
-  onToggleFilters: () => void;
+  showFilters?: boolean;
+  onToggleFilters?: () => void;
 }
 
 export function AdvancedFilters({
+  categories,
   genres,
   locations,
   dateRanges,
   priceRanges,
   sortOptions,
+  selectedCategory,
   selectedGenre,
   selectedLocation,
   selectedDate,
   selectedPrice,
   sortBy,
+  onCategoryChange,
   onGenreChange,
   onLocationChange,
   onDateChange,
