@@ -8,7 +8,8 @@ export async function GET(
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
+    const resolvedParams = await params;
+
     const { data: event, error } = await supabase
       .from('events')
       .select(`
@@ -37,7 +38,7 @@ export async function GET(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (error) {
@@ -58,17 +59,17 @@ export async function GET(
     const transformedEvent = {
       ...event,
       attendeeCount: event.attendees?.length || 0,
-      attendingUsers: event.attendees?.filter(a => a.status === 'attending') || [],
-      interestedUsers: event.attendees?.filter(a => a.status === 'interested') || [],
+      attendingUsers: event.attendees?.filter((a: { status: string }) => a.status === 'attending') || [],
+      interestedUsers: event.attendees?.filter((a: { status: string }) => a.status === 'interested') || [],
       formattedDate: formatEventDate(event.event_date),
       formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
       isFeatured: isFeaturedEvent(event),
       rating: calculateEventRating(event)
     };
 
-    return NextResponse.json({ 
-      success: true, 
-      event: transformedEvent 
+    return NextResponse.json({
+      success: true,
+      event: transformedEvent
     });
   } catch (error) {
     console.error('Event fetch API error:', error);
@@ -81,14 +82,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
+    const resolvedParams = await params;
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -100,7 +102,7 @@ export async function PUT(
     const { data: existingEvent, error: fetchError } = await supabase
       .from('events')
       .select('creator_id')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError || !existingEvent) {
@@ -118,14 +120,14 @@ export async function PUT(
     }
 
     const updateData = await request.json();
-    
+
     // Validate category if provided
     if (updateData.category) {
       const validCategories = [
-        'Christian', 'Secular', 'Carnival', 'Gospel', 'Hip-Hop', 
+        'Christian', 'Secular', 'Carnival', 'Gospel', 'Hip-Hop',
         'Afrobeat', 'Jazz', 'Classical', 'Rock', 'Pop', 'Other'
       ];
-      
+
       if (!validCategories.includes(updateData.category)) {
         return NextResponse.json(
           { error: 'Invalid category' },
@@ -149,7 +151,7 @@ export async function PUT(
     const { data: event, error: updateError } = await supabase
       .from('events')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select(`
         *,
         creator:profiles!events_creator_id_fkey(
@@ -180,9 +182,9 @@ export async function PUT(
       rating: calculateEventRating(event)
     };
 
-    return NextResponse.json({ 
-      success: true, 
-      event: transformedEvent 
+    return NextResponse.json({
+      success: true,
+      event: transformedEvent
     });
   } catch (error) {
     console.error('Event update API error:', error);
@@ -195,14 +197,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
+    const resolvedParams = await params;
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -214,7 +217,7 @@ export async function DELETE(
     const { data: existingEvent, error: fetchError } = await supabase
       .from('events')
       .select('creator_id')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError || !existingEvent) {
@@ -235,7 +238,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('events')
       .delete()
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (deleteError) {
       console.error('Event delete error:', deleteError);
@@ -294,10 +297,10 @@ function formatPrice(priceGbp: number | null, priceNgn: number | null): string {
   return 'Free Entry';
 }
 
-function isFeaturedEvent(event: any): boolean {
+function isFeaturedEvent(event: { current_attendees?: number }): boolean {
   return (event.current_attendees || 0) > 100;
 }
 
-function calculateEventRating(event: any): number {
+function calculateEventRating(_event: { current_attendees?: number }): number {
   return 4.5 + Math.random() * 0.5;
 } 

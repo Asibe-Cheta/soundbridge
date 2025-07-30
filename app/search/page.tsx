@@ -475,7 +475,7 @@ export default function SearchResultsPage() {
           }}>
             <div>
               <h2 style={{ color: '#ccc', marginBottom: '0.5rem' }}>
-                Search results for "{query}"
+                Search results for &quot;{query}&quot;
               </h2>
               <p style={{ color: '#999', fontSize: '0.9rem' }}>
                 Found {totalResults} total results • Showing {getResultCount(activeTab)} {activeTab}

@@ -365,7 +365,7 @@ export default function LoginPage() {
 
         {/* Sign Up Link */}
         <div style={{ textAlign: 'center', color: '#999', fontSize: '0.9rem' }}>
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link 
             href="/signup"
             style={{

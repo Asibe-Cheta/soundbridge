@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
               Check Your Email
             </h1>
             <p style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
-              We've sent password reset instructions to your email address
+              We&apos;ve sent password reset instructions to your email address
             </p>
           </div>
 

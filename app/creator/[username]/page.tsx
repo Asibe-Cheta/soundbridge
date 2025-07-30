@@ -29,9 +29,6 @@ import {
   Mail,
   MapPin,
   Users,
-  Play,
-  Clock,
-  Star,
   Send,
   UserPlus,
   UserMinus
@@ -39,7 +36,6 @@ import {
 
 export default function CreatorProfile({ params }: { params: Promise<{ username: string }> }) {
   const [activeTab, setActiveTab] = useState('music');
-  const [messageText, setMessageText] = useState('');
   const [collaborationSubject, setCollaborationSubject] = useState('');
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [collaborationDeadline, setCollaborationDeadline] = useState('');
@@ -254,7 +250,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             ) : (
               <div className="card" style={{ gridColumn: 'span 6', textAlign: 'center', padding: '2rem' }}>
                 <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Tracks Yet</h3>
-                <p style={{ color: '#ccc' }}>This creator hasn't uploaded any tracks yet.</p>
+                <p style={{ color: '#ccc' }}>This creator hasn&apos;t uploaded any tracks yet.</p>
               </div>
             )}
           </div>
@@ -289,7 +285,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             ) : (
               <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
                 <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Events Yet</h3>
-                <p style={{ color: '#ccc' }}>This creator hasn't created any events yet.</p>
+                <p style={{ color: '#ccc' }}>This creator hasn&apos;t created any events yet.</p>
               </div>
             )}
           </div>

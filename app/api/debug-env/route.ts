@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   console.log('\n🔍 === ENVIRONMENT DEBUG API ===');
   
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     };
     
     const missingVars = Object.entries(requiredVars)
-      .filter(([key, value]) => !value)
+      .filter(([, value]) => !value)
       .map(([key]) => key);
     
     const response = {

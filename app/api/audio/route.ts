@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, db } from '../../../src/lib/supabase';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { getCreatorTracks } from '@/src/lib/creator';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createRouteHandlerClient({ cookies });
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const creatorId = searchParams.get('creator_id');
+    const creatorId = searchParams.get('creatorId');
 
     if (creatorId) {
-      const { data, error } = await db.getAudioContentByCreator(creatorId);
-      
+      const { data, error } = await getCreatorTracks(creatorId);
+
       if (error) {
         return NextResponse.json(
           { error: 'Failed to fetch audio content' },
@@ -17,21 +19,41 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({ data });
-    } else {
-      const { data, error } = await db.getAudioContent(limit);
-      
-      if (error) {
-        return NextResponse.json(
-          { error: 'Failed to fetch audio content' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({ data });
+      return NextResponse.json({
+        success: true,
+        tracks: data || []
+      });
     }
+
+    // If no creatorId, return all public tracks
+    const { data: tracks, error } = await supabase
+      .from('audio_tracks')
+      .select(`
+        *,
+        creator:profiles!audio_tracks_creator_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url
+        )
+      `)
+      .eq('is_public', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to fetch audio content' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      tracks: tracks || []
+    });
+
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Audio API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -41,7 +63,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = createRouteHandlerClient({ cookies });
     const body = await request.json();
 
     // Validate required fields

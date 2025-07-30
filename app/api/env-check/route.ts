@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   console.log('\n🔍 === ENVIRONMENT FILE CHECK ===');
 
   try {

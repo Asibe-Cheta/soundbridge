@@ -849,7 +849,7 @@ export default function FeedPage() {
             <div style={{ flex: 1, fontSize: '0.9rem' }}>
               <span style={{ color: 'white', fontWeight: '600' }}>{activity.user.name}</span>
               <span style={{ color: '#999' }}> {activity.action} </span>
-              <span style={{ color: '#EC4899' }}>"{activity.track}"</span>
+              <span style={{ color: '#EC4899' }}>&quot;{activity.track}&quot;</span>
             </div>
             <div style={{ color: '#666', fontSize: '0.8rem' }}>
               {activity.timestamp}

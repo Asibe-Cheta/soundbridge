@@ -449,7 +449,7 @@ export default function SignupPage() {
               style={{ marginTop: '0.25rem' }}
             />
             <label style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: '1.4' }}>
-              I agree to SoundBridge's{' '}
+              I agree to SoundBridge&apos;s{' '}
               <Link href="/terms" style={{ color: '#EC4899', textDecoration: 'none' }}>
                 Terms of Service
               </Link>
@@ -469,7 +469,7 @@ export default function SignupPage() {
               style={{ marginTop: '0.25rem' }}
             />
             <label style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: '1.4' }}>
-              I'd like to receive emails about new features, events, and creator spotlights
+              I&apos;d like to receive emails about new features, events, and creator spotlights
             </label>
           </div>
 

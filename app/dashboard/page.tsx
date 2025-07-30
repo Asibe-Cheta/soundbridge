@@ -91,7 +91,7 @@ export default function DashboardPage() {
   const handleDeleteAccount = async () => {
     try {
       const result = await deleteUserAccount();
-      if (result.success) {
+      if (result?.success) {
         await signOut();
       }
     } catch (error) {
@@ -292,8 +292,14 @@ export default function DashboardPage() {
               <ContentManager
                 tracks={tracks}
                 events={events}
-                onDeleteTrack={deleteTrack}
-                onDeleteEvent={deleteEvent}
+                onDeleteTrack={async (trackId: string) => {
+                  const result = await deleteTrack(trackId);
+                  return result || { success: false };
+                }}
+                onDeleteEvent={async (eventId: string) => {
+                  const result = await deleteEvent(eventId);
+                  return result || { success: false };
+                }}
                 isLoading={isLoadingTracks || isLoadingEvents}
               />
             )}

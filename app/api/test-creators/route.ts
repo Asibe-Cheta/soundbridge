@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createApiClient } from '@/src/lib/supabase';
 import { getCreatorStats, searchCreators } from '@/src/lib/creator';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createApiClient();
 

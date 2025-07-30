@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiClient } from '@/src/lib/supabase';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createApiClient();
 
     // Test database connection by querying profiles table
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
       .select('count')
       .limit(1);
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Test auth functionality
-    const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
+    const { error: authError } = await supabase.auth.admin.listUsers({
       perPage: 1
     });
 

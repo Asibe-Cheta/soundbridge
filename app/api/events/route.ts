@@ -229,8 +229,8 @@ export async function GET(request: NextRequest) {
     const transformedEvents = events?.map(event => ({
       ...event,
       attendeeCount: event.attendees?.length || 0,
-      isAttending: event.attendees?.some(a => a.status === 'attending') || false,
-      isInterested: event.attendees?.some(a => a.status === 'interested') || false,
+      isAttending: event.attendees?.some((a: { status: string }) => a.status === 'attending') || false,
+      isInterested: event.attendees?.some((a: { status: string }) => a.status === 'interested') || false,
       formattedDate: formatEventDate(event.event_date),
       formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
       isFeatured: isFeaturedEvent(event),
@@ -290,10 +290,10 @@ function formatPrice(priceGbp: number | null, priceNgn: number | null): string {
   return 'Free Entry';
 }
 
-function isFeaturedEvent(event: any): boolean {
+function isFeaturedEvent(event: { current_attendees?: number }): boolean {
   return (event.current_attendees || 0) > 100;
 }
 
-function calculateEventRating(event: any): number {
+function calculateEventRating(_event: { current_attendees?: number }): number {
   return 4.5 + Math.random() * 0.5;
 } 

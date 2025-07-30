@@ -140,9 +140,8 @@ export async function GET(request: NextRequest) {
 
         // Try loading from a different context
         try {
-          const { config } = await import('next/config');
-          const nextConfig = config();
-          console.log('Next.js config:', nextConfig);
+          const nextConfig = await import('next/config');
+          console.log('Next.js config available');
         } catch (e) {
           console.log('Could not load Next.js config:', e);
         }

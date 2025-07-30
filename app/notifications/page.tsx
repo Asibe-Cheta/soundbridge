@@ -24,7 +24,6 @@ import {
   X,
   ChevronRight,
   Map,
-  Location,
   Radio,
   Mic,
   Guitar,
@@ -178,7 +177,7 @@ export default function NotificationPreferencesPage() {
               onMouseLeave={(e) => settings.locationRadius !== radius && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Location size={20} />
+                <MapPin size={20} />
                 <span style={{ fontWeight: '600' }}>{radius}km radius</span>
               </div>
               {settings.locationRadius === radius && <Check size={20} />}
@@ -412,7 +411,7 @@ export default function NotificationPreferencesPage() {
         Quiet Hours
       </h3>
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
-        Set times when you don't want to receive notifications
+        Set times when you don&apos;t want to receive notifications
       </p>
       
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>

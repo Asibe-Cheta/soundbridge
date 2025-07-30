@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     const latitude = parseFloat(searchParams.get('latitude') || '0');
     const longitude = parseFloat(searchParams.get('longitude') || '0');
 
-    // Build filters object
-    const filters: SearchFilters = {
+    // Build filters object (unused but kept for future use)
+    const _filters: SearchFilters = {
       content_types: contentTypes.length > 0 ? contentTypes : undefined,
       genre,
       category,
@@ -40,7 +40,14 @@ export async function GET(request: NextRequest) {
     };
 
     // Perform search based on content types
-    const results = {
+    const results: {
+      music: any[];
+      creators: any[];
+      events: any[];
+      podcasts: any[];
+      total_results: number;
+      has_more: boolean;
+    } = {
       music: [],
       creators: [],
       events: [],

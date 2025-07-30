@@ -113,7 +113,7 @@ export default function VerifyEmailPage() {
             Check Your Email
           </h1>
           <p style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
-            We've sent a verification link to your email address
+            We&apos;ve sent a verification link to your email address
           </p>
         </div>
 
@@ -204,7 +204,7 @@ export default function VerifyEmailPage() {
         {/* Help Text */}
         <div style={{ color: '#999', fontSize: '0.9rem', lineHeight: '1.4' }}>
           <p style={{ marginBottom: '0.5rem' }}>
-            Didn't receive the email? Check your spam folder or try a different email address.
+            Didn&apos;t receive the email? Check your spam folder or try a different email address.
           </p>
           <p>
             Need help?{' '}

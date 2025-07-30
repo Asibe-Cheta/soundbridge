@@ -10,7 +10,6 @@ import {
   MoreVertical,
   Trash2,
   Archive,
-  Mute,
   Pin
 } from 'lucide-react';
 
@@ -203,7 +202,7 @@ export function ConversationList({
               <Archive size={14} />
             </button>
             <button className="hover:text-white transition-colors">
-              <Mute size={14} />
+              <Pin size={14} />
             </button>
           </div>
         </div>
