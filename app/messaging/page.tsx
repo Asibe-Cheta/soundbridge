@@ -8,6 +8,7 @@ import { ConversationList } from '../../src/components/messaging/ConversationLis
 import { ChatInterface } from '../../src/components/messaging/ChatInterface';
 import { useMessaging } from '../../src/hooks/useMessaging';
 import { useAuth } from '../../src/contexts/AuthContext';
+import type { MessageType } from '../../src/lib/types/messaging';
 import {
   MessageCircle,
   Search,
@@ -70,7 +71,7 @@ export default function MessagingPage() {
     }
   }, [isMobileView, conversations, selectedConversationId, selectConversation]);
 
-  const handleSendMessage = async (content: string, type = 'text', attachment?: any) => {
+  const handleSendMessage = async (content: string, type: MessageType = 'text', attachment?: any) => {
     try {
       await sendMessage(content, type, attachment);
     } catch (error) {
@@ -176,7 +177,7 @@ export default function MessagingPage() {
             <div className={`${isMobileView && selectedConversationId ? 'hidden' : 'block'} lg:block`}>
               <ConversationList
                 conversations={conversations}
-                selectedConversationId={selectedConversationId}
+                selectedConversationId={selectedConversationId || undefined}
                 onSelectConversation={selectConversation}
                 onSearchConversations={handleSearchConversations}
               />
