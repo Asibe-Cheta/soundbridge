@@ -184,7 +184,7 @@ export default function ProfileImageUploadPage() {
                   bannerActions.resetUpload();
                 }
               }}
-              selectedFile={activeTab === 'avatar' ? avatarState.imageFile?.file || null : bannerState.imageFile?.file || null}
+              selectedFile={activeTab === 'avatar' ? avatarState.imageFile : bannerState.imageFile}
               previewUrl={activeTab === 'avatar' ? avatarState.previewUrl : bannerState.previewUrl}
               isUploading={activeTab === 'avatar' ? avatarState.isUploading : bannerState.isUploading}
               uploadProgress={activeTab === 'avatar' ? avatarState.uploadProgress : bannerState.uploadProgress}

@@ -442,7 +442,7 @@ export default function CreateEventPage() {
                   <ImageUpload
                     onImageSelect={(file) => imageActions.setImageFile(file)}
                     onImageRemove={() => imageActions.resetUpload()}
-                    selectedFile={imageState.imageFile?.file || null}
+                    selectedFile={imageState.imageFile}
                     previewUrl={imageState.previewUrl}
                     isUploading={imageState.isUploading}
                     uploadProgress={imageState.uploadProgress}

@@ -135,7 +135,7 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
           uploadStatus: 'success',
           successMessage: 'Cover art uploaded successfully!',
           uploadProgress: 100,
-          uploadedUrl: result.url
+          uploadedUrl: result.url || null
         }));
         return true;
       } else {
@@ -213,7 +213,7 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
             uploadStatus: 'success',
             successMessage: `${type === 'avatar' ? 'Profile picture' : 'Banner'} updated successfully!`,
             uploadProgress: 100,
-            uploadedUrl: result.url
+            uploadedUrl: result.url || null
           }));
           return true;
         } else {
@@ -295,7 +295,7 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
           uploadStatus: 'success',
           successMessage: 'Event image uploaded successfully!',
           uploadProgress: 100,
-          uploadedUrl: result.url
+          uploadedUrl: result.url || null
         }));
         return true;
       } else {

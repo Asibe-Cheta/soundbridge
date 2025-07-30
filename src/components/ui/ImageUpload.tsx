@@ -12,10 +12,23 @@ import {
   Crop
 } from 'lucide-react';
 
+interface UploadFile {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'success' | 'error' | 'cancelled';
+  error?: string;
+  url?: string;
+  metadata?: any;
+}
+
 interface ImageUploadProps {
   onImageSelect: (file: File) => void;
   onImageRemove: () => void;
-  selectedFile: File | null;
+  selectedFile: UploadFile | null;
   previewUrl?: string | null;
   isUploading?: boolean;
   uploadProgress?: number;
@@ -153,7 +166,7 @@ export function ImageUpload({
               aspectRatio: aspectRatio ? aspectRatio.toString() : 'auto'
             }}>
               <img
-                src={previewUrl || URL.createObjectURL(selectedFile)}
+                src={previewUrl || URL.createObjectURL(selectedFile.file)}
                 alt="Preview"
                 style={{
                   width: '100%',
