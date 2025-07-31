@@ -392,7 +392,7 @@ function SearchContent() {
             <FloatingCard key={event.id} title={event.title || 'Untitled Event'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
-                  src={event.cover_art_url || '/placeholder-event.jpg'}
+                  src={event.image_url || '/placeholder-event.jpg'}
                   alt={event.title}
                   className="w-full h-full object-cover"
                 />
