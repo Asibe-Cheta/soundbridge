@@ -82,7 +82,7 @@ export function useEvents(): [EventsState, EventsActions] {
       if (result.data) {
         setState(prev => ({
           ...prev,
-          events: [result.data, ...prev.events],
+          events: [result.data as Event, ...prev.events],
           total: prev.total + 1
         }));
       }
@@ -113,7 +113,7 @@ export function useEvents(): [EventsState, EventsActions] {
         setState(prev => ({
           ...prev,
           events: prev.events.map(event =>
-            event.id === eventId ? result.data : event
+            event.id === eventId ? result.data as Event : event
           )
         }));
       }
