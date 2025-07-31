@@ -104,7 +104,7 @@ export class EventService {
         formattedPrice: this.formatPrice(event.price_gbp, event.price_ngn),
         isFeatured: this.isFeaturedEvent(event),
         rating: this.calculateEventRating(event)
-      })) || [];
+      } as Event)) || [];
 
       return { data: events, error: null };
     } catch (error) {
@@ -201,7 +201,7 @@ export class EventService {
         formattedPrice: this.formatPrice(event.price_gbp, event.price_ngn),
         isFeatured: this.isFeaturedEvent(event),
         rating: this.calculateEventRating(event)
-      })) || [];
+      } as Event)) || [];
 
       return { data: events, error: null };
     } catch (error) {
@@ -235,15 +235,18 @@ export class EventService {
         return { data: [], error };
       }
 
-      const events = data?.map(item => ({
-        ...item.event,
-        attendeeCount: (item.event as any).attendees?.[0]?.count || 0,
-        userStatus: (item as any).status,
-        formattedDate: this.formatEventDate((item.event as any).event_date),
-        formattedPrice: this.formatPrice((item.event as any).price_gbp, (item.event as any).price_ngn),
-        isFeatured: this.isFeaturedEvent(item.event),
-        rating: this.calculateEventRating(item.event)
-      })) || [];
+      const events = data?.map(item => {
+        const event = {
+          ...item.event,
+          attendeeCount: (item.event as any).attendees?.[0]?.count || 0,
+          userStatus: (item as any).status,
+          formattedDate: this.formatEventDate((item.event as any).event_date),
+          formattedPrice: this.formatPrice((item.event as any).price_gbp, (item.event as any).price_ngn),
+          isFeatured: this.isFeaturedEvent(item.event),
+          rating: this.calculateEventRating(item.event)
+        };
+        return event as unknown as Event;
+      }) || [];
 
       return { data: events, error: null };
     } catch (error) {
@@ -289,7 +292,7 @@ export class EventService {
         formattedPrice: this.formatPrice(data.price_gbp, data.price_ngn),
         isFeatured: this.isFeaturedEvent(data),
         rating: this.calculateEventRating(data)
-      };
+      } as Event;
 
       return { data: event, error: null };
     } catch (error) {
@@ -343,7 +346,7 @@ export class EventService {
         formattedPrice: this.formatPrice(data.price_gbp, data.price_ngn),
         isFeatured: this.isFeaturedEvent(data),
         rating: this.calculateEventRating(data)
-      };
+      } as Event;
 
       return { data: event, error: null };
     } catch (error) {
@@ -418,7 +421,7 @@ export class EventService {
         return { data: [], error };
       }
 
-      const events = data?.map(event => ({
+      const events = data?.map((event: any) => ({
         ...event,
         attendeeCount: event.attendee_count || 0,
         formattedDate: this.formatEventDate(event.event_date),
