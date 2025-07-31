@@ -191,7 +191,7 @@ export class AudioUploadService {
       }
 
       // Get signed URL for private bucket
-      const { data: urlData } = this.supabase.storage
+      const { data: urlData } = await this.supabase.storage
         .from('audio-tracks')
         .createSignedUrl(path, 3600); // 1 hour expiry
 
@@ -463,14 +463,14 @@ export class AudioUploadService {
   }
 
   // Get file URL
-  getFileUrl(bucketId: string, path: string, signed: boolean = false): string {
+  async getFileUrl(bucketId: string, path: string, signed: boolean = false): Promise<string> {
     if (signed) {
-      const { data } = this.supabase.storage
+      const { data } = await this.supabase.storage
         .from(bucketId)
         .createSignedUrl(path, 3600);
       return data?.signedUrl || '';
     } else {
-      const { data } = this.supabase.storage
+      const { data } = await this.supabase.storage
         .from(bucketId)
         .getPublicUrl(path);
       return data.publicUrl;
