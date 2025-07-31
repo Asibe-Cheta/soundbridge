@@ -1,12 +1,46 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 
-export default function LoginPage() {
+// Loading fallback component
+function LoginLoading() {
+  return (
+    <div 
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem'
+      }}
+    >
+      <div 
+        style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          padding: '3rem',
+          width: '100%',
+          maxWidth: '400px',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+          textAlign: 'center',
+          color: 'white'
+        }}
+      >
+        <div>Loading...</div>
+      </div>
+    </div>
+  );
+}
+
+// Main login content component that uses useSearchParams
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, signInWithProvider } = useAuth();
@@ -382,5 +416,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   );
 } 
