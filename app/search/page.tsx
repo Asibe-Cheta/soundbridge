@@ -29,6 +29,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
+
 // Loading fallback component
 function SearchLoading() {
   return (
@@ -306,11 +309,10 @@ function SearchContent() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab.id
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon size={16} />
                 {tab.label}
@@ -485,7 +487,7 @@ function SearchContent() {
             >
               <ArrowLeft size={24} />
             </Link>
-            
+
             {/* Search Bar */}
             <div className="flex-1 max-w-2xl">
               <div className="relative">
@@ -504,9 +506,8 @@ function SearchContent() {
             {/* Filter Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-3 rounded-lg transition-colors ${
-                showFilters ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
-              }`}
+              className={`p-3 rounded-lg transition-colors ${showFilters ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                }`}
             >
               <Sliders size={20} />
             </button>

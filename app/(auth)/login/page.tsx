@@ -6,10 +6,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
+
 // Loading fallback component
 function LoginLoading() {
   return (
-    <div 
+    <div
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
@@ -19,7 +22,7 @@ function LoginLoading() {
         padding: '2rem'
       }}
     >
-      <div 
+      <div
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
@@ -104,7 +107,7 @@ function LoginContent() {
   };
 
   return (
-    <div 
+    <div
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
@@ -115,7 +118,7 @@ function LoginContent() {
       }}
     >
       {/* Back to Home */}
-      <Link 
+      <Link
         href="/"
         style={{
           position: 'absolute',
@@ -139,7 +142,7 @@ function LoginContent() {
       </Link>
 
       {/* Auth Card */}
-      <div 
+      <div
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
@@ -153,7 +156,7 @@ function LoginContent() {
       >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 
+          <h1
             style={{
               fontSize: '2rem',
               fontWeight: 'bold',
@@ -194,15 +197,15 @@ function LoginContent() {
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
-              <Mail 
-                size={20} 
-                style={{ 
-                  position: 'absolute', 
-                  left: '1rem', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)', 
-                  color: '#999' 
-                }} 
+              <Mail
+                size={20}
+                style={{
+                  position: 'absolute',
+                  left: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#999'
+                }}
               />
               <input
                 type="email"
@@ -234,15 +237,15 @@ function LoginContent() {
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock 
-                size={20} 
-                style={{ 
-                  position: 'absolute', 
-                  left: '1rem', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)', 
-                  color: '#999' 
-                }} 
+              <Lock
+                size={20}
+                style={{
+                  position: 'absolute',
+                  left: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#999'
+                }}
               />
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -287,7 +290,7 @@ function LoginContent() {
 
           {/* Forgot Password */}
           <div style={{ textAlign: 'right' }}>
-            <Link 
+            <Link
               href="/reset-password"
               style={{
                 color: '#EC4899',
@@ -400,7 +403,7 @@ function LoginContent() {
         {/* Sign Up Link */}
         <div style={{ textAlign: 'center', color: '#999', fontSize: '0.9rem' }}>
           Don&apos;t have an account?{' '}
-          <Link 
+          <Link
             href="/signup"
             style={{
               color: '#EC4899',
