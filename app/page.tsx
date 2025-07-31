@@ -110,7 +110,7 @@ export default function HomePage() {
             <div className="featured-creator">
               <div className="featured-creator-content">
                 <h2>Featured Creator: Kwame Asante</h2>
-                <p>Afrobeats sensation taking UK by storm</p>
+                <p>Afrobeats sensation taking UK by storm!</p>
                 <div className="waveform"></div>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                   <button className="btn-primary">▶ Play Latest</button>
