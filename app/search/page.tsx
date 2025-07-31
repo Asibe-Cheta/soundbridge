@@ -329,7 +329,7 @@ function SearchContent() {
         {/* Results Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {activeTab === 'music' && results?.music?.map((track) => (
-            <FloatingCard key={track.id} title={track.title} className="group">
+            <FloatingCard key={track.id} title={track.title || 'Untitled Track'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={track.cover_art_url || '/placeholder-cover.jpg'}
@@ -359,7 +359,7 @@ function SearchContent() {
           ))}
 
           {activeTab === 'creators' && results?.creators?.map((creator) => (
-            <FloatingCard key={creator.id} title={creator.display_name} className="group">
+            <FloatingCard key={creator.id} title={creator.display_name || 'Unknown Creator'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={creator.avatar_url || '/placeholder-avatar.jpg'}
@@ -389,10 +389,10 @@ function SearchContent() {
           ))}
 
           {activeTab === 'events' && results?.events?.map((event) => (
-            <FloatingCard key={event.id} title={event.title} className="group">
+            <FloatingCard key={event.id} title={event.title || 'Untitled Event'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
-                  src={event.cover_image_url || '/placeholder-event.jpg'}
+                  src={event.cover_art_url || '/placeholder-event.jpg'}
                   alt={event.title}
                   className="w-full h-full object-cover"
                 />
@@ -422,7 +422,7 @@ function SearchContent() {
           ))}
 
           {activeTab === 'podcasts' && results?.podcasts?.map((podcast) => (
-            <FloatingCard key={podcast.id} title={podcast.title} className="group">
+            <FloatingCard key={podcast.id} title={podcast.title || 'Untitled Podcast'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={podcast.cover_art_url || '/placeholder-podcast.jpg'}
@@ -438,7 +438,7 @@ function SearchContent() {
               <h3 className="font-semibold text-white mb-1 truncate">{podcast.title}</h3>
               <p className="text-gray-400 text-sm mb-2">{podcast.creator?.display_name}</p>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">{podcast.episodes_count} episodes</span>
+                <span className="text-gray-500">{podcast.duration || 'Unknown duration'}</span>
                 <div className="flex items-center gap-2">
                   <button className="text-gray-400 hover:text-red-400 transition-colors">
                     <Heart size={16} />
