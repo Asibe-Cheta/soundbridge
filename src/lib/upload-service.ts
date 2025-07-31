@@ -176,16 +176,7 @@ export class AudioUploadService {
         .from('audio-tracks')
         .upload(path, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {
@@ -264,16 +255,7 @@ export class AudioUploadService {
         .from('cover-art')
         .upload(path, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {

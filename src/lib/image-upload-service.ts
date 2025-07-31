@@ -176,16 +176,7 @@ export class ImageUploadService {
         .from('cover-art')
         .upload(path, compressedFile, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {
@@ -269,16 +260,7 @@ export class ImageUploadService {
         .from('profile-images')
         .upload(path, compressedFile, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {
@@ -360,16 +342,7 @@ export class ImageUploadService {
         .from('event-images')
         .upload(path, compressedFile, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {
