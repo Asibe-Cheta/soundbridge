@@ -310,8 +310,8 @@ function SearchContent() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-400 hover:text-white'
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-400 hover:text-white'
                   }`}
               >
                 <Icon size={16} />
@@ -329,7 +329,7 @@ function SearchContent() {
         {/* Results Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {activeTab === 'music' && results?.music?.map((track) => (
-            <FloatingCard key={track.id} className="group">
+            <FloatingCard key={track.id} title={track.title} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={track.cover_art_url || '/placeholder-cover.jpg'}
@@ -359,7 +359,7 @@ function SearchContent() {
           ))}
 
           {activeTab === 'creators' && results?.creators?.map((creator) => (
-            <FloatingCard key={creator.id} className="group">
+            <FloatingCard key={creator.id} title={creator.display_name} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={creator.avatar_url || '/placeholder-avatar.jpg'}
@@ -389,7 +389,7 @@ function SearchContent() {
           ))}
 
           {activeTab === 'events' && results?.events?.map((event) => (
-            <FloatingCard key={event.id} className="group">
+            <FloatingCard key={event.id} title={event.title} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={event.cover_image_url || '/placeholder-event.jpg'}
@@ -403,7 +403,7 @@ function SearchContent() {
                 </div>
               </div>
               <h3 className="font-semibold text-white mb-1 truncate">{event.title}</h3>
-              <p className="text-gray-400 text-sm mb-2">{event.formattedDate}</p>
+              <p className="text-gray-400 text-sm mb-2">{event.formatted_date}</p>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 flex items-center gap-1">
                   <MapPin size={14} />
@@ -422,7 +422,7 @@ function SearchContent() {
           ))}
 
           {activeTab === 'podcasts' && results?.podcasts?.map((podcast) => (
-            <FloatingCard key={podcast.id} className="group">
+            <FloatingCard key={podcast.id} title={podcast.title} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
                 <img
                   src={podcast.cover_art_url || '/placeholder-podcast.jpg'}
