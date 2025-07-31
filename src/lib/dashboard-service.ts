@@ -374,13 +374,13 @@ export class DashboardService {
       }
 
       const followers = data?.map(item => ({
-        id: item.follower.id,
-        username: item.follower.username,
-        display_name: item.follower.display_name,
-        avatar_url: item.follower.avatar_url,
-        bio: item.follower.bio,
-        role: item.follower.role,
-        created_at: item.follower.created_at,
+        id: (item.follower as any).id,
+        username: (item.follower as any).username,
+        display_name: (item.follower as any).display_name,
+        avatar_url: (item.follower as any).avatar_url,
+        bio: (item.follower as any).bio,
+        role: (item.follower as any).role,
+        created_at: (item.follower as any).created_at,
       })) || [];
 
       return { data: followers, error: null };
@@ -417,13 +417,13 @@ export class DashboardService {
       }
 
       const following = data?.map(item => ({
-        id: item.following.id,
-        username: item.following.username,
-        display_name: item.following.display_name,
-        avatar_url: item.following.avatar_url,
-        bio: item.following.bio,
-        role: item.following.role,
-        created_at: item.following.created_at,
+        id: (item.following as any).id,
+        username: (item.following as any).username,
+        display_name: (item.following as any).display_name,
+        avatar_url: (item.following as any).avatar_url,
+        bio: (item.following as any).bio,
+        role: (item.following as any).role,
+        created_at: (item.following as any).created_at,
       })) || [];
 
       return { data: following, error: null };
@@ -561,7 +561,10 @@ export class DashboardService {
 
       const analyticsData: AnalyticsData = {
         playsOverTime,
-        followersOverTime,
+        followersOverTime: followersOverTime.map(item => ({
+          date: item.date,
+          followers: item.plays // Map plays to followers for now
+        })),
         topTracks,
         topEvents,
         engagementRate,

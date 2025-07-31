@@ -50,8 +50,8 @@ export function ConversationList({
     }
   };
 
-  const getOtherParticipant = (conversation: Conversation) => {
-    return conversation.participants.find(p => p.id !== conversation.lastMessage.sender_id) ||
+  const getOtherParticipant = (conversation: any) => {
+    return conversation.participants.find((p: any) => p.id !== conversation.lastMessage.sender_id) ||
       conversation.participants[0];
   };
 
@@ -113,8 +113,8 @@ export function ConversationList({
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation.id)}
                 className={`conversation-item p-3 rounded-lg cursor-pointer transition-all duration-200 ${isSelected
-                    ? 'bg-gradient-to-r from-primary-red/20 to-accent-pink/20 border border-accent-pink/30'
-                    : 'hover:bg-white/5 border border-transparent'
+                  ? 'bg-gradient-to-r from-primary-red/20 to-accent-pink/20 border border-accent-pink/30'
+                  : 'hover:bg-white/5 border border-transparent'
                   } ${isUnread ? 'border-l-4 border-l-accent-pink' : ''}`}
               >
                 <div className="flex items-start gap-3">

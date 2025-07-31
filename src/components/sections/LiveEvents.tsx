@@ -91,14 +91,14 @@ export function LiveEvents({ events = [] }: LiveEventsProps) {
         <div className="grid-4">
           {liveEvents.map((event) => {
             const eventDate = new Date(event.event_date);
-            const timeString = eventDate.toLocaleTimeString('en-GB', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            const timeString = eventDate.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit'
             });
-            const dayString = eventDate.toLocaleDateString('en-GB', { 
-              weekday: 'short' 
+            const dayString = eventDate.toLocaleDateString('en-GB', {
+              weekday: 'short'
             });
-            
+
             const formatPrice = (priceRange: { min: number; max: number; currency: string }) => {
               const { min, max, currency } = priceRange;
               if (min === 0 && max === 0) return 'Free Entry';
@@ -110,7 +110,7 @@ export function LiveEvents({ events = [] }: LiveEventsProps) {
 
             return (
               <div key={event.id} className="event-card relative h-48 rounded-xl overflow-hidden cursor-pointer group">
-                <div 
+                <div
                   className="absolute inset-0 bg-gradient-to-br from-primary-red/80 to-accent-pink/60"
                   style={{
                     backgroundImage: `url('https://picsum.photos/400/300?random=${event.id}')`,
@@ -119,7 +119,7 @@ export function LiveEvents({ events = [] }: LiveEventsProps) {
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-xl" />
-                
+
                 <div className="relative z-10 h-full flex flex-col justify-end p-6">
                   <div className="text-sm text-accent-pink mb-1">
                     {dayString} • {timeString}
@@ -128,11 +128,11 @@ export function LiveEvents({ events = [] }: LiveEventsProps) {
                     {event.title}
                   </div>
                   <div className="text-white/80 text-sm mb-3 line-clamp-1">
-                    {event.venue_name}, {event.city}
+                    {(event as any).venue_name || 'Venue TBA'}, {event.city}
                   </div>
                   <div>
                     <span className="bg-accent-pink/20 text-accent-pink px-3 py-1 rounded-full text-xs font-medium">
-                      {formatPrice(event.price_range || { min: 0, max: 0, currency: 'GBP' })}
+                      {formatPrice((event as any).price_range || { min: 0, max: 0, currency: 'GBP' } as any)}
                     </span>
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export function LiveEvents({ events = [] }: LiveEventsProps) {
 
         {/* View All Events Button */}
         <div className="text-center mt-12">
-          <Button variant="primary" size="large">
+          <Button variant="primary" size="lg">
             View All Events
           </Button>
         </div>

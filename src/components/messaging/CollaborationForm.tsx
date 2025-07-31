@@ -93,10 +93,10 @@ export function CollaborationForm({
   };
 
   const handleAddRequirement = () => {
-    if (newRequirement.trim() && !formData.requirements.includes(newRequirement.trim())) {
+    if (newRequirement.trim() && !formData.requirements?.includes(newRequirement.trim())) {
       setFormData(prev => ({
         ...prev,
-        requirements: [...prev.requirements, newRequirement.trim()]
+        requirements: [...(prev.requirements || []), newRequirement.trim()]
       }));
       setNewRequirement('');
     }
@@ -105,7 +105,7 @@ export function CollaborationForm({
   const handleRemoveRequirement = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      requirements: prev.requirements.filter((_, i) => i !== index)
+      requirements: prev.requirements?.filter((_, i) => i !== index) || []
     }));
   };
 
@@ -160,8 +160,8 @@ export function CollaborationForm({
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, projectType: type.id }))}
                 className={`p-3 rounded-lg border transition-all duration-200 flex items-center gap-2 ${formData.projectType === type.id
-                    ? 'bg-accent-pink/20 border-accent-pink text-accent-pink'
-                    : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
+                  ? 'bg-accent-pink/20 border-accent-pink text-accent-pink'
+                  : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
                   }`}
               >
                 <type.icon size={16} />
@@ -241,7 +241,7 @@ export function CollaborationForm({
             Requirements
           </label>
           <div className="space-y-2">
-            {formData.requirements.map((requirement, index) => (
+            {formData.requirements?.map((requirement, index) => (
               <div key={index} className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-green-400 flex-shrink-0" />
                 <span className="text-sm text-white flex-1">{requirement}</span>

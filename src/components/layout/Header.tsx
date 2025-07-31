@@ -62,10 +62,10 @@ export function Header() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="secondary" size="small">
+            <Button variant="secondary" size="sm">
               Login
             </Button>
-            <Button variant="primary" size="small">
+            <Button variant="primary" size="sm">
               Sign Up
             </Button>
           </div>
@@ -117,10 +117,10 @@ export function Header() {
 
               {/* Mobile Auth Buttons */}
               <div className="pt-4 space-y-2">
-                <Button variant="secondary" size="small" className="w-full">
+                <Button variant="secondary" size="sm" className="w-full">
                   Login
                 </Button>
-                <Button variant="primary" size="small" className="w-full">
+                <Button variant="primary" size="sm" className="w-full">
                   Sign Up
                 </Button>
               </div>

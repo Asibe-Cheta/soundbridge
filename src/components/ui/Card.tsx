@@ -3,15 +3,25 @@
 import React from 'react';
 import { Play, Users, Calendar, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { CardProps } from '../../lib/types';
+// import { CardProps } from '../../lib/types';
+interface CardProps {
+  children?: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  title?: string;
+  subtitle?: string;
+  image?: string;
+  type?: string;
+  data?: any;
+}
 
-export function Card({ 
-  title, 
-  subtitle, 
-  image, 
-  type, 
+export function Card({
+  title,
+  subtitle,
+  image,
+  type,
   onClick,
-  data 
+  data
 }: CardProps) {
   const getIcon = () => {
     switch (type) {
@@ -30,7 +40,7 @@ export function Card({
 
   const getSubtitle = () => {
     if (subtitle) return subtitle;
-    
+
     if (type === 'event' && data && 'event_date' in data) {
       return new Date(data.event_date).toLocaleDateString('en-GB', {
         month: 'short',
@@ -38,16 +48,16 @@ export function Card({
         year: 'numeric'
       });
     }
-    
+
     if (type === 'music' && data && 'play_count' in data) {
       return `${data.play_count.toLocaleString()} plays`;
     }
-    
+
     return '';
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6",
         "hover:bg-white/10 hover:border-white/20 hover:-translate-y-2",
@@ -58,14 +68,14 @@ export function Card({
     >
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-red/10 to-accent-pink/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
+
       {/* Content */}
       <div className="relative z-10">
         {/* Image */}
         {image && (
           <div className="relative mb-4 aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-            <img 
-              src={image} 
+            <img
+              src={image}
               alt={title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
@@ -90,19 +100,19 @@ export function Card({
             )}
           </div>
         )}
-        
+
         {/* Text content */}
         <div className="space-y-2">
           <h3 className="font-semibold text-white text-lg line-clamp-2 group-hover:text-white/90 transition-colors">
             {title}
           </h3>
-          
+
           {getSubtitle() && (
             <p className="text-white/60 text-sm line-clamp-1">
               {getSubtitle()}
             </p>
           )}
-          
+
           {/* Type indicator */}
           <div className="flex items-center gap-2 text-xs text-white/40">
             {getIcon()}

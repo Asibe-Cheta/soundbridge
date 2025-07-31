@@ -138,9 +138,9 @@ export function ChatInterface({
           <div>
             <h3 className="font-semibold text-white">Chat</h3>
             <p className="text-sm text-gray-400">
-              {typingUsers.length > 0 ? (
+              {typingUsers && typingUsers.length > 0 ? (
                 <span className="text-accent-pink">
-                  {typingUsers.length === 1 ? 'is typing' : 'are typing'}...
+                  {typingUsers?.length === 1 ? 'is typing' : 'are typing'}...
                 </span>
               ) : (
                 'Online'
@@ -199,7 +199,7 @@ export function ChatInterface({
         ))}
 
         {/* Typing indicator */}
-        {typingUsers.length > 0 && (
+        {typingUsers && typingUsers.length > 0 && (
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <div className="flex gap-1">
               <div className="w-2 h-2 bg-accent-pink rounded-full animate-pulse"></div>
@@ -207,7 +207,7 @@ export function ChatInterface({
               <div className="w-2 h-2 bg-accent-pink rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
             </div>
             <span>
-              {typingUsers.length === 1 ? 'is typing' : 'are typing'}...
+              {typingUsers?.length === 1 ? 'is typing' : 'are typing'}...
             </span>
           </div>
         )}
@@ -315,8 +315,8 @@ export function ChatInterface({
             onClick={handleSendMessage}
             disabled={(!messageText.trim() && !selectedFile) || isSending}
             className={`p-3 rounded-lg transition-colors ${(messageText.trim() || selectedFile) && !isSending
-                ? 'bg-gradient-to-r from-primary-red to-accent-pink text-white hover:opacity-90'
-                : 'bg-white/10 text-gray-400 cursor-not-allowed'
+              ? 'bg-gradient-to-r from-primary-red to-accent-pink text-white hover:opacity-90'
+              : 'bg-white/10 text-gray-400 cursor-not-allowed'
               }`}
           >
             {isSending ? (

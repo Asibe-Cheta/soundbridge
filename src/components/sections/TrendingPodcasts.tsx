@@ -4,7 +4,8 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Play, ExternalLink } from 'lucide-react';
-import { AudioContent } from '../../lib/types';
+// import { AudioContent } from '../../lib/types';
+type AudioContent = any;
 
 interface TrendingPodcastsProps {
   podcasts?: AudioContent[];
@@ -87,7 +88,7 @@ export function TrendingPodcasts({ podcasts = [] }: TrendingPodcastsProps) {
                   <Play className="w-5 h-5" />
                 </div>
               </div>
-              
+
               <div className="font-semibold text-sm mb-1 line-clamp-1">
                 {podcast.title}
               </div>
@@ -119,7 +120,7 @@ export function TrendingPodcasts({ podcasts = [] }: TrendingPodcastsProps) {
 
         {/* View All Podcasts Button */}
         <div className="text-center mt-12">
-          <Button variant="outline" size="large">
+          <Button variant="outline" size="lg">
             Browse All Podcasts
           </Button>
         </div>

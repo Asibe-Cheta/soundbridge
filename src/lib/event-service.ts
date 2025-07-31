@@ -98,8 +98,8 @@ export class EventService {
       const events = data?.map(event => ({
         ...event,
         attendeeCount: event.attendees?.length || 0,
-        isAttending: event.attendees?.some(a => a.status === 'attending') || false,
-        isInterested: event.attendees?.some(a => a.status === 'interested') || false,
+        isAttending: event.attendees?.some((a: any) => a.status === 'attending') || false,
+        isInterested: event.attendees?.some((a: any) => a.status === 'interested') || false,
         formattedDate: this.formatEventDate(event.event_date),
         formattedPrice: this.formatPrice(event.price_gbp, event.price_ngn),
         isFeatured: this.isFeaturedEvent(event),
@@ -157,8 +157,8 @@ export class EventService {
       const event = {
         ...data,
         attendeeCount: data.attendees?.length || 0,
-        attendingUsers: data.attendees?.filter(a => a.status === 'attending') || [],
-        interestedUsers: data.attendees?.filter(a => a.status === 'interested') || [],
+        attendingUsers: data.attendees?.filter((a: any) => a.status === 'attending') || [],
+        interestedUsers: data.attendees?.filter((a: any) => a.status === 'interested') || [],
         formattedDate: this.formatEventDate(data.event_date),
         formattedPrice: this.formatPrice(data.price_gbp, data.price_ngn),
         isFeatured: this.isFeaturedEvent(data),
@@ -237,10 +237,10 @@ export class EventService {
 
       const events = data?.map(item => ({
         ...item.event,
-        attendeeCount: item.event.attendees?.[0]?.count || 0,
-        userStatus: item.status,
-        formattedDate: this.formatEventDate(item.event.event_date),
-        formattedPrice: this.formatPrice(item.event.price_gbp, item.event.price_ngn),
+        attendeeCount: (item.event as any).attendees?.[0]?.count || 0,
+        userStatus: (item as any).status,
+        formattedDate: this.formatEventDate((item.event as any).event_date),
+        formattedPrice: this.formatPrice((item.event as any).price_gbp, (item.event as any).price_ngn),
         isFeatured: this.isFeaturedEvent(item.event),
         rating: this.calculateEventRating(item.event)
       })) || [];

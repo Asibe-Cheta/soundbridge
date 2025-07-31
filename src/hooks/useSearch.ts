@@ -26,8 +26,8 @@ const initialState: SearchState = {
 
 export function useSearch() {
   const [state, setState] = useState<SearchState>(initialState);
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
-  const abortControllerRef = useRef<AbortController>();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
 
   // Debounced search function
   const debouncedSearch = useCallback((query: string, filters: SearchFilters = {}) => {

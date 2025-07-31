@@ -20,7 +20,7 @@ export function PerformanceMonitor({ pageName }: PerformanceMonitorProps) {
           // sendToAnalytics('LCP', entry.startTime, pageName);
         }
         if (entry.entryType === 'first-input') {
-          console.log('FID:', entry.processingStart - entry.startTime);
+          console.log('FID:', (entry as any).processingStart - entry.startTime);
           // sendToAnalytics('FID', entry.processingStart - entry.startTime, pageName);
         }
         if (entry.entryType === 'layout-shift') {
@@ -47,8 +47,8 @@ export function PerformanceMonitor({ pageName }: PerformanceMonitorProps) {
     // Monitor resource loading
     const resourceObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.initiatorType === 'img' || entry.initiatorType === 'audio') {
-          console.log(`${entry.initiatorType} load time:`, entry.duration);
+        if ((entry as any).initiatorType === 'img' || (entry as any).initiatorType === 'audio') {
+          console.log(`${(entry as any).initiatorType} load time:`, entry.duration);
           // sendToAnalytics('resource_load', entry.duration, `${pageName}_${entry.initiatorType}`);
         }
       }

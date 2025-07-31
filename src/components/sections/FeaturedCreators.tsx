@@ -3,7 +3,8 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { User } from '../../lib/types';
+// import { User } from '../../lib/types';
+type User = any;
 
 interface FeaturedCreatorsProps {
   creators?: User[];
@@ -45,7 +46,7 @@ export function FeaturedCreators({ creators = [] }: FeaturedCreatorsProps) {
     <section className="relative py-20 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-background-secondary via-background to-background" />
-      
+
       {/* Hero Section */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
@@ -56,14 +57,14 @@ export function FeaturedCreators({ creators = [] }: FeaturedCreatorsProps) {
             </span>
           </h1>
           <p className="text-xl text-white/70 max-w-2xl mx-auto mb-8">
-            Connect with talented artists, producers, and musicians from the UK and Nigeria. 
+            Connect with talented artists, producers, and musicians from the UK and Nigeria.
             Discover new sounds and build your network.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="primary" size="large">
+            <Button variant="primary" size="lg">
               Explore Creators
             </Button>
-            <Button variant="secondary" size="large">
+            <Button variant="secondary" size="lg">
               Become a Creator
             </Button>
           </div>
@@ -80,13 +81,15 @@ export function FeaturedCreators({ creators = [] }: FeaturedCreatorsProps) {
               type="creator"
               data={creator}
               onClick={() => console.log('Navigate to creator:', creator.username)}
-            />
+            >
+              {/* Card content will be rendered by the Card component */}
+            </Card>
           ))}
         </div>
 
         {/* View All Button */}
         <div className="text-center mt-12">
-          <Button variant="outline" size="large">
+          <Button variant="outline" size="lg">
             View All Creators
           </Button>
         </div>

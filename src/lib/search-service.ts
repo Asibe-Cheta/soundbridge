@@ -364,7 +364,7 @@ export class SearchService {
       const { data: trendingSearches } = await this.getTrendingSearches(limit);
       if (trendingSearches) {
         suggestions.push(...trendingSearches.map(search => ({
-          type: 'trending',
+          type: 'trending' as const,
           text: search.query,
           count: search.count
         })));
@@ -422,7 +422,7 @@ export class SearchService {
 
       if (musicTitles) {
         suggestions.push(...musicTitles.map(track => ({
-          type: 'music',
+          type: 'music' as const,
           text: track.title,
           count: 1
         })));
@@ -438,7 +438,7 @@ export class SearchService {
 
       if (creatorNames) {
         suggestions.push(...creatorNames.map(creator => ({
-          type: 'creator',
+          type: 'creator' as const,
           text: creator.display_name,
           count: 1
         })));
@@ -454,7 +454,7 @@ export class SearchService {
 
       if (eventTitles) {
         suggestions.push(...eventTitles.map(event => ({
-          type: 'event',
+          type: 'event' as const,
           text: event.title,
           count: 1
         })));

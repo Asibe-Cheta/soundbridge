@@ -303,7 +303,7 @@ export class MessagingService {
           const { data: conversations } = await this.getConversations(userId);
           if (conversations) {
             const updatedConversation = conversations.find(c =>
-              c.id === this.getConversationId(payload.new.sender_id, payload.new.recipient_id)
+              c.id === this.getConversationId((payload.new as any).sender_id, (payload.new as any).recipient_id)
             );
             if (updatedConversation) {
               onConversationUpdate(updatedConversation);

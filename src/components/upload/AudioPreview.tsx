@@ -320,7 +320,7 @@ export function AudioPreview({ uploadFile, onMetadataExtracted }: AudioPreviewPr
           <div>Duration: {formatTime(metadata.duration)}</div>
           <div>Bitrate: ~{Math.round(metadata.bitrate / 1000)}kbps</div>
           <div>Format: {metadata.format.split('/')[1].toUpperCase()}</div>
-          <div>Size: {(metadata.size / 1024 / 1024).toFixed(2)} MB</div>
+          <div>Size: {((metadata.size || 0) / 1024 / 1024).toFixed(2)} MB</div>
         </div>
       )}
     </div>
