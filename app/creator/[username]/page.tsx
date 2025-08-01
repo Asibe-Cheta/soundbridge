@@ -85,7 +85,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             display_name: creatorData.display_name || creatorData.full_name || 'Unknown',
             bio: creatorData.bio || null,
             avatar_url: creatorData.avatar_url || null,
-            banner_url: creatorData.banner_url || null,
+            banner_url: (creatorData as any).banner_url || null,
             role: creatorData.role as 'creator' | 'listener',
             location: creatorData.location || null,
             country: creatorData.country as 'UK' | 'Nigeria' | null,
