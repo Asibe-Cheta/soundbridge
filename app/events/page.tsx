@@ -17,6 +17,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
+import Image from 'next/image';
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -114,8 +115,15 @@ export default function EventsPage() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-          🌉 SoundBridge
-        </div>
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
             For You

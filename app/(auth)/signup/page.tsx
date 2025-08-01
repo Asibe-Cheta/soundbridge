@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
+import Image from 'next/image';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -172,18 +173,16 @@ export default function SignupPage() {
         }}
       >
         {/* Logo */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          gap: '0.5rem', 
-          fontSize: '2rem', 
-          fontWeight: 'bold', 
-          color: '#DC2626', 
-          marginBottom: '2rem' 
-        }}>
-          🌉 SoundBridge
-        </div>
+        <div className="logo">
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>

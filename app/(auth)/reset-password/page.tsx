@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
+import Image from 'next/image';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
@@ -86,18 +87,16 @@ export default function ResetPasswordPage() {
           }}
         >
           {/* Logo */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: '#DC2626',
-            marginBottom: '2rem'
-          }}>
-            🌉 SoundBridge
-          </div>
+          <div className="logo">
+                    <Image
+                      src="/images/logos/logo-trans-lockup.png"
+                      alt="SoundBridge Logo"
+                      width={150}
+                      height={40}
+                      priority
+                      style={{ height: 'auto' }}
+                    />
+                  </div>
 
           {/* Success Icon */}
           <div style={{
@@ -247,18 +246,16 @@ export default function ResetPasswordPage() {
         }}
       >
         {/* Logo */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.5rem',
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          color: '#DC2626',
-          marginBottom: '2rem'
-        }}>
-          🌉 SoundBridge
-        </div>
+         <div className="logo">
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>

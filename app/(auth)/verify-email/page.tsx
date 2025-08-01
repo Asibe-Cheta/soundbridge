@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 
 export default function VerifyEmailPage() {
   const [email] = useState(() => {
@@ -69,18 +70,16 @@ export default function VerifyEmailPage() {
         }}
       >
         {/* Logo */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          gap: '0.5rem', 
-          fontSize: '2rem', 
-          fontWeight: 'bold', 
-          color: '#DC2626', 
-          marginBottom: '2rem' 
-        }}>
-          🌉 SoundBridge
-        </div>
+        <div className="logo">
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
 
         {/* Success Icon */}
         <div style={{

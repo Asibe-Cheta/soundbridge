@@ -7,6 +7,7 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { Event } from '../../../src/lib/types/event';
+import Image from 'next/image';
 import {
   MapPin,
   Calendar,
@@ -240,8 +241,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       <>
         <header className="header">
           <div className="logo">
-            🌉 SoundBridge
-          </div>
+                    <Image
+                      src="/images/logos/logo-trans-lockup.png"
+                      alt="SoundBridge Logo"
+                      width={150}
+                      height={40}
+                      priority
+                      style={{ height: 'auto' }}
+                    />
+                  </div>
           <nav className="nav">
             <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
               For You
@@ -280,8 +288,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       <>
         <header className="header">
           <div className="logo">
-            🌉 SoundBridge
-          </div>
+                    <Image
+                      src="/images/logos/logo-trans-lockup.png"
+                      alt="SoundBridge Logo"
+                      width={150}
+                      height={40}
+                      priority
+                      style={{ height: 'auto' }}
+                    />
+                  </div>
           <nav className="nav">
             <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
               For You
@@ -325,8 +340,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       {/* Header */}
       <header className="header">
         <div className="logo">
-          🌉 SoundBridge
-        </div>
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
             For You

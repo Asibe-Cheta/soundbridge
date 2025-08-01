@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Calendar,
   AlertCircle,
@@ -177,9 +178,16 @@ export default function CreateEventPage() {
     return (
       <>
         <header className="header">
-          <div className="logo">
-            🌉 SoundBridge
-          </div>
+         <div className="logo">
+                   <Image
+                     src="/images/logos/logo-trans-lockup.png"
+                     alt="SoundBridge Logo"
+                     width={150}
+                     height={40}
+                     priority
+                     style={{ height: 'auto' }}
+                   />
+                 </div>
           <nav className="nav">
             <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
               For You
@@ -223,8 +231,15 @@ export default function CreateEventPage() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-          🌉 SoundBridge
-        </div>
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
             For You

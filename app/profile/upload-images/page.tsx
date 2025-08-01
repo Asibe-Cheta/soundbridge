@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../../src/components/layout/Footer';
-
+import Image from 'next/image';
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -72,8 +72,15 @@ export default function ProfileImageUploadPage() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-          🌉 SoundBridge
-        </div>
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={150}
+                    height={40}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
             For You
