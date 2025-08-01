@@ -2,6 +2,7 @@
 
 import React, { useState, use, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { CreatorProfileSkeleton } from '../../../src/components/ui/Skeleton';
@@ -89,12 +90,12 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             role: creatorData.role as 'creator' | 'listener',
             location: creatorData.location || null,
             country: creatorData.country as 'UK' | 'Nigeria' | null,
-            social_links: creatorData.social_links || {},
+            social_links: (creatorData as any).social_links || {},
             created_at: creatorData.created_at,
             updated_at: creatorData.updated_at,
-            followers_count: creatorData.followers_count || 0,
+            followers_count: (creatorData as any).followers_count || 0,
             following_count: 0, // Would need to calculate this
-            tracks_count: creatorData.tracks_count || 0,
+            tracks_count: (creatorData as any).tracks_count || 0,
             events_count: 0, // Would need to calculate this
             is_following: false // Would need to check this separately
           };
@@ -109,16 +110,42 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
 
           // Load tracks
           const { data: tracksData } = await getCreatorTracks(creatorData.id);
-          setTracks(tracksData || []);
+          if (tracksData) {
+            setTracks(tracksData.map(track => ({
+              ...track,
+              cover_art_url: track.artwork_url || null,
+              formatted_duration: (track as any).formatted_duration || '0:00',
+              formatted_play_count: (track as any).formatted_play_count || '0'
+            })));
+          }
 
           // Load events
           const { data: eventsData } = await getCreatorEvents(creatorData.id);
-          setEvents(eventsData || []);
+          if (eventsData) {
+            setEvents(eventsData.map(event => ({
+              ...event,
+              creator_id: event.organizer_id,
+              category: event.category as "Christian" | "Secular" | "Carnival" | "Gospel" | "Hip-Hop" | "Afrobeat" | "Jazz" | "Classical" | "Rock" | "Pop" | "Other",
+              location: (event as any).venue_name || (event as any).address || 'Location TBD',
+              price_gbp: (event as any).price_gbp || null,
+              price_ngn: (event as any).price_ngn || null,
+              formatted_date: (event as any).formatted_date || 'Date TBD',
+              formatted_price: (event as any).formatted_price || 'Free',
+              current_attendees: (event as any).current_attendees || 0,
+              image_url: (event as any).image_url || null
+            })));
+          }
 
           // Load messages if user is authenticated
           if (user?.id) {
             const { data: messagesData } = await getMessages(creatorData.id, user.id);
-            setMessages(messagesData || []);
+            if (messagesData) {
+              setMessages(messagesData.map(msg => ({
+                ...msg,
+                message_type: msg.message_type as 'text' | 'audio' | 'file' | 'collaboration',
+                formatted_timestamp: (msg as any).formatted_timestamp || 'Just now'
+              })));
+            }
           }
         }
       } catch (err) {
@@ -171,7 +198,11 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
       );
 
       if (!error && newMessage) {
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => [...prev, {
+          ...newMessage,
+          message_type: newMessage.message_type as 'text' | 'audio' | 'file' | 'collaboration',
+          formatted_timestamp: 'Just now'
+        }]);
         setChatMessage('');
       }
     } catch (err) {
@@ -510,7 +541,15 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
     return (
       <>
         <header className="header">
-          <div className="logo">🌉 SoundBridge</div>
+          <div className="logo">
+            <Image
+              src="/images/logos/logo-trans-lockup.png"
+              alt="SoundBridge"
+              width={150}
+              height={40}
+              style={{ objectFit: 'contain' }}
+            />
+          </div>
           <nav className="nav">
             <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
             <a href="#">Discover</a>
@@ -546,7 +585,15 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
     <>
       {/* Header */}
       <header className="header">
-        <div className="logo">🌉 SoundBridge</div>
+        <div className="logo">
+          <Image
+            src="/images/logos/logo-trans-lockup.png"
+            alt="SoundBridge"
+            width={150}
+            height={40}
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
           <a href="#">Discover</a>
@@ -720,4 +767,4 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
       </FloatingCard>
     </>
   );
-} 
+}
