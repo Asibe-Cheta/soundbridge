@@ -7,98 +7,106 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
     const resolvedParams = await params;
-    const eventId = resolvedParams.id;
+    const { id: eventId } = resolvedParams;
+    const body = await request.json();
+    const { userId, action } = body;
 
-    // Get user from request
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    if (!userId || !action) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const { status } = await request.json();
-
-    // Validate status
-    if (!['attending', 'interested', 'not_attending'].includes(status)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid status' },
+        { error: 'Missing required fields: userId and action' },
         { status: 400 }
       );
     }
 
-    // Check if RSVP already exists
-    const { data: existingRsvp, error: checkError } = await supabase
-      .from('event_attendees')
-      .select('id, status')
-      .eq('event_id', eventId)
-      .eq('user_id', user.id)
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Check if event exists
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing RSVP:', checkError);
+    if (eventError || !event) {
       return NextResponse.json(
-        { success: false, error: 'Failed to check RSVP status' },
-        { status: 500 }
+        { error: 'Event not found' },
+        { status: 404 }
       );
     }
 
-    let result;
-    if (existingRsvp) {
-      // Update existing RSVP
-      const { data: updatedRsvp, error: updateError } = await supabase
-        .from('event_attendees')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', existingRsvp.id)
-        .select('*')
-        .single();
+    // Check if user is already RSVP'd
+    const { data: existingRsvp, error: rsvpError } = await supabase
+      .from('event_attendees')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .single();
 
-      if (updateError) {
-        console.error('Error updating RSVP:', updateError);
+    if (action === 'rsvp') {
+      if (existingRsvp) {
         return NextResponse.json(
-          { success: false, error: 'Failed to update RSVP' },
-          { status: 500 }
+          { error: 'User already RSVP\'d to this event' },
+          { status: 400 }
         );
       }
 
-      result = updatedRsvp;
-    } else {
-      // Create new RSVP
-      const { data: newRsvp, error: createError } = await supabase
+      // Add RSVP
+      const { error: insertError } = await supabase
         .from('event_attendees')
         .insert({
           event_id: eventId,
-          user_id: user.id,
-          status,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select('*')
-        .single();
+          user_id: userId,
+          status: 'confirmed'
+        });
 
-      if (createError) {
-        console.error('Error creating RSVP:', createError);
+      if (insertError) {
         return NextResponse.json(
-          { success: false, error: 'Failed to create RSVP' },
+          { error: 'Failed to RSVP to event' },
           { status: 500 }
         );
       }
 
-      result = newRsvp;
+      return NextResponse.json({
+        success: true,
+        message: 'Successfully RSVP\'d to event'
+      });
+    } else if (action === 'cancel') {
+      if (!existingRsvp) {
+        return NextResponse.json(
+          { error: 'User not RSVP\'d to this event' },
+          { status: 400 }
+        );
+      }
+
+      // Remove RSVP
+      const { error: deleteError } = await supabase
+        .from('event_attendees')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        return NextResponse.json(
+          { error: 'Failed to cancel RSVP' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Successfully cancelled RSVP'
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid action. Must be "rsvp" or "cancel"' },
+        { status: 400 }
+      );
     }
-
-    return NextResponse.json({
-      success: true,
-      rsvp: result
-    });
-
   } catch (error) {
     console.error('RSVP error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

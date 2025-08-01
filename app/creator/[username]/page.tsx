@@ -86,16 +86,16 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             display_name: creatorData.display_name || creatorData.full_name || 'Unknown',
             bio: creatorData.bio || null,
             avatar_url: creatorData.avatar_url || null,
-            banner_url: (creatorData as any).banner_url || null,
+            banner_url: (creatorData as Record<string, unknown>).banner_url as string | null || null,
             role: creatorData.role as 'creator' | 'listener',
             location: creatorData.location || null,
             country: creatorData.country as 'UK' | 'Nigeria' | null,
-            social_links: (creatorData as any).social_links || {},
+            social_links: (creatorData as Record<string, unknown>).social_links as Record<string, string> || {},
             created_at: creatorData.created_at,
             updated_at: creatorData.updated_at,
-            followers_count: (creatorData as any).followers_count || 0,
+            followers_count: (creatorData as Record<string, unknown>).followers_count as number || 0,
             following_count: 0, // Would need to calculate this
-            tracks_count: (creatorData as any).tracks_count || 0,
+            tracks_count: (creatorData as Record<string, unknown>).tracks_count as number || 0,
             events_count: 0, // Would need to calculate this
             is_following: false // Would need to check this separately
           };
@@ -114,8 +114,8 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             setTracks(tracksData.map(track => ({
               ...track,
               cover_art_url: track.artwork_url || null,
-              formatted_duration: (track as any).formatted_duration || '0:00',
-              formatted_play_count: (track as any).formatted_play_count || '0'
+              formatted_duration: (track as Record<string, unknown>).formatted_duration as string || '0:00',
+              formatted_play_count: (track as Record<string, unknown>).formatted_play_count as string || '0'
             })));
           }
 
@@ -126,13 +126,13 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
               ...event,
               creator_id: event.organizer_id,
               category: event.category as "Christian" | "Secular" | "Carnival" | "Gospel" | "Hip-Hop" | "Afrobeat" | "Jazz" | "Classical" | "Rock" | "Pop" | "Other",
-              location: (event as any).venue_name || (event as any).address || 'Location TBD',
-              price_gbp: (event as any).price_gbp || null,
-              price_ngn: (event as any).price_ngn || null,
-              formatted_date: (event as any).formatted_date || 'Date TBD',
-              formatted_price: (event as any).formatted_price || 'Free',
-              current_attendees: (event as any).current_attendees || 0,
-              image_url: (event as any).image_url || null
+              location: (event as Record<string, unknown>).venue_name as string || (event as Record<string, unknown>).address as string || 'Location TBD',
+              price_gbp: (event as Record<string, unknown>).price_gbp as number | null || null,
+              price_ngn: (event as Record<string, unknown>).price_ngn as number | null || null,
+              formatted_date: (event as Record<string, unknown>).formatted_date as string || 'Date TBD',
+              formatted_price: (event as Record<string, unknown>).formatted_price as string || 'Free',
+              current_attendees: (event as Record<string, unknown>).current_attendees as number || 0,
+              image_url: (event as Record<string, unknown>).image_url as string | null || null
             })));
           }
 
@@ -143,7 +143,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
               setMessages(messagesData.map(msg => ({
                 ...msg,
                 message_type: msg.message_type as 'text' | 'audio' | 'file' | 'collaboration',
-                formatted_timestamp: (msg as any).formatted_timestamp || 'Just now'
+                formatted_timestamp: (msg as Record<string, unknown>).formatted_timestamp as string || 'Just now'
               })));
             }
           }
@@ -268,9 +268,11 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
                 <div key={track.id} className="card">
                   <div className="card-image">
                     {track.cover_art_url ? (
-                      <img
+                      <Image
                         src={track.cover_art_url}
                         alt={track.title}
+                        width={200}
+                        height={200}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
                       />
                     ) : (
@@ -620,9 +622,11 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
                 <div className="creator-profile-photo">
                   {creator.avatar_url ? (
-                    <img
+                    <Image
                       src={creator.avatar_url}
                       alt={creator.display_name}
+                      width={150}
+                      height={150}
                       style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                     />
                   ) : (
@@ -760,7 +764,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>John is listening to "Praise Medley"</div>
+          <div>John is listening to &quot;Praise Medley&quot;</div>
           <div>Sarah posted a new track</div>
           <div>Mike joined Gospel Night event</div>
         </div>

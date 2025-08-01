@@ -1,5 +1,4 @@
 import { createBrowserClient } from './supabase';
-import type { User } from '@supabase/supabase-js';
 
 export interface DashboardStats {
   totalPlays: number;
@@ -118,7 +117,7 @@ export class DashboardService {
   async getDashboardStats(userId: string): Promise<{ data: DashboardStats | null; error: unknown }> {
     try {
       // Get user profile
-      const { data: profile, error: profileError } = await this.supabase
+      const { error: profileError } = await this.supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -373,15 +372,24 @@ export class DashboardService {
         return { data: null, error };
       }
 
-      const followers = data?.map(item => ({
-        id: (item.follower as Record<string, unknown>).id as string,
-        username: (item.follower as Record<string, unknown>).username as string,
-        display_name: (item.follower as Record<string, unknown>).display_name as string,
-        avatar_url: (item.follower as Record<string, unknown>).avatar_url as string | undefined,
-        bio: (item.follower as Record<string, unknown>).bio as string | undefined,
-        role: (item.follower as Record<string, unknown>).role as string,
-        created_at: (item.follower as Record<string, unknown>).created_at as string,
-      })) || [];
+      const followers: FollowerData[] = data?.map(item => {
+        const followerRaw = item.follower;
+        if (followerRaw && typeof followerRaw === 'object' && !Array.isArray(followerRaw)) {
+          const follower = followerRaw as Record<string, unknown>;
+          return {
+            id: typeof follower.id === 'string' ? follower.id : '',
+            username: typeof follower.username === 'string' ? follower.username : '',
+            display_name: typeof follower.display_name === 'string' ? follower.display_name : '',
+            avatar_url: typeof follower.avatar_url === 'string' ? follower.avatar_url : undefined,
+            bio: typeof follower.bio === 'string' ? follower.bio : undefined,
+            role: typeof follower.role === 'string' ? follower.role : '',
+            created_at: typeof follower.created_at === 'string' ? follower.created_at : '',
+          };
+        }
+        return {
+          id: '', username: '', display_name: '', avatar_url: undefined, bio: undefined, role: '', created_at: ''
+        };
+      }) || [];
 
       return { data: followers, error: null };
     } catch (error) {
@@ -416,15 +424,24 @@ export class DashboardService {
         return { data: null, error };
       }
 
-      const following = data?.map(item => ({
-        id: (item.following as Record<string, unknown>).id as string,
-        username: (item.following as Record<string, unknown>).username as string,
-        display_name: (item.following as Record<string, unknown>).display_name as string,
-        avatar_url: (item.following as Record<string, unknown>).avatar_url as string | undefined,
-        bio: (item.following as Record<string, unknown>).bio as string | undefined,
-        role: (item.following as Record<string, unknown>).role as string,
-        created_at: (item.following as Record<string, unknown>).created_at as string,
-      })) || [];
+      const following: FollowerData[] = data?.map(item => {
+        const followingRaw = item.following;
+        if (followingRaw && typeof followingRaw === 'object' && !Array.isArray(followingRaw)) {
+          const following = followingRaw as Record<string, unknown>;
+          return {
+            id: typeof following.id === 'string' ? following.id : '',
+            username: typeof following.username === 'string' ? following.username : '',
+            display_name: typeof following.display_name === 'string' ? following.display_name : '',
+            avatar_url: typeof following.avatar_url === 'string' ? following.avatar_url : undefined,
+            bio: typeof following.bio === 'string' ? following.bio : undefined,
+            role: typeof following.role === 'string' ? following.role : '',
+            created_at: typeof following.created_at === 'string' ? following.created_at : '',
+          };
+        }
+        return {
+          id: '', username: '', display_name: '', avatar_url: undefined, bio: undefined, role: '', created_at: ''
+        };
+      }) || [];
 
       return { data: following, error: null };
     } catch (error) {

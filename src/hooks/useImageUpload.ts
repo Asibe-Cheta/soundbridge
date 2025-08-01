@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { imageUploadService } from '../lib/image-upload-service';
-import type { UploadFile, UploadProgress } from '../lib/types/upload';
+import type { UploadFile } from '../lib/types/upload';
 
 export interface ImageUploadState {
   imageFile: UploadFile | null;

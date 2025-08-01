@@ -29,10 +29,10 @@ import {
   Trash2,
   Activity,
   AlertCircle,
-  CheckCircle,
   X,
   AlertTriangle
 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -41,20 +41,14 @@ export default function DashboardPage() {
     tracks,
     events,
     profile,
-    preferences,
     followers,
     following,
     analytics,
-    isLoading,
     isLoadingStats,
     isLoadingTracks,
     isLoadingEvents,
     isLoadingAnalytics,
     error,
-    statsError,
-    tracksError,
-    eventsError,
-    analyticsError,
     deleteTrack,
     deleteEvent,
     exportUserData,
@@ -150,7 +144,7 @@ export default function DashboardPage() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveTab(item.id as any)}
+                    onClick={() => setActiveTab(item.id as 'overview' | 'content' | 'analytics' | 'followers' | 'settings')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === item.id
                       ? 'bg-accent-pink text-white'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
@@ -319,7 +313,13 @@ export default function DashboardPage() {
                         <div key={follower.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-red to-accent-pink flex items-center justify-center">
                             {follower.avatar_url ? (
-                              <img src={follower.avatar_url} alt={follower.display_name} className="w-full h-full rounded-full object-cover" />
+                              <Image
+                                src={follower.avatar_url}
+                                alt={follower.display_name}
+                                width={40}
+                                height={40}
+                                className="w-full h-full rounded-full object-cover"
+                              />
                             ) : (
                               <span className="text-white font-semibold">{follower.display_name.charAt(0)}</span>
                             )}
@@ -343,7 +343,13 @@ export default function DashboardPage() {
                         <div key={followingUser.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-pink to-coral flex items-center justify-center">
                             {followingUser.avatar_url ? (
-                              <img src={followingUser.avatar_url} alt={followingUser.display_name} className="w-full h-full rounded-full object-cover" />
+                              <Image
+                                src={followingUser.avatar_url}
+                                alt={followingUser.display_name}
+                                width={40}
+                                height={40}
+                                className="w-full h-full rounded-full object-cover"
+                              />
                             ) : (
                               <span className="text-white font-semibold">{followingUser.display_name.charAt(0)}</span>
                             )}

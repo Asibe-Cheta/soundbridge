@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createApiClient } from '@/src/lib/supabase';
 import { getCreatorStats, searchCreators } from '@/src/lib/creator';
 

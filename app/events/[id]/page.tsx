@@ -16,12 +16,6 @@ import {
   Heart,
   Share2,
   MessageCircle,
-  Phone,
-  Mail,
-  Globe,
-  Instagram,
-  Twitter,
-  Youtube,
   ArrowLeft,
   CheckCircle,
   AlertCircle,
@@ -30,9 +24,7 @@ import {
   Music,
   DollarSign,
   Info,
-  Loader2,
-  Edit,
-  Trash2
+  Loader2
 } from 'lucide-react';
 
 export default function EventDetail({ params }: { params: Promise<{ id: string }> }) {

@@ -19,15 +19,12 @@ import {
   Play,
   Heart,
   Share2,
-  MessageCircle,
-  Star,
-  Clock,
-  TrendingUp,
   ArrowLeft,
   Sliders,
   Loader2,
   AlertCircle
 } from 'lucide-react';
+import Image from 'next/image';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -69,9 +66,7 @@ function SearchContent() {
     results,
     loading,
     error,
-    suggestions,
     search,
-    updateFilters,
     loadMore,
     hasResults,
     totalResults,
@@ -172,7 +167,7 @@ function SearchContent() {
   };
 
   const handleDateChange = (value: string) => {
-    setSelectedDate(value as any);
+    setSelectedDate(value as 'all' | 'today' | 'week' | 'month' | 'next-month');
     if (value !== 'all') {
       setAppliedFilters(prev => [...prev.filter(f => !f.startsWith('date:')), `date:${value}`]);
     } else {
@@ -181,7 +176,7 @@ function SearchContent() {
   };
 
   const handlePriceChange = (value: string) => {
-    setSelectedPrice(value as any);
+    setSelectedPrice(value as 'all' | 'free' | 'low' | 'medium' | 'high');
     if (value !== 'all') {
       setAppliedFilters(prev => [...prev.filter(f => !f.startsWith('price:')), `price:${value}`]);
     } else {
@@ -190,7 +185,7 @@ function SearchContent() {
   };
 
   const handleSortChange = (value: string) => {
-    setSortBy(value as any);
+    setSortBy(value as 'relevance' | 'trending' | 'latest' | 'popular' | 'nearest');
   };
 
   const handleSearch = (newQuery: string) => {
@@ -240,10 +235,15 @@ function SearchContent() {
     if (!hasResults) {
       return (
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Search className="h-8 w-8 text-gray-400 mx-auto mb-4" />
-            <p className="text-white">No results found for "{query}"</p>
-            <p className="text-gray-400 text-sm mt-2">Try adjusting your search terms or filters</p>
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">No results found</h3>
+            <p className="text-gray-400 mb-4">
+              Try adjusting your search terms or filters to find what you&apos;re looking for.
+            </p>
+            <p className="text-gray-400">
+              You can also try searching for &quot;gospel&quot; or &quot;afrobeats&quot; to get started.
+            </p>
           </div>
         </div>
       );
@@ -254,7 +254,7 @@ function SearchContent() {
         {/* Results Summary */}
         <div className="flex items-center justify-between">
           <p className="text-white">
-            Found {totalResults} results for "{query}"
+            Found {totalResults} results for &quot;{query}&quot;
           </p>
           {appliedFilters.length > 0 && (
             <button
@@ -277,7 +277,7 @@ function SearchContent() {
                 {filter.split(':')[1]}
                 <button
                   onClick={() => {
-                    const [type, value] = filter.split(':');
+                    const [type] = filter.split(':');
                     setAppliedFilters(prev => prev.filter(f => f !== filter));
                     // Reset the corresponding filter
                     switch (type) {
@@ -339,11 +339,19 @@ function SearchContent() {
           {activeTab === 'music' && results?.music?.map((track) => (
             <FloatingCard key={track.id} title={track.title || 'Untitled Track'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                <img
-                  src={track.cover_art_url || '/placeholder-cover.jpg'}
-                  alt={track.title}
-                  className="w-full h-full object-cover"
-                />
+                {track.cover_art_url ? (
+                  <Image
+                    src={track.cover_art_url}
+                    alt={track.title}
+                    width={200}
+                    height={200}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
+                    <p className="text-gray-400">No cover art</p>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
                   <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
                     <Play size={20} className="text-white" />
@@ -369,11 +377,19 @@ function SearchContent() {
           {activeTab === 'creators' && results?.creators?.map((creator) => (
             <FloatingCard key={creator.id} title={creator.display_name || 'Unknown Creator'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                <img
-                  src={creator.avatar_url || '/placeholder-avatar.jpg'}
-                  alt={creator.display_name}
-                  className="w-full h-full object-cover"
-                />
+                {creator.avatar_url ? (
+                  <Image
+                    src={creator.avatar_url}
+                    alt={creator.display_name}
+                    width={60}
+                    height={60}
+                    className="w-15 h-15 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-full">
+                    <p className="text-gray-400">No avatar</p>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
                   <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
                     <Users size={20} className="text-white" />
@@ -399,11 +415,19 @@ function SearchContent() {
           {activeTab === 'events' && results?.events?.map((event) => (
             <FloatingCard key={event.id} title={event.title || 'Untitled Event'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                <img
-                  src={event.image_url || '/placeholder-event.jpg'}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                />
+                {event.image_url ? (
+                  <Image
+                    src={event.image_url}
+                    alt={event.title}
+                    width={200}
+                    height={200}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
+                    <p className="text-gray-400">No event image</p>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
                   <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
                     <Calendar size={20} className="text-white" />
@@ -432,11 +456,19 @@ function SearchContent() {
           {activeTab === 'podcasts' && results?.podcasts?.map((podcast) => (
             <FloatingCard key={podcast.id} title={podcast.title || 'Untitled Podcast'} className="group">
               <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                <img
-                  src={podcast.cover_art_url || '/placeholder-podcast.jpg'}
-                  alt={podcast.title}
-                  className="w-full h-full object-cover"
-                />
+                {podcast.cover_art_url ? (
+                  <Image
+                    src={podcast.cover_art_url}
+                    alt={podcast.title}
+                    width={200}
+                    height={200}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
+                    <p className="text-gray-400">No podcast cover art</p>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
                   <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
                     <Mic size={20} className="text-white" />

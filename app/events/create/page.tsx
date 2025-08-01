@@ -1,33 +1,19 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import Link from 'next/link';
-import { Footer } from '../../../src/components/layout/Footer';
-import { FloatingCard } from '../../../src/components/ui/FloatingCard';
-import { ImageUpload } from '../../../src/components/ui/ImageUpload';
-import { useImageUpload } from '../../../src/hooks/useImageUpload';
-import { useAuth } from '../../../src/contexts/AuthContext';
-import { eventService } from '../../../src/lib/event-service';
-import type { EventCreateData } from '../../../src/lib/types/event';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
+  Mic,
   MapPin,
-  Clock,
   DollarSign,
-  Music,
-  Image as ImageIcon,
-  Users,
-  Globe,
-  Lock,
-  Save,
-  Send,
-  ArrowLeft,
-  Upload,
-  X,
-  CheckCircle,
-  Loader2,
-  AlertCircle
+  ImageIcon,
+  AlertCircle,
+  X
 } from 'lucide-react';
+import { useAuth } from '../../../src/contexts/AuthContext';
+import { createEvent } from '../../../src/lib/event-service';
+import type { EventCreateData } from '../../../src/lib/types/event';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
@@ -136,14 +122,14 @@ export default function CreateEventPage() {
         event_date: eventDateTime.toISOString(),
         location: location,
         venue: address || undefined,
-        category: genre as any,
+        category: genre as 'Christian' | 'Secular' | 'Carnival' | 'Gospel' | 'Hip-Hop' | 'Afrobeat' | 'Jazz' | 'Classical' | 'Rock' | 'Pop' | 'Other',
         price_gbp: priceGbp || undefined,
         price_ngn: priceNgn || undefined,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
         image_url: imageState.uploadedUrl || undefined
       };
 
-      const result = await eventService.createEvent(eventData);
+      const result = await createEvent(eventData);
 
       if (result.error) {
         setError(result.error);
@@ -515,7 +501,7 @@ export default function CreateEventPage() {
                         name="privacy"
                         value="public"
                         checked={privacy === 'public'}
-                        onChange={(e) => setPrivacy(e.target.value as any)}
+                        onChange={(e) => setPrivacy(e.target.value as 'public' | 'private' | 'invite-only')}
                       />
                       <Globe size={16} />
                       <span>Public - Anyone can see and RSVP</span>
@@ -524,23 +510,23 @@ export default function CreateEventPage() {
                       <input
                         type="radio"
                         name="privacy"
-                        value="followers"
-                        checked={privacy === 'followers'}
-                        onChange={(e) => setPrivacy(e.target.value as any)}
+                        value="private"
+                        checked={privacy === 'private'}
+                        onChange={(e) => setPrivacy(e.target.value as 'public' | 'private' | 'invite-only')}
                       />
-                      <Users size={16} />
-                      <span>Followers only - Only your followers can see</span>
+                      <Lock size={16} />
+                      <span>Private - Only you can see</span>
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                       <input
                         type="radio"
                         name="privacy"
-                        value="private"
-                        checked={privacy === 'private'}
-                        onChange={(e) => setPrivacy(e.target.value as any)}
+                        value="invite-only"
+                        checked={privacy === 'invite-only'}
+                        onChange={(e) => setPrivacy(e.target.value as 'public' | 'private' | 'invite-only')}
                       />
-                      <Lock size={16} />
-                      <span>Private - Only you can see</span>
+                      <Users size={16} />
+                      <span>Invite Only - Only specific users can see</span>
                     </label>
                   </div>
                 </div>
@@ -555,7 +541,7 @@ export default function CreateEventPage() {
                         name="publishOption"
                         value="now"
                         checked={publishOption === 'now'}
-                        onChange={(e) => setPublishOption(e.target.value as any)}
+                        onChange={(e) => setPublishOption(e.target.value as 'draft' | 'published' | 'scheduled')}
                       />
                       <Send size={16} />
                       <span>Publish Now</span>
@@ -566,7 +552,7 @@ export default function CreateEventPage() {
                         name="publishOption"
                         value="schedule"
                         checked={publishOption === 'schedule'}
-                        onChange={(e) => setPublishOption(e.target.value as any)}
+                        onChange={(e) => setPublishOption(e.target.value as 'draft' | 'published' | 'scheduled')}
                       />
                       <Clock size={16} />
                       <span>Schedule for later</span>
@@ -577,7 +563,7 @@ export default function CreateEventPage() {
                         name="publishOption"
                         value="draft"
                         checked={publishOption === 'draft'}
-                        onChange={(e) => setPublishOption(e.target.value as any)}
+                        onChange={(e) => setPublishOption(e.target.value as 'draft' | 'published' | 'scheduled')}
                       />
                       <Save size={16} />
                       <span>Save as draft</span>

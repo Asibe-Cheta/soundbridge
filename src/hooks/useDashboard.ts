@@ -7,8 +7,7 @@ import type {
   UserProfile,
   UserPreferences,
   FollowerData,
-  AnalyticsData,
-  ActivityItem
+  AnalyticsData
 } from '../lib/dashboard-service';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -61,7 +60,7 @@ export function useDashboard() {
       }
 
       setStats(data);
-    } catch (err) {
+    } catch {
       setStatsError('Failed to load dashboard stats');
     } finally {
       setIsLoadingStats(false);
@@ -84,7 +83,7 @@ export function useDashboard() {
       }
 
       setTracks(data || []);
-    } catch (err) {
+    } catch {
       setTracksError('Failed to load tracks');
     } finally {
       setIsLoadingTracks(false);
@@ -107,7 +106,7 @@ export function useDashboard() {
       }
 
       setEvents(data || []);
-    } catch (err) {
+    } catch {
       setEventsError('Failed to load events');
     } finally {
       setIsLoadingEvents(false);
@@ -130,7 +129,7 @@ export function useDashboard() {
       }
 
       setProfile(data);
-    } catch (err) {
+    } catch {
       setProfileError('Failed to load profile');
     } finally {
       setIsLoadingProfile(false);
@@ -153,7 +152,7 @@ export function useDashboard() {
       }
 
       setPreferences(data);
-    } catch (err) {
+    } catch {
       setPreferencesError('Failed to load preferences');
     } finally {
       setIsLoadingPreferences(false);
@@ -176,7 +175,7 @@ export function useDashboard() {
       }
 
       setFollowers(data || []);
-    } catch (err) {
+    } catch {
       setFollowersError('Failed to load followers');
     } finally {
       setIsLoadingFollowers(false);
@@ -217,7 +216,7 @@ export function useDashboard() {
       }
 
       setAnalytics(data);
-    } catch (err) {
+    } catch {
       setAnalyticsError('Failed to load analytics');
     } finally {
       setIsLoadingAnalytics(false);
@@ -241,7 +240,7 @@ export function useDashboard() {
 
       setProfile(data);
       return { success: true };
-    } catch (err) {
+    } catch {
       setProfileError('Failed to update profile');
       return { success: false };
     } finally {
@@ -266,7 +265,7 @@ export function useDashboard() {
 
       setPreferences(data);
       return { success: true };
-    } catch (err) {
+    } catch {
       setPreferencesError('Failed to update preferences');
       return { success: false };
     } finally {
@@ -293,7 +292,7 @@ export function useDashboard() {
       await loadDashboardStats();
 
       return { success: true };
-    } catch (err) {
+    } catch {
       setTracksError('Failed to delete track');
       return { success: false };
     }
@@ -318,7 +317,7 @@ export function useDashboard() {
       await loadDashboardStats();
 
       return { success: true };
-    } catch (err) {
+    } catch {
       setEventsError('Failed to delete event');
       return { success: false };
     }
@@ -348,7 +347,7 @@ export function useDashboard() {
       URL.revokeObjectURL(url);
 
       return { success: true };
-    } catch (err) {
+    } catch {
       setError('Failed to export user data');
       return { success: false };
     }
@@ -367,7 +366,7 @@ export function useDashboard() {
       }
 
       return { success: true };
-    } catch (err) {
+    } catch {
       setError('Failed to delete account');
       return { success: false };
     }
@@ -391,7 +390,7 @@ export function useDashboard() {
         loadFollowing(),
         loadAnalytics(),
       ]);
-    } catch (err) {
+    } catch {
       setError('Failed to load dashboard data');
     } finally {
       setIsLoading(false);

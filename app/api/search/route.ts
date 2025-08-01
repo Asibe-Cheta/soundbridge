@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import type { SearchFilters } from '../../../src/lib/types/search';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,32 +11,14 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const contentTypes = searchParams.get('content_types')?.split(',') as ('music' | 'creators' | 'events' | 'podcasts')[] || [];
-    const genre = searchParams.get('genre') || undefined;
-    const category = searchParams.get('category') || undefined;
-    const location = searchParams.get('location') || undefined;
-    const country = searchParams.get('country') as 'UK' | 'Nigeria' || undefined;
-    const dateRange = searchParams.get('date_range') as 'all' | 'today' | 'week' | 'month' | 'next-month' || undefined;
-    const priceRange = searchParams.get('price_range') as 'all' | 'free' | 'low' | 'medium' | 'high' || undefined;
-    const sortBy = searchParams.get('sort_by') as 'relevance' | 'trending' | 'latest' | 'popular' | 'nearest' || 'relevance';
-    const radiusKm = parseInt(searchParams.get('radius_km') || '50');
-    const latitude = parseFloat(searchParams.get('latitude') || '0');
-    const longitude = parseFloat(searchParams.get('longitude') || '0');
-
-    // Build filters object (unused but kept for future use)
-    const _filters: SearchFilters = {
-      content_types: contentTypes.length > 0 ? contentTypes : undefined,
-      genre,
-      category,
-      location,
-      country,
-      date_range: dateRange,
-      price_range: priceRange,
-      sort_by: sortBy,
-      radius_km: radiusKm,
-      latitude: latitude || undefined,
-      longitude: longitude || undefined
-    };
+    const contentTypes = searchParams.get('content_types')?.split(',') || [];
+    const genre = searchParams.get('genre') || '';
+    const category = searchParams.get('category') || '';
+    const location = searchParams.get('location') || '';
+    const country = searchParams.get('country') || '';
+    const dateRange = searchParams.get('date_range') || '';
+    const priceRange = searchParams.get('price_range') || '';
+    const sortBy = searchParams.get('sort_by') || 'relevance';
 
     // Perform search based on content types
     const results: {

@@ -2,7 +2,6 @@ import { createBrowserClient } from './supabase';
 import type {
   Message,
   Conversation,
-  MessageStatus,
   MessageType,
   TypingIndicator,
   ConversationParticipant,
@@ -499,12 +498,12 @@ export class MessagingService {
       const conversationId = this.getConversationId(userId, otherUserId as string);
 
       if (!conversationMap.has(conversationId)) {
-        const otherUser = message.sender_id === userId ? message.recipient : message.sender;
+        // const otherUser = message.sender_id === userId ? message.recipient : message.sender;
 
         conversationMap.set(conversationId, {
           id: conversationId,
           participants: [message.sender, message.recipient] as ConversationParticipant[],
-          lastMessage: message as Message,
+          lastMessage: message as unknown as Message,
           unreadCount: 0,
           updatedAt: message.created_at as string
         });
@@ -519,7 +518,7 @@ export class MessagingService {
 
       // Update last message if this is more recent
       if (new Date(message.created_at as string).getTime() > new Date(conversation.lastMessage.created_at).getTime()) {
-        conversation.lastMessage = message as Message;
+        conversation.lastMessage = message as unknown as Message;
         conversation.updatedAt = message.created_at as string;
       }
     });
@@ -538,9 +537,10 @@ export class MessagingService {
    */
   cleanup(): void {
     this.subscriptions.forEach(subscription => {
-      if ((subscription as Record<string, unknown>).messages) {
-        (subscription as Record<string, unknown>).messages.unsubscribe();
-        (subscription as Record<string, unknown>).typing.unsubscribe();
+      const sub = subscription as Record<string, unknown>;
+      if (sub.messages) {
+        (sub.messages as { unsubscribe: () => void }).unsubscribe();
+        (sub.typing as { unsubscribe: () => void }).unsubscribe();
       } else {
         (subscription as { unsubscribe: () => void }).unsubscribe();
       }

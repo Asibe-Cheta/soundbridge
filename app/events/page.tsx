@@ -1,25 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Footer } from '../../src/components/layout/Footer';
-import { FloatingCard } from '../../src/components/ui/FloatingCard';
-import { useEvents } from '../../src/hooks/useEvents';
-import { useAuth } from '../../src/contexts/AuthContext';
 import {
-  Search,
-  MapPin,
   Calendar,
-  Music,
+  MapPin,
   DollarSign,
-  Filter,
-  Star,
   Users,
+  Star,
   Clock,
   TrendingUp,
-  Loader2,
-  AlertCircle
+  Filter,
+  Search,
+  Plus,
+  ArrowRight,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { useAuth } from '../../src/contexts/AuthContext';
+import { eventService } from '../../src/lib/event-service';
+import type { Event } from '../../src/lib/types/event';
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -380,11 +380,6 @@ export default function EventsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
                           <MapPin size={14} />
                           <span>{event.location}</span>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
-                          <Music size={14} />
-                          <span>{event.category}</span>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { audioUploadService } from '../lib/upload-service';
-import type { UploadFile, UploadProgress, TrackUploadData } from '../lib/types/upload';
+import type { UploadFile, TrackUploadData } from '../lib/types/upload';
 
 export interface UploadState {
   audioFile: UploadFile | null;

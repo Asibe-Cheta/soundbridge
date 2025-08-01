@@ -9,7 +9,7 @@ import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
 import { useSearch } from '../../src/hooks/useSearch';
 import { searchCreators } from '../../src/lib/creator';
-import type { CreatorSearchResult } from '../../src/lib/types/creator';
+import type { CreatorSearchResult, AudioTrack, Event } from '../../src/lib/types/creator';
 import {
   Search,
   Filter,
@@ -18,13 +18,6 @@ import {
   Users,
   Calendar,
   Mic,
-  X,
-  Play,
-  Heart,
-  Share2,
-  MessageCircle,
-  ArrowRight,
-  Loader2,
   AlertCircle
 } from 'lucide-react';
 
@@ -139,29 +132,29 @@ export default function DiscoverPage() {
             display_name: creator.profile.display_name || creator.profile.full_name || 'Unknown Creator',
             bio: creator.profile.bio || null,
             avatar_url: creator.profile.avatar_url || null,
-            banner_url: (creator.profile as any).banner_url || null,
+            banner_url: (creator.profile as Record<string, unknown>).banner_url as string | null || null,
             role: (creator.profile.role === 'organizer' ? 'creator' : creator.profile.role) as 'creator' | 'listener',
             location: creator.profile.location || null,
             country: creator.profile.country as 'UK' | 'Nigeria' | null,
-            social_links: (creator.profile as any).social_links || {},
+            social_links: (creator.profile as Record<string, unknown>).social_links as Record<string, string> || {},
             created_at: creator.profile.created_at,
             updated_at: creator.profile.updated_at,
             followers_count: creator.stats.followers_count,
-            following_count: (creator.stats as any).following_count || 0,
+            following_count: (creator.stats as Record<string, unknown>).following_count as number || 0,
             tracks_count: creator.stats.tracks_count,
             events_count: creator.stats.events_count,
             is_following: false // Default value, would need separate API call to determine
           },
           stats: {
             followers_count: creator.stats.followers_count,
-            following_count: (creator.stats as any).following_count || 0,
+            following_count: (creator.stats as Record<string, unknown>).following_count as number || 0,
             tracks_count: creator.stats.tracks_count,
             events_count: creator.stats.events_count,
-            total_plays: (creator.stats as any).total_plays || 0,
-            total_likes: (creator.stats as any).total_likes || 0
+            total_plays: (creator.stats as Record<string, unknown>).total_plays as number || 0,
+            total_likes: (creator.stats as Record<string, unknown>).total_likes as number || 0
           },
-          recent_tracks: (creator as any).recent_tracks || [],
-          upcoming_events: (creator as any).upcoming_events || []
+          recent_tracks: (creator as unknown as Record<string, unknown>).recent_tracks as AudioTrack[] || [],
+          upcoming_events: (creator as unknown as Record<string, unknown>).upcoming_events as Event[] || []
         }));
 
         setCreators(transformedCreators);
@@ -240,10 +233,12 @@ export default function DiscoverPage() {
                 <div key={track.id} className="card">
                   <div className="card-image">
                     {track.cover_art_url ? (
-                      <img
+                      <Image
                         src={track.cover_art_url}
                         alt={track.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                        width={200}
+                        height={200}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                       />
                     ) : (
                       <div style={{
@@ -326,10 +321,12 @@ export default function DiscoverPage() {
                   <div className="card">
                     <div className="card-image">
                       {creator.profile.avatar_url ? (
-                        <img
+                        <Image
                           src={creator.profile.avatar_url}
-                          alt={creator.profile.display_name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                          alt={creator.profile.display_name || 'Creator'}
+                          width={60}
+                          height={60}
+                          style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
                         />
                       ) : (
                         <div style={{
