@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createApiClient } from '../../../../src/lib/supabase';
 
 export async function POST() {
@@ -70,7 +70,7 @@ export async function POST() {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createApiClient();
 

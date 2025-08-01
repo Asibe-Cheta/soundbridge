@@ -36,7 +36,7 @@ export async function POST(
     }
 
     // Check if user is already RSVP'd
-    const { data: existingRsvp, error: rsvpError } = await supabase
+    const { data: existingRsvp } = await supabase
       .from('event_attendees')
       .select('*')
       .eq('event_id', eventId)
@@ -207,51 +207,3 @@ export async function GET(
   }
 }
 
-// Helper functions
-// Helper functions (unused but kept for future use)
-function _formatEventDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Tomorrow';
-  } else if (diffDays < 7) {
-    return `${diffDays} days`;
-  } else {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-  }
-}
-
-function _formatPrice(priceGbp: number | null, priceNgn: number | null): string {
-  if (priceGbp === 0 && priceNgn === 0) {
-    return 'Free Entry';
-  }
-
-  if (priceGbp && priceGbp > 0) {
-    return `£${priceGbp}`;
-  }
-
-  if (priceNgn && priceNgn > 0) {
-    return `₦${priceNgn.toLocaleString()}`;
-  }
-
-  return 'Free Entry';
-}
-
-function _isFeaturedEvent(event: { current_attendees?: number }): boolean {
-  return (event.current_attendees || 0) > 100;
-}
-
-function _calculateEventRating(_event: { current_attendees?: number }): number {
-  // Placeholder for rating calculation
-  return 4.5 + Math.random() * 0.5;
-} 

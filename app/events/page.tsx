@@ -8,18 +8,15 @@ import {
   DollarSign,
   Users,
   Star,
-  Clock,
-  TrendingUp,
   Filter,
   Search,
-  Plus,
-  ArrowRight,
   AlertCircle,
   Loader2
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { eventService } from '../../src/lib/event-service';
-import type { Event } from '../../src/lib/types/event';
+import { useEvents } from '../../src/hooks/useEvents';
+import Footer from '../../src/components/layout/Footer';
+import FloatingCard from '../../src/components/ui/FloatingCard';
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -76,16 +73,16 @@ export default function EventsPage() {
   useEffect(() => {
     const filters = {
       search: searchQuery || undefined,
-      category: selectedGenre !== 'all' ? selectedGenre as any : undefined,
+      category: selectedGenre !== 'all' ? selectedGenre as string : undefined,
       location: selectedLocation !== 'all' ? selectedLocation : undefined,
-      dateRange: selectedDate !== 'all' ? selectedDate as any : undefined,
-      priceRange: selectedPrice !== 'all' ? selectedPrice as any : undefined,
-      sortBy: sortBy as any
+      dateRange: selectedDate !== 'all' ? selectedDate as string : undefined,
+      priceRange: selectedPrice !== 'all' ? selectedPrice as string : undefined,
+      sortBy: sortBy as string
     };
 
     eventsActions.updateFilters(filters);
     eventsActions.fetchEvents(filters);
-  }, [searchQuery, selectedLocation, selectedGenre, selectedDate, selectedPrice, sortBy]);
+  }, [searchQuery, selectedLocation, selectedGenre, selectedDate, selectedPrice, sortBy, eventsActions]);
 
   const handleRSVP = async (eventId: string, status: 'attending' | 'interested' | 'not_going') => {
     if (!user) {

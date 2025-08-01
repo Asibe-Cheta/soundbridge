@@ -10,10 +10,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import {
   Upload,
   Music,
-  Mic,
   FileAudio,
-  Image,
-  Tag,
   Globe,
   Users,
   Lock,
@@ -21,11 +18,9 @@ import {
   Save,
   Play,
   Pause,
-  Volume2,
   X,
   CheckCircle,
   AlertCircle,
-  Clock,
   AlertTriangle,
   Loader2
 } from 'lucide-react';
@@ -48,7 +43,6 @@ export default function UploadPage() {
   const [scheduleDate, setScheduleDate] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const coverArtInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const genres = [
@@ -75,7 +69,7 @@ export default function UploadPage() {
       const file = e.dataTransfer.files[0];
       handleFileUpload(file);
     }
-  }, []);
+  }, [handleFileUpload]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -91,12 +85,7 @@ export default function UploadPage() {
     setTitle(fileName);
   };
 
-  const handleCoverArtUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      uploadActions.setCoverArtFile(file);
-    }
-  };
+
 
   const handleCoverArtSelect = (file: File) => {
     uploadActions.setCoverArtFile(file);
@@ -499,7 +488,7 @@ export default function UploadPage() {
                   name="privacy"
                   value="public"
                   checked={privacy === 'public'}
-                  onChange={(e) => setPrivacy(e.target.value as any)}
+                  onChange={(e) => setPrivacy(e.target.value as 'public' | 'followers' | 'private')}
                 />
                 <Globe size={16} />
                 <span>Public - Anyone can view</span>
@@ -510,7 +499,7 @@ export default function UploadPage() {
                   name="privacy"
                   value="followers"
                   checked={privacy === 'followers'}
-                  onChange={(e) => setPrivacy(e.target.value as any)}
+                  onChange={(e) => setPrivacy(e.target.value as 'public' | 'followers' | 'private')}
                 />
                 <Users size={16} />
                 <span>Followers Only</span>
@@ -521,7 +510,7 @@ export default function UploadPage() {
                   name="privacy"
                   value="private"
                   checked={privacy === 'private'}
-                  onChange={(e) => setPrivacy(e.target.value as any)}
+                  onChange={(e) => setPrivacy(e.target.value as 'public' | 'followers' | 'private')}
                 />
                 <Lock size={16} />
                 <span>Private - Only you can view</span>
@@ -542,7 +531,7 @@ export default function UploadPage() {
                   name="publish"
                   value="now"
                   checked={publishOption === 'now'}
-                  onChange={(e) => setPublishOption(e.target.value as any)}
+                  onChange={(e) => setPublishOption(e.target.value as 'now' | 'schedule' | 'draft')}
                 />
                 <span>Publish Now</span>
               </label>
@@ -552,7 +541,7 @@ export default function UploadPage() {
                   name="publish"
                   value="schedule"
                   checked={publishOption === 'schedule'}
-                  onChange={(e) => setPublishOption(e.target.value as any)}
+                  onChange={(e) => setPublishOption(e.target.value as 'now' | 'schedule' | 'draft')}
                 />
                 <span>Schedule for Later</span>
               </label>
@@ -571,7 +560,7 @@ export default function UploadPage() {
                   name="publish"
                   value="draft"
                   checked={publishOption === 'draft'}
-                  onChange={(e) => setPublishOption(e.target.value as any)}
+                  onChange={(e) => setPublishOption(e.target.value as 'now' | 'schedule' | 'draft')}
                 />
                 <Save size={16} />
                 <span>Save as Draft</span>

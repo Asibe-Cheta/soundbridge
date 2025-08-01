@@ -18,7 +18,7 @@ interface StatsCardProps {
   value: number | string;
   change?: number;
   changeType?: 'increase' | 'decrease' | 'neutral';
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
   color: string;
   isLoading?: boolean;
   formatValue?: (value: number) => string;

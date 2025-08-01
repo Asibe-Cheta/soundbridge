@@ -1,39 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  Play, 
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Play,
   Pause,
-  UserPlus,
-  UserMinus,
   MoreHorizontal,
-  Clock,
   Users,
-  TrendingUp,
-  Star,
-  Music,
   Calendar,
   MapPin,
-  Eye,
-  ThumbsUp,
-  Repeat,
-  Download,
   Bookmark,
-  Filter,
-  Search,
-  Bell,
   Sparkles,
   Activity,
   Headphones,
-  Mic,
-  Guitar,
-  Drum,
-  Radio,
-  Volume2
+  Repeat
 } from 'lucide-react';
 
 interface Creator {
@@ -256,54 +239,23 @@ const mockRecentlyPlayed: Track[] = [
 
 export default function FeedPage() {
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
-  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>(mockActivityFeed);
+  const [activityFeed] = useState<ActivityItem[]>(mockActivityFeed);
   const [creators, setCreators] = useState<Creator[]>(mockCreators);
-  const [tracks, setTracks] = useState<Track[]>(mockTracks);
-  const [events, setEvents] = useState<Event[]>(mockEvents);
-  const [friendActivity, setFriendActivity] = useState<FriendActivity[]>(mockFriendActivity);
-  const [recentlyPlayed, setRecentlyPlayed] = useState<Track[]>(mockRecentlyPlayed);
+
+  const [friendActivity] = useState<FriendActivity[]>(mockFriendActivity);
+  const [recentlyPlayed] = useState<Track[]>(mockRecentlyPlayed);
   const [isPlaying, setIsPlaying] = useState<string | null>(null);
-  const [showCreatorDiscovery, setShowCreatorDiscovery] = useState(false);
+
 
   const toggleFollow = (creatorId: string) => {
-    setCreators(prev => prev.map(creator => 
-      creator.id === creatorId 
+    setCreators(prev => prev.map(creator =>
+      creator.id === creatorId
         ? { ...creator, isFollowing: !creator.isFollowing }
         : creator
     ));
   };
 
-  const toggleLike = (trackId: string) => {
-    setTracks(prev => prev.map(track => 
-      track.id === trackId 
-        ? { ...track, isLiked: !track.isLiked, likes: track.isLiked ? track.likes - 1 : track.likes + 1 }
-        : track
-    ));
-  };
 
-  const toggleRepost = (trackId: string) => {
-    setTracks(prev => prev.map(track => 
-      track.id === trackId 
-        ? { ...track, isReposted: !track.isReposted, shares: track.isReposted ? track.shares - 1 : track.shares + 1 }
-        : track
-    ));
-  };
-
-  const toggleBookmark = (trackId: string) => {
-    setTracks(prev => prev.map(track => 
-      track.id === trackId 
-        ? { ...track, isBookmarked: !track.isBookmarked }
-        : track
-    ));
-  };
-
-  const toggleEventInterest = (eventId: string) => {
-    setEvents(prev => prev.map(event => 
-      event.id === eventId 
-        ? { ...event, isInterested: !event.isInterested }
-        : event
-    ));
-  };
 
   const togglePlay = (trackId: string) => {
     setIsPlaying(isPlaying === trackId ? null : trackId);
@@ -318,8 +270,8 @@ export default function FeedPage() {
       marginBottom: '1rem',
       transition: 'all 0.3s ease'
     }}
-    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
     >
       {/* Creator Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
@@ -349,8 +301,8 @@ export default function FeedPage() {
           onClick={() => toggleFollow(track.artist.id)}
           style={{
             padding: '0.5rem 1rem',
-            background: track.artist.isFollowing 
-              ? 'rgba(255, 255, 255, 0.1)' 
+            background: track.artist.isFollowing
+              ? 'rgba(255, 255, 255, 0.1)'
               : 'linear-gradient(45deg, #DC2626, #EC4899)',
             border: 'none',
             borderRadius: '20px',
@@ -379,9 +331,9 @@ export default function FeedPage() {
           cursor: 'pointer',
           transition: 'all 0.3s ease'
         }}
-        onClick={() => togglePlay(track.id)}
-        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onClick={() => togglePlay(track.id)}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           {isPlaying === track.id ? <Pause size={32} /> : <Play size={32} />}
         </div>
@@ -511,8 +463,8 @@ export default function FeedPage() {
       marginBottom: '1rem',
       transition: 'all 0.3s ease'
     }}
-    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
     >
       {/* Creator Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
@@ -542,8 +494,8 @@ export default function FeedPage() {
           onClick={() => toggleFollow(event.creator.id)}
           style={{
             padding: '0.5rem 1rem',
-            background: event.creator.isFollowing 
-              ? 'rgba(255, 255, 255, 0.1)' 
+            background: event.creator.isFollowing
+              ? 'rgba(255, 255, 255, 0.1)'
               : 'linear-gradient(45deg, #DC2626, #EC4899)',
             border: 'none',
             borderRadius: '20px',
@@ -587,8 +539,8 @@ export default function FeedPage() {
               alignItems: 'center',
               gap: '0.5rem',
               padding: '0.5rem 1rem',
-              background: event.isInterested 
-                ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+              background: event.isInterested
+                ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                 : 'rgba(255, 255, 255, 0.1)',
               border: 'none',
               borderRadius: '20px',
@@ -702,8 +654,8 @@ export default function FeedPage() {
             borderRadius: '10px',
             transition: 'all 0.3s ease'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
           >
             <div style={{
               width: '40px',
@@ -772,9 +724,9 @@ export default function FeedPage() {
             cursor: 'pointer',
             transition: 'all 0.3s ease'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
-          onClick={() => togglePlay(track.id)}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
+            onClick={() => togglePlay(track.id)}
           >
             <div style={{
               width: '40px',
@@ -902,8 +854,8 @@ export default function FeedPage() {
               onClick={() => setActiveTab('for-you')}
               style={{
                 padding: '0.75rem 1.5rem',
-                background: activeTab === 'for-you' 
-                  ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                background: activeTab === 'for-you'
+                  ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                   : 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
                 borderRadius: '25px',
@@ -921,8 +873,8 @@ export default function FeedPage() {
               onClick={() => setActiveTab('following')}
               style={{
                 padding: '0.75rem 1.5rem',
-                background: activeTab === 'following' 
-                  ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                background: activeTab === 'following'
+                  ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                   : 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
                 borderRadius: '25px',

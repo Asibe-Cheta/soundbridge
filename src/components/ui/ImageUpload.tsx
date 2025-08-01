@@ -22,7 +22,7 @@ interface UploadFile {
   status: 'pending' | 'uploading' | 'success' | 'error' | 'cancelled';
   error?: string;
   url?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface ImageUploadProps {

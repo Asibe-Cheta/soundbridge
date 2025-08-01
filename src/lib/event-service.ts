@@ -5,7 +5,7 @@ export class EventService {
   private supabase = createBrowserClient();
 
   // Get all events with optional filters
-  async getEvents(filters: EventFilters = {}): Promise<{ data: Event[]; error: any }> {
+  async getEvents(filters: EventFilters = {}): Promise<{ data: Event[]; error: unknown }> {
     try {
       let query = this.supabase
         .from('events')
@@ -98,8 +98,8 @@ export class EventService {
       const events = data?.map(event => ({
         ...event,
         attendeeCount: event.attendees?.length || 0,
-        isAttending: event.attendees?.some((a: any) => a.status === 'attending') || false,
-        isInterested: event.attendees?.some((a: any) => a.status === 'interested') || false,
+        isAttending: event.attendees?.some((a: { status: string }) => a.status === 'attending') || false,
+        isInterested: event.attendees?.some((a: { status: string }) => a.status === 'interested') || false,
         formattedDate: this.formatEventDate(event.event_date),
         formattedPrice: this.formatPrice(event.price_gbp, event.price_ngn),
         isFeatured: this.isFeaturedEvent(event),
@@ -113,7 +113,7 @@ export class EventService {
   }
 
   // Get event by ID with full details
-  async getEventById(id: string): Promise<{ data: Event | null; error: any }> {
+  async getEventById(id: string): Promise<{ data: Event | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('events')
@@ -172,7 +172,7 @@ export class EventService {
   }
 
   // Get events by creator
-  async getEventsByCreator(creatorId: string): Promise<{ data: Event[]; error: any }> {
+  async getEventsByCreator(creatorId: string): Promise<{ data: Event[]; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('events')
@@ -210,7 +210,7 @@ export class EventService {
   }
 
   // Get user's attending events
-  async getUserAttendingEvents(userId: string): Promise<{ data: Event[]; error: any }> {
+  async getUserAttendingEvents(userId: string): Promise<{ data: Event[]; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('event_attendees')
@@ -255,7 +255,7 @@ export class EventService {
   }
 
   // Create new event
-  async createEvent(eventData: EventCreateData): Promise<{ data: Event | null; error: any }> {
+  async createEvent(eventData: EventCreateData): Promise<{ data: Event | null; error: unknown }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser();
       if (!user) {
@@ -301,7 +301,7 @@ export class EventService {
   }
 
   // Update event
-  async updateEvent(eventId: string, eventData: Partial<EventCreateData>): Promise<{ data: Event | null; error: any }> {
+  async updateEvent(eventId: string, eventData: Partial<EventCreateData>): Promise<{ data: Event | null; error: unknown }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser();
       if (!user) {
@@ -355,7 +355,7 @@ export class EventService {
   }
 
   // Delete event
-  async deleteEvent(eventId: string): Promise<{ success: boolean; error: any }> {
+  async deleteEvent(eventId: string): Promise<{ success: boolean; error: unknown }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser();
       if (!user) {
@@ -385,7 +385,7 @@ export class EventService {
   }
 
   // RSVP to event
-  async rsvpToEvent(eventId: string, status: 'attending' | 'interested' | 'not_going'): Promise<{ success: boolean; error: any }> {
+  async rsvpToEvent(eventId: string, status: 'attending' | 'interested' | 'not_going'): Promise<{ success: boolean; error: unknown }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser();
       if (!user) {
@@ -408,7 +408,7 @@ export class EventService {
   }
 
   // Get nearby events (location-based)
-  async getNearbyEvents(latitude: number, longitude: number, radiusKm: number = 50): Promise<{ data: Event[]; error: any }> {
+  async getNearbyEvents(latitude: number, longitude: number, radiusKm: number = 50): Promise<{ data: Event[]; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .rpc('get_nearby_events', {
@@ -437,7 +437,7 @@ export class EventService {
   }
 
   // Get trending events
-  async getTrendingEvents(limit: number = 10): Promise<{ data: Event[]; error: any }> {
+  async getTrendingEvents(limit: number = 10): Promise<{ data: Event[]; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('events')
@@ -514,13 +514,13 @@ export class EventService {
     return 'Free Entry';
   }
 
-  private isFeaturedEvent(event: any): boolean {
+  private isFeaturedEvent(event: { current_attendees?: number }): boolean {
     // Logic to determine if event is featured
     // Could be based on attendee count, creator reputation, etc.
     return (event.current_attendees || 0) > 100;
   }
 
-  private calculateEventRating(event: any): number {
+  private calculateEventRating(event: { current_attendees?: number }): number {
     // Placeholder for rating calculation
     // Could be based on attendee feedback, creator rating, etc.
     return 4.5 + Math.random() * 0.5;

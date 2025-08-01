@@ -12,7 +12,7 @@ interface CardProps {
   subtitle?: string;
   image?: string;
   type?: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export function Card({

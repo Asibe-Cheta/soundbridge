@@ -2,26 +2,16 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Bell, 
-  MapPin, 
-  Clock, 
-  Mail, 
-  Smartphone, 
-  Volume2, 
-  VolumeX,
+import {
+  Bell,
+  MapPin,
+  Clock,
+  Mail,
+  Smartphone,
   Music,
   Users,
-  Calendar,
   Heart,
-  MessageCircle,
-  Settings,
-  Globe,
-  Zap,
-  Moon,
-  Sun,
   Check,
-  X,
   ChevronRight,
   Map,
   Radio,
@@ -35,7 +25,8 @@ import {
   UserPlus,
   MessageSquare,
   Share2,
-  Star
+  Zap,
+  Moon
 } from 'lucide-react';
 
 interface NotificationSettings {
@@ -107,7 +98,7 @@ export default function NotificationPreferencesPage() {
 
   const [activeSection, setActiveSection] = useState('location');
 
-  const updateSettings = (key: keyof NotificationSettings, value: any) => {
+  const updateSettings = (key: keyof NotificationSettings, value: unknown) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -151,7 +142,7 @@ export default function NotificationPreferencesPage() {
         <p style={{ color: '#999', marginBottom: '1.5rem' }}>
           Choose how far from your location to receive event notifications
         </p>
-        
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {[1, 5, 10, 25].map((radius) => (
             <button
@@ -162,8 +153,8 @@ export default function NotificationPreferencesPage() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '1rem',
-                background: settings.locationRadius === radius 
-                  ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                background: settings.locationRadius === radius
+                  ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                   : 'rgba(255, 255, 255, 0.03)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
@@ -252,12 +243,12 @@ export default function NotificationPreferencesPage() {
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
         Select which types of events you want to be notified about
       </p>
-      
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
         {eventCategories.map((category) => {
           const Icon = category.icon;
           const isSelected = settings.eventCategories.includes(category.id);
-          
+
           return (
             <button
               key={category.id}
@@ -267,8 +258,8 @@ export default function NotificationPreferencesPage() {
                 alignItems: 'center',
                 gap: '0.75rem',
                 padding: '1rem',
-                background: isSelected 
-                  ? `linear-gradient(45deg, ${category.color}, ${category.color}dd)` 
+                background: isSelected
+                  ? `linear-gradient(45deg, ${category.color}, ${category.color}dd)`
                   : 'rgba(255, 255, 255, 0.03)',
                 border: `1px solid ${isSelected ? category.color : 'rgba(255, 255, 255, 0.1)'}`,
                 borderRadius: '10px',
@@ -305,7 +296,7 @@ export default function NotificationPreferencesPage() {
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
         Choose when you want to receive event notifications
       </p>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {timingOptions.map((option) => (
           <button
@@ -316,8 +307,8 @@ export default function NotificationPreferencesPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '1rem',
-              background: settings.notificationTiming === option.id 
-                ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+              background: settings.notificationTiming === option.id
+                ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                 : 'rgba(255, 255, 255, 0.03)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
@@ -355,12 +346,12 @@ export default function NotificationPreferencesPage() {
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
         Choose how you want to receive notifications
       </p>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {deliveryMethods.map((method) => {
           const Icon = method.icon;
           const isSelected = settings.deliveryMethods.includes(method.id);
-          
+
           return (
             <button
               key={method.id}
@@ -370,8 +361,8 @@ export default function NotificationPreferencesPage() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '1rem',
-                background: isSelected 
-                  ? 'linear-gradient(45deg, #DC2626, #EC4899)' 
+                background: isSelected
+                  ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                   : 'rgba(255, 255, 255, 0.03)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
@@ -413,7 +404,7 @@ export default function NotificationPreferencesPage() {
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
         Set times when you don&apos;t want to receive notifications
       </p>
-      
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
         <button
           onClick={() => updateSettings('quietHours', { ...settings.quietHours, enabled: !settings.quietHours.enabled })}
@@ -443,7 +434,7 @@ export default function NotificationPreferencesPage() {
           {settings.quietHours.enabled ? 'Enabled' : 'Disabled'}
         </span>
       </div>
-      
+
       {settings.quietHours.enabled && (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div>
@@ -502,7 +493,7 @@ export default function NotificationPreferencesPage() {
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
         Manage notifications for social interactions
       </p>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {[
           { key: 'follows', label: 'New Followers', icon: UserPlus, description: 'When someone follows you' },
@@ -513,7 +504,7 @@ export default function NotificationPreferencesPage() {
         ].map((item) => {
           const Icon = item.icon;
           const isEnabled = settings.socialNotifications[item.key as keyof typeof settings.socialNotifications];
-          
+
           return (
             <div key={item.key} style={{
               display: 'flex',
@@ -576,7 +567,7 @@ export default function NotificationPreferencesPage() {
       <p style={{ color: '#999', marginBottom: '1.5rem' }}>
         Get notified when creators you follow upload new content or create events
       </p>
-      
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <button
           onClick={() => updateSettings('creatorActivity', !settings.creatorActivity)}

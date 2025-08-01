@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Music, Mic, Calendar, Users, Play } from 'lucide-react';
+import { Music, Mic, Calendar, Users } from 'lucide-react';
 
 export function Sidebar() {
   const quickActions = [
@@ -20,10 +20,10 @@ export function Sidebar() {
   return (
     <aside className="fixed right-8 top-1/2 transform -translate-y-1/2 w-72 glass rounded-2xl p-6 hidden xl:block">
       <h3 className="text-xl font-bold text-accent-pink mb-6">Quick Actions</h3>
-      
+
       <div className="space-y-3 mb-8">
         {quickActions.map((action, index) => (
-          <div 
+          <div
             key={index}
             className="quick-action bg-primary-red/10 border border-primary-red/30 text-primary-red p-3 rounded-lg text-center cursor-pointer transition-all duration-300 hover:bg-primary-red/20"
           >
@@ -34,7 +34,7 @@ export function Sidebar() {
           </div>
         ))}
       </div>
-      
+
       <h3 className="text-xl font-bold text-accent-pink mb-4">Friends Activity</h3>
       <div className="space-y-3 text-sm">
         {friendsActivity.map((friend, index) => (

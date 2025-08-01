@@ -14,7 +14,7 @@ export async function GET() {
   // Test 1: Database Connection
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    const { data, error } = await supabase.from('profiles').select('id').limit(1);
+    const { error } = await supabase.from('profiles').select('id').limit(1);
 
     if (error) {
       tests.connection = {
@@ -41,7 +41,6 @@ export async function GET() {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       tests.environment = {

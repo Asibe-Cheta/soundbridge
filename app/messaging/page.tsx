@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
-import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import { ConversationList } from '../../src/components/messaging/ConversationList';
 import { ChatInterface } from '../../src/components/messaging/ChatInterface';
 import { useMessaging } from '../../src/hooks/useMessaging';
@@ -12,12 +11,9 @@ import type { MessageType } from '../../src/lib/types/messaging';
 import {
   MessageCircle,
   Search,
-  Filter,
-  Plus,
   ArrowLeft,
   Bell,
   Settings,
-  MoreVertical,
   Loader2,
   AlertCircle,
   X
@@ -35,22 +31,14 @@ export default function MessagingPage() {
     typingUsers,
     unreadCount,
     hasMoreMessages,
-    searchQuery,
-    searchResults,
-    loadConversations,
     sendMessage,
-    sendCollaborationRequest,
     handleTyping,
-    searchMessages,
     loadMoreMessages,
     selectConversation,
-    deleteMessage,
-    setSearchQuery,
     setError
   } = useMessaging();
 
   const [showSearch, setShowSearch] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
 
   // Handle mobile responsiveness
@@ -71,7 +59,7 @@ export default function MessagingPage() {
     }
   }, [isMobileView, conversations, selectedConversationId, selectConversation]);
 
-  const handleSendMessage = async (content: string, type: MessageType = 'text', attachment?: any) => {
+  const handleSendMessage = async (content: string, type: MessageType = 'text', attachment?: unknown) => {
     try {
       await sendMessage(content, type, attachment);
     } catch (error) {
@@ -79,32 +67,7 @@ export default function MessagingPage() {
     }
   };
 
-  const handleSendCollaboration = async (request: any) => {
-    try {
-      await sendCollaborationRequest(request);
-    } catch (error) {
-      console.error('Failed to send collaboration request:', error);
-    }
-  };
 
-  const handleSearchConversations = async (query: string) => {
-    if (query.trim()) {
-      await searchMessages(query);
-    }
-  };
-
-  const handleDeleteMessage = async (messageId: string) => {
-    try {
-      await deleteMessage(messageId);
-    } catch (error) {
-      console.error('Failed to delete message:', error);
-    }
-  };
-
-  const handleReplyToMessage = (message: any) => {
-    // Implement reply functionality
-    console.log('Reply to message:', message);
-  };
 
   if (!user) {
     return (

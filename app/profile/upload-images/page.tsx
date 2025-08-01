@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../../src/components/layout/Footer';
-import { FloatingCard } from '../../../src/components/ui/FloatingCard';
+
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';

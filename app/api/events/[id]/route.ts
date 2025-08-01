@@ -301,6 +301,6 @@ function isFeaturedEvent(event: { current_attendees?: number }): boolean {
   return (event.current_attendees || 0) > 100;
 }
 
-function calculateEventRating(_event: { current_attendees?: number }): number {
+function calculateEventRating(): number {
   return 4.5 + Math.random() * 0.5;
 } 

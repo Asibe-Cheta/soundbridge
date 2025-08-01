@@ -1,19 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Calendar,
-  Mic,
-  MapPin,
-  DollarSign,
-  ImageIcon,
   AlertCircle,
-  X
+  ArrowLeft,
+  CheckCircle,
+  Upload,
+  Loader2,
+  Globe,
+  Lock,
+  Users,
+  Send,
+  Clock,
+  Save,
+  Music
 } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { createEvent } from '../../../src/lib/event-service';
 import type { EventCreateData } from '../../../src/lib/types/event';
+import { useImageUpload } from '../../../src/hooks/useImageUpload';
+import ImageUpload from '../../../src/components/ui/ImageUpload';
+import Footer from '../../../src/components/layout/Footer';
+import FloatingCard from '../../../src/components/ui/FloatingCard';
 
 export default function CreateEventPage() {
   const { user } = useAuth();

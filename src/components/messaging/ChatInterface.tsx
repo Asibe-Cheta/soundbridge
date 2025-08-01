@@ -102,7 +102,7 @@ export function ChatInterface({
     setShowFileUpload(false);
   };
 
-  const handleCollaborationSubmit = async (request: any) => {
+  const handleCollaborationSubmit = async (request: unknown) => {
     try {
       setIsSending(true);
       await onSendMessage(JSON.stringify(request), 'collaboration');
@@ -123,7 +123,7 @@ export function ChatInterface({
     });
   };
 
-  const getParticipantName = (message: any) => {
+  const getParticipantName = (message: unknown) => {
     return message.sender?.display_name || 'Unknown User';
   };
 
