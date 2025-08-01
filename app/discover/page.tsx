@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
@@ -130,7 +131,40 @@ export default function DiscoverPage() {
           return;
         }
 
-        setCreators(creatorsData || []);
+        // Transform the data to match the expected interface
+        const transformedCreators = (creatorsData || []).map(creator => ({
+          profile: {
+            id: creator.profile.id,
+            username: creator.profile.username || '',
+            display_name: creator.profile.display_name || creator.profile.full_name || 'Unknown Creator',
+            bio: creator.profile.bio || null,
+            avatar_url: creator.profile.avatar_url || null,
+            banner_url: (creator.profile as any).banner_url || null,
+            role: (creator.profile.role === 'organizer' ? 'creator' : creator.profile.role) as 'creator' | 'listener',
+            location: creator.profile.location || null,
+            country: creator.profile.country as 'UK' | 'Nigeria' | null,
+            social_links: (creator.profile as any).social_links || {},
+            created_at: creator.profile.created_at,
+            updated_at: creator.profile.updated_at,
+            followers_count: creator.stats.followers_count,
+            following_count: (creator.stats as any).following_count || 0,
+            tracks_count: creator.stats.tracks_count,
+            events_count: creator.stats.events_count,
+            is_following: false // Default value, would need separate API call to determine
+          },
+          stats: {
+            followers_count: creator.stats.followers_count,
+            following_count: (creator.stats as any).following_count || 0,
+            tracks_count: creator.stats.tracks_count,
+            events_count: creator.stats.events_count,
+            total_plays: (creator.stats as any).total_plays || 0,
+            total_likes: (creator.stats as any).total_likes || 0
+          },
+          recent_tracks: (creator as any).recent_tracks || [],
+          upcoming_events: (creator as any).upcoming_events || []
+        }));
+
+        setCreators(transformedCreators);
       } catch (err) {
         console.error('Error loading creators:', err);
         setError('Failed to load creators');
@@ -395,7 +429,15 @@ export default function DiscoverPage() {
     <>
       {/* Header */}
       <header className="header">
-        <div className="logo">🌉 SoundBridge</div>
+        <div className="logo">
+          <Image
+            src="/images/logos/logo-trans-lockup.png"
+            alt="SoundBridge"
+            width={150}
+            height={40}
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
           <a href="#" style={{ color: '#EC4899' }}>Discover</a>
@@ -515,4 +557,4 @@ export default function DiscoverPage() {
       </FloatingCard>
     </>
   );
-} 
+}
