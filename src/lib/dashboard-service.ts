@@ -22,7 +22,7 @@ export interface ActivityItem {
   title: string;
   description: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UserTrack {
@@ -66,7 +66,7 @@ export interface UserProfile {
   role: string;
   location?: string;
   country?: string;
-  social_links?: any;
+  social_links?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -115,7 +115,7 @@ export class DashboardService {
   /**
    * Get comprehensive dashboard stats for a user
    */
-  async getDashboardStats(userId: string): Promise<{ data: DashboardStats | null; error: any }> {
+  async getDashboardStats(userId: string): Promise<{ data: DashboardStats | null; error: unknown }> {
     try {
       // Get user profile
       const { data: profile, error: profileError } = await this.supabase
@@ -210,7 +210,7 @@ export class DashboardService {
   /**
    * Get user's tracks with management options
    */
-  async getUserTracks(userId: string): Promise<{ data: UserTrack[] | null; error: any }> {
+  async getUserTracks(userId: string): Promise<{ data: UserTrack[] | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('audio_tracks')
@@ -233,7 +233,7 @@ export class DashboardService {
   /**
    * Get user's events with management options
    */
-  async getUserEvents(userId: string): Promise<{ data: UserEvent[] | null; error: any }> {
+  async getUserEvents(userId: string): Promise<{ data: UserEvent[] | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('events')
@@ -256,7 +256,7 @@ export class DashboardService {
   /**
    * Get user profile data
    */
-  async getUserProfile(userId: string): Promise<{ data: UserProfile | null; error: any }> {
+  async getUserProfile(userId: string): Promise<{ data: UserProfile | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('profiles')
@@ -279,7 +279,7 @@ export class DashboardService {
   /**
    * Update user profile
    */
-  async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<{ data: UserProfile | null; error: any }> {
+  async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<{ data: UserProfile | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('profiles')
@@ -303,7 +303,7 @@ export class DashboardService {
   /**
    * Get user preferences
    */
-  async getUserPreferences(userId: string): Promise<{ data: UserPreferences | null; error: any }> {
+  async getUserPreferences(userId: string): Promise<{ data: UserPreferences | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('user_preferences')
@@ -326,7 +326,7 @@ export class DashboardService {
   /**
    * Update user preferences
    */
-  async updateUserPreferences(userId: string, updates: Partial<UserPreferences>): Promise<{ data: UserPreferences | null; error: any }> {
+  async updateUserPreferences(userId: string, updates: Partial<UserPreferences>): Promise<{ data: UserPreferences | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('user_preferences')
@@ -350,7 +350,7 @@ export class DashboardService {
   /**
    * Get user's followers
    */
-  async getUserFollowers(userId: string): Promise<{ data: FollowerData[] | null; error: any }> {
+  async getUserFollowers(userId: string): Promise<{ data: FollowerData[] | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('follows')
@@ -374,13 +374,13 @@ export class DashboardService {
       }
 
       const followers = data?.map(item => ({
-        id: (item.follower as any).id,
-        username: (item.follower as any).username,
-        display_name: (item.follower as any).display_name,
-        avatar_url: (item.follower as any).avatar_url,
-        bio: (item.follower as any).bio,
-        role: (item.follower as any).role,
-        created_at: (item.follower as any).created_at,
+        id: (item.follower as Record<string, unknown>).id as string,
+        username: (item.follower as Record<string, unknown>).username as string,
+        display_name: (item.follower as Record<string, unknown>).display_name as string,
+        avatar_url: (item.follower as Record<string, unknown>).avatar_url as string | undefined,
+        bio: (item.follower as Record<string, unknown>).bio as string | undefined,
+        role: (item.follower as Record<string, unknown>).role as string,
+        created_at: (item.follower as Record<string, unknown>).created_at as string,
       })) || [];
 
       return { data: followers, error: null };
@@ -393,7 +393,7 @@ export class DashboardService {
   /**
    * Get user's following
    */
-  async getUserFollowing(userId: string): Promise<{ data: FollowerData[] | null; error: any }> {
+  async getUserFollowing(userId: string): Promise<{ data: FollowerData[] | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('follows')
@@ -417,13 +417,13 @@ export class DashboardService {
       }
 
       const following = data?.map(item => ({
-        id: (item.following as any).id,
-        username: (item.following as any).username,
-        display_name: (item.following as any).display_name,
-        avatar_url: (item.following as any).avatar_url,
-        bio: (item.following as any).bio,
-        role: (item.following as any).role,
-        created_at: (item.following as any).created_at,
+        id: (item.following as Record<string, unknown>).id as string,
+        username: (item.following as Record<string, unknown>).username as string,
+        display_name: (item.following as Record<string, unknown>).display_name as string,
+        avatar_url: (item.following as Record<string, unknown>).avatar_url as string | undefined,
+        bio: (item.following as Record<string, unknown>).bio as string | undefined,
+        role: (item.following as Record<string, unknown>).role as string,
+        created_at: (item.following as Record<string, unknown>).created_at as string,
       })) || [];
 
       return { data: following, error: null };
@@ -436,7 +436,7 @@ export class DashboardService {
   /**
    * Delete a track
    */
-  async deleteTrack(trackId: string, userId: string): Promise<{ error: any }> {
+  async deleteTrack(trackId: string, userId: string): Promise<{ error: unknown }> {
     try {
       // Verify user owns the track
       const { data: track, error: fetchError } = await this.supabase
@@ -473,7 +473,7 @@ export class DashboardService {
   /**
    * Delete an event
    */
-  async deleteEvent(eventId: string, userId: string): Promise<{ error: any }> {
+  async deleteEvent(eventId: string, userId: string): Promise<{ error: unknown }> {
     try {
       // Verify user owns the event
       const { data: event, error: fetchError } = await this.supabase
@@ -510,7 +510,7 @@ export class DashboardService {
   /**
    * Get analytics data
    */
-  async getAnalyticsData(userId: string): Promise<{ data: AnalyticsData | null; error: any }> {
+  async getAnalyticsData(userId: string): Promise<{ data: AnalyticsData | null; error: unknown }> {
     try {
       // Get user's tracks for analytics
       const { data: tracks, error: tracksError } = await this.supabase
@@ -582,7 +582,7 @@ export class DashboardService {
   /**
    * Get recent activity
    */
-  private async getRecentActivity(userId: string): Promise<{ data: ActivityItem[] | null; error: any }> {
+  private async getRecentActivity(userId: string): Promise<{ data: ActivityItem[] | null; error: unknown }> {
     try {
       // Get recent tracks
       const { data: recentTracks, error: tracksError } = await this.supabase
@@ -671,7 +671,7 @@ export class DashboardService {
   /**
    * Export user data
    */
-  async exportUserData(userId: string): Promise<{ data: any | null; error: any }> {
+  async exportUserData(userId: string): Promise<{ data: Record<string, unknown> | null; error: unknown }> {
     try {
       // Get all user data
       const [profile, tracks, events, preferences] = await Promise.all([
@@ -703,7 +703,7 @@ export class DashboardService {
   /**
    * Delete user account
    */
-  async deleteUserAccount(userId: string): Promise<{ error: any }> {
+  async deleteUserAccount(userId: string): Promise<{ error: unknown }> {
     try {
       // This would typically be handled by Supabase Auth
       // For now, we'll just delete the profile

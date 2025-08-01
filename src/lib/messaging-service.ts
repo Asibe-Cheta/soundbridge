@@ -12,13 +12,13 @@ import type {
 
 export class MessagingService {
   private supabase = createBrowserClient();
-  private subscriptions: Map<string, any> = new Map();
+  private subscriptions: Map<string, unknown> = new Map();
   private typingTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   /**
    * Get all conversations for a user
    */
-  async getConversations(userId: string): Promise<{ data: Conversation[] | null; error: any }> {
+  async getConversations(userId: string): Promise<{ data: Conversation[] | null; error: unknown }> {
     try {
       // Get conversations where user is sender or recipient
       const { data: messages, error } = await this.supabase
@@ -61,7 +61,7 @@ export class MessagingService {
   /**
    * Get messages for a specific conversation
    */
-  async getMessages(conversationId: string, userId: string, limit = 50): Promise<{ data: Message[] | null; error: any }> {
+  async getMessages(conversationId: string, userId: string, limit = 50): Promise<{ data: Message[] | null; error: unknown }> {
     try {
       // Parse conversation ID to get participant IDs
       const [user1Id, user2Id] = conversationId.split('_');
@@ -113,9 +113,9 @@ export class MessagingService {
     content: string,
     messageType: MessageType = 'text',
     attachment?: MessageAttachment
-  ): Promise<{ data: Message | null; error: any }> {
+  ): Promise<{ data: Message | null; error: unknown }> {
     try {
-      const messageData: any = {
+      const messageData: Record<string, unknown> = {
         sender_id: senderId,
         recipient_id: recipientId,
         content,
@@ -170,7 +170,7 @@ export class MessagingService {
     senderId: string,
     recipientId: string,
     request: CollaborationRequest
-  ): Promise<{ data: Message | null; error: any }> {
+  ): Promise<{ data: Message | null; error: unknown }> {
     try {
       const content = JSON.stringify({
         type: 'collaboration_request',
@@ -192,7 +192,7 @@ export class MessagingService {
   /**
    * Mark messages as read
    */
-  async markMessagesAsRead(conversationId: string, userId: string): Promise<{ error: any }> {
+  async markMessagesAsRead(conversationId: string, userId: string): Promise<{ error: unknown }> {
     try {
       const [user1Id, user2Id] = conversationId.split('_');
 
@@ -303,7 +303,7 @@ export class MessagingService {
           const { data: conversations } = await this.getConversations(userId);
           if (conversations) {
             const updatedConversation = conversations.find(c =>
-              c.id === this.getConversationId((payload.new as any).sender_id, (payload.new as any).recipient_id)
+              c.id === this.getConversationId((payload.new as Record<string, unknown>).sender_id as string, (payload.new as Record<string, unknown>).recipient_id as string)
             );
             if (updatedConversation) {
               onConversationUpdate(updatedConversation);
@@ -368,7 +368,7 @@ export class MessagingService {
   /**
    * Search messages
    */
-  async searchMessages(userId: string, query: string): Promise<{ data: Message[] | null; error: any }> {
+  async searchMessages(userId: string, query: string): Promise<{ data: Message[] | null; error: unknown }> {
     try {
       const { data, error } = await this.supabase
         .from('messages')
@@ -409,7 +409,7 @@ export class MessagingService {
   /**
    * Get unread message count
    */
-  async getUnreadCount(userId: string): Promise<{ data: number; error: any }> {
+  async getUnreadCount(userId: string): Promise<{ data: number; error: unknown }> {
     try {
       const { count, error } = await this.supabase
         .from('messages')
@@ -432,7 +432,7 @@ export class MessagingService {
   /**
    * Delete a message
    */
-  async deleteMessage(messageId: string, userId: string): Promise<{ error: any }> {
+  async deleteMessage(messageId: string, userId: string): Promise<{ error: unknown }> {
     try {
       // Verify user owns the message
       const { data: message, error: fetchError } = await this.supabase
@@ -469,7 +469,7 @@ export class MessagingService {
   /**
    * Get conversation participants
    */
-  async getConversationParticipants(conversationId: string): Promise<{ data: ConversationParticipant[] | null; error: any }> {
+  async getConversationParticipants(conversationId: string): Promise<{ data: ConversationParticipant[] | null; error: unknown }> {
     try {
       const [user1Id, user2Id] = conversationId.split('_');
 
@@ -491,22 +491,22 @@ export class MessagingService {
   }
 
   // Utility methods
-  private groupMessagesIntoConversations(messages: any[], userId: string): Conversation[] {
+  private groupMessagesIntoConversations(messages: Record<string, unknown>[], userId: string): Conversation[] {
     const conversationMap = new Map<string, Conversation>();
 
     messages.forEach(message => {
       const otherUserId = message.sender_id === userId ? message.recipient_id : message.sender_id;
-      const conversationId = this.getConversationId(userId, otherUserId);
+      const conversationId = this.getConversationId(userId, otherUserId as string);
 
       if (!conversationMap.has(conversationId)) {
         const otherUser = message.sender_id === userId ? message.recipient : message.sender;
 
         conversationMap.set(conversationId, {
           id: conversationId,
-          participants: [message.sender, message.recipient],
-          lastMessage: message,
+          participants: [message.sender, message.recipient] as ConversationParticipant[],
+          lastMessage: message as Message,
           unreadCount: 0,
-          updatedAt: message.created_at
+          updatedAt: message.created_at as string
         });
       }
 
@@ -518,9 +518,9 @@ export class MessagingService {
       }
 
       // Update last message if this is more recent
-      if (new Date(message.created_at) > new Date(conversation.lastMessage.created_at)) {
-        conversation.lastMessage = message;
-        conversation.updatedAt = message.created_at;
+      if (new Date(message.created_at as string).getTime() > new Date(conversation.lastMessage.created_at).getTime()) {
+        conversation.lastMessage = message as Message;
+        conversation.updatedAt = message.created_at as string;
       }
     });
 
@@ -538,11 +538,11 @@ export class MessagingService {
    */
   cleanup(): void {
     this.subscriptions.forEach(subscription => {
-      if (subscription.messages) {
-        subscription.messages.unsubscribe();
-        subscription.typing.unsubscribe();
+      if ((subscription as Record<string, unknown>).messages) {
+        (subscription as Record<string, unknown>).messages.unsubscribe();
+        (subscription as Record<string, unknown>).typing.unsubscribe();
       } else {
-        subscription.unsubscribe();
+        (subscription as { unsubscribe: () => void }).unsubscribe();
       }
     });
     this.subscriptions.clear();

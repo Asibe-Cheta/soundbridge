@@ -10,8 +10,14 @@ const getEnvVar = (key: string, required = true): string => {
   if (!value) {
     // Try loading from Next.js runtime
     try {
-      if (typeof global !== 'undefined' && (global as any).__NEXT_DATA__?.env?.[key]) {
-        value = (global as any).__NEXT_DATA__.env[key];
+      if (typeof global !== 'undefined' && (global as Record<string, unknown>).__NEXT_DATA__ &&
+        (global as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown> &&
+        ((global as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown>).env) {
+        const nextData = (global as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown>;
+        const env = nextData.env as Record<string, unknown>;
+        if (env[key]) {
+          value = env[key] as string;
+        }
       }
     } catch (e) {
       console.log(`Could not access global.__NEXT_DATA__.env for ${key}`);
@@ -33,7 +39,7 @@ const getEnvVar = (key: string, required = true): string => {
 };
 
 // Debug all environment variables
-const debugEnvironment = () => {
+const debugEnvironment = (): void => {
   console.log('\n🔧 === ENVIRONMENT DEBUG ===');
   console.log('NODE_ENV:', process.env.NODE_ENV);
   console.log('Server context:', typeof window === 'undefined' ? '✅ Yes' : '❌ No');
@@ -84,8 +90,8 @@ export async function GET(request: NextRequest) {
       timestamp: string;
       status: string;
       tests: {
-        connection: { passed: boolean; message: string; error: any };
-        environment: { passed: boolean; message: string; error: any };
+        connection: { passed: boolean; message: string; error: unknown };
+        environment: { passed: boolean; message: string; error: unknown };
       };
       summary: {
         totalTests: number;

@@ -6,7 +6,7 @@ import type { SearchFilters } from '../../../src/lib/types/search';
 export async function GET(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
@@ -17,9 +17,9 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || undefined;
     const location = searchParams.get('location') || undefined;
     const country = searchParams.get('country') as 'UK' | 'Nigeria' || undefined;
-    const dateRange = searchParams.get('date_range') || undefined;
-    const priceRange = searchParams.get('price_range') || undefined;
-    const sortBy = searchParams.get('sort_by') || 'relevance';
+    const dateRange = searchParams.get('date_range') as 'all' | 'today' | 'week' | 'month' | 'next-month' || undefined;
+    const priceRange = searchParams.get('price_range') as 'all' | 'free' | 'low' | 'medium' | 'high' || undefined;
+    const sortBy = searchParams.get('sort_by') as 'relevance' | 'trending' | 'latest' | 'popular' | 'nearest' || 'relevance';
     const radiusKm = parseInt(searchParams.get('radius_km') || '50');
     const latitude = parseFloat(searchParams.get('latitude') || '0');
     const longitude = parseFloat(searchParams.get('longitude') || '0');
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
       category,
       location,
       country,
-      date_range: dateRange as any,
-      price_range: priceRange as any,
-      sort_by: sortBy as any,
+      date_range: dateRange,
+      price_range: priceRange,
+      sort_by: sortBy,
       radius_km: radiusKm,
       latitude: latitude || undefined,
       longitude: longitude || undefined
@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
 
     // Perform search based on content types
     const results: {
-      music: any[];
-      creators: any[];
-      events: any[];
-      podcasts: any[];
+      music: unknown[];
+      creators: unknown[];
+      events: unknown[];
+      podcasts: unknown[];
       total_results: number;
       has_more: boolean;
     } = {
@@ -318,8 +318,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate totals
-    results.total_results = results.music.length + results.creators.length + 
-                          results.events.length + results.podcasts.length;
+    results.total_results = results.music.length + results.creators.length +
+      results.events.length + results.podcasts.length;
     results.has_more = results.total_results >= limit;
 
     return NextResponse.json({
@@ -345,10 +345,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
+
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     const body = await request.json();
     const { query, filters, results_count } = body;
 
@@ -418,10 +418,10 @@ function formatEventPrice(priceGbp: number | null, priceNgn: number | null, coun
   return 'Free';
 }
 
-function getDateRangeFilter(dateRange: string): { start: string; end?: string } | null {
+function getDateRangeFilter(dateRange: 'today' | 'week' | 'month' | 'next-month'): { start: string; end?: string } | null {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   switch (dateRange) {
     case 'today':
       return { start: today.toISOString() };
@@ -439,7 +439,7 @@ function getDateRangeFilter(dateRange: string): { start: string; end?: string } 
   }
 }
 
-function getPriceRangeFilter(priceRange: string): { min: number; max?: number } | null {
+function getPriceRangeFilter(priceRange: 'free' | 'low' | 'medium' | 'high'): { min: number; max?: number } | null {
   switch (priceRange) {
     case 'free':
       return { min: 0, max: 0 };

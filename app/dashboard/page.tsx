@@ -27,10 +27,7 @@ import {
   Shield,
   Download,
   Trash2,
-  Edit,
-  Eye,
   Activity,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   X,
@@ -402,7 +399,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-3">
                         <Shield size={20} className="text-gray-400" />
                         <div>
-                          <div className="text-sm font-medium text-white">Privacy & Security</div>
+                          <div className="text-sm font-medium text-white">Privacy &amp; Security</div>
                           <div className="text-xs text-gray-400">Manage your privacy settings</div>
                         </div>
                       </div>

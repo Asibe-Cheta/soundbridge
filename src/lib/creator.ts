@@ -1,127 +1,153 @@
 import { createBrowserClient } from './supabase';
-import type {
-  CreatorProfile,
-  AudioTrack,
-  Event,
-  Follow,
-  Message,
-  CreatorStats,
-  CreatorSearchFilters,
-  CreatorSearchResult
-} from './types/creator';
+import type { AudioTrack, Event, Profile, Message, Follow } from './types';
 
-export async function getCreatorByUsername(username: string, currentUserId?: string) {
+export interface CreatorSearchResult {
+  profile: Profile;
+  stats: {
+    followers_count: number;
+    tracks_count: number;
+    events_count: number;
+    total_plays: number;
+    total_likes: number;
+  };
+}
+
+export interface CreatorSearchFilters {
+  genre?: string;
+  location?: string;
+  country?: 'UK' | 'Nigeria';
+  sortBy?: 'popular' | 'recent' | 'name';
+  limit?: number;
+}
+
+export interface CreatorStats {
+  followers_count: number;
+  tracks_count: number;
+  events_count: number;
+  total_plays: number;
+  total_likes: number;
+  engagement_rate: number;
+}
+
+/**
+ * Get a creator's profile by username
+ */
+export async function getCreatorByUsername(username: string): Promise<{ data: Profile | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
-    // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('username', username)
+      .eq('role', 'creator')
       .single();
 
-    if (profileError) {
-      console.error('Error fetching creator profile:', profileError);
-      return { data: null, error: profileError };
+    if (error) {
+      console.error('Error fetching creator:', error);
+      return { data: null, error };
     }
 
-    // Get creator stats
-    const stats = await getCreatorStats(profile.id);
-
-    // Check if current user is following this creator
-    let isFollowing = false;
-    if (currentUserId) {
-      const { data: followData } = await supabase
-        .from('follows')
-        .select('*')
-        .eq('follower_id', currentUserId)
-        .eq('following_id', profile.id)
-        .single();
-
-      isFollowing = !!followData;
-    }
-
-    const creatorWithStats: CreatorProfile = {
-      ...profile,
-      ...stats,
-      is_following: isFollowing
-    };
-
-    return { data: creatorWithStats, error: null };
+    return { data, error: null };
   } catch (error) {
     console.error('Unexpected error getting creator:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 
-export async function getCreatorStats(creatorId: string): Promise<CreatorStats> {
+/**
+ * Get creator stats
+ */
+export async function getCreatorStats(creatorId: string): Promise<{ data: CreatorStats | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
     // Get followers count
-    const { count: followersCount } = await supabase
+    const { count: followersCount, error: followersError } = await supabase
       .from('follows')
       .select('*', { count: 'exact', head: true })
       .eq('following_id', creatorId);
 
-    // Get following count
-    const { count: followingCount } = await supabase
-      .from('follows')
-      .select('*', { count: 'exact', head: true })
-      .eq('follower_id', creatorId);
+    if (followersError) {
+      console.error('Error fetching followers count:', followersError);
+      return { data: null, error: followersError };
+    }
 
     // Get tracks count
-    const { count: tracksCount } = await supabase
+    const { count: tracksCount, error: tracksError } = await supabase
       .from('audio_tracks')
       .select('*', { count: 'exact', head: true })
       .eq('creator_id', creatorId)
       .eq('is_public', true);
 
+    if (tracksError) {
+      console.error('Error fetching tracks count:', tracksError);
+      return { data: null, error: tracksError };
+    }
+
     // Get events count
-    const { count: eventsCount } = await supabase
+    const { count: eventsCount, error: eventsError } = await supabase
       .from('events')
       .select('*', { count: 'exact', head: true })
       .eq('creator_id', creatorId);
 
-    // Get total plays and likes
-    const { data: tracksData } = await supabase
+    if (eventsError) {
+      console.error('Error fetching events count:', eventsError);
+      return { data: null, error: eventsError };
+    }
+
+    // Get total plays and likes from tracks
+    const { data: tracks, error: tracksDataError } = await supabase
       .from('audio_tracks')
       .select('play_count, like_count')
       .eq('creator_id', creatorId)
       .eq('is_public', true);
 
-    const totalPlays = tracksData?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 0;
-    const totalLikes = tracksData?.reduce((sum, track) => sum + (track.like_count || 0), 0) || 0;
+    if (tracksDataError) {
+      console.error('Error fetching tracks data:', tracksDataError);
+      return { data: null, error: tracksDataError };
+    }
 
-    return {
+    const totalPlays = tracks?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 0;
+    const totalLikes = tracks?.reduce((sum, track) => sum + (track.like_count || 0), 0) || 0;
+    const engagementRate = totalPlays > 0 ? (totalLikes / totalPlays) * 100 : 0;
+
+    const stats: CreatorStats = {
       followers_count: followersCount || 0,
-      following_count: followingCount || 0,
       tracks_count: tracksCount || 0,
       events_count: eventsCount || 0,
       total_plays: totalPlays,
-      total_likes: totalLikes
+      total_likes: totalLikes,
+      engagement_rate: engagementRate,
     };
+
+    return { data: stats, error: null };
   } catch (error) {
-    console.error('Error getting creator stats:', error);
-    return {
-      followers_count: 0,
-      following_count: 0,
-      tracks_count: 0,
-      events_count: 0,
-      total_plays: 0,
-      total_likes: 0
-    };
+    console.error('Unexpected error getting creator stats:', error);
+    return { data: null, error };
   }
 }
 
-export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{ data: AudioTrack[] | null; error: any }> {
+/**
+ * Get creator's tracks
+ */
+export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{ data: AudioTrack[] | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
     const { data, error } = await supabase
       .from('audio_tracks')
-      .select('*')
+      .select(`
+        *,
+        creator:profiles!audio_tracks_creator_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          location,
+          country
+        )
+      `)
       .eq('creator_id', creatorId)
       .eq('is_public', true)
       .order('created_at', { ascending: false })
@@ -132,29 +158,35 @@ export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{
       return { data: null, error };
     }
 
-    // Format tracks with computed fields
-    const formattedTracks: AudioTrack[] = data?.map(track => ({
-      ...track,
-      formatted_duration: track.duration ? formatDuration(track.duration) : null,
-      formatted_play_count: formatPlayCount(track.play_count)
-    })) || [];
-
-    return { data: formattedTracks, error: null };
+    return { data: data || [], error: null };
   } catch (error) {
     console.error('Unexpected error getting creator tracks:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 
-export async function getCreatorEvents(creatorId: string, limit = 20): Promise<{ data: Event[] | null; error: any }> {
+/**
+ * Get creator's events
+ */
+export async function getCreatorEvents(creatorId: string, limit = 20): Promise<{ data: Event[] | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
     const { data, error } = await supabase
       .from('events')
-      .select('*')
+      .select(`
+        *,
+        creator:profiles!events_creator_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          location,
+          country
+        ),
+        attendees:event_attendees!event_attendees_event_id_fkey(count)
+      `)
       .eq('creator_id', creatorId)
-      .gte('event_date', new Date().toISOString())
       .order('event_date', { ascending: true })
       .limit(limit);
 
@@ -163,29 +195,44 @@ export async function getCreatorEvents(creatorId: string, limit = 20): Promise<{
       return { data: null, error };
     }
 
-    // Format events with computed fields
-    const formattedEvents: Event[] = data?.map(event => ({
-      ...event,
-      formatted_date: formatEventDate(event.event_date),
-      formatted_price: formatEventPrice(event.price_gbp, event.price_ngn, event.country)
-    })) || [];
-
-    return { data: formattedEvents, error: null };
+    return { data: data || [], error: null };
   } catch (error) {
     console.error('Unexpected error getting creator events:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 
-export async function followCreator(followerId: string, followingId: string): Promise<{ data: Follow | null; error: any }> {
+/**
+ * Follow a creator
+ */
+export async function followCreator(followerId: string, followingId: string): Promise<{ data: Follow | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
+    // Check if already following
+    const { data: existingFollow, error: checkError } = await supabase
+      .from('follows')
+      .select('*')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing follow:', checkError);
+      return { data: null, error: checkError };
+    }
+
+    if (existingFollow) {
+      return { data: existingFollow, error: null };
+    }
+
+    // Create new follow
     const { data, error } = await supabase
       .from('follows')
       .insert({
         follower_id: followerId,
-        following_id: followingId
+        following_id: followingId,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -198,11 +245,14 @@ export async function followCreator(followerId: string, followingId: string): Pr
     return { data, error: null };
   } catch (error) {
     console.error('Unexpected error following creator:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 
-export async function unfollowCreator(followerId: string, followingId: string): Promise<{ error: any }> {
+/**
+ * Unfollow a creator
+ */
+export async function unfollowCreator(followerId: string, followingId: string): Promise<{ error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
@@ -220,11 +270,14 @@ export async function unfollowCreator(followerId: string, followingId: string): 
     return { error: null };
   } catch (error) {
     console.error('Unexpected error unfollowing creator:', error);
-    return { error: error as Error };
+    return { error };
   }
 }
 
-export async function getMessages(creatorId: string, currentUserId: string): Promise<{ data: Message[] | null; error: any }> {
+/**
+ * Get messages between current user and creator
+ */
+export async function getMessages(creatorId: string, currentUserId: string): Promise<{ data: Message[] | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
@@ -232,8 +285,20 @@ export async function getMessages(creatorId: string, currentUserId: string): Pro
       .from('messages')
       .select(`
         *,
-        sender:profiles!messages_sender_id_fkey(*),
-        recipient:profiles!messages_recipient_id_fkey(*)
+        sender:profiles!messages_sender_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          role
+        ),
+        recipient:profiles!messages_recipient_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          role
+        )
       `)
       .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${creatorId}),and(sender_id.eq.${creatorId},recipient_id.eq.${currentUserId})`)
       .order('created_at', { ascending: true });
@@ -243,20 +308,22 @@ export async function getMessages(creatorId: string, currentUserId: string): Pro
       return { data: null, error };
     }
 
-    // Format messages with computed fields
-    const formattedMessages: Message[] = data?.map(message => ({
-      ...message,
-      formatted_timestamp: formatMessageTimestamp(message.created_at)
-    })) || [];
-
-    return { data: formattedMessages, error: null };
+    return { data: data || [], error: null };
   } catch (error) {
     console.error('Unexpected error getting messages:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 
-export async function sendMessage(senderId: string, recipientId: string, content: string, messageType: 'text' | 'audio' | 'file' | 'collaboration' = 'text'): Promise<{ data: Message | null; error: any }> {
+/**
+ * Send a message to a creator
+ */
+export async function sendMessage(
+  senderId: string,
+  recipientId: string,
+  content: string,
+  messageType: 'text' | 'audio' | 'collaboration' = 'text'
+): Promise<{ data: Message | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
@@ -266,9 +333,27 @@ export async function sendMessage(senderId: string, recipientId: string, content
         sender_id: senderId,
         recipient_id: recipientId,
         content,
-        message_type: messageType
+        message_type: messageType,
+        is_read: false,
+        created_at: new Date().toISOString()
       })
-      .select()
+      .select(`
+        *,
+        sender:profiles!messages_sender_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          role
+        ),
+        recipient:profiles!messages_recipient_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          role
+        )
+      `)
       .single();
 
     if (error) {
@@ -279,58 +364,74 @@ export async function sendMessage(senderId: string, recipientId: string, content
     return { data, error: null };
   } catch (error) {
     console.error('Unexpected error sending message:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 
-export async function searchCreators(filters: CreatorSearchFilters, limit = 20): Promise<{ data: CreatorSearchResult[] | null; error: any }> {
+/**
+ * Search creators with filters
+ */
+export async function searchCreators(filters: CreatorSearchFilters, limit = 20): Promise<{ data: CreatorSearchResult[] | null; error: unknown }> {
   try {
     const supabase = createBrowserClient();
 
     let query = supabase
       .from('profiles')
-      .select('*')
+      .select(`
+        *,
+        followers:follows!follows_following_id_fkey(count),
+        tracks:audio_tracks!audio_tracks_creator_id_fkey(count),
+        events:events!events_creator_id_fkey(count)
+      `)
       .eq('role', 'creator');
 
     // Apply filters
-    if (filters.genre) {
-      query = query.eq('genre', filters.genre);
-    }
     if (filters.location) {
       query = query.ilike('location', `%${filters.location}%`);
     }
+
     if (filters.country) {
       query = query.eq('country', filters.country);
     }
 
-    const { data: profiles, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    // Apply sorting
+    switch (filters.sortBy) {
+      case 'popular':
+        query = query.order('created_at', { ascending: false });
+        break;
+      case 'recent':
+        query = query.order('created_at', { ascending: false });
+        break;
+      case 'name':
+        query = query.order('display_name', { ascending: true });
+        break;
+      default:
+        query = query.order('created_at', { ascending: false });
+    }
+
+    const { data, error } = await query.limit(limit);
 
     if (error) {
       console.error('Error searching creators:', error);
       return { data: null, error };
     }
 
-    // Get stats and recent content for each creator
-    const results: CreatorSearchResult[] = [];
-    for (const profile of profiles || []) {
-      const stats = await getCreatorStats(profile.id);
-      const { data: recentTracks } = await getCreatorTracks(profile.id, 3);
-      const { data: upcomingEvents } = await getCreatorEvents(profile.id, 3);
+    // Transform data to include stats
+    const creators = data?.map(profile => ({
+      profile,
+      stats: {
+        followers_count: profile.followers?.[0]?.count || 0,
+        tracks_count: profile.tracks?.[0]?.count || 0,
+        events_count: profile.events?.[0]?.count || 0,
+        total_plays: 0, // Would need to calculate from tracks
+        total_likes: 0, // Would need to calculate from tracks
+      }
+    })) || [];
 
-      results.push({
-        profile: { ...profile, ...stats },
-        stats,
-        recent_tracks: recentTracks || [],
-        upcoming_events: upcomingEvents || []
-      });
-    }
-
-    return { data: results, error: null };
+    return { data: creators, error: null };
   } catch (error) {
     console.error('Unexpected error searching creators:', error);
-    return { data: null, error: error as Error };
+    return { data: null, error };
   }
 }
 

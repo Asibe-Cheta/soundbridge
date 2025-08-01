@@ -13,9 +13,6 @@ import {
   Search,
   Filter,
   TrendingUp,
-  Clock,
-  Star,
-  MapPin,
   Music,
   Users,
   Calendar,
@@ -511,7 +508,7 @@ export default function DiscoverPage() {
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>John is listening to "Praise Medley"</div>
+          <div>John is listening to &quot;Praise Medley&quot;</div>
           <div>Sarah posted a new track</div>
           <div>Mike joined Gospel Night event</div>
         </div>

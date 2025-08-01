@@ -74,7 +74,7 @@ export async function GET() {
       return NextResponse.json({
         status: 'error',
         message: 'Failed to search creators',
-        error: searchError.message
+        error: searchError instanceof Error ? searchError.message : 'Unknown error'
       }, { status: 500 });
     }
 
@@ -83,12 +83,16 @@ export async function GET() {
     if (profiles && profiles.length > 0) {
       const firstProfile = profiles[0];
       try {
-        const stats = await getCreatorStats(firstProfile.id);
-        statsTest = {
-          profile_id: firstProfile.id,
-          username: firstProfile.username,
-          stats
-        };
+        const { data: stats, error: statsError } = await getCreatorStats(firstProfile.id);
+        if (statsError) {
+          statsTest = { error: 'Failed to get stats' };
+        } else {
+          statsTest = {
+            profile_id: firstProfile.id,
+            username: firstProfile.username,
+            stats
+          };
+        }
       } catch (statsError) {
         console.error('Error getting creator stats:', statsError);
         statsTest = { error: 'Failed to get stats' };
