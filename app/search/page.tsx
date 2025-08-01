@@ -136,6 +136,14 @@ function SearchContent() {
     { value: 'nearest', label: 'Nearest' }
   ];
 
+  const categories = [
+    { id: 'all', label: 'All', icon: Filter },
+    { id: 'music', label: 'Music', icon: Music },
+    { id: 'creators', label: 'Creators', icon: Users },
+    { id: 'events', label: 'Events', icon: Calendar },
+    { id: 'podcasts', label: 'Podcasts', icon: Mic }
+  ];
+
   const handleClearFilters = () => {
     setSelectedGenre('all');
     setSelectedLocation('all');
@@ -518,16 +526,19 @@ function SearchContent() {
       {/* Filters Panel */}
       {showFilters && (
         <AdvancedFilters
+          categories={categories}
           genres={genres}
           locations={locations}
           dateRanges={dateRanges}
           priceRanges={priceRanges}
           sortOptions={sortOptions}
+          selectedCategory={activeTab}
           selectedGenre={selectedGenre}
           selectedLocation={selectedLocation}
           selectedDate={selectedDate}
           selectedPrice={selectedPrice}
           sortBy={sortBy}
+          onCategoryChange={setActiveTab}
           onGenreChange={handleGenreChange}
           onLocationChange={handleLocationChange}
           onDateChange={handleDateChange}
