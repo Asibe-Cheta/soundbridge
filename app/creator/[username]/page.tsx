@@ -81,7 +81,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
           // Transform database record to CreatorProfile
           const creatorProfile: CreatorProfile = {
             id: creatorData.id,
-            username: creatorData.username,
+            username: creatorData.username || '',
             display_name: creatorData.display_name || creatorData.full_name || 'Unknown',
             bio: creatorData.bio || null,
             avatar_url: creatorData.avatar_url || null,
@@ -98,7 +98,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
             events_count: 0, // Would need to calculate this
             is_following: false // Would need to check this separately
           };
-          
+
           setCreator(creatorProfile);
           // Check if user is following this creator
           if (user?.id) {
