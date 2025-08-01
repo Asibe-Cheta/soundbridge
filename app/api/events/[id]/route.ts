@@ -64,7 +64,7 @@ export async function GET(
       formattedDate: formatEventDate(event.event_date),
       formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
       isFeatured: isFeaturedEvent(event),
-      rating: calculateEventRating(event)
+      rating: calculateEventRating()
     };
 
     return NextResponse.json({
@@ -179,7 +179,7 @@ export async function PUT(
       formattedDate: formatEventDate(event.event_date),
       formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
       isFeatured: isFeaturedEvent(event),
-      rating: calculateEventRating(event)
+      rating: calculateEventRating()
     };
 
     return NextResponse.json({

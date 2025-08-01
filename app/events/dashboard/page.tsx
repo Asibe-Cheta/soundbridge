@@ -13,8 +13,6 @@ import {
   Clock,
   Users,
   Star,
-  Heart,
-  Share2,
   Edit,
   Trash2,
   Eye,
@@ -22,10 +20,8 @@ import {
   AlertCircle,
   ArrowLeft,
   Plus,
-  Filter,
   Search,
   Loader2,
-  User,
   Music,
   DollarSign
 } from 'lucide-react';

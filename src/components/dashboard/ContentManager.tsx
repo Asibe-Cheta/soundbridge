@@ -8,10 +8,8 @@ import {
   Calendar,
   Play,
   Heart,
-  Eye,
   Edit,
   Trash2,
-  MoreVertical,
   Clock,
   MapPin,
   Users,
@@ -59,10 +57,10 @@ export function ContentManager({
   const handleDelete = async (id: string, type: 'track' | 'event') => {
     setIsDeleting(true);
     try {
-      const result = type === 'track' 
+      const result = type === 'track'
         ? await onDeleteTrack(id)
         : await onDeleteEvent(id);
-      
+
       if (result.success) {
         setShowDeleteConfirm(null);
       }
@@ -108,7 +106,7 @@ export function ContentManager({
               <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
                 <Edit size={16} />
               </button>
-              <button 
+              <button
                 className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
                 onClick={() => setShowDeleteConfirm(`track-${track.id}`)}
               >
@@ -139,11 +137,10 @@ export function ContentManager({
 
           {/* Status */}
           <div className="flex items-center gap-2 mt-2">
-            <div className={`px-2 py-1 rounded-full text-xs ${
-              track.is_public 
-                ? 'bg-green-500/20 text-green-400' 
+            <div className={`px-2 py-1 rounded-full text-xs ${track.is_public
+                ? 'bg-green-500/20 text-green-400'
                 : 'bg-yellow-500/20 text-yellow-400'
-            }`}>
+              }`}>
               {track.is_public ? 'Public' : 'Private'}
             </div>
             <span className="text-xs text-gray-500">
@@ -190,7 +187,7 @@ export function ContentManager({
               <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
                 <Edit size={16} />
               </button>
-              <button 
+              <button
                 className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
                 onClick={() => setShowDeleteConfirm(`event-${event.id}`)}
               >
@@ -269,11 +266,10 @@ export function ContentManager({
           <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('tracks')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'tracks'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'tracks'
                   ? 'bg-accent-pink text-white'
                   : 'text-gray-400 hover:text-white'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <Music size={16} />
@@ -282,11 +278,10 @@ export function ContentManager({
             </button>
             <button
               onClick={() => setActiveTab('events')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'events'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'events'
                   ? 'bg-accent-pink text-white'
                   : 'text-gray-400 hover:text-white'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <Calendar size={16} />
@@ -351,7 +346,7 @@ export function ContentManager({
               <h3 className="text-lg font-semibold text-white">Confirm Delete</h3>
             </div>
             <p className="text-gray-400 mb-6">
-              Are you sure you want to delete this {showDeleteConfirm.startsWith('track') ? 'track' : 'event'}? 
+              Are you sure you want to delete this {showDeleteConfirm.startsWith('track') ? 'track' : 'event'}?
               This action cannot be undone.
             </p>
             <div className="flex items-center gap-3">

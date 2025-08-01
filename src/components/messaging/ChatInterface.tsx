@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import type { ChatInterfaceProps, MessageType, MessageAttachment } from '../../lib/types/messaging';
+import React, { useState, useEffect, useRef } from 'react';
+import type { ChatInterfaceProps, MessageAttachment } from '../../lib/types/messaging';
 import { MessageBubble } from './MessageBubble';
 import { CollaborationForm } from './CollaborationForm';
 import { FileUpload } from './FileUpload';
@@ -112,19 +112,6 @@ export function ChatInterface({
     } finally {
       setIsSending(false);
     }
-  };
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const getParticipantName = (message: unknown) => {
-    return message.sender?.display_name || 'Unknown User';
   };
 
   return (

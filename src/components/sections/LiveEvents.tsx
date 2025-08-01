@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+
 import { Event } from '../../lib/types';
 
 interface LiveEventsProps {

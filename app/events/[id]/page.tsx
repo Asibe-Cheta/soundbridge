@@ -10,8 +10,8 @@ import type { Event } from '../../../src/lib/types/event';
 import {
   MapPin,
   Calendar,
-  Clock,
   Users,
+  Clock,
   Star,
   Heart,
   Share2,
@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   CheckCircle,
   AlertCircle,
-  Clock as ClockIcon,
   User,
   Music,
   DollarSign,

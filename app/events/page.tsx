@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
-import Footer from '../../src/components/layout/Footer';
-import FloatingCard from '../../src/components/ui/FloatingCard';
+import { Footer } from '../../src/components/layout/Footer';
+import { FloatingCard } from '../../src/components/ui/FloatingCard';
 
 export default function EventsPage() {
   const { user } = useAuth();

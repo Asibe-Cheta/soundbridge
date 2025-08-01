@@ -8,7 +8,6 @@ import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import {
-  User,
   Image as ImageIcon,
   Camera,
   Palette,
@@ -16,8 +15,7 @@ import {
   ArrowLeft,
   CheckCircle,
   AlertCircle,
-  Loader2,
-  X
+  Loader2
 } from 'lucide-react';
 
 export default function ProfileImageUploadPage() {

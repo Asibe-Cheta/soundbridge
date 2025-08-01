@@ -18,12 +18,12 @@ import {
   Music
 } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import { createEvent } from '../../../src/lib/event-service';
+import { eventService } from '../../../src/lib/event-service';
 import type { EventCreateData } from '../../../src/lib/types/event';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
-import ImageUpload from '../../../src/components/ui/ImageUpload';
-import Footer from '../../../src/components/layout/Footer';
-import FloatingCard from '../../../src/components/ui/FloatingCard';
+import { ImageUpload } from '../../../src/components/ui/ImageUpload';
+import { Footer } from '../../../src/components/layout/Footer';
+import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
@@ -139,7 +139,7 @@ export default function CreateEventPage() {
         image_url: imageState.uploadedUrl || undefined
       };
 
-      const result = await createEvent(eventData);
+      const result = await eventService.createEvent(eventData);
 
       if (result.error) {
         setError(result.error);
