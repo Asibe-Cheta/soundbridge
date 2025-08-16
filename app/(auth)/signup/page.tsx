@@ -83,9 +83,13 @@ export default function SignupPage() {
 
         // Redirect to dashboard or email confirmation page
         if (data.session) {
+          // User is automatically signed in, redirect to dashboard
           router.push('/dashboard');
         } else {
-          // Email confirmation required
+          // Email confirmation required - store email and redirect to verification page
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('signup_email', formData.email);
+          }
           router.push('/verify-email');
         }
       }
@@ -474,14 +478,14 @@ export default function SignupPage() {
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
                 onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
               >
-                <option value="">Select your location</option>
-                <option value="london">London, UK</option>
-                <option value="manchester">Manchester, UK</option>
-                <option value="birmingham">Birmingham, UK</option>
-                <option value="lagos">Lagos, Nigeria</option>
-                <option value="abuja">Abuja, Nigeria</option>
-                <option value="other-uk">Other UK</option>
-                <option value="other-nigeria">Other Nigeria</option>
+                <option value="" style={{ background: '#1a1a1a', color: 'white' }}>Select your location</option>
+                <option value="london" style={{ background: '#1a1a1a', color: 'white' }}>London, UK</option>
+                <option value="manchester" style={{ background: '#1a1a1a', color: 'white' }}>Manchester, UK</option>
+                <option value="birmingham" style={{ background: '#1a1a1a', color: 'white' }}>Birmingham, UK</option>
+                <option value="lagos" style={{ background: '#1a1a1a', color: 'white' }}>Lagos, Nigeria</option>
+                <option value="abuja" style={{ background: '#1a1a1a', color: 'white' }}>Abuja, Nigeria</option>
+                <option value="other-uk" style={{ background: '#1a1a1a', color: 'white' }}>Other UK</option>
+                <option value="other-nigeria" style={{ background: '#1a1a1a', color: 'white' }}>Other Nigeria</option>
               </select>
             </div>
 
@@ -656,6 +660,26 @@ export default function SignupPage() {
           .form-row {
             grid-template-columns: 1fr;
           }
+        }
+
+        /* Dropdown styling for dark theme */
+        select option {
+          background-color: #1a1a1a !important;
+          color: white !important;
+          padding: 0.5rem;
+        }
+
+        select option:hover {
+          background-color: #2d1b3d !important;
+        }
+
+        select option:checked {
+          background-color: #DC2626 !important;
+        }
+
+        /* Ensure dropdown is visible */
+        select:focus option:checked {
+          background-color: #DC2626 !important;
         }
       `}</style>
     </div>

@@ -10,11 +10,12 @@ import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users } from 'lucide-react';
 
 export default function HomePage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading, error: authError } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
     try {
       await signOut();
     } catch (error) {
@@ -24,6 +25,7 @@ export default function HomePage() {
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
+      e.preventDefault();
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -31,10 +33,14 @@ export default function HomePage() {
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const menu = document.getElementById('user-menu');
-      const menuButton = document.getElementById('user-menu-button');
-      if (menu && menuButton && !menu.contains(event.target as Node) && !menuButton.contains(event.target as Node)) {
-        menu.style.display = 'none';
+      try {
+        const menu = document.getElementById('user-menu');
+        const menuButton = document.getElementById('user-menu-button');
+        if (menu && menuButton && !menu.contains(event.target as Node) && !menuButton.contains(event.target as Node)) {
+          menu.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error in click outside handler:', error);
       }
     };
 
@@ -44,10 +50,72 @@ export default function HomePage() {
     };
   }, []);
 
-  return (
-    <>
-      {/* Header */}
-      <header className="header">
+  // Show loading state while auth is initializing (with timeout fallback)
+  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      console.warn('Auth loading timeout - proceeding without auth');
+      setLoadingTimeout(true);
+    }, 3000); // 3 second timeout
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show error state if auth failed
+  if (authError) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        color: 'white',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <div>
+          <h1 style={{ marginBottom: '1rem' }}>Authentication Error</h1>
+          <p style={{ marginBottom: '1rem' }}>{authError}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !loadingTimeout) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        color: 'white'
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
+  try {
+    return (
+      <>
+        {/* Header */}
+        <header className="header">
         {/* LEFT SIDE */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <div className="logo">
@@ -86,7 +154,7 @@ export default function HomePage() {
               placeholder="Search creators, events, podcasts..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleSearch}
+              onKeyDown={handleSearch}
               style={{ width: '100%', paddingLeft: '40px' }} 
             />
           </div>
@@ -102,7 +170,7 @@ export default function HomePage() {
                 color: 'white',
                 border: 'none',
                 padding: '0.75rem 1.5rem',
-                borderRadius: '25px',
+                borderRadius: '12px',
                 cursor: 'pointer',
                 fontWeight: '600',
                 fontSize: '0.9rem',
@@ -131,10 +199,15 @@ export default function HomePage() {
             <div style={{ position: 'relative' }}>
               <button
                 id="user-menu-button"
-                onClick={() => {
-                  const menu = document.getElementById('user-menu');
-                  if (menu) {
-                    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                onClick={(e) => {
+                  e.preventDefault();
+                  try {
+                    const menu = document.getElementById('user-menu');
+                    if (menu) {
+                      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                    }
+                  } catch (error) {
+                    console.error('Error toggling user menu:', error);
                   }
                 }}
                 style={{
@@ -275,7 +348,7 @@ export default function HomePage() {
                     color: 'white',
                     border: '1px solid rgba(255, 255, 255, 0.3)',
                     padding: '0.75rem 1.5rem',
-                    borderRadius: '25px',
+                    borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
                     fontSize: '0.9rem',
@@ -294,7 +367,7 @@ export default function HomePage() {
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem 1.5rem',
-                    borderRadius: '25px',
+                    borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
                     fontSize: '0.9rem',
@@ -745,4 +818,38 @@ export default function HomePage() {
       </FloatingCard>
     </>
   );
+  } catch (error) {
+    console.error('Error in HomePage component:', error);
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        color: 'white',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <div>
+          <h1 style={{ marginBottom: '1rem' }}>Something went wrong</h1>
+          <p>Please refresh the page or try again later.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              marginTop: '1rem'
+            }}
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }

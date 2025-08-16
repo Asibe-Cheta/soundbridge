@@ -13,7 +13,7 @@ import {
   LogOut, 
   Bell,
   ChevronDown,
-  Dashboard
+  LayoutDashboard
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { 
@@ -132,7 +132,7 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="flex items-center space-x-2 cursor-pointer">
-                      <Dashboard className="h-4 w-4" />
+                      <LayoutDashboard className="h-4 w-4" />
                       <span>Dashboard</span>
                     </Link>
                   </DropdownMenuItem>

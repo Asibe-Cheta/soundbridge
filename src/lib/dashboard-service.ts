@@ -112,16 +112,36 @@ export class DashboardService {
   private supabase = createBrowserClient();
 
   /**
-   * Get comprehensive dashboard stats for a user
+   * Get dashboard statistics for a user
    */
   async getDashboardStats(userId: string): Promise<{ data: DashboardStats | null; error: unknown }> {
     try {
-      // Get user profile
+      // Get user profile first
       const { error: profileError } = await this.supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+
+      // If profile doesn't exist, create a default one
+      if (profileError && profileError.code === 'PGRST116') {
+        // Profile doesn't exist, create default stats
+        const defaultStats: DashboardStats = {
+          totalPlays: 0,
+          totalLikes: 0,
+          totalFollowers: 0,
+          totalFollowing: 0,
+          totalTracks: 0,
+          totalEvents: 0,
+          monthlyGrowth: {
+            plays: 0,
+            followers: 0,
+            likes: 0,
+          },
+          recentActivity: [],
+        };
+        return { data: defaultStats, error: null };
+      }
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
@@ -136,7 +156,7 @@ export class DashboardService {
 
       if (tracksError) {
         console.error('Error fetching tracks:', tracksError);
-        return { data: null, error: tracksError };
+        // Continue with empty tracks array
       }
 
       // Get user's events
@@ -147,7 +167,7 @@ export class DashboardService {
 
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
-        return { data: null, error: eventsError };
+        // Continue with empty events array
       }
 
       // Get follower count
@@ -158,7 +178,7 @@ export class DashboardService {
 
       if (followersError) {
         console.error('Error fetching followers:', followersError);
-        return { data: null, error: followersError };
+        // Continue with 0 followers
       }
 
       // Get following count
@@ -169,7 +189,7 @@ export class DashboardService {
 
       if (followingError) {
         console.error('Error fetching following:', followingError);
-        return { data: null, error: followingError };
+        // Continue with 0 following
       }
 
       // Calculate stats
@@ -264,6 +284,10 @@ export class DashboardService {
         .single();
 
       if (error) {
+        // If profile doesn't exist, return null data instead of error
+        if (error.code === 'PGRST116') {
+          return { data: null, error: null };
+        }
         console.error('Error fetching user profile:', error);
         return { data: null, error };
       }
@@ -311,6 +335,10 @@ export class DashboardService {
         .single();
 
       if (error) {
+        // If preferences don't exist, return null data instead of error
+        if (error.code === 'PGRST116') {
+          return { data: null, error: null };
+        }
         console.error('Error fetching user preferences:', error);
         return { data: null, error };
       }

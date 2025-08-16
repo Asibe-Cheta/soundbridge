@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  error: string | null;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signUp: (email: string, password: string, metadata?: any) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
@@ -20,18 +21,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createBrowserClient();
+  const [error, setError] = useState<string | null>(null);
+  
+  // Create Supabase client with error handling
+  const supabase = React.useMemo(() => {
+    try {
+      return createBrowserClient();
+    } catch (err) {
+      console.error('Failed to create Supabase client:', err);
+      setError('Failed to initialize authentication');
+      setLoading(false);
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
+    console.log('AuthProvider: Initializing...');
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('AuthProvider: Getting initial session...');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('AuthProvider: Initial session result:', session ? 'Found' : 'None');
         setSession(session);
         setUser(session?.user ?? null);
       } catch (error) {
         console.error('Error getting initial session:', error);
+        setError('Failed to get initial session');
       } finally {
+        console.log('AuthProvider: Setting loading to false');
         setLoading(false);
       }
     };
@@ -49,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -109,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    error,
     signIn,
     signUp,
     signOut,
