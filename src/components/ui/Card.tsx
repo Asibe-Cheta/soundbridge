@@ -1,125 +1,118 @@
 'use client';
 
-import React from 'react';
-import { Play, Users, Calendar, MapPin } from 'lucide-react';
-import { cn } from '../../lib/utils';
-// import { CardProps } from '../../lib/types';
-interface CardProps {
-  children?: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-  title?: string;
-  subtitle?: string;
-  image?: string;
-  type?: string;
-  data?: Record<string, unknown>;
-}
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { motion } from "framer-motion"
 
-export function Card({
-  title,
-  subtitle,
-  image,
-  type,
-  onClick,
-  data
-}: CardProps) {
-  const getIcon = () => {
-    switch (type) {
-      case 'music':
-        return <Play className="w-4 h-4" />;
-      case 'creator':
-        return <Users className="w-4 h-4" />;
-      case 'event':
-        return <Calendar className="w-4 h-4" />;
-      case 'podcast':
-        return <Play className="w-4 h-4" />;
-      default:
-        return null;
-    }
-  };
+import { cn } from "../../lib/utils"
 
-  const getSubtitle = () => {
-    if (subtitle) return subtitle;
+const cardVariants = cva(
+  "rounded-lg border text-card-foreground shadow-sm transition-all duration-300",
+  {
+    variants: {
+      variant: {
+        default: "bg-card",
+        glass: "bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5",
+        glassmorphism: "bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 hover:from-white/20 hover:to-white/10 hover:border-white/30 hover:shadow-lg",
+        music: "bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border-white/10 hover:from-white/10 hover:to-white/15 hover:border-white/20 hover:shadow-lg hover:shadow-primary-red/10",
+        creator: "bg-gradient-to-br from-primary-red/10 to-accent-pink/10 backdrop-blur-xl border-primary-red/20 hover:from-primary-red/20 hover:to-accent-pink/20 hover:border-primary-red/30 hover:shadow-lg hover:shadow-primary-red/15",
+        event: "bg-gradient-to-br from-coral/10 to-primary-red/10 backdrop-blur-xl border-coral/20 hover:from-coral/20 hover:to-primary-red/20 hover:border-coral/30 hover:shadow-lg hover:shadow-coral/15",
+        transparent: "bg-transparent border-transparent",
+        elevated: "bg-white/8 backdrop-blur-xl border-white/15 hover:bg-white/12 hover:border-white/25 hover:shadow-xl hover:shadow-black/20",
+        gradient: "bg-gradient-to-br from-primary-red/5 via-accent-pink/5 to-coral/5 backdrop-blur-xl border-primary-red/20 hover:from-primary-red/10 hover:via-accent-pink/10 hover:to-coral/10 hover:border-primary-red/30",
+      },
+      size: {
+        default: "p-6",
+        sm: "p-4",
+        lg: "p-8",
+        compact: "p-3",
+        none: "p-0",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
 
-    if (type === 'event' && data && 'event_date' in data) {
-      return new Date(data.event_date).toLocaleDateString('en-GB', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    }
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>
+>(({ className, variant, size, ...props }, ref) => (
+  <motion.div
+    ref={ref}
+    className={cn(cardVariants({ variant, size, className }))}
+    whileHover={{ 
+      y: -8,
+      scale: 1.02,
+      transition: { duration: 0.3, ease: "easeOut" }
+    }}
+    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 0.4, ease: "easeOut" }}
+    {...props}
+  />
+))
+Card.displayName = "Card"
 
-    if (type === 'music' && data && 'play_count' in data) {
-      return `${data.play_count.toLocaleString()} plays`;
-    }
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+))
+CardHeader.displayName = "CardHeader"
 
-    return '';
-  };
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+))
+CardTitle.displayName = "CardTitle"
 
-  return (
-    <div
-      className={cn(
-        "group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6",
-        "hover:bg-white/10 hover:border-white/20 hover:-translate-y-2",
-        "transition-all duration-300 cursor-pointer",
-        "overflow-hidden"
-      )}
-      onClick={onClick}
-    >
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-red/10 to-accent-pink/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+CardDescription.displayName = "CardDescription"
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Image */}
-        {image && (
-          <div className="relative mb-4 aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-            <img
-              src={image}
-              alt={title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                // Fallback to a placeholder if image fails to load
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            {/* Fallback placeholder */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800 hidden">
-              <div className="text-white/50 text-4xl">
-                {type === 'music' || type === 'podcast' ? '🎵' : type === 'creator' ? '👤' : '🎪'}
-              </div>
-            </div>
-            {/* Play button overlay for music/podcast */}
-            {(type === 'music' || type === 'podcast') && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                  {getIcon()}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
 
-        {/* Text content */}
-        <div className="space-y-2">
-          <h3 className="font-semibold text-white text-lg line-clamp-2 group-hover:text-white/90 transition-colors">
-            {title}
-          </h3>
+const CardFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+))
+CardFooter.displayName = "CardFooter"
 
-          {getSubtitle() && (
-            <p className="text-white/60 text-sm line-clamp-1">
-              {getSubtitle()}
-            </p>
-          )}
-
-          {/* Type indicator */}
-          <div className="flex items-center gap-2 text-xs text-white/40">
-            {getIcon()}
-            <span className="capitalize">{type}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-} 
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, cardVariants } 

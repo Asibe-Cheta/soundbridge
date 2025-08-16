@@ -3,11 +3,33 @@
 @tailwind utilities;
 
 :root {
+  /* SoundBridge Brand Colors */
   --primary-red: #DC2626;
   --accent-pink: #EC4899;
   --coral: #F97316;
-  --background: #1a1a1a;
   --background-secondary: #2d1b3d;
+  
+  /* Shadcn/ui CSS Variables */
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 10%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 72% 51%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 63.9%;
+  --accent: 0 0% 15%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 72% 51%;
+  --radius: 0.5rem;
 }
 
 * {
@@ -80,36 +102,7 @@ body {
   gap: 1rem;
 }
 
-.btn-primary {
-  background: linear-gradient(45deg, #DC2626, #EC4899);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0.75rem 1.5rem;
-  border-radius: 25px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-}
+/* Removed old button styles - now using Shadcn Button component */
 
 /* Main Container */
 .main-container {
@@ -119,6 +112,37 @@ body {
 }
 
 /* Hero Section */
+.hero {
+  padding: 4rem 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.8), rgba(45, 27, 61, 0.8));
+  margin-bottom: 3rem;
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-content h1 {
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  color: #ccc;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .hero-section {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -159,6 +183,13 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Container */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
 /* Section Styles */
 .section {
   margin-bottom: 3rem;
@@ -174,6 +205,13 @@ body {
 .section-title {
   font-size: 1.8rem;
   font-weight: bold;
+  background: linear-gradient(45deg, #DC2626, #EC4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text {
   background: linear-gradient(45deg, #DC2626, #EC4899);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -197,6 +235,27 @@ body {
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
 .grid-6 { grid-template-columns: repeat(6, 1fr); }
 
+/* Responsive Grid Adjustments */
+@media (max-width: 1200px) {
+  .grid-6 { grid-template-columns: repeat(4, 1fr); }
+  .grid-4 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .grid-6 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(1, 1fr); }
+}
+
+/* Glass Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
 /* Card Styles */
 .card {
   background: rgba(255, 255, 255, 0.05);
@@ -209,6 +268,12 @@ body {
 }
 
 .card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.card-hover:hover {
   transform: translateY(-5px);
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -283,6 +348,91 @@ body {
   color: #999;
 }
 
+/* Action Buttons */
+.action-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Card Content */
+.card-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.card-content p {
+  color: #ccc;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Event Badge */
+.event-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #DC2626;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Event Details */
+.event-details {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+/* Featured Badge */
+.featured-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: linear-gradient(45deg, #DC2626, #EC4899);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Creator Stats */
+.creator-stats {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
 /* Sidebar */
 .sidebar {
   position: fixed;
@@ -324,6 +474,32 @@ body {
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><path d="M0,20 Q25,10 50,20 T100,20" stroke="%23DC2626" stroke-width="2" fill="none"/></svg>');
   background-size: cover;
   margin: 0.5rem 0;
+  display: flex;
+  align-items: end;
+  gap: 2px;
+}
+
+.waveform-bar {
+  width: 3px;
+  background: linear-gradient(to top, #DC2626, #EC4899);
+  border-radius: 2px;
+  animation: waveform-animation 1.5s ease-in-out infinite;
+}
+
+.waveform-bar:nth-child(1) { height: 20px; animation-delay: 0s; }
+.waveform-bar:nth-child(2) { height: 30px; animation-delay: 0.1s; }
+.waveform-bar:nth-child(3) { height: 15px; animation-delay: 0.2s; }
+.waveform-bar:nth-child(4) { height: 35px; animation-delay: 0.3s; }
+.waveform-bar:nth-child(5) { height: 25px; animation-delay: 0.4s; }
+.waveform-bar:nth-child(6) { height: 40px; animation-delay: 0.5s; }
+.waveform-bar:nth-child(7) { height: 18px; animation-delay: 0.6s; }
+.waveform-bar:nth-child(8) { height: 32px; animation-delay: 0.7s; }
+.waveform-bar:nth-child(9) { height: 22px; animation-delay: 0.8s; }
+.waveform-bar:nth-child(10) { height: 28px; animation-delay: 0.9s; }
+
+@keyframes waveform-animation {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.5); }
 }
 
 /* Creator Profile Styles */
@@ -801,11 +977,7 @@ select.form-input option:focus {
     gap: 0.5rem;
   }
   
-  .btn-primary,
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-  }
+  /* Button styles now handled by Shadcn Button component */
   
   .tab-navigation {
     flex-wrap: wrap;

@@ -305,98 +305,61 @@ function LoginContent() {
             </Link>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button - Fresh SoundBridge Themed */}
           <button
             type="submit"
             disabled={isLoading}
             style={{
-              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
               color: 'white',
               border: 'none',
-              padding: '1rem',
-              borderRadius: '25px',
+              padding: '1rem 2rem',
+              borderRadius: '12px',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               fontWeight: '600',
               fontSize: '1rem',
               transition: 'all 0.3s ease',
-              opacity: isLoading ? 0.7 : 1
+              opacity: isLoading ? 0.6 : 1,
+              boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+              transform: 'translateY(0)'
             }}
-            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-2px)', e.currentTarget.style.boxShadow = '0 10px 25px rgba(220, 38, 38, 0.4)')}
-            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)', e.currentTarget.style.boxShadow = 'none')}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-2px)', e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)', e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)')}
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         {/* Divider */}
-        <div style={{ margin: '2rem 0', textAlign: 'center', position: 'relative' }}>
-          <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', position: 'absolute', top: '50%', left: 0, right: 0 }}></div>
-          <span style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0 1rem', color: '#999', fontSize: '0.9rem' }}>
-            or continue with
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#999' }}>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.2)' }}></div>
+          <span style={{ padding: '0 1rem', fontSize: '0.9rem' }}>or continue with</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.2)' }}></div>
         </div>
 
-        {/* Social Login */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        {/* Social Login - Google Only */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
           <button
             onClick={() => handleSocialLogin('google')}
             disabled={isLoading}
             style={{
-              flex: 1,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '12px',
-              padding: '0.75rem',
+              padding: '0.75rem 2rem',
               color: 'white',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
               fontSize: '0.9rem',
-              opacity: isLoading ? 0.6 : 1
+              opacity: isLoading ? 0.6 : 1,
+              transform: 'translateY(0)',
+              minWidth: '200px'
             }}
-            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)', e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)', e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.transform = 'translateY(0)')}
           >
             Google
-          </button>
-          <button
-            onClick={() => handleSocialLogin('facebook')}
-            disabled={isLoading}
-            style={{
-              flex: 1,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '12px',
-              padding: '0.75rem',
-              color: 'white',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s ease',
-              fontSize: '0.9rem',
-              opacity: isLoading ? 0.6 : 1
-            }}
-            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
-          >
-            Facebook
-          </button>
-          <button
-            onClick={() => handleSocialLogin('apple')}
-            disabled={isLoading}
-            style={{
-              flex: 1,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '12px',
-              padding: '0.75rem',
-              color: 'white',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s ease',
-              fontSize: '0.9rem',
-              opacity: isLoading ? 0.6 : 1
-            }}
-            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
-          >
-            Apple
           </button>
         </div>
 

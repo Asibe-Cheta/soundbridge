@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
-import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users } from 'lucide-react';
+import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Users, Calendar, Music } from 'lucide-react';
 
 export default function HomePage() {
   const { user, signOut } = useAuth();
@@ -45,7 +45,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <>
+    <div>
       {/* Header */}
       <header className="header">
         {/* LEFT SIDE */}
@@ -98,14 +98,13 @@ export default function HomePage() {
           <Link href="/upload" style={{ textDecoration: 'none' }}>
             <button 
               style={{
-                background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
                 color: 'white',
                 border: 'none',
                 padding: '0.75rem 1.5rem',
-                borderRadius: '25px',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '600',
-                fontSize: '0.9rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
@@ -129,137 +128,107 @@ export default function HomePage() {
           {/* User Menu */}
           {user ? (
             <div style={{ position: 'relative' }}>
-              <button
+              <button 
                 id="user-menu-button"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                }}
                 onClick={() => {
                   const menu = document.getElementById('user-menu');
                   if (menu) {
                     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
                   }
                 }}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '50%',
-                  width: '40px',
-                  height: '40px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
               >
-                <User size={20} color="white" />
+                <User size={16} />
+                <span>Menu</span>
+                <span style={{ fontSize: '0.8rem' }}>▼</span>
               </button>
               
-              <div
+              {/* Dropdown Menu */}
+              <div 
                 id="user-menu"
                 style={{
                   position: 'absolute',
                   top: '100%',
                   right: 0,
                   marginTop: '0.5rem',
-                  background: 'rgba(255, 255, 255, 0.05)',
+                  background: 'rgba(0, 0, 0, 0.9)',
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '0.5rem',
-                  minWidth: '200px',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0',
+                  minWidth: '180px',
                   display: 'none',
-                  zIndex: 1000,
-                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                  zIndex: 1000
                 }}
               >
                 <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem',
-                    color: 'white',
-                    borderRadius: '8px',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
+                  <div style={{ padding: '0.75rem 1rem', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Home size={16} />
                     Dashboard
                   </div>
                 </Link>
                 <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem',
-                    color: 'white',
-                    borderRadius: '8px',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
+                  <div style={{ padding: '0.75rem 1rem', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Bell size={16} />
                     Notifications
                   </div>
                 </Link>
                 <Link href="/profile" style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem',
-                    color: 'white',
-                    borderRadius: '8px',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
+                  <div style={{ padding: '0.75rem 1rem', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <User size={16} />
                     Profile
                   </div>
                 </Link>
                 <Link href="/settings" style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem',
-                    color: 'white',
-                    borderRadius: '8px',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
+                  <div style={{ padding: '0.75rem 1rem', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Settings size={16} />
                     Settings
                   </div>
                 </Link>
-                <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', margin: '0.5rem 0' }}></div>
                 <button
                   onClick={handleSignOut}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem',
-                    color: '#FCA5A5',
-                    background: 'none',
+                    background: 'transparent',
                     border: 'none',
+                    color: '#EF4444',
+                    padding: '0.75rem 1rem',
                     width: '100%',
                     textAlign: 'left',
-                    borderRadius: '8px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                    e.currentTarget.style.color = '#FCA5A5';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#EF4444';
+                  }}
                 >
                   <LogOut size={16} />
                   Sign Out
@@ -267,37 +236,43 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            /* Login/Signup Buttons */
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <Link href="/login" style={{ textDecoration: 'none' }}>
                 <button 
                   style={{
-                    background: 'transparent',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
                     padding: '0.75rem 1.5rem',
-                    borderRadius: '25px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
                 >
-                  Sign in
+                  Login
                 </button>
               </Link>
               <Link href="/signup" style={{ textDecoration: 'none' }}>
                 <button 
                   style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem 1.5rem',
-                    borderRadius: '25px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     transition: 'all 0.3s ease',
                     boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
                   }}
@@ -310,7 +285,7 @@ export default function HomePage() {
                     e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
                   }}
                 >
-                  Sign up
+                  Sign Up
                 </button>
               </Link>
             </div>
@@ -335,16 +310,14 @@ export default function HomePage() {
                       color: 'white',
                       border: 'none',
                       padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
                       transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-                      transform: 'translateY(0)'
+                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-2px)';
@@ -360,30 +333,26 @@ export default function HomePage() {
                   </button>
                   <button 
                     style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       color: 'white',
                       padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      transition: 'all 0.3s ease',
-                      transform: 'translateY(0)'
+                      transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
                       e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                     }}
                   >
                     <Heart size={16} />
@@ -391,30 +360,26 @@ export default function HomePage() {
                   </button>
                   <button 
                     style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       color: 'white',
                       padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      transition: 'all 0.3s ease',
-                      transform: 'translateY(0)'
+                      transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
                       e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                     }}
                   >
                     <MessageCircle size={16} />
@@ -434,19 +399,32 @@ export default function HomePage() {
                   <div style={{ color: '#999', fontSize: '0.9rem' }}>Ada Grace</div>
                 </div>
                 <button 
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: '#DC2626', 
-                    fontSize: '1.2rem',
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#DC2626',
+                    padding: '0.5rem',
+                    borderRadius: '50%',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    transform: 'scale(1)'
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.color = '#EF4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.color = '#DC2626';
+                  }}
                 >
-                  <Play size={20} />
+                  <Play size={12} />
                 </button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -456,19 +434,32 @@ export default function HomePage() {
                   <div style={{ color: '#999', fontSize: '0.9rem' }}>DJ Emeka</div>
                 </div>
                 <button 
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: '#DC2626', 
-                    fontSize: '1.2rem',
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#DC2626',
+                    padding: '0.5rem',
+                    borderRadius: '50%',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    transform: 'scale(1)'
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.color = '#EF4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.color = '#DC2626';
+                  }}
                 >
-                  <Play size={20} />
+                  <Play size={12} />
                 </button>
               </div>
             </div>
@@ -485,9 +476,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>New Song Title</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Artist Name</div>
@@ -496,9 +485,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Gospel Vibes</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Sarah Johnson</div>
@@ -507,9 +494,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Afro Fusion</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Michael Okafor</div>
@@ -518,9 +503,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>UK Drill Mix</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Tommy B</div>
@@ -529,9 +512,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Praise & Worship</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Grace Community</div>
@@ -540,9 +521,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Lagos Anthem</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Wizkid Jr</div>
@@ -562,9 +541,7 @@ export default function HomePage() {
               <div className="card">
                 <div className="card-image">
                   Creator Photo
-                  <div className="play-button">
-                    <Play size={20} />
-                  </div>
+                  <div className="play-button">▶</div>
                 </div>
                 <div style={{ fontWeight: '600' }}>Adunni Adebayo</div>
                 <div style={{ color: '#999', fontSize: '0.9rem' }}>Afrobeats • Lagos</div>
@@ -577,9 +554,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Creator Photo
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>James Mitchell</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Gospel • London</div>
@@ -591,9 +566,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Creator Photo
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Chiamaka Okonkwo</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Highlife • Abuja</div>
@@ -665,9 +638,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>The Lagos Life</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Episode 45: Music Industry</div>
@@ -676,9 +647,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Faith & Beats</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Gospel in Modern Music</div>
@@ -687,9 +656,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>UK Underground</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>Drill Scene Deep Dive</div>
@@ -698,9 +665,7 @@ export default function HomePage() {
             <div className="card">
               <div className="card-image">
                 Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+                <div className="play-button">▶</div>
               </div>
               <div style={{ fontWeight: '600' }}>Creator Stories</div>
               <div style={{ color: '#999', fontSize: '0.9rem' }}>From Bedroom to Billboard</div>
@@ -718,20 +683,20 @@ export default function HomePage() {
         <div className="quick-actions">
           <Link href="/upload" style={{ textDecoration: 'none' }}>
             <div className="quick-action">
-              <Upload size={16} />
+              <Upload size={16} style={{ marginRight: '0.5rem' }} />
               Upload Music
             </div>
           </Link>
           <div className="quick-action">
-            <Mic size={16} />
+            <Music size={16} style={{ marginRight: '0.5rem' }} />
             Start Podcast
           </div>
           <div className="quick-action">
-            <Calendar size={16} />
+            <Calendar size={16} style={{ marginRight: '0.5rem' }} />
             Create Event
           </div>
           <div className="quick-action">
-            <Users size={16} />
+            <Users size={16} style={{ marginRight: '0.5rem' }} />
             Find Collaborators
           </div>
         </div>
@@ -743,6 +708,6 @@ export default function HomePage() {
           <div>Mike joined Gospel Night event</div>
         </div>
       </FloatingCard>
-    </>
+    </div>
   );
 }

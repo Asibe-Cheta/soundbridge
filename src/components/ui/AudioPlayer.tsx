@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Repeat, Shuffle, Heart, Share2, List } from 'lucide-react';
+import { Card, CardContent } from './Card';
+import { Button } from './Button';
+import { cn, formatDuration } from '../../lib/utils';
 
 interface Track {
   id: string;
@@ -64,6 +68,7 @@ export function AudioPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showQueue, setShowQueue] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -114,12 +119,6 @@ export function AudioPlayer({
     onSeek(newTime);
   };
 
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   const toggleMute = () => {
     setIsMuted(!isMuted);
     onVolumeChange(isMuted ? volume : 0);
@@ -127,162 +126,274 @@ export function AudioPlayer({
 
   if (error) {
     return (
-      <div className={`audio-player error ${className}`}>
-        <div style={{ color: '#EF4444', textAlign: 'center', padding: '1rem' }}>
-          <div style={{ marginBottom: '0.5rem' }}>⚠️ Audio Error</div>
-          <div style={{ fontSize: '0.9rem' }}>{error}</div>
-        </div>
-      </div>
+      <Card variant="glass" className={cn("audio-player error", className)}>
+        <CardContent className="text-center p-6">
+          <div className="text-red-400 mb-2">⚠️ Audio Error</div>
+          <div className="text-sm text-white/60">{error}</div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!currentTrack) {
     return (
-      <div className={`audio-player ${className}`}>
-        <div style={{ textAlign: 'center', padding: '1rem', color: '#999' }}>
+      <Card variant="glass" className={cn("audio-player", className)}>
+        <CardContent className="text-center p-6 text-white/60">
           No track selected
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className={`audio-player ${className}`}>
+    <Card variant="glass" className={cn("audio-player", className)}>
       <audio ref={audioRef} src={currentTrack.url} preload="metadata" />
+      
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          {/* Cover Art */}
+          <motion.div 
+            className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.2 }}
+          >
+            {currentTrack.artwork ? (
+              <img
+                src={currentTrack.artwork}
+                alt={currentTrack.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary-red to-accent-pink flex items-center justify-center text-2xl">
+                🎵
+              </div>
+            )}
+            
+            {/* Play/Pause Overlay */}
+            <AnimatePresence>
+              {isPlaying && (
+                <motion.div
+                  className="absolute inset-0 bg-black/30 flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
-      {/* Cover Art */}
-      <div style={{
-        width: '60px',
-        height: '60px',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        marginRight: '1rem',
-        flexShrink: 0
-      }}>
-        <div style={{
-          width: '100%',
-          height: '100%',
-          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '2rem'
-        }}>
-          {currentTrack.artwork}
-        </div>
-      </div>
+          {/* Track Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-white text-sm truncate">
+              {currentTrack.title}
+            </h3>
+            <p className="text-white/60 text-xs truncate">
+              {currentTrack.artist}
+            </p>
+          </div>
 
-      {/* Track Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
-          {currentTrack.title}
-        </div>
-        <div style={{ fontSize: '0.9rem', color: '#999' }}>
-          {currentTrack.artist}
-        </div>
-      </div>
+          {/* Main Controls */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleShuffle}
+              className={cn(
+                "w-8 h-8",
+                isShuffled && "text-primary-red"
+              )}
+            >
+              <Shuffle size={16} />
+            </Button>
 
-      {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {/* Play/Pause Button */}
-        <button
-          onClick={togglePlayPause}
-          disabled={isLoading}
-          style={{
-            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            opacity: isLoading ? 0.6 : 1
-          }}
-        >
-          {isLoading ? (
-            <div style={{
-              width: '16px',
-              height: '16px',
-              border: '2px solid transparent',
-              borderTop: '2px solid white',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }} />
-          ) : isPlaying ? (
-            <Pause size={16} />
-          ) : (
-            <Play size={16} />
-          )}
-        </button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSkipPrevious}
+              className="w-8 h-8"
+            >
+              <SkipBack size={16} />
+            </Button>
+
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                variant="primary"
+                size="icon"
+                onClick={togglePlayPause}
+                disabled={isLoading}
+                className="w-12 h-12 rounded-full"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : isPlaying ? (
+                  <Pause size={20} />
+                ) : (
+                  <Play size={20} className="ml-0.5" />
+                )}
+              </Button>
+            </motion.div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSkipNext}
+              className="w-8 h-8"
+            >
+              <SkipForward size={16} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleRepeat}
+              className={cn(
+                "w-8 h-8",
+                repeatMode !== 'none' && "text-primary-red"
+              )}
+            >
+              <Repeat size={16} />
+            </Button>
+          </div>
+
+          {/* Secondary Controls */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleLike}
+              className={cn(
+                "w-8 h-8",
+                currentTrack.liked && "text-primary-red"
+              )}
+            >
+              <Heart size={16} className={cn(currentTrack.liked && "fill-current")} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onShare}
+              className="w-8 h-8"
+            >
+              <Share2 size={16} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowQueue(!showQueue)}
+              className="w-8 h-8"
+            >
+              <List size={16} />
+            </Button>
+          </div>
+
+          {/* Volume Control */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMute}
+              className="w-8 h-8"
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </Button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={isMuted ? 0 : volume}
+              onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+              className="w-16 h-1 bg-white/10 rounded-full appearance-none cursor-pointer slider"
+            />
+          </div>
+        </div>
 
         {/* Progress Bar */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#999', marginBottom: '0.25rem' }}>
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+        <div className="mt-4">
+          <div className="flex justify-between text-xs text-white/40 mb-2">
+            <span>{formatDuration(currentTime)}</span>
+            <span>{formatDuration(duration)}</span>
           </div>
           <div
             ref={progressRef}
             onClick={handleProgressClick}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '10px',
-              height: '8px',
-              cursor: 'pointer',
-              overflow: 'hidden'
-            }}
+            className="w-full bg-white/10 rounded-full h-2 cursor-pointer overflow-hidden"
           >
-            <div style={{
-              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-              height: '100%',
-              width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
-              transition: 'width 0.1s ease'
-            }} />
+            <motion.div
+              className="h-full bg-gradient-to-r from-primary-red to-accent-pink"
+              initial={{ width: 0 }}
+              animate={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+              transition={{ duration: 0.1 }}
+            />
           </div>
         </div>
 
-        {/* Volume Control */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button
-            onClick={toggleMute}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#999',
-              cursor: 'pointer',
-              padding: '0.25rem'
-            }}
-          >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={isMuted ? 0 : volume}
-            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-            style={{
-              width: '60px',
-              height: '4px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '2px',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          />
-        </div>
-      </div>
+        {/* Queue Panel */}
+        <AnimatePresence>
+          {showQueue && (
+            <motion.div
+              className="mt-4 pt-4 border-t border-white/10"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h4 className="text-sm font-semibold text-white mb-2">Queue</h4>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {queue.map((track, index) => (
+                  <div
+                    key={track.id}
+                    className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded bg-gradient-to-br from-primary-red/20 to-accent-pink/20 flex items-center justify-center text-xs">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{track.title}</p>
+                      <p className="text-xs text-white/60 truncate">{track.artist}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onRemoveFromQueue(index)}
+                      className="w-6 h-6 text-white/40 hover:text-red-400"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardContent>
 
       <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: linear-gradient(45deg, #DC2626, #EC4899);
+          cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: linear-gradient(45deg, #DC2626, #EC4899);
+          cursor: pointer;
+          border: none;
         }
       `}</style>
-    </div>
+    </Card>
   );
 } 
