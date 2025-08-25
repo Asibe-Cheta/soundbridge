@@ -218,7 +218,20 @@ export default function CreateEventPage() {
             <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Authentication Required</h2>
             <p style={{ color: '#999', marginBottom: '2rem' }}>Please log in to create events.</p>
             <Link href="/login" style={{ textDecoration: 'none' }}>
-              <button className="btn-primary">Login</button>
+              <button style={{
+                padding: '0.75rem 1.5rem',
+                background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: 'white',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+              }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                Login
+              </button>
             </Link>
           </div>
         </main>
@@ -256,10 +269,35 @@ export default function CreateEventPage() {
         <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
         <div className="auth-buttons">
           <Link href="/login" style={{ textDecoration: 'none' }}>
-            <button className="btn-secondary">Login</button>
+            <button style={{
+              padding: '0.5rem 1rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0.5rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}>
+              Login
+            </button>
           </Link>
           <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <button className="btn-primary">Sign Up</button>
+            <button style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+              border: 'none',
+              borderRadius: '0.5rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+              Sign Up
+            </button>
           </Link>
         </div>
       </header>
@@ -269,7 +307,20 @@ export default function CreateEventPage() {
         {/* Back Button */}
         <section className="section">
           <Link href="/events" style={{ textDecoration: 'none' }}>
-            <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0.5rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}>
               <ArrowLeft size={16} />
               Back to Events
             </button>
@@ -470,15 +521,27 @@ export default function CreateEventPage() {
                     <button
                       onClick={handleImageUpload}
                       disabled={imageState.isUploading}
-                      className="btn-primary"
                       style={{
                         width: '100%',
                         marginTop: '1rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        padding: '0.75rem 1rem',
+                        background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+                        opacity: imageState.isUploading ? 0.7 : 1
                       }}
+                      onMouseEnter={(e) => !imageState.isUploading && (e.currentTarget.style.transform = 'translateY(-1px)')}
+                      onMouseLeave={(e) => !imageState.isUploading && (e.currentTarget.style.transform = 'translateY(0)')}
                     >
                       {imageState.isUploading ? (
                         <>
@@ -616,8 +679,25 @@ export default function CreateEventPage() {
                     <button
                       onClick={handleSaveDraft}
                       disabled={isPublishing}
-                      className="btn-secondary"
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        padding: '0.75rem 1rem',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '0.5rem',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        opacity: isPublishing ? 0.7 : 1
+                      }}
+                      onMouseEnter={(e) => !isPublishing && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
+                      onMouseLeave={(e) => !isPublishing && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
                     >
                       {isPublishing ? (
                         <Loader2 size={16} className="animate-spin" />
@@ -630,8 +710,26 @@ export default function CreateEventPage() {
                     <button
                       onClick={handlePublish}
                       disabled={isPublishing}
-                      className="btn-primary"
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        padding: '0.75rem 1rem',
+                        background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+                        opacity: isPublishing ? 0.7 : 1
+                      }}
+                      onMouseEnter={(e) => !isPublishing && (e.currentTarget.style.transform = 'translateY(-1px)')}
+                      onMouseLeave={(e) => !isPublishing && (e.currentTarget.style.transform = 'translateY(0)')}
                     >
                       {isPublishing ? (
                         <Loader2 size={16} className="animate-spin" />
@@ -653,11 +751,11 @@ export default function CreateEventPage() {
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Event Creation Tips">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>📝 Write a compelling description</div>
-          <div>📅 Choose a date at least 1 week ahead</div>
-          <div>📍 Be specific about the location</div>
-          <div>💰 Set a reasonable price</div>
-          <div>📸 Add an attractive image</div>
+          <div>Write a compelling description</div>
+          <div>Choose a date at least 1 week ahead</div>
+          <div>Be specific about the location</div>
+          <div>Set a reasonable price</div>
+          <div>Add an attractive image</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Categories</h3>

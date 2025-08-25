@@ -18,7 +18,8 @@ import {
   Users,
   Calendar,
   Mic,
-  AlertCircle
+  AlertCircle,
+  User
 } from 'lucide-react';
 
 export default function DiscoverPage() {
@@ -206,7 +207,7 @@ export default function DiscoverPage() {
                       color: 'white',
                       fontSize: '2rem'
                     }}>
-                      🎵
+                      <Music size={32} />
                     </div>
                     <div className="play-button">▶</div>
                   </div>
@@ -252,7 +253,7 @@ export default function DiscoverPage() {
                         color: 'white',
                         fontSize: '2rem'
                       }}>
-                        🎵
+                        <Music size={32} />
                       </div>
                     )}
                     <div className="play-button">▶</div>
@@ -294,7 +295,7 @@ export default function DiscoverPage() {
                       color: 'white',
                       fontSize: '2rem'
                     }}>
-                      👤
+                      <User size={32} />
                     </div>
                     <div className="play-button">▶</div>
                   </div>
@@ -538,11 +539,11 @@ export default function DiscoverPage() {
       <FloatingCard title="Quick Actions">
         <div className="quick-actions">
           <Link href="/upload" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">🎵 Upload Music</div>
+            <div className="quick-action">Upload Music</div>
           </Link>
-          <div className="quick-action">🎙️ Start Podcast</div>
-          <div className="quick-action">📅 Create Event</div>
-          <div className="quick-action">💬 Find Collaborators</div>
+          <div className="quick-action">Start Podcast</div>
+          <div className="quick-action">Create Event</div>
+          <div className="quick-action">Find Collaborators</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>

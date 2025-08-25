@@ -39,7 +39,9 @@ CREATE TABLE audio_tracks (
     genre VARCHAR(100),
     tags TEXT[],
     play_count INTEGER DEFAULT 0,
-    like_count INTEGER DEFAULT 0,
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    shares_count INTEGER DEFAULT 0,
     is_public BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -60,6 +62,9 @@ CREATE TABLE events (
     price_ngn DECIMAL(10, 2),
     max_attendees INTEGER,
     current_attendees INTEGER DEFAULT 0,
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    shares_count INTEGER DEFAULT 0,
     image_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -107,6 +112,283 @@ CREATE TABLE user_preferences (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. COPYRIGHT_PROTECTION TABLE (copyright checking system)
+CREATE TABLE copyright_protection (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    track_id UUID REFERENCES audio_tracks(id) ON DELETE CASCADE,
+    creator_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, approved, flagged, blocked
+    check_type VARCHAR(50) NOT NULL, -- automated, manual, community_report
+    fingerprint_hash TEXT, -- Audio fingerprint for comparison
+    confidence_score DECIMAL(3,2), -- 0.00 to 1.00 confidence in match
+    matched_track_info JSONB, -- Information about matched copyrighted content
+    reviewer_id UUID REFERENCES profiles(id), -- Admin who reviewed (if manual)
+    review_notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. COPYRIGHT_VIOLATIONS TABLE (tracking violations)
+CREATE TABLE copyright_violations (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    track_id UUID REFERENCES audio_tracks(id) ON DELETE CASCADE,
+    reporter_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    violation_type VARCHAR(100) NOT NULL, -- 'copyright_infringement', 'trademark', 'rights_holder_complaint'
+    description TEXT NOT NULL,
+    evidence_urls TEXT[], -- URLs to evidence (screenshots, links, etc.)
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, under_review, resolved, dismissed
+    admin_notes TEXT,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 10. COPYRIGHT_WHITELIST TABLE (known safe content)
+CREATE TABLE copyright_whitelist (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    fingerprint_hash TEXT UNIQUE NOT NULL,
+    track_title VARCHAR(255),
+    artist_name VARCHAR(255),
+    rights_holder VARCHAR(255),
+    license_type VARCHAR(100), -- 'public_domain', 'creative_commons', 'licensed'
+    license_details JSONB,
+    added_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 11. COPYRIGHT_BLACKLIST TABLE (known copyrighted content)
+CREATE TABLE copyright_blacklist (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    fingerprint_hash TEXT UNIQUE NOT NULL,
+    track_title VARCHAR(255) NOT NULL,
+    artist_name VARCHAR(255) NOT NULL,
+    rights_holder VARCHAR(255),
+    release_date DATE,
+    country_of_origin VARCHAR(50),
+    added_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    added_reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 12. DMCA_REQUESTS TABLE (DMCA compliance)
+CREATE TABLE dmca_requests (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    track_id UUID REFERENCES audio_tracks(id) ON DELETE CASCADE,
+    requester_name VARCHAR(255) NOT NULL,
+    requester_email VARCHAR(255) NOT NULL,
+    requester_phone VARCHAR(50),
+    rights_holder VARCHAR(255) NOT NULL,
+    infringement_description TEXT NOT NULL,
+    original_work_description TEXT NOT NULL,
+    good_faith_statement BOOLEAN NOT NULL,
+    accuracy_statement BOOLEAN NOT NULL,
+    authority_statement BOOLEAN NOT NULL,
+    contact_address TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, processing, resolved, dismissed
+    admin_notes TEXT,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13. COPYRIGHT_SETTINGS TABLE (platform copyright configuration)
+CREATE TABLE copyright_settings (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    setting_key VARCHAR(100) UNIQUE NOT NULL,
+    setting_value JSONB NOT NULL,
+    description TEXT,
+    updated_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 14. COMMENTS TABLE (user comments on tracks and events)
+CREATE TABLE comments (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    content_id UUID NOT NULL, -- Track or event ID
+    content_type VARCHAR(20) NOT NULL CHECK (content_type IN ('track', 'event')),
+    content TEXT NOT NULL,
+    parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE, -- For threaded comments
+    likes_count INTEGER DEFAULT 0,
+    is_edited BOOLEAN DEFAULT FALSE,
+    edited_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 15. LIKES TABLE (user likes on tracks, events, and comments)
+CREATE TABLE likes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    content_id UUID NOT NULL, -- Track, event, or comment ID
+    content_type VARCHAR(20) NOT NULL CHECK (content_type IN ('track', 'event', 'comment')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, content_id, content_type)
+);
+
+-- 16. SHARES TABLE (user shares/reposts of content)
+CREATE TABLE shares (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    content_id UUID NOT NULL, -- Track or event ID
+    content_type VARCHAR(20) NOT NULL CHECK (content_type IN ('track', 'event')),
+    share_type VARCHAR(20) NOT NULL DEFAULT 'repost' CHECK (share_type IN ('repost', 'external_share')),
+    external_platform VARCHAR(50), -- 'twitter', 'facebook', 'instagram', etc.
+    external_url TEXT,
+    caption TEXT, -- User's caption when sharing
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 17. BOOKMARKS TABLE (user bookmarks/saves)
+CREATE TABLE bookmarks (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    content_id UUID NOT NULL, -- Track or event ID
+    content_type VARCHAR(20) NOT NULL CHECK (content_type IN ('track', 'event')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, content_id, content_type)
+);
+
+-- 18. PLAYLISTS TABLE (user playlists)
+CREATE TABLE playlists (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    creator_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_public BOOLEAN DEFAULT TRUE,
+    cover_image_url TEXT,
+    tracks_count INTEGER DEFAULT 0,
+    total_duration INTEGER DEFAULT 0, -- in seconds
+    followers_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 19. PLAYLIST_TRACKS TABLE (tracks in playlists)
+CREATE TABLE playlist_tracks (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    playlist_id UUID REFERENCES playlists(id) ON DELETE CASCADE NOT NULL,
+    track_id UUID REFERENCES audio_tracks(id) ON DELETE CASCADE NOT NULL,
+    position INTEGER NOT NULL,
+    added_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(playlist_id, track_id)
+);
+
+-- 20. COLLABORATIONS TABLE (artist collaborations)
+CREATE TABLE collaborations (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    initiator_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    collaborator_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    project_title VARCHAR(255) NOT NULL,
+    description TEXT,
+    project_type VARCHAR(50) NOT NULL CHECK (project_type IN ('recording', 'live_performance', 'music_video', 'remix', 'feature', 'production')),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'in_progress', 'completed', 'cancelled')),
+    deadline TIMESTAMPTZ,
+    compensation_type VARCHAR(20) CHECK (compensation_type IN ('fixed', 'percentage', 'revenue_share', 'none')),
+    compensation_amount DECIMAL(10, 2),
+    compensation_currency VARCHAR(3) DEFAULT 'GBP',
+    requirements TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 21. COLLABORATION_TRACKS TABLE (tracks created through collaborations)
+CREATE TABLE collaboration_tracks (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    collaboration_id UUID REFERENCES collaborations(id) ON DELETE CASCADE NOT NULL,
+    track_id UUID REFERENCES audio_tracks(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 22. NOTIFICATIONS TABLE (user notifications)
+CREATE TABLE notifications (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('follow', 'like', 'comment', 'share', 'collaboration', 'event', 'system')),
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    related_id UUID, -- ID of related content (track, event, comment, etc.)
+    related_type VARCHAR(20), -- Type of related content
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 23. USER_FEED TABLE (personalized user feed)
+CREATE TABLE user_feed (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    content_id UUID NOT NULL,
+    content_type VARCHAR(20) NOT NULL CHECK (content_type IN ('track', 'event', 'comment', 'share')),
+    source_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE, -- Who generated this feed item
+    feed_type VARCHAR(20) NOT NULL CHECK (feed_type IN ('upload', 'share', 'comment', 'follow', 'collaboration')),
+    relevance_score DECIMAL(3,2) DEFAULT 1.00, -- Algorithm relevance score
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 24. SOCIAL_ANALYTICS TABLE (social engagement analytics)
+CREATE TABLE social_analytics (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    date DATE NOT NULL,
+    followers_gained INTEGER DEFAULT 0,
+    followers_lost INTEGER DEFAULT 0,
+    total_followers INTEGER NOT NULL,
+    likes_received INTEGER DEFAULT 0,
+    comments_received INTEGER DEFAULT 0,
+    shares_received INTEGER DEFAULT 0,
+    engagement_rate DECIMAL(5,2) DEFAULT 0.00,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, date)
+);
+
+-- MFA Settings Table
+CREATE TABLE IF NOT EXISTS mfa_settings (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    enabled BOOLEAN DEFAULT false,
+    methods TEXT[] DEFAULT '{}',
+    secret TEXT,
+    backup_codes TEXT[] DEFAULT '{}',
+    last_used TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User Roles Table
+CREATE TABLE IF NOT EXISTS user_roles (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'moderator', 'creator', 'listener')),
+    permissions TEXT[] DEFAULT '{}',
+    scope TEXT DEFAULT 'personal' CHECK (scope IN ('global', 'organization', 'personal')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Rate Limiting Table
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    identifier TEXT NOT NULL,
+    count INTEGER DEFAULT 1,
+    reset_time TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Audit Logs Table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id),
+    action VARCHAR(100) NOT NULL,
+    table_name VARCHAR(100),
+    record_id UUID,
+    old_values JSONB,
+    new_values JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Create indexes for performance
 CREATE INDEX idx_profiles_username ON profiles(username);
 CREATE INDEX idx_profiles_role ON profiles(role);
@@ -140,6 +422,39 @@ CREATE INDEX idx_messages_recipient_id ON messages(recipient_id);
 CREATE INDEX idx_messages_created_at ON messages(created_at);
 CREATE INDEX idx_messages_is_read ON messages(is_read);
 
+-- Copyright protection indexes
+CREATE INDEX idx_copyright_protection_track_id ON copyright_protection(track_id);
+CREATE INDEX idx_copyright_protection_creator_id ON copyright_protection(creator_id);
+CREATE INDEX idx_copyright_protection_status ON copyright_protection(status);
+CREATE INDEX idx_copyright_protection_fingerprint ON copyright_protection(fingerprint_hash);
+CREATE INDEX idx_copyright_protection_created_at ON copyright_protection(created_at);
+
+CREATE INDEX idx_copyright_violations_track_id ON copyright_violations(track_id);
+CREATE INDEX idx_copyright_violations_reporter_id ON copyright_violations(reporter_id);
+CREATE INDEX idx_copyright_violations_status ON copyright_violations(status);
+CREATE INDEX idx_copyright_violations_created_at ON copyright_violations(created_at);
+
+CREATE INDEX idx_copyright_whitelist_fingerprint ON copyright_whitelist(fingerprint_hash);
+CREATE INDEX idx_copyright_whitelist_artist ON copyright_whitelist(artist_name);
+
+CREATE INDEX idx_copyright_blacklist_fingerprint ON copyright_blacklist(fingerprint_hash);
+CREATE INDEX idx_copyright_blacklist_artist ON copyright_blacklist(artist_name);
+CREATE INDEX idx_copyright_blacklist_title ON copyright_blacklist(track_title);
+
+CREATE INDEX idx_dmca_requests_track_id ON dmca_requests(track_id);
+CREATE INDEX idx_dmca_requests_status ON dmca_requests(status);
+CREATE INDEX idx_dmca_requests_created_at ON dmca_requests(created_at);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_mfa_settings_user_id ON mfa_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_reset_time ON rate_limits(reset_time);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -158,6 +473,28 @@ CREATE TRIGGER update_event_attendees_updated_at BEFORE UPDATE ON event_attendee
 
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Copyright protection triggers
+CREATE TRIGGER update_copyright_protection_updated_at BEFORE UPDATE ON copyright_protection
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_copyright_violations_updated_at BEFORE UPDATE ON copyright_violations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_dmca_requests_updated_at BEFORE UPDATE ON dmca_requests
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Triggers for updated_at columns
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_mfa_settings_updated_at BEFORE UPDATE ON mfa_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_roles_updated_at BEFORE UPDATE ON user_roles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to update current_attendees count
 CREATE OR REPLACE FUNCTION update_event_attendees_count()
@@ -196,7 +533,7 @@ CREATE TRIGGER update_event_attendees_count
     AFTER INSERT OR UPDATE OR DELETE ON event_attendees
     FOR EACH ROW EXECUTE FUNCTION update_event_attendees_count();
 
--- RLS Policies
+-- Row Level Security Policies
 
 -- Enable RLS on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -206,6 +543,10 @@ ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mfa_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view all profiles" ON profiles
@@ -294,6 +635,29 @@ CREATE POLICY "Users can update their own preferences" ON user_preferences
 
 CREATE POLICY "Users can delete their own preferences" ON user_preferences
     FOR DELETE USING (auth.uid() = user_id);
+
+-- MFA Settings Policies
+CREATE POLICY "Users can view own MFA settings" ON mfa_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own MFA settings" ON mfa_settings FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own MFA settings" ON mfa_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- User Roles Policies
+CREATE POLICY "Users can view own roles" ON user_roles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins can view all roles" ON user_roles FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Admins can manage roles" ON user_roles FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+
+-- Rate Limits Policies (system only)
+CREATE POLICY "System can manage rate limits" ON rate_limits FOR ALL USING (false);
+
+-- Audit Logs Policies
+CREATE POLICY "Admins can view audit logs" ON audit_logs FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "System can insert audit logs" ON audit_logs FOR INSERT WITH CHECK (true);
 
 -- Create functions for common operations
 
@@ -484,3 +848,218 @@ INSERT INTO events (title, description, creator_id, event_date, location, venue,
 ('Gospel Night', 'An evening of gospel music', '550e8400-e29b-41d4-a716-446655440001', NOW() + INTERVAL '7 days', 'London', 'Royal Albert Hall', 'Gospel', 25.00),
 ('Afrobeat Festival', 'Celebrating African music', '550e8400-e29b-41d4-a716-446655440002', NOW() + INTERVAL '14 days', 'Lagos', 'National Theatre', 'Afrobeat', 5000.00);
 */ 
+
+-- Create triggers for automatic updates
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply triggers to tables with updated_at columns
+CREATE TRIGGER update_copyright_protection_updated_at BEFORE UPDATE ON copyright_protection FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_copyright_violations_updated_at BEFORE UPDATE ON copyright_violations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_dmca_requests_updated_at BEFORE UPDATE ON dmca_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_playlists_updated_at BEFORE UPDATE ON playlists FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_collaborations_updated_at BEFORE UPDATE ON collaborations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to update like counts
+CREATE OR REPLACE FUNCTION update_like_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Increment like count
+        IF NEW.content_type = 'track' THEN
+            UPDATE audio_tracks SET likes_count = likes_count + 1 WHERE id = NEW.content_id;
+        ELSIF NEW.content_type = 'event' THEN
+            UPDATE events SET likes_count = likes_count + 1 WHERE id = NEW.content_id;
+        ELSIF NEW.content_type = 'comment' THEN
+            UPDATE comments SET likes_count = likes_count + 1 WHERE id = NEW.content_id;
+        END IF;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- Decrement like count
+        IF OLD.content_type = 'track' THEN
+            UPDATE audio_tracks SET likes_count = likes_count - 1 WHERE id = OLD.content_id;
+        ELSIF OLD.content_type = 'event' THEN
+            UPDATE events SET likes_count = likes_count - 1 WHERE id = OLD.content_id;
+        ELSIF OLD.content_type = 'comment' THEN
+            UPDATE comments SET likes_count = likes_count - 1 WHERE id = OLD.content_id;
+        END IF;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+-- Apply like count trigger
+CREATE TRIGGER update_like_counts AFTER INSERT OR DELETE ON likes FOR EACH ROW EXECUTE FUNCTION update_like_count();
+
+-- Function to update comment counts
+CREATE OR REPLACE FUNCTION update_comment_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Increment comment count
+        IF NEW.content_type = 'track' THEN
+            UPDATE audio_tracks SET comments_count = comments_count + 1 WHERE id = NEW.content_id;
+        ELSIF NEW.content_type = 'event' THEN
+            UPDATE events SET comments_count = comments_count + 1 WHERE id = NEW.content_id;
+        END IF;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- Decrement comment count
+        IF OLD.content_type = 'track' THEN
+            UPDATE audio_tracks SET comments_count = comments_count - 1 WHERE id = OLD.content_id;
+        ELSIF OLD.content_type = 'event' THEN
+            UPDATE events SET comments_count = comments_count - 1 WHERE id = OLD.content_id;
+        END IF;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+-- Apply comment count trigger
+CREATE TRIGGER update_comment_counts AFTER INSERT OR DELETE ON comments FOR EACH ROW EXECUTE FUNCTION update_comment_count();
+
+-- Function to update follower counts
+CREATE OR REPLACE FUNCTION update_follower_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Increment following count for follower
+        UPDATE profiles SET following_count = following_count + 1 WHERE id = NEW.follower_id;
+        -- Increment follower count for following
+        UPDATE profiles SET followers_count = followers_count + 1 WHERE id = NEW.following_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- Decrement following count for follower
+        UPDATE profiles SET following_count = following_count - 1 WHERE id = OLD.follower_id;
+        -- Decrement follower count for following
+        UPDATE profiles SET followers_count = followers_count - 1 WHERE id = OLD.following_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+-- Apply follower count trigger
+CREATE TRIGGER update_follower_counts AFTER INSERT OR DELETE ON follows FOR EACH ROW EXECUTE FUNCTION update_follower_count();
+
+-- Function to update playlist track counts
+CREATE OR REPLACE FUNCTION update_playlist_track_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Increment track count and update duration
+        UPDATE playlists 
+        SET tracks_count = tracks_count + 1,
+            total_duration = total_duration + COALESCE((SELECT duration FROM audio_tracks WHERE id = NEW.track_id), 0)
+        WHERE id = NEW.playlist_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- Decrement track count and update duration
+        UPDATE playlists 
+        SET tracks_count = tracks_count - 1,
+            total_duration = total_duration - COALESCE((SELECT duration FROM audio_tracks WHERE id = OLD.track_id), 0)
+        WHERE id = OLD.playlist_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+-- Apply playlist track count trigger
+CREATE TRIGGER update_playlist_track_counts AFTER INSERT OR DELETE ON playlist_tracks FOR EACH ROW EXECUTE FUNCTION update_playlist_track_count();
+
+-- Enable Row Level Security (RLS) for new tables
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE playlists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE playlist_tracks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collaborations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collaboration_tracks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_feed ENABLE ROW LEVEL SECURITY;
+ALTER TABLE social_analytics ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for comments
+CREATE POLICY "Comments are viewable by everyone" ON comments FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own comments" ON comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own comments" ON comments FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own comments" ON comments FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for likes
+CREATE POLICY "Likes are viewable by everyone" ON likes FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own likes" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own likes" ON likes FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for shares
+CREATE POLICY "Shares are viewable by everyone" ON shares FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own shares" ON shares FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own shares" ON shares FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own shares" ON shares FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for bookmarks
+CREATE POLICY "Users can view their own bookmarks" ON bookmarks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own bookmarks" ON bookmarks FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own bookmarks" ON bookmarks FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for playlists
+CREATE POLICY "Public playlists are viewable by everyone" ON playlists FOR SELECT USING (is_public = true OR auth.uid() = creator_id);
+CREATE POLICY "Users can insert their own playlists" ON playlists FOR INSERT WITH CHECK (auth.uid() = creator_id);
+CREATE POLICY "Users can update their own playlists" ON playlists FOR UPDATE USING (auth.uid() = creator_id);
+CREATE POLICY "Users can delete their own playlists" ON playlists FOR DELETE USING (auth.uid() = creator_id);
+
+-- RLS Policies for playlist_tracks
+CREATE POLICY "Playlist tracks are viewable by playlist owner" ON playlist_tracks FOR SELECT USING (
+    EXISTS (SELECT 1 FROM playlists WHERE id = playlist_id AND (is_public = true OR creator_id = auth.uid()))
+);
+CREATE POLICY "Users can manage tracks in their own playlists" ON playlist_tracks FOR ALL USING (
+    EXISTS (SELECT 1 FROM playlists WHERE id = playlist_id AND creator_id = auth.uid())
+);
+
+-- RLS Policies for collaborations
+CREATE POLICY "Users can view collaborations they're involved in" ON collaborations FOR SELECT USING (
+    auth.uid() = initiator_id OR auth.uid() = collaborator_id
+);
+CREATE POLICY "Users can insert collaborations" ON collaborations FOR INSERT WITH CHECK (auth.uid() = initiator_id);
+CREATE POLICY "Users can update collaborations they're involved in" ON collaborations FOR UPDATE USING (
+    auth.uid() = initiator_id OR auth.uid() = collaborator_id
+);
+
+-- RLS Policies for notifications
+CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "System can insert notifications" ON notifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- RLS Policies for user_feed
+CREATE POLICY "Users can view their own feed" ON user_feed FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "System can insert feed items" ON user_feed FOR INSERT WITH CHECK (true);
+
+-- RLS Policies for social_analytics
+CREATE POLICY "Users can view their own analytics" ON social_analytics FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "System can insert analytics" ON social_analytics FOR INSERT WITH CHECK (true);
+CREATE POLICY "System can update analytics" ON social_analytics FOR UPDATE USING (true);
+
+-- Insert sample data for testing
+INSERT INTO copyright_whitelist (fingerprint_hash, track_title, artist_name, rights_holder, license_type) VALUES
+('sample_whitelist_hash_1', 'Sample Original Track', 'Original Artist', 'Original Rights Holder', 'public_domain'),
+('sample_whitelist_hash_2', 'Creative Commons Track', 'CC Artist', 'CC Rights Holder', 'creative_commons');
+
+INSERT INTO copyright_blacklist (fingerprint_hash, track_title, artist_name, rights_holder, violation_type) VALUES
+('sample_blacklist_hash_1', 'Copyrighted Song', 'Famous Artist', 'Major Label', 'copyright_infringement'),
+('sample_blacklist_hash_2', 'Protected Track', 'Popular Artist', 'Music Publisher', 'copyright_infringement');
+
+INSERT INTO copyright_settings (setting_key, setting_value, description) VALUES
+('automated_checking_enabled', 'true', 'Enable automated copyright checking'),
+('confidence_threshold', '0.8', 'Minimum confidence score for copyright matches'),
+('manual_review_threshold', '0.6', 'Confidence score threshold for manual review'),
+('check_whitelist_first', 'true', 'Check whitelist before blacklist'),
+('max_file_size_mb', '50', 'Maximum file size for copyright checking'); 

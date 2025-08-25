@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/src/contexts/AuthContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
 import {
   LogOut,
-  User,
   Settings,
   Upload,
   Calendar,
@@ -15,19 +14,14 @@ import {
   BarChart3,
   Users,
   Bell,
-  Shield,
-  Download,
-  Trash2,
   Activity,
   AlertCircle,
   X,
   AlertTriangle,
   TrendingUp,
-  Eye,
   Heart,
   Play,
   FileAudio,
-  MapPin,
   Clock,
   Plus,
   MessageCircle,
@@ -39,44 +33,32 @@ export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const {
     stats,
-    tracks,
-    events,
     profile,
-    followers,
-    following,
-    analytics,
-    isLoadingStats,
-    isLoadingTracks,
-    isLoadingEvents,
-    isLoadingAnalytics,
     error,
-    deleteTrack,
-    deleteEvent,
-    exportUserData,
     deleteUserAccount,
     setError
   } = useDashboard();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'settings'>('overview');
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Handle mobile responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleSignOut = async () => {
     try {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
-    }
-  };
-
-  const handleExportData = async () => {
-    setIsExporting(true);
-    try {
-      await exportUserData();
-    } catch (error) {
-      console.error('Error exporting data:', error);
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -128,65 +110,42 @@ export default function DashboardPage() {
           <div style={{
             maxWidth: '1200px',
             margin: '0 auto',
-            padding: '0 1rem',
-            height: '4rem',
+            padding: isMobile ? '0 0.5rem' : '0 1rem',
+            height: isMobile ? '3.5rem' : '4rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
           }}>
-            {/* Left Side - SoundBridge Logo and Hamburger */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <button style={{
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                padding: '0.5rem',
-                borderRadius: '0.375rem',
-                transition: 'all 0.2s ease'
-              }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="12" x2="21" y2="12"></line>
-                  <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{
-                  width: '2rem',
-                  height: '2rem',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                  borderRadius: '0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6" cy="18" r="3"></circle>
-                    <circle cx="18" cy="16" r="3"></circle>
-                  </svg>
-                </div>
+            {/* Left Side - SoundBridge Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1rem' }}>
+              <Link 
+                href="/" 
+                style={{ 
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
                 <Image
                   src="/images/logos/logo-trans.png"
                   alt="SoundBridge"
-                  width={200}
-                  height={60}
+                  width={isMobile ? 150 : 200}
+                  height={isMobile ? 45 : 60}
                   style={{
-                    height: '10rem',
-                    width: 'auto',
-                    objectFit: 'contain',
-                    //border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '0.5rem',
-                    padding: '0.25rem'
+                    height: 'auto'
                   }}
                 />
-              </div>
+              </Link>
             </div>
 
             {/* Center - Dashboard Title and Welcome */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ 
+              display: isMobile ? 'none' : 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem' 
+            }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{
                   width: '2.5rem',
@@ -207,15 +166,34 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Mobile Dashboard Title */}
+            {isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{
+                  width: '2rem',
+                  height: '2rem',
+                  background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                  borderRadius: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+                }}>
+                  <Activity size={16} style={{ color: 'white' }} />
+                </div>
+                <h1 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', margin: 0 }}>Dashboard</h1>
+              </div>
+            )}
+
             {/* Right Side - Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '0.75rem' }}>
               <button style={{
-                padding: '0.5rem 1rem',
+                padding: isMobile ? '0.5rem' : '0.5rem 1rem',
                 background: 'rgba(255, 255, 255, 0.1)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '0.5rem',
                 color: 'white',
-                fontSize: '0.875rem',
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
                 fontWeight: '500',
                 display: 'flex',
                 alignItems: 'center',
@@ -223,18 +201,18 @@ export default function DashboardPage() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}>
-                <Bell size={16} />
-                Notifications
+                <Bell size={isMobile ? 14 : 16} />
+                {!isMobile && 'Notifications'}
               </button>
               <button
                 onClick={handleSignOut}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: isMobile ? '0.5rem' : '0.5rem 1rem',
                   background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
                   border: 'none',
                   borderRadius: '0.5rem',
                   color: 'white',
-                  fontSize: '0.875rem',
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
                   fontWeight: '500',
                   display: 'flex',
                   alignItems: 'center',
@@ -246,27 +224,32 @@ export default function DashboardPage() {
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                <LogOut size={16} />
-                Sign Out
+                <LogOut size={isMobile ? 14 : 16} />
+                {!isMobile && 'Sign Out'}
               </button>
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem' }}>
+        <main style={{ 
+          maxWidth: '1200px', 
+          margin: '0 auto', 
+          padding: isMobile ? '1rem 0.5rem' : '2rem 1rem' 
+        }}>
           {/* Navigation Tabs */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.25rem',
-            marginBottom: '2rem',
+            marginBottom: isMobile ? '1rem' : '2rem',
             padding: '0.25rem',
             background: 'rgba(255, 255, 255, 0.05)',
             borderRadius: '0.75rem',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)'
+            WebkitBackdropFilter: 'blur(20px)',
+            overflowX: isMobile ? 'auto' : 'visible'
           }}>
             {navigation.map((item) => {
               const Icon = item.icon;
@@ -278,10 +261,10 @@ export default function DashboardPage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.5rem 1rem',
+                    gap: isMobile ? '0.25rem' : '0.5rem',
+                    padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
                     borderRadius: '0.5rem',
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '0.75rem' : '0.875rem',
                     fontWeight: '500',
                     whiteSpace: 'nowrap',
                     cursor: 'pointer',
@@ -293,7 +276,7 @@ export default function DashboardPage() {
                   onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'white', e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
                   onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = '#94a3b8', e.currentTarget.style.background = 'transparent')}
                 >
-                  <Icon size={16} />
+                  <Icon size={isMobile ? 14 : 16} />
                   {item.label}
                 </button>
               );
@@ -338,8 +321,8 @@ export default function DashboardPage() {
               {/* Stats Cards */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1.5rem'
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: isMobile ? '1rem' : '1.5rem'
               }}>
                 {[
                   { icon: Play, label: 'Total Plays', value: stats?.totalPlays || 0, color: '#dc2626' },
@@ -384,8 +367,8 @@ export default function DashboardPage() {
               {/* Quick Actions */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '1.5rem'
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: isMobile ? '1rem' : '1.5rem'
               }}>
                 {[
                   {

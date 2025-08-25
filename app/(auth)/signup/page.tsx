@@ -501,13 +501,13 @@ export default function SignupPage() {
               />
               <label style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: '1.4' }}>
                 I agree to SoundBridge&apos;s{' '}
-                <Link href="/terms" style={{ color: '#EC4899', textDecoration: 'none' }}>
-                  Terms of Service
-                </Link>
-                {' '}and{' '}
-                <Link href="/privacy" style={{ color: '#EC4899', textDecoration: 'none' }}>
-                  Privacy Policy
-                </Link>
+                        <Link href="/legal/terms" style={{ color: '#EC4899', textDecoration: 'none' }}>
+          Terms of Service
+        </Link>
+        {' '}and{' '}
+        <Link href="/legal/privacy" style={{ color: '#EC4899', textDecoration: 'none' }}>
+          Privacy Policy
+        </Link>
               </label>
             </div>
 

@@ -555,13 +555,13 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       <FloatingCard title="Quick Actions">
         <div className="quick-actions">
           <Link href="/events/create" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">📅 Create Event</div>
+            <div className="quick-action">Create Event</div>
           </Link>
           <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">📋 My Events</div>
+            <div className="quick-action">My Events</div>
           </Link>
-          <div className="quick-action">🎵 Upload Music</div>
-          <div className="quick-action">💬 Find Collaborators</div>
+          <div className="quick-action">Upload Music</div>
+          <div className="quick-action">Find Collaborators</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Similar Events</h3>

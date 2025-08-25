@@ -402,7 +402,7 @@ export default function EventDashboardPage() {
                           color: 'white',
                           fontSize: '2rem'
                         }}>
-                          🎵
+                          <Music size={32} />
                         </div>
                       )}
                     </div>
@@ -509,21 +509,21 @@ export default function EventDashboardPage() {
       <FloatingCard title="Quick Actions">
         <div className="quick-actions">
           <Link href="/events/create" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">📅 Create Event</div>
+            <div className="quick-action">Create Event</div>
           </Link>
           <Link href="/events" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">🔍 Browse Events</div>
+            <div className="quick-action">Browse Events</div>
           </Link>
-          <div className="quick-action">🎵 Upload Music</div>
-          <div className="quick-action">💬 Find Collaborators</div>
+          <div className="quick-action">Upload Music</div>
+          <div className="quick-action">Find Collaborators</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Management</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>📊 Event Analytics</div>
-          <div>📧 Email Attendees</div>
-          <div>📱 Mobile App</div>
-          <div>🔔 Notifications</div>
+          <div>Event Analytics</div>
+          <div>Email Attendees</div>
+          <div>Mobile App</div>
+          <div>Notifications</div>
         </div>
       </FloatingCard>
     </>

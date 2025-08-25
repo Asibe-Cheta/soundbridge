@@ -61,6 +61,14 @@ export default function UploadPage() {
     }
   }, []);
 
+  const handleFileUpload = (file: File) => {
+    uploadActions.setAudioFile(file);
+
+    // Auto-fill title from filename
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+    setTitle(fileName);
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -70,22 +78,13 @@ export default function UploadPage() {
       const file = e.dataTransfer.files[0];
       handleFileUpload(file);
     }
-  }, [handleFileUpload]);
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       handleFileUpload(e.target.files[0]);
     }
   };
-
-  const handleFileUpload = (file: File) => {
-    uploadActions.setAudioFile(file);
-
-    // Auto-fill title from filename
-    const fileName = file.name.replace(/\.[^/.]+$/, '');
-    setTitle(fileName);
-  };
-
 
 
   const handleCoverArtSelect = (file: File) => {
@@ -612,10 +611,10 @@ export default function UploadPage() {
       {/* Floating Upload Tips Card */}
       <FloatingCard title="Upload Tips">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>🎵 Use high-quality audio files for best results</div>
-          <div>📝 Add detailed descriptions to help discovery</div>
-          <div>🏷️ Use relevant tags to reach your audience</div>
-          <div>🖼️ Upload cover art to make your track stand out</div>
+          <div>Use high-quality audio files for best results</div>
+          <div>Add detailed descriptions to help discovery</div>
+          <div>Use relevant tags to reach your audience</div>
+          <div>Upload cover art to make your track stand out</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Recent Uploads</h3>

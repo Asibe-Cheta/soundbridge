@@ -72,11 +72,12 @@ export async function middleware(req: NextRequest) {
     }
 
     // Handle root path - redirect authenticated users to dashboard
-    if (req.nextUrl.pathname === '/' && session) {
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = '/dashboard';
-      return NextResponse.redirect(redirectUrl);
-    }
+    // Commented out to allow authenticated users to access homepage
+    // if (req.nextUrl.pathname === '/' && session) {
+    //   const redirectUrl = req.nextUrl.clone();
+    //   redirectUrl.pathname = '/dashboard';
+    //   return NextResponse.redirect(redirectUrl);
+    // }
 
     return res;
   } catch (error) {

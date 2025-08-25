@@ -67,6 +67,12 @@ export default function MessagingPage() {
     }
   };
 
+  const handleSearchConversations = (searchTerm: string) => {
+    // This function would typically filter conversations based on search term
+    // For now, we'll just log the search term
+    console.log('Searching conversations for:', searchTerm);
+    // TODO: Implement conversation search functionality
+  };
 
 
   if (!user) {

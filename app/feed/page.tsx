@@ -16,7 +16,8 @@ import {
   Sparkles,
   Activity,
   Headphones,
-  Repeat
+  Repeat,
+  User
 } from 'lucide-react';
 
 interface Creator {
@@ -86,12 +87,12 @@ interface FriendActivity {
 }
 
 const mockCreators: Creator[] = [
-  { id: '1', name: 'Kwame Asante', username: '@kwame_asante', avatar: '🎵', followers: 125000, isFollowing: true, genre: 'Afrobeats', location: 'London, UK', verified: true },
-  { id: '2', name: 'Sarah Johnson', username: '@sarah_j', avatar: '🎵', followers: 89000, isFollowing: true, genre: 'Gospel', location: 'Birmingham, UK', verified: false },
-  { id: '3', name: 'Tommy B', username: '@tommy_b', avatar: '🎵', followers: 67000, isFollowing: false, genre: 'UK Drill', location: 'Manchester, UK', verified: true },
-  { id: '4', name: 'Ada Grace', username: '@ada_grace', avatar: '🎵', followers: 45000, isFollowing: false, genre: 'Gospel', location: 'Lagos, Nigeria', verified: false },
-  { id: '5', name: 'DJ Emeka', username: '@dj_emeka', avatar: '🎵', followers: 78000, isFollowing: true, genre: 'Afrobeats', location: 'Lagos, Nigeria', verified: true },
-  { id: '6', name: 'Grace Community', username: '@grace_community', avatar: '🎵', followers: 34000, isFollowing: false, genre: 'Gospel', location: 'Abuja, Nigeria', verified: false }
+  { id: '1', name: 'Kwame Asante', username: '@kwame_asante', avatar: '', followers: 125000, isFollowing: true, genre: 'Afrobeats', location: 'London, UK', verified: true },
+  { id: '2', name: 'Sarah Johnson', username: '@sarah_j', avatar: '', followers: 89000, isFollowing: true, genre: 'Gospel', location: 'Birmingham, UK', verified: false },
+  { id: '3', name: 'Tommy B', username: '@tommy_b', avatar: '', followers: 67000, isFollowing: false, genre: 'UK Drill', location: 'Manchester, UK', verified: true },
+  { id: '4', name: 'Ada Grace', username: '@ada_grace', avatar: '', followers: 45000, isFollowing: false, genre: 'Gospel', location: 'Lagos, Nigeria', verified: false },
+  { id: '5', name: 'DJ Emeka', username: '@dj_emeka', avatar: '', followers: 78000, isFollowing: true, genre: 'Afrobeats', location: 'Lagos, Nigeria', verified: true },
+  { id: '6', name: 'Grace Community', username: '@grace_community', avatar: '', followers: 34000, isFollowing: false, genre: 'Gospel', location: 'Abuja, Nigeria', verified: false }
 ];
 
 const mockTracks: Track[] = [
@@ -105,7 +106,7 @@ const mockTracks: Track[] = [
     comments: 45,
     shares: 23,
     uploadedAt: '2 hours ago',
-    artwork: '🎵',
+    artwork: '',
     isLiked: false,
     isReposted: false,
     isBookmarked: false,
@@ -122,7 +123,7 @@ const mockTracks: Track[] = [
     comments: 32,
     shares: 18,
     uploadedAt: '5 hours ago',
-    artwork: '🎵',
+    artwork: '',
     isLiked: true,
     isReposted: false,
     isBookmarked: true,
@@ -139,7 +140,7 @@ const mockTracks: Track[] = [
     comments: 78,
     shares: 45,
     uploadedAt: '1 day ago',
-    artwork: '🎵',
+    artwork: '',
     isLiked: false,
     isReposted: true,
     isBookmarked: false,
@@ -225,16 +226,16 @@ const mockActivityFeed: ActivityItem[] = [
 ];
 
 const mockFriendActivity: FriendActivity[] = [
-  { id: '1', user: { name: 'John', avatar: '👤' }, action: 'is listening to', track: 'Praise Medley', timestamp: '5 min ago' },
-  { id: '2', user: { name: 'Sarah', avatar: '👤' }, action: 'posted a new track', track: 'Gospel Vibes', timestamp: '1 hour ago' },
-  { id: '3', user: { name: 'Mike', avatar: '👤' }, action: 'joined event', track: 'Gospel Night Live', timestamp: '2 hours ago' },
-  { id: '4', user: { name: 'Emma', avatar: '👤' }, action: 'liked', track: 'Lagos Nights', timestamp: '3 hours ago' }
+  { id: '1', user: { name: 'John', avatar: '' }, action: 'is listening to', track: 'Praise Medley', timestamp: '5 min ago' },
+  { id: '2', user: { name: 'Sarah', avatar: '' }, action: 'posted a new track', track: 'Gospel Vibes', timestamp: '1 hour ago' },
+  { id: '3', user: { name: 'Mike', avatar: '' }, action: 'joined event', track: 'Gospel Night Live', timestamp: '2 hours ago' },
+  { id: '4', user: { name: 'Emma', avatar: '' }, action: 'liked', track: 'Lagos Nights', timestamp: '3 hours ago' }
 ];
 
 const mockRecentlyPlayed: Track[] = [
-  { id: '1', title: 'Praise Medley', artist: mockCreators[1], duration: '4:30', plays: 0, likes: 0, comments: 0, shares: 0, uploadedAt: '', artwork: '🎵', isLiked: false, isReposted: false, isBookmarked: false, genre: 'Gospel', waveform: [] },
-  { id: '2', title: 'Afro Fusion', artist: mockCreators[0], duration: '3:45', plays: 0, likes: 0, comments: 0, shares: 0, uploadedAt: '', artwork: '🎵', isLiked: false, isReposted: false, isBookmarked: false, genre: 'Afrobeats', waveform: [] },
-  { id: '3', title: 'Worship Experience', artist: mockCreators[5], duration: '5:20', plays: 0, likes: 0, comments: 0, shares: 0, uploadedAt: '', artwork: '🎵', isLiked: false, isReposted: false, isBookmarked: false, genre: 'Gospel', waveform: [] }
+  { id: '1', title: 'Praise Medley', artist: mockCreators[1], duration: '4:30', plays: 0, likes: 0, comments: 0, shares: 0, uploadedAt: '', artwork: '', isLiked: false, isReposted: false, isBookmarked: false, genre: 'Gospel', waveform: [] },
+  { id: '2', title: 'Afro Fusion', artist: mockCreators[0], duration: '3:45', plays: 0, likes: 0, comments: 0, shares: 0, uploadedAt: '', artwork: '', isLiked: false, isReposted: false, isBookmarked: false, genre: 'Afrobeats', waveform: [] },
+  { id: '3', title: 'Worship Experience', artist: mockCreators[5], duration: '5:20', plays: 0, likes: 0, comments: 0, shares: 0, uploadedAt: '', artwork: '', isLiked: false, isReposted: false, isBookmarked: false, genre: 'Gospel', waveform: [] }
 ];
 
 export default function FeedPage() {
@@ -286,7 +287,7 @@ export default function FeedPage() {
           color: 'white',
           fontSize: '1.2rem'
         }}>
-          {track.artist.avatar}
+          <User size={24} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -479,7 +480,7 @@ export default function FeedPage() {
           color: 'white',
           fontSize: '1.2rem'
         }}>
-          {event.creator.avatar}
+          <User size={24} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -609,7 +610,7 @@ export default function FeedPage() {
                 color: 'white',
                 fontSize: '1.2rem'
               }}>
-                {item.creator.avatar}
+                <User size={20} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -668,7 +669,7 @@ export default function FeedPage() {
               color: 'white',
               fontSize: '1rem'
             }}>
-              {creator.avatar}
+              <User size={20} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -796,7 +797,7 @@ export default function FeedPage() {
               color: 'white',
               fontSize: '0.8rem'
             }}>
-              {activity.user.avatar}
+              <User size={16} />
             </div>
             <div style={{ flex: 1, fontSize: '0.9rem' }}>
               <span style={{ color: 'white', fontWeight: '600' }}>{activity.user.name}</span>

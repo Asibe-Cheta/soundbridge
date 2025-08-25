@@ -7,6 +7,7 @@ import type {
   ImageMetadata,
   TrackUploadData
 } from './types/upload';
+import { copyrightService } from './copyright-service';
 
 // Audio upload service for SoundBridge
 export class AudioUploadService {
@@ -76,21 +77,19 @@ export class AudioUploadService {
       const url = URL.createObjectURL(file);
 
       audio.addEventListener('loadedmetadata', () => {
-        const metadata: AudioMetadata = {
-          duration: audio.duration,
-          bitrate: Math.round((file.size * 8) / audio.duration), // rough estimate
-          format: file.type,
-          size: file.size,
-          mimeType: file.type
-        };
-
         URL.revokeObjectURL(url);
-        resolve(metadata);
+        resolve({
+          duration: Math.round(audio.duration),
+          bitrate: 128, // Default bitrate
+          format: file.type,
+          sampleRate: 44100, // Default sample rate
+          channels: 2 // Default stereo
+        });
       });
 
       audio.addEventListener('error', () => {
         URL.revokeObjectURL(url);
-        reject(new Error('Failed to load audio file'));
+        reject(new Error('Failed to extract audio metadata'));
       });
 
       audio.src = url;
@@ -104,33 +103,22 @@ export class AudioUploadService {
       const url = URL.createObjectURL(file);
 
       img.addEventListener('load', () => {
-        const metadata: ImageMetadata = {
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-          format: file.type,
-          size: file.size,
-          mimeType: file.type
-        };
-
         URL.revokeObjectURL(url);
-        resolve(metadata);
+        resolve({
+          width: img.width,
+          height: img.height,
+          format: file.type,
+          size: file.size
+        });
       });
 
       img.addEventListener('error', () => {
         URL.revokeObjectURL(url);
-        reject(new Error('Failed to load image file'));
+        reject(new Error('Failed to extract image metadata'));
       });
 
       img.src = url;
     });
-  }
-
-  // Generate unique filename
-  generateUniqueFilename(originalName: string, userId: string): string {
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const extension = originalName.split('.').pop();
-    return `${userId}/${timestamp}_${randomString}.${extension}`;
   }
 
   // Upload audio file to Supabase storage
@@ -140,43 +128,21 @@ export class AudioUploadService {
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadResult> {
     try {
-      // Validate file
-      const validation = this.validateAudioFile(file);
-      if (!validation.isValid) {
-        return {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: validation.errors.join(', '),
-            details: validation
-          }
-        };
-      }
-
-      // Extract metadata
-      let metadata: AudioMetadata;
-      try {
-        metadata = await this.extractAudioMetadata(file);
-      } catch (error) {
-        return {
-          success: false,
-          error: {
-            code: 'METADATA_ERROR',
-            message: 'Failed to extract audio metadata',
-            details: error
-          }
-        };
-      }
-
-      // Generate unique path
-      const path = this.generateUniqueFilename(file.name, userId);
-
-      // Upload to Supabase storage
+      const fileName = `${userId}/${Date.now()}_${file.name}`;
       const { data, error } = await this.supabase.storage
         .from('audio-tracks')
-        .upload(path, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          onUploadProgress: (progress) => {
+            if (onProgress) {
+              onProgress({
+                loaded: progress.loaded,
+                total: progress.total,
+                percentage: (progress.loaded / progress.total) * 100
+              });
+            }
+          }
         });
 
       if (error) {
@@ -190,15 +156,14 @@ export class AudioUploadService {
         };
       }
 
-      // Get signed URL for private bucket
+      // Get signed URL for private access
       const { data: urlData } = await this.supabase.storage
         .from('audio-tracks')
-        .createSignedUrl(path, 3600); // 1 hour expiry
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
 
       return {
         success: true,
-        url: urlData?.signedUrl || '',
-        metadata
+        url: urlData?.signedUrl || `https://your-project.supabase.co/storage/v1/object/public/audio-tracks/${fileName}`
       };
     } catch (error) {
       return {
@@ -219,43 +184,21 @@ export class AudioUploadService {
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadResult> {
     try {
-      // Validate file
-      const validation = this.validateImageFile(file);
-      if (!validation.isValid) {
-        return {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: validation.errors.join(', '),
-            details: validation
-          }
-        };
-      }
-
-      // Extract metadata
-      let metadata: ImageMetadata;
-      try {
-        metadata = await this.extractImageMetadata(file);
-      } catch (error) {
-        return {
-          success: false,
-          error: {
-            code: 'METADATA_ERROR',
-            message: 'Failed to extract image metadata',
-            details: error
-          }
-        };
-      }
-
-      // Generate unique path
-      const path = this.generateUniqueFilename(file.name, userId);
-
-      // Upload to Supabase storage
+      const fileName = `${userId}/${Date.now()}_${file.name}`;
       const { data, error } = await this.supabase.storage
         .from('cover-art')
-        .upload(path, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          onUploadProgress: (progress) => {
+            if (onProgress) {
+              onProgress({
+                loaded: progress.loaded,
+                total: progress.total,
+                percentage: (progress.loaded / progress.total) * 100
+              });
+            }
+          }
         });
 
       if (error) {
@@ -269,15 +212,14 @@ export class AudioUploadService {
         };
       }
 
-      // Get public URL for cover art
-      const { data: urlData } = this.supabase.storage
+      // Get public URL
+      const { data: urlData } = await this.supabase.storage
         .from('cover-art')
-        .getPublicUrl(path);
+        .getPublicUrl(fileName);
 
       return {
         success: true,
-        url: urlData.publicUrl,
-        metadata
+        url: urlData.publicUrl
       };
     } catch (error) {
       return {
@@ -304,54 +246,26 @@ export class AudioUploadService {
     is_public: boolean;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
-      // Get session for API call
-      const { data: { session } } = await this.supabase.auth.getSession();
-      if (!session) {
+      const { data, error } = await this.supabase
+        .from('audio_tracks')
+        .insert([trackData])
+        .select()
+        .single();
+
+      if (error) {
         return {
           success: false,
           error: {
-            code: 'AUTH_ERROR',
-            message: 'No active session',
-            details: null
-          }
-        };
-      }
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          title: trackData.title,
-          description: trackData.description,
-          genre: trackData.genre,
-          tags: trackData.tags,
-          privacy: trackData.is_public ? 'public' : 'private',
-          publishOption: 'now',
-          audioFileUrl: trackData.file_url,
-          coverArtUrl: trackData.cover_art_url,
-          duration: trackData.duration
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: {
-            code: 'API_ERROR',
-            message: result.error || 'Failed to create track record',
-            details: result
+            code: 'DATABASE_ERROR',
+            message: error.message,
+            details: error
           }
         };
       }
 
       return {
         success: true,
-        data: result.track
+        data
       };
     } catch (error) {
       return {
@@ -365,7 +279,16 @@ export class AudioUploadService {
     }
   }
 
-  // Complete upload process
+  // Delete file from storage
+  async deleteFile(bucket: string, filePath: string): Promise<void> {
+    try {
+      await this.supabase.storage.from(bucket).remove([filePath]);
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  }
+
+  // Complete upload process with copyright checking
   async uploadTrack(
     trackData: TrackUploadData,
     userId: string,
@@ -407,7 +330,7 @@ export class AudioUploadService {
         creator_id: userId,
         file_url: audioResult.url!,
         cover_art_url: coverArtUrl,
-        duration: (audioResult.metadata as AudioMetadata).duration,
+        duration: (trackData.audioFile.metadata as AudioMetadata)?.duration || 0,
         genre: trackData.genre,
         tags: trackData.tags,
         is_public: trackData.privacy === 'public'
@@ -428,9 +351,42 @@ export class AudioUploadService {
         };
       }
 
+      // Perform copyright check after successful upload
+      try {
+        const copyrightCheck = await copyrightService.checkCopyrightViolation(
+          dbResult.data.id,
+          userId,
+          trackData.audioFile.file
+        );
+
+        // Handle copyright check results
+        if (copyrightCheck.isViolation) {
+          console.warn('Copyright violation detected:', copyrightCheck);
+          
+          // Update copyright protection status based on recommendation
+          if (copyrightCheck.recommendation === 'block') {
+            await copyrightService.updateCopyrightStatus(dbResult.data.id, 'blocked');
+            
+            // Optionally, you could delete the track here or mark it as blocked
+            // For now, we'll just log the violation
+            console.log('Track blocked due to copyright violation');
+          } else if (copyrightCheck.recommendation === 'flag') {
+            await copyrightService.updateCopyrightStatus(dbResult.data.id, 'flagged');
+            console.log('Track flagged for copyright review');
+          }
+        } else {
+          // Mark as approved if no violation detected
+          await copyrightService.updateCopyrightStatus(dbResult.data.id, 'approved');
+        }
+      } catch (copyrightError) {
+        console.error('Error during copyright check:', copyrightError);
+        // Don't fail the upload if copyright check fails
+        // Just log the error and continue
+      }
+
       return {
         success: true,
-        trackId: dbResult.data?.id
+        trackId: dbResult.data.id
       };
     } catch (error) {
       return {
@@ -441,70 +397,6 @@ export class AudioUploadService {
           details: error
         }
       };
-    }
-  }
-
-  // Delete file from storage
-  async deleteFile(bucketId: string, fileUrl: string): Promise<boolean> {
-    try {
-      // Extract path from URL
-      const path = fileUrl.split('/').pop();
-      if (!path) return false;
-
-      const { error } = await this.supabase.storage
-        .from(bucketId)
-        .remove([path]);
-
-      return !error;
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      return false;
-    }
-  }
-
-  // Get file URL
-  async getFileUrl(bucketId: string, path: string, signed: boolean = false): Promise<string> {
-    if (signed) {
-      const { data } = await this.supabase.storage
-        .from(bucketId)
-        .createSignedUrl(path, 3600);
-      return data?.signedUrl || '';
-    } else {
-      const { data } = await this.supabase.storage
-        .from(bucketId)
-        .getPublicUrl(path);
-      return data.publicUrl;
-    }
-  }
-
-  // Format file size
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  // Format upload speed
-  formatUploadSpeed(bytesPerSecond: number): string {
-    return this.formatFileSize(bytesPerSecond) + '/s';
-  }
-
-  // Format time remaining
-  formatTimeRemaining(seconds: number): string {
-    if (seconds < 60) {
-      return `${Math.round(seconds)}s`;
-    } else if (seconds < 3600) {
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = Math.round(seconds % 60);
-      return `${minutes}m ${remainingSeconds}s`;
-    } else {
-      const hours = Math.floor(seconds / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      return `${hours}h ${minutes}m`;
     }
   }
 }

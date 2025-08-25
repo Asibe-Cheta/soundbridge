@@ -287,7 +287,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
                         color: 'white',
                         fontSize: '2rem'
                       }}>
-                        🎵
+                        <Music size={32} />
                       </div>
                     )}
                     <div className="play-button">▶</div>
@@ -712,7 +712,7 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
                   color: 'white',
                   fontSize: '1.5rem'
                 }}>
-                  🎵
+                  <Music size={24} />
                 </div>
                 <div>
                   <div style={{ fontWeight: '600' }}>{tracks[0].title}</div>
@@ -756,10 +756,10 @@ export default function CreatorProfile({ params }: { params: Promise<{ username:
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions">
         <div className="quick-actions">
-          <div className="quick-action">🎵 Upload Music</div>
-          <div className="quick-action">🎙️ Start Podcast</div>
-          <div className="quick-action">📅 Create Event</div>
-          <div className="quick-action">💬 Find Collaborators</div>
+          <div className="quick-action">Upload Music</div>
+          <div className="quick-action">Start Podcast</div>
+          <div className="quick-action">Create Event</div>
+          <div className="quick-action">Find Collaborators</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>

@@ -79,10 +79,10 @@ export function Footer() {
             <Link href="/contact" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Mail size={16} /> Contact
             </Link>
-            <Link href="/privacy" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+            <Link href="/legal/privacy" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Shield size={16} /> Privacy Policy
             </Link>
-            <Link href="/terms" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+            <Link href="/legal/terms" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <FileText size={16} /> Terms
             </Link>
           </div>
@@ -111,9 +111,9 @@ export function Footer() {
         </div>
         
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.8rem', color: '#999' }}>
-          <Link href="/privacy" style={{ color: '#999', textDecoration: 'none' }}>Privacy</Link>
+          <Link href="/legal/privacy" style={{ color: '#999', textDecoration: 'none' }}>Privacy</Link>
           <span>•</span>
-          <Link href="/terms" style={{ color: '#999', textDecoration: 'none' }}>Terms</Link>
+          <Link href="/legal/terms" style={{ color: '#999', textDecoration: 'none' }}>Terms</Link>
           <span>•</span>
           <Link href="/cookies" style={{ color: '#999', textDecoration: 'none' }}>Cookies</Link>
         </div>

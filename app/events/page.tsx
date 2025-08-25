@@ -11,7 +11,8 @@ import {
   Filter,
   Search,
   AlertCircle,
-  Loader2
+  Loader2,
+  Music
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
@@ -364,7 +365,7 @@ export default function EventsPage() {
                             color: 'white',
                             fontSize: '2rem'
                           }}>
-                            🎵
+                            <Music size={32} />
                           </div>
                         )}
                       </div>
@@ -449,13 +450,13 @@ export default function EventsPage() {
       <FloatingCard title="Quick Actions">
         <div className="quick-actions">
           <Link href="/events/create" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">📅 Create Event</div>
+            <div className="quick-action">Create Event</div>
           </Link>
           <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">📋 My Events</div>
+            <div className="quick-action">My Events</div>
           </Link>
-          <div className="quick-action">🎵 Upload Music</div>
-          <div className="quick-action">💬 Find Collaborators</div>
+          <div className="quick-action">Upload Music</div>
+          <div className="quick-action">Find Collaborators</div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Categories</h3>

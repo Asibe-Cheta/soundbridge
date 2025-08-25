@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AudioPlayer } from '../../src/components/ui/AudioPlayer';
+import { Music, Sliders, BarChart3, List } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -32,7 +33,7 @@ export default function PlayerDemoPage() {
       artist: 'Kwame Asante',
       album: 'Afrobeats Vibes',
       duration: 225, // 3:45
-      artwork: '🎵',
+      artwork: '',
       url: '/audio/lagos-nights.mp3',
       liked: true
     },
@@ -42,7 +43,7 @@ export default function PlayerDemoPage() {
       artist: 'Sarah Johnson',
       album: 'Spiritual Journey',
       duration: 252, // 4:12
-      artwork: '🎵',
+      artwork: '',
       url: '/audio/gospel-fusion.mp3',
       liked: false
     },
@@ -52,7 +53,7 @@ export default function PlayerDemoPage() {
       artist: 'Tommy B',
       album: 'Underground Sounds',
       duration: 208, // 3:28
-      artwork: '🎵',
+      artwork: '',
       url: '/audio/uk-drill-mix.mp3',
       liked: true
     },
@@ -62,7 +63,7 @@ export default function PlayerDemoPage() {
       artist: 'Michael Okafor',
       album: 'Modern African',
       duration: 235, // 3:55
-      artwork: '🎵',
+      artwork: '',
       url: '/audio/afro-fusion.mp3',
       liked: false
     },
@@ -72,7 +73,7 @@ export default function PlayerDemoPage() {
       artist: 'Grace Community',
       album: 'Worship Collection',
       duration: 270, // 4:30
-      artwork: '🎵',
+      artwork: '',
       url: '/audio/praise-worship.mp3',
       liked: true
     },
@@ -82,7 +83,7 @@ export default function PlayerDemoPage() {
       artist: 'Wizkid Jr',
       album: 'Nigerian Vibes',
       duration: 195, // 3:15
-      artwork: '🎵',
+      artwork: '',
       url: '/audio/lagos-anthem.mp3',
       liked: false
     }
@@ -343,7 +344,10 @@ export default function PlayerDemoPage() {
             padding: '1.5rem',
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            <h3 style={{ color: '#EC4899', margin: '0 0 1rem 0' }}>🎵 Mini Player</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <Music size={20} color="#EC4899" />
+              <h3 style={{ color: '#EC4899', margin: 0 }}>Mini Player</h3>
+            </div>
             <p style={{ color: '#ccc', margin: 0, fontSize: '0.9rem' }}>
               Always visible at the bottom of the screen with essential controls and track info
             </p>
@@ -367,7 +371,10 @@ export default function PlayerDemoPage() {
             padding: '1.5rem',
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            <h3 style={{ color: '#EC4899', margin: '0 0 1rem 0' }}>📋 Queue Management</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <List size={20} color="#EC4899" />
+              <h3 style={{ color: '#EC4899', margin: 0 }}>Queue Management</h3>
+            </div>
             <p style={{ color: '#ccc', margin: 0, fontSize: '0.9rem' }}>
               Drag-to-reorder playlist with visual feedback and easy track removal
             </p>
@@ -379,7 +386,10 @@ export default function PlayerDemoPage() {
             padding: '1.5rem',
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            <h3 style={{ color: '#EC4899', margin: '0 0 1rem 0' }}>🎛️ Audio Controls</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <Sliders size={20} color="#EC4899" />
+              <h3 style={{ color: '#EC4899', margin: 0 }}>Audio Controls</h3>
+            </div>
             <p style={{ color: '#ccc', margin: 0, fontSize: '0.9rem' }}>
               Play/pause, skip, repeat, shuffle, volume control with seek functionality
             </p>
@@ -391,7 +401,10 @@ export default function PlayerDemoPage() {
             padding: '1.5rem',
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            <h3 style={{ color: '#EC4899', margin: '0 0 1rem 0' }}>📊 Progress Tracking</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <BarChart3 size={20} color="#EC4899" />
+              <h3 style={{ color: '#EC4899', margin: 0 }}>Progress Tracking</h3>
+            </div>
             <p style={{ color: '#ccc', margin: 0, fontSize: '0.9rem' }}>
               Real-time progress bar with click-to-seek and time display
             </p>
