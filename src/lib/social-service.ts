@@ -266,6 +266,8 @@ export class SocialService {
   // ===== SHARES =====
   async createShare(userId: string, request: CreateShareRequest): Promise<{ data: Share | null; error: any }> {
     try {
+      console.log('🔍 Creating share with:', { userId, request });
+      
       const { data, error } = await this.supabase
         .from('shares')
         .insert({
@@ -277,25 +279,84 @@ export class SocialService {
           external_url: request.external_url,
           caption: request.caption
         })
-        .select(`
-          *,
-          user:profiles!shares_user_id_fkey(id, username, display_name, avatar_url),
-          content:audio_tracks!shares_content_id_fkey(id, title, creator_id),
-          content:events!shares_content_id_fkey(id, title, creator_id)
-        `)
+        .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error inserting share:', error);
+        throw error;
+      }
 
-      // Create notification
-      await this.createNotification({
-        user_id: request.content_id, // Will be updated to get actual creator_id
-        type: 'share',
-        title: 'New Share',
-        message: `Someone shared your ${request.content_type}`,
-        related_id: data.id,
-        related_type: 'share'
-      });
+      console.log('✅ Share created successfully:', data);
+
+      // Get the content creator's ID for notification
+      let creatorId: string | null = null;
+      
+      if (request.content_type === 'track') {
+        const { data: track, error: trackError } = await this.supabase
+          .from('audio_tracks')
+          .select('creator_id')
+          .eq('id', request.content_id)
+          .single();
+        
+        if (trackError) {
+          console.error('❌ Error fetching track creator:', trackError);
+        } else {
+          creatorId = track?.creator_id || null;
+          console.log('📝 Track creator ID:', creatorId);
+        }
+      } else if (request.content_type === 'event') {
+        const { data: event, error: eventError } = await this.supabase
+          .from('events')
+          .select('creator_id')
+          .eq('id', request.content_id)
+          .single();
+        
+        if (eventError) {
+          console.error('❌ Error fetching event creator:', eventError);
+        } else {
+          creatorId = event?.creator_id || null;
+          console.log('📝 Event creator ID:', creatorId);
+        }
+      }
+
+      // Create notification for content creator (if it's a repost and creator is different from sharer)
+      if (request.share_type === 'repost' && creatorId && creatorId !== userId) {
+        try {
+          console.log('🔔 Creating notification for creator:', creatorId);
+          
+          // Check if the creator exists in the profiles table
+          const { data: creatorProfile, error: profileError } = await this.supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', creatorId)
+            .single();
+          
+          if (profileError) {
+            console.error('❌ Error checking creator profile:', profileError);
+            console.log('ℹ️ Skipping notification creation due to profile error');
+          } else if (!creatorProfile) {
+            console.error('❌ Creator profile not found for ID:', creatorId);
+            console.log('ℹ️ Skipping notification creation due to missing profile');
+          } else {
+            console.log('✅ Creator profile found, creating notification');
+            await this.createNotification({
+              user_id: creatorId,
+              type: 'share',
+              title: 'Your content was shared',
+              message: `Someone shared your ${request.content_type}`,
+              related_id: data.id,
+              related_type: 'share'
+            });
+            console.log('✅ Notification created successfully');
+          }
+        } catch (notificationError) {
+          console.error('❌ Error creating notification:', notificationError);
+          // Don't fail the share if notification fails
+        }
+      } else {
+        console.log('ℹ️ No notification needed (not a repost or same user)');
+      }
 
       return { data, error: null };
     } catch (error) {
@@ -722,6 +783,159 @@ export class SocialService {
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       return { error };
+    }
+  }
+
+  // ===== SHARES =====
+  async shareContent(
+    userId: string,
+    contentId: string,
+    contentType: 'track' | 'event',
+    shareType: 'repost' | 'external_share' = 'repost',
+    options?: {
+      externalPlatform?: string;
+      externalUrl?: string;
+      caption?: string;
+    }
+  ): Promise<{ data: any; error: any }> {
+    try {
+      const shareData = {
+        user_id: userId,
+        content_id: contentId,
+        content_type: contentType,
+        share_type: shareType,
+        external_platform: options?.externalPlatform || null,
+        external_url: options?.externalUrl || null,
+        caption: options?.caption || null,
+      };
+
+      const { data, error } = await this.supabase
+        .from('shares')
+        .insert(shareData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create notification for content creator
+      if (shareType === 'repost') {
+        await this.createNotification({
+          user_id: userId, // This will be updated to content creator's ID
+          type: 'share',
+          title: 'Your content was shared',
+          message: 'Someone shared your content',
+          related_content_id: contentId,
+          related_content_type: contentType,
+        });
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error sharing content:', error);
+      return { data: null, error };
+    }
+  }
+
+  async getShares(contentId: string, contentType: 'track' | 'event'): Promise<{ data: any[] | null; error: any }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('shares')
+        .select(`
+          *,
+          user:profiles!shares_user_id_fkey(id, username, display_name, avatar_url)
+        `)
+        .eq('content_id', contentId)
+        .eq('content_type', contentType)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error getting shares:', error);
+      return { data: null, error };
+    }
+  }
+
+  async hasShared(userId: string, contentId: string, contentType: 'track' | 'event'): Promise<{ data: boolean; error: any }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('shares')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('content_id', contentId)
+        .eq('content_type', contentType)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+      return { data: !!data, error: null };
+    } catch (error) {
+      console.error('Error checking if shared:', error);
+      return { data: false, error };
+    }
+  }
+
+  async getUserShares(userId: string): Promise<{ data: Share[] | null; error: any }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('shares')
+        .select(`
+          *,
+          user:profiles!shares_user_id_fkey(id, username, display_name, avatar_url)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get content details for each share
+      const sharesWithContent = await Promise.all(
+        data.map(async (share) => {
+          let content = null;
+          
+          if (share.content_type === 'track') {
+            const { data: track } = await this.supabase
+              .from('audio_tracks')
+              .select(`
+                id,
+                title,
+                creator_id,
+                cover_art_url,
+                duration,
+                play_count,
+                like_count,
+                creator:profiles!audio_tracks_creator_id_fkey(username, display_name)
+              `)
+              .eq('id', share.content_id)
+              .single();
+            content = track;
+          } else if (share.content_type === 'event') {
+            const { data: event } = await this.supabase
+              .from('events')
+              .select(`
+                id,
+                title,
+                creator_id,
+                venue,
+                event_date,
+                start_time,
+                creator:profiles!events_creator_id_fkey(username, display_name)
+              `)
+              .eq('id', share.content_id)
+              .single();
+            content = event;
+          }
+
+          return {
+            ...share,
+            content
+          };
+        })
+      );
+
+      return { data: sharesWithContent.filter(share => share.content !== null), error: null };
+    } catch (error) {
+      console.error('Error getting user shares:', error);
+      return { data: null, error };
     }
   }
 

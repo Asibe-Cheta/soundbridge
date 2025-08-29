@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
   Heart, Share2, List, Settings, Maximize2, Minimize2
 } from 'lucide-react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
+import { useSocial } from '../../hooks/useSocial';
+import { useAuth } from '../../contexts/AuthContext';
 import { cn, formatTime } from '../../lib/utils';
+import ShareModal from '../social/ShareModal';
 
 export function GlobalAudioPlayer() {
   const {
@@ -27,8 +30,32 @@ export function GlobalAudioPlayer() {
     clearError
   } = useAudioPlayer();
 
+  const { toggleLike, isLiked, createShare } = useSocial();
+  const { user } = useAuth();
   const [showVolume, setShowVolume] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isTrackLiked, setIsTrackLiked] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+
+  // Check if current track is liked
+  useEffect(() => {
+    const checkIfLiked = async () => {
+      if (!user || !currentTrack) {
+        setIsTrackLiked(false);
+        return;
+      }
+
+      try {
+        const result = await isLiked(currentTrack.id, 'track');
+        setIsTrackLiked(result.data);
+      } catch (error) {
+        console.error('Error checking if track is liked:', error);
+        setIsTrackLiked(false);
+      }
+    };
+
+    checkIfLiked();
+  }, [user, currentTrack, isLiked]);
 
   // Don't render if no track is playing
   if (!currentTrack) {
@@ -66,6 +93,56 @@ export function GlobalAudioPlayer() {
       setVolume(0);
       setIsMuted(true);
     }
+  };
+
+  const handleLikeTrack = async () => {
+    if (!user || !currentTrack) {
+      alert('Please sign in to like tracks');
+      return;
+    }
+
+    try {
+      const result = await toggleLike({
+        content_id: currentTrack.id,
+        content_type: 'track'
+      });
+
+      if (result.error) {
+        console.error('Error toggling like:', result.error);
+        return;
+      }
+
+      // Update local state
+      setIsTrackLiked(!isTrackLiked);
+
+      // Update like count in database
+      const updateResponse = await fetch('/api/audio/update-likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          trackId: currentTrack.id,
+          action: isTrackLiked ? 'unlike' : 'like'
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        console.error('Failed to update like count in database');
+      }
+
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
+  };
+
+  const handleShareTrack = async () => {
+    if (!user || !currentTrack) {
+      alert('Please sign in to share tracks');
+      return;
+    }
+
+    setShareModalOpen(true);
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -409,11 +486,11 @@ export function GlobalAudioPlayer() {
             {/* Additional Controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
-                onClick={() => {/* TODO: Like track */}}
+                onClick={handleLikeTrack}
                 style={{ 
                   background: 'none', 
                   border: 'none', 
-                  color: '#9CA3AF', 
+                  color: isTrackLiked ? '#EC4899' : '#9CA3AF', 
                   cursor: 'pointer',
                   padding: '8px',
                   borderRadius: '50%',
@@ -424,15 +501,20 @@ export function GlobalAudioPlayer() {
                   e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.color = isTrackLiked ? '#EC4899' : '#9CA3AF';
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <Heart size={18} />
+                <Heart 
+                  size={18} 
+                  style={{ 
+                    fill: isTrackLiked ? '#EC4899' : 'none'
+                  }} 
+                />
               </button>
 
               <button
-                onClick={() => {/* TODO: Share track */}}
+                onClick={handleShareTrack}
                 style={{ 
                   background: 'none', 
                   border: 'none', 
@@ -465,6 +547,25 @@ export function GlobalAudioPlayer() {
           `
         }} />
       </motion.div>
+
+      {/* Share Modal */}
+      {shareModalOpen && currentTrack && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          content={{
+            id: currentTrack.id,
+            title: currentTrack.title,
+            type: 'track',
+            creator: {
+              name: currentTrack.artist || 'Unknown Artist',
+              username: 'unknown'
+            },
+            coverArt: currentTrack.artwork,
+            url: currentTrack.url
+          }}
+        />
+      )}
     </AnimatePresence>
   );
 }

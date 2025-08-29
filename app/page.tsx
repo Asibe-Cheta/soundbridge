@@ -6,19 +6,25 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
+import { useSocial } from '@/src/hooks/useSocial';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2 } from 'lucide-react';
+import ShareModal from '@/src/components/social/ShareModal';
 
 export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
+  const { toggleLike, isLiked, createShare } = useSocial();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [recentTracks, setRecentTracks] = React.useState<any[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
+  const [likedTracks, setLikedTracks] = React.useState<Set<string>>(new Set());
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedTrackForShare, setSelectedTrackForShare] = useState<any>(null);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -72,7 +78,7 @@ export default function HomePage() {
     const audioTrack = {
       id: track.id,
       title: track.title,
-      artist: track.creator?.name || 'Unknown Artist',
+      artist: track.artist || track.creator?.name || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
       artwork: track.coverArt || '',
@@ -82,6 +88,75 @@ export default function HomePage() {
     
     console.log('🎵 Converted to AudioTrack:', audioTrack);
     playTrack(audioTrack);
+  };
+
+  const handleLikeTrack = async (track: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      alert('Please sign in to like tracks');
+      return;
+    }
+
+    try {
+      const result = await toggleLike({
+        content_id: track.id,
+        content_type: 'track'
+      });
+
+      if (result.error) {
+        console.error('Error toggling like:', result.error);
+        return;
+      }
+
+      // Update local state
+      const newLikedTracks = new Set(likedTracks);
+      const isCurrentlyLiked = newLikedTracks.has(track.id);
+      
+      if (isCurrentlyLiked) {
+        newLikedTracks.delete(track.id);
+      } else {
+        newLikedTracks.add(track.id);
+      }
+      setLikedTracks(newLikedTracks);
+
+      // Update like count in database
+      const updateResponse = await fetch('/api/audio/update-likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          trackId: track.id,
+          action: isCurrentlyLiked ? 'unlike' : 'like'
+        }),
+      });
+
+      if (updateResponse.ok) {
+        const updateResult = await updateResponse.json();
+        // Update local state with the new count from database
+        setRecentTracks(prev => prev.map(t => 
+          t.id === track.id ? { ...t, likes: updateResult.newLikeCount } : t
+        ));
+      }
+
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
+  };
+
+  const handleShareTrack = async (track: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      alert('Please sign in to share tracks');
+      return;
+    }
+
+    setSelectedTrackForShare(track);
+    setShareModalOpen(true);
   };
 
   // Close dropdown when clicking outside
@@ -150,6 +225,30 @@ export default function HomePage() {
     // Load tracks regardless of user authentication status
     loadRecentTracks();
   }, []);
+
+  // Check which tracks are liked by the current user
+  React.useEffect(() => {
+    const checkLikedTracks = async () => {
+      if (!user || recentTracks.length === 0) return;
+
+      try {
+        const likedTrackIds = new Set<string>();
+        
+        for (const track of recentTracks) {
+          const result = await isLiked(track.id, 'track');
+          if (result.data) {
+            likedTrackIds.add(track.id);
+          }
+        }
+        
+        setLikedTracks(likedTrackIds);
+      } catch (error) {
+        console.error('Error checking liked tracks:', error);
+      }
+    };
+
+    checkLikedTracks();
+  }, [user, recentTracks, isLiked]);
 
   // Show error state if auth failed
   if (authError) {
@@ -994,6 +1093,31 @@ export default function HomePage() {
                   </div>
                 </Link>
                 
+                <Link 
+                  href="/shares" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '16px 20px',
+                    color: 'white',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    fontSize: '17px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                  >
+                    <Share2 size={20} style={{ color: '#3B82F6' }} />
+                    Shared Content
+                  </div>
+                </Link>
+                
                 <button
                   onClick={(e) => {
                     setIsMobileMenuOpen(false);
@@ -1371,12 +1495,83 @@ export default function HomePage() {
                         <Play size={20} />
                       )}
                     </div>
+                    {/* Like Button */}
+                    <div 
+                      className="like-button"
+                      onClick={(e) => handleLikeTrack(track, e)}
+                      style={{ 
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Heart 
+                        size={16} 
+                        style={{ 
+                          color: likedTracks.has(track.id) ? '#EC4899' : 'white',
+                          fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
+                        }} 
+                      />
+                    </div>
+                    {/* Share Button */}
+                    <div 
+                      className="share-button"
+                      onClick={(e) => handleShareTrack(track, e)}
+                      style={{ 
+                        position: 'absolute',
+                        top: '10px',
+                        right: '50px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Share2 
+                        size={16} 
+                        style={{ 
+                          color: 'white'
+                        }} 
+                      />
+                    </div>
                   </div>
                   <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
                     {track.title || 'Untitled Track'}
                   </div>
                   <div style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                    {track.creator?.name || 'Unknown Artist'}
+                    {track.artist || track.creator?.name || 'Unknown Artist'}
                   </div>
                   <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
                     {track.plays || 0} plays • {track.likes || 0} likes
@@ -1603,6 +1798,28 @@ export default function HomePage() {
           <div>Mike joined Gospel Night event</div>
         </div>
       </FloatingCard>
+
+      {/* Share Modal */}
+      {shareModalOpen && selectedTrackForShare && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSelectedTrackForShare(null);
+          }}
+          content={{
+            id: selectedTrackForShare.id,
+            title: selectedTrackForShare.title,
+            type: 'track',
+            creator: {
+              name: selectedTrackForShare.artist || selectedTrackForShare.creator?.name || 'Unknown Artist',
+              username: selectedTrackForShare.creator?.username || 'unknown'
+            },
+            coverArt: selectedTrackForShare.coverArt,
+            url: selectedTrackForShare.url
+          }}
+        />
+      )}
     </>
   );
   } catch (error) {

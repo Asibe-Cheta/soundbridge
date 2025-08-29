@@ -45,14 +45,15 @@ export async function GET() {
     const formattedTracks = tracks.map(track => ({
       id: track.id,
       title: track.title,
+      artist: track.artist_name || 'Unknown Artist',
       coverArt: track.cover_art_url,
       url: track.file_url,
       duration: track.duration || 0,
       plays: track.play_count || 0,
-      likes: track.likes_count || 0,
+      likes: track.like_count || 0,
       creator: {
         id: track.creator_id,
-        name: 'Unknown Artist',
+        name: track.artist_name || 'Unknown Artist',
         username: 'unknown',
         avatar: null
       }

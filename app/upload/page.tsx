@@ -37,6 +37,7 @@ export default function UploadPage() {
 
   // Form states
   const [title, setTitle] = useState('');
+  const [artistName, setArtistName] = useState('');
   const [description, setDescription] = useState('');
   const [genre, setGenre] = useState('');
   const [tags, setTags] = useState('');
@@ -138,6 +139,11 @@ export default function UploadPage() {
       return;
     }
 
+    if (!artistName.trim()) {
+      console.error('No artist name provided');
+      return;
+    }
+
     try {
       console.log('Starting upload process...');
       
@@ -177,6 +183,7 @@ export default function UploadPage() {
       // Now proceed with upload
       const trackData = {
         title: title.trim(),
+        artistName: artistName.trim(),
         description: description.trim(),
         genre,
         tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
@@ -191,6 +198,7 @@ export default function UploadPage() {
              if (success) {
          // Reset form
          setTitle('');
+         setArtistName('');
          setDescription('');
          setGenre('');
          setTags('');
@@ -575,6 +583,18 @@ export default function UploadPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter track title"
+                  className="form-input"
+                />
+              </div>
+
+              {/* Artist Name */}
+              <div>
+                <label className="form-label">Artist Name *</label>
+                <input
+                  type="text"
+                  value={artistName}
+                  onChange={(e) => setArtistName(e.target.value)}
+                  placeholder="Enter artist name"
                   className="form-input"
                 />
               </div>

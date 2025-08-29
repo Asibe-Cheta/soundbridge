@@ -193,12 +193,17 @@ export function useSocial() {
     setError(null);
 
     try {
+      console.log('🔄 useSocial.createShare called with:', { userId: user.id, request });
       const result = await socialService.createShare(user.id, request);
+      console.log('📊 socialService.createShare result:', result);
+      
       if (result.error) {
+        console.error('❌ Share error from service:', result.error);
         setError(result.error.message || 'Failed to create share');
       }
       return result;
     } catch (err) {
+      console.error('❌ Share error in useSocial:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create share';
       setError(errorMessage);
       return { data: null, error: errorMessage };
@@ -225,6 +230,27 @@ export function useSocial() {
       setLoading(false);
     }
   }, []);
+
+  const getUserShares = useCallback(async () => {
+    if (!user) return { data: null, error: 'User not authenticated' };
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await socialService.getUserShares(user.id);
+      if (result.error) {
+        setError(result.error.message || 'Failed to get user shares');
+      }
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get user shares';
+      setError(errorMessage);
+      return { data: null, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   // ===== BOOKMARKS =====
   const toggleBookmark = useCallback(async (request: CreateBookmarkRequest) => {
@@ -625,6 +651,7 @@ export function useSocial() {
     // Shares
     createShare,
     getShares,
+    getUserShares,
     
     // Bookmarks
     toggleBookmark,

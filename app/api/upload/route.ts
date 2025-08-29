@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       title,
+      artistName,
       description,
       genre,
       tags,
@@ -38,9 +39,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!title || !audioFileUrl) {
+    if (!title || !artistName || !audioFileUrl) {
       return NextResponse.json(
-        { error: 'Title and audio file are required' },
+        { error: 'Title, artist name, and audio file are required' },
         { status: 400 }
       );
     }
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
     // Create audio track record
     const trackData = {
       title: title.trim(),
+      artist_name: artistName.trim(),
       description: description?.trim() || null,
       creator_id: user.id,
       file_url: audioFileUrl,
