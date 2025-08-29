@@ -5,12 +5,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
-import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X } from 'lucide-react';
 
 export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -63,6 +65,25 @@ export default function HomePage() {
     }
   };
 
+  const handlePlayTrack = (track: any) => {
+    console.log('🎵 handlePlayTrack called with:', track);
+    
+    // Convert track data to AudioTrack format
+    const audioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.name || 'Unknown Artist',
+      album: '',
+      duration: track.duration || 0,
+      artwork: track.coverArt || '',
+      url: track.url || '',
+      liked: false
+    };
+    
+    console.log('🎵 Converted to AudioTrack:', audioTrack);
+    playTrack(audioTrack);
+  };
+
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -101,7 +122,7 @@ export default function HomePage() {
       try {
         console.log('🔄 Loading recent tracks...');
         setIsLoadingTracks(true);
-        const response = await fetch('/api/audio?recent=true');
+        const response = await fetch('/api/audio/recent');
         
         if (response.ok) {
           const result = await response.json();
@@ -1067,6 +1088,7 @@ export default function HomePage() {
                 {/* Main Content */}
         <main style={{
           padding: isMobile ? '1rem' : '2rem',
+          paddingBottom: isMobile ? '6rem' : '7rem',
           maxWidth: '1400px',
           margin: '0 auto'
         }}>
@@ -1331,8 +1353,23 @@ export default function HomePage() {
                         </div>
                       </div>
                     )}
-                    <div className="play-button">
-                      <Play size={20} />
+                    <div 
+                      className="play-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePlayTrack(track);
+                      }}
+                      style={{ 
+                        cursor: 'pointer',
+                        backgroundColor: currentTrack?.id === track.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
+                      }}
+                    >
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <Pause size={20} />
+                      ) : (
+                        <Play size={20} />
+                      )}
                     </div>
                   </div>
                   <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>

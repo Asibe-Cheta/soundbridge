@@ -1,0 +1,470 @@
+'use client';
+
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
+  Heart, Share2, List, Settings, Maximize2, Minimize2
+} from 'lucide-react';
+import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
+import { cn, formatTime } from '../../lib/utils';
+
+export function GlobalAudioPlayer() {
+  const {
+    currentTrack,
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    isLoading,
+    error,
+    playTrack,
+    pause,
+    resume,
+    stop,
+    seek,
+    setVolume,
+    clearError
+  } = useAudioPlayer();
+
+  const [showVolume, setShowVolume] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Don't render if no track is playing
+  if (!currentTrack) {
+    return null;
+  }
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      pause();
+    } else {
+      resume();
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const progressWidth = rect.width;
+    const clickPercent = clickX / progressWidth;
+    const newTime = clickPercent * duration;
+    seek(newTime);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    setIsMuted(newVolume === 0);
+  };
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setVolume(volume || 0.7);
+      setIsMuted(false);
+    } else {
+      setVolume(0);
+      setIsMuted(true);
+    }
+  };
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  // Format time to MM:SS format
+  const formatTimeDisplay = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        style={{ 
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          backgroundColor: 'rgba(26, 26, 26, 0.98)',
+          backdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          height: '90px',
+          maxHeight: '90px',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px'
+        }}
+      >
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '1400px', 
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: 'white',
+          fontSize: '14px'
+        }}>
+          {/* Left Section - Track Info & Cover Art */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1', minWidth: 0 }}>
+            {/* Cover Art */}
+            <div style={{ 
+              width: '56px', 
+              height: '56px', 
+              borderRadius: '8px',
+              overflow: 'hidden',
+              flexShrink: 0,
+              background: 'linear-gradient(135deg, #DC2626, #EC4899)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {currentTrack.artwork ? (
+                <img 
+                  src={currentTrack.artwork} 
+                  alt={currentTrack.title}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover' 
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize: '24px', color: 'white' }}>🎵</span>
+              )}
+            </div>
+            
+            {/* Track Info */}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ 
+                fontWeight: '600', 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis',
+                color: 'white',
+                fontSize: '14px',
+                marginBottom: '4px'
+              }}>
+                {currentTrack.title}
+              </div>
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#9CA3AF',
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis'
+              }}>
+                {currentTrack.artist}
+              </div>
+            </div>
+          </div>
+
+          {/* Center Section - Playback Controls & Progress */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '12px',
+            flex: '1',
+            maxWidth: '500px'
+          }}>
+            {/* Playback Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                onClick={() => {/* TODO: Previous track */}}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <SkipBack size={20} />
+              </button>
+
+              <button
+                onClick={handlePlayPause}
+                disabled={isLoading}
+                style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  background: 'linear-gradient(135deg, #DC2626, #EC4899)', 
+                  borderRadius: '50%', 
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'white',
+                  fontSize: '16px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+                }}
+              >
+                {isLoading ? (
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    borderTopColor: 'white',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                ) : isPlaying ? (
+                  <Pause size={20} />
+                ) : (
+                  <Play size={20} style={{ marginLeft: '2px' }} />
+                )}
+              </button>
+
+              <button
+                onClick={() => {/* TODO: Next track */}}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <SkipForward size={20} />
+              </button>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ 
+                fontSize: '11px', 
+                color: '#9CA3AF', 
+                width: '35px', 
+                textAlign: 'right',
+                fontVariantNumeric: 'tabular-nums'
+              }}>
+                {formatTimeDisplay(currentTime)}
+              </span>
+              
+              <div 
+                style={{ 
+                  flex: 1, 
+                  height: '4px', 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                  borderRadius: '2px', 
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onClick={handleSeek}
+              >
+                <div 
+                  style={{ 
+                    height: '100%', 
+                    background: 'linear-gradient(90deg, #DC2626, #EC4899)', 
+                    borderRadius: '2px',
+                    width: `${progressPercent}%`,
+                    transition: 'width 0.1s ease',
+                    position: 'relative'
+                  }}
+                />
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: `${progressPercent}%`,
+                    transform: 'translate(-50%, -50%)',
+                    width: '12px',
+                    height: '12px',
+                    backgroundColor: 'white',
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                    opacity: progressPercent > 0 ? 1 : 0,
+                    transition: 'opacity 0.2s ease'
+                  }}
+                />
+              </div>
+              
+              <span style={{ 
+                fontSize: '11px', 
+                color: '#9CA3AF', 
+                width: '35px',
+                fontVariantNumeric: 'tabular-nums'
+              }}>
+                {formatTimeDisplay(duration)}
+              </span>
+            </div>
+          </div>
+
+          {/* Right Section - Volume & Additional Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+            {/* Volume Control */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={toggleMute}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
+              
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  style={{
+                    width: '80px',
+                    height: '4px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '2px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    WebkitAppearance: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+                                 <style dangerouslySetInnerHTML={{
+                   __html: `
+                     input[type="range"]::-webkit-slider-thumb {
+                       appearance: none;
+                       width: 12px;
+                       height: 12px;
+                       border-radius: 50%;
+                       background: linear-gradient(135deg, #DC2626, #EC4899);
+                       cursor: pointer;
+                       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                     }
+                     
+                     input[type="range"]::-moz-range-thumb {
+                       width: 12px;
+                       height: 12px;
+                       border-radius: 50%;
+                       background: linear-gradient(135deg, #DC2626, #EC4899);
+                       cursor: pointer;
+                       border: none;
+                       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                     }
+                   `
+                 }} />
+              </div>
+            </div>
+
+            {/* Additional Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => {/* TODO: Like track */}}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#EC4899';
+                  e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <Heart size={18} />
+              </button>
+
+              <button
+                onClick={() => {/* TODO: Share track */}}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <Share2 size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `
+        }} />
+      </motion.div>
+    </AnimatePresence>
+  );
+}

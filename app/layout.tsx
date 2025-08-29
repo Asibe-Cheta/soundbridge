@@ -4,6 +4,8 @@ import "./globals.css";
 import { ServiceWorkerRegistration } from "@/src/components/performance/ServiceWorkerRegistration";
 import { PerformanceMonitor } from "@/src/components/performance/PerformanceMonitor";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
+import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -119,7 +121,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          {children}
+          <AudioPlayerProvider>
+            {children}
+            <GlobalAudioPlayer />
+          </AudioPlayerProvider>
         </AuthProvider>
 
         {/* Performance monitoring */}
