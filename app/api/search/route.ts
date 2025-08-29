@@ -183,28 +183,34 @@ export async function GET(request: NextRequest) {
 
       // Apply date range filter
       if (dateRange && dateRange !== 'all') {
-        const dateFilter = getDateRangeFilter(dateRange);
-        if (dateFilter) {
-          eventQuery = eventQuery.gte('event_date', dateFilter.start);
-          if (dateFilter.end) {
-            eventQuery = eventQuery.lte('event_date', dateFilter.end);
+        const validDateRanges = ['today', 'week', 'month', 'next-month'] as const;
+        if (validDateRanges.includes(dateRange as any)) {
+          const dateFilter = getDateRangeFilter(dateRange as 'today' | 'week' | 'month' | 'next-month');
+          if (dateFilter) {
+            eventQuery = eventQuery.gte('event_date', dateFilter.start);
+            if (dateFilter.end) {
+              eventQuery = eventQuery.lte('event_date', dateFilter.end);
+            }
           }
         }
       }
 
       // Apply price range filter
       if (priceRange && priceRange !== 'all') {
-        const priceFilter = getPriceRangeFilter(priceRange);
-        if (priceFilter) {
-          if (country === 'Nigeria') {
-            eventQuery = eventQuery.gte('price_ngn', priceFilter.min);
-            if (priceFilter.max) {
-              eventQuery = eventQuery.lte('price_ngn', priceFilter.max);
-            }
-          } else {
-            eventQuery = eventQuery.gte('price_gbp', priceFilter.min);
-            if (priceFilter.max) {
-              eventQuery = eventQuery.lte('price_gbp', priceFilter.max);
+        const validPriceRanges = ['free', 'low', 'medium', 'high'] as const;
+        if (validPriceRanges.includes(priceRange as any)) {
+          const priceFilter = getPriceRangeFilter(priceRange as 'free' | 'low' | 'medium' | 'high');
+          if (priceFilter) {
+            if (country === 'Nigeria') {
+              eventQuery = eventQuery.gte('price_ngn', priceFilter.min);
+              if (priceFilter.max) {
+                eventQuery = eventQuery.lte('price_ngn', priceFilter.max);
+              }
+            } else {
+              eventQuery = eventQuery.gte('price_gbp', priceFilter.min);
+              if (priceFilter.max) {
+                eventQuery = eventQuery.lte('price_gbp', priceFilter.max);
+              }
             }
           }
         }

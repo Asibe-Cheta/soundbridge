@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Footer } from '../../src/components/layout/Footer';
-import { FloatingCard } from '../../src/components/ui/FloatingCard';
-import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
-import { useSearch } from '../../src/hooks/useSearch';
-import { searchCreators } from '../../src/lib/creator';
-import type { CreatorSearchResult, AudioTrack, Event } from '../../src/lib/types/creator';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { Footer } from '../../../src/components/layout/Footer';
+import { FloatingCard } from '../../../src/components/ui/FloatingCard';
+import { AdvancedFilters } from '../../../src/components/ui/AdvancedFilters';
+import { useSearch } from '../../../src/hooks/useSearch';
+import { searchCreators } from '../../../src/lib/creator';
+import type { CreatorSearchResult, AudioTrack, Event } from '../../../src/lib/types/creator';
 import {
   Search,
   Filter,
@@ -19,11 +20,16 @@ import {
   Calendar,
   Mic,
   AlertCircle,
-  User
+  User,
+  Plus,
+  LogOut,
+  Bell,
+  Settings
 } from 'lucide-react';
 
 export default function DiscoverPage() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -32,6 +38,15 @@ export default function DiscoverPage() {
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('trending');
   const [activeTab, setActiveTab] = useState('music');
+
+  // Handle URL parameters for tab selection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['music', 'creators', 'events', 'podcasts'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [creators, setCreators] = useState<CreatorSearchResult[]>([]);
@@ -44,6 +59,35 @@ export default function DiscoverPage() {
     error: trendingError,
     getTrendingContent
   } = useSearch();
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      try {
+        const menu = document.getElementById('user-menu');
+        const menuButton = document.getElementById('user-menu-button');
+        if (menu && menuButton && !menu.contains(event.target as Node) && !menuButton.contains(event.target as Node)) {
+          menu.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error in click outside handler:', error);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const categories = [
     { id: 'all', label: 'All', icon: TrendingUp },
@@ -186,6 +230,91 @@ export default function DiscoverPage() {
     }
   };
 
+  const renderEmptyState = (type: string) => {
+    const emptyStates = {
+      music: {
+        icon: <Music size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Music Available Yet",
+        description: "Be the first to upload amazing tracks and share your music with the world!",
+        action: "Upload Music",
+        actionLink: "/upload"
+      },
+      creators: {
+        icon: <Users size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Creators Found",
+        description: "Join our community of talented artists and creators!",
+        action: "Become a Creator",
+        actionLink: "/signup"
+      },
+      events: {
+        icon: <Calendar size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Events Scheduled",
+        description: "Create exciting events and bring people together through music!",
+        action: "Create Event",
+        actionLink: "/events/create"
+      },
+      podcasts: {
+        icon: <Mic size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Podcasts Yet",
+        description: "Start your podcast journey and share your stories with listeners!",
+        action: "Start Podcast",
+        actionLink: "/upload"
+      }
+    };
+
+    const state = emptyStates[type as keyof typeof emptyStates] || emptyStates.music;
+
+    return (
+      <div className="card" style={{ 
+        gridColumn: type === 'music' ? 'span 6' : 'span 3', 
+        textAlign: 'center', 
+        padding: '3rem 2rem',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px dashed rgba(255, 255, 255, 0.1)'
+      }}>
+        <div style={{ color: '#EC4899', marginBottom: '1rem' }}>
+          {state.icon}
+        </div>
+        <h3 style={{ color: '#EC4899', marginBottom: '1rem', fontSize: '1.2rem' }}>
+          {state.title}
+        </h3>
+        <p style={{ color: '#ccc', marginBottom: '2rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+          {state.description}
+        </p>
+        <Link href={state.actionLink} style={{ textDecoration: 'none' }}>
+          <button style={{ 
+            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.9rem',
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem',
+            margin: '0 auto',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+          }}
+          >
+            <Plus size={16} />
+            {state.action}
+          </button>
+        </Link>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'music':
@@ -225,7 +354,29 @@ export default function DiscoverPage() {
                 <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
                 <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Music</h3>
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
-                <button onClick={() => getTrendingContent(20)} className="btn-primary">
+                <button 
+                  onClick={() => getTrendingContent(20)} 
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
                   Try Again
                 </button>
               </div>
@@ -268,10 +419,7 @@ export default function DiscoverPage() {
                 </div>
               ))
             ) : (
-              <div className="card" style={{ gridColumn: 'span 6', textAlign: 'center', padding: '2rem' }}>
-                <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Trending Music</h3>
-                <p style={{ color: '#ccc' }}>Check back later for trending tracks.</p>
-              </div>
+              renderEmptyState('music')
             )}
           </div>
         );
@@ -312,7 +460,29 @@ export default function DiscoverPage() {
                 <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
                 <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Creators</h3>
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{error}</p>
-                <button onClick={() => window.location.reload()} className="btn-primary">
+                <button 
+                  onClick={() => window.location.reload()} 
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
                   Try Again
                 </button>
               </div>
@@ -358,10 +528,7 @@ export default function DiscoverPage() {
                 </Link>
               ))
             ) : (
-              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
-                <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Creators Found</h3>
-                <p style={{ color: '#ccc' }}>Try adjusting your filters or search terms.</p>
-              </div>
+              renderEmptyState('creators')
             )}
           </div>
         );
@@ -389,7 +556,29 @@ export default function DiscoverPage() {
                 <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
                 <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Events</h3>
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
-                <button onClick={() => getTrendingContent(20)} className="btn-primary">
+                <button 
+                  onClick={() => getTrendingContent(20)} 
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
                   Try Again
                 </button>
               </div>
@@ -410,10 +599,108 @@ export default function DiscoverPage() {
                 </Link>
               ))
             ) : (
-              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
-                <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Trending Events</h3>
-                <p style={{ color: '#ccc' }}>Check back later for trending events.</p>
+              renderEmptyState('events')
+            )}
+          </div>
+        );
+
+      case 'podcasts':
+        return (
+          <div className="grid grid-4">
+            {trendingLoading ? (
+              // Loading skeleton
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card">
+                  <div className="card-image">
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '2rem'
+                    }}>
+                      <Mic size={32} />
+                    </div>
+                    <div className="play-button">▶</div>
+                  </div>
+                  <div style={{ fontWeight: '600' }}>Loading...</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>Loading...</div>
+                </div>
+              ))
+            ) : trendingError ? (
+              <div className="card" style={{ gridColumn: 'span 4', textAlign: 'center', padding: '2rem' }}>
+                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
+                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Podcasts</h3>
+                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
+                <button 
+                  onClick={() => getTrendingContent(20)} 
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  Try Again
+                </button>
               </div>
+            ) : trendingResults?.podcasts && trendingResults.podcasts.length > 0 ? (
+              trendingResults.podcasts.map((podcast) => (
+                <div key={podcast.id} className="card">
+                  <div className="card-image">
+                    {podcast.cover_art_url ? (
+                      <Image
+                        src={podcast.cover_art_url}
+                        alt={podcast.title}
+                        width={200}
+                        height={200}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '2rem'
+                      }}>
+                        <Mic size={32} />
+                      </div>
+                    )}
+                    <div className="play-button">▶</div>
+                  </div>
+                  <div style={{ fontWeight: '600' }}>{podcast.title}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.creator_name}</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    {podcast.formatted_duration} • {podcast.formatted_play_count} plays
+                  </div>
+                </div>
+              ))
+            ) : (
+              renderEmptyState('podcasts')
             )}
           </div>
         );
@@ -428,13 +715,16 @@ export default function DiscoverPage() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-          <Image
-            src="/images/logos/logo-trans-lockup.png"
-            alt="SoundBridge"
-            width={150}
-            height={40}
-            style={{ objectFit: 'contain' }}
-          />
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Image
+              src="/images/logos/logo-trans-lockup.png"
+              alt="SoundBridge"
+              width={120}
+              height={32}
+              priority
+              style={{ height: 'auto' }}
+            />
+          </Link>
         </div>
         <nav className="nav">
           <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
@@ -442,9 +732,15 @@ export default function DiscoverPage() {
           <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
           <a href="#">Creators</a>
         </nav>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '600px' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
+        <div style={{ 
+          flex: 1, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          maxWidth: '500px', 
+          marginRight: '2rem'
+        }}>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
             <input
               type="search"
               className="search-bar"
@@ -456,30 +752,242 @@ export default function DiscoverPage() {
                   handleSearch();
                 }
               }}
-              style={{ paddingLeft: '40px' }}
+              style={{ 
+                width: '100%', 
+                paddingLeft: '40px',
+                fontSize: '16px'
+              }}
             />
           </div>
-          <button
-            className="btn-secondary"
-            onClick={() => setShowFilters(!showFilters)}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <Filter size={16} />
-            Filters
-          </button>
         </div>
         <div className="auth-buttons">
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <button className="btn-secondary">Login</button>
-          </Link>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <button className="btn-primary">Sign Up</button>
-          </Link>
+          {user ? (
+            <div style={{ position: 'relative' }}>
+              <button
+                id="user-menu-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  try {
+                    const menu = document.getElementById('user-menu');
+                    if (menu) {
+                      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                    }
+                  } catch (error) {
+                    console.error('Error toggling user menu:', error);
+                  }
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+              >
+                <User size={20} color="white" />
+              </button>
+              
+              <div
+                id="user-menu"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '0.5rem',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  padding: '0.5rem',
+                  minWidth: '200px',
+                  display: 'none',
+                  zIndex: 1000,
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    color: 'white',
+                    borderRadius: '8px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <User size={16} />
+                    Dashboard
+                  </div>
+                </Link>
+                <Link href="/notifications" style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    color: 'white',
+                    borderRadius: '8px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Bell size={16} />
+                    Notifications
+                  </div>
+                </Link>
+                <Link href="/profile" style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    color: 'white',
+                    borderRadius: '8px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <User size={16} />
+                    Profile
+                  </div>
+                </Link>
+                <Link href="/settings" style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    color: 'white',
+                    borderRadius: '8px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </div>
+                </Link>
+                <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                <button
+                  onClick={handleSignOut}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    color: '#FCA5A5',
+                    background: 'none',
+                    border: 'none',
+                    width: '100%',
+                    textAlign: 'left',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <LogOut size={16} />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'transparent',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  Sign in
+                </button>
+              </Link>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                }}
+                >
+                  Sign up
+                </button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
       <main className="main-container">
+        {/* Filters Button - Top Right */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          padding: '1rem 2rem 0',
+          marginBottom: '1rem'
+        }}>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              background: 'transparent',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <Filter size={16} />
+            Filters
+          </button>
+        </div>
+
         {/* Filters Section */}
         {showFilters && (
           <section className="section">

@@ -5,7 +5,7 @@ import { socialService } from '@/src/lib/social-service';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
@@ -22,7 +22,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    const result = await socialService.updateComment(params.id, user.id, content);
+    const resolvedParams = await params;
+    const result = await socialService.updateComment(resolvedParams.id, user.id, content);
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
@@ -37,7 +38,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
@@ -47,7 +48,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await socialService.deleteComment(params.id, user.id);
+    const resolvedParams = await params;
+    const result = await socialService.deleteComment(resolvedParams.id, user.id);
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });

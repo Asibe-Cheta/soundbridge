@@ -1,0 +1,802 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import {
+  User,
+  Edit3,
+  Camera,
+  Save,
+  X,
+  MapPin,
+  Globe,
+  Mail,
+  Phone,
+  Calendar,
+  Music,
+  Users,
+  Heart,
+  Share2,
+  Download,
+  Play,
+  Pause,
+  MoreVertical,
+  Plus,
+  Trash2,
+  Settings,
+  Bell,
+  Lock,
+  Shield,
+  Activity,
+  BarChart3,
+  TrendingUp,
+  Award,
+  Star,
+  Clock,
+  Eye
+} from 'lucide-react';
+
+interface ProfileStats {
+  totalPlays: number;
+  totalLikes: number;
+  totalShares: number;
+  totalDownloads: number;
+  followers: number;
+  following: number;
+  tracks: number;
+  events: number;
+}
+
+interface RecentTrack {
+  id: string;
+  title: string;
+  duration: string;
+  plays: number;
+  likes: number;
+  uploadedAt: string;
+  coverArt?: string;
+}
+
+interface RecentEvent {
+  id: string;
+  title: string;
+  date: string;
+  attendees: number;
+  location: string;
+  status: 'upcoming' | 'past' | 'cancelled';
+}
+
+export default function ProfilePage() {
+  const { user, signOut, loading } = useAuth();
+  const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [profileData, setProfileData] = useState({
+    displayName: user?.display_name || 'Your Name',
+    username: user?.username || 'username',
+    bio: user?.bio || 'Tell your story...',
+    location: user?.location || 'Location not set',
+    website: user?.website || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    genre: user?.genre || 'Not specified',
+    experience: user?.experience || 'Beginner',
+    avatarUrl: user?.avatar_url || ''
+  });
+
+  const [stats, setStats] = useState<ProfileStats>({
+    totalPlays: 0,
+    totalLikes: 0,
+    totalShares: 0,
+    totalDownloads: 0,
+    followers: 0,
+    following: 0,
+    tracks: 0,
+    events: 0
+  });
+
+  const [recentTracks, setRecentTracks] = useState<RecentTrack[]>([]);
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  const [analyticsData, setAnalyticsData] = useState({
+    monthlyPlays: 0,
+    engagementRate: 0,
+    topGenre: 'No tracks yet',
+    monthlyPlaysChange: 0,
+    engagementRateChange: 0
+  });
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+
+  useEffect(() => {
+    // Only redirect if we're not loading and there's no user
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (!loading && user) {
+      // Load profile data from the API
+      loadProfileData();
+      // Load analytics data
+      loadAnalyticsData();
+    }
+  }, [user, loading, router]);
+
+  const loadAnalyticsData = async () => {
+    try {
+      setIsLoadingAnalytics(true);
+      console.log('🔍 Loading analytics data for user:', user?.id);
+      const response = await fetch('/api/profile/analytics');
+      
+      console.log('📊 Analytics response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📊 Analytics result:', result);
+        
+        if (result.success && result.analytics) {
+          console.log('📊 Setting stats:', result.analytics.stats);
+          console.log('📊 Setting recent tracks:', result.analytics.recentTracks);
+          setStats(result.analytics.stats);
+          setRecentTracks(result.analytics.recentTracks);
+          setRecentEvents(result.analytics.recentEvents);
+          setAnalyticsData({
+            monthlyPlays: result.analytics.monthlyPlays,
+            engagementRate: result.analytics.engagementRate,
+            topGenre: result.analytics.topGenre,
+            monthlyPlaysChange: result.analytics.monthlyPlaysChange,
+            engagementRateChange: result.analytics.engagementRateChange
+          });
+        } else {
+          console.error('❌ Analytics API returned success: false or no analytics data');
+        }
+      } else {
+        console.error('❌ Analytics API returned error status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+      }
+    } catch (error) {
+      console.error('❌ Error loading analytics data:', error);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
+  const loadProfileData = async () => {
+    try {
+      const response = await fetch('/api/profile/upload-image', {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.profile) {
+          setProfileData(prev => ({
+            ...prev,
+            displayName: result.profile.display_name || 'Your Name',
+            username: result.profile.username || 'username',
+            bio: result.profile.bio || 'Tell your story...',
+            location: result.profile.location || 'Location not set',
+            avatarUrl: result.profile.avatar_url || ''
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const response = await fetch('/api/profile/upload-image', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          display_name: profileData.displayName,
+          username: profileData.username,
+          bio: profileData.bio,
+          location: profileData.location,
+          website: profileData.website,
+          phone: profileData.phone,
+          genre: profileData.genre,
+          experience: profileData.experience
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log('Profile saved successfully');
+          setIsEditing(false);
+          // Reload profile data to ensure we have the latest
+          await loadProfileData();
+          // Reload analytics data to reflect any changes
+          await loadAnalyticsData();
+        } else {
+          throw new Error(result.error || 'Failed to save profile');
+        }
+      } else {
+        throw new Error('Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      // Show error message
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingAvatar(true);
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Upload avatar to API
+      const response = await fetch('/api/profile/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.avatarUrl) {
+        // Update the user's avatar URL in the profile data
+        setProfileData(prev => ({
+          ...prev,
+          avatarUrl: result.avatarUrl
+        }));
+        
+        // Update the user context if available
+        if (user) {
+          // You might want to update the user context here
+          // This depends on how your AuthContext is set up
+          console.log('Avatar updated successfully:', result.avatarUrl);
+        }
+        
+        // Show success message
+        console.log('Avatar uploaded successfully!');
+        // You could add a toast notification here instead of console.log
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      // You could add a toast notification here instead of alert
+      console.error('Upload failed. Please try again.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const renderOverviewTab = () => (
+    <div className="space-y-6">
+      {isLoadingAnalytics ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+            <p className="mt-4 text-gray-400">Loading overview...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Play size={20} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.totalPlays.toLocaleString()}</div>
+                <div className="stat-label">Total Plays</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Heart size={20} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.totalLikes.toLocaleString()}</div>
+                <div className="stat-label">Total Likes</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Users size={20} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.followers.toLocaleString()}</div>
+                <div className="stat-label">Followers</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Music size={20} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.tracks}</div>
+                <div className="stat-label">Tracks</div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Tracks */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Recent Tracks</h3>
+            <Link href="/upload" className="btn-secondary">
+              <Plus size={16} />
+              Upload New
+            </Link>
+          </div>
+                     <div className="space-y-3">
+             {recentTracks.length > 0 ? (
+               recentTracks.map((track) => (
+                 <div key={track.id} className="track-item">
+                   <div className="track-cover">
+                     {track.coverArt ? (
+                       <Image
+                         src={track.coverArt}
+                         alt={track.title}
+                         width={48}
+                         height={48}
+                         className="rounded-lg"
+                       />
+                     ) : (
+                       <div className="track-placeholder">
+                         <Music size={20} />
+                       </div>
+                     )}
+                   </div>
+                   <div className="track-info">
+                     <div className="track-title">{track.title}</div>
+                     <div className="track-meta">
+                       {track.duration} • {track.plays.toLocaleString()} plays • {track.likes} likes
+                     </div>
+                   </div>
+                   <div className="track-actions">
+                     <button className="btn-icon">
+                       <Play size={16} />
+                     </button>
+                     <button className="btn-icon">
+                       <MoreVertical size={16} />
+                     </button>
+                   </div>
+                 </div>
+               ))
+             ) : (
+               <div className="text-center py-8 text-gray-400">
+                 <Music size={48} className="mx-auto mb-4 opacity-50" />
+                 <p>No tracks uploaded yet</p>
+                 <p className="text-sm">Start by uploading your first track!</p>
+               </div>
+             )}
+           </div>
+        </div>
+
+        {/* Recent Events */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Recent Events</h3>
+            <Link href="/events/create" className="btn-secondary">
+              <Plus size={16} />
+              Create Event
+            </Link>
+          </div>
+                     <div className="space-y-3">
+             {recentEvents.length > 0 ? (
+               recentEvents.map((event) => (
+                 <div key={event.id} className="event-item">
+                   <div className="event-status">
+                     <div className={`status-dot ${event.status}`}></div>
+                   </div>
+                   <div className="event-info">
+                     <div className="event-title">{event.title}</div>
+                     <div className="event-meta">
+                       {event.date} • {event.location} • {event.attendees} attendees
+                     </div>
+                   </div>
+                   <div className="event-actions">
+                     <button className="btn-icon">
+                       <Eye size={16} />
+                     </button>
+                   </div>
+                 </div>
+               ))
+             ) : (
+               <div className="text-center py-8 text-gray-400">
+                 <Calendar size={48} className="mx-auto mb-4 opacity-50" />
+                 <p>No events created yet</p>
+                 <p className="text-sm">Start by creating your first event!</p>
+               </div>
+             )}
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAnalyticsTab = () => (
+    <div className="space-y-6">
+      {/* Analytics Header with Refresh Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Analytics</h2>
+        <button 
+          onClick={loadAnalyticsData}
+          disabled={isLoadingAnalytics}
+          className="btn-secondary flex items-center gap-2"
+        >
+          <div className={`w-4 h-4 ${isLoadingAnalytics ? 'animate-spin' : ''}`}>
+            {isLoadingAnalytics ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+            ) : (
+              <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+            )}
+          </div>
+          Refresh
+        </button>
+      </div>
+
+      {isLoadingAnalytics ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+            <p className="mt-4 text-gray-400">Loading analytics...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Analytics Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Monthly Plays</h3>
+                <TrendingUp size={20} className="text-green-500" />
+              </div>
+              <div className="text-3xl font-bold text-white">{analyticsData.monthlyPlays.toLocaleString()}</div>
+              <div className="text-sm text-green-500">+{analyticsData.monthlyPlaysChange}% from last month</div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Engagement Rate</h3>
+                <BarChart3 size={20} className="text-blue-500" />
+              </div>
+              <div className="text-3xl font-bold text-white">{analyticsData.engagementRate}%</div>
+              <div className="text-sm text-blue-500">+{analyticsData.engagementRateChange}% from last month</div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Top Genre</h3>
+                <Award size={20} className="text-yellow-500" />
+              </div>
+              <div className="text-3xl font-bold text-white">{analyticsData.topGenre}</div>
+              <div className="text-sm text-yellow-500">Your most popular genre</div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Performance Chart Placeholder */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Performance Over Time</h3>
+        </div>
+        <div className="h-64 flex items-center justify-center text-gray-500">
+          <div className="text-center">
+            <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
+            <p>Performance charts will be displayed here</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSettingsTab = () => (
+    <div className="space-y-6">
+      {/* Profile Settings */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Profile Settings</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="form-group">
+            <label className="form-label">Display Name</label>
+            <input
+              type="text"
+              className="form-input"
+              value={profileData.displayName}
+              onChange={(e) => handleInputChange('displayName', e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Username</label>
+            <input
+              type="text"
+              className="form-input"
+              value={profileData.username}
+              onChange={(e) => handleInputChange('username', e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Bio</label>
+            <textarea
+              className="form-textarea"
+              value={profileData.bio}
+              onChange={(e) => handleInputChange('bio', e.target.value)}
+              disabled={!isEditing}
+              rows={3}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Location</label>
+            <input
+              type="text"
+              className="form-input"
+              value={profileData.location}
+              onChange={(e) => handleInputChange('location', e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Website</label>
+            <input
+              type="url"
+              className="form-input"
+              value={profileData.website}
+              onChange={(e) => handleInputChange('website', e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Privacy Settings */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Privacy Settings</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-white">Profile Visibility</div>
+              <div className="text-sm text-gray-400">Make your profile public or private</div>
+            </div>
+            <button className="btn-toggle">Public</button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-white">Show Email</div>
+              <div className="text-sm text-gray-400">Display your email on your profile</div>
+            </div>
+            <button className="btn-toggle">Private</button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-white">Allow Messages</div>
+              <div className="text-sm text-gray-400">Let other users send you messages</div>
+            </div>
+            <button className="btn-toggle">Public</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Show loading state while authentication is being determined
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state if no user after loading is complete
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Header */}
+      <header className="header">
+        <div className="logo">
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Image
+              src="/images/logos/logo-trans-lockup.png"
+              alt="SoundBridge"
+              width={120}
+              height={32}
+              priority
+              style={{ height: 'auto' }}
+            />
+          </Link>
+        </div>
+        <nav className="nav">
+          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
+          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>Discover</Link>
+          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
+          <Link href="/creators" style={{ textDecoration: 'none', color: 'white' }}>Creators</Link>
+        </nav>
+        <div className="auth-buttons">
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => signOut()}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            >
+              <User size={20} color="white" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="main-container">
+        {/* Profile Header */}
+        <div className="profile-header">
+          <div className="profile-avatar-section">
+            <div className="profile-avatar">
+              {(profileData.avatarUrl || user.avatar_url) ? (
+                <Image
+                  src={profileData.avatarUrl || user.avatar_url}
+                  alt="Profile Avatar"
+                  width={120}
+                  height={120}
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="avatar-placeholder">
+                  <User size={48} />
+                </div>
+              )}
+              {isEditing && (
+                <label className="avatar-upload-btn" style={{ opacity: isUploadingAvatar ? 0.5 : 1, cursor: isUploadingAvatar ? 'not-allowed' : 'pointer' }}>
+                  {isUploadingAvatar ? (
+                    <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderRadius: '50%', borderTopColor: 'white', animation: 'spin 1s linear infinite' }}></div>
+                  ) : (
+                    <Camera size={20} />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    style={{ display: 'none' }}
+                    disabled={isUploadingAvatar}
+                  />
+                </label>
+              )}
+            </div>
+            <div className="profile-info">
+              <div className="profile-name-section">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="profile-name-input"
+                    value={profileData.displayName}
+                    onChange={(e) => handleInputChange('displayName', e.target.value)}
+                  />
+                ) : (
+                  <h1 className="profile-name">{profileData.displayName}</h1>
+                )}
+                <div className="profile-actions">
+                  {isEditing ? (
+                    <>
+                      <button onClick={handleSaveProfile} className="btn-primary">
+                        <Save size={16} />
+                        Save
+                      </button>
+                      <button onClick={() => setIsEditing(false)} className="btn-secondary">
+                        <X size={16} />
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => setIsEditing(true)} className="btn-primary">
+                      <Edit3 size={16} />
+                      Edit Profile
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="profile-meta">
+                <span className="profile-username">@{profileData.username}</span>
+                {profileData.location && (
+                  <span className="profile-location">
+                    <MapPin size={14} />
+                    {profileData.location}
+                  </span>
+                )}
+                {profileData.website && (
+                  <a href={profileData.website} className="profile-website" target="_blank" rel="noopener noreferrer">
+                    <Globe size={14} />
+                    {profileData.website}
+                  </a>
+                )}
+              </div>
+              {!isEditing && profileData.bio && (
+                <p className="profile-bio">{profileData.bio}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="tab-navigation">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+          >
+            <Activity size={16} />
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
+          >
+            <BarChart3 size={16} />
+            Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
+          >
+            <Settings size={16} />
+            Settings
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === 'overview' && renderOverviewTab()}
+          {activeTab === 'analytics' && renderAnalyticsTab()}
+          {activeTab === 'settings' && renderSettingsTab()}
+        </div>
+      </main>
+    </div>
+  );
+}

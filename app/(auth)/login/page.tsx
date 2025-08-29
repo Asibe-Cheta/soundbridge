@@ -55,6 +55,20 @@ function LoginContent() {
     password: '',
   });
 
+  // Check for URL parameters for confirmation errors
+  React.useEffect(() => {
+    const urlError = searchParams.get('error');
+    const urlMessage = searchParams.get('message');
+    
+    if (urlError === 'confirmation_failed') {
+      setError(urlMessage || 'Email confirmation failed. Please try again.');
+    } else if (urlError === 'invalid_token') {
+      setError('Invalid confirmation link. Please request a new confirmation email.');
+    } else if (urlError === 'callback_failed') {
+      setError('Confirmation process failed. Please try again.');
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);

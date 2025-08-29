@@ -15,6 +15,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [recentTracks, setRecentTracks] = React.useState<any[]>([]);
+  const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -93,11 +95,46 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Load recent tracks from all creators globally
+  React.useEffect(() => {
+    const loadRecentTracks = async () => {
+      try {
+        console.log('🔄 Loading recent tracks...');
+        setIsLoadingTracks(true);
+        const response = await fetch('/api/audio?recent=true');
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('📊 API Response:', result);
+          if (result.success && result.tracks) {
+            console.log('✅ Setting tracks:', result.tracks.length);
+            // Log each track's cover art status
+            result.tracks.forEach((track: any, index: number) => {
+              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'}`);
+            });
+            setRecentTracks(result.tracks);
+          } else {
+            console.log('❌ No tracks in response');
+          }
+        } else {
+          console.error('❌ API Error:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error loading recent tracks:', error);
+      } finally {
+        setIsLoadingTracks(false);
+      }
+    };
+
+    // Load tracks regardless of user authentication status
+    loadRecentTracks();
+  }, []);
+
   // Show error state if auth failed
   if (authError) {
     return (
       <div style={{ 
-        minHeight: '100vh', 
+        minHeight: '100vh',
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
@@ -1228,83 +1265,100 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Recently Added Music */}
+        {/* Recently Added Music - REAL DATA */}
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Recently Added Music</h2>
-            <a href="#" className="view-all">View All</a>
+            <Link href="/discover?tab=music" className="view-all">View All</Link>
           </div>
+          
+          
+
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: isMobile ? '1rem' : '1.5rem'
           }}>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">
-                  <Play size={20} />
+            {isLoadingTracks ? (
+              // Loading state
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="card">
+                  <div className="card-image" style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderRadius: '50%', borderTopColor: 'white', animation: 'spin 1s linear infinite' }}></div>
+                  </div>
+                  <div style={{ fontWeight: '600', background: '#333', height: '16px', borderRadius: '4px', marginBottom: '0.5rem' }}></div>
+                  <div style={{ color: '#999', fontSize: '0.9rem', background: '#333', height: '14px', borderRadius: '4px', width: '60%' }}></div>
+                  <div className="waveform"></div>
                 </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>New Song Title</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Artist Name</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">
-                  <Play size={20} />
+              ))
+            ) : recentTracks.length > 0 ? (
+              // REAL TRACKS FROM DATABASE
+              recentTracks.map((track) => (
+                <div key={track.id} className="card">
+                  <div className="card-image">
+                    {track.coverArt ? (
+                      <Image
+                        src={track.coverArt}
+                        alt={track.title}
+                        width={200}
+                        height={200}
+                        style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ 
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '0.9rem',
+                        height: '200px',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          textAlign: 'center'
+                        }}>
+                          <Mic size={32} style={{ marginBottom: '8px', opacity: 0.8 }} />
+                          <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
+                            {track.title ? track.title.substring(0, 20) + (track.title.length > 20 ? '...' : '') : 'No Cover'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="play-button">
+                      <Play size={20} />
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
+                    {track.title || 'Untitled Track'}
+                  </div>
+                  <div style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    {track.creator?.name || 'Unknown Artist'}
+                  </div>
+                  <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                    {track.plays || 0} plays • {track.likes || 0} likes
+                  </div>
+                  <div className="waveform"></div>
                 </div>
+              ))
+            ) : (
+              // No tracks state
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
+                <Mic size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                <p>No recent tracks available</p>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <Link href="/upload" style={{ color: '#EC4899', textDecoration: 'none' }}>
+                    Be the first to upload a track →
+                  </Link>
+                </p>
               </div>
-              <div style={{ fontWeight: '600' }}>Gospel Vibes</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Sarah Johnson</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Afro Fusion</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Michael Okafor</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>UK Drill Mix</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Tommy B</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Praise & Worship</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Grace Community</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Lagos Anthem</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Wizkid Jr</div>
-              <div className="waveform"></div>
-            </div>
+            )}
           </div>
         </section>
 

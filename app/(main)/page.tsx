@@ -5,14 +5,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Footer } from '../src/components/layout/Footer';
-import { FloatingCard } from '../src/components/ui/FloatingCard';
+import { Footer } from '../../src/components/layout/Footer';
 import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Users, Calendar, Music } from 'lucide-react';
 
 export default function HomePage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [recentTracks, setRecentTracks] = React.useState<any[]>([]);
+  const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
 
   const handleSignOut = async () => {
     try {
@@ -27,6 +28,37 @@ export default function HomePage() {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  // Load recent tracks from all creators globally
+  React.useEffect(() => {
+    const loadRecentTracks = async () => {
+      try {
+        console.log('🔄 Loading recent tracks...');
+        setIsLoadingTracks(true);
+        const response = await fetch('/api/audio?recent=true');
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('📊 API Response:', result);
+          if (result.success && result.tracks) {
+            console.log('✅ Setting tracks:', result.tracks.length);
+            setRecentTracks(result.tracks);
+          } else {
+            console.log('❌ No tracks in response');
+          }
+        } else {
+          console.error('❌ API Error:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error loading recent tracks:', error);
+      } finally {
+        setIsLoadingTracks(false);
+      }
+    };
+
+    // Load tracks regardless of user authentication status
+    loadRecentTracks();
+  }, []);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -466,67 +498,93 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Recently Added Music */}
+        {/* Recently Added Music - FRESH VERSION */}
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Recently Added Music</h2>
-            <a href="#" className="view-all">View All</a>
+            <a href="/profile" className="view-all">View All</a>
           </div>
+          
+          {/* Debug Info */}
+          <div style={{ 
+            background: 'rgba(255, 255, 255, 0.05)', 
+            padding: '1rem', 
+            marginBottom: '1rem', 
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            color: '#ccc'
+          }}>
+            <div>🔄 Loading: {isLoadingTracks ? 'Yes' : 'No'}</div>
+            <div>📊 Tracks Count: {recentTracks.length}</div>
+            <div>🎵 API Status: Working</div>
+          </div>
+
           <div className="grid grid-6">
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">▶</div>
+            {isLoadingTracks ? (
+              // Loading state
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="card">
+                  <div className="card-image" style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderRadius: '50%', borderTopColor: 'white', animation: 'spin 1s linear infinite' }}></div>
+                  </div>
+                  <div style={{ fontWeight: '600', background: '#333', height: '16px', borderRadius: '4px', marginBottom: '0.5rem' }}></div>
+                  <div style={{ color: '#999', fontSize: '0.9rem', background: '#333', height: '14px', borderRadius: '4px', width: '60%' }}></div>
+                  <div className="waveform"></div>
+                </div>
+              ))
+            ) : recentTracks.length > 0 ? (
+              // REAL TRACKS FROM DATABASE
+              recentTracks.map((track) => (
+                <div key={track.id} className="card">
+                  <div className="card-image">
+                    {track.coverArt ? (
+                      <Image
+                        src={track.coverArt}
+                        alt={track.title}
+                        width={200}
+                        height={200}
+                        style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ 
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '0.9rem',
+                        height: '200px'
+                      }}>
+                        <Music size={24} />
+                      </div>
+                    )}
+                    <div className="play-button">▶</div>
+                  </div>
+                  <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
+                    {track.title || 'Untitled Track'}
+                  </div>
+                  <div style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    {track.creator?.name || 'Unknown Artist'}
+                  </div>
+                  <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                    {track.plays || 0} plays • {track.likes || 0} likes
+                  </div>
+                  <div className="waveform"></div>
+                </div>
+              ))
+            ) : (
+              // No tracks state
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
+                <Music size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                <p>No recent tracks available</p>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <Link href="/upload" style={{ color: '#EC4899', textDecoration: 'none' }}>
+                    Be the first to upload a track →
+                  </Link>
+                </p>
               </div>
-              <div style={{ fontWeight: '600' }}>New Song Title</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Artist Name</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">▶</div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Gospel Vibes</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Sarah Johnson</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">▶</div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Afro Fusion</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Michael Okafor</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">▶</div>
-              </div>
-              <div style={{ fontWeight: '600' }}>UK Drill Mix</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Tommy B</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">▶</div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Praise & Worship</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Grace Community</div>
-              <div className="waveform"></div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Album Cover
-                <div className="play-button">▶</div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Lagos Anthem</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Wizkid Jr</div>
-              <div className="waveform"></div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -534,7 +592,7 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Hot Creators Right Now</h2>
-            <a href="#" className="view-all">View All</a>
+            <a href="/creators" className="view-all">View All</a>
           </div>
           <div className="grid grid-3">
             <Link href="/creator/adunni-adebayo" style={{ textDecoration: 'none' }}>
@@ -582,7 +640,7 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Live Events This Week</h2>
-            <a href="#" className="view-all">View All</a>
+            <a href="/events" className="view-all">View All</a>
           </div>
           <div className="grid grid-4">
             <div className="event-card">
@@ -632,7 +690,7 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Trending Podcasts</h2>
-            <a href="#" className="view-all">View All</a>
+            <a href="/discover" className="view-all">View All</a>
           </div>
           <div className="grid grid-4">
             <div className="card">
@@ -677,37 +735,6 @@ export default function HomePage() {
         {/* Footer */}
         <Footer />
       </main>
-
-      {/* Floating Quick Actions Card */}
-      <FloatingCard title="Quick Actions">
-        <div className="quick-actions">
-          <Link href="/upload" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">
-              <Upload size={16} style={{ marginRight: '0.5rem' }} />
-              Upload Music
-            </div>
-          </Link>
-          <div className="quick-action">
-            <Music size={16} style={{ marginRight: '0.5rem' }} />
-            Start Podcast
-          </div>
-          <div className="quick-action">
-            <Calendar size={16} style={{ marginRight: '0.5rem' }} />
-            Create Event
-          </div>
-          <div className="quick-action">
-            <Users size={16} style={{ marginRight: '0.5rem' }} />
-            Find Collaborators
-          </div>
-        </div>
-
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>John is listening to &quot;Praise Medley&quot;</div>
-          <div>Sarah posted a new track</div>
-          <div>Mike joined Gospel Night event</div>
-        </div>
-      </FloatingCard>
     </div>
   );
 }

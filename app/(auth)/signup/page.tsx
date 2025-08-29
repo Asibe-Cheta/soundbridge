@@ -81,6 +81,9 @@ export default function SignupPage() {
           // The user can still sign in and complete their profile later
         }
 
+        // Supabase will automatically send signup confirmation email via Auth hook
+        // No need to manually send email - it's handled by the Auth hook
+
         // Redirect to dashboard or email confirmation page
         if (data.session) {
           // User is automatically signed in, redirect to dashboard

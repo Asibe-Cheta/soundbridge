@@ -185,6 +185,13 @@ export class AudioUploadService {
   ): Promise<UploadResult> {
     try {
       const fileName = `${userId}/${Date.now()}_${file.name}`;
+      console.log('🎨 Attempting to upload cover art:', {
+        fileName,
+        fileType: file.type,
+        fileSize: file.size,
+        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif']
+      });
+      
       const { data, error } = await this.supabase.storage
         .from('cover-art')
         .upload(fileName, file, {
@@ -202,6 +209,12 @@ export class AudioUploadService {
         });
 
       if (error) {
+        console.error('❌ Cover art upload error:', {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error.error,
+          details: error
+        });
         return {
           success: false,
           error: {
@@ -312,6 +325,8 @@ export class AudioUploadService {
       // Upload cover art if provided
       let coverArtUrl: string | undefined;
       if (trackData.coverArtFile) {
+        console.log('🎨 Uploading cover art:', trackData.coverArtFile.file.name, 'Type:', trackData.coverArtFile.file.type);
+        
         const coverResult = await this.uploadCoverArt(
           trackData.coverArtFile.file,
           userId,
@@ -320,7 +335,12 @@ export class AudioUploadService {
 
         if (coverResult.success) {
           coverArtUrl = coverResult.url;
+          console.log('✅ Cover art uploaded successfully:', coverArtUrl);
+        } else {
+          console.error('❌ Cover art upload failed:', coverResult.error);
         }
+      } else {
+        console.log('ℹ️ No cover art file provided');
       }
 
       // Create database record

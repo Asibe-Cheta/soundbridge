@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Repeat, Shuffle, 
   Heart, Share2, List, Settings, Maximize2, Minimize2, Music, BarChart3,
-  Type, Equalizer, Zap, Waveform, Radio, Clock, User, Album
+  Type, Sliders, Zap, Activity, Radio, Clock, User, Album
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -273,7 +273,7 @@ export function AdvancedAudioPlayer({
                     state.equalizer.enabled && "text-primary-red"
                   )}
                 >
-                  <Equalizer size={16} />
+                  <Sliders size={16} />
                 </Button>
               )}
 
@@ -315,7 +315,7 @@ export function AdvancedAudioPlayer({
                     state.showWaveform && "text-primary-red"
                   )}
                 >
-                  <Waveform size={16} />
+                  <Activity size={16} />
                 </Button>
               )}
 

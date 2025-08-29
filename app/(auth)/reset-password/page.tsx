@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
 
     try {
+      // Use Supabase's built-in password reset with custom email templates
       const supabase = createBrowserClient();
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/update-password`,

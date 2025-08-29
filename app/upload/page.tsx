@@ -23,11 +23,12 @@ import {
   CheckCircle,
   AlertCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
+  User
 } from 'lucide-react';
 
 export default function UploadPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -42,6 +43,8 @@ export default function UploadPage() {
   const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
+  
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -61,14 +64,6 @@ export default function UploadPage() {
     }
   }, []);
 
-  const handleFileUpload = (file: File) => {
-    uploadActions.setAudioFile(file);
-
-    // Auto-fill title from filename
-    const fileName = file.name.replace(/\.[^/.]+$/, '');
-    setTitle(fileName);
-  };
-
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -79,6 +74,14 @@ export default function UploadPage() {
       handleFileUpload(file);
     }
   }, []);
+
+  const handleFileUpload = (file: File) => {
+    uploadActions.setAudioFile(file);
+
+    // Auto-fill title from filename
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+    setTitle(fileName);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -120,53 +123,191 @@ export default function UploadPage() {
   };
 
   const handlePublish = async () => {
-    // Validate form
-    const validation = uploadActions.validateFiles();
-    if (!validation.isValid) {
-      alert(validation.errors.join('\n'));
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    if (!uploadState.audioFile) {
+      console.error('No audio file selected');
       return;
     }
 
     if (!title.trim()) {
-      alert('Please add a title for your track');
+      console.error('No title provided');
       return;
     }
 
-    if (publishOption === 'schedule' && !scheduleDate) {
-      alert('Please select a schedule date');
-      return;
-    }
+    try {
+      console.log('Starting upload process...');
+      
+      // First, ensure profile exists
+      console.log('Ensuring profile exists...');
+      const profileCheckResponse = await fetch('/api/profile/create', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const profileCheckResult = await profileCheckResponse.json();
+      console.log('Profile check result:', profileCheckResult);
+      
+      if (!profileCheckResult.exists) {
+        console.log('Profile does not exist, creating...');
+        const profileCreateResponse = await fetch('/api/profile/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const profileCreateResult = await profileCreateResponse.json();
+        console.log('Profile creation result:', profileCreateResult);
+        
+        if (!profileCreateResult.success) {
+          throw new Error('Failed to create profile: ' + profileCreateResult.error);
+        }
+        
+        console.log('Profile created successfully');
+      } else {
+        console.log('Profile already exists');
+      }
 
-    // Prepare track data
-    const trackData = {
-      title: title.trim(),
-      description: description.trim(),
-      genre: genre || undefined,
-      tags: tags ? tags.split(',').map(tag => tag.trim()) : undefined,
-      privacy,
-      publishOption,
-      scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined
-    };
+      // Now proceed with upload
+      const trackData = {
+        title: title.trim(),
+        description: description.trim(),
+        genre,
+        tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        privacy,
+        publishOption,
+        scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined
+      };
 
-    // Upload track
-    const success = await uploadActions.uploadTrack(trackData);
+      console.log('Uploading track with data:', trackData);
+      const success = await uploadActions.uploadTrack(trackData);
 
-    if (success) {
-      // Reset form on success
-      setTitle('');
-      setDescription('');
-      setGenre('');
-      setTags('');
-      setPrivacy('public');
-      setPublishOption('now');
-      setScheduleDate('');
-      uploadActions.resetUpload();
+             if (success) {
+         // Reset form
+         setTitle('');
+         setDescription('');
+         setGenre('');
+         setTags('');
+         setPrivacy('public');
+         setPublishOption('now');
+         setScheduleDate('');
+         uploadActions.resetUpload();
+         
+         // Redirect to success page with track details
+         console.log('Redirecting to success page...');
+         const successUrl = `/upload/success?title=${encodeURIComponent(title.trim())}`;
+         window.location.href = successUrl;
+       } else {
+        console.error('Failed to upload track. Please try again.');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
     }
   };
 
   const handleCancelUpload = () => {
     uploadActions.cancelUpload();
   };
+
+  // Debug authentication state
+  console.log('UploadPage Auth State:', { 
+    user: user?.email, 
+    loading, 
+    hasUser: !!user,
+    userId: user?.id 
+  });
+
+  // Force refresh authentication state
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { createBrowserClient } = await import('@/src/lib/supabase');
+        const supabase = createBrowserClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Manual auth check:', { 
+          hasSession: !!session, 
+          userEmail: session?.user?.email 
+        });
+      } catch (error) {
+        console.error('Auth check error:', error);
+      }
+    };
+    
+    if (!user && !loading) {
+      console.log('No user found, checking auth manually...');
+      checkAuth();
+    }
+  }, [user, loading]);
+
+  // Ensure profile exists before upload
+  React.useEffect(() => {
+    const ensureProfile = async () => {
+      if (!user) return;
+      
+      try {
+        console.log('Ensuring profile exists for user:', user.email);
+        
+        // Check if profile exists
+        const response = await fetch('/api/profile/create', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const result = await response.json();
+        console.log('Profile check result:', result);
+        
+        if (!result.exists) {
+          // Create profile
+          const createResponse = await fetch('/api/profile/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const createResult = await createResponse.json();
+          console.log('Profile creation result:', createResult);
+          
+          if (createResult.success) {
+            console.log('Profile created successfully');
+          } else {
+            console.error('Failed to create profile:', createResult.error);
+          }
+        } else {
+          console.log('Profile already exists');
+        }
+      } catch (error) {
+        console.error('Error ensuring profile:', error);
+      }
+    };
+    
+    if (user && !loading) {
+      ensureProfile();
+    }
+  }, [user, loading]);
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="main-container" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+        <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+          <Loader2 size={48} style={{ color: '#EC4899', marginBottom: '1rem', animation: 'spin 1s linear infinite' }} />
+          <h2 style={{ marginBottom: '1rem' }}>Loading...</h2>
+          <p style={{ color: '#999', marginBottom: '2rem' }}>
+            Checking your authentication status...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect if not authenticated
   if (!user) {
@@ -196,31 +337,60 @@ export default function UploadPage() {
       {/* Header */}
       <header className="header">
         <div className="logo">
-                  <Image
-                    src="/images/logos/logo-trans-lockup.png"
-                    alt="SoundBridge Logo"
-                    width={150}
-                    height={40}
-                    priority
-                    style={{ height: 'auto' }}
-                  />
-                </div>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Image
+              src="/images/logos/logo-trans-lockup.png"
+              alt="SoundBridge"
+              width={120}
+              height={32}
+              priority
+              style={{ height: 'auto' }}
+            />
+          </Link>
+        </div>
         <nav className="nav">
-          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
-            For You
-          </Link>
-          <a href="#">Discover</a>
-          <a href="#">Events</a>
-          <a href="#">Creators</a>
+          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
+          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>Discover</Link>
+          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
+          <Link href="/creators" style={{ textDecoration: 'none', color: 'white' }}>Creators</Link>
         </nav>
-        <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
-        <div className="auth-buttons">
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <button className="btn-secondary">Login</button>
-          </Link>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <button className="btn-primary">Sign Up</button>
-          </Link>
+        <div className="search-bar">
+          <input type="search" placeholder="Search creators, events, podcasts..." />
+        </div>
+                 <div className="auth-buttons">
+           {user ? (
+             <div style={{ position: 'relative' }}>
+               <Link href="/profile" style={{ textDecoration: 'none' }}>
+                 <button
+                   style={{
+                     background: 'rgba(255, 255, 255, 0.1)',
+                     border: '1px solid rgba(255, 255, 255, 0.2)',
+                     borderRadius: '50%',
+                     width: '40px',
+                     height: '40px',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center',
+                     cursor: 'pointer',
+                     transition: 'all 0.3s ease'
+                   }}
+                   onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                   onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                 >
+                   <User size={20} color="white" />
+                 </button>
+               </Link>
+             </div>
+           ) : (
+            <>
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <button className="btn-secondary">Login</button>
+              </Link>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <button className="btn-primary">Sign Up</button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -247,18 +417,7 @@ export default function UploadPage() {
           </div>
         )}
 
-        {uploadState.successMessage && (
-          <div className="card" style={{
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            marginBottom: '2rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22C55E' }}>
-              <CheckCircle size={20} />
-              <span>{uploadState.successMessage}</span>
-            </div>
-          </div>
-        )}
+        
 
         <div className="grid grid-2" style={{ gap: '2rem' }}>
           {/* Upload Area */}
