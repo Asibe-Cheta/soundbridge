@@ -27,16 +27,25 @@ import {
   User,
   Headphones,
   Radio,
-  ArrowLeft
+  ArrowLeft,
+  Menu,
+  Home,
+  Bell,
+  Settings,
+  LogOut,
+  Search
 } from 'lucide-react';
 
 export default function PodcastUploadPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form states
   const [title, setTitle] = useState('');
@@ -197,6 +206,19 @@ export default function PodcastUploadPage() {
     uploadActions.cancelUpload();
   };
 
+  const handleSignOut = () => {
+    signOut();
+    window.location.href = '/login';
+  };
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      // Redirect to search page with query
+      const searchUrl = `/search?q=${encodeURIComponent(searchQuery)}`;
+      window.location.href = searchUrl;
+    }
+  };
+
   // Debug authentication state
   console.log('PodcastUploadPage Auth State:', { 
     user: user?.email, 
@@ -211,6 +233,58 @@ export default function PodcastUploadPage() {
       window.location.href = '/login';
     }
   }, [user, loading]);
+
+  // Handle mobile menu visibility
+  React.useEffect(() => {
+    const updateIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    updateIsMobile(); // Set initial value
+    window.addEventListener('resize', updateIsMobile);
+    return () => window.removeEventListener('resize', updateIsMobile);
+  }, []);
+
+  // Handle mobile menu open/close
+  React.useEffect(() => {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const userMenuButton = document.getElementById('user-menu-button');
+    const userMenu = document.getElementById('user-menu');
+
+    if (mobileMenuButton && userMenuButton && userMenu) {
+      mobileMenuButton.addEventListener('click', () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+      });
+      userMenuButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        userMenu.style.display = userMenu.style.display === 'block' ? 'none' : 'block';
+      });
+    }
+
+    return () => {
+      if (mobileMenuButton) mobileMenuButton.removeEventListener('click', () => {});
+      if (userMenuButton) userMenuButton.removeEventListener('click', () => {});
+    };
+  }, [isMobileMenuOpen]);
+
+  // Close mobile menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const userMenu = document.getElementById('user-menu');
+      const userMenuButton = document.getElementById('user-menu-button');
+
+      if (mobileMenuButton && userMenu && userMenuButton &&
+          !mobileMenuButton.contains(event.target as Node) &&
+          !userMenuButton.contains(event.target as Node) &&
+          !userMenu.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
 
   if (loading) {
     return (
@@ -237,77 +311,506 @@ export default function PodcastUploadPage() {
     <>
       {/* Header */}
       <header className="header">
-        <div className="logo">
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Image
-              src="/images/logos/logo-trans-lockup.png"
-              alt="SoundBridge"
-              width={120}
-              height={32}
-              priority
-              style={{ height: 'auto' }}
-            />
-          </Link>
-        </div>
-        <nav className="nav">
-          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
-          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>Discover</Link>
-          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
-          <a href="#">Creators</a>
-        </nav>
-        <div className="auth-buttons">
-          {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ color: 'white', fontSize: '0.9rem' }}>
-                Welcome, {user.email}
-              </span>
-              <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                <button style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}>
-                  Dashboard
-                </button>
-              </Link>
+        {isMobile ? (
+          /* Mobile Header - Apple Music Style */
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            width: '100%'
+          }}>
+            {/* LEFT - Hamburger Menu */}
+            <button
+              id="mobile-menu-button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              <Menu size={24} color="white" />
+            </button>
+
+            {/* CENTER - Small Logo */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              flex: 1
+            }}>
+              <Image
+                src="/images/logos/logo-trans-lockup.png"
+                alt="SoundBridge Logo"
+                width={80}
+                height={22}
+                priority
+                style={{ height: 'auto' }}
+              />
             </div>
-          ) : (
-            <>
-              <Link href="/login" style={{ textDecoration: 'none' }}>
-                <button style={{
-                  background: 'transparent',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  fontSize: '0.9rem'
-                }}>
-                  Sign in
+
+            {/* RIGHT - Sign In / Profile */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {user ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    id="user-menu-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        const menu = document.getElementById('user-menu');
+                        if (menu) {
+                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                        }
+                      } catch (error) {
+                        console.error('Error toggling user menu:', error);
+                      }
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  >
+                    <User size={24} color="white" />
+                  </button>
+                  
+                  <div
+                    id="user-menu"
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '0.5rem',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      padding: '0.5rem',
+                      minWidth: '200px',
+                      display: 'none',
+                      zIndex: 1000,
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Home size={16} />
+                        Dashboard
+                      </div>
+                    </Link>
+                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Bell size={16} />
+                        Notifications
+                      </div>
+                    </Link>
+                    <Link href="/profile" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <User size={16} />
+                        Profile
+                      </div>
+                    </Link>
+                    <Link href="/settings" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </div>
+                    </Link>
+                    <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                    <button
+                      onClick={handleSignOut}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: '#FCA5A5',
+                        background: 'none',
+                        border: 'none',
+                        width: '100%',
+                        textAlign: 'left',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <LogOut size={16} />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <button 
+                    style={{
+                      background: 'none',
+                      color: '#DC2626',
+                      border: 'none',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      fontSize: '16px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  >
+                    Sign In
+                  </button>
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Desktop Header - Original Style */
+          <>
+            {/* LEFT SIDE */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+              <div className="logo">
+                <Image
+                  src="/images/logos/logo-trans-lockup.png"
+                  alt="SoundBridge Logo"
+                  width={120}
+                  height={32}
+                  priority
+                  style={{ height: 'auto' }}
+                />
+              </div>
+              {/* Desktop Navigation */}
+              <nav className="nav">
+                <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
+                  For You
+                </Link>
+                <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>
+                  Discover
+                </Link>
+                <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+                  Events
+                </Link>
+                <Link href="/creators" style={{ textDecoration: 'none', color: 'white' }}>
+                  Creators
+                </Link>
+              </nav>
+            </div>
+
+            {/* CENTER - Search Bar */}
+            <div style={{ 
+              flex: 1, 
+              display: 'flex', 
+              justifyContent: 'center', 
+              maxWidth: '500px', 
+              marginRight: '2rem'
+            }}>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
+                <input 
+                  type="search" 
+                  className="search-bar" 
+                  placeholder="Search creators, events, podcasts..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
+                  style={{ 
+                    width: '100%', 
+                    paddingLeft: '40px',
+                    fontSize: '16px'
+                  }} 
+                />
+              </div>
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* Upload Button */}
+              <Link href="/upload" style={{ textDecoration: 'none' }}>
+                <button 
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  <Upload size={16} />
+                  Upload
                 </button>
               </Link>
-              <Link href="/signup" style={{ textDecoration: 'none' }}>
-                <button style={{
-                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  fontSize: '0.9rem'
-                }}>
-                  Sign up
-                </button>
-              </Link>
-            </>
-          )}
-        </div>
+
+              {/* User Menu */}
+              {user ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    id="user-menu-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        const menu = document.getElementById('user-menu');
+                        if (menu) {
+                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                        }
+                      } catch (error) {
+                        console.error('Error toggling user menu:', error);
+                      }
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  >
+                    <User size={20} color="white" />
+                  </button>
+                  
+                  <div
+                    id="user-menu"
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '0.5rem',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      padding: '0.5rem',
+                      minWidth: '200px',
+                      display: 'none',
+                      zIndex: 1000,
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Home size={16} />
+                        Dashboard
+                      </div>
+                    </Link>
+                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Bell size={16} />
+                        Notifications
+                      </div>
+                    </Link>
+                    <Link href="/profile" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <User size={16} />
+                        Profile
+                      </div>
+                    </Link>
+                    <Link href="/settings" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'white',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </div>
+                    </Link>
+                    <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                    <button
+                      onClick={handleSignOut}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: '#FCA5A5',
+                        background: 'none',
+                        border: 'none',
+                        width: '100%',
+                        textAlign: 'left',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <LogOut size={16} />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <Link href="/login" style={{ textDecoration: 'none' }}>
+                    <button 
+                      style={{
+                        background: 'transparent',
+                        color: 'white',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.9rem',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      Sign in
+                    </button>
+                  </Link>
+                  <Link href="/signup" style={{ textDecoration: 'none' }}>
+                    <button 
+                      style={{
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.9rem',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                      }}
+                    >
+                      Sign up
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </header>
 
       {/* Main Content */}
@@ -394,7 +897,7 @@ export default function PodcastUploadPage() {
                       <div style={{ background: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px', padding: '1rem' }}>
                         <audio
                           ref={audioRef}
-                          src={URL.createObjectURL(uploadState.audioFile)}
+                          src={uploadState.audioFile ? URL.createObjectURL(uploadState.audioFile.file) : ''}
                           onTimeUpdate={handleTimeUpdate}
                           onLoadedMetadata={handleTimeUpdate}
                           style={{ width: '100%' }}

@@ -54,7 +54,10 @@ export async function GET(request: NextRequest) {
             country
           )
         `)
-        .eq('is_public', true);
+        .eq('is_public', true)
+        .not('genre', 'eq', 'podcast')
+        .not('genre', 'eq', 'Podcast')
+        .not('genre', 'eq', 'PODCAST');
 
       if (query) {
         musicQuery = musicQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`);
@@ -261,7 +264,7 @@ export async function GET(request: NextRequest) {
           )
         `)
         .eq('is_public', true)
-        .eq('genre', 'podcast');
+        .in('genre', ['podcast', 'Podcast', 'PODCAST']);
 
       if (query) {
         podcastQuery = podcastQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);

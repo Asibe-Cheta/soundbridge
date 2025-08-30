@@ -40,17 +40,37 @@ export async function GET(request: NextRequest) {
 
     suggestions.push(...matchingTrending);
 
-    // Search for matching music titles
+    // Search for matching music titles (excluding podcasts)
     const { data: musicTitles } = await supabase
       .from('audio_tracks')
       .select('title')
       .ilike('title', `%${query}%`)
       .eq('is_public', true)
+      .not('genre', 'eq', 'podcast')
+      .not('genre', 'eq', 'Podcast')
+      .not('genre', 'eq', 'PODCAST')
       .limit(limit);
 
     if (musicTitles) {
       suggestions.push(...musicTitles.map(track => ({
         type: 'music' as const,
+        text: track.title,
+        count: 1
+      })));
+    }
+
+    // Search for matching podcast titles
+    const { data: podcastTitles } = await supabase
+      .from('audio_tracks')
+      .select('title')
+      .ilike('title', `%${query}%`)
+      .eq('is_public', true)
+      .in('genre', ['podcast', 'Podcast', 'PODCAST'])
+      .limit(limit);
+
+    if (podcastTitles) {
+      suggestions.push(...podcastTitles.map(track => ({
+        type: 'podcast' as const,
         text: track.title,
         count: 1
       })));
@@ -88,12 +108,15 @@ export async function GET(request: NextRequest) {
       })));
     }
 
-    // Search for matching genres
+    // Search for matching genres (excluding podcast genre)
     const { data: genres } = await supabase
       .from('audio_tracks')
       .select('genre')
       .ilike('genre', `%${query}%`)
       .not('genre', 'is', null)
+      .not('genre', 'eq', 'podcast')
+      .not('genre', 'eq', 'Podcast')
+      .not('genre', 'eq', 'PODCAST')
       .limit(limit);
 
     if (genres) {

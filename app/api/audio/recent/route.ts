@@ -25,9 +25,13 @@ export async function GET() {
     console.log('✅ Database connection successful');
 
     // Get recent tracks from all creators, ordered by creation date
+    // Exclude podcasts (genre = 'podcast') - podcasts should only appear in the podcasts section
     const { data: tracks, error } = await supabase
       .from('audio_tracks')
       .select('*')
+      .not('genre', 'eq', 'podcast')
+      .not('genre', 'eq', 'Podcast')
+      .not('genre', 'eq', 'PODCAST')
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -39,7 +43,8 @@ export async function GET() {
       );
     }
 
-    console.log('✅ Fetched tracks:', tracks?.length);
+    console.log('✅ Fetched tracks (excluding podcasts):', tracks?.length);
+    console.log('✅ Track genres:', tracks?.map(t => t.genre));
 
     // Format the tracks for the frontend
     const formattedTracks = tracks.map(track => ({
