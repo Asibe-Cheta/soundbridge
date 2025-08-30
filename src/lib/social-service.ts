@@ -212,15 +212,80 @@ export class SocialService {
 
         if (error) throw error;
 
-        // Create notification
-        await this.createNotification({
-          user_id: request.content_id, // Will be updated to get actual creator_id
-          type: 'like',
-          title: 'New Like',
-          message: `Someone liked your ${request.content_type}`,
-          related_id: data.id,
-          related_type: 'like'
-        });
+        // Get the content creator's ID for notification
+        let creatorId: string | null = null;
+        
+        if (request.content_type === 'track') {
+          const { data: track, error: trackError } = await this.supabase
+            .from('audio_tracks')
+            .select('creator_id')
+            .eq('id', request.content_id)
+            .single();
+          
+          if (trackError) {
+            console.error('❌ Error fetching track creator:', trackError);
+          } else {
+            creatorId = track?.creator_id || null;
+            console.log('📝 Track creator ID:', creatorId);
+          }
+        } else if (request.content_type === 'event') {
+          const { data: event, error: eventError } = await this.supabase
+            .from('events')
+            .select('creator_id')
+            .eq('id', request.content_id)
+            .single();
+          
+          if (eventError) {
+            console.error('❌ Error fetching event creator:', eventError);
+          } else {
+            creatorId = event?.creator_id || null;
+            console.log('📝 Event creator ID:', creatorId);
+          }
+        }
+
+        // Create notification for content creator (if creator is different from liker)
+        if (creatorId && creatorId !== userId) {
+          try {
+            console.log('🔔 Creating notification for creator:', creatorId);
+            
+            // Check if the creator exists in the profiles table
+            const { data: creatorProfile, error: profileError } = await this.supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', creatorId)
+              .single();
+            
+            if (profileError) {
+              console.error('❌ Error checking creator profile:', profileError);
+              console.log('ℹ️ Skipping notification creation due to profile error');
+            } else if (!creatorProfile) {
+              console.error('❌ Creator profile not found for ID:', creatorId);
+              console.log('ℹ️ Skipping notification creation due to missing profile');
+            } else {
+              console.log('✅ Creator profile found, creating notification');
+              const notificationResult = await this.createNotification({
+                user_id: creatorId,
+                type: 'like',
+                title: 'New Like',
+                message: `Someone liked your ${request.content_type}`,
+                related_id: data.id,
+                related_type: 'like'
+              });
+              
+              if (notificationResult.error) {
+                console.error('❌ Notification creation failed:', notificationResult.error);
+                console.log('ℹ️ Continuing with like operation despite notification failure');
+              } else {
+                console.log('✅ Notification created successfully');
+              }
+            }
+          } catch (notificationError) {
+            console.error('❌ Error creating notification:', notificationError);
+            console.log('ℹ️ Continuing with like operation despite notification failure');
+          }
+        } else {
+          console.log('ℹ️ No notification needed (same user or no creator found)');
+        }
 
         return { data, error: null };
       }
@@ -733,16 +798,23 @@ export class SocialService {
     related_type?: string;
   }): Promise<{ data: Notification | null; error: any }> {
     try {
+      console.log('🔔 Creating notification with data:', notification);
+      
       const { data, error } = await this.supabase
         .from('notifications')
         .insert(notification)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase error creating notification:', error);
+        throw error;
+      }
+      
+      console.log('✅ Notification created successfully:', data);
       return { data, error: null };
     } catch (error) {
-      console.error('Error creating notification:', error);
+      console.error('❌ Error creating notification:', error);
       return { data: null, error };
     }
   }

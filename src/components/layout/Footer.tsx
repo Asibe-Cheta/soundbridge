@@ -38,7 +38,7 @@ export function Footer() {
             <Link href="/upload" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Music size={16} /> Upload Music
             </Link>
-            <Link href="/podcast" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+            <Link href="/podcast/upload" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Mic size={16} /> Start Podcast
             </Link>
             <Link href="/create-event" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>

@@ -30,6 +30,10 @@ export default function HomePage() {
   // Events state
   const [events, setEvents] = useState<any[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  
+  // Podcasts state
+  const [podcasts, setPodcasts] = useState<any[]>([]);
+  const [isLoadingPodcasts, setIsLoadingPodcasts] = useState(true);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -86,6 +90,35 @@ export default function HomePage() {
     };
 
     fetchEvents();
+  }, []);
+
+  // Fetch podcasts for homepage
+  useEffect(() => {
+    const fetchPodcasts = async () => {
+      try {
+        setIsLoadingPodcasts(true);
+        console.log('🎙️ Fetching podcasts from API...');
+        const response = await fetch('/api/podcasts/recent?limit=4');
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Podcasts API response:', data);
+          setPodcasts(data.podcasts || []);
+        } else {
+          console.error('❌ API Error:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('❌ Error details:', errorText);
+          setPodcasts([]);
+        }
+      } catch (error) {
+        console.error('❌ Error loading podcasts:', error);
+        setPodcasts([]);
+      } finally {
+        setIsLoadingPodcasts(false);
+      }
+    };
+
+    fetchPodcasts();
   }, []);
 
   const handleSignOut = async (e: React.MouseEvent) => {
@@ -149,6 +182,20 @@ export default function HomePage() {
           newLikedTracks.add(track.id);
         }
         setLikedTracks(newLikedTracks);
+
+        // Update the like count in recentTracks
+        setRecentTracks(prevTracks => 
+          prevTracks.map(t => {
+            if (t.id === track.id) {
+              const currentLikes = t.likes || 0;
+              return {
+                ...t,
+                likes: isCurrentlyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1
+              };
+            }
+            return t;
+          })
+        );
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -1726,57 +1773,63 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Trending Podcasts</h2>
-            <a href="#" className="view-all">View All</a>
+            <Link href="/search?tab=podcasts" className="view-all">View All</Link>
           </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: isMobile ? '1rem' : '1.5rem'
           }}>
-            <div className="card">
-              <div className="card-image">
-                Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
+            {isLoadingPodcasts ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <p>Loading podcasts...</p>
               </div>
-              <div style={{ fontWeight: '600' }}>The Lagos Life</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Episode 45: Music Industry</div>
-              <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>42 min • 12K plays</div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
+            ) : podcasts && podcasts.length > 0 ? (
+              podcasts.map((podcast) => (
+                <div key={podcast.id} className="card" style={{ cursor: 'pointer' }} onClick={() => playTrack(podcast)}>
+                  <div className="card-image">
+                    {podcast.cover_art_url ? (
+                      <Image
+                        src={podcast.cover_art_url}
+                        alt={podcast.title}
+                        width={200}
+                        height={200}
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                      />
+                    ) : (
+                      <div style={{ 
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '0.9rem'
+                      }}>
+                        Podcast Cover
+                      </div>
+                    )}
+                    <div className="play-button">
+                      <Play size={20} />
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: '600' }}>{podcast.title}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.creator_name}</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    {podcast.formatted_duration} • {podcast.formatted_play_count} plays
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
+                <p>No podcasts available</p>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <Link href="/podcast/upload" style={{ color: '#EC4899', textDecoration: 'none' }}>
+                    Start your first podcast →
+                  </Link>
+                </p>
               </div>
-              <div style={{ fontWeight: '600' }}>Faith & Beats</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Gospel in Modern Music</div>
-              <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>35 min • 8K plays</div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>UK Underground</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Drill Scene Deep Dive</div>
-              <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>28 min • 15K plays</div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Podcast Cover
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Creator Stories</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>From Bedroom to Billboard</div>
-              <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>52 min • 9K plays</div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -1785,7 +1838,7 @@ export default function HomePage() {
       </main>
 
       {/* Floating Quick Actions Card */}
-      <FloatingCard title="Quick Actions">
+      <FloatingCard title="Quick Actions" position="bottom-right">
         <div className="quick-actions">
           <Link href="/upload" style={{ textDecoration: 'none' }}>
             <div className="quick-action">
@@ -1793,14 +1846,18 @@ export default function HomePage() {
               Upload Music
             </div>
           </Link>
-          <div className="quick-action">
-            <Mic size={16} />
-            Start Podcast
-          </div>
-          <div className="quick-action">
-            <Calendar size={16} />
-            Create Event
-          </div>
+          <Link href="/podcast/upload" style={{ textDecoration: 'none' }}>
+            <div className="quick-action">
+              <Mic size={16} />
+              Start Podcast
+            </div>
+          </Link>
+          <Link href="/events/create" style={{ textDecoration: 'none' }}>
+            <div className="quick-action">
+              <Calendar size={16} />
+              Create Event
+            </div>
+          </Link>
           <div className="quick-action">
             <Users size={16} />
             Find Collaborators

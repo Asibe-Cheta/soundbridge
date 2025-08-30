@@ -25,6 +25,8 @@ export function FloatingCard({
   const [isVisible, setIsVisible] = useState(defaultVisible);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  console.log('🎯 FloatingCard rendered:', { title, position, isVisible, isCollapsed });
+
   const getPositionClasses = () => {
     switch (position) {
       case 'top-left':
@@ -69,7 +71,7 @@ export function FloatingCard({
         exit={{ opacity: 0, y: -20, scale: 0.9 }}
         transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
       >
-        <Card variant="glass" className="shadow-2xl">
+        <Card variant="glass" className="shadow-2xl" style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(20px)' }}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{title}</h3>
