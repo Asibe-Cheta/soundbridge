@@ -7,15 +7,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
+import { eventService } from '@/src/lib/event-service';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2 } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2 } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 
 export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
-  const { toggleLike, isLiked, createShare } = useSocial();
+  const { toggleLike, isLiked } = useSocial();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -25,6 +26,10 @@ export default function HomePage() {
   const [likedTracks, setLikedTracks] = React.useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedTrackForShare, setSelectedTrackForShare] = useState<any>(null);
+  
+  // Events state
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -54,6 +59,34 @@ export default function HomePage() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
+
+  // Fetch events for homepage
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setIsLoadingEvents(true);
+        const result = await eventService.getEvents({
+          includePast: false, // Only future events
+          limit: 4 // Limit to 4 events for homepage
+        });
+        
+                 if (result.error) {
+           console.error('Error fetching events:', result.error);
+           setEvents([]);
+         } else {
+           console.log('📅 Events fetched:', result.data);
+           setEvents(result.data || []);
+         }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        setEvents([]);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -104,45 +137,21 @@ export default function HomePage() {
         content_id: track.id,
         content_type: 'track'
       });
-
-      if (result.error) {
-        console.error('Error toggling like:', result.error);
-        return;
-      }
-
-      // Update local state
-      const newLikedTracks = new Set(likedTracks);
-      const isCurrentlyLiked = newLikedTracks.has(track.id);
       
-      if (isCurrentlyLiked) {
-        newLikedTracks.delete(track.id);
-      } else {
-        newLikedTracks.add(track.id);
+      if (!result.error) {
+        // Update local state
+        const newLikedTracks = new Set(likedTracks);
+        const isCurrentlyLiked = newLikedTracks.has(track.id);
+        
+        if (isCurrentlyLiked) {
+          newLikedTracks.delete(track.id);
+        } else {
+          newLikedTracks.add(track.id);
+        }
+        setLikedTracks(newLikedTracks);
       }
-      setLikedTracks(newLikedTracks);
-
-      // Update like count in database
-      const updateResponse = await fetch('/api/audio/update-likes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          trackId: track.id,
-          action: isCurrentlyLiked ? 'unlike' : 'like'
-        }),
-      });
-
-      if (updateResponse.ok) {
-        const updateResult = await updateResponse.json();
-        // Update local state with the new count from database
-        setRecentTracks(prev => prev.map(t => 
-          t.id === track.id ? { ...t, likes: updateResult.newLikeCount } : t
-        ));
-      }
-
     } catch (error) {
-      console.error('Error handling like:', error);
+      console.error('Error toggling like:', error);
     }
   };
 
@@ -150,34 +159,36 @@ export default function HomePage() {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!user) {
-      alert('Please sign in to share tracks');
-      return;
-    }
-
     setSelectedTrackForShare(track);
     setShareModalOpen(true);
   };
 
-  // Close dropdown when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      try {
-        const menu = document.getElementById('user-menu');
-        const menuButton = document.getElementById('user-menu-button');
-        if (menu && menuButton && !menu.contains(event.target as Node) && !menuButton.contains(event.target as Node)) {
-          menu.style.display = 'none';
-        }
-      } catch (error) {
-        console.error('Error in click outside handler:', error);
-      }
-    };
+  // Format event date for display
+  const formatEventDate = (eventDate: string) => {
+    const date = new Date(eventDate);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return `Today • ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    } else if (diffDays === 1) {
+      return `Tomorrow • ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    } else {
+      return `${date.toLocaleDateString('en-US', { weekday: 'long' })} • ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    }
+  };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  // Format event price for display
+  const formatEventPrice = (event: any) => {
+    if (event.price_gbp && event.price_gbp > 0) {
+      return `£${event.price_gbp}`;
+    } else if (event.price_ngn && event.price_ngn > 0) {
+      return `₦${event.price_ngn.toLocaleString()}`;
+    } else {
+      return 'Free Entry';
+    }
+  };
 
   // Show loading state while auth is initializing (with timeout fallback)
   const [loadingTimeout, setLoadingTimeout] = React.useState(false);
@@ -197,7 +208,7 @@ export default function HomePage() {
       try {
         console.log('🔄 Loading recent tracks...');
         setIsLoadingTracks(true);
-        const response = await fetch('/api/audio/recent');
+        const response = await fetch('/api/audio/recent?t=' + Date.now());
         
         if (response.ok) {
           const result = await response.json();
@@ -213,7 +224,10 @@ export default function HomePage() {
             console.log('❌ No tracks in response');
           }
         } else {
-          console.error('❌ API Error:', response.status);
+          console.error('❌ API Error:', response.status, response.statusText);
+          console.error('❌ Response URL:', response.url);
+          const errorText = await response.text();
+          console.error('❌ Error response body:', errorText);
         }
       } catch (error) {
         console.error('❌ Error loading recent tracks:', error);
@@ -1656,53 +1670,55 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Live Events This Week</h2>
-            <a href="#" className="view-all">View All</a>
+            <Link href="/events" className="view-all">View All</Link>
           </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: isMobile ? '1rem' : '1.5rem'
           }}>
-            <div className="event-card">
-              <div className="event-card-content">
-                <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>Tonight • 8PM</div>
-                <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>Gospel Night Live</div>
-                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Royal Festival Hall, London</div>
-                <div style={{ marginTop: '0.5rem' }}>
-                  <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>£25-45</span>
-                </div>
+            {isLoadingEvents ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
+                <Loader2 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                <p>Loading events...</p>
               </div>
-            </div>
-            <div className="event-card">
-              <div className="event-card-content">
-                <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>Friday • 7PM</div>
-                <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>Afrobeats Carnival</div>
-                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Tafawa Balewa Square, Lagos</div>
-                <div style={{ marginTop: '0.5rem' }}>
-                  <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>₦5000-15000</span>
-                </div>
+            ) : events.length > 0 ? (
+                             events.map((event) => {
+                               console.log('🎯 Rendering event:', event.title, 'Image URL:', event.image_url);
+                               return (
+                 <Link key={event.id} href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
+                   <div 
+                     className="event-card"
+                     style={{
+                       background: event.image_url 
+                         ? `linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(236, 72, 153, 0.3)), url('${event.image_url}')`
+                         : `linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/400/300?random=${event.id}")`,
+                       backgroundSize: 'cover',
+                       backgroundPosition: 'center'
+                     }}
+                   >
+                     <div className="event-card-content">
+                       <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>{formatEventDate(event.event_date)}</div>
+                       <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>{event.title}</div>
+                       <div style={{ color: '#ccc', fontSize: '0.9rem' }}>{event.location}</div>
+                       <div style={{ marginTop: '0.5rem' }}>
+                         <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>{formatEventPrice(event)}</span>
+                       </div>
+                     </div>
+                   </div>
+                 </Link>
+               );
+                             })
+            ) : (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
+                <p>No upcoming events</p>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <Link href="/events" style={{ color: '#EC4899', textDecoration: 'none' }}>
+                    View all events →
+                  </Link>
+                </p>
               </div>
-            </div>
-            <div className="event-card">
-              <div className="event-card-content">
-                <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>Saturday • 6PM</div>
-                <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>UK Drill Showcase</div>
-                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>O2 Academy, Birmingham</div>
-                <div style={{ marginTop: '0.5rem' }}>
-                  <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>£15-35</span>
-                </div>
-              </div>
-            </div>
-            <div className="event-card">
-              <div className="event-card-content">
-                <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>Sunday • 4PM</div>
-                <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>Worship Experience</div>
-                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>House on the Rock, Abuja</div>
-                <div style={{ marginTop: '0.5rem' }}>
-                  <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>Free Entry</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 

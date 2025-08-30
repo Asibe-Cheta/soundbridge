@@ -1,14 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Calendar,
   AlertCircle,
   ArrowLeft,
   CheckCircle,
-  Upload,
   Loader2,
   Globe,
   Lock,
@@ -16,12 +14,14 @@ import {
   Send,
   Clock,
   Save,
-  Music
+  MapPin,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
-import type { EventCreateData } from '../../../src/lib/types/event';
+import type { EventCreateData, EventCategory } from '../../../src/lib/types/event';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
+import { useLocation } from '../../../src/hooks/useLocation';
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
@@ -29,6 +29,7 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 export default function CreateEventPage() {
   const { user } = useAuth();
   const [imageState, imageActions] = useImageUpload();
+  const { location, isLoading: locationLoading, error: locationError, detectLocation } = useLocation();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function CreateEventPage() {
   const [genre, setGenre] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [location, setLocation] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
   const [address, setAddress] = useState('');
   const [price, setPrice] = useState('');
   const [maxAttendees, setMaxAttendees] = useState('');
@@ -47,9 +48,18 @@ export default function CreateEventPage() {
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
 
+  // Type adapter for ImageUpload component
+  const adaptUploadFile = (file: any) => {
+    if (!file) return null;
+    return {
+      ...file,
+      metadata: file.metadata as Record<string, unknown>
+    };
+  };
+
   const genres = [
-    'Afrobeats', 'Gospel', 'UK Drill', 'Highlife', 'Jazz', 'Hip Hop',
-    'R&B', 'Pop', 'Rock', 'Electronic', 'Classical', 'Folk', 'Country'
+    'Gospel', 'Christian', 'Afrobeat', 'Hip-Hop', 'Jazz', 'Classical', 
+    'Rock', 'Pop', 'Carnival', 'Secular', 'Other'
   ];
 
   const locations = [
@@ -57,16 +67,36 @@ export default function CreateEventPage() {
     'Birmingham, UK', 'Liverpool, UK', 'Port Harcourt, Nigeria', 'Kano, Nigeria'
   ];
 
-  const handleImageUpload = async () => {
-    if (!user) return;
-
-    try {
-      await imageActions.uploadEventImage();
-    } catch (err) {
-      console.error('Image upload failed:', err);
-      setError('Failed to upload image');
+  // Auto-set location based on detected location
+  useEffect(() => {
+    if (location && location.isDetected) {
+      // Auto-select the closest location based on detected country
+      if (location.countryCode === 'GB' || location.countryCode === 'UK') {
+        setEventLocation('London, UK');
+      } else if (location.countryCode === 'NG') {
+        setEventLocation('Lagos, Nigeria');
+      }
     }
-  };
+  }, [location]);
+
+  // Auto-upload image when imageFile is set
+  useEffect(() => {
+    if (imageState.imageFile && !imageState.uploadedUrl && !imageState.isUploading) {
+      console.log('🖼️ useEffect: Image file detected, starting upload...');
+      const uploadImage = async () => {
+        const result = await imageActions.uploadEventImage();
+        console.log('🖼️ useEffect: Upload result:', result);
+        if (result) {
+          console.log('🖼️ useEffect: Image uploaded successfully!');
+        } else {
+          console.log('🖼️ useEffect: Image upload failed!');
+        }
+      };
+      uploadImage();
+    }
+  }, [imageState.imageFile, imageState.uploadedUrl, imageState.isUploading, imageActions]);
+
+
 
   const validateForm = () => {
     if (!title.trim()) {
@@ -89,7 +119,7 @@ export default function CreateEventPage() {
       setError('Event time is required');
       return false;
     }
-    if (!location) {
+    if (!eventLocation) {
       setError('Event location is required');
       return false;
     }
@@ -113,27 +143,40 @@ export default function CreateEventPage() {
       // Combine date and time
       const eventDateTime = new Date(`${date}T${time}`);
 
-      // Parse price
+      // Parse price based on detected currency
       let priceGbp = null;
       let priceNgn = null;
+      
       if (price && price !== '0') {
-        if (price.includes('£')) {
-          priceGbp = parseFloat(price.replace('£', ''));
-        } else if (price.includes('₦')) {
-          priceNgn = parseFloat(price.replace('₦', '').replace(',', ''));
-        } else {
-          // Assume GBP if no currency symbol
-          priceGbp = parseFloat(price);
+        const numericPrice = parseFloat(price.replace(/[£₦$€]/g, ''));
+        
+        if (location?.currency === 'GBP') {
+          priceGbp = numericPrice;
+        } else if (location?.currency === 'NGN') {
+          priceNgn = numericPrice;
         }
       }
+
+      console.log('📅 Creating event with data:', {
+        title: title.trim(),
+        description: description.trim(),
+        event_date: eventDateTime.toISOString(),
+        location: eventLocation,
+        venue: address || undefined,
+        category: genre as EventCategory,
+        price_gbp: priceGbp || undefined,
+        price_ngn: priceNgn || undefined,
+        max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
+        image_url: imageState.uploadedUrl || undefined
+      });
 
       const eventData: EventCreateData = {
         title: title.trim(),
         description: description.trim(),
         event_date: eventDateTime.toISOString(),
-        location: location,
+        location: eventLocation,
         venue: address || undefined,
-        category: genre as 'Christian' | 'Secular' | 'Carnival' | 'Gospel' | 'Hip-Hop' | 'Afrobeat' | 'Jazz' | 'Classical' | 'Rock' | 'Pop' | 'Other',
+        category: genre as EventCategory,
         price_gbp: priceGbp || undefined,
         price_ngn: priceNgn || undefined,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
@@ -143,7 +186,7 @@ export default function CreateEventPage() {
       const result = await eventService.createEvent(eventData);
 
       if (result.error) {
-        setError(result.error);
+        setError(typeof result.error === 'string' ? result.error : 'Failed to create event');
         setPublishStatus('error');
       } else {
         setPublishStatus('success');
@@ -153,627 +196,724 @@ export default function CreateEventPage() {
         setGenre('');
         setDate('');
         setTime('');
-        setLocation('');
+        setEventLocation('');
         setAddress('');
         setPrice('');
         setMaxAttendees('');
         imageActions.resetUpload();
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Event creation error:', error);
       setError('Failed to create event');
       setPublishStatus('error');
-      console.error('Event creation error:', err);
     } finally {
       setIsPublishing(false);
     }
   };
 
   const handleSaveDraft = async () => {
-    // For now, we'll just save as a regular event
-    // In a real implementation, you might want a separate draft status
-    await handlePublish();
+    // TODO: Implement draft saving
+    console.log('Saving draft...');
   };
 
-  if (!user) {
-    return (
-      <>
-        <header className="header">
-         <div className="logo">
-                   <Image
-                     src="/images/logos/logo-trans-lockup.png"
-                     alt="SoundBridge Logo"
-                     width={150}
-                     height={40}
-                     priority
-                     style={{ height: 'auto' }}
-                   />
-                 </div>
-          <nav className="nav">
-            <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
-              For You
-            </Link>
-            <a href="#">Discover</a>
-            <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
-              Events
-            </Link>
-            <a href="#">Creators</a>
-            <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
-              Upload
-            </Link>
-          </nav>
-          <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
-          <div className="auth-buttons">
-            <Link href="/login" style={{ textDecoration: 'none' }}>
-              <button className="btn-secondary">Login</button>
-            </Link>
-            <Link href="/signup" style={{ textDecoration: 'none' }}>
-              <button className="btn-primary">Sign Up</button>
-            </Link>
-          </div>
-        </header>
+  const formatPrice = (value: string) => {
+    if (!location) return value;
+    
+    // Remove any existing currency symbols
+    const numericValue = value.replace(/[£₦$€]/g, '');
+    
+    if (numericValue === '') return '';
+    
+    // Add the detected currency symbol
+    return `${location.currencySymbol}${numericValue}`;
+  };
 
-        <main className="main-container">
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
-            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Authentication Required</h2>
-            <p style={{ color: '#999', marginBottom: '2rem' }}>Please log in to create events.</p>
-            <Link href="/login" style={{ textDecoration: 'none' }}>
-              <button style={{
-                padding: '0.75rem 1.5rem',
-                background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                border: 'none',
-                borderRadius: '0.5rem',
-                color: 'white',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
-              }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                Login
-              </button>
-            </Link>
-          </div>
-        </main>
-      </>
-    );
-  }
+  const handlePriceChange = (value: string) => {
+    // Remove any existing currency symbols and set the raw numeric value
+    const numericValue = value.replace(/[£₦$€]/g, '');
+    setPrice(numericValue);
+  };
 
   return (
     <>
       {/* Header */}
       <header className="header">
         <div className="logo">
-                  <Image
-                    src="/images/logos/logo-trans-lockup.png"
-                    alt="SoundBridge Logo"
-                    width={150}
-                    height={40}
-                    priority
-                    style={{ height: 'auto' }}
-                  />
-                </div>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Image
+              src="/images/logos/logo-trans-lockup.png"
+              alt="SoundBridge"
+              width={120}
+              height={32}
+              priority
+              style={{ height: 'auto' }}
+            />
+          </Link>
+        </div>
         <nav className="nav">
-          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
-            For You
-          </Link>
-          <a href="#">Discover</a>
-          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
-            Events
-          </Link>
+          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
+          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>Discover</Link>
+          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
           <a href="#">Creators</a>
-          <Link href="/upload" style={{ textDecoration: 'none', color: 'white' }}>
-            Upload
-          </Link>
         </nav>
-        <input type="search" className="search-bar" placeholder="Search creators, events, podcasts..." />
         <div className="auth-buttons">
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <button style={{
-              padding: '0.5rem 1rem',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '0.5rem',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}>
-              Login
-            </button>
-          </Link>
-          <Link href="/signup" style={{ textDecoration: 'none' }}>
-            <button style={{
-              padding: '0.5rem 1rem',
-              background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
-            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-              Sign Up
-            </button>
-          </Link>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ color: 'white', fontSize: '0.9rem' }}>
+                Welcome, {user.email}
+              </span>
+              <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}>
+                  Dashboard
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'transparent',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '0.9rem'
+                }}>
+                  Sign in
+                </button>
+              </Link>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '0.9rem'
+                }}>
+                  Sign up
+                </button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
       <main className="main-container">
-        {/* Back Button */}
-        <section className="section">
+        {/* Back to Events */}
+        <div style={{ padding: '2rem 2rem 0' }}>
           <Link href="/events" style={{ textDecoration: 'none' }}>
             <button style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              padding: '0.5rem 1rem',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '0.5rem',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}>
+              fontSize: '0.9rem'
+            }}>
               <ArrowLeft size={16} />
               Back to Events
             </button>
           </Link>
-        </section>
-
-        {/* Success Message */}
-        {publishStatus === 'success' && (
-          <section className="section">
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '1rem',
-              background: 'rgba(34, 197, 94, 0.1)',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              color: '#22c55e'
-            }}>
-              <CheckCircle size={16} />
-              <span>Event created successfully!</span>
-            </div>
-          </section>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <section className="section">
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              color: '#ef4444'
-            }}>
-              <AlertCircle size={16} />
-              <span>{error}</span>
-            </div>
-          </section>
-        )}
+        </div>
 
         {/* Create Event Form */}
-        <section className="section">
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-              <Calendar size={24} style={{ color: '#EC4899' }} />
-              <h2 style={{ fontWeight: '600', color: '#EC4899' }}>Create New Event</h2>
+        <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h1 style={{
+              fontSize: '2.5rem',
+              fontWeight: 'bold',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              marginBottom: '1rem'
+            }}>
+              Create New Event
+            </h1>
+            <p style={{ color: '#ccc', fontSize: '1.1rem' }}>
+              Share your music event with the world
+            </p>
+          </div>
+
+          {/* Location Detection Status */}
+          {location && (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <MapPin size={20} color="#EC4899" />
+                <div>
+                  <div style={{ color: 'white', fontWeight: '600' }}>
+                    {location.isDetected ? `Detected: ${location.country}` : 'Location not detected'}
+                  </div>
+                  {location.city && (
+                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                      {location.city}, {location.region}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: '#EC4899', fontWeight: '600' }}>
+                  Currency: {location.currencySymbol} ({location.currency})
+                </span>
+                <button
+                  onClick={detectLocation}
+                  disabled={locationLoading}
+                  style={{
+                    background: 'rgba(236, 72, 153, 0.2)',
+                    border: '1px solid rgba(236, 72, 153, 0.3)',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    cursor: locationLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <RefreshCw size={16} color="#EC4899" className={locationLoading ? 'animate-spin' : ''} />
+                </button>
+              </div>
             </div>
+          )}
 
-            <div className="grid grid-2" style={{ gap: '2rem' }}>
-              {/* Left Column - Main Form */}
-              <div>
-                <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Details</h3>
+          {/* Error Messages */}
+          {error && (
+            <div style={{
+              background: 'rgba(220, 38, 38, 0.1)',
+              border: '1px solid rgba(220, 38, 38, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              color: '#FCA5A5',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <AlertCircle size={20} />
+              {error}
+            </div>
+          )}
 
-                {/* Event Title */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Event Title *</label>
+          {locationError && (
+            <div style={{
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              color: '#FCD34D',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <AlertCircle size={20} />
+              Location detection failed. Using default currency (£).
+            </div>
+          )}
+
+          {/* Form */}
+          <div style={{ display: 'grid', gap: '2rem' }}>
+            {/* Basic Information */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                Basic Information
+              </h3>
+              
+              <div style={{ display: 'grid', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Event Title *
+                  </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter event title..."
-                    className="form-input"
-                    style={{ fontSize: '1.1rem' }}
+                    placeholder="Enter event title"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
                   />
                 </div>
 
-                {/* Event Description */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Event Description *</label>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Description *
+                  </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe your event..."
-                    className="form-input"
-                    rows={6}
-                    style={{ resize: 'vertical' }}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem',
+                      resize: 'vertical'
+                    }}
                   />
                 </div>
 
-                {/* Genre and Category */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Genre/Category *</label>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Genre *
+                  </label>
                   <select
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    className="form-input"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
                   >
-                    <option value="">Select a genre</option>
+                    <option value="">Select genre</option>
                     {genres.map((g) => (
                       <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
                 </div>
+              </div>
+            </div>
 
-                {/* Date and Time */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div>
-                    <label className="form-label">Event Date *</label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="form-input"
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Event Time *</label>
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
+            {/* Date & Time */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                Date & Time
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
+                  />
                 </div>
 
-                {/* Location */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Location *</label>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                Location
+              </h3>
+              
+              <div style={{ display: 'grid', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Location *
+                  </label>
                   <select
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="form-input"
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
                   >
-                    <option value="">Select a location</option>
+                    <option value="">Select location</option>
                     {locations.map((loc) => (
                       <option key={loc} value={loc}>{loc}</option>
                     ))}
                   </select>
                 </div>
 
-                {/* Venue/Address */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Venue/Address</label>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Venue Address
+                  </label>
                   <input
                     type="text"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter venue or address details..."
-                    className="form-input"
+                    placeholder="Enter venue address"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
                   />
-                </div>
-
-                {/* Price and Capacity */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div>
-                    <label className="form-label">Price</label>
-                    <input
-                      type="text"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      placeholder="£25 or ₦5000"
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Max Attendees</label>
-                    <input
-                      type="number"
-                      value={maxAttendees}
-                      onChange={(e) => setMaxAttendees(e.target.value)}
-                      placeholder="100"
-                      className="form-input"
-                      min="1"
-                    />
-                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Right Column - Image Upload and Settings */}
-              <div>
-                <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Image</h3>
-
-                {/* Image Upload */}
-                <div style={{ marginBottom: '2rem' }}>
-                  <ImageUpload
-                    onImageSelect={(file) => imageActions.setImageFile(file)}
-                    onImageRemove={() => imageActions.resetUpload()}
-                    selectedFile={imageState.imageFile}
-                    previewUrl={imageState.previewUrl}
-                    isUploading={imageState.isUploading}
-                    uploadProgress={imageState.uploadProgress}
-                    uploadStatus={imageState.uploadStatus}
-                    error={imageState.error}
-                    title="Upload Event Image"
-                    subtitle="Drag & drop or click to browse (recommended: 1200x800px)"
-                    aspectRatio={1.5}
-                    disabled={imageState.isUploading}
-                  />
-
-                  {/* Upload Button */}
-                  {imageState.imageFile && !imageState.uploadedUrl && (
-                    <button
-                      onClick={handleImageUpload}
-                      disabled={imageState.isUploading}
+            {/* Pricing */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                Pricing
+              </h3>
+              
+              <div style={{ display: 'grid', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Ticket Price ({location?.currencySymbol || '£'})
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      value={formatPrice(price)}
+                      onChange={(e) => handlePriceChange(e.target.value)}
+                      placeholder={`0.00`}
                       style={{
                         width: '100%',
-                        marginTop: '1rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        padding: '0.75rem 1rem',
-                        background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                        border: 'none',
-                        borderRadius: '0.5rem',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '12px',
+                        padding: '1rem',
                         color: 'white',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
-                        opacity: imageState.isUploading ? 0.7 : 1
+                        fontSize: '1rem'
                       }}
-                      onMouseEnter={(e) => !imageState.isUploading && (e.currentTarget.style.transform = 'translateY(-1px)')}
-                      onMouseLeave={(e) => !imageState.isUploading && (e.currentTarget.style.transform = 'translateY(0)')}
-                    >
-                      {imageState.isUploading ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload size={16} />
-                          Upload Image
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Upload Success Message */}
-                  {imageState.uploadedUrl && (
-                    <div style={{
-                      marginTop: '1rem',
-                      padding: '0.75rem',
-                      background: 'rgba(34, 197, 94, 0.1)',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      borderRadius: '8px',
-                      color: '#22c55e',
-                      fontSize: '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}>
-                      <CheckCircle size={16} />
-                      Image uploaded successfully!
-                    </div>
-                  )}
-                </div>
-
-                <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Publishing Options</h3>
-
-                {/* Privacy Settings */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Privacy</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="privacy"
-                        value="public"
-                        checked={privacy === 'public'}
-                        onChange={(e) => setPrivacy(e.target.value as 'public' | 'private' | 'invite-only')}
-                      />
-                      <Globe size={16} />
-                      <span>Public - Anyone can see and RSVP</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="privacy"
-                        value="private"
-                        checked={privacy === 'private'}
-                        onChange={(e) => setPrivacy(e.target.value as 'public' | 'private' | 'invite-only')}
-                      />
-                      <Lock size={16} />
-                      <span>Private - Only you can see</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="privacy"
-                        value="invite-only"
-                        checked={privacy === 'invite-only'}
-                        onChange={(e) => setPrivacy(e.target.value as 'public' | 'private' | 'invite-only')}
-                      />
-                      <Users size={16} />
-                      <span>Invite Only - Only specific users can see</span>
-                    </label>
+                    />
+                    {locationLoading && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}>
+                        <Loader2 size={16} className="animate-spin" color="#EC4899" />
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ color: '#ccc', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                    Leave empty for free events
                   </div>
                 </div>
 
-                {/* Publish Options */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Publish Option</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="publishOption"
-                        value="now"
-                        checked={publishOption === 'now'}
-                        onChange={(e) => setPublishOption(e.target.value as 'draft' | 'published' | 'scheduled')}
-                      />
-                      <Send size={16} />
-                      <span>Publish Now</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="publishOption"
-                        value="schedule"
-                        checked={publishOption === 'schedule'}
-                        onChange={(e) => setPublishOption(e.target.value as 'draft' | 'published' | 'scheduled')}
-                      />
-                      <Clock size={16} />
-                      <span>Schedule for later</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="publishOption"
-                        value="draft"
-                        checked={publishOption === 'draft'}
-                        onChange={(e) => setPublishOption(e.target.value as 'draft' | 'published' | 'scheduled')}
-                      />
-                      <Save size={16} />
-                      <span>Save as draft</span>
-                    </label>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Maximum Attendees
+                  </label>
+                  <input
+                    type="number"
+                    value={maxAttendees}
+                    onChange={(e) => setMaxAttendees(e.target.value)}
+                    placeholder="No limit"
+                    min="1"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Event Image */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                Event Image
+              </h3>
+              
+              <ImageUpload
+                onImageSelect={async (file) => {
+                  console.log('🖼️ Image selected:', file);
+                  await imageActions.setImageFile(file);
+                  // The useEffect will handle the automatic upload
+                }}
+                onImageRemove={() => imageActions.setImageFile(null)}
+                selectedFile={adaptUploadFile(imageState.imageFile)}
+                previewUrl={imageState.previewUrl}
+                isUploading={imageState.isUploading}
+                uploadProgress={imageState.uploadProgress}
+                uploadStatus={imageState.uploadStatus}
+                error={imageState.error}
+                title="Upload Event Image"
+                subtitle="Drag & drop or click to browse"
+                accept="image/*"
+                maxSize={5 * 1024 * 1024} // 5MB
+              />
+            </div>
+
+            {/* Privacy & Publishing */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                Privacy & Publishing
+              </h3>
+              
+              <div style={{ display: 'grid', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Privacy Setting
+                  </label>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    {[
+                      { value: 'public', label: 'Public', icon: Globe },
+                      { value: 'followers', label: 'Followers Only', icon: Users },
+                      { value: 'private', label: 'Private', icon: Lock }
+                    ].map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => setPrivacy(option.value as any)}
+                          style={{
+                            flex: 1,
+                            background: privacy === option.value ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                            border: privacy === option.value ? '2px solid #EC4899' : '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '12px',
+                            padding: '1rem',
+                            color: 'white',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <Icon size={20} />
+                          <span style={{ fontSize: '0.9rem' }}>{option.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Schedule Date (if scheduling) */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                    Publishing Option
+                  </label>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    {[
+                      { value: 'now', label: 'Publish Now', icon: Send },
+                      { value: 'schedule', label: 'Schedule', icon: Clock },
+                      { value: 'draft', label: 'Save Draft', icon: Save }
+                    ].map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => setPublishOption(option.value as any)}
+                          style={{
+                            flex: 1,
+                            background: publishOption === option.value ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                            border: publishOption === option.value ? '2px solid #EC4899' : '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '12px',
+                            padding: '1rem',
+                            color: 'white',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <Icon size={20} />
+                          <span style={{ fontSize: '0.9rem' }}>{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {publishOption === 'schedule' && (
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label className="form-label">Schedule Date</label>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                      Schedule Date
+                    </label>
                     <input
                       type="datetime-local"
                       value={scheduleDate}
                       onChange={(e) => setScheduleDate(e.target.value)}
-                      className="form-input"
                       min={new Date().toISOString().slice(0, 16)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        color: 'white',
+                        fontSize: '1rem'
+                      }}
                     />
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                  {publishOption === 'draft' ? (
-                    <button
-                      onClick={handleSaveDraft}
-                      disabled={isPublishing}
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        padding: '0.75rem 1rem',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        opacity: isPublishing ? 0.7 : 1
-                      }}
-                      onMouseEnter={(e) => !isPublishing && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
-                      onMouseLeave={(e) => !isPublishing && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
-                    >
-                      {isPublishing ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <Save size={16} />
-                      )}
-                      Save Draft
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handlePublish}
-                      disabled={isPublishing}
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        padding: '0.75rem 1rem',
-                        background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
-                        opacity: isPublishing ? 0.7 : 1
-                      }}
-                      onMouseEnter={(e) => !isPublishing && (e.currentTarget.style.transform = 'translateY(-1px)')}
-                      onMouseLeave={(e) => !isPublishing && (e.currentTarget.style.transform = 'translateY(0)')}
-                    >
-                      {isPublishing ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <Send size={16} />
-                      )}
-                      {publishOption === 'now' ? 'Publish Event' : 'Schedule Event'}
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
-          </div>
-        </section>
 
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                onClick={handleSaveDraft}
+                disabled={isPublishing}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  padding: '1rem 2rem',
+                  borderRadius: '12px',
+                  cursor: isPublishing ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <Save size={20} />
+                Save Draft
+              </button>
+
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing || locationLoading}
+                style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2rem',
+                  borderRadius: '12px',
+                  cursor: isPublishing || locationLoading ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  opacity: isPublishing || locationLoading ? 0.6 : 1
+                }}
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} />
+                    Publish Event
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Success Message */}
+            {publishStatus === 'success' && (
+              <div style={{
+                background: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                borderRadius: '12px',
+                padding: '1rem',
+                color: '#86EFAC',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                textAlign: 'center',
+                justifyContent: 'center'
+              }}>
+                <CheckCircle size={20} />
+                Event published successfully!
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
         <Footer />
       </main>
 
       {/* Floating Quick Actions Card */}
-      <FloatingCard title="Event Creation Tips">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          <div>Write a compelling description</div>
-          <div>Choose a date at least 1 week ahead</div>
-          <div>Be specific about the location</div>
-          <div>Set a reasonable price</div>
-          <div>Add an attractive image</div>
+      <FloatingCard title="Quick Actions">
+        <div className="quick-actions">
+          <Link href="/upload" style={{ textDecoration: 'none' }}>
+            <div className="quick-action">Upload Music</div>
+          </Link>
+          <div className="quick-action">Start Podcast</div>
+          <div className="quick-action">Create Event</div>
+          <div className="quick-action">Find Collaborators</div>
         </div>
 
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Categories</h3>
+        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-          {genres.slice(0, 6).map((genre) => (
-            <div key={genre} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}>
-              <Music size={14} />
-              {genre}
-            </div>
-          ))}
+          <div>John is listening to &quot;Praise Medley&quot;</div>
+          <div>Sarah posted a new track</div>
+          <div>Mike joined Gospel Night event</div>
         </div>
       </FloatingCard>
     </>

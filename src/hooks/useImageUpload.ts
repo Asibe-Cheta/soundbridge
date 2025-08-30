@@ -246,7 +246,12 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
   }, [user, state.imageFile]);
 
   const uploadEventImage = useCallback(async (): Promise<boolean> => {
+    console.log('🖼️ Hook: uploadEventImage called');
+    console.log('🖼️ Hook: user =', user);
+    console.log('🖼️ Hook: state.imageFile =', state.imageFile);
+    
     if (!user) {
+      console.log('🖼️ Hook: No user found, returning false');
       setState(prev => ({
         ...prev,
         error: 'You must be logged in to upload images',
@@ -256,6 +261,7 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
     }
 
     if (!state.imageFile) {
+      console.log('🖼️ Hook: No image file found, returning false');
       setState(prev => ({
         ...prev,
         error: 'Please select an image file to upload',
@@ -277,6 +283,10 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
     }));
 
     try {
+      console.log('🖼️ Hook: About to call imageUploadService.uploadEventImage');
+      console.log('🖼️ Hook: user.id =', user.id);
+      console.log('🖼️ Hook: state.imageFile =', state.imageFile);
+      
       const result = await imageUploadService.uploadEventImage(
         state.imageFile.file,
         user.id,
@@ -287,6 +297,8 @@ export function useImageUpload(): [ImageUploadState, ImageUploadActions] {
           }));
         }
       );
+
+      console.log('🖼️ Hook: Result from imageUploadService:', result);
 
       if (result.success) {
         setState(prev => ({

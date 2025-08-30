@@ -171,7 +171,8 @@ export function useSocial() {
 
     try {
       const result = await socialService.isLiked(user.id, contentId, contentType);
-      if (result.error) {
+      // Don't treat PGRST116 (no rows found) as an error - it's expected when user hasn't liked content
+      if (result.error && result.error.code !== 'PGRST116') {
         setError(result.error.message || 'Failed to check like status');
       }
       return result;

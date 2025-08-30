@@ -270,12 +270,12 @@ export function useEvents(): [EventsState, EventsActions] {
 
   const refreshEvents = useCallback(async () => {
     await fetchEvents(state.filters);
-  }, [fetchEvents, state.filters]);
+  }, [state.filters]);
 
   // Initial load
   useEffect(() => {
     fetchEvents();
-  }, [fetchEvents]);
+  }, []);
 
   return [
     state,

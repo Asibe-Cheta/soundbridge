@@ -1,59 +1,56 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ServiceWorkerRegistration } from "@/src/components/performance/ServiceWorkerRegistration";
-import { PerformanceMonitor } from "@/src/components/performance/PerformanceMonitor";
-import { AuthProvider } from "@/src/contexts/AuthContext";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
 import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
 import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
+import { SocialScripts } from "@/src/components/SocialScripts";
+import { AuthProvider } from "@/src/contexts/AuthContext";
+import Script from 'next/script';
 
 const inter = Inter({
-  subsets: ["latin"],
+  subsets: ['latin'],
   display: 'swap',
-  preload: true,
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "SoundBridge - Connect Through Music",
-    template: "%s | SoundBridge"
-  },
-  description: "Discover, share, and connect through music on SoundBridge. Join the community of creators and listeners in the UK and Nigeria markets.",
-  keywords: ["music", "audio", "creators", "events", "community", "soundbridge", "uk", "nigeria"],
-  authors: [{ name: "SoundBridge Team" }],
-  creator: "SoundBridge",
-  publisher: "SoundBridge",
+  title: 'SoundBridge - Connect with Creators, Discover Amazing Events',
+  description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community. Upload your music, create events, and collaborate with artists worldwide.',
+  keywords: 'music, creators, events, collaboration, afrobeats, gospel, uk drill, highlife, jazz, hip hop, r&b, pop, electronic',
+  authors: [{ name: 'SoundBridge Team' }],
+  creator: 'SoundBridge',
+  publisher: 'SoundBridge',
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://soundbridge.com'),
+  metadataBase: new URL('https://soundbridge.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: '/',
-    title: 'SoundBridge - Connect Through Music',
-    description: 'Discover, share, and connect through music on SoundBridge.',
+    title: 'SoundBridge - Connect with Creators, Discover Amazing Events',
+    description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community.',
+    url: 'https://soundbridge.com',
     siteName: 'SoundBridge',
     images: [
       {
-        url: '/images/logos/logo-white-lockup.png',
+        url: '/images/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'SoundBridge Logo',
+        alt: 'SoundBridge - Music Community Platform',
       },
     ],
+    locale: 'en_US',
+    type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SoundBridge - Connect Through Music',
-    description: 'Discover, share, and connect through music on SoundBridge.',
-    images: ['/images/logos/logo-white-lockup.png'],
+    title: 'SoundBridge - Connect with Creators, Discover Amazing Events',
+    description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community.',
+    images: ['/images/og-image.jpg'],
     creator: '@soundbridge',
+    site: '@soundbridge',
   },
   robots: {
     index: true,
@@ -71,7 +68,6 @@ export const metadata: Metadata = {
     yandex: 'your-yandex-verification-code',
     yahoo: 'your-yahoo-verification-code',
   },
-  category: 'music',
 };
 
 export default function RootLayout({
@@ -82,42 +78,47 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* DNS prefetch for external domains */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-        <link rel="dns-prefetch" href="//*.supabase.co" />
-        <link rel="dns-prefetch" href="//*.supabase.com" />
-
-        {/* Preconnect for performance */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://*.supabase.co" />
-        <link rel="preconnect" href="https://*.supabase.com" />
-
-        {/* Structured data for organization */}
-        <script
-          type="application/ld+json"
+        <link rel="preconnect" href="https://aunxdbqukbxyyiusaeqi.supabase.co" />
+        
+        {/* Facebook SDK */}
+        <Script
+          id="facebook-sdk"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "SoundBridge",
-              "url": "https://soundbridge.com",
-              "logo": "https://soundbridge.com/images/logos/logo-white-lockup.png",
-              "description": "Connect Through Music",
-              "sameAs": [
-                "https://twitter.com/soundbridge",
-                "https://facebook.com/soundbridge",
-                "https://instagram.com/soundbridge"
-              ],
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "contactType": "customer service",
-                "email": "support@soundbridge.com"
-              }
-            }),
+            __html: `
+              window.fbAsyncInit = function() {
+                FB.init({
+                  appId: '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || 'your-facebook-app-id'}',
+                  cookie: true,
+                  xfbml: true,
+                  version: 'v18.0'
+                });
+              };
+              (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = "https://connect.facebook.net/en_US/sdk.js";
+                fjs.parentNode.insertBefore(js, fjs);
+              }(document, 'script', 'facebook-jssdk'));
+            `,
           }}
         />
+        
+        {/* YouTube API */}
+        <Script
+          id="youtube-api"
+          src="https://apis.google.com/js/api.js"
+          strategy="afterInteractive"
+        />
+        
+        <SocialScripts />
       </head>
       <body className={inter.className}>
         <AuthProvider>
@@ -126,12 +127,6 @@ export default function RootLayout({
             <GlobalAudioPlayer />
           </AudioPlayerProvider>
         </AuthProvider>
-
-        {/* Performance monitoring */}
-        <PerformanceMonitor pageName="root" />
-
-        {/* Service worker registration */}
-        <ServiceWorkerRegistration />
       </body>
     </html>
   );

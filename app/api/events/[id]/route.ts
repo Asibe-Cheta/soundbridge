@@ -195,6 +195,95 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    const resolvedParams = await params;
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify user owns the event
+    const { data: existingEvent, error: fetchError } = await supabase
+      .from('events')
+      .select('creator_id')
+      .eq('id', resolvedParams.id)
+      .single();
+
+    if (fetchError || !existingEvent) {
+      return NextResponse.json(
+        { error: 'Event not found' },
+        { status: 404 }
+      );
+    }
+
+    if (existingEvent.creator_id !== user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    const updateData = await request.json();
+
+    // Update event
+    const { data: event, error: updateError } = await supabase
+      .from('events')
+      .update(updateData)
+      .eq('id', resolvedParams.id)
+      .select(`
+        *,
+        creator:profiles!events_creator_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url,
+          banner_url
+        )
+      `)
+      .single();
+
+    if (updateError) {
+      console.error('Event update error:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update event' },
+        { status: 500 }
+      );
+    }
+
+    // Transform event data
+    const transformedEvent = {
+      ...event,
+      attendeeCount: 0,
+      formattedDate: formatEventDate(event.event_date),
+      formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
+      isFeatured: isFeaturedEvent(event),
+      rating: calculateEventRating()
+    };
+
+    return NextResponse.json({
+      success: true,
+      event: transformedEvent
+    });
+  } catch (error) {
+    console.error('Event update API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -173,13 +173,18 @@ export class SocialService {
   async toggleLike(userId: string, request: CreateLikeRequest): Promise<{ data: Like | null; error: any }> {
     try {
       // Check if already liked
-      const { data: existingLike } = await this.supabase
+      const { data: existingLike, error: existingError } = await this.supabase
         .from('likes')
         .select('*')
         .eq('user_id', userId)
         .eq('content_id', request.content_id)
         .eq('content_type', request.content_type)
-        .single();
+        .maybeSingle();
+
+      // Handle the case where no like exists (PGRST116 error)
+      if (existingError && existingError.code !== 'PGRST116') {
+        throw existingError;
+      }
 
       if (existingLike) {
         // Unlike
@@ -253,9 +258,14 @@ export class SocialService {
         .eq('user_id', userId)
         .eq('content_id', contentId)
         .eq('content_type', contentType)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      // PGRST116 means no rows found, which is expected when user hasn't liked the content
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking if liked:', error);
+        return { data: false, error };
+      }
+      
       return { data: !!data, error: null };
     } catch (error) {
       console.error('Error checking if liked:', error);

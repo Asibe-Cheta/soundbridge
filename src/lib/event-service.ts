@@ -88,6 +88,11 @@ export class EventService {
         query = query.gte('event_date', new Date().toISOString());
       }
 
+      // Apply limit if specified
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
       const { data, error } = await query;
 
       if (error) {

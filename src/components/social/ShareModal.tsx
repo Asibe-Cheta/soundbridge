@@ -60,6 +60,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isTabsExpanded, setIsTabsExpanded] = useState(false);
+  const [contactSearch, setContactSearch] = useState('');
 
   // Mock contacts - in a real app, this would come from the user's contacts/following
   const mockContacts: Contact[] = [
@@ -124,55 +125,185 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
   };
 
   const handleExternalShare = async (platform: string) => {
-    const shareUrl = generateShareUrl();
-    const shareText = generateShareText();
-    
-    let shareLink = '';
-    
-    switch (platform) {
-      case 'twitter':
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-        break;
-      case 'facebook':
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
-        break;
-      case 'linkedin':
-        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-        break;
-      case 'whatsapp':
-        shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
-        break;
-      case 'telegram':
-        shareLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
-        break;
-      case 'email':
-        shareLink = `mailto:?subject=${encodeURIComponent('Check out this track on SoundBridge')}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
-        break;
-      case 'instagram':
-        // Instagram doesn't support direct URL sharing, but we can copy the text
-        await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
-        alert('Share text copied to clipboard! You can now paste it on Instagram.');
-        return;
-      default:
-        break;
-    }
-    
-    if (shareLink) {
-      window.open(shareLink, '_blank', 'width=600,height=400');
-    }
-    
-    // Also save to our database
     try {
-      await createShare({
-        content_id: content.id,
-        content_type: content.type,
-        share_type: 'external_share',
-        caption: shareText,
-        external_platform: platform,
-        external_url: shareUrl
-      });
+      const shareUrl = generateShareUrl();
+      const shareText = generateShareText();
+      
+      let shareLink = '';
+      let shouldOpenNewWindow = true;
+      let deepLink = '';
+      
+      switch (platform) {
+        case 'twitter':
+          shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+          break;
+        case 'facebook':
+          // Use Facebook Share Dialog API
+          if (window.FB) {
+            window.FB.ui({
+              method: 'share',
+              href: shareUrl,
+              quote: shareText,
+            }, function(response) {
+              console.log('Facebook share response:', response);
+            });
+          } else {
+            // Fallback to web sharing
+            shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+          }
+          break;
+        case 'linkedin':
+          shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+          break;
+        case 'whatsapp':
+          shareLink = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+          deepLink = `whatsapp://send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+          // Try deep link first, fallback to web
+          tryDeepLink(deepLink, shareLink, 'WhatsApp');
+          return;
+        case 'telegram':
+          shareLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+          deepLink = `tg://msg?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+          // Try deep link first, fallback to web
+          tryDeepLink(deepLink, shareLink, 'Telegram');
+          return;
+        case 'email':
+          shareLink = `mailto:?subject=${encodeURIComponent('Check out this track on SoundBridge')}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+          shouldOpenNewWindow = false; // Email opens in default mail client
+          break;
+        case 'youtube':
+          // Use YouTube Data API for sharing
+          try {
+            // Check if user is logged into YouTube
+            if (window.gapi && window.gapi.auth2) {
+              const auth2 = window.gapi.auth2.getAuthInstance();
+              if (auth2.isSignedIn.get()) {
+                // User is signed in, can use YouTube API
+                console.log('YouTube API available, user signed in');
+                // For now, fallback to clipboard with better messaging
+                await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+                alert('Share text copied! You can now paste it in YouTube Studio or create a YouTube Short. For direct sharing, you\'ll need to connect your YouTube account in settings.');
+              } else {
+                // User not signed in, prompt to sign in
+                alert('To share directly to YouTube, please sign in to your YouTube account first. For now, the share text has been copied to your clipboard.');
+                await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+              }
+            } else {
+              // YouTube API not loaded, fallback to clipboard
+              await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+              alert('Share text copied! You can paste this in YouTube Studio or create a YouTube Short. To enable direct sharing, we\'ll need to integrate the YouTube API.');
+            }
+          } catch (error) {
+            console.error('YouTube sharing error:', error);
+            // Fallback to clipboard
+            await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+            alert('Share text copied to clipboard! You can paste this in YouTube Studio or create a YouTube Short.');
+          }
+          return;
+        case 'instagram':
+          // Instagram doesn't have a public sharing API, but we can provide better UX
+          try {
+            await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+            alert('Share text copied! You can now paste this in Instagram Stories, Reels, or posts. Instagram doesn\'t allow direct web sharing, but you can easily paste the copied text.');
+          } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = `${shareText}\n\n${shareUrl}`;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Share text copied! You can paste this in Instagram Stories, Reels, or posts.');
+          }
+          return;
+        case 'discord':
+          shareLink = `https://discord.com/channels/@me?content=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+          break;
+        case 'reddit':
+          shareLink = `https://reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`;
+          break;
+        case 'pinterest':
+          shareLink = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(shareText)}`;
+          break;
+        case 'tiktok':
+          // TikTok doesn't have a public sharing API
+          try {
+            await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+            alert('Share text copied! You can paste this in TikTok when creating a video. TikTok doesn\'t allow direct web sharing, but you can easily paste the copied text.');
+          } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            const textArea = document.createElement('textarea');
+            textArea.value = `${shareText}\n\n${shareUrl}`;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Share text copied! You can paste this in TikTok when creating a video.');
+          }
+          return;
+        case 'snapchat':
+          // Snapchat doesn't have a public sharing API
+          try {
+            await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+            alert('Share text copied! You can paste this in Snapchat when creating a snap. Snapchat doesn\'t allow direct web sharing, but you can easily paste the copied text.');
+          } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            const textArea = document.createElement('textarea');
+            textArea.value = `${shareText}\n\n${shareUrl}`;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Share text copied! You can paste this in Snapchat when creating a snap.');
+          }
+          return;
+        default:
+          break;
+      }
+      
+      if (shareLink) {
+        if (shouldOpenNewWindow) {
+          // Open in a popup window for better UX
+          const popup = window.open(shareLink, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+          
+          // Focus the popup if it was blocked
+          if (popup) {
+            popup.focus();
+          } else {
+            // If popup was blocked, open in new tab
+            window.open(shareLink, '_blank');
+          }
+        } else {
+          // For email, just open the link (will open default mail client)
+          window.location.href = shareLink;
+        }
+      }
+      
+      // Also save to our database
+      try {
+        await createShare({
+          content_id: content.id,
+          content_type: content.type,
+          share_type: 'external_share',
+          caption: shareText,
+          external_platform: platform,
+          external_url: shareUrl
+        });
+      } catch (error) {
+        console.error('Error saving external share:', error);
+      }
     } catch (error) {
-      console.error('Error saving external share:', error);
+      console.error('Error in handleExternalShare:', error);
+      // Fallback - just copy the link
+      try {
+        const shareUrl = generateShareUrl();
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Link copied to clipboard!');
+      } catch (clipboardError) {
+        console.error('Error copying to clipboard:', clipboardError);
+        alert('Failed to share. Please try again.');
+      }
     }
   };
 
@@ -188,29 +319,89 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
     }
   };
 
-  const handleNativeShare = async () => {
-    if (navigator.share) {
+  // Helper function to try deep link and fallback to web
+  const tryDeepLink = (deepLink: string, webLink: string, platformName: string) => {
+    try {
+      // Try to open the deep link
+      const link = document.createElement('a');
+      link.href = deepLink;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // Set a timeout to detect if the app opened
+      const timeout = setTimeout(() => {
+        try {
+          // App didn't open, fallback to web
+          window.open(webLink, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+        } catch (fallbackError) {
+          console.error('Error opening web fallback:', fallbackError);
+          // Final fallback - just copy the link
+          navigator.clipboard.writeText(webLink).catch(() => {
+            console.error('Failed to copy link to clipboard');
+          });
+        }
+      }, 2000);
+      
+      // Try to open the deep link
       try {
-        await navigator.share({
-          title: content.title,
-          text: generateShareText(),
-          url: generateShareUrl(),
-        });
-        
-        // Save to our database
-        await createShare({
-          content_id: content.id,
-          content_type: content.type,
-          share_type: 'external_share',
-          caption: generateShareText(),
-          external_platform: 'native_share',
-          external_url: generateShareUrl()
-        });
+        link.click();
       } catch (error) {
-        console.error('Error with native share:', error);
+        console.log(`${platformName} app not installed, falling back to web`);
       }
-    } else {
-      // Fallback to copy link
+      
+      // Clean up
+      try {
+        document.body.removeChild(link);
+        clearTimeout(timeout);
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+      }
+    } catch (error) {
+      console.error(`Error in tryDeepLink for ${platformName}:`, error);
+      // Fallback to web version
+      try {
+        window.open(webLink, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+      } catch (fallbackError) {
+        console.error('Error opening web fallback:', fallbackError);
+      }
+    }
+  };
+
+  const handleNativeShare = async () => {
+    try {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: content.title,
+            text: generateShareText(),
+            url: generateShareUrl(),
+          });
+          
+          // Save to our database
+          try {
+            await createShare({
+              content_id: content.id,
+              content_type: content.type,
+              share_type: 'external_share',
+              caption: generateShareText(),
+              external_platform: 'native_share',
+              external_url: generateShareUrl()
+            });
+          } catch (dbError) {
+            console.error('Error saving native share to database:', dbError);
+          }
+        } catch (shareError) {
+          console.error('Error with native share:', shareError);
+          // Fallback to copy link
+          handleCopyLink();
+        }
+      } else {
+        // Fallback to copy link
+        handleCopyLink();
+      }
+    } catch (error) {
+      console.error('Error in handleNativeShare:', error);
+      // Final fallback
       handleCopyLink();
     }
   };
@@ -222,6 +413,12 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
         : [...prev, contactId]
     );
   };
+
+  // Filter contacts based on search
+  const filteredContacts = mockContacts.filter(contact =>
+    contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+    contact.username.toLowerCase().includes(contactSearch.toLowerCase())
+  );
 
   const shareOptions: ShareOption[] = [
     {
@@ -566,77 +763,111 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                 />
               </div>
               
-              <div style={{ marginBottom: '1rem' }}>
-                <h4 style={{ color: 'white', fontSize: '0.875rem', fontWeight: '600', margin: '0 0 0.75rem 0' }}>
-                  Select Contacts
-                </h4>
-                <div 
-                  className="share-modal-scroll"
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '0.5rem',
-                    maxHeight: '100px',
-                    overflow: 'auto',
-                    scrollbarWidth: 'auto',
-                    scrollbarColor: '#D1D5DB #374151'
-                  }}
-                >
-                  {mockContacts.map((contact) => (
-                    <button
-                      key={contact.id}
-                      onClick={() => toggleContact(contact.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        background: selectedContacts.includes(contact.id) 
-                          ? 'rgba(59, 130, 246, 0.1)' 
-                          : 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid',
-                        borderColor: selectedContacts.includes(contact.id) 
-                          ? '#3B82F6' 
-                          : 'rgba(255, 255, 255, 0.1)',
-                        borderRadius: '8px',
-                        color: 'white',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                        minHeight: '60px'
-                      }}
-                    >
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(45deg, #3B82F6, #8B5CF6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        flexShrink: 0
-                      }}>
-                        {contact.name.charAt(0)}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>
-                          {contact.name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-                          {contact.username}
-                        </div>
-                      </div>
-                      <div style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: contact.isOnline ? '#10B981' : '#6B7280',
-                        flexShrink: 0
-                      }} />
-                    </button>
-                  ))}
+                             <div style={{ marginBottom: '1rem' }}>
+                 <h4 style={{ color: 'white', fontSize: '0.875rem', fontWeight: '600', margin: '0 0 0.75rem 0' }}>
+                   Select Contacts
+                 </h4>
+                 
+                 {/* Search Input */}
+                 <div style={{ marginBottom: '0.75rem' }}>
+                   <input
+                     type="text"
+                     value={contactSearch}
+                     onChange={(e) => setContactSearch(e.target.value)}
+                     placeholder="Search contacts..."
+                     style={{
+                       width: '100%',
+                       padding: '0.5rem 0.75rem',
+                       background: 'rgba(255, 255, 255, 0.05)',
+                       border: '1px solid rgba(255, 255, 255, 0.1)',
+                       borderRadius: '6px',
+                       color: 'white',
+                       fontSize: '0.875rem',
+                       outline: 'none'
+                     }}
+                     onFocus={(e) => e.target.style.borderColor = '#3B82F6'}
+                     onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                   />
+                 </div>
+                 
+                 <div 
+                   className="share-modal-scroll"
+                   style={{ 
+                     display: 'flex', 
+                     flexDirection: 'column', 
+                     gap: '0.5rem',
+                     maxHeight: '100px',
+                     overflow: 'auto',
+                     scrollbarWidth: 'auto',
+                     scrollbarColor: '#D1D5DB #374151'
+                   }}
+                 >
+                                                        {filteredContacts.length > 0 ? (
+                     filteredContacts.map((contact) => (
+                       <button
+                         key={contact.id}
+                         onClick={() => toggleContact(contact.id)}
+                         style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           background: selectedContacts.includes(contact.id) 
+                             ? 'rgba(59, 130, 246, 0.1)' 
+                             : 'rgba(255, 255, 255, 0.05)',
+                           border: '1px solid',
+                           borderColor: selectedContacts.includes(contact.id) 
+                             ? '#3B82F6' 
+                             : 'rgba(255, 255, 255, 0.1)',
+                           borderRadius: '8px',
+                           color: 'white',
+                           cursor: 'pointer',
+                           width: '100%',
+                           textAlign: 'left',
+                           minHeight: '60px'
+                         }}
+                       >
+                         <div style={{
+                           width: '32px',
+                           height: '32px',
+                           borderRadius: '50%',
+                           background: 'linear-gradient(45deg, #3B82F6, #8B5CF6)',
+                           display: 'flex',
+                           alignItems: 'center',
+                           justifyContent: 'center',
+                           fontSize: '0.75rem',
+                           fontWeight: '600',
+                           flexShrink: 0
+                         }}>
+                           {contact.name.charAt(0)}
+                         </div>
+                         <div style={{ flex: 1 }}>
+                           <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                             {contact.name}
+                           </div>
+                           <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                             {contact.username}
+                           </div>
+                         </div>
+                         <div style={{
+                           width: '8px',
+                           height: '8px',
+                           borderRadius: '50%',
+                           background: contact.isOnline ? '#10B981' : '#6B7280',
+                           flexShrink: 0
+                         }} />
+                       </button>
+                     ))
+                   ) : (
+                     <div style={{
+                       textAlign: 'center',
+                       padding: '1rem',
+                       color: '#9CA3AF',
+                       fontSize: '0.875rem'
+                     }}>
+                       {contactSearch ? 'No contacts found matching your search' : 'No contacts available'}
+                     </div>
+                   )}
                 </div>
               </div>
               
@@ -675,22 +906,22 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                   scrollbarColor: '#6B7280 #374151'
                 }}
               >
-                {[
-                  { name: 'Twitter', icon: <Twitter size={20} />, color: '#1DA1F2', action: () => handleExternalShare('twitter') },
-                  { name: 'Facebook', icon: <Facebook size={20} />, color: '#1877F2', action: () => handleExternalShare('facebook') },
-                  { name: 'Instagram', icon: <Instagram size={20} />, color: '#E4405F', action: () => handleExternalShare('instagram') },
-                  { name: 'LinkedIn', icon: <LinkIcon size={20} />, color: '#0077B5', action: () => handleExternalShare('linkedin') },
-                  { name: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#25D366', action: () => handleExternalShare('whatsapp') },
-                  { name: 'Telegram', icon: <MessageCircle size={20} />, color: '#0088CC', action: () => handleExternalShare('telegram') },
-                  { name: 'Email', icon: <Mail size={20} />, color: '#EA4335', action: () => handleExternalShare('email') },
-                  { name: 'Discord', icon: <MessageCircle size={20} />, color: '#5865F2', action: () => handleExternalShare('discord') },
-                  { name: 'Reddit', icon: <Globe size={20} />, color: '#FF4500', action: () => handleExternalShare('reddit') },
-                  { name: 'Pinterest', icon: <Globe size={20} />, color: '#E60023', action: () => handleExternalShare('pinterest') },
-                  { name: 'TikTok', icon: <Globe size={20} />, color: '#000000', action: () => handleExternalShare('tiktok') },
-                  { name: 'YouTube', icon: <Globe size={20} />, color: '#FF0000', action: () => handleExternalShare('youtube') },
-                  { name: 'Snapchat', icon: <Globe size={20} />, color: '#FFFC00', action: () => handleExternalShare('snapchat') },
-                  { name: 'Copy Link', icon: <Copy size={20} />, color: '#6B7280', action: handleCopyLink }
-                ].map((platform) => (
+                                 {[
+                   { name: 'Twitter', icon: <Twitter size={20} />, color: '#1DA1F2', action: () => handleExternalShare('twitter'), hasDeepLink: false, hasAPI: false },
+                   { name: 'Facebook', icon: <Facebook size={20} />, color: '#1877F2', action: () => handleExternalShare('facebook'), hasDeepLink: false, hasAPI: true },
+                   { name: 'Instagram', icon: <Instagram size={20} />, color: '#E4405F', action: () => handleExternalShare('instagram'), hasDeepLink: false, hasAPI: false },
+                   { name: 'LinkedIn', icon: <LinkIcon size={20} />, color: '#0077B5', action: () => handleExternalShare('linkedin'), hasDeepLink: false, hasAPI: false },
+                   { name: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#25D366', action: () => handleExternalShare('whatsapp'), hasDeepLink: true, hasAPI: false },
+                   { name: 'Telegram', icon: <MessageCircle size={20} />, color: '#0088CC', action: () => handleExternalShare('telegram'), hasDeepLink: true, hasAPI: false },
+                   { name: 'Email', icon: <Mail size={20} />, color: '#EA4335', action: () => handleExternalShare('email'), hasDeepLink: false, hasAPI: false },
+                   { name: 'Discord', icon: <MessageCircle size={20} />, color: '#5865F2', action: () => handleExternalShare('discord'), hasDeepLink: false, hasAPI: false },
+                   { name: 'Reddit', icon: <Globe size={20} />, color: '#FF4500', action: () => handleExternalShare('reddit'), hasDeepLink: false, hasAPI: false },
+                   { name: 'Pinterest', icon: <Globe size={20} />, color: '#E60023', action: () => handleExternalShare('pinterest'), hasDeepLink: false, hasAPI: false },
+                   { name: 'TikTok', icon: <Globe size={20} />, color: '#000000', action: () => handleExternalShare('tiktok'), hasDeepLink: false, hasAPI: false },
+                   { name: 'YouTube', icon: <Globe size={20} />, color: '#FF0000', action: () => handleExternalShare('youtube'), hasDeepLink: false, hasAPI: true },
+                   { name: 'Snapchat', icon: <Globe size={20} />, color: '#FFFC00', action: () => handleExternalShare('snapchat'), hasDeepLink: false, hasAPI: false },
+                   { name: 'Copy Link', icon: <Copy size={20} />, color: '#6B7280', action: handleCopyLink, hasDeepLink: false, hasAPI: false }
+                 ].map((platform) => (
                   <button
                     key={platform.name}
                     onClick={platform.action}
@@ -718,9 +949,30 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                     <div style={{ color: platform.color, flexShrink: 0 }}>
                       {platform.icon}
                     </div>
-                    <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
-                      Share on {platform.name}
-                    </span>
+                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                       <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                         Share on {platform.name}
+                       </span>
+                                               {platform.hasDeepLink && (
+                          <div style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: '#10B981',
+                            flexShrink: 0
+                          }} title="Opens mobile app if installed" />
+                        )}
+                        {platform.hasAPI && (
+                          <div style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: '#3B82F6',
+                            flexShrink: 0,
+                            marginLeft: '4px'
+                          }} title="Uses official API" />
+                        )}
+                     </div>
                   </button>
                 ))}
               </div>

@@ -1019,6 +1019,14 @@ export default function SettingsPage() {
             <Settings size={16} />
             App
           </button>
+          <a
+            href="/settings/social-connections"
+            className="tab-button"
+            style={{ textDecoration: 'none' }}
+          >
+            <Share2 size={16} />
+            Social Connections
+          </a>
         </div>
 
         {/* Tab Content */}

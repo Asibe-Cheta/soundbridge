@@ -338,6 +338,10 @@ export class ImageUploadService {
       const path = this.generateUniqueFilename(compressedFile.name, userId);
 
       // Upload to Supabase storage
+      console.log('🖼️ Uploading to event-images bucket with path:', path);
+      console.log('🖼️ File size:', compressedFile.size, 'bytes');
+      console.log('🖼️ File type:', compressedFile.type);
+      
       const { data, error } = await this.supabase.storage
         .from('event-images')
         .upload(path, compressedFile, {
@@ -346,6 +350,7 @@ export class ImageUploadService {
         });
 
       if (error) {
+        console.error('🖼️ Supabase upload error:', error);
         return {
           success: false,
           error: {
@@ -355,6 +360,8 @@ export class ImageUploadService {
           }
         };
       }
+
+      console.log('🖼️ Upload successful, data:', data);
 
       // Get public URL for event image
       const { data: urlData } = this.supabase.storage
