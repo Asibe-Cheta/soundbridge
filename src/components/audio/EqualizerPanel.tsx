@@ -92,11 +92,11 @@ export function EqualizerPanel({
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between">
               <span className="text-white text-sm">Equalizer</span>
-              <Button
-                variant={equalizer.enabled ? "primary" : "outline"}
-                size="sm"
-                onClick={onToggle}
-              >
+                              <Button
+                  variant={equalizer.enabled ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggle}
+                >
                 {equalizer.enabled ? "Enabled" : "Disabled"}
               </Button>
             </div>
@@ -108,7 +108,7 @@ export function EqualizerPanel({
                 {Object.keys(equalizer.presets).map((preset) => (
                   <Button
                     key={preset}
-                    variant={selectedPreset === preset ? "primary" : "outline"}
+                    variant={selectedPreset === preset ? "default" : "outline"}
                     size="sm"
                     onClick={() => handlePresetChange(preset)}
                     className="text-xs"
