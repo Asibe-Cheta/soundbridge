@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-export default function UploadSuccessPage() {
+function UploadSuccessContent() {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const [trackData, setTrackData] = useState<{ title: string; trackId?: string } | null>(null);
@@ -277,5 +277,24 @@ export default function UploadSuccessPage() {
          }
        `}} />
     </>
+  );
+}
+
+export default function UploadSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div>Loading...</div>
+      </div>
+    }>
+      <UploadSuccessContent />
+    </Suspense>
   );
 }

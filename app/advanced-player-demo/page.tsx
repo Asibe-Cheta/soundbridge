@@ -228,6 +228,9 @@ export default function AdvancedPlayerDemoPage() {
     );
   }
 
+  // Only render the AdvancedAudioPlayer when on client side
+  const AudioPlayerComponent = isClient ? AdvancedAudioPlayer : null;
+
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -515,16 +518,18 @@ export default function AdvancedPlayerDemoPage() {
         )}
       </div>
 
-      {/* Advanced Audio Player */}
-      <AdvancedAudioPlayer
-        showMiniPlayer={true}
-        showFullscreenButton={true}
-        showEqualizer={true}
-        showEffects={true}
-        showLyrics={true}
-        showWaveform={true}
-        showSpectrum={true}
-      />
+             {/* Advanced Audio Player */}
+       {AudioPlayerComponent && (
+         <AudioPlayerComponent
+           showMiniPlayer={true}
+           showFullscreenButton={true}
+           showEqualizer={true}
+           showEffects={true}
+           showLyrics={true}
+           showWaveform={true}
+           showSpectrum={true}
+         />
+       )}
     </div>
   );
 }
