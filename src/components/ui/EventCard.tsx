@@ -228,7 +228,7 @@ export function EventCard({
               transition={{ duration: 0.2 }}
             >
               <Button
-                variant={isAttending ? "glass" : "primary"}
+                variant={isAttending ? "glassmorphism" : "default"}
                 size="sm"
                 onClick={handleRSVP}
                 className={cn(
