@@ -51,7 +51,7 @@ export function FloatingCard({
         transition={{ duration: 0.3 }}
       >
         <Button
-          variant="glass"
+          variant="glassmorphism"
           onClick={() => setIsVisible(true)}
           className="flex items-center gap-2 px-4 py-2"
         >
