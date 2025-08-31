@@ -38,7 +38,7 @@ const cardVariants = cva(
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>
+  React.ComponentProps<typeof motion.div> & VariantProps<typeof cardVariants>
 >(({ className, variant, size, ...props }, ref) => (
   <motion.div
     ref={ref}
