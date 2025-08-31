@@ -76,6 +76,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) {
+      return { data: null, error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -89,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, metadata?: any) => {
+    if (!supabase) {
+      return { data: null, error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -105,6 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+    }
     try {
       const { error } = await supabase.auth.signOut();
       return { error };
@@ -115,6 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithProvider = async (provider: 'google' | 'facebook' | 'apple') => {
+    if (!supabase) {
+      return { data: null, error: new Error('Supabase client not initialized') };
+    }
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
