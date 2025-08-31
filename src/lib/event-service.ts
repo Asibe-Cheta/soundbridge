@@ -247,8 +247,8 @@ export class EventService {
           userStatus: (item as any).status,
           formattedDate: this.formatEventDate((item.event as any).event_date),
           formattedPrice: this.formatPrice((item.event as any).price_gbp, (item.event as any).price_ngn),
-          isFeatured: this.isFeaturedEvent(item.event),
-          rating: this.calculateEventRating(item.event)
+          isFeatured: this.isFeaturedEvent(item.event as any),
+          rating: this.calculateEventRating(item.event as any)
         };
         return event as unknown as Event;
       }) || [];
