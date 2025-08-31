@@ -149,7 +149,7 @@ export function AnalyticsChart({ data, isLoading = false }: AnalyticsChartProps)
         <div className="chart-container glass rounded-xl p-4 border border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4">Plays Over Time</h3>
           <div className="h-48 flex items-end justify-between gap-1">
-            {data.playsOverTime.slice(-7).map((item) => {
+            {data.playsOverTime.slice(-7).map((item, index) => {
               const maxPlays = Math.max(...data.playsOverTime.map(d => d.plays));
               const height = maxPlays > 0 ? (item.plays / maxPlays) * 100 : 0;
 
