@@ -38,8 +38,7 @@ export function AudioPreview({ uploadFile, onMetadataExtracted }: AudioPreviewPr
           duration: audio.duration,
           bitrate: Math.round((uploadFile.file.size * 8) / audio.duration), // rough estimate
           format: uploadFile.file.type,
-          size: uploadFile.file.size,
-          mimeType: uploadFile.file.type
+          size: uploadFile.file.size
         };
 
         setMetadata(audioMetadata);
