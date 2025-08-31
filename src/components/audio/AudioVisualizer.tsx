@@ -18,7 +18,7 @@ export function AudioVisualizer({
   className = '' 
 }: AudioVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   const processedData = useMemo(() => {
     if (!data.length) return [];
