@@ -19,6 +19,12 @@ import {
 } from 'lucide-react';
 
 export default function AdvancedPlayerDemoPage() {
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const { loadTrack } = useAdvancedAudioPlayer();
   const [selectedTrack, setSelectedTrack] = useState<AudioTrack | null>(null);
 
@@ -203,6 +209,21 @@ export default function AdvancedPlayerDemoPage() {
       // This is expected behavior for demo data
     }
   };
+
+  if (!isClient) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 

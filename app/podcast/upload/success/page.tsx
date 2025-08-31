@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Footer } from '../../../../src/components/layout/Footer';
 import { CheckCircle, Mic, Headphones, Share2, Users, TrendingUp, ArrowLeft } from 'lucide-react';
 
-export default function PodcastUploadSuccessPage() {
+function PodcastUploadSuccessContent() {
   const searchParams = useSearchParams();
   const [title, setTitle] = useState('Your Podcast');
 
@@ -431,5 +431,24 @@ export default function PodcastUploadSuccessPage() {
         <Footer />
       </main>
     </>
+  );
+}
+
+export default function PodcastUploadSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div>Loading...</div>
+      </div>
+    }>
+      <PodcastUploadSuccessContent />
+    </Suspense>
   );
 }
