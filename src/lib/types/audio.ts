@@ -94,7 +94,7 @@ export interface QueueItem {
   track: AudioTrack;
   addedAt: Date;
   addedBy?: string;
-  source?: 'playlist' | 'album' | 'search' | 'recommendation';
+  source?: 'playlist' | 'album' | 'search' | 'recommendation' | 'manual';
 }
 
 export interface Playlist {
