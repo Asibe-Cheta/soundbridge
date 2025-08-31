@@ -122,7 +122,7 @@ export function CreatorCard({
               transition={{ delay: 0.1 }}
             >
               <Button
-                variant={isFollowing ? "glass" : "default"}
+                variant={isFollowing ? "glassmorphism" : "default"}
                 size="sm"
                 onClick={handleFollow}
                 className={cn(
