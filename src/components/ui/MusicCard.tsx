@@ -102,7 +102,7 @@ export function MusicCard({
               transition={{ duration: 0.2 }}
             >
               <Button
-                variant="glass"
+                variant="glassmorphism"
                 size="icon"
                 onClick={handlePlay}
                 className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30"
@@ -123,7 +123,7 @@ export function MusicCard({
                 transition={{ duration: 0.2, delay: 0.1 }}
               >
                 <Button
-                  variant="glass"
+                  variant="glassmorphism"
                   size="icon"
                   onClick={handleLike}
                   className={cn(
@@ -141,7 +141,7 @@ export function MusicCard({
                 transition={{ duration: 0.2, delay: 0.2 }}
               >
                 <Button
-                  variant="glass"
+                  variant="glassmorphism"
                   size="icon"
                   onClick={handleShare}
                   className="w-8 h-8 rounded-full"
