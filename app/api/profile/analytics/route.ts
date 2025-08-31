@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createApiClientWithCookies } from '@/src/lib/supabase-api';
 
 export async function GET() {
   try {
     console.log('📊 Fetching user analytics...');
     
     // Create a route handler client that can access cookies
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -38,7 +36,7 @@ export async function GET() {
       // Get user's tracks
       supabase
         .from('audio_tracks')
-        .select('id, title, play_count, like_count, created_at, cover_art_url, duration')
+        .select('id, title, play_count, like_count, created_at, cover_art_url, duration, genre')
         .eq('creator_id', user.id)
         .order('created_at', { ascending: false }),
 

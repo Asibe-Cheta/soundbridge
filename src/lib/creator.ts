@@ -158,7 +158,38 @@ export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{
       return { data: null, error };
     }
 
-    return { data: data || [], error: null };
+    // Transform the data to match AudioTrack interface
+    const transformedData = (data || []).map(track => ({
+      id: track.id,
+      title: track.title,
+      description: track.description,
+      creator_id: track.creator_id,
+      file_url: track.file_url,
+      cover_art_url: track.artwork_url || track.cover_art_url,
+      duration: track.duration,
+      genre: track.genre,
+      tags: track.tags,
+      play_count: track.play_count || 0,
+      like_count: track.likes_count || track.like_count || 0,
+      is_public: track.is_public !== false,
+      created_at: track.created_at,
+      creator: track.creator ? {
+        id: track.creator.id,
+        username: track.creator.username,
+        display_name: track.creator.display_name,
+        avatar_url: track.creator.avatar_url,
+        location: track.creator.location,
+        country: track.creator.country,
+        bio: null,
+        role: 'creator',
+        is_verified: false,
+        social_links: {},
+        created_at: '',
+        updated_at: ''
+      } : undefined
+    }));
+
+    return { data: transformedData, error: null };
   } catch (error) {
     console.error('Unexpected error getting creator tracks:', error);
     return { data: null, error };
@@ -195,7 +226,41 @@ export async function getCreatorEvents(creatorId: string, limit = 20): Promise<{
       return { data: null, error };
     }
 
-    return { data: data || [], error: null };
+    // Transform the data to match Event interface
+    const transformedData = (data || []).map(event => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      creator_id: event.creator_id,
+      event_date: event.event_date,
+      location: event.location,
+      venue: event.venue,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      category: event.category,
+      price_gbp: event.price_gbp,
+      price_ngn: event.price_ngn,
+      max_attendees: event.max_attendees,
+      current_attendees: event.current_attendees,
+      image_url: event.image_url,
+      created_at: event.created_at,
+      creator: event.creator ? {
+        id: event.creator.id,
+        username: event.creator.username,
+        display_name: event.creator.display_name,
+        avatar_url: event.creator.avatar_url,
+        location: event.creator.location,
+        country: event.creator.country,
+        bio: null,
+        role: 'creator',
+        is_verified: false,
+        social_links: {},
+        created_at: '',
+        updated_at: ''
+      } : undefined
+    }));
+
+    return { data: transformedData, error: null };
   } catch (error) {
     console.error('Unexpected error getting creator events:', error);
     return { data: null, error };

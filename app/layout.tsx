@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import '../src/styles/themes.css';
 import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
 import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
 import { SocialScripts } from "@/src/components/SocialScripts";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { ThemeProvider } from "@/src/contexts/ThemeContext";
+import { StructuredData, organizationStructuredData, websiteStructuredData } from "@/src/components/seo/StructuredData";
 import Script from 'next/script';
 
 const inter = Inter({
@@ -13,9 +16,33 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SoundBridge - Connect with Creators, Discover Amazing Events',
+  title: {
+    default: 'SoundBridge - Connect Through Music',
+    template: '%s | SoundBridge'
+  },
   description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community. Upload your music, create events, and collaborate with artists worldwide.',
-  keywords: 'music, creators, events, collaboration, afrobeats, gospel, uk drill, highlife, jazz, hip hop, r&b, pop, electronic',
+  keywords: [
+    'music platform',
+    'music creators',
+    'music collaboration',
+    'music events',
+    'music community',
+    'afrobeats',
+    'gospel music',
+    'uk drill',
+    'highlife',
+    'jazz',
+    'hip hop',
+    'r&b',
+    'pop music',
+    'electronic music',
+    'music discovery',
+    'artist collaboration',
+    'music networking',
+    'music upload',
+    'podcast platform',
+    'music streaming'
+  ],
   authors: [{ name: 'SoundBridge Team' }],
   creator: 'SoundBridge',
   publisher: 'SoundBridge',
@@ -29,7 +56,7 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'SoundBridge - Connect with Creators, Discover Amazing Events',
+    title: 'SoundBridge - Connect Through Music',
     description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community.',
     url: 'https://soundbridge.com',
     siteName: 'SoundBridge',
@@ -39,6 +66,7 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         alt: 'SoundBridge - Music Community Platform',
+        type: 'image/jpeg',
       },
     ],
     locale: 'en_US',
@@ -46,7 +74,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SoundBridge - Connect with Creators, Discover Amazing Events',
+    title: 'SoundBridge - Connect Through Music',
     description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community.',
     images: ['/images/og-image.jpg'],
     creator: '@soundbridge',
@@ -64,9 +92,32 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
-    yahoo: 'your-yahoo-verification-code',
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
+    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION,
+    yahoo: process.env.NEXT_PUBLIC_YAHOO_VERIFICATION,
+  },
+  category: 'music',
+  classification: 'Music Platform',
+  referrer: 'origin-when-cross-origin',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#DC2626' },
+    { media: '(prefers-color-scheme: dark)', color: '#DC2626' }
+  ],
+  colorScheme: 'light dark',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  applicationName: 'SoundBridge',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SoundBridge',
+  },
+  other: {
+    'msapplication-TileColor': '#DC2626',
+    'msapplication-config': '/browserconfig.xml',
   },
 };
 
@@ -119,14 +170,20 @@ export default function RootLayout({
         />
         
         <SocialScripts />
+        
+        {/* Structured Data */}
+        <StructuredData type="organization" data={organizationStructuredData} />
+        <StructuredData type="website" data={websiteStructuredData} />
       </head>
       <body className={inter.className}>
-        <AuthProvider>
-          <AudioPlayerProvider>
-            {children}
-            <GlobalAudioPlayer />
-          </AudioPlayerProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AudioPlayerProvider>
+              {children}
+              <GlobalAudioPlayer />
+            </AudioPlayerProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

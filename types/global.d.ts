@@ -1,11 +1,8 @@
 /// <reference types="react" />
 /// <reference types="react-dom" />
 
-declare namespace JSX {
-  interface IntrinsicElements {
-    [elemName: string]: any;
-  }
-}
+// JSX namespace is already provided by React types, so we don't need to declare it here
+// The React types will handle JSX.IntrinsicElements properly
 
 declare module '*.svg' {
   const content: React.FunctionComponent<React.SVGAttributes<SVGElement>>;

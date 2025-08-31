@@ -25,7 +25,8 @@ import {
   Clock,
   Plus,
   MessageCircle,
-  Home
+  Home,
+  Clock3
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -39,7 +40,7 @@ export default function DashboardPage() {
     setError
   } = useDashboard();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'settings' | 'availability'>('overview');
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -78,6 +79,7 @@ export default function DashboardPage() {
     { id: 'content', label: 'Content', icon: Music },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'followers', label: 'Followers', icon: Users },
+    { id: 'availability', label: 'Availability', icon: Clock3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -545,7 +547,52 @@ export default function DashboardPage() {
           )}
 
           {/* Other tabs would go here - keeping it simple for now */}
-          {activeTab !== 'overview' && (
+          {activeTab === 'availability' && (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '1rem',
+              padding: '2rem',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '4rem',
+                height: '4rem',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <Clock3 size={32} style={{ color: 'white' }} />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', margin: '0 0 0.5rem 0' }}>Manage Your Availability</h3>
+              <p style={{ color: '#94a3b8', margin: '0 0 1.5rem 0' }}>Set your available time slots for collaboration requests</p>
+              <Link href="/availability" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  Go to Availability Calendar
+                </button>
+              </Link>
+            </div>
+          )}
+
+          {activeTab !== 'overview' && activeTab !== 'availability' && (
             <div style={{
               background: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(20px)',

@@ -72,8 +72,31 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
         setCurrentTime(0);
       };
       
-      const handleError = () => {
-        setError('Failed to load audio file');
+      const handleError = (event: Event) => {
+        const audio = event.target as HTMLAudioElement;
+        let errorMessage = 'Failed to load audio file';
+        
+        if (audio.error) {
+          switch (audio.error.code) {
+            case MediaError.MEDIA_ERR_ABORTED:
+              errorMessage = 'Audio loading was aborted';
+              break;
+            case MediaError.MEDIA_ERR_NETWORK:
+              errorMessage = 'Network error while loading audio';
+              break;
+            case MediaError.MEDIA_ERR_DECODE:
+              errorMessage = 'Audio format not supported';
+              break;
+            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+              errorMessage = 'Audio source not supported or invalid URL';
+              break;
+            default:
+              errorMessage = `Audio error: ${audio.error.message || 'Unknown error'}`;
+          }
+        }
+        
+        console.error('Audio error:', audio.error, errorMessage);
+        setError(errorMessage);
         setIsLoading(false);
         setIsPlaying(false);
       };
@@ -120,6 +143,13 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       return;
     }
     
+    // Validate track URL
+    if (!track.url || track.url.trim() === '') {
+      console.error('🎵 Invalid track URL:', track.url);
+      setError('Invalid audio URL');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -137,9 +167,8 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       
       // Load new track
       console.log('🎵 Loading new track:', track.title);
-      console.log('🎵 Setting currentTrack to:', track);
+      console.log('🎵 Audio URL:', track.url);
       setCurrentTrack(track);
-      console.log('🎵 currentTrack state after setCurrentTrack:', currentTrack);
       audioRef.current.src = track.url;
       audioRef.current.currentTime = 0;
       

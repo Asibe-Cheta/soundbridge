@@ -305,13 +305,17 @@ CREATE TABLE collaboration_tracks (
 CREATE TABLE notifications (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('follow', 'like', 'comment', 'share', 'collaboration', 'event', 'system')),
+    type VARCHAR(50) NOT NULL CHECK (type IN ('follow', 'like', 'comment', 'share', 'collaboration', 'collaboration_request', 'event', 'system')),
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     related_id UUID, -- ID of related content (track, event, comment, etc.)
     related_type VARCHAR(20), -- Type of related content
+    action_url TEXT, -- URL to navigate to when notification is clicked
+    metadata JSONB, -- Additional data for the notification
     is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    read_at TIMESTAMPTZ, -- When the notification was read
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 23. USER_FEED TABLE (personalized user feed)

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useSocial } from '@/src/hooks/useSocial';
-import { useAudioPlayer } from '@/src/hooks/useAdvancedAudioPlayer';
+import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 
 interface SharedContent {
   id: string;

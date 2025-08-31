@@ -36,7 +36,8 @@ import {
   Award,
   Star,
   Clock,
-  Eye
+  Eye,
+  Clock3
 } from 'lucide-react';
 
 interface ProfileStats {
@@ -511,6 +512,31 @@ export default function ProfilePage() {
     </div>
   );
 
+  const renderAvailabilityTab = () => (
+    <div className="space-y-6">
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Manage Your Availability</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Clock3 size={32} className="text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Set Your Availability</h3>
+            <p className="text-gray-400 mb-6">Manage your available time slots for collaboration requests from other creators</p>
+            <Link href="/availability" className="inline-block">
+              <button className="btn-primary bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
+                <Clock3 size={16} className="mr-2" />
+                Go to Availability Calendar
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderSettingsTab = () => (
     <div className="space-y-6">
       {/* Profile Settings */}
@@ -782,6 +808,13 @@ export default function ProfilePage() {
             Analytics
           </button>
           <button
+            onClick={() => setActiveTab('availability')}
+            className={`tab-button ${activeTab === 'availability' ? 'active' : ''}`}
+          >
+            <Clock3 size={16} />
+            Availability
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
           >
@@ -794,6 +827,7 @@ export default function ProfilePage() {
         <div className="tab-content">
           {activeTab === 'overview' && renderOverviewTab()}
           {activeTab === 'analytics' && renderAnalyticsTab()}
+          {activeTab === 'availability' && renderAvailabilityTab()}
           {activeTab === 'settings' && renderSettingsTab()}
         </div>
       </main>

@@ -173,13 +173,17 @@ export interface CollaborationTrack {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'follow' | 'like' | 'comment' | 'share' | 'collaboration' | 'event' | 'system';
+  type: 'follow' | 'like' | 'comment' | 'share' | 'collaboration' | 'collaboration_request' | 'event' | 'system';
   title: string;
   message: string;
   related_id?: string;
   related_type?: string;
+  action_url?: string;
+  metadata?: Record<string, any>;
   is_read: boolean;
+  read_at?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface UserFeed {

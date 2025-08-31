@@ -45,6 +45,11 @@ export async function GET() {
 
     console.log('✅ Fetched tracks (excluding podcasts):', tracks?.length);
     console.log('✅ Track genres:', tracks?.map(t => t.genre));
+    if (tracks && tracks.length > 0) {
+      tracks.forEach((track, index) => {
+        console.log(`🎵 Track ${index + 1}: "${track.title}" - File URL: ${track.file_url}`);
+      });
+    }
 
     // Format the tracks for the frontend
     const formattedTracks = tracks.map(track => ({

@@ -50,6 +50,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ Fetched podcasts:', podcasts?.length || 0);
+    if (podcasts && podcasts.length > 0) {
+      podcasts.forEach((podcast, index) => {
+        console.log(`🎙️ Podcast ${index + 1}: "${podcast.title}" - File URL: ${podcast.file_url}`);
+      });
+    }
 
     // If no podcasts found, return empty array instead of error
     if (!podcasts || podcasts.length === 0) {
@@ -67,9 +72,15 @@ export async function GET(request: NextRequest) {
       title: podcast.title,
       description: podcast.description,
       creator_id: podcast.creator_id,
-      creator_name: podcast.creator?.display_name || 'Unknown Creator',
-      creator_username: podcast.creator?.username,
-      creator_avatar: podcast.creator?.avatar_url,
+      creator_name: Array.isArray(podcast.creator) && podcast.creator.length > 0 
+        ? podcast.creator[0].display_name || 'Unknown Creator'
+        : (podcast.creator as any)?.display_name || 'Unknown Creator',
+      creator_username: Array.isArray(podcast.creator) && podcast.creator.length > 0 
+        ? podcast.creator[0].username
+        : (podcast.creator as any)?.username,
+      creator_avatar: Array.isArray(podcast.creator) && podcast.creator.length > 0 
+        ? podcast.creator[0].avatar_url
+        : (podcast.creator as any)?.avatar_url,
       file_url: podcast.file_url,
       cover_art_url: podcast.cover_art_url,
       duration: podcast.duration,

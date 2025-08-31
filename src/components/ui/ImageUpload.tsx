@@ -12,18 +12,7 @@ import {
   Crop
 } from 'lucide-react';
 
-interface UploadFile {
-  id: string;
-  file: File;
-  name: string;
-  size: number;
-  type: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error' | 'cancelled';
-  error?: string;
-  url?: string;
-  metadata?: Record<string, unknown>;
-}
+import type { UploadFile } from '../../lib/types/upload';
 
 interface ImageUploadProps {
   onImageSelect: (file: File) => void;

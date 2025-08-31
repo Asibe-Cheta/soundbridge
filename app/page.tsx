@@ -10,6 +10,7 @@ import { useSocial } from '@/src/hooks/useSocial';
 import { eventService } from '@/src/lib/event-service';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
+import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
 import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2 } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 
@@ -363,6 +364,7 @@ export default function HomePage() {
   try {
     return (
       <>
+        <HomePageSEO />
         {/* Header */}
         <header className="header">
           {isMobile ? (
@@ -1787,7 +1789,22 @@ export default function HomePage() {
               </div>
             ) : podcasts && podcasts.length > 0 ? (
               podcasts.map((podcast) => (
-                <div key={podcast.id} className="card" style={{ cursor: 'pointer' }} onClick={() => playTrack(podcast)}>
+                <div key={podcast.id} className="card" style={{ cursor: 'pointer' }} onClick={() => {
+                  // Convert podcast to AudioTrack format
+                  const audioTrack = {
+                    id: podcast.id,
+                    title: podcast.title,
+                    artist: podcast.creator_name || 'Unknown Creator',
+                    album: '',
+                    duration: podcast.duration || 0,
+                    artwork: podcast.cover_art_url || '',
+                    url: podcast.file_url || '',
+                    liked: false
+                  };
+                  console.log('🎙️ Playing podcast:', audioTrack);
+                  console.log('🎙️ Audio URL:', audioTrack.url);
+                  playTrack(audioTrack);
+                }}>
                   <div className="card-image">
                     {podcast.cover_art_url ? (
                       <Image

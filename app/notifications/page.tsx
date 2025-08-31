@@ -47,6 +47,12 @@ interface NotificationSettings {
     likes: boolean;
     shares: boolean;
   };
+  collaborationRequests: {
+    newRequests: boolean;
+    requestUpdates: boolean;
+    requestReminders: boolean;
+    deliveryMethods: string[];
+  };
 }
 
 const eventCategories = [
@@ -93,6 +99,12 @@ export default function NotificationPreferencesPage() {
       collaborations: true,
       likes: false,
       shares: false
+    },
+    collaborationRequests: {
+      newRequests: true,
+      requestUpdates: true,
+      requestReminders: true,
+      deliveryMethods: ['push', 'email']
     }
   });
 
@@ -106,6 +118,13 @@ export default function NotificationPreferencesPage() {
     setSettings(prev => ({
       ...prev,
       socialNotifications: { ...prev.socialNotifications, [key]: value }
+    }));
+  };
+
+  const updateCollaborationSettings = (key: keyof NotificationSettings['collaborationRequests'], value: boolean | string[]) => {
+    setSettings(prev => ({
+      ...prev,
+      collaborationRequests: { ...prev.collaborationRequests, [key]: value }
     }));
   };
 
@@ -600,6 +619,190 @@ export default function NotificationPreferencesPage() {
     </div>
   );
 
+  const renderCollaborationRequests = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      {/* Collaboration Request Types */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '15px',
+        padding: '1.5rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Share2 size={20} />
+          Collaboration Request Types
+        </h3>
+        <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+          Choose which collaboration request notifications you want to receive
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {[
+            { key: 'newRequests', label: 'New Requests', icon: Bell, description: 'When someone sends you a collaboration request' },
+            { key: 'requestUpdates', label: 'Request Updates', icon: Check, description: 'When requests are accepted, declined, or modified' },
+            { key: 'requestReminders', label: 'Request Reminders', icon: Clock, description: 'Reminders for pending requests that need attention' }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isEnabled = settings.collaborationRequests[item.key as keyof typeof settings.collaborationRequests] as boolean;
+
+            return (
+              <div key={item.key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Icon size={20} style={{ color: '#EC4899' }} />
+                  <div>
+                    <div style={{ color: 'white', fontWeight: '600' }}>{item.label}</div>
+                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{item.description}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => updateCollaborationSettings(item.key as keyof typeof settings.collaborationRequests, !isEnabled)}
+                  style={{
+                    width: '50px',
+                    height: '24px',
+                    background: isEnabled ? 'linear-gradient(45deg, #DC2626, #EC4899)' : '#333',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '2px',
+                    left: isEnabled ? '26px' : '2px',
+                    width: '20px',
+                    height: '20px',
+                    background: 'white',
+                    borderRadius: '50%',
+                    transition: 'all 0.3s ease'
+                  }} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Delivery Methods for Collaboration Requests */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '15px',
+        padding: '1.5rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Zap size={20} />
+          Delivery Methods
+        </h3>
+        <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+          Choose how you want to receive collaboration request notifications
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {deliveryMethods.map((method) => {
+            const Icon = method.icon;
+            const isSelected = settings.collaborationRequests.deliveryMethods.includes(method.id);
+
+            return (
+              <button
+                key={method.id}
+                onClick={() => {
+                  const newMethods = isSelected
+                    ? settings.collaborationRequests.deliveryMethods.filter(id => id !== method.id)
+                    : [...settings.collaborationRequests.deliveryMethods, method.id];
+                  updateCollaborationSettings('deliveryMethods', newMethods);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem',
+                  background: isSelected
+                    ? 'linear-gradient(45deg, #DC2626, #EC4899)'
+                    : 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '10px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  width: '100%',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={(e) => !isSelected && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+                onMouseLeave={(e) => !isSelected && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Icon size={20} />
+                  <div>
+                    <div style={{ fontWeight: '600' }}>{method.label}</div>
+                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{method.description}</div>
+                  </div>
+                </div>
+                {isSelected && <Check size={20} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Preview */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '15px',
+        padding: '1.5rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Bell size={20} />
+          Notification Preview
+        </h3>
+        <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+          See how your collaboration request notifications will appear
+        </p>
+
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: '10px',
+          padding: '1rem',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '1.2rem',
+              fontWeight: 'bold'
+            }}>
+              J
+            </div>
+            <div>
+              <div style={{ color: 'white', fontWeight: '600' }}>New Collaboration Request</div>
+              <div style={{ color: '#999', fontSize: '0.9rem' }}>John Doe wants to collaborate with you</div>
+            </div>
+          </div>
+          <div style={{ color: '#999', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+            "I'd love to work on a gospel project together. Are you available next week?"
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case 'location':
@@ -616,6 +819,8 @@ export default function NotificationPreferencesPage() {
         return renderCreatorActivity();
       case 'social':
         return renderSocialNotifications();
+      case 'collaboration-requests':
+        return renderCollaborationRequests();
       default:
         return renderLocationSettings();
     }
@@ -628,7 +833,8 @@ export default function NotificationPreferencesPage() {
     { id: 'delivery', label: 'Delivery Methods', icon: Zap },
     { id: 'quiet-hours', label: 'Quiet Hours', icon: Moon },
     { id: 'creator-activity', label: 'Creator Activity', icon: Mic },
-    { id: 'social', label: 'Social', icon: Users }
+    { id: 'social', label: 'Social', icon: Users },
+    { id: 'collaboration-requests', label: 'Collaboration Requests', icon: Share2 }
   ];
 
   return (
@@ -655,12 +861,25 @@ export default function NotificationPreferencesPage() {
               ←
             </button>
           </Link>
-          <div>
-            <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Notification Preferences</h1>
-            <p style={{ color: '#999', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
-              Customize your event discovery experience
-            </p>
-          </div>
+                     <div>
+             <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Notification Preferences</h1>
+             <p style={{ color: '#999', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+               Customize your event discovery experience
+             </p>
+           </div>
+           <Link href="/notifications-list" style={{ textDecoration: 'none' }}>
+             <button style={{
+               background: 'rgba(255, 255, 255, 0.1)',
+               color: 'white',
+               border: '1px solid rgba(255, 255, 255, 0.2)',
+               padding: '0.5rem 1rem',
+               borderRadius: '8px',
+               cursor: 'pointer',
+               fontSize: '0.9rem'
+             }}>
+               View Notifications
+             </button>
+           </Link>
         </div>
       </header>
 

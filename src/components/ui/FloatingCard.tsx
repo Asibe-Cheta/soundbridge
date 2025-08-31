@@ -25,7 +25,7 @@ export function FloatingCard({
   const [isVisible, setIsVisible] = useState(defaultVisible);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  console.log('🎯 FloatingCard rendered:', { title, position, isVisible, isCollapsed });
+  // console.log('🎯 FloatingCard rendered:', { title, position, isVisible, isCollapsed });
 
   const getPositionClasses = () => {
     switch (position) {

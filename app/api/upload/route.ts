@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClient } from '../../../src/lib/supabase';
+import { createApiClientWithCookies } from '../../../src/lib/supabase-api';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiClient();
+    const supabase = createApiClientWithCookies();
 
     // Get the current user session
     const authHeader = request.headers.get('authorization');
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiClient();
+    const supabase = createApiClientWithCookies();
 
     // Get the current user session
     const authHeader = request.headers.get('authorization');

@@ -72,18 +72,31 @@ export const createServerClient = () => {
   });
 };
 
-// API route client (for API routes with service role)
+// API route client (for API routes that need user session)
 export const createApiClient = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Supabase environment variables not configured for API client');
+    console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
+    throw new Error('Supabase environment variables not configured for API client. Check your .env.local file.');
+  }
+  
+  // For API routes, we use the anon key with session handling
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+    },
+  });
+};
+
+// Service role client (for admin operations that bypass RLS)
+export const createServiceClient = () => {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    console.error('❌ Supabase environment variables not configured for service client');
     console.error('Required: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
     console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseServiceRoleKey: !!supabaseServiceRoleKey });
-    console.error('Environment check:', {
-      NODE_ENV: process.env.NODE_ENV,
-      isServer: typeof window === 'undefined',
-      envKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE'))
-    });
-    throw new Error('Supabase environment variables not configured for API client. Check your .env.local file.');
+    throw new Error('Supabase environment variables not configured for service client. Check your .env.local file.');
   }
   
   return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {

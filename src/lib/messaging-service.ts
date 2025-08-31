@@ -195,6 +195,8 @@ export class MessagingService {
     try {
       const [user1Id, user2Id] = conversationId.split('_');
 
+      // Mark messages as read where the current user is the recipient
+      // and the messages are between the two users in the conversation
       const { error } = await this.supabase
         .from('messages')
         .update({
@@ -202,8 +204,8 @@ export class MessagingService {
           read_at: new Date().toISOString()
         })
         .eq('recipient_id', userId)
-        .or(`and(sender_id.eq.${user1Id},recipient_id.eq.${user2Id}),and(sender_id.eq.${user2Id},recipient_id.eq.${user1Id})`)
-        .eq('is_read', false);
+        .eq('is_read', false)
+        .or(`sender_id.eq.${user1Id},sender_id.eq.${user2Id}`);
 
       if (error) {
         console.error('Error marking messages as read:', error);

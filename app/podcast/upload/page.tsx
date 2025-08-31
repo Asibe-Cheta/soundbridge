@@ -3,7 +3,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../../src/components/layout/Footer';
-import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import Image from 'next/image';
 import { useAudioUpload } from '../../../src/hooks/useAudioUpload';
@@ -19,14 +18,11 @@ import {
   Save,
   Play,
   Pause,
-  X,
   CheckCircle,
-  AlertCircle,
   AlertTriangle,
   Loader2,
   User,
   Headphones,
-  Radio,
   ArrowLeft,
   Menu,
   Home,
@@ -77,6 +73,14 @@ export default function PodcastUploadPage() {
     }
   }, []);
 
+  const handleFileUpload = useCallback((file: File) => {
+    uploadActions.setAudioFile(file);
+
+    // Auto-fill title from filename
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+    setTitle(fileName);
+  }, [uploadActions]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -86,15 +90,7 @@ export default function PodcastUploadPage() {
       const file = e.dataTransfer.files[0];
       handleFileUpload(file);
     }
-  }, []);
-
-  const handleFileUpload = (file: File) => {
-    uploadActions.setAudioFile(file);
-
-    // Auto-fill title from filename
-    const fileName = file.name.replace(/\.[^/.]+$/, '');
-    setTitle(fileName);
-  };
+  }, [handleFileUpload]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -986,9 +982,9 @@ export default function PodcastUploadPage() {
                   onImageSelect={handleCoverArtSelect}
                   onImageRemove={handleCoverArtRemove}
                   selectedFile={uploadState.coverArtFile}
-                  previewUrl={uploadState.coverArtUrl}
+                  previewUrl={uploadState.coverArtFile?.url}
                   isUploading={uploadState.isUploading}
-                  uploadProgress={uploadState.uploadProgress}
+                  uploadProgress={uploadState.uploadProgress.cover}
                   uploadStatus={uploadState.uploadStatus}
                   error={uploadState.error}
                   title="Upload Cover Art"
@@ -1145,7 +1141,7 @@ export default function PodcastUploadPage() {
                         return (
                           <button
                             key={option.value}
-                            onClick={() => setPrivacy(option.value as any)}
+                            onClick={() => setPrivacy(option.value as 'public' | 'followers' | 'private')}
                             style={{
                               flex: 1,
                               background: privacy === option.value ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.05)',
@@ -1183,7 +1179,7 @@ export default function PodcastUploadPage() {
                         return (
                           <button
                             key={option.value}
-                            onClick={() => setPublishOption(option.value as any)}
+                            onClick={() => setPublishOption(option.value as 'now' | 'schedule' | 'draft')}
                             style={{
                               flex: 1,
                               background: publishOption === option.value ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.05)',

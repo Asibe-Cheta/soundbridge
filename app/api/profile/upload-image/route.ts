@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: Request) {
   try {
     console.log('📤 Starting profile image upload...');
     
     // Create a route handler client that can access cookies
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -62,10 +60,7 @@ export async function POST(request: Request) {
 
     // Check if avatars bucket exists using service role client
     console.log('🔍 Checking avatars bucket...');
-    const serviceRoleClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const serviceRoleClient = createServiceClient();
     
     const { data: buckets, error: bucketsError } = await serviceRoleClient.storage.listBuckets();
     if (bucketsError) {
@@ -194,8 +189,7 @@ export async function GET() {
     console.log('📤 Getting profile data...');
     
     // Create a route handler client that can access cookies
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -258,8 +252,7 @@ export async function PUT(request: Request) {
     console.log('📝 Updating profile data...');
     
     // Create a route handler client that can access cookies
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -6,13 +6,22 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
-import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Users, Calendar, Music } from 'lucide-react';
+import { LogOut, User, Upload, Play, Heart, MessageCircle, Search, Bell, Settings, Home, Music } from 'lucide-react';
+import { ThemeToggle } from '../../src/components/ui/ThemeToggle';
 
 export default function HomePage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [recentTracks, setRecentTracks] = React.useState<any[]>([]);
+  const [recentTracks, setRecentTracks] = React.useState<Array<{
+    id: string;
+    title: string;
+    creator: { display_name: string; username: string };
+    cover_art_url?: string;
+    duration?: number;
+    play_count?: number;
+    like_count?: number;
+  }>>([]);
   const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
 
   const handleSignOut = async () => {
@@ -237,6 +246,10 @@ export default function HomePage() {
                     Settings
                   </div>
                 </Link>
+                
+                {/* Theme Toggle */}
+                <ThemeToggle />
+                
                 <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', margin: '0.5rem 0' }}></div>
                 <button
                   onClick={handleSignOut}
@@ -537,9 +550,9 @@ export default function HomePage() {
               recentTracks.map((track) => (
                 <div key={track.id} className="card">
                   <div className="card-image">
-                    {track.coverArt ? (
+                    {track.cover_art_url ? (
                       <Image
-                        src={track.coverArt}
+                        src={track.cover_art_url}
                         alt={track.title}
                         width={200}
                         height={200}
@@ -565,10 +578,10 @@ export default function HomePage() {
                     {track.title || 'Untitled Track'}
                   </div>
                   <div style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                    {track.creator?.name || 'Unknown Artist'}
+                    {track.creator?.display_name || 'Unknown Artist'}
                   </div>
                   <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                    {track.plays || 0} plays • {track.likes || 0} likes
+                    {track.play_count || 0} plays • {track.like_count || 0} likes
                   </div>
                   <div className="waveform"></div>
                 </div>
@@ -592,7 +605,7 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Hot Creators Right Now</h2>
-            <a href="/creators" className="view-all">View All</a>
+            <Link href="/creators" className="view-all">View All</Link>
           </div>
           <div className="grid grid-3">
             <Link href="/creator/adunni-adebayo" style={{ textDecoration: 'none' }}>
@@ -640,7 +653,7 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Live Events This Week</h2>
-            <a href="/events" className="view-all">View All</a>
+            <Link href="/events" className="view-all">View All</Link>
           </div>
           <div className="grid grid-4">
             <div className="event-card">
