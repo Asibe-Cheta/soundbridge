@@ -375,25 +375,25 @@ export function AudioPlayer({
         </AnimatePresence>
       </CardContent>
 
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background: linear-gradient(45deg, #DC2626, #EC4899);
-          cursor: pointer;
-        }
-        
-        .slider::-moz-range-thumb {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background: linear-gradient(45deg, #DC2626, #EC4899);
-          cursor: pointer;
-          border: none;
-        }
-      `}</style>
+             <style dangerouslySetInnerHTML={{ __html: `
+         .slider::-webkit-slider-thumb {
+           appearance: none;
+           width: 12px;
+           height: 12px;
+           border-radius: 50%;
+           background: linear-gradient(45deg, #DC2626, #EC4899);
+           cursor: pointer;
+         }
+         
+         .slider::-moz-range-thumb {
+           width: 12px;
+           height: 12px;
+           border-radius: 50%;
+           background: linear-gradient(45deg, #DC2626, #EC4899);
+           cursor: pointer;
+           border: none;
+         }
+       `}} />
     </Card>
   );
 } 

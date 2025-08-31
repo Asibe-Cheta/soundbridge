@@ -46,11 +46,11 @@ export default function ProtectedRoute({
         <div style={{ color: 'white', fontSize: '1rem' }}>
           Loading...
         </div>
-        <style jsx>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           @keyframes spin {
             to { transform: rotate(360deg); }
           }
-        `}</style>
+        `}} />
       </div>
     );
   }

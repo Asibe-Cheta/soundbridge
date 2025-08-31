@@ -246,7 +246,7 @@ export function EqualizerPanel({
         </Card>
       </motion.div>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .slider-vertical {
           writing-mode: bt-lr;
           -webkit-appearance: slider-vertical;
@@ -293,7 +293,7 @@ export function EqualizerPanel({
           cursor: pointer;
           border: none;
         }
-      `}</style>
+      `}} />
     </motion.div>
   );
 }

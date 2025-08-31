@@ -442,7 +442,7 @@ export function EffectsPanel({
         </Card>
       </motion.div>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .slider::-webkit-slider-thumb {
           appearance: none;
           width: 12px;
@@ -460,7 +460,7 @@ export function EffectsPanel({
           cursor: pointer;
           border: none;
         }
-      `}</style>
+      `}} />
     </motion.div>
   );
 }

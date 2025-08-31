@@ -201,7 +201,7 @@ export function AudioVisualizer({
         }}
       />
       
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .audio-visualizer {
           position: relative;
           overflow: hidden;
@@ -210,7 +210,7 @@ export function AudioVisualizer({
         .audio-visualizer canvas {
           display: block;
         }
-      `}</style>
+      `}} />
     </div>
   );
 }
