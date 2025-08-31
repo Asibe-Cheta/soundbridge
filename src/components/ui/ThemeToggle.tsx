@@ -21,7 +21,7 @@ export function ThemeToggle({ className = '', showLabel = true }: ThemeTogglePro
         alignItems: 'center',
         gap: '0.75rem',
         padding: '0.75rem',
-        color: 'var(--text-color)',
+        color: 'var(--accent-primary)',
         background: 'none',
         border: 'none',
         width: '100%',
@@ -29,15 +29,16 @@ export function ThemeToggle({ className = '', showLabel = true }: ThemeTogglePro
         borderRadius: '8px',
         cursor: 'pointer',
         transition: 'all 0.3s ease',
-        fontSize: '0.9rem'
+        fontSize: '0.9rem',
+        fontWeight: '500'
       }}
       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >
       {theme === 'dark' ? (
-        <Sun size={16} style={{ color: 'var(--accent-color)' }} />
+        <Sun size={16} style={{ color: 'var(--accent-primary)' }} />
       ) : (
-        <Moon size={16} style={{ color: 'var(--accent-color)' }} />
+        <Moon size={16} style={{ color: 'var(--accent-primary)' }} />
       )}
       {showLabel && (
         <span>

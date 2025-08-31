@@ -656,51 +656,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      {/* Header */}
-      <header className="header">
-        <div className="logo">
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Image
-              src="/images/logos/logo-trans-lockup.png"
-              alt="SoundBridge"
-              width={120}
-              height={32}
-              priority
-              style={{ height: 'auto' }}
-            />
-          </Link>
-        </div>
-        <nav className="nav">
-          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
-          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>Discover</Link>
-          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
-          <Link href="/creators" style={{ textDecoration: 'none', color: 'white' }}>Creators</Link>
-        </nav>
-        <div className="auth-buttons">
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => signOut()}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            >
-              <User size={20} color="white" />
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="main-container">
         {/* Profile Header */}

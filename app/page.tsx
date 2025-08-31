@@ -13,6 +13,7 @@ import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
 import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2 } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
+import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 
 export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
@@ -52,16 +53,23 @@ export default function HomePage() {
     const handleClickOutside = (event: MouseEvent) => {
       const mobileMenu = document.getElementById('mobile-menu');
       const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const userMenu = document.getElementById('user-menu');
+      const userMenuButton = document.getElementById('user-menu-button');
+      
       if (mobileMenu && mobileMenuButton && 
           !mobileMenu.contains(event.target as Node) && 
           !mobileMenuButton.contains(event.target as Node)) {
         setIsMobileMenuOpen(false);
       }
+      
+      if (userMenu && userMenuButton && 
+          !userMenu.contains(event.target as Node) && 
+          !userMenuButton.contains(event.target as Node)) {
+        userMenu.style.display = 'none';
+      }
     };
 
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
@@ -430,19 +438,30 @@ export default function HomePage() {
                         }
                       }}
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: '8px',
-                        cursor: 'pointer',
+                        background: 'var(--bg-card)',
+                        border: '2px solid var(--accent-primary)',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        transition: 'all 0.2s ease'
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--hover-bg)';
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--bg-card)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                      }}
                     >
-                      <User size={24} color="white" />
+                      <User size={20} color="var(--accent-primary)" />
                     </button>
                     
                     <div
@@ -452,86 +471,94 @@ export default function HomePage() {
                         top: '100%',
                         right: 0,
                         marginTop: '0.5rem',
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        background: 'var(--bg-secondary)',
                         backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        border: '2px solid var(--accent-primary)',
                         borderRadius: '12px',
                         padding: '0.5rem',
                         minWidth: '200px',
                         display: 'none',
                         zIndex: 1000,
-                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                        boxShadow: 'var(--shadow-lg)'
                       }}
                     >
-                      <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Home size={16} />
-                          Dashboard
-                        </div>
-                      </Link>
-                      <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Bell size={16} />
-                          Notifications
-                        </div>
-                      </Link>
-                      <Link href="/profile" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <User size={16} />
-                          Profile
-                        </div>
-                      </Link>
-                      <Link href="/settings" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Settings size={16} />
-                          Settings
-                        </div>
-                      </Link>
-                      <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                                             <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <Home size={16} />
+                           Dashboard
+                         </div>
+                       </Link>
+                       <Link href="/notifications" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <Bell size={16} />
+                           Notifications
+                         </div>
+                       </Link>
+                       <Link href="/profile" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <User size={16} />
+                           Profile
+                         </div>
+                       </Link>
+                       <Link href="/settings" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <Settings size={16} />
+                           Settings
+                         </div>
+                       </Link>
+                      
+                      {/* Theme Toggle */}
+                      <ThemeToggle />
+                      
+                      <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
                       <button
                         onClick={handleSignOut}
                         style={{
@@ -595,16 +622,52 @@ export default function HomePage() {
                 </div>
                 {/* Desktop Navigation */}
                 <nav className="nav">
-                  <Link href="/" className="active" style={{ textDecoration: 'none', color: 'white' }}>
+                  <Link href="/" className="active" style={{ 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    transition: 'all 0.3s ease',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     For You
                   </Link>
-                  <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>
+                  <Link href="/discover" style={{ 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    transition: 'all 0.3s ease',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     Discover
                   </Link>
-                  <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
+                  <Link href="/events" style={{ 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    transition: 'all 0.3s ease',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     Events
                   </Link>
-                  <Link href="/creators" style={{ textDecoration: 'none', color: 'white' }}>
+                  <Link href="/creators" style={{ 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    transition: 'all 0.3s ease',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     Creators
                   </Link>
                 </nav>
@@ -687,8 +750,8 @@ export default function HomePage() {
                         }
                       }}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        background: 'var(--bg-card)',
+                        border: '2px solid var(--accent-primary)',
                         borderRadius: '50%',
                         width: '40px',
                         height: '40px',
@@ -696,101 +759,118 @@ export default function HomePage() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--hover-bg)';
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--bg-card)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                      }}
                     >
-                      <User size={20} color="white" />
+                      <User size={20} color="var(--accent-primary)" />
                     </button>
                     
-                    <div
-                      id="user-menu"
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '0.5rem',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '12px',
-                        padding: '0.5rem',
-                        minWidth: '200px',
-                        display: 'none',
-                        zIndex: 1000,
-                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-                      }}
-                    >
-                      <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Home size={16} />
-                          Dashboard
-                        </div>
-                      </Link>
-                      <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Bell size={16} />
-                          Notifications
-                        </div>
-                      </Link>
-                      <Link href="/profile" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <User size={16} />
-                          Profile
-                        </div>
-                      </Link>
-                      <Link href="/settings" style={{ textDecoration: 'none' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: 'white',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <Settings size={16} />
-                          Settings
-                        </div>
-                      </Link>
-                      <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                                         <div
+                       id="user-menu"
+                       style={{
+                         position: 'absolute',
+                         top: '100%',
+                         right: 0,
+                         marginTop: '0.5rem',
+                         background: 'rgba(255, 255, 255, 0.05)',
+                         backdropFilter: 'blur(20px)',
+                         border: '1px solid rgba(255, 255, 255, 0.1)',
+                         borderRadius: '12px',
+                         padding: '0.5rem',
+                         minWidth: '200px',
+                         display: 'none',
+                         zIndex: 1000,
+                         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                       }}
+                     >
+                       <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <Home size={16} />
+                           Dashboard
+                         </div>
+                       </Link>
+                       <Link href="/notifications" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <Bell size={16} />
+                           Notifications
+                         </div>
+                       </Link>
+                       <Link href="/profile" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <User size={16} />
+                           Profile
+                         </div>
+                       </Link>
+                       <Link href="/settings" style={{ textDecoration: 'none' }}>
+                         <div style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.75rem',
+                           padding: '0.75rem',
+                           color: 'var(--text-primary)',
+                           borderRadius: '8px',
+                           transition: 'all 0.3s ease',
+                           fontWeight: '500'
+                         }}
+                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                         >
+                           <Settings size={16} />
+                           Settings
+                         </div>
+                       </Link>
+                      
+                      {/* Theme Toggle */}
+                      <ThemeToggle />
+                      
+                      <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
                       <button
                         onClick={handleSignOut}
                         style={{
@@ -1304,14 +1384,11 @@ export default function HomePage() {
                 position: 'relative',
                 zIndex: 2
               }}>
-                <h2 style={{ 
-                  fontSize: isMobile ? '1.5rem' : '2rem',
-                  fontWeight: 'bold',
+                <h2 className={isMobile ? "heading-4 text-display" : "heading-2 text-display"} style={{ 
                   marginBottom: '0.5rem',
                   color: 'white'
                 }}>Featured Creator: Kwame Asante</h2>
-                <p style={{ 
-                  fontSize: isMobile ? '1rem' : '1.1rem',
+                <p className={isMobile ? "text-base text-body" : "text-large text-body"} style={{ 
                   color: '#ccc',
                   marginBottom: '1rem'
                 }}>Afrobeats sensation taking UK by storm!</p>
@@ -1424,7 +1501,7 @@ export default function HomePage() {
             border: '1px solid rgba(255, 255, 255, 0.1)',
             display: isMobile ? 'none' : 'block'
           }}>
-            <h3 style={{ marginBottom: '1rem', color: '#EC4899' }}>Trending Now</h3>
+                            <h3 className="heading-5 text-display" style={{ marginBottom: '1rem', color: '#EC4899' }}>Trending Now</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: '50px', height: '50px', background: '#333', borderRadius: '8px' }}></div>
@@ -1477,7 +1554,7 @@ export default function HomePage() {
         {/* Recently Added Music - REAL DATA */}
         <section className="section">
           <div className="section-header">
-            <h2 className="section-title">Recently Added Music</h2>
+                            <h2 className="heading-3 text-display">Recently Added Music</h2>
             <Link href="/discover?tab=music" className="view-all">View All</Link>
           </div>
           
@@ -1660,7 +1737,7 @@ export default function HomePage() {
         {/* Hot Creators */}
         <section className="section">
           <div className="section-header">
-            <h2 className="section-title">Hot Creators Right Now</h2>
+                            <h2 className="heading-3 text-display">Hot Creators Right Now</h2>
             <a href="#" className="view-all">View All</a>
           </div>
           <div style={{
@@ -1718,7 +1795,7 @@ export default function HomePage() {
         {/* Live Events This Week */}
         <section className="section">
           <div className="section-header">
-            <h2 className="section-title">Live Events This Week</h2>
+                            <h2 className="heading-3 text-display">Live Events This Week</h2>
             <Link href="/events" className="view-all">View All</Link>
           </div>
           <div style={{
@@ -1774,7 +1851,7 @@ export default function HomePage() {
         {/* Trending Podcasts */}
         <section className="section">
           <div className="section-header">
-            <h2 className="section-title">Trending Podcasts</h2>
+                            <h2 className="heading-3 text-display">Trending Podcasts</h2>
             <Link href="/search?tab=podcasts" className="view-all">View All</Link>
           </div>
           <div style={{
@@ -1881,7 +1958,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
+                        <h3 className="heading-5 text-display" style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
           <div>John is listening to &quot;Praise Medley&quot;</div>
           <div>Sarah posted a new track</div>

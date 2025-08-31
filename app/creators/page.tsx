@@ -144,8 +144,7 @@ export default function CreatorsPage() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
+
         {isMobile ? (
           /* Mobile Header */
           <div style={{ 
@@ -646,7 +645,6 @@ export default function CreatorsPage() {
             </div>
           </>
         )}
-      </header>
 
       {/* Main Content */}
       <main className="main-container">

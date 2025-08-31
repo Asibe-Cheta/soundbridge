@@ -43,16 +43,23 @@ export function Header({
     const handleClickOutside = (event: MouseEvent) => {
       const mobileMenu = document.getElementById('mobile-menu');
       const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const userMenu = document.getElementById('user-menu');
+      const userMenuButton = document.getElementById('user-menu-button');
+      
       if (mobileMenu && mobileMenuButton && 
           !mobileMenu.contains(event.target as Node) && 
           !mobileMenuButton.contains(event.target as Node)) {
         setIsMobileMenuOpen(false);
       }
+      
+      if (userMenu && userMenuButton && 
+          !userMenu.contains(event.target as Node) && 
+          !userMenuButton.contains(event.target as Node)) {
+        userMenu.style.display = 'none';
+      }
     };
 
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
@@ -141,19 +148,30 @@ export function Header({
                     }
                   }}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '8px',
-                    cursor: 'pointer',
+                    background: 'var(--bg-card)',
+                    border: '2px solid var(--accent-primary)',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'all 0.2s ease'
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--hover-bg)';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--bg-card)';
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  }}
                 >
-                  <User size={24} color="var(--text-primary)" />
+                  <User size={20} color="var(--accent-primary)" />
                 </button>
                 
                 <div
@@ -165,7 +183,7 @@ export function Header({
                     marginTop: '0.5rem',
                     background: 'var(--bg-secondary)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--border-primary)',
+                    border: '2px solid var(--accent-primary)',
                     borderRadius: '12px',
                     padding: '0.5rem',
                     minWidth: '200px',
@@ -182,7 +200,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -199,7 +218,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -216,7 +236,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -233,7 +254,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -308,20 +330,56 @@ export function Header({
                 style={{ height: 'auto' }}
               />
             </div>
-            <nav className="nav">
-              <Link href="/" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
-                For You
-              </Link>
-              <Link href="/discover" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
-                Discover
-              </Link>
-              <Link href="/events" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
-                Events
-              </Link>
-              <Link href="/creators" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
-                Creators
-              </Link>
-            </nav>
+                         <nav className="nav">
+                                <Link href="/" className="text-base text-display font-medium" style={{ 
+                   textDecoration: 'none', 
+                   color: 'var(--text-primary)',
+                   transition: 'all 0.3s ease',
+                   padding: '0.5rem 1rem',
+                   borderRadius: '8px'
+                 }}
+               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               >
+                 For You
+               </Link>
+                                <Link href="/discover" className="text-base text-display font-medium" style={{ 
+                   textDecoration: 'none', 
+                   color: 'var(--text-primary)',
+                   transition: 'all 0.3s ease',
+                   padding: '0.5rem 1rem',
+                   borderRadius: '8px'
+                 }}
+               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               >
+                 Discover
+               </Link>
+                                <Link href="/events" className="text-base text-display font-medium" style={{ 
+                   textDecoration: 'none', 
+                   color: 'var(--text-primary)',
+                   transition: 'all 0.3s ease',
+                   padding: '0.5rem 1rem',
+                   borderRadius: '8px'
+                 }}
+               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               >
+                 Events
+               </Link>
+                                <Link href="/creators" className="text-base text-display font-medium" style={{ 
+                   textDecoration: 'none', 
+                   color: 'var(--text-primary)',
+                   transition: 'all 0.3s ease',
+                   padding: '0.5rem 1rem',
+                   borderRadius: '8px'
+                 }}
+               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               >
+                 Creators
+               </Link>
+             </nav>
           </div>
 
           {/* CENTER - Search Bar */}
@@ -404,7 +462,7 @@ export function Header({
                   }}
                   style={{
                     background: 'var(--bg-card)',
-                    border: '1px solid var(--border-primary)',
+                    border: '2px solid var(--accent-primary)',
                     borderRadius: '50%',
                     width: '40px',
                     height: '40px',
@@ -412,12 +470,21 @@ export function Header({
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--hover-bg)';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--bg-card)';
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                  }}
                 >
-                  <User size={20} color="var(--text-primary)" />
+                  <User size={20} color="var(--accent-primary)" />
                 </button>
                 
                 <div
@@ -429,7 +496,7 @@ export function Header({
                     marginTop: '0.5rem',
                     background: 'var(--bg-secondary)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--border-primary)',
+                    border: '2px solid var(--accent-primary)',
                     borderRadius: '12px',
                     padding: '0.5rem',
                     minWidth: '200px',
@@ -446,7 +513,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -463,7 +531,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -480,7 +549,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -497,7 +567,8 @@ export function Header({
                       padding: '0.75rem',
                       color: 'var(--text-primary)',
                       borderRadius: '8px',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}

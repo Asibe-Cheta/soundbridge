@@ -169,8 +169,7 @@ export default function EventsPage() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
+
         {isMobile ? (
           /* Mobile Header - Apple Music Style */
           <div style={{ 
@@ -671,7 +670,6 @@ export default function EventsPage() {
             </div>
           </>
         )}
-      </header>
 
       {/* Main Content */}
       <main className="main-container">

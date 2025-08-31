@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
 import {
@@ -32,6 +33,7 @@ import Image from 'next/image';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const {
     stats,
     profile,
@@ -95,8 +97,8 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        color: 'white'
+        background: 'var(--bg-primary)',
+        color: 'var(--text-primary)'
       }}>
         {/* Header */}
         <header style={{
@@ -104,8 +106,8 @@ export default function DashboardPage() {
           top: 0,
           zIndex: 40,
           width: '100%',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          background: 'rgba(255, 255, 255, 0.05)',
+          borderBottom: '1px solid var(--border-primary)',
+          background: 'var(--bg-secondary)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)'
         }}>
@@ -162,8 +164,8 @@ export default function DashboardPage() {
                   <Activity size={20} style={{ color: 'white' }} />
                 </div>
                 <div>
-                  <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', margin: 0 }}>Dashboard</h1>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Welcome back, {profile?.display_name || user.email}</p>
+                  <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>Welcome back, {profile?.display_name || user.email}</p>
                 </div>
               </div>
             </div>
@@ -183,7 +185,7 @@ export default function DashboardPage() {
                 }}>
                   <Activity size={16} style={{ color: 'white' }} />
                 </div>
-                <h1 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', margin: 0 }}>Dashboard</h1>
+                <h1 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
               </div>
             )}
 
@@ -191,10 +193,10 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '0.75rem' }}>
               <button style={{
                 padding: isMobile ? '0.5rem' : '0.5rem 1rem',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'var(--hover-bg)',
+                border: '1px solid var(--border-primary)',
                 borderRadius: '0.5rem',
-                color: 'white',
+                color: 'var(--text-primary)',
                 fontSize: isMobile ? '0.75rem' : '0.875rem',
                 fontWeight: '500',
                 display: 'flex',
@@ -202,7 +204,7 @@ export default function DashboardPage() {
                 gap: '0.5rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
-              }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}>
+              }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}>
                 <Bell size={isMobile ? 14 : 16} />
                 {!isMobile && 'Notifications'}
               </button>
@@ -246,9 +248,9 @@ export default function DashboardPage() {
             gap: '0.25rem',
             marginBottom: isMobile ? '1rem' : '2rem',
             padding: '0.25rem',
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'var(--bg-secondary)',
             borderRadius: '0.75rem',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--border-primary)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             overflowX: isMobile ? 'auto' : 'visible'
@@ -272,11 +274,11 @@ export default function DashboardPage() {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     background: isActive ? 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)' : 'transparent',
-                    color: isActive ? 'white' : '#94a3b8',
+                    color: isActive ? 'white' : 'var(--text-secondary)',
                     boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none'
                   }}
-                  onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'white', e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
-                  onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = '#94a3b8', e.currentTarget.style.background = 'transparent')}
+                  onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-primary)', e.currentTarget.style.background = 'var(--hover-bg)')}
+                  onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-secondary)', e.currentTarget.style.background = 'transparent')}
                 >
                   <Icon size={isMobile ? 14 : 16} />
                   {item.label}
@@ -296,7 +298,7 @@ export default function DashboardPage() {
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#fca5a5' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--error)' }}>
                 <AlertCircle size={18} />
                 <span style={{ fontSize: '0.875rem' }}>{error}</span>
                 <button
@@ -336,15 +338,15 @@ export default function DashboardPage() {
                   const Icon = stat.icon;
                   return (
                     <div key={index} style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
+                      background: 'var(--bg-secondary)',
                       backdropFilter: 'blur(20px)',
                       WebkitBackdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      border: '1px solid var(--border-primary)',
                       borderRadius: '1rem',
                       padding: '1.5rem',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease'
-                    }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}>
+                    }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                         <div style={{
                           width: '3rem',
@@ -359,8 +361,8 @@ export default function DashboardPage() {
                         </div>
                         <TrendingUp size={20} style={{ color: '#10b981' }} />
                       </div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.25rem' }}>{stat.value}</div>
-                      <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>{stat.label}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{stat.value}</div>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{stat.label}</div>
                     </div>
                   );
                 })}
@@ -402,19 +404,19 @@ export default function DashboardPage() {
                   return (
                     <Link key={index} href={action.href} style={{ textDecoration: 'none' }}>
                       <div style={{
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        background: 'var(--bg-secondary)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        border: '1px solid var(--border-primary)',
                         borderRadius: '1rem',
                         padding: '1.5rem',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease'
                       }} onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                        e.currentTarget.style.background = 'var(--hover-bg)';
                         e.currentTarget.style.transform = 'scale(1.02)';
                       }} onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.background = 'var(--bg-secondary)';
                         e.currentTarget.style.transform = 'scale(1)';
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
@@ -431,11 +433,11 @@ export default function DashboardPage() {
                             <Icon size={28} style={{ color: 'white' }} />
                           </div>
                           <div>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'white', margin: '0 0 0.25rem 0' }}>{action.title}</h3>
-                            <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: 0 }}>{action.subtitle}</p>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>{action.title}</h3>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{action.subtitle}</p>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#94a3b8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                           <Plus size={16} />
                           <span>{action.description}</span>
                         </div>
@@ -447,10 +449,10 @@ export default function DashboardPage() {
 
               {/* Recent Activity */}
               <div style={{
-                background: 'rgba(255, 255, 255, 0.05)',
+                background: 'var(--bg-secondary)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: '1px solid var(--border-primary)',
                 borderRadius: '1rem',
                 padding: '2rem'
               }}>
@@ -467,8 +469,8 @@ export default function DashboardPage() {
                     <Activity size={20} style={{ color: 'white' }} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', margin: '0 0 0.25rem 0' }}>Recent Activity</h2>
-                    <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: 0 }}>Your latest updates and interactions</p>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Recent Activity</h2>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>Your latest updates and interactions</p>
                   </div>
                 </div>
                 
@@ -481,10 +483,10 @@ export default function DashboardPage() {
                         gap: '1rem',
                         padding: '1rem',
                         borderRadius: '0.75rem',
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        background: 'var(--hover-bg)',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease'
-                      }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}>
+                      }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}>
                         <div style={{
                           width: '2.5rem',
                           height: '2.5rem',
@@ -497,10 +499,10 @@ export default function DashboardPage() {
                           <Activity size={18} style={{ color: 'white' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '0.875rem', fontWeight: '500', color: 'white', marginBottom: '0.25rem' }}>{activity.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{activity.description}</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{activity.title}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.description}</div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                           <Clock size={14} />
                           <span>{new Date(activity.timestamp).toLocaleDateString()}</span>
                         </div>
@@ -521,8 +523,8 @@ export default function DashboardPage() {
                       }}>
                         <Activity size={32} style={{ color: 'white' }} />
                       </div>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'white', margin: '0 0 0.5rem 0' }}>No recent activity</h3>
-                      <p style={{ color: '#94a3b8', margin: '0 0 1rem 0' }}>Start creating content to see your activity here</p>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No recent activity</h3>
+                      <p style={{ color: 'var(--text-secondary)', margin: '0 0 1rem 0' }}>Start creating content to see your activity here</p>
                       <Link href="/upload" style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -549,10 +551,10 @@ export default function DashboardPage() {
           {/* Other tabs would go here - keeping it simple for now */}
           {activeTab === 'availability' && (
             <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: '1px solid var(--border-primary)',
               borderRadius: '1rem',
               padding: '2rem',
               textAlign: 'center'
@@ -569,8 +571,8 @@ export default function DashboardPage() {
               }}>
                 <Clock3 size={32} style={{ color: 'white' }} />
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', margin: '0 0 0.5rem 0' }}>Manage Your Availability</h3>
-              <p style={{ color: '#94a3b8', margin: '0 0 1.5rem 0' }}>Set your available time slots for collaboration requests</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Manage Your Availability</h3>
+              <p style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0' }}>Set your available time slots for collaboration requests</p>
               <Link href="/availability" style={{ textDecoration: 'none' }}>
                 <button style={{
                   background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
@@ -594,10 +596,10 @@ export default function DashboardPage() {
 
           {activeTab !== 'overview' && activeTab !== 'availability' && (
             <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: '1px solid var(--border-primary)',
               borderRadius: '1rem',
               padding: '2rem',
               textAlign: 'center'
@@ -615,8 +617,8 @@ export default function DashboardPage() {
               }}>
                 <Home size={32} style={{ color: 'white' }} />
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', margin: '0 0 0.5rem 0' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
-              <p style={{ color: '#94a3b8', margin: 0 }}>This section is under development</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
+              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>This section is under development</p>
             </div>
           )}
         </main>
@@ -636,10 +638,10 @@ export default function DashboardPage() {
             padding: '1rem'
           }}>
             <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: '1px solid var(--border-primary)',
               borderRadius: '1rem',
               padding: '2rem',
               maxWidth: '28rem',
@@ -655,15 +657,15 @@ export default function DashboardPage() {
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <AlertTriangle size={24} style={{ color: '#fca5a5' }} />
+                  <AlertTriangle size={24} style={{ color: 'var(--error)' }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', margin: '0 0 0.25rem 0' }}>Delete Account</h3>
-                  <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: 0 }}>This action cannot be undone</p>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Delete Account</h3>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>This action cannot be undone</p>
                 </div>
               </div>
               
-              <p style={{ color: '#94a3b8', margin: '0 0 2rem 0', lineHeight: '1.6' }}>
+              <p style={{ color: 'var(--text-secondary)', margin: '0 0 2rem 0', lineHeight: '1.6' }}>
                 Are you sure you want to permanently delete your account? This action cannot be undone and will remove all your data, tracks, and events.
               </p>
               
@@ -673,7 +675,7 @@ export default function DashboardPage() {
                   style={{
                     flex: 1,
                     padding: '0.75rem 1rem',
-                    background: '#dc2626',
+                    background: 'var(--error)',
                     color: 'white',
                     borderRadius: '0.5rem',
                     border: 'none',
@@ -682,8 +684,8 @@ export default function DashboardPage() {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#b91c1c'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#dc2626'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--error)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--error)'}
                 >
                   Delete Account
                 </button>
@@ -692,8 +694,8 @@ export default function DashboardPage() {
                   style={{
                     flex: 1,
                     padding: '0.75rem 1rem',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    color: 'white',
+                    background: 'var(--hover-bg)',
+                    color: 'var(--text-primary)',
                     borderRadius: '0.5rem',
                     border: 'none',
                     fontSize: '0.875rem',
@@ -701,8 +703,8 @@ export default function DashboardPage() {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                 >
                   Cancel
                 </button>

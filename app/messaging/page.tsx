@@ -166,8 +166,7 @@ export default function MessagingPage() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
+
         {isMobile ? (
           <div style={{
             display: 'flex',
@@ -285,8 +284,8 @@ export default function MessagingPage() {
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '2px solid #EC4899',
                     borderRadius: '50%',
                     width: '40px',
                     height: '40px',
@@ -294,7 +293,7 @@ export default function MessagingPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    color: 'white',
+                    color: '#EC4899',
                     fontWeight: '600'
                   }}
                 >
@@ -308,7 +307,7 @@ export default function MessagingPage() {
                     marginTop: '0.5rem',
                     background: 'rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    border: '2px solid #EC4899',
                     borderRadius: '8px',
                     padding: '0.5rem',
                     minWidth: '150px',
@@ -316,10 +315,11 @@ export default function MessagingPage() {
                   }}>
                     <div style={{
                       padding: '0.5rem',
-                      color: 'white',
+                      color: '#EC4899',
                       fontSize: '0.9rem',
                       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                      marginBottom: '0.5rem'
+                      marginBottom: '0.5rem',
+                      fontWeight: '500'
                     }}>
                       {user.email}
                     </div>
@@ -329,13 +329,14 @@ export default function MessagingPage() {
                         width: '100%',
                         background: 'none',
                         border: 'none',
-                        color: 'white',
+                        color: '#EC4899',
                         padding: '0.5rem',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        fontSize: '0.9rem'
+                        fontSize: '0.9rem',
+                        fontWeight: '500'
                       }}
                     >
                       <LogOut size={16} />
@@ -347,7 +348,6 @@ export default function MessagingPage() {
             </div>
           </div>
         )}
-      </header>
 
       {/* Main Content */}
       <main className="main-container">
