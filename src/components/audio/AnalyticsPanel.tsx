@@ -243,9 +243,12 @@ export function AnalyticsPanel({
                       <p className="text-white text-sm">
                         {event.type === 'play' && 'Started playing'}
                         {event.type === 'pause' && 'Paused'}
+                        {event.type === 'stop' && 'Stopped'}
+                        {event.type === 'seek' && 'Seeked'}
+                        {event.type === 'volume' && 'Changed volume'}
                         {event.type === 'trackChange' && 'Changed track'}
-                        {event.type === 'like' && 'Liked track'}
-                        {event.type === 'share' && 'Shared track'}
+                        {event.type === 'queueChange' && 'Updated queue'}
+                        {event.type === 'error' && 'Error occurred'}
                       </p>
                       <p className="text-white/60 text-xs">
                         {event.timestamp.toLocaleTimeString()}

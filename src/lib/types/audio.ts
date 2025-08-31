@@ -251,7 +251,7 @@ export interface AudioPlayerConfig {
 }
 
 export interface AudioPlayerEvent {
-  type: 'play' | 'pause' | 'stop' | 'seek' | 'volume' | 'trackChange' | 'queueChange' | 'error';
+  type: 'play' | 'pause' | 'stop' | 'seek' | 'volume' | 'trackChange' | 'queueChange' | 'error' | 'like' | 'share';
   timestamp: Date;
   data?: any;
 }
