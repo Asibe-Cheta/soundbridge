@@ -190,7 +190,7 @@ export function AdvancedAudioPlayer({
                 whileTap={{ scale: 0.95 }}
               >
                 <Button
-                  variant="primary"
+                  variant="default"
                   size="icon"
                   onClick={actions.togglePlayPause}
                   disabled={isLoading}

@@ -61,7 +61,7 @@ export function FeaturedCreators({ creators = [] }: FeaturedCreatorsProps) {
             Discover new sounds and build your network.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="primary" size="lg">
+            <Button variant="default" size="lg">
               Explore Creators
             </Button>
             <Button variant="secondary" size="lg">

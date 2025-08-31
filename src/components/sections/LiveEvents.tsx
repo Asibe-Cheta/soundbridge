@@ -150,7 +150,7 @@ export function LiveEvents({ events = [] }: LiveEventsProps) {
 
         {/* View All Events Button */}
         <div className="text-center mt-12">
-          <Button variant="primary" size="lg">
+          <Button variant="default" size="lg">
             View All Events
           </Button>
         </div>

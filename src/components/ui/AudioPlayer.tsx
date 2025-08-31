@@ -222,7 +222,7 @@ export function AudioPlayer({
               whileTap={{ scale: 0.95 }}
             >
               <Button
-                variant="primary"
+                variant="default"
                 size="icon"
                 onClick={togglePlayPause}
                 disabled={isLoading}
