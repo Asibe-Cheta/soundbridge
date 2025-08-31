@@ -25,8 +25,11 @@ export default function AdvancedPlayerDemoPage() {
     setIsClient(true);
   }, []);
 
-  const { loadTrack } = useAdvancedAudioPlayer();
   const [selectedTrack, setSelectedTrack] = useState<AudioTrack | null>(null);
+  
+  // Only initialize the hook when on client side
+  const audioPlayerHook = isClient ? useAdvancedAudioPlayer() : null;
+  const loadTrack = audioPlayerHook?.loadTrack || (() => Promise.resolve());
 
   // Enhanced mock data with audio analysis
   const mockTracks: AudioTrack[] = [

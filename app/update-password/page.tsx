@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
 import Image from 'next/image';
 
-export default function UpdatePasswordPage() {
+function UpdatePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
@@ -576,5 +576,24 @@ export default function UpdatePasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function UpdatePasswordPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div>Loading...</div>
+      </div>
+    }>
+      <UpdatePasswordContent />
+    </Suspense>
   );
 }
