@@ -105,9 +105,18 @@ export default function TermsOfService() {
               </ul>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. User Accounts</h2>
-              <div className="space-y-4 text-gray-700">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                3. User Accounts
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 <p>
                   <strong>Account Creation:</strong> You must be at least 13 years old to create an account. You are responsible for maintaining the confidentiality of your account information.
                 </p>
@@ -120,16 +129,30 @@ export default function TermsOfService() {
               </div>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Content Guidelines</h2>
-              <div className="space-y-4 text-gray-700">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                4. Content Guidelines
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 <p>
                   <strong>User Content:</strong> You retain ownership of content you upload, but grant us a non-exclusive license to host and distribute it.
                 </p>
                 <p>
                   <strong>Prohibited Content:</strong> You may not upload content that:
                 </p>
-                <ul className="list-disc pl-6">
+                <ul style={{ 
+                  listStyle: 'disc', 
+                  paddingLeft: '1.5rem', 
+                  color: 'var(--text-secondary)', 
+                  marginBottom: '1rem' 
+                }}>
                   <li>Violates copyright or intellectual property rights</li>
                   <li>Contains hate speech, harassment, or discrimination</li>
                   <li>Is illegal, harmful, or dangerous</li>
@@ -139,9 +162,18 @@ export default function TermsOfService() {
               </div>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Copyright and Intellectual Property</h2>
-              <div className="space-y-4 text-gray-700">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                5. Copyright and Intellectual Property
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 <p>
                   <strong>Copyright Compliance:</strong> You must only upload content that you own or have proper licensing for. We have implemented copyright protection systems to detect violations.
                 </p>
@@ -154,17 +186,40 @@ export default function TermsOfService() {
               </div>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Privacy and Data Protection</h2>
-              <p className="text-gray-700 mb-4">
-                Your privacy is important to us. Please review our <Link href="/legal/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link> to understand how we collect, use, and protect your information.
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                6. Privacy and Data Protection
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Your privacy is important to us. Please review our <Link href="/legal/privacy" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Privacy Policy</Link> to understand how we collect, use, and protect your information.
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Prohibited Activities</h2>
-              <p className="text-gray-700 mb-4">You agree not to:</p>
-              <ul className="list-disc pl-6 text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                7. Prohibited Activities
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>You agree not to:</p>
+              <ul style={{ 
+                listStyle: 'disc', 
+                paddingLeft: '1.5rem', 
+                color: 'var(--text-secondary)', 
+                marginBottom: '1rem' 
+              }}>
                 <li>Use the Platform for any illegal purpose</li>
                 <li>Attempt to gain unauthorized access to our systems</li>
                 <li>Interfere with or disrupt the Platform's operation</li>
@@ -174,31 +229,67 @@ export default function TermsOfService() {
               </ul>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Limitation of Liability</h2>
-              <p className="text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                8. Limitation of Liability
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 To the maximum extent permitted by law, SoundBridge shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or use.
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Indemnification</h2>
-              <p className="text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                9. Indemnification
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 You agree to indemnify and hold harmless SoundBridge from any claims, damages, or expenses arising from your use of the Platform or violation of these terms.
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Changes to Terms</h2>
-              <p className="text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                10. Changes to Terms
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 We may modify these terms at any time. We will notify users of significant changes via email or through the Platform. Continued use of the Platform after changes constitutes acceptance of the new terms.
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">11. Governing Law</h2>
-              <p className="text-gray-700 mb-4">
-                These terms are governed by the laws of [Your Jurisdiction]. Any disputes shall be resolved in the courts of [Your Jurisdiction].
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                11. Governing Law
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                These terms are governed by the laws of the United Kingdom. Any disputes shall be resolved in the courts of the United Kingdom.
               </p>
             </section>
 

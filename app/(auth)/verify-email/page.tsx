@@ -70,7 +70,7 @@ export default function VerifyEmailPage() {
         }}
       >
         {/* Logo */}
-        <div className="logo">
+        <Link href="/" className="logo" style={{ textDecoration: 'none', display: 'block' }}>
                   <Image
                     src="/images/logos/logo-trans-lockup.png"
                     alt="SoundBridge Logo"
@@ -79,7 +79,7 @@ export default function VerifyEmailPage() {
                     priority
                     style={{ height: 'auto' }}
                   />
-                </div>
+                </Link>
 
         {/* Success Icon */}
         <div style={{

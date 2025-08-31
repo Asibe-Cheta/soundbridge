@@ -114,11 +114,12 @@ export function Header({
           </button>
 
           {/* CENTER - Small Logo */}
-          <div style={{ 
+          <Link href="/" style={{ 
             display: 'flex', 
             justifyContent: 'center', 
             alignItems: 'center',
-            flex: 1
+            flex: 1,
+            textDecoration: 'none'
           }}>
             <Image
               src="/images/logos/logo-trans-lockup.png"
@@ -128,7 +129,7 @@ export function Header({
               priority
               style={{ height: 'auto' }}
             />
-          </div>
+          </Link>
 
           {/* RIGHT - Sign In / Profile */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -298,16 +299,23 @@ export function Header({
                 <button 
                   style={{
                     background: 'none',
-                    color: 'var(--accent-primary)',
-                    border: 'none',
+                    color: 'var(--text-primary)',
+                    border: '2px solid var(--accent-primary)',
                     padding: '8px 16px',
                     cursor: 'pointer',
                     fontWeight: '500',
                     fontSize: '16px',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    borderRadius: '8px'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--accent-primary)';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }}
                 >
                   Sign In
                 </button>
@@ -320,7 +328,7 @@ export function Header({
         <>
           {/* LEFT SIDE */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <div className="logo">
+            <Link href="/" className="logo" style={{ textDecoration: 'none' }}>
               <Image
                 src="/images/logos/logo-trans-lockup.png"
                 alt="SoundBridge Logo"
@@ -329,7 +337,7 @@ export function Header({
                 priority
                 style={{ height: 'auto' }}
               />
-            </div>
+            </Link>
                          <nav className="nav">
                                 <Link href="/" className="text-base text-display font-medium" style={{ 
                    textDecoration: 'none', 

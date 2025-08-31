@@ -237,7 +237,7 @@ export default function SignupPage() {
           }}
         >
           {/* Logo - Centered */}
-          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <Link href="/" style={{ textAlign: 'center', marginBottom: '1rem', display: 'block', textDecoration: 'none' }}>
             <Image
               src="/images/logos/logo-trans-lockup.png"
               alt="SoundBridge Logo"
@@ -246,7 +246,7 @@ export default function SignupPage() {
               priority
               style={{ height: 'auto' }}
             />
-          </div>
+          </Link>
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>

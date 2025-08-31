@@ -1494,11 +1494,11 @@ export default function HomePage() {
             </div>
           </Link>
           <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'var(--card-bg)',
             backdropFilter: 'blur(20px)',
             borderRadius: '20px',
             padding: isMobile ? '1rem' : '1.5rem',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--border-color)',
             display: isMobile ? 'none' : 'block'
           }}>
                             <h3 className="heading-5 text-display" style={{ marginBottom: '1rem', color: '#EC4899' }}>Trending Now</h3>
