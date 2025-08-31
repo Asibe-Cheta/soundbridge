@@ -67,7 +67,7 @@ export function EffectsPanel({
                   <span className="text-white text-sm font-medium">Reverb</span>
                 </div>
                 <Button
-                  variant={effects.reverb.enabled ? "primary" : "outline"}
+                  variant={effects.reverb.enabled ? "default" : "outline"}
                   size="sm"
                   onClick={onReverbToggle}
                 >
@@ -148,7 +148,7 @@ export function EffectsPanel({
                   <span className="text-white text-sm font-medium">Echo</span>
                 </div>
                 <Button
-                  variant={effects.echo.enabled ? "primary" : "outline"}
+                  variant={effects.echo.enabled ? "default" : "outline"}
                   size="sm"
                   onClick={onEchoToggle}
                 >
@@ -229,7 +229,7 @@ export function EffectsPanel({
                   <span className="text-white text-sm font-medium">Compression</span>
                 </div>
                 <Button
-                  variant={effects.compression.enabled ? "primary" : "outline"}
+                  variant={effects.compression.enabled ? "default" : "outline"}
                   size="sm"
                   onClick={() => {
                     // This would toggle compression
@@ -339,7 +339,7 @@ export function EffectsPanel({
                   <span className="text-white text-sm font-medium">Distortion</span>
                 </div>
                 <Button
-                  variant={effects.distortion.enabled ? "primary" : "outline"}
+                  variant={effects.distortion.enabled ? "default" : "outline"}
                   size="sm"
                   onClick={() => {
                     // This would toggle distortion
