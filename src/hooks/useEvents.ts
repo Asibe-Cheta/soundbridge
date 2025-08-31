@@ -164,7 +164,7 @@ export function useEvents(): [EventsState, EventsActions] {
       const result = await eventService.rsvpToEvent(eventId, status);
 
       if (result.error) {
-        return { success: false, error: result.error?.message || 'Failed to RSVP' };
+        return { success: false, error: result.error instanceof Error ? result.error.message : 'Failed to RSVP' };
       }
 
       // Update event in the list with new RSVP status
@@ -248,7 +248,7 @@ export function useEvents(): [EventsState, EventsActions] {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: result.error?.message || 'Failed to load more events'
+          error: result.error instanceof Error ? result.error.message : 'Failed to load more events'
         }));
         return;
       }
