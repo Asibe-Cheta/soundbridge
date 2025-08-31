@@ -5,12 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Footer } from '../../../src/components/layout/Footer';
-import { FloatingCard } from '../../../src/components/ui/FloatingCard';
-import { AdvancedFilters } from '../../../src/components/ui/AdvancedFilters';
-import { useSearch } from '../../../src/hooks/useSearch';
-import { searchCreators } from '../../../src/lib/creator';
-import type { CreatorSearchResult, AudioTrack, Event } from '../../../src/lib/types/creator';
+import { Footer } from '../../src/components/layout/Footer';
+import { FloatingCard } from '../../src/components/ui/FloatingCard';
+import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
+import { useSearch } from '../../src/hooks/useSearch';
+import { searchCreators } from '../../src/lib/creator';
+import type { CreatorSearchResult, AudioTrack, Event } from '../../src/lib/types/creator';
 import {
   Search,
   Filter,
