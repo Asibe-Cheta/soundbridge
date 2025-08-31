@@ -219,7 +219,7 @@ export function useNotifications(): [NotificationsState, NotificationsActions] {
           refreshUnreadCount();
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         console.log('🔔 Real-time subscription status:', status);
         
         // If real-time fails, we'll rely on the periodic refresh
