@@ -24,7 +24,7 @@ export default function VerifyEmailPage() {
     <div 
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        background: 'var(--bg-gradient)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

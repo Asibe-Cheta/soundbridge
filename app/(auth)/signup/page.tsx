@@ -188,7 +188,7 @@ export default function SignupPage() {
         style={{
           width: '100%',
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+          background: 'var(--bg-gradient)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

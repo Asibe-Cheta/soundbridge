@@ -1,30 +1,102 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Terms of Service</h1>
-            <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
-          </div>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg-gradient)',
+      color: 'var(--text-primary)',
+      padding: '2rem'
+    }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        background: 'var(--card-bg)',
+        borderRadius: '20px',
+        padding: '3rem',
+        boxShadow: 'var(--card-shadow)',
+        border: 'var(--card-border)'
+      }}>
+        {/* Back to Home */}
+        <Link 
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: 'var(--text-primary)',
+            textDecoration: 'none',
+            padding: '0.5rem 1rem',
+            borderRadius: '25px',
+            border: '2px solid var(--border-color)',
+            transition: 'all 0.3s ease',
+            marginBottom: '2rem'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+        >
+          <ArrowLeft size={16} />
+          Back to Home
+        </Link>
 
-          <div className="prose prose-lg max-w-none">
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h2>
-              <p className="text-gray-700 mb-4">
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: 'bold',
+            background: 'var(--gradient-primary)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            marginBottom: '1rem'
+          }}>
+            Terms of Service
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+            Last updated: January 1, 2025
+          </p>
+        </div>
+
+          <div style={{ lineHeight: '1.8', fontSize: '1rem' }}>
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                1. Acceptance of Terms
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 By accessing and using SoundBridge ("the Platform"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Description of Service</h2>
-              <p className="text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                2. Description of Service
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 SoundBridge is a music platform that connects Christian and secular music creators with listeners. The Platform provides:
               </p>
-              <ul className="list-disc pl-6 text-gray-700 mb-4">
+              <ul style={{ 
+                listStyle: 'disc', 
+                paddingLeft: '1.5rem', 
+                color: 'var(--text-secondary)', 
+                marginBottom: '1rem' 
+              }}>
                 <li>Audio file upload and streaming services</li>
                 <li>Event creation and management</li>
                 <li>Community features and messaging</li>
@@ -130,25 +202,57 @@ export default function TermsOfService() {
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Contact Information</h2>
-              <p className="text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                12. Contact Information
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 If you have questions about these Terms of Service, please contact us at:
               </p>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-gray-700">
-                  <strong>Email:</strong> legal@soundbridge.com<br/>
-                  <strong>Address:</strong> [Your Business Address]<br/>
-                  <strong>Phone:</strong> [Your Phone Number]
+              <div style={{
+                background: 'var(--card-bg)',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  <strong>Email:</strong> contact@soundbridge.live<br/>
+                  <strong>Address:</strong> Wokingham, United Kingdom<br/>
+                  <strong>Legal Email:</strong> legal@soundbridge.live
                 </p>
               </div>
             </section>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+          <div style={{
+            marginTop: '2rem',
+            paddingTop: '2rem',
+            borderTop: '1px solid var(--border-color)',
+            textAlign: 'center'
+          }}>
             <Link 
               href="/"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0.75rem 1.5rem',
+                border: '2px solid var(--accent-primary)',
+                borderRadius: '25px',
+                color: 'var(--text-primary)',
+                textDecoration: 'none',
+                fontWeight: '500',
+                transition: 'all 0.3s ease',
+                background: 'var(--accent-primary)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
               Back to Home
             </Link>

@@ -1,15 +1,64 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-            <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
-          </div>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg-gradient)',
+      color: 'var(--text-primary)',
+      padding: '2rem'
+    }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        background: 'var(--card-bg)',
+        borderRadius: '20px',
+        padding: '3rem',
+        boxShadow: 'var(--card-shadow)',
+        border: 'var(--card-border)'
+      }}>
+        {/* Back to Home */}
+        <Link 
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: 'var(--text-primary)',
+            textDecoration: 'none',
+            padding: '0.5rem 1rem',
+            borderRadius: '25px',
+            border: '2px solid var(--border-color)',
+            transition: 'all 0.3s ease',
+            marginBottom: '2rem'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+        >
+          <ArrowLeft size={16} />
+          Back to Home
+        </Link>
+
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: 'bold',
+            background: 'var(--gradient-primary)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            marginBottom: '1rem'
+          }}>
+            Privacy Policy
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+            Last updated: January 1, 2025
+          </p>
+        </div>
 
           <div className="prose prose-lg max-w-none">
             <section className="mb-8">
@@ -121,8 +170,8 @@ export default function PrivacyPolicy() {
                 </div>
               </div>
               
-              <p className="text-gray-700 mt-4">
-                To exercise these rights, please contact us at privacy@soundbridge.com.
+              <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>
+                To exercise these rights, please contact us at contact@soundbridge.live.
               </p>
             </section>
 
@@ -168,17 +217,31 @@ export default function PrivacyPolicy() {
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Contact Us</h2>
-              <p className="text-gray-700 mb-4">
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                borderBottom: '2px solid var(--accent-primary)',
+                paddingBottom: '0.5rem'
+              }}>
+                12. Contact Us
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 If you have questions about this Privacy Policy or our data practices, please contact us:
               </p>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-gray-700">
-                  <strong>Email:</strong> privacy@soundbridge.com<br/>
-                  <strong>Address:</strong> [Your Business Address]<br/>
-                  <strong>Phone:</strong> [Your Phone Number]<br/>
-                  <strong>Data Protection Officer:</strong> dpo@soundbridge.com
+              <div style={{
+                background: 'var(--card-bg)',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  <strong>Email:</strong> contact@soundbridge.live<br/>
+                  <strong>Address:</strong> Wokingham, United Kingdom<br/>
+                  <strong>Privacy Email:</strong> privacy@soundbridge.live<br/>
+                  <strong>Data Protection Officer:</strong> dpo@soundbridge.live
                 </p>
               </div>
             </section>
@@ -201,10 +264,28 @@ export default function PrivacyPolicy() {
             </section>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+          <div style={{
+            marginTop: '2rem',
+            paddingTop: '2rem',
+            borderTop: '1px solid var(--border-color)',
+            textAlign: 'center'
+          }}>
             <Link 
               href="/"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0.75rem 1.5rem',
+                border: '2px solid var(--accent-primary)',
+                borderRadius: '25px',
+                color: 'var(--text-primary)',
+                textDecoration: 'none',
+                fontWeight: '500',
+                transition: 'all 0.3s ease',
+                background: 'var(--accent-primary)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
               Back to Home
             </Link>

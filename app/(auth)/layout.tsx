@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { Toaster } from "@/src/components/ui/Toast";
 
 export default function AuthLayout({
@@ -7,9 +8,11 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
-      {children}
-      <Toaster />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        {children}
+        <Toaster />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
