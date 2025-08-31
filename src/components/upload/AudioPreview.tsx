@@ -38,7 +38,9 @@ export function AudioPreview({ uploadFile, onMetadataExtracted }: AudioPreviewPr
           duration: audio.duration,
           bitrate: Math.round((uploadFile.file.size * 8) / audio.duration), // rough estimate
           format: uploadFile.file.type,
-          size: uploadFile.file.size
+          size: uploadFile.file.size,
+          sampleRate: 44100, // Default sample rate
+          channels: 2 // Default stereo
         };
 
         setMetadata(audioMetadata);
