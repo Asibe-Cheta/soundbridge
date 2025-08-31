@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+import { Card, CardHeader, CardTitle, CardDescription } from '../ui/Card';
 // import { User } from '../../lib/types';
 type User = any;
 
@@ -75,14 +75,29 @@ export function FeaturedCreators({ creators = [] }: FeaturedCreatorsProps) {
           {featuredCreators.map((creator) => (
             <Card
               key={creator.id}
-              title={creator.display_name || creator.username}
-              subtitle={creator.bio}
-              image={creator.avatar_url}
-              type="creator"
-              data={creator}
+              variant="creator"
+              className="cursor-pointer"
               onClick={() => console.log('Navigate to creator:', creator.username)}
             >
-              {/* Card content will be rendered by the Card component */}
+              <CardHeader>
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden">
+                    <img
+                      src={creator.avatar_url}
+                      alt={creator.display_name || creator.username}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-white">
+                      {creator.display_name || creator.username}
+                    </CardTitle>
+                    <CardDescription className="text-white/70">
+                      {creator.bio}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
             </Card>
           ))}
         </div>
