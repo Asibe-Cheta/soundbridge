@@ -49,13 +49,13 @@ export async function POST(request: NextRequest) {
       let confirmationUrl;
       if (email_data.token && email_data.token_hash) {
         // Use Supabase's built-in confirmation URL structure
-        confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?token_hash=${email_data.token_hash}&type=signup&next=/dashboard`;
+        confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/auth/callback?token_hash=${email_data.token_hash}&type=signup&next=/dashboard`;
       } else if (email_data.redirect_to) {
         // Fallback to redirect_to if available
         confirmationUrl = email_data.redirect_to;
       } else {
         // Last resort - build a basic verification URL
-        confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/verify-email?token=${email_data.token || 'unknown'}`;
+        confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/verify-email?token=${email_data.token || 'unknown'}`;
       }
       
       dynamicData = {
@@ -70,13 +70,13 @@ export async function POST(request: NextRequest) {
       let resetUrl;
       if (email_data.token && email_data.token_hash) {
         // Use Supabase's built-in reset URL structure
-        resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?token_hash=${email_data.token_hash}&type=recovery&next=/update-password`;
+        resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/auth/callback?token_hash=${email_data.token_hash}&type=recovery&next=/update-password`;
       } else if (email_data.redirect_to) {
         // Fallback to redirect_to if available
         resetUrl = email_data.redirect_to;
       } else {
         // Last resort - build a basic reset URL
-        resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/update-password?token=${email_data.token || 'unknown'}`;
+        resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/update-password?token=${email_data.token || 'unknown'}`;
       }
       
       dynamicData = {
