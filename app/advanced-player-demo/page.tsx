@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AdvancedAudioPlayer } from '../../src/components/audio/AdvancedAudioPlayer';
+import dynamic from 'next/dynamic';
 import { AudioTrack } from '../../src/lib/types/audio';
 import { useAdvancedAudioPlayer } from '../../src/hooks/useAdvancedAudioPlayer';
+
+// Dynamically import the AdvancedAudioPlayer to avoid SSR issues
+const AdvancedAudioPlayer = dynamic(
+  () => import('../../src/components/audio/AdvancedAudioPlayer').then(mod => ({ default: mod.AdvancedAudioPlayer })),
+  { 
+    ssr: false,
+    loading: () => <div>Loading audio player...</div>
+  }
+);
 import { 
   Music, 
   Sliders, 
@@ -228,8 +237,7 @@ export default function AdvancedPlayerDemoPage() {
     );
   }
 
-  // Only render the AdvancedAudioPlayer when on client side
-  const AudioPlayerComponent = isClient ? AdvancedAudioPlayer : null;
+
 
   return (
     <div style={{ 
@@ -518,18 +526,16 @@ export default function AdvancedPlayerDemoPage() {
         )}
       </div>
 
-             {/* Advanced Audio Player */}
-       {AudioPlayerComponent && (
-         <AudioPlayerComponent
-           showMiniPlayer={true}
-           showFullscreenButton={true}
-           showEqualizer={true}
-           showEffects={true}
-           showLyrics={true}
-           showWaveform={true}
-           showSpectrum={true}
-         />
-       )}
+                    {/* Advanced Audio Player */}
+        <AdvancedAudioPlayer
+          showMiniPlayer={true}
+          showFullscreenButton={true}
+          showEqualizer={true}
+          showEffects={true}
+          showLyrics={true}
+          showWaveform={true}
+          showSpectrum={true}
+        />
     </div>
   );
 }
