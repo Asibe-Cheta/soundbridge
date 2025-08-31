@@ -45,7 +45,7 @@ export function useEvents(): [EventsState, EventsActions] {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: result.error?.message || 'Failed to fetch events'
+          error: result.error instanceof Error ? result.error.message : 'Failed to fetch events'
         }));
         return;
       }
@@ -75,7 +75,7 @@ export function useEvents(): [EventsState, EventsActions] {
       const result = await eventService.createEvent(eventData);
 
       if (result.error) {
-        return { success: false, error: result.error?.message || 'Failed to create event' };
+        return { success: false, error: result.error instanceof Error ? result.error.message : 'Failed to create event' };
       }
 
       // Add new event to the list
@@ -105,7 +105,7 @@ export function useEvents(): [EventsState, EventsActions] {
       const result = await eventService.updateEvent(eventId, eventData);
 
       if (result.error) {
-        return { success: false, error: result.error?.message || 'Failed to update event' };
+        return { success: false, error: result.error instanceof Error ? result.error.message : 'Failed to update event' };
       }
 
       // Update event in the list
@@ -136,7 +136,7 @@ export function useEvents(): [EventsState, EventsActions] {
       const result = await eventService.deleteEvent(eventId);
 
       if (result.error) {
-        return { success: false, error: result.error?.message || 'Failed to delete event' };
+        return { success: false, error: result.error instanceof Error ? result.error.message : 'Failed to delete event' };
       }
 
       // Remove event from the list
