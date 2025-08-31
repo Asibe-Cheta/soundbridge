@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { AudioTrack } from '../../src/lib/types/audio';
-import { useAdvancedAudioPlayer } from '../../src/hooks/useAdvancedAudioPlayer';
 
 // Dynamically import the AdvancedAudioPlayer to avoid SSR issues
 const AdvancedAudioPlayer = dynamic(
@@ -37,7 +36,17 @@ export default function AdvancedPlayerDemoPage() {
   const [selectedTrack, setSelectedTrack] = useState<AudioTrack | null>(null);
   
   // Only initialize the hook when on client side
-  const audioPlayerHook = isClient ? useAdvancedAudioPlayer() : null;
+  const [audioPlayerHook, setAudioPlayerHook] = useState<any>(null);
+  
+  useEffect(() => {
+    if (isClient) {
+      // Import and initialize the hook only on client side
+      import('../../src/hooks/useAdvancedAudioPlayer').then(({ useAdvancedAudioPlayer }) => {
+        setAudioPlayerHook(useAdvancedAudioPlayer());
+      });
+    }
+  }, [isClient]);
+  
   const loadTrack = audioPlayerHook?.loadTrack || (() => Promise.resolve());
 
   // Enhanced mock data with audio analysis
