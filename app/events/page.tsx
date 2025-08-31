@@ -27,6 +27,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
+import type { EventCategory } from '../../src/lib/types/event';
 
 export default function EventsPage() {
   const { user, signOut } = useAuth();
@@ -131,11 +132,11 @@ export default function EventsPage() {
   useEffect(() => {
     const filters = {
       search: searchQuery || undefined,
-      category: selectedGenre !== 'all' ? selectedGenre as string : undefined,
+      category: selectedGenre !== 'all' ? selectedGenre as EventCategory : undefined,
       location: selectedLocation !== 'all' ? selectedLocation : undefined,
-      dateRange: selectedDate !== 'all' ? selectedDate as string : undefined,
-      priceRange: selectedPrice !== 'all' ? selectedPrice as string : undefined,
-      sortBy: sortBy as string
+      dateRange: selectedDate !== 'all' ? selectedDate as 'today' | 'week' | 'month' | 'next-month' : undefined,
+      priceRange: selectedPrice !== 'all' ? selectedPrice as 'free' | 'low' | 'medium' | 'high' : undefined,
+      sortBy: sortBy as 'date' | 'price' | 'attendees' | 'rating'
     };
 
     eventsActions.updateFilters(filters);

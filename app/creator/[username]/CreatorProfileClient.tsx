@@ -73,15 +73,13 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [isMobile, setIsMobile] = useState(false);
   
   // Availability states
-  const [creatorAvailability, setCreatorAvailability] = useState<AvailabilitySlot[]>([]);
   const [selectedAvailabilitySlot, setSelectedAvailabilitySlot] = useState<AvailabilitySlot | null>(null);
   const [proposedStartDate, setProposedStartDate] = useState('');
   const [proposedEndDate, setProposedEndDate] = useState('');
-  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   const { user, signOut } = useAuth();
-  const [, availabilityActions] = useAvailability();
+  const [availabilityState, availabilityActions] = useAvailability();
   const router = useRouter();
 
   const tabs = [
@@ -137,19 +135,20 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                setEvents(eventsData || []);
 
         // Load availability
-        const availabilityData = await availabilityActions.getCreatorAvailability(username);
-        setCreatorAvailability(availabilityData || []);
+        await availabilityActions.fetchAvailability(creator.id);
+        // Note: The availability data will be loaded into the availability state
+        // We'll need to access it from the availability hook state
 
         // Check if current user is following this creator
         if (user) {
-          const { data: followData } = await followCreator(creator.id);
+          const { data: followData } = await followCreator(user.id, creator.id);
           setIsFollowing(!!followData);
         }
 
         // Load messages if user is logged in
         if (user) {
-          const messagesData = await getMessages(creator.id);
-          setMessages(messagesData);
+          const { data: messagesData } = await getMessages(creator.id, user.id);
+          setMessages(messagesData || []);
         }
       } catch (err) {
         console.error('Error loading creator data:', err);
@@ -172,10 +171,10 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     try {
       setIsLoadingFollow(true);
       if (isFollowing) {
-        await unfollowCreator(creator.id);
+        await unfollowCreator(user.id, creator.id);
         setIsFollowing(false);
       } else {
-        await followCreator(creator.id);
+        await followCreator(user.id, creator.id);
         setIsFollowing(true);
       }
     } catch (err) {
@@ -196,11 +195,11 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
     try {
       setIsLoadingMessage(true);
-      await sendMessage(creator.id, chatMessage);
+      await sendMessage(user.id, creator.id, chatMessage);
       setChatMessage('');
       // Reload messages
-      const messagesData = await getMessages(creator.id);
-      setMessages(messagesData);
+      const { data: messagesData } = await getMessages(creator.id, user.id);
+      setMessages(messagesData || []);
     } catch (err) {
       console.error('Error sending message:', err);
     } finally {
@@ -231,12 +230,11 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     }
 
     try {
-      setIsLoadingAvailability(true);
       setAvailabilityError(null);
 
       const requestData: CreateCollaborationRequestData = {
         creator_id: creator.id,
-        availability_slot_id: selectedAvailabilitySlot.id,
+        availability_id: selectedAvailabilitySlot.id,
         subject: collaborationSubject.trim(),
         message: collaborationMessage.trim(),
         proposed_start_date: proposedStartDate,
@@ -257,8 +255,6 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     } catch (err) {
       console.error('Error sending collaboration request:', err);
       setAvailabilityError('Failed to send collaboration request');
-    } finally {
-      setIsLoadingAvailability(false);
     }
   };
 
@@ -561,7 +557,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                   {tracks.map((track) => (
                     <div key={track.id} className="bg-gray-700 rounded-lg p-4">
                       <h3 className="font-semibold mb-2">{track.title}</h3>
-                      <p className="text-gray-400 text-sm mb-2">{track.artist_name}</p>
+                      <p className="text-gray-400 text-sm mb-2">{track.creator?.display_name || 'Unknown Artist'}</p>
                       <p className="text-gray-500 text-xs">{track.genre}</p>
                     </div>
                   ))}
@@ -582,7 +578,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                       <h3 className="font-semibold mb-2">{event.title}</h3>
                       <p className="text-gray-400 text-sm mb-2">{event.description}</p>
                       <p className="text-gray-500 text-xs">
-                        {formatDate(event.event_date)} at {formatTime(event.event_time)}
+                        {formatDate(event.event_date)}
                       </p>
                     </div>
                   ))}
@@ -635,12 +631,12 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
             <div>
               <h2 className="text-2xl font-bold mb-6">Collaborate</h2>
               
-              {creatorAvailability.length > 0 ? (
+              {availabilityState.availability.length > 0 ? (
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold mb-4">Available Time Slots</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {creatorAvailability.map((slot) => (
+                      {availabilityState.availability.map((slot) => (
                         <div
                           key={slot.id}
                           onClick={() => setSelectedAvailabilitySlot(slot)}
@@ -650,9 +646,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                               : 'border-gray-600 bg-gray-700 hover:border-gray-500'
                           }`}
                         >
-                          <p className="font-medium">{formatDate(slot.date)}</p>
+                          <p className="font-medium">{formatDate(slot.start_date)}</p>
                           <p className="text-gray-400 text-sm">
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                            {formatDate(slot.start_date)} - {formatDate(slot.end_date)}
                           </p>
                         </div>
                       ))}
@@ -712,10 +708,10 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
                         <button
                           onClick={handleCollaborationRequest}
-                          disabled={isLoadingAvailability}
+                          disabled={availabilityState.loading}
                           className="w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
                         >
-                          {isLoadingAvailability ? (
+                          {availabilityState.loading ? (
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           ) : (
                             'Send Request'

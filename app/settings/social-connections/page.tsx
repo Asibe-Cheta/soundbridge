@@ -165,7 +165,7 @@ export default function SocialConnectionsPage() {
       switch (platform) {
         case 'facebook':
           if (window.FB) {
-            window.FB.logout(() => {
+            (window.FB as any).logout(() => {
               setConnections(prev => 
                 prev.map(conn => 
                   conn.platform === 'facebook' 
@@ -424,12 +424,14 @@ export default function SocialConnectionsPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-      `}</style>
+      `
+      }} />
     </div>
   );
 }

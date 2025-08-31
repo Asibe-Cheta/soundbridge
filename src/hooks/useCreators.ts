@@ -16,6 +16,7 @@ export interface Creator {
   social_links: Record<string, string>;
   created_at: string;
   updated_at: string;
+  is_verified?: boolean;
   // Computed fields
   followers_count: number;
   tracks_count: number;

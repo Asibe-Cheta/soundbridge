@@ -1,5 +1,6 @@
 import { createBrowserClient } from './supabase';
-import type { AudioTrack, Event, Profile, Message, Follow } from './types';
+import type { Profile, Follow } from './types';
+import type { AudioTrack, Event, Message } from './types/creator';
 
 export interface CreatorSearchResult {
   profile: Profile;
@@ -165,12 +166,12 @@ export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{
       description: track.description,
       creator_id: track.creator_id,
       file_url: track.file_url,
-      cover_art_url: track.artwork_url || track.cover_art_url,
+      cover_art_url: track.cover_art_url,
       duration: track.duration,
       genre: track.genre,
       tags: track.tags,
       play_count: track.play_count || 0,
-      like_count: track.likes_count || track.like_count || 0,
+      like_count: track.likes_count || 0,
       is_public: track.is_public !== false,
       created_at: track.created_at,
       creator: track.creator ? {
@@ -373,7 +374,46 @@ export async function getMessages(creatorId: string, currentUserId: string): Pro
       return { data: null, error };
     }
 
-    return { data: data || [], error: null };
+    // Transform the data to match Message interface
+    const transformedData = (data || []).map(message => ({
+      id: message.id,
+      sender_id: message.sender_id,
+      recipient_id: message.recipient_id,
+      content: message.content,
+      message_type: message.message_type as 'text' | 'audio' | 'file' | 'collaboration',
+      is_read: message.is_read,
+      created_at: message.created_at,
+      sender: message.sender ? {
+        id: message.sender.id,
+        username: message.sender.username,
+        display_name: message.sender.display_name,
+        avatar_url: message.sender.avatar_url,
+        location: message.sender.location,
+        country: message.sender.country,
+        bio: null,
+        role: 'creator',
+        is_verified: false,
+        social_links: {},
+        created_at: '',
+        updated_at: ''
+      } : undefined,
+      recipient: message.recipient ? {
+        id: message.recipient.id,
+        username: message.recipient.username,
+        display_name: message.recipient.display_name,
+        avatar_url: message.recipient.avatar_url,
+        location: message.recipient.location,
+        country: message.recipient.country,
+        bio: null,
+        role: 'creator',
+        is_verified: false,
+        social_links: {},
+        created_at: '',
+        updated_at: ''
+      } : undefined
+    }));
+
+    return { data: transformedData, error: null };
   } catch (error) {
     console.error('Unexpected error getting messages:', error);
     return { data: null, error };

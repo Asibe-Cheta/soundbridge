@@ -119,11 +119,11 @@ export default function SettingsPage() {
   const [accountData, setAccountData] = useState({
     email: user?.email || '',
     phone: user?.phone || '',
-    displayName: user?.display_name || '',
-    username: user?.username || '',
-    bio: user?.bio || '',
-    location: user?.location || '',
-    website: user?.website || '',
+    displayName: '',
+    username: '',
+    bio: '',
+    location: '',
+    website: '',
     language: 'English',
     timezone: 'UTC',
     currency: 'GBP'

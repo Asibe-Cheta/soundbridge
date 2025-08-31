@@ -105,11 +105,11 @@ export default function UIDemoPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="primary">Primary</Button>
-              <Button variant="glass">Glass</Button>
-              <Button variant="gradient">Gradient</Button>
-              <Button variant="glassmorphism">Glassmorphism</Button>
-              <Button variant="neon">Neon</Button>
+              <Button variant="default">Primary</Button>
+              <Button variant="outline">Glass</Button>
+              <Button variant="secondary">Gradient</Button>
+              <Button variant="ghost">Glassmorphism</Button>
+              <Button variant="destructive">Neon</Button>
               <Button variant="subtle">Subtle</Button>
               <Button variant="outline">Outline</Button>
               <Button variant="ghost">Ghost</Button>
@@ -158,7 +158,7 @@ export default function UIDemoPage() {
           <CardContent>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="primary">Open Dialog</Button>
+                <Button variant="default">Open Dialog</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -177,7 +177,7 @@ export default function UIDemoPage() {
                   <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button variant="primary" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="default" onClick={() => setIsDialogOpen(false)}>
                     Confirm
                   </Button>
                 </DialogFooter>
@@ -194,7 +194,7 @@ export default function UIDemoPage() {
           <CardContent>
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="glass">Open Sheet</Button>
+                <Button variant="outline">Open Sheet</Button>
               </SheetTrigger>
               <SheetContent>
                 <SheetHeader>
@@ -230,7 +230,7 @@ export default function UIDemoPage() {
                   </div>
                 </div>
                 <SheetFooter>
-                  <Button variant="primary" onClick={() => setIsSheetOpen(false)}>
+                  <Button variant="default" onClick={() => setIsSheetOpen(false)}>
                     Close
                   </Button>
                 </SheetFooter>
@@ -378,7 +378,7 @@ export default function UIDemoPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="primary" onClick={() => handleToast('success')}>
+              <Button variant="default" onClick={() => handleToast('success')}>
                 Success Toast
               </Button>
               <Button variant="destructive" onClick={() => handleToast('error')}>

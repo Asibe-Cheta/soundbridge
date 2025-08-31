@@ -842,7 +842,7 @@ export default function CreatorsPage() {
                     </div>
 
                     {/* Verified Badge */}
-                    {creator.isVerified && (
+                    {creator.is_verified && (
                       <div style={{
                         position: 'absolute',
                         top: '0.5rem',

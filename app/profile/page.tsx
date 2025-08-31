@@ -77,16 +77,16 @@ export default function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [profileData, setProfileData] = useState({
-    displayName: user?.display_name || 'Your Name',
-    username: user?.username || 'username',
-    bio: user?.bio || 'Tell your story...',
-    location: user?.location || 'Location not set',
-    website: user?.website || '',
+    displayName: 'Your Name',
+    username: 'username',
+    bio: 'Tell your story...',
+    location: 'Location not set',
+    website: '',
     email: user?.email || '',
-    phone: user?.phone || '',
-    genre: user?.genre || 'Not specified',
-    experience: user?.experience || 'Beginner',
-    avatarUrl: user?.avatar_url || ''
+    phone: '',
+    genre: 'Not specified',
+    experience: 'Beginner',
+    avatarUrl: ''
   });
 
   const [stats, setStats] = useState<ProfileStats>({
@@ -662,9 +662,9 @@ export default function ProfilePage() {
         <div className="profile-header">
           <div className="profile-avatar-section">
             <div className="profile-avatar">
-              {(profileData.avatarUrl || user.avatar_url) ? (
+              {profileData.avatarUrl ? (
                 <Image
-                  src={profileData.avatarUrl || user.avatar_url}
+                  src={profileData.avatarUrl}
                   alt="Profile Avatar"
                   width={120}
                   height={120}

@@ -82,7 +82,7 @@ export default function SharesPage() {
         // Load user's own shares
         if (user) {
           const { data } = await getUserShares();
-          setUserShares(data || []);
+          setUserShares((data || []).filter(share => share.user) as SharedContent[]);
         }
       }
     } catch (error) {
@@ -97,9 +97,11 @@ export default function SharesPage() {
       id: track.id,
       title: track.title,
       artist: track.creator?.display_name || 'Unknown Artist',
-      coverArt: track.cover_art_url,
-      audioUrl: track.file_url,
-      duration: track.duration
+      album: track.creator?.display_name || 'Unknown Album',
+      duration: track.duration || 0,
+      artwork: track.cover_art_url || '',
+      url: track.file_url,
+      liked: false
     });
   };
 

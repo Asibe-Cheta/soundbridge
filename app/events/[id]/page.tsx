@@ -105,7 +105,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
         const result = await eventService.getEventById(resolvedParams.id);
 
         if (result.error) {
-          setError(result.error);
+          setError(typeof result.error === 'string' ? result.error : 'Failed to load event');
           return;
         }
 

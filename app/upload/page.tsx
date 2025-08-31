@@ -804,12 +804,14 @@ export default function UploadPage() {
         </div>
       </FloatingCard>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-      `}</style>
+      `
+      }} />
     </>
   );
 } 
