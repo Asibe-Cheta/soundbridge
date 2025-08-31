@@ -46,8 +46,7 @@ export class ImageUploadService {
           width: img.naturalWidth,
           height: img.naturalHeight,
           format: file.type,
-          size: file.size,
-          mimeType: file.type
+          size: file.size
         };
 
         URL.revokeObjectURL(url);
