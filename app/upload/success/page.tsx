@@ -25,10 +25,10 @@ export default function UploadSuccessPage() {
     const title = searchParams.get('title');
     const trackId = searchParams.get('trackId');
     
-    if (title) {
+    if (title && trackId) {
       setTrackData({
         title,
-        trackId
+        trackId: trackId || undefined
       });
     }
   }, [searchParams]);
