@@ -179,7 +179,7 @@ export function useNotifications(): [NotificationsState, NotificationsActions] {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('🔔 Real-time notification INSERT:', payload);
           
           // Refresh notifications and unread count immediately
@@ -195,7 +195,7 @@ export function useNotifications(): [NotificationsState, NotificationsActions] {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('🔔 Real-time notification UPDATE:', payload);
           
           // Refresh notifications and unread count immediately
@@ -211,7 +211,7 @@ export function useNotifications(): [NotificationsState, NotificationsActions] {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('🔔 Real-time notification DELETE:', payload);
           
           // Refresh notifications and unread count immediately
