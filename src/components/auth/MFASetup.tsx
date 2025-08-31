@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { authService, MFASettings } from '@/lib/auth-service';
+import { authService, MFASettings } from '../../lib/auth-service';
 import { Shield, Smartphone, Mail, Key, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface MFASetupProps {
