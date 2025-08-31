@@ -622,69 +622,71 @@ export default function SignupPage() {
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
-        /* Desktop styles */
-        @media (min-width: 1024px) {
-          .desktop-bg {
-            display: block !important;
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes spin {
+            to { transform: rotate(360deg); }
           }
           
-          .form-container {
-            width: 50% !important;
-            margin-right: 50%;
-          }
-        }
-        
-        /* Mobile styles */
-        @media (max-width: 1023px) {
-          .desktop-bg {
-            display: none !important;
-          }
-          
-          .form-container {
-            width: 100% !important;
-            margin-right: 0;
-          }
-        }
-        
-        @media (max-width: 640px) {
-          .signup-container {
-            padding: 2rem;
+          /* Desktop styles */
+          @media (min-width: 1024px) {
+            .desktop-bg {
+              display: block !important;
+            }
+            
+            .form-container {
+              width: 50% !important;
+              margin-right: 50%;
+            }
           }
           
-          .role-options {
-            grid-template-columns: 1fr;
+          /* Mobile styles */
+          @media (max-width: 1023px) {
+            .desktop-bg {
+              display: none !important;
+            }
+            
+            .form-container {
+              width: 100% !important;
+              margin-right: 0;
+            }
           }
           
-          .form-row {
-            grid-template-columns: 1fr;
+          @media (max-width: 640px) {
+            .signup-container {
+              padding: 2rem;
+            }
+            
+            .role-options {
+              grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+              grid-template-columns: 1fr;
+            }
           }
-        }
 
-        /* Dropdown styling for dark theme */
-        select option {
-          background-color: #1a1a1a !important;
-          color: white !important;
-          padding: 0.5rem;
-        }
+          /* Dropdown styling for dark theme */
+          select option {
+            background-color: #1a1a1a !important;
+            color: white !important;
+            padding: 0.5rem;
+          }
 
-        select option:hover {
-          background-color: #2d1b3d !important;
-        }
+          select option:hover {
+            background-color: #2d1b3d !important;
+          }
 
-        select option:checked {
-          background-color: #DC2626 !important;
-        }
+          select option:checked {
+            background-color: #DC2626 !important;
+          }
 
-        /* Ensure dropdown is visible */
-        select:focus option:checked {
-          background-color: #DC2626 !important;
-        }
-      `}</style>
+          /* Ensure dropdown is visible */
+          select:focus option:checked {
+            background-color: #DC2626 !important;
+          }
+        `
+      }} />
     </div>
   );
 } 
