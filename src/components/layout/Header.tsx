@@ -338,7 +338,7 @@ export function Header({
                 style={{ height: 'auto' }}
               />
             </Link>
-                         <nav className="nav" style={{ marginRight: '4rem' }}>
+                                                  <nav className="nav">
                                 <Link href="/" className="text-base text-display font-medium" style={{ 
                    textDecoration: 'none', 
                    color: 'var(--text-primary)',
@@ -387,7 +387,10 @@ export function Header({
                >
                  Creators
                </Link>
-             </nav>
+              </nav>
+              
+              {/* Spacer between navigation and search */}
+              <div style={{ width: '3rem' }}></div>
           </div>
 
           {/* CENTER - Search Bar */}
