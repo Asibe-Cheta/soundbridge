@@ -1787,21 +1787,21 @@ select.form-input option:focus {
 
 /* Homepage search bar placeholder styling */
 .homepage-search::placeholder {
-  color: rgba(255, 255, 255, 0.7) !important;
-  opacity: 1 !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
 }
 
 .homepage-search::-webkit-input-placeholder {
-  color: rgba(255, 255, 255, 0.7) !important;
-  opacity: 1 !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
 }
 
 .homepage-search::-moz-placeholder {
-  color: rgba(255, 255, 255, 0.7) !important;
-  opacity: 1 !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
 }
 
 .homepage-search:-ms-input-placeholder {
-  color: rgba(255, 255, 255, 0.7) !important;
-  opacity: 1 !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
 }
