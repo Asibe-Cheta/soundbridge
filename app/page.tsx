@@ -684,16 +684,16 @@ export default function HomePage() {
                 </nav>
                 
                 {/* Spacer between navigation and search */}
-                <div style={{ width: '1.5rem' }}></div>
+                <div style={{ width: '1rem' }}></div>
               </div>
 
               {/* CENTER - Search Bar */}
-              <div className="navbar-center" style={{ 
-                display: 'flex', 
+              <div className="navbar-center" style={{
+                display: 'flex',
                 justifyContent: 'center',
                 flex: 1,
                 minWidth: 0,
-                maxWidth: searchQuery ? '700px' : '600px',
+                maxWidth: searchQuery ? '800px' : '750px',
                 transition: 'max-width 0.3s ease'
               }}>
                 <div style={{ position: 'relative', width: '100%' }}>
