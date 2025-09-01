@@ -338,7 +338,7 @@ export function Header({
                 style={{ height: 'auto' }}
               />
             </Link>
-                         <nav className="nav" style={{ marginRight: '1.5rem' }}>
+                         <nav className="nav" style={{ marginRight: '2.5rem' }}>
                                 <Link href="/" className="text-base text-display font-medium" style={{ 
                    textDecoration: 'none', 
                    color: 'var(--text-primary)',
