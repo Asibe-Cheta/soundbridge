@@ -607,9 +607,20 @@ export default function HomePage() {
             </div>
           ) : (
             /* Desktop Header - Original Style */
-            <>
+            <div className="navbar-main" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              width: '100%',
+              gap: '1rem'
+            }}>
               {/* LEFT SIDE */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+              <div className="navbar-left" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '2rem',
+                flexShrink: 0
+              }}>
                 <div className="logo">
                   <Image
                     src="/images/logos/logo-trans-lockup.png"
@@ -672,17 +683,16 @@ export default function HomePage() {
                   </Link>
                 </nav>
                 
-                                 {/* Spacer between navigation and search */}
-                 <div style={{ width: '1.5rem' }}></div>
+                {/* Spacer between navigation and search */}
+                <div style={{ width: '1.5rem' }}></div>
               </div>
 
-                                                          {/* CENTER - Search Bar */}
-              <div style={{ 
-                flex: 1, 
+              {/* CENTER - Search Bar */}
+              <div className="navbar-center" style={{ 
                 display: 'flex', 
-                justifyContent: 'center', 
-                marginRight: '2rem',
-                minWidth: '300px',
+                justifyContent: 'center',
+                flex: 1,
+                minWidth: 0,
                 maxWidth: searchQuery ? '600px' : '500px',
                 transition: 'max-width 0.3s ease'
               }}>
@@ -724,7 +734,12 @@ export default function HomePage() {
               </div>
 
               {/* RIGHT SIDE */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div className="navbar-right" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '1rem',
+                flexShrink: 0
+              }}>
                 {/* Upload Button */}
                 <Link href="/upload" style={{ textDecoration: 'none' }}>
                   <button 
@@ -975,7 +990,7 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
         </header>
 
