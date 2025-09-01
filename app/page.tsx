@@ -919,25 +919,31 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '1rem' }}>
-                    <Link href="/login" style={{ textDecoration: 'none' }}>
-                      <button 
-                        style={{
-                          background: 'transparent',
-                          color: 'white',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          padding: '0.75rem 1.5rem',
-                          borderRadius: '12px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '0.9rem',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        Sign in
-                      </button>
-                    </Link>
+                                         <Link href="/login" style={{ textDecoration: 'none' }}>
+                       <button 
+                         style={{
+                           background: 'transparent',
+                           color: '#374151',
+                           border: '1px solid #d1d5db',
+                           padding: '0.75rem 1.5rem',
+                           borderRadius: '12px',
+                           cursor: 'pointer',
+                           fontWeight: '600',
+                           fontSize: '0.9rem',
+                           transition: 'all 0.3s ease'
+                         }}
+                         onMouseEnter={(e) => {
+                           e.currentTarget.style.background = '#f3f4f6';
+                           e.currentTarget.style.borderColor = '#9ca3af';
+                         }}
+                         onMouseLeave={(e) => {
+                           e.currentTarget.style.background = 'transparent';
+                           e.currentTarget.style.borderColor = '#d1d5db';
+                         }}
+                       >
+                         Sign in
+                       </button>
+                     </Link>
                     <Link href="/signup" style={{ textDecoration: 'none' }}>
                       <button 
                         style={{
