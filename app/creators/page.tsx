@@ -144,88 +144,89 @@ export default function CreatorsPage() {
 
   return (
     <>
-      {/* Search and Filters */}
-      <section className="section">
-        <div className="search-filters">
-          <div className="search-bar-container">
-            <Search size={20} style={{ color: '#999' }} />
-            <input
-              type="text"
-              placeholder="Search creators..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
-            />
+      <main className="main-container">
+        {/* Search and Filters */}
+        <section className="section">
+          <div className="search-filters">
+            <div className="search-bar-container">
+              <Search size={20} style={{ color: '#999' }} />
+              <input
+                type="text"
+                placeholder="Search creators..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
+              />
+            </div>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Filter size={16} />
+              Filters
+            </button>
           </div>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <Filter size={16} />
-            Filters
-          </button>
-        </div>
+          {showFilters && (
+            <div className="filters-panel">
+              <div className="filter-group">
+                <label>Genre</label>
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                >
+                  {genres.map((genre) => (
+                    <option key={genre.value} value={genre.value}>
+                      {genre.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-        {showFilters && (
-          <div className="filters-panel">
-            <div className="filter-group">
-              <label>Genre</label>
-              <select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
-              >
-                {genres.map((genre) => (
-                  <option key={genre.value} value={genre.value}>
-                    {genre.label}
-                  </option>
-                ))}
-              </select>
+              <div className="filter-group">
+                <label>Location</label>
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                >
+                  {locations.map((location) => (
+                    <option key={location.value} value={location.value}>
+                      {location.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                >
+                  <option value="followers">Followers</option>
+                  <option value="rating">Rating</option>
+                  <option value="tracks">Tracks</option>
+                  <option value="name">Name</option>
+                </select>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
-
-            <div className="filter-group">
-              <label>Location</label>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
-              >
-                {locations.map((location) => (
-                  <option key={location.value} value={location.value}>
-                    {location.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label>Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
-              >
-                <option value="followers">Followers</option>
-                <option value="rating">Rating</option>
-                <option value="tracks">Tracks</option>
-                <option value="name">Name</option>
-              </select>
-            </div>
-
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="btn-secondary"
-                style={{ width: '100%' }}
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-        )}
-      </section>
+          )}
+        </section>
 
         {/* Creators Grid */}
         <section className="section">
@@ -315,77 +316,64 @@ export default function CreatorsPage() {
                         {creator.display_name}
                       </h3>
                       <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                        @{creator.username}
+                        {creator.bio || 'No bio available'}
                       </p>
-                      <p style={{ color: '#999', fontSize: '0.8rem', lineHeight: '1.4', marginBottom: '1rem' }}>
-                        {creator.bio}
-                      </p>
-                    </div>
+                      
+                      {/* Stats */}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem', fontSize: '0.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#EC4899' }}>
+                          <Users size={12} />
+                          {creator.followers_count} followers
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
+                          <Music size={12} />
+                          {creator.tracks_count} tracks
+                        </div>
+                      </div>
 
-                                         {/* Stats */}
-                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                       <div style={{ textAlign: 'center' }}>
-                         <div style={{ color: '#EC4899', fontWeight: '600', fontSize: '1.1rem' }}>
-                           {creator.followers_count.toLocaleString()}
-                         </div>
-                         <div style={{ color: '#999', fontSize: '0.8rem' }}>Followers</div>
-                       </div>
-                       <div style={{ textAlign: 'center' }}>
-                         <div style={{ color: '#EC4899', fontWeight: '600', fontSize: '1.1rem' }}>
-                           {creator.tracks_count}
-                         </div>
-                         <div style={{ color: '#999', fontSize: '0.8rem' }}>Tracks</div>
-                       </div>
-                       <div style={{ textAlign: 'center' }}>
-                         <div style={{ color: '#EC4899', fontWeight: '600', fontSize: '1.1rem' }}>
-                           {creator.events_count}
-                         </div>
-                         <div style={{ color: '#999', fontSize: '0.8rem' }}>Events</div>
-                       </div>
-                     </div>
+                      {/* Location and Date */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
+                          <MapPin size={12} />
+                          {creator.location || 'Unknown'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
+                          <Calendar size={12} />
+                          {new Date(creator.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
 
-                     {/* Additional Info */}
-                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.8rem' }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                         <MapPin size={12} />
-                         {creator.location || 'Unknown'}
-                       </div>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                         <Calendar size={12} />
-                         {new Date(creator.created_at).toLocaleDateString()}
-                       </div>
-                     </div>
+                      {/* Country Badge */}
+                      {creator.country && (
+                        <div style={{
+                          background: 'rgba(236, 72, 153, 0.2)',
+                          border: '1px solid rgba(236, 72, 153, 0.3)',
+                          borderRadius: '20px',
+                          padding: '0.25rem 0.75rem',
+                          fontSize: '0.8rem',
+                          color: '#EC4899',
+                          textAlign: 'center',
+                          marginBottom: '1rem'
+                        }}>
+                          {creator.country}
+                        </div>
+                      )}
 
-                     {/* Country Badge */}
-                     {creator.country && (
-                       <div style={{
-                         background: 'rgba(236, 72, 153, 0.2)',
-                         border: '1px solid rgba(236, 72, 153, 0.3)',
-                         borderRadius: '20px',
-                         padding: '0.25rem 0.75rem',
-                         fontSize: '0.8rem',
-                         color: '#EC4899',
-                         textAlign: 'center',
-                         marginBottom: '1rem'
-                       }}>
-                         {creator.country}
-                       </div>
-                     )}
-
-                    {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        onClick={() => handleFollow(creator.id)}
-                        className={creator.isFollowing ? 'btn-secondary' : 'btn-primary'}
-                        style={{ flex: 1, fontSize: '0.9rem' }}
-                      >
-                        {creator.isFollowing ? 'Following' : 'Follow'}
-                      </button>
-                      <Link href={`/creator/${creator.username}`} style={{ textDecoration: 'none', flex: 1 }}>
-                        <button className="btn-secondary" style={{ width: '100%', fontSize: '0.9rem' }}>
-                          View Profile
+                      {/* Action Buttons */}
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => handleFollow(creator.id)}
+                          className={creator.isFollowing ? 'btn-secondary' : 'btn-primary'}
+                          style={{ flex: 1, fontSize: '0.9rem' }}
+                        >
+                          {creator.isFollowing ? 'Following' : 'Follow'}
                         </button>
-                      </Link>
+                        <Link href={`/creator/${creator.username}`} style={{ textDecoration: 'none', flex: 1 }}>
+                          <button className="btn-secondary" style={{ width: '100%', fontSize: '0.9rem' }}>
+                            View Profile
+                          </button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
