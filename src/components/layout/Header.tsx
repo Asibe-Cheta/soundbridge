@@ -621,7 +621,7 @@ export function Header({
                     style={{
                       background: 'transparent',
                       color: 'var(--text-primary)',
-                      border: '1px solid var(--border-primary)',
+                      border: '2px solid var(--accent-primary)',
                       padding: '0.75rem 1.5rem',
                       borderRadius: '12px',
                       cursor: 'pointer',
@@ -629,8 +629,14 @@ export function Header({
                       fontSize: '0.9rem',
                       transition: 'all 0.3s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--accent-primary)';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }}
                   >
                     Sign in
                   </button>
