@@ -13,7 +13,7 @@ export default function SignupPage() {
   const { signUp, signInWithProvider } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<'creator' | 'listener'>('listener');
+  const [selectedRole, setSelectedRole] = useState<'creator' | 'listener'>('creator');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,6 +40,13 @@ export default function SignupPage() {
     // Validate password strength
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate role selection
+    if (!selectedRole) {
+      setError('Please select whether you are a Creator or Listener');
       setIsLoading(false);
       return;
     }
