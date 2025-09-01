@@ -144,640 +144,88 @@ export default function CreatorsPage() {
 
   return (
     <>
-
-        {isMobile ? (
-          /* Mobile Header */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
-            {/* LEFT - Hamburger Menu */}
-            <button
-              id="mobile-menu-button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <Menu size={24} color="white" />
-            </button>
-
-            {/* CENTER - Small Logo */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              flex: 1
-            }}>
-              <Image
-                src="/images/logos/logo-trans-lockup.png"
-                alt="SoundBridge Logo"
-                width={80}
-                height={22}
-                priority
-                style={{ height: 'auto' }}
-              />
-            </div>
-
-            {/* RIGHT - Sign In / Profile */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    id="user-menu-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        const menu = document.getElementById('user-menu');
-                        if (menu) {
-                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                        }
-                      } catch (error) {
-                        console.error('Error toggling user menu:', error);
-                      }
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                  >
-                    <User size={24} color="white" />
-                  </button>
-                  
-                  <div
-                    id="user-menu"
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '0.5rem',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      padding: '0.5rem',
-                      minWidth: '200px',
-                      display: 'none',
-                      zIndex: 1000,
-                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-                    }}
-                  >
-                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Home size={16} />
-                        Dashboard
-                      </div>
-                    </Link>
-                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Bell size={16} />
-                        Notifications
-                      </div>
-                    </Link>
-                    <Link href="/profile" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <User size={16} />
-                        Profile
-                      </div>
-                    </Link>
-                    <Link href="/settings" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Settings size={16} />
-                        Settings
-                      </div>
-                    </Link>
-                    <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
-                    <button
-                      onClick={handleSignOut}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: '#FCA5A5',
-                        background: 'none',
-                        border: 'none',
-                        width: '100%',
-                        textAlign: 'left',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <LogOut size={16} />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/login" style={{ textDecoration: 'none' }}>
-                  <button 
-                    style={{
-                      background: 'none',
-                      color: '#DC2626',
-                      border: 'none',
-                      padding: '8px 16px',
-                      cursor: 'pointer',
-                      fontWeight: '500',
-                      fontSize: '16px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                  >
-                    Sign In
-                  </button>
-                </Link>
-              )}
-            </div>
+      {/* Search and Filters */}
+      <section className="section">
+        <div className="search-filters">
+          <div className="search-bar-container">
+            <Search size={20} style={{ color: '#999' }} />
+            <input
+              type="text"
+              placeholder="Search creators..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
+            />
           </div>
-        ) : (
-          /* Desktop Header */
-          <>
-            {/* LEFT SIDE */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-              <div className="logo">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={120}
-                  height={32}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </div>
-              {/* Desktop Navigation */}
-              <nav className="nav">
-                <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>
-                  For You
-                </Link>
-                <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>
-                  Discover
-                </Link>
-                <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>
-                  Events
-                </Link>
-                <Link href="/creators" className="active" style={{ textDecoration: 'none', color: 'white' }}>
-                  Creators
-                </Link>
-              </nav>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <Filter size={16} />
+            Filters
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="filters-panel">
+            <div className="filter-group">
+              <label>Genre</label>
+              <select
+                value={selectedGenre}
+                onChange={(e) => setSelectedGenre(e.target.value)}
+                style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+              >
+                {genres.map((genre) => (
+                  <option key={genre.value} value={genre.value}>
+                    {genre.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* CENTER - Search Bar */}
-            <div style={{ 
-              flex: 1, 
-              display: 'flex', 
-              justifyContent: 'center', 
-              maxWidth: '500px', 
-              marginRight: '2rem'
-            }}>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
-                <input 
-                  type="search" 
-                  className="search-bar" 
-                  placeholder="Search creators..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearch}
-                  style={{ 
-                    width: '100%', 
-                    paddingLeft: '40px',
-                    fontSize: '16px'
-                  }} 
-                />
-              </div>
+            <div className="filter-group">
+              <label>Location</label>
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+              >
+                {locations.map((location) => (
+                  <option key={location.value} value={location.value}>
+                    {location.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* RIGHT SIDE */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {/* Upload Button */}
-              <Link href="/upload" style={{ textDecoration: 'none' }}>
-                <button 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.9rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
-                >
-                  <Upload size={16} />
-                  Upload
-                </button>
-              </Link>
-
-              {/* User Menu */}
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    id="user-menu-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        const menu = document.getElementById('user-menu');
-                        if (menu) {
-                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                        }
-                      } catch (error) {
-                        console.error('Error toggling user menu:', error);
-                      }
-                    }}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      borderRadius: '50%',
-                      width: '40px',
-                      height: '40px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  >
-                    <User size={20} color="white" />
-                  </button>
-                  
-                  <div
-                    id="user-menu"
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '0.5rem',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      padding: '0.5rem',
-                      minWidth: '200px',
-                      display: 'none',
-                      zIndex: 1000,
-                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-                    }}
-                  >
-                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Home size={16} />
-                        Dashboard
-                      </div>
-                    </Link>
-                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Bell size={16} />
-                        Notifications
-                      </div>
-                    </Link>
-                    <Link href="/profile" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <User size={16} />
-                        Profile
-                      </div>
-                    </Link>
-                    <Link href="/settings" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'white',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Settings size={16} />
-                        Settings
-                      </div>
-                    </Link>
-                    <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
-                    <button
-                      onClick={handleSignOut}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: '#FCA5A5',
-                        background: 'none',
-                        border: 'none',
-                        width: '100%',
-                        textAlign: 'left',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <LogOut size={16} />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <Link href="/login" style={{ textDecoration: 'none' }}>
-                    <button 
-                      style={{
-                        background: 'transparent',
-                        color: 'white',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '0.9rem',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      Sign in
-                    </button>
-                  </Link>
-                  <Link href="/signup" style={{ textDecoration: 'none' }}>
-                    <button 
-                      style={{
-                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '0.9rem',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                      }}
-                    >
-                      Sign up
-                    </button>
-                  </Link>
-                </div>
-              )}
+            <div className="filter-group">
+              <label>Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+              >
+                <option value="followers">Followers</option>
+                <option value="rating">Rating</option>
+                <option value="tracks">Tracks</option>
+                <option value="name">Name</option>
+              </select>
             </div>
-          </>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="btn-secondary"
+                style={{ width: '100%' }}
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         )}
-
-      {/* Main Content */}
-      <main className="main-container">
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="featured-creator">
-            <div className="featured-creator-content">
-              <h2>Discover Amazing Creators</h2>
-              <p>Connect with talented musicians, producers, and performers from around the world</p>
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <Link href="/upload" style={{ textDecoration: 'none' }}>
-                  <button className="btn-primary">Become a Creator</button>
-                </Link>
-                <Link href="/events" style={{ textDecoration: 'none' }}>
-                  <button className="btn-secondary">Browse Events</button>
-                </Link>
-              </div>
-            </div>
-          </div>
-          <div className="trending-panel">
-            <h3 style={{ marginBottom: '1rem', color: '#EC4899' }}>Top Creators</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {creatorsState.creators.slice(0, 3).map((creator) => (
-                <div key={creator.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ 
-                    width: '50px', 
-                    height: '50px', 
-                    borderRadius: '50%',
-                    background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: '600',
-                    fontSize: '1.2rem'
-                  }}>
-                    {creator.display_name.charAt(0)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{creator.display_name}</div>
-                    <div style={{ color: '#999', fontSize: '0.8rem' }}>{creator.location || 'Unknown'}</div>
-                  </div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem' }}>
-                    {creator.followers_count} followers
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Search and Filters */}
-        <section className="section">
-          <div className="search-filters">
-            <div className="search-bar-container">
-              <Search size={20} style={{ color: '#999' }} />
-              <input
-                type="text"
-                placeholder="Search creators..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
-              />
-            </div>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-            >
-              <Filter size={16} />
-              Filters
-            </button>
-          </div>
-
-          {showFilters && (
-            <div className="filters-panel">
-              <div className="filter-group">
-                <label>Genre</label>
-                <select
-                  value={selectedGenre}
-                  onChange={(e) => setSelectedGenre(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
-                >
-                  {genres.map((genre) => (
-                    <option key={genre.value} value={genre.value}>
-                      {genre.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>Location</label>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
-                >
-                  {locations.map((location) => (
-                    <option key={location.value} value={location.value}>
-                      {location.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
-                >
-                  <option value="followers">Followers</option>
-                  <option value="rating">Rating</option>
-                  <option value="tracks">Tracks</option>
-                  <option value="name">Name</option>
-                </select>
-              </div>
-
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="btn-secondary"
-                  style={{ width: '100%' }}
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          )}
-        </section>
+      </section>
 
         {/* Creators Grid */}
         <section className="section">
