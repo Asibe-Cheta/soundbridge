@@ -342,17 +342,17 @@ export default function SignupPage() {
                   required
                   style={{
                     width: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
                     borderRadius: '12px',
                     padding: '1rem',
-                    color: 'white',
+                    color: '#374151',
                     fontSize: '1rem',
                     transition: 'all 0.3s ease',
                     outline: 'none'
                   }}
                   onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                  onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   placeholder="Enter your first name"
                 />
               </div>
@@ -368,17 +368,17 @@ export default function SignupPage() {
                   required
                   style={{
                     width: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
                     borderRadius: '12px',
                     padding: '1rem',
-                    color: 'white',
+                    color: '#374151',
                     fontSize: '1rem',
                     transition: 'all 0.3s ease',
                     outline: 'none'
                   }}
                   onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                  onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   placeholder="Enter your last name"
                 />
               </div>
@@ -396,17 +396,17 @@ export default function SignupPage() {
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   padding: '1rem',
-                  color: 'white',
+                  color: '#374151',
                   fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 placeholder="Enter your email"
               />
             </div>
@@ -423,17 +423,17 @@ export default function SignupPage() {
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   padding: '1rem',
-                  color: 'white',
+                  color: '#374151',
                   fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 placeholder="Create a strong password"
               />
             </div>
@@ -450,17 +450,17 @@ export default function SignupPage() {
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   padding: '1rem',
-                  color: 'white',
+                  color: '#374151',
                   fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 placeholder="Confirm your password"
               />
             </div>
@@ -476,17 +476,17 @@ export default function SignupPage() {
                 required
                 style={{
                   width: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   padding: '1rem',
-                  color: 'white',
+                  color: '#374151',
                   fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               >
                 <option value="" style={{ background: '#1a1a1a', color: 'white' }}>Select your location</option>
                 <option value="london" style={{ background: '#1a1a1a', color: 'white' }}>London, UK</option>
@@ -578,10 +578,10 @@ export default function SignupPage() {
           </form>
 
           {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#999' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.2)' }}></div>
+          <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#6b7280' }}>
+            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
             <span style={{ padding: '0 1rem', fontSize: '0.9rem' }}>or continue with</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.2)' }}></div>
+            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
           </div>
 
           {/* Social Login - Google Only */}
@@ -590,21 +590,21 @@ export default function SignupPage() {
               onClick={() => handleSocialLogin('google')}
               disabled={isLoading}
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
                 borderRadius: '12px',
                 padding: '0.75rem 2rem',
-                color: 'white',
+                color: '#374151',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.3s ease',
                 fontSize: '0.9rem',
                 opacity: isLoading ? 0.6 : 1,
                 transform: 'translateY(0)',
-                minWidth: '200px'
+                minWidth: '200px',
+                fontWeight: '500'
               }}
-              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)', e.currentTarget.style.transform = 'translateY(-1px)')}
-              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)', e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.transform = 'translateY(0)')}
+              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = '#f9fafb', e.currentTarget.style.borderColor = '#d1d5db', e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = '#ffffff', e.currentTarget.style.borderColor = '#e5e7eb', e.currentTarget.style.transform = 'translateY(0)')}
             >
               Google
             </button>
@@ -673,24 +673,26 @@ export default function SignupPage() {
             }
           }
 
-          /* Dropdown styling for dark theme */
+          /* Dropdown styling for both themes */
           select option {
-            background-color: #1a1a1a !important;
-            color: white !important;
+            background-color: #ffffff !important;
+            color: #374151 !important;
             padding: 0.5rem;
           }
 
           select option:hover {
-            background-color: #2d1b3d !important;
+            background-color: #f3f4f6 !important;
           }
 
           select option:checked {
             background-color: #DC2626 !important;
+            color: white !important;
           }
 
           /* Ensure dropdown is visible */
           select:focus option:checked {
             background-color: #DC2626 !important;
+            color: white !important;
           }
         `
       }} />

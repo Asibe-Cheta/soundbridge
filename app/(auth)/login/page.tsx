@@ -230,16 +230,16 @@ function LoginContent() {
                 style={{
                   width: '100%',
                   padding: '1rem 1rem 1rem 3rem',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
-                  color: 'white',
+                  color: '#374151',
                   fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 placeholder="Enter your email"
               />
             </div>
@@ -270,16 +270,16 @@ function LoginContent() {
                 style={{
                   width: '100%',
                   padding: '1rem 1rem 1rem 3rem',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
-                  color: 'white',
+                  color: '#374151',
                   fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 placeholder="Enter your password"
               />
               <button
@@ -345,10 +345,10 @@ function LoginContent() {
         </form>
 
         {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#999' }}>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.2)' }}></div>
+        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#6b7280' }}>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
           <span style={{ padding: '0 1rem', fontSize: '0.9rem' }}>or continue with</span>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.2)' }}></div>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
         </div>
 
         {/* Social Login - Google Only */}
@@ -357,21 +357,21 @@ function LoginContent() {
             onClick={() => handleSocialLogin('google')}
             disabled={isLoading}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: '#ffffff',
+              border: '1px solid #e5e7eb',
               borderRadius: '12px',
               padding: '0.75rem 2rem',
-              color: 'white',
+              color: '#374151',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
               fontSize: '0.9rem',
               opacity: isLoading ? 0.6 : 1,
               transform: 'translateY(0)',
-              minWidth: '200px'
+              minWidth: '200px',
+              fontWeight: '500'
             }}
-            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)', e.currentTarget.style.transform = 'translateY(-1px)')}
-            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)', e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.transform = 'translateY(0)')}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = '#f9fafb', e.currentTarget.style.borderColor = '#d1d5db', e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = '#ffffff', e.currentTarget.style.borderColor = '#e5e7eb', e.currentTarget.style.transform = 'translateY(0)')}
           >
             Google
           </button>
