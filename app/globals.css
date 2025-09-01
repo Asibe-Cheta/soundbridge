@@ -1805,3 +1805,46 @@ select.form-input option:focus {
   color: var(--text-secondary) !important;
   opacity: 0.7 !important;
 }
+
+/* Dynamic search bar expansion */
+.search-bar-container {
+  transition: max-width 0.3s ease, width 0.3s ease;
+}
+
+.search-bar-container.expanded {
+  max-width: 600px !important;
+}
+
+.search-bar-container.collapsed {
+  max-width: 500px !important;
+}
+
+/* Ensure navbar elements don't get squashed */
+.navbar-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 1rem;
+}
+
+.navbar-left {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.navbar-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}

@@ -676,50 +676,52 @@ export default function HomePage() {
                  <div style={{ width: '1.5rem' }}></div>
               </div>
 
-                                            {/* CENTER - Search Bar */}
-               <div style={{ 
-                 flex: 1, 
-                 display: 'flex', 
-                 justifyContent: 'center', 
-                 maxWidth: '500px', 
-                 marginRight: '2rem'
-               }}>
-                 <div style={{ position: 'relative', width: '100%' }}>
-                   <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', zIndex: 1 }} />
-                   <input 
-                     type="search" 
-                     className="search-bar" 
-                     placeholder="Search creators, events, podcasts..."
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     onKeyDown={handleSearch}
-                     style={{ 
-                       width: '100%', 
-                       paddingLeft: '40px',
-                       paddingRight: '16px',
-                       paddingTop: '12px',
-                       paddingBottom: '12px',
-                       fontSize: '16px',
-                       borderRadius: '8px',
-                       border: '1px solid #e5e7eb',
-                       background: '#f9fafb',
-                       color: '#374151',
-                       outline: 'none',
-                       transition: 'all 0.3s ease'
-                     }} 
-                     onFocus={(e) => {
-                       e.target.style.borderColor = '#3b82f6';
-                       e.target.style.background = '#ffffff';
-                       e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                     }}
-                     onBlur={(e) => {
-                       e.target.style.borderColor = '#e5e7eb';
-                       e.target.style.background = '#f9fafb';
-                       e.target.style.boxShadow = 'none';
-                     }}
-                   />
-                 </div>
-               </div>
+                                                          {/* CENTER - Search Bar */}
+              <div style={{ 
+                flex: 1, 
+                display: 'flex', 
+                justifyContent: 'center', 
+                marginRight: '2rem',
+                minWidth: '300px',
+                maxWidth: searchQuery ? '600px' : '500px',
+                transition: 'max-width 0.3s ease'
+              }}>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', zIndex: 1 }} />
+                  <input 
+                    type="search" 
+                    className="search-bar" 
+                    placeholder="Search creators, events, podcasts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearch}
+                    style={{ 
+                      width: '100%', 
+                      paddingLeft: '40px',
+                      paddingRight: '16px',
+                      paddingTop: '12px',
+                      paddingBottom: '12px',
+                      fontSize: '16px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      background: '#f9fafb',
+                      color: '#374151',
+                      outline: 'none',
+                      transition: 'all 0.3s ease'
+                    }} 
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.background = '#ffffff';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.background = '#f9fafb';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+              </div>
 
               {/* RIGHT SIDE */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
