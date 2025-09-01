@@ -693,7 +693,7 @@ export default function HomePage() {
                 justifyContent: 'center',
                 flex: 1,
                 minWidth: 0,
-                maxWidth: searchQuery ? '600px' : '500px',
+                maxWidth: searchQuery ? '700px' : '600px',
                 transition: 'max-width 0.3s ease'
               }}>
                 <div style={{ position: 'relative', width: '100%' }}>

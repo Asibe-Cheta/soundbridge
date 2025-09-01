@@ -1812,11 +1812,11 @@ select.form-input option:focus {
 }
 
 .search-bar-container.expanded {
-  max-width: 600px !important;
+  max-width: 700px !important;
 }
 
 .search-bar-container.collapsed {
-  max-width: 500px !important;
+  max-width: 600px !important;
 }
 
 /* Ensure navbar elements don't get squashed */
