@@ -671,33 +671,53 @@ export default function HomePage() {
                     Creators
                   </Link>
                 </nav>
+                
+                                 {/* Spacer between navigation and search */}
+                 <div style={{ width: '1.5rem' }}></div>
               </div>
 
-              {/* CENTER - Search Bar */}
-              <div style={{ 
-                flex: 1, 
-                display: 'flex', 
-                justifyContent: 'center', 
-                maxWidth: '500px', 
-                marginRight: '2rem'
-              }}>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
-                  <input 
-                    type="search" 
-                    className="search-bar" 
-                    placeholder="Search creators, events, podcasts..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearch}
-                    style={{ 
-                      width: '100%', 
-                      paddingLeft: '40px',
-                      fontSize: '16px'
-                    }} 
-                  />
-                </div>
-              </div>
+                                            {/* CENTER - Search Bar */}
+               <div style={{ 
+                 flex: 1, 
+                 display: 'flex', 
+                 justifyContent: 'center', 
+                 maxWidth: '500px', 
+                 marginRight: '2rem'
+               }}>
+                 <div style={{ position: 'relative', width: '100%' }}>
+                   <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
+                   <input 
+                     type="search" 
+                     className="search-bar" 
+                     placeholder="Search creators, events, podcasts..." 
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     onKeyDown={handleSearch}
+                     style={{ 
+                       width: '100%', 
+                       paddingLeft: '40px',
+                       paddingRight: '16px',
+                       paddingTop: '12px',
+                       paddingBottom: '12px',
+                       fontSize: '16px',
+                       borderRadius: '8px',
+                       border: '1px solid rgba(255, 255, 255, 0.2)',
+                       background: 'rgba(255, 255, 255, 0.1)',
+                       color: 'white',
+                       outline: 'none',
+                       transition: 'all 0.3s ease'
+                     }} 
+                     onFocus={(e) => {
+                       e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                       e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+                     }}
+                     onBlur={(e) => {
+                       e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                       e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                     }}
+                   />
+                 </div>
+               </div>
 
               {/* RIGHT SIDE */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
