@@ -688,7 +688,7 @@ export default function HomePage() {
                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
                    <input 
                      type="search" 
-                     className="search-bar" 
+                     className="search-bar homepage-search" 
                      placeholder="Search creators, events, podcasts..." 
                      value={searchQuery}
                      onChange={(e) => setSearchQuery(e.target.value)}
