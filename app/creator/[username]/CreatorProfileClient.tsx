@@ -88,9 +88,13 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         setIsLoading(true);
         setError(null);
 
-        // Load tracks
-        const { data: tracksData } = await getCreatorTracks(creator.id);
-        setTracks(tracksData || []);
+        // Load tracks only if not already loaded
+        if (tracks.length === 0) {
+          const { data: tracksData } = await getCreatorTracks(creator.id);
+          if (tracksData && tracksData.length > 0) {
+            setTracks(tracksData);
+          }
+        }
 
         // Load events
         const { data: eventsData } = await getCreatorEvents(creator.id);
@@ -119,14 +123,17 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         }
       } catch (err) {
         console.error('Error loading creator data:', err);
-        setError('Failed to load creator data');
+        // Don't clear tracks if they're already loaded
+        if (tracks.length === 0) {
+          setError('Failed to load creator data');
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     loadCreatorData();
-  }, [creator.id, username, user]);
+  }, [creator.id, username, user?.id]);
 
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
@@ -416,22 +423,59 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         </div>
 
         {/* Tab Content */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 shadow-lg">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 shadow-lg min-h-[400px]">
           {activeTab === 'music' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-white">Music</h2>
               {tracks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {tracks.map((track) => (
-                    <div key={track.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:bg-gray-600 transition-all duration-200 hover:shadow-lg hover:border-gray-500">
-                      <h3 className="font-semibold mb-2 text-white">{track.title}</h3>
-                      <p className="text-sm mb-2 text-gray-300">{track.creator?.display_name || 'Unknown Artist'}</p>
-                      <p className="text-xs text-gray-400">{track.genre}</p>
+                    <div 
+                      key={track.id} 
+                      className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl p-6 border border-gray-600 hover:border-red-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10 group backdrop-blur-sm"
+                    >
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <h3 className="font-bold text-xl text-white group-hover:text-red-400 transition-colors leading-tight">
+                            {track.title}
+                          </h3>
+                          <button className="text-red-400 hover:text-red-300 transition-colors opacity-70 group-hover:opacity-100">
+                            <Music className="h-6 w-6" />
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <p className="text-gray-300 font-medium">
+                            {track.creator?.display_name || 'Unknown Artist'}
+                          </p>
+                        </div>
+                        
+                        {track.genre && (
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-colors">
+                              {track.genre}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-600/50">
+                          <span className="text-gray-400 text-sm flex items-center space-x-1">
+                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                            <span>Audio Track</span>
+                          </span>
+                          <span className="text-xs text-gray-500 bg-gray-800/50 px-2 py-1 rounded">
+                            Play
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-300">No music uploaded yet.</p>
+                <div className="text-center py-8">
+                  <p className="text-gray-300">No music uploaded yet.</p>
+                </div>
               )}
             </div>
           )}
