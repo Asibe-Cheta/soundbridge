@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 // Search suggestion types
 interface SearchSuggestion {
@@ -26,6 +27,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { user } = useAuth();
 
   // Debounced search function
   useEffect(() => {
