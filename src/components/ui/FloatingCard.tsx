@@ -30,15 +30,15 @@ export function FloatingCard({
   const getPositionClasses = () => {
     switch (position) {
       case 'top-left':
-        return 'top-20 left-5';
+        return 'top-32 left-5 hidden lg:block';
       case 'top-right':
-        return 'top-20 right-5';
+        return 'top-32 right-5 hidden lg:block';
       case 'bottom-left':
-        return 'bottom-20 left-5';
+        return 'bottom-20 left-5 hidden lg:block';
       case 'bottom-right':
-        return 'bottom-20 right-5';
+        return 'bottom-20 right-5 hidden lg:block';
       default:
-        return 'top-20 right-5';
+        return 'top-32 right-5 hidden lg:block';
     }
   };
 
