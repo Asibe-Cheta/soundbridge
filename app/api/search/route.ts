@@ -143,11 +143,14 @@ export async function GET(request: NextRequest) {
         .range(offset, offset + limit - 1);
 
       if (!creatorError && creatorData) {
+        console.log('🔍 API: Found creators:', creatorData.length, creatorData.map(c => ({ id: c.id, display_name: c.display_name, first_name: c.first_name, last_name: c.last_name, username: c.username })));
         results.creators = creatorData.map(creator => ({
           ...creator,
           followers_count: creator.followers?.[0]?.count || 0,
           tracks_count: creator.tracks?.[0]?.count || 0
         }));
+      } else if (creatorError) {
+        console.error('❌ API: Error searching creators:', creatorError);
       }
     }
 

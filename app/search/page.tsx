@@ -335,160 +335,168 @@ function SearchContent() {
         </div>
 
         {/* Results Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           {activeTab === 'music' && results?.music?.map((track) => (
-            <FloatingCard key={track.id} title={track.title || 'Untitled Track'} className="group">
-              <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                {track.cover_art_url ? (
-                  <Image
-                    src={track.cover_art_url}
-                    alt={track.title}
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
-                    <p className="text-gray-400">No cover art</p>
+            <div key={track.id} className="w-full">
+              <FloatingCard title={track.title || 'Untitled Track'} className="group h-full">
+                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
+                  {track.cover_art_url ? (
+                    <Image
+                      src={track.cover_art_url}
+                      alt={track.title}
+                      width={200}
+                      height={200}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
+                      <p className="text-gray-400">No cover art</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
+                      <Play size={20} className="text-white" />
+                    </button>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                    <Play size={20} className="text-white" />
-                  </button>
                 </div>
-              </div>
-              <h3 className="font-semibold text-white mb-1 truncate">{track.title}</h3>
-              <p className="text-gray-400 text-sm mb-2">{track.creator?.display_name}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">{track.duration}</span>
-                <div className="flex items-center gap-2">
-                  <button className="text-gray-400 hover:text-red-400 transition-colors">
-                    <Heart size={16} />
-                  </button>
-                  <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                    <Share2 size={16} />
-                  </button>
+                <h3 className="font-semibold text-white mb-1 truncate">{track.title}</h3>
+                <p className="text-gray-400 text-sm mb-2">{track.creator?.display_name}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">{track.duration}</span>
+                  <div className="flex items-center gap-2">
+                    <button className="text-gray-400 hover:text-red-400 transition-colors">
+                      <Heart size={16} />
+                    </button>
+                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </FloatingCard>
+              </FloatingCard>
+            </div>
           ))}
 
           {activeTab === 'creators' && results?.creators?.map((creator) => (
-            <FloatingCard key={creator.id} title={creator.display_name || 'Unknown Creator'} className="group">
-              <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                {creator.avatar_url ? (
-                  <Image
-                    src={creator.avatar_url}
-                    alt={creator.display_name}
-                    width={60}
-                    height={60}
-                    className="w-15 h-15 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-full">
-                    <p className="text-gray-400">No avatar</p>
+            <div key={creator.id} className="w-full">
+              <FloatingCard title={creator.display_name || 'Unknown Creator'} className="group h-full">
+                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
+                  {creator.avatar_url ? (
+                    <Image
+                      src={creator.avatar_url}
+                      alt={creator.display_name}
+                      width={60}
+                      height={60}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-full">
+                      <p className="text-gray-400">No avatar</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
+                      <Users size={20} />
+                    </button>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                    <Users size={20} className="text-white" />
-                  </button>
                 </div>
-              </div>
-              <h3 className="font-semibold text-white mb-1 truncate">{creator.display_name}</h3>
-              <p className="text-gray-400 text-sm mb-2">@{creator.username}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">{creator.followers_count} followers</span>
-                <div className="flex items-center gap-2">
-                  <button className="text-gray-400 hover:text-red-400 transition-colors">
-                    <Heart size={16} />
-                  </button>
-                  <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                    <Share2 size={16} />
-                  </button>
+                <h3 className="font-semibold text-white mb-1 truncate">{creator.display_name}</h3>
+                <p className="text-gray-400 text-sm mb-2">@{creator.username}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">{creator.followers_count} followers</span>
+                  <div className="flex items-center gap-2">
+                    <button className="text-gray-400 hover:text-red-400 transition-colors">
+                      <Heart size={16} />
+                    </button>
+                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </FloatingCard>
+              </FloatingCard>
+            </div>
           ))}
 
           {activeTab === 'events' && results?.events?.map((event) => (
-            <FloatingCard key={event.id} title={event.title || 'Untitled Event'} className="group">
-              <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                {event.image_url ? (
-                  <Image
-                    src={event.image_url}
-                    alt={event.title}
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
-                    <p className="text-gray-400">No event image</p>
+            <div key={event.id} className="w-full">
+              <FloatingCard title={event.title || 'Untitled Event'} className="group h-full">
+                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
+                  {event.image_url ? (
+                    <Image
+                      src={event.image_url}
+                      alt={event.title}
+                      width={200}
+                      height={200}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
+                      <p className="text-gray-400">No event image</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
+                      <Calendar size={20} className="text-white" />
+                    </button>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                    <Calendar size={20} className="text-white" />
-                  </button>
                 </div>
-              </div>
-              <h3 className="font-semibold text-white mb-1 truncate">{event.title}</h3>
-              <p className="text-gray-400 text-sm mb-2">{event.formatted_date}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500 flex items-center gap-1">
-                  <MapPin size={14} />
-                  {event.location}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button className="text-gray-400 hover:text-red-400 transition-colors">
-                    <Heart size={16} />
-                  </button>
-                  <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                    <Share2 size={16} />
-                  </button>
+                <h3 className="font-semibold text-white mb-1 truncate">{event.title}</h3>
+                <p className="text-gray-400 text-sm mb-2">{event.formatted_date}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 flex items-center gap-1">
+                    <MapPin size={14} />
+                    {event.location}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button className="text-gray-400 hover:text-red-400 transition-colors">
+                      <Heart size={16} />
+                    </button>
+                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </FloatingCard>
+              </FloatingCard>
+            </div>
           ))}
 
           {activeTab === 'podcasts' && results?.podcasts?.map((podcast) => (
-            <FloatingCard key={podcast.id} title={podcast.title || 'Untitled Podcast'} className="group">
-              <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                {podcast.cover_art_url ? (
-                  <Image
-                    src={podcast.cover_art_url}
-                    alt={podcast.title}
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
-                    <p className="text-gray-400">No podcast cover art</p>
+            <div key={podcast.id} className="w-full">
+              <FloatingCard title={podcast.title || 'Untitled Podcast'} className="group h-full">
+                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
+                  {podcast.cover_art_url ? (
+                    <Image
+                      src={podcast.cover_art_url}
+                      alt={podcast.title}
+                      width={200}
+                      height={200}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
+                      <p className="text-gray-400">No podcast cover art</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
+                      <Mic size={20} />
+                    </button>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                    <Mic size={20} className="text-white" />
-                  </button>
                 </div>
-              </div>
-              <h3 className="font-semibold text-white mb-1 truncate">{podcast.title}</h3>
-              <p className="text-gray-400 text-sm mb-2">{podcast.creator?.display_name}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">{podcast.duration || 'Unknown duration'}</span>
-                <div className="flex items-center gap-2">
-                  <button className="text-gray-400 hover:text-red-400 transition-colors">
-                    <Heart size={16} />
-                  </button>
-                  <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                    <Share2 size={16} />
-                  </button>
+                <h3 className="font-semibold text-white mb-1 truncate">{podcast.title}</h3>
+                <p className="text-gray-400 text-sm mb-2">{podcast.creator?.display_name}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">{podcast.duration || 'Unknown duration'}</span>
+                  <div className="flex items-center gap-2">
+                    <button className="text-gray-400 hover:text-red-400 transition-colors">
+                      <Heart size={16} />
+                    </button>
+                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </FloatingCard>
+              </FloatingCard>
+            </div>
           ))}
         </div>
 

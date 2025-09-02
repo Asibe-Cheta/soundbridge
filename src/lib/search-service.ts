@@ -310,9 +310,11 @@ export class SearchService {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        console.error('Error searching events:', error);
+        console.error('❌ Error searching events:', error);
         return { data: null, error };
       }
+
+      console.log('🔍 Found events:', data?.length || 0, data);
 
       // Format events
       const formattedEvents: Event[] = (data || []).map(event => ({
