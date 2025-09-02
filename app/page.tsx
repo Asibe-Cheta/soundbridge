@@ -618,7 +618,7 @@ export default function HomePage() {
               <div className="navbar-left" style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '2rem',
+                gap: '1rem',
                 flexShrink: 0
               }}>
                 <div className="logo">
@@ -632,7 +632,7 @@ export default function HomePage() {
                   />
                 </div>
                 {/* Desktop Navigation */}
-                <nav className="nav">
+                <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
                   <Link href="/" className="active" style={{ 
                     textDecoration: 'none', 
                     color: 'var(--text-primary)',
@@ -684,7 +684,7 @@ export default function HomePage() {
                 </nav>
                 
                 {/* Spacer between navigation and search */}
-                <div style={{ width: '1rem' }}></div>
+                <div style={{ width: '0.25rem' }}></div>
               </div>
 
               {/* CENTER - Search Bar */}
@@ -693,7 +693,7 @@ export default function HomePage() {
                 justifyContent: 'center',
                 flex: 1,
                 minWidth: 0,
-                maxWidth: searchQuery ? '800px' : '750px',
+                maxWidth: searchQuery ? '1200px' : '1100px',
                 transition: 'max-width 0.3s ease'
               }}>
                 <div style={{ position: 'relative', width: '100%' }}>
@@ -737,7 +737,7 @@ export default function HomePage() {
               <div className="navbar-right" style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '1rem',
+                gap: '0.75rem',
                 flexShrink: 0
               }}>
                 {/* Upload Button */}
@@ -747,16 +747,16 @@ export default function HomePage() {
                       background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                       color: 'white',
                       border: 'none',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '12px',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
+                      fontSize: '0.8rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '0.25rem',
                       transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-2px)';
@@ -962,19 +962,19 @@ export default function HomePage() {
                        </button>
                      </Link>
                     <Link href="/signup" style={{ textDecoration: 'none' }}>
-                      <button 
-                        style={{
-                          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.75rem 1.5rem',
-                          borderRadius: '12px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '0.9rem',
-                          transition: 'all 0.3s ease',
-                          boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                        }}
+                                             <button 
+                         style={{
+                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                           color: 'white',
+                           border: 'none',
+                           padding: '0.75rem 1.5rem',
+                           borderRadius: '12px',
+                           cursor: 'pointer',
+                           fontWeight: '600',
+                           fontSize: '0.9rem',
+                           transition: 'all 0.3s ease',
+                           boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-2px)';
                           e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
