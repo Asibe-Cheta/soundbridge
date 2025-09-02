@@ -629,7 +629,7 @@ export default function CreatorsPage() {
                   ))}
                 </div>
               </div>
-            </>)
+            </>
           )}
 
           {/* Load More Button - Removed for performance optimization */}
