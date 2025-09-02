@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
-import { eventService } from '@/src/lib/event-service';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
 import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2 } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
+import SearchDropdown from '@/src/components/search/SearchDropdown';
 
 export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
@@ -78,18 +78,16 @@ export default function HomePage() {
     const fetchEvents = async () => {
       try {
         setIsLoadingEvents(true);
-        const result = await eventService.getEvents({
-          includePast: false, // Only future events
-          limit: 4 // Limit to 4 events for homepage
-        });
+        const response = await fetch('/api/events?limit=4');
         
-                 if (result.error) {
-           console.error('Error fetching events:', result.error);
-           setEvents([]);
-         } else {
-           console.log('📅 Events fetched:', result.data);
-           setEvents(result.data || []);
-         }
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📅 Events fetched:', data);
+          setEvents(data.events || []);
+        } else {
+          console.error('Error fetching events:', response.statusText);
+          setEvents([]);
+        }
       } catch (error) {
         console.error('Error fetching events:', error);
         setEvents([]);
@@ -701,52 +699,8 @@ export default function HomePage() {
               </div>
 
               {/* CENTER - Search Bar */}
-              <div className="navbar-center" style={{
-                display: 'flex',
-                justifyContent: 'center',
-                flex: 1,
-                minWidth: 0,
-                maxWidth: searchQuery ? '1200px' : '1100px',
-                transition: 'max-width 0.3s ease'
-              }}>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', zIndex: 1 }} />
-                  <input 
-                    type="search" 
-                    className="search-bar" 
-                    placeholder="Search creators, events, podcasts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearch}
-                    style={{ 
-                      width: '100%', 
-                      paddingLeft: '40px',
-                      paddingRight: '16px',
-                      paddingTop: '12px',
-                      paddingBottom: '12px',
-                      fontSize: '16px',
-                      borderRadius: '8px',
-                      border: '1px solid #e5e7eb',
-                      background: '#f9fafb',
-                      color: '#374151',
-                      outline: 'none',
-                      transition: 'all 0.3s ease'
-                    }} 
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#3b82f6';
-                      e.target.style.background = '#ffffff';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
-                      e.target.style.background = '#f9fafb';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                  
-
-
-                </div>
+              <div className="navbar-center">
+                <SearchDropdown placeholder="Search creators, events, podcasts..." />
               </div>
 
               {/* RIGHT SIDE */}
