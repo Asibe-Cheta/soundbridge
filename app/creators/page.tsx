@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -23,21 +23,81 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { useCreators } from '../../src/hooks/useCreators';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
+
+// Simple debounce function
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 export default function CreatorsPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const [creatorsState, creatorsActions] = useCreators();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [sortBy, setSortBy] = useState('followers');
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [creators, setCreators] = useState<any[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Debounced fetch function
+  const fetchCreators = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams();
+      
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim());
+      }
+      if (selectedGenre !== 'all') {
+        params.append('genre', selectedGenre);
+      }
+      if (selectedLocation !== 'all') {
+        params.append('location', selectedLocation);
+      }
+      params.append('sortBy', sortBy);
+      params.append('limit', '20');
+      
+      if (user?.id) {
+        params.append('currentUserId', user.id);
+      }
+
+      const response = await fetch(`/api/creators?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch creators');
+      }
+
+      const result = await response.json();
+      setCreators(result.data || []);
+    } catch (err) {
+      console.error('Error fetching creators:', err);
+      setError('Failed to load creators');
+      setCreators([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, selectedGenre, selectedLocation, sortBy, user?.id]);
+
+  // Debounce the fetch function
+  const debouncedFetchCreators = useCallback(
+    debounce(fetchCreators, 300),
+    [fetchCreators]
+  );
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -80,24 +140,44 @@ export default function CreatorsPage() {
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      creatorsActions.updateFilters({ search: searchQuery.trim() });
+      // Search will be triggered by useEffect when searchQuery changes
     }
   };
 
   const handleFollow = async (creatorId: string) => {
-    const creator = creatorsState.creators.find(c => c.id === creatorId);
-    if (!creator) return;
+    const creator = creators.find(c => c.id === creatorId);
+    if (!creator || !user) return;
 
-    if (creator.isFollowing) {
-      const result = await creatorsActions.unfollowCreator(creatorId);
-      if (!result.success) {
-        console.error('Failed to unfollow:', result.error);
+    try {
+      const isFollowing = creator.isFollowing;
+      const endpoint = isFollowing ? `/api/follows/${creatorId}` : '/api/follows';
+      const method = isFollowing ? 'DELETE' : 'POST';
+      const body = isFollowing ? undefined : JSON.stringify({ following_id: creatorId });
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${isFollowing ? 'unfollow' : 'follow'} creator`);
       }
-    } else {
-      const result = await creatorsActions.followCreator(creatorId);
-      if (!result.success) {
-        console.error('Failed to follow:', result.error);
-      }
+
+      // Update local state
+      setCreators(prev => prev.map(c =>
+        c.id === creatorId
+          ? {
+              ...c,
+              isFollowing: !isFollowing,
+              followers_count: isFollowing 
+                ? Math.max(0, c.followers_count - 1)
+                : c.followers_count + 1
+            }
+          : c
+      ));
+    } catch (error) {
+      console.error('Error updating follow status:', error);
     }
   };
 
@@ -123,15 +203,15 @@ export default function CreatorsPage() {
     { value: 'liverpool', label: 'Liverpool, UK' }
   ];
 
-  // Update filters when they change
+  // Initial load and filter changes
   useEffect(() => {
-    creatorsActions.updateFilters({
-      search: searchQuery,
-      genre: selectedGenre !== 'all' ? selectedGenre : undefined,
-      location: selectedLocation !== 'all' ? selectedLocation : undefined,
-      sortBy: sortBy as any
-    });
-  }, [searchQuery, selectedGenre, selectedLocation, sortBy]);
+    fetchCreators();
+  }, []);
+
+  // Debounced filter changes
+  useEffect(() => {
+    debouncedFetchCreators();
+  }, [searchQuery, selectedGenre, selectedLocation, sortBy, debouncedFetchCreators]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -232,12 +312,12 @@ export default function CreatorsPage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">
-              {creatorsState.loading ? 'Loading creators...' : `${creatorsState.creators.length} Creators Found`}
+              {loading ? 'Loading creators...' : `${creators.length} Creators Found`}
             </h2>
           </div>
 
           {/* Error Display */}
-          {creatorsState.error && (
+          {error && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -249,15 +329,15 @@ export default function CreatorsPage() {
               color: '#ef4444'
             }}>
               <AlertCircle size={16} />
-              <span>{creatorsState.error}</span>
+              <span>{error}</span>
             </div>
           )}
 
-          {creatorsState.loading ? (
+          {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
               <Loader2 size={32} className="animate-spin" style={{ color: '#EC4899' }} />
             </div>
-          ) : creatorsState.creators.length === 0 ? (
+          ) : creators.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
               <User size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
               <h3>No creators found</h3>
@@ -270,7 +350,7 @@ export default function CreatorsPage() {
             </div>
           ) : (
             <div className="grid grid-4">
-              {creatorsState.creators.map((creator) => (
+              {creators.map((creator) => (
                 <div key={creator.id} className="card">
                   <div style={{ position: 'relative' }}>
                     {/* Avatar */}
@@ -381,17 +461,7 @@ export default function CreatorsPage() {
             </div>
           )}
 
-          {/* Load More Button */}
-          {creatorsState.pagination.hasMore && !creatorsState.loading && (
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-              <button
-                onClick={creatorsActions.loadMore}
-                className="btn-secondary"
-              >
-                Load More Creators
-              </button>
-            </div>
-          )}
+          {/* Load More Button - Removed for performance optimization */}
         </section>
 
         <Footer />
