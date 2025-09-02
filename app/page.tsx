@@ -139,10 +139,23 @@ export default function HomePage() {
     }
   };
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       e.preventDefault();
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}&limit=10`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Search results:', data);
+          router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        } else {
+          console.error('Search failed:', response.statusText);
+          router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      }
     }
   };
 
@@ -730,6 +743,9 @@ export default function HomePage() {
                       e.target.style.boxShadow = 'none';
                     }}
                   />
+                  
+
+
                 </div>
               </div>
 
