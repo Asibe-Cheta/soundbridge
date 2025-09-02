@@ -4,7 +4,7 @@ import { notificationService } from '@/src/lib/notification-service';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {

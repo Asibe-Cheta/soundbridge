@@ -299,14 +299,18 @@ export async function followCreator(followerId: string, followingId: string): Pr
       .from('follows')
       .insert({
         follower_id: followerId,
-        following_id: followingId,
-        created_at: new Date().toISOString()
+        following_id: followingId
       })
       .select()
       .single();
 
     if (error) {
-      console.error('Error following creator:', error);
+      console.error('Error following creator:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return { data: null, error };
     }
 

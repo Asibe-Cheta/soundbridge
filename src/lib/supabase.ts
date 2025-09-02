@@ -7,13 +7,17 @@ import type { Database } from './types';
 const getEnvVar = (key: string, required = true): string => {
   const value = process.env[key];
   
-  console.log(`🔍 Checking environment variable: ${key}`);
-  console.log(`   Value: ${value ? '✅ Set' : '❌ Missing'}`);
-  console.log(`   Required: ${required ? 'Yes' : 'No'}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔍 Checking environment variable: ${key}`);
+    console.log(`   Value: ${value ? '✅ Set' : '❌ Missing'}`);
+    console.log(`   Required: ${required ? 'Yes' : 'No'}`);
+  }
   
   if (required && !value) {
     console.error(`❌ Missing required environment variable: ${key}`);
-    console.error(`Available environment variables:`, Object.keys(process.env).filter(k => k.includes('SUPABASE')));
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Available environment variables:`, Object.keys(process.env).filter(k => k.includes('SUPABASE')));
+    }
     throw new Error(`Missing required environment variable: ${key}`);
   }
   
@@ -42,69 +46,89 @@ if (process.env.NODE_ENV === 'development') {
 
 // Browser client (for client-side operations)
 export const createBrowserClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Supabase environment variables not configured for browser client');
-    console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
-    throw new Error('Supabase environment variables not configured for browser client. Check your .env.local file.');
+  try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ Supabase environment variables not configured for browser client');
+      console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
+      throw new Error('Supabase environment variables not configured for browser client. Check your .env.local file.');
+    }
+    
+    return createClientComponentClient<Database>({
+      supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+    });
+  } catch (error) {
+    console.error('Error creating browser client:', error);
+    throw error;
   }
-  
-  return createClientComponentClient<Database>({
-    supabaseUrl,
-    supabaseKey: supabaseAnonKey,
-  });
 };
 
 // Server client (for server-side operations with service role)
 export const createServerClient = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    console.error('❌ Supabase environment variables not configured for server client');
-    console.error('Required: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
-    console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseServiceRoleKey: !!supabaseServiceRoleKey });
-    throw new Error('Supabase environment variables not configured for server client. Check your .env.local file.');
+  try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('❌ Supabase environment variables not configured for server client');
+      console.error('Required: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+      console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseServiceRoleKey: !!supabaseServiceRoleKey });
+      throw new Error('Supabase environment variables not configured for server client. Check your .env.local file.');
+    }
+    
+    return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating server client:', error);
+    throw error;
   }
-  
-  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
 };
 
 // API route client (for API routes that need user session)
 export const createApiClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Supabase environment variables not configured for API client');
-    console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
-    throw new Error('Supabase environment variables not configured for API client. Check your .env.local file.');
+  try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ Supabase environment variables not configured for API client');
+      console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
+      throw new Error('Supabase environment variables not configured for API client. Check your .env.local file.');
+    }
+    
+    // For API routes, we use the anon key with session handling
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating API client:', error);
+    throw error;
   }
-  
-  // For API routes, we use the anon key with session handling
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-    },
-  });
 };
 
 // Service role client (for admin operations that bypass RLS)
 export const createServiceClient = () => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    console.error('❌ Supabase environment variables not configured for service client');
-    console.error('Required: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
-    console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseServiceRoleKey: !!supabaseServiceRoleKey });
-    throw new Error('Supabase environment variables not configured for service client. Check your .env.local file.');
+  try {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('❌ Supabase environment variables not configured for service client');
+      console.error('Required: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+      console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseServiceRoleKey: !!supabaseServiceRoleKey });
+      throw new Error('Supabase environment variables not configured for service client. Check your .env.local file.');
+    }
+    
+    return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating service client:', error);
+    throw error;
   }
-  
-  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
 };
 
 // Server component client (for server components) - only import cookies in server context

@@ -3,7 +3,7 @@ import { createApiClientWithCookies } from '@/src/lib/supabase-api';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError) {

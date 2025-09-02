@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
-import { useAuth } from '@/src/contexts/AuthContext';
 
 // Search suggestion types
 interface SearchSuggestion {
@@ -27,7 +26,32 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { user } = useAuth();
+
+  const handleSuggestionClick = useCallback((suggestion: SearchSuggestion) => {
+    console.log('🎯 Clicking suggestion:', suggestion);
+    
+    switch (suggestion.type) {
+      case 'music':
+        console.log('🎵 Navigating to music:', `/track/${suggestion.id}`);
+        router.push(`/track/${suggestion.id}`);
+        break;
+      case 'creator':
+        const username = suggestion.subtitle.replace('@', '');
+        console.log('👤 Navigating to creator:', `/creator/${username}`);
+        router.push(`/creator/${username}`);
+        break;
+      case 'event':
+        console.log('📅 Navigating to event:', `/events/${suggestion.id}`);
+        router.push(`/events/${suggestion.id}`);
+        break;
+      case 'podcast':
+        console.log('🎙️ Navigating to podcast:', `/podcast/${suggestion.id}`);
+        router.push(`/podcast/${suggestion.id}`);
+        break;
+    }
+    setShowSuggestions(false);
+    setSearchQuery('');
+  }, [router]);
 
   // Debounced search function
   useEffect(() => {
@@ -89,7 +113,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showSuggestions, searchSuggestions, selectedIndex, searchQuery, router]);
+  }, [showSuggestions, searchSuggestions, selectedIndex, searchQuery, router, handleSuggestionClick]);
 
   const performSearch = async (query: string) => {
     if (query.length < 2) return;
@@ -103,7 +127,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
 
         // Add music suggestions
         if (data.data?.music) {
-          data.data.music.forEach((track: any) => {
+          data.data.music.forEach((track: { id: string; title: string; creator?: { display_name?: string }; cover_art_url?: string }) => {
             suggestions.push({
               id: track.id,
               type: 'music',
@@ -116,7 +140,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
 
         // Add creator suggestions
         if (data.data?.creators) {
-          data.data.creators.forEach((creator: any) => {
+          data.data.creators.forEach((creator: { id: string; display_name?: string; username: string; avatar_url?: string }) => {
             suggestions.push({
               id: creator.id,
               type: 'creator',
@@ -129,7 +153,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
 
         // Add event suggestions
         if (data.data?.events) {
-          data.data.events.forEach((event: any) => {
+          data.data.events.forEach((event: { id: string; title: string; location?: string; image_url?: string }) => {
             suggestions.push({
               id: event.id,
               type: 'event',
@@ -151,24 +175,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
     }
   };
 
-  const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-    switch (suggestion.type) {
-      case 'music':
-        router.push(`/track/${suggestion.id}`);
-        break;
-      case 'creator':
-        router.push(`/creator/${suggestion.id}`);
-        break;
-      case 'event':
-        router.push(`/event/${suggestion.id}`);
-        break;
-      case 'podcast':
-        router.push(`/podcast/${suggestion.id}`);
-        break;
-    }
-    setShowSuggestions(false);
-    setSearchQuery('');
-  };
+
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,12 +201,12 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
             left: '12px', 
             top: '50%', 
             transform: 'translateY(-50%)', 
-            color: '#6b7280', 
+            color: '#9ca3af', 
             zIndex: 1 
           }} />
           <input
             type="text"
-            className="search-bar"
+            className="search-bar placeholder-gray-400"
             placeholder={placeholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -211,14 +218,14 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
             style={{
               width: '100%',
               paddingLeft: '40px',
-              paddingRight: searchQuery ? '80px' : '16px',
+              paddingRight: searchQuery ? '40px' : '16px',
               paddingTop: '12px',
               paddingBottom: '12px',
               fontSize: '16px',
               borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-              background: '#f9fafb',
-              color: '#374151',
+              border: '1px solid #374151',
+              background: '#1f2937',
+              color: '#f9fafb',
               outline: 'none',
               transition: 'all 0.3s ease'
             }}
@@ -229,7 +236,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
               onClick={clearSearch}
               style={{
                 position: 'absolute',
-                right: '40px',
+                right: '8px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 background: 'none',
@@ -237,37 +244,18 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                 cursor: 'pointer',
                 padding: '4px',
                 borderRadius: '50%',
-                color: '#6b7280',
+                color: '#9ca3af',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                transition: 'color 0.2s ease'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
             >
               <X size={16} />
             </button>
           )}
-          <button
-            type="submit"
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: '#3b82f6',
-              border: 'none',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'background 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
-          >
-            Search
-          </button>
         </div>
       </form>
 
@@ -278,10 +266,10 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
           top: '100%',
           left: 0,
           right: 0,
-          background: 'white',
-          border: '1px solid #e5e7eb',
+          background: '#1f2937',
+          border: '1px solid #374151',
           borderRadius: '8px',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
           zIndex: 1000,
           maxHeight: '400px',
           overflowY: 'auto'
@@ -290,9 +278,9 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
             <div style={{
               padding: '20px',
               textAlign: 'center',
-              color: '#6b7280'
+              color: '#9ca3af'
             }}>
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500 mx-auto mb-2"></div>
               Searching...
             </div>
           ) : searchSuggestions.length > 0 ? (
@@ -304,8 +292,8 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                   style={{
                     padding: '12px 16px',
                     cursor: 'pointer',
-                    borderBottom: index < searchSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
-                    background: selectedIndex === index ? '#f3f4f6' : 'white',
+                    borderBottom: index < searchSuggestions.length - 1 ? '1px solid #374151' : 'none',
+                    background: selectedIndex === index ? '#374151' : '#1f2937',
                     transition: 'background 0.2s ease'
                   }}
                   onMouseEnter={() => setSelectedIndex(index)}
@@ -335,7 +323,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
                         fontWeight: '600',
-                        color: '#111827',
+                        color: '#f9fafb',
                         marginBottom: '2px',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -345,7 +333,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                       </div>
                       <div style={{
                         fontSize: '14px',
-                        color: '#6b7280',
+                        color: '#9ca3af',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
@@ -378,9 +366,9 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
             <div style={{
               padding: '20px',
               textAlign: 'center',
-              color: '#6b7280'
+              color: '#9ca3af'
             }}>
-              No results found for "{searchQuery}"
+              No results found for &quot;{searchQuery}&quot;
             </div>
           ) : null}
         </div>

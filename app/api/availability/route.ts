@@ -5,7 +5,7 @@ import type { CreateAvailabilityData } from '@/src/lib/types/availability';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     
     const creatorId = searchParams.get('creatorId');
     if (!creatorId) {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {

@@ -1866,3 +1866,24 @@ select.form-input option:focus {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Search bar placeholder styling for dark theme */
+.search-bar::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.8 !important;
+}
+
+.search-bar::-webkit-input-placeholder {
+  color: #9ca3af !important;
+  opacity: 0.8 !important;
+}
+
+.search-bar::-moz-placeholder {
+  color: #9ca3af !important;
+  opacity: 0.8 !important;
+}
+
+.search-bar:-ms-input-placeholder {
+  color: #9ca3af !important;
+  opacity: 0.8 !important;
+}

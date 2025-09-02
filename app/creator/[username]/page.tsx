@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/src/lib/supabase';
 import { CreatorProfileClient } from './CreatorProfileClient';
-import { StructuredData, personStructuredData } from '@/src/components/seo/StructuredData';
+import Navbar from '@/src/components/layout/Navbar';
+import Link from 'next/link';
 
 interface CreatorProfilePageProps {
   params: Promise<{ username: string }>;
@@ -18,7 +19,6 @@ export async function generateMetadata({ params }: CreatorProfilePageProps): Pro
       .from('profiles')
       .select('username, display_name, bio, avatar_url, location, social_links')
       .eq('username', username)
-      .eq('is_public', true)
       .single();
 
     if (!creator) {
@@ -74,14 +74,15 @@ export async function generateMetadata({ params }: CreatorProfilePageProps): Pro
     };
   } catch (error) {
     console.error('Error generating metadata for creator profile:', error);
+    // Return fallback metadata instead of throwing
     return {
-      title: 'Creator Profile | SoundBridge',
-      description: 'Discover music creators on SoundBridge.',
+      title: `${username} | SoundBridge`,
+      description: `Discover music and events by ${username} on SoundBridge.`,
     };
   }
 }
 
-export default async function CreatorProfilePage({ params }: CreatorProfilePageProps) {
+export default async function CreatorProfilePage({ params }: { params: { username: string } }) {
   const resolvedParams = await params;
   const { username } = resolvedParams;
 
@@ -91,32 +92,39 @@ export default async function CreatorProfilePage({ params }: CreatorProfilePageP
       .from('profiles')
       .select('*')
       .eq('username', username)
-      .eq('is_public', true)
       .single();
 
     if (!creator) {
       notFound();
     }
 
-    // Generate structured data for the creator
-    const creatorStructuredData = personStructuredData({
-      name: creator.display_name || creator.username,
-      description: creator.bio,
-      image: creator.avatar_url,
-      url: `https://soundbridge.com/creator/${username}`,
-      sameAs: creator.social_links ? Object.values(creator.social_links).filter(Boolean) as string[] : undefined,
-      jobTitle: 'Music Creator',
-      worksFor: 'SoundBridge',
-    });
-
     return (
       <>
-        <StructuredData type="person" data={creatorStructuredData} />
+        <Navbar />
         <CreatorProfileClient username={username} initialCreator={creator} />
       </>
     );
   } catch (error) {
     console.error('Error loading creator profile:', error);
-    notFound();
+    
+    // Return a fallback UI instead of crashing
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold mb-2">Unable to Load Profile</h1>
+              <p className="text-gray-400 mb-4">
+                We&apos;re experiencing technical difficulties. Please try again later.
+              </p>
+              <Link href="/" className="text-red-500 hover:text-red-400">
+                Return to Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 }
