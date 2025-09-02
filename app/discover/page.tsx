@@ -5,12 +5,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
+import { useSocial } from '@/src/hooks/useSocial';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
 import { useSearch } from '../../src/hooks/useSearch';
 import { searchCreators } from '../../src/lib/creator';
 import type { CreatorSearchResult, AudioTrack, Event } from '../../src/lib/types/creator';
+import ShareModal from '@/src/components/social/ShareModal';
 import {
   Search,
   Filter,
@@ -24,12 +27,18 @@ import {
   Plus,
   LogOut,
   Bell,
-  Settings
+  Settings,
+  Play,
+  Pause,
+  Heart,
+  Share2
 } from 'lucide-react';
 
 export default function DiscoverPage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
+  const { toggleLike, isLiked } = useSocial();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -51,6 +60,9 @@ export default function DiscoverPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [creators, setCreators] = useState<CreatorSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedTrackForShare, setSelectedTrackForShare] = useState<any>(null);
 
   // Use the search hook for trending content
   const {
@@ -230,6 +242,65 @@ export default function DiscoverPage() {
     }
   };
 
+  const handlePlayTrack = (track: any) => {
+    console.log('🎵 handlePlayTrack called with:', track);
+    
+    // Convert track data to AudioTrack format
+    const audioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.artist || track.creator_name || 'Unknown Artist',
+      album: '',
+      duration: track.duration || 0,
+      artwork: track.cover_art_url || '',
+      url: track.file_url || '',
+      liked: false
+    };
+    
+    console.log('🎵 Converted to AudioTrack:', audioTrack);
+    playTrack(audioTrack);
+  };
+
+  const handleLikeTrack = async (track: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      alert('Please sign in to like tracks');
+      return;
+    }
+
+    try {
+      const result = await toggleLike({
+        content_id: track.id,
+        content_type: 'track'
+      });
+      
+      if (!result.error) {
+        // Update local state
+        const newLikedTracks = new Set(likedTracks);
+        const isCurrentlyLiked = newLikedTracks.has(track.id);
+        
+        if (isCurrentlyLiked) {
+          newLikedTracks.delete(track.id);
+        } else {
+          newLikedTracks.add(track.id);
+        }
+        setLikedTracks(newLikedTracks);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleShareTrack = async (track: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setSelectedTrackForShare(track);
+    setShareModalOpen(true);
+  };
+
   const renderEmptyState = (type: string) => {
     const emptyStates = {
       music: {
@@ -382,8 +453,8 @@ export default function DiscoverPage() {
               </div>
             ) : trendingResults?.music && trendingResults.music.length > 0 ? (
               trendingResults.music.map((track) => (
-                <div key={track.id} className="card">
-                  <div className="card-image">
+                <div key={track.id} className="card" style={{ cursor: 'pointer' }}>
+                  <div className="card-image" style={{ position: 'relative' }}>
                     {track.cover_art_url ? (
                       <Image
                         src={track.cover_art_url}
@@ -407,7 +478,96 @@ export default function DiscoverPage() {
                         <Music size={32} />
                       </div>
                     )}
-                    <div className="play-button">▶</div>
+                    {/* Play Button */}
+                    <div 
+                      className="play-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePlayTrack(track);
+                      }}
+                      style={{ 
+                        cursor: 'pointer',
+                        backgroundColor: currentTrack?.id === track.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
+                      }}
+                    >
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <Pause size={20} />
+                      ) : (
+                        <Play size={20} />
+                      )}
+                    </div>
+                    {/* Like Button */}
+                    <div 
+                      className="like-button"
+                      onClick={(e) => handleLikeTrack(track, e)}
+                      style={{ 
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Heart 
+                        size={16} 
+                        style={{ 
+                          color: likedTracks.has(track.id) ? '#EC4899' : 'white',
+                          fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
+                        }} 
+                      />
+                    </div>
+                    {/* Share Button */}
+                    <div 
+                      className="share-button"
+                      onClick={(e) => handleShareTrack(track, e)}
+                      style={{ 
+                        position: 'absolute',
+                        top: '10px',
+                        right: '50px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Share2 
+                        size={16} 
+                        style={{ 
+                          color: 'white'
+                        }} 
+                      />
+                    </div>
                   </div>
                   <div style={{ fontWeight: '600' }}>{track.title}</div>
                   <div style={{ color: '#999', fontSize: '0.9rem' }}>{track.creator_name}</div>
@@ -665,8 +825,8 @@ export default function DiscoverPage() {
               </div>
             ) : trendingResults?.podcasts && trendingResults.podcasts.length > 0 ? (
               trendingResults.podcasts.map((podcast) => (
-                <div key={podcast.id} className="card">
-                  <div className="card-image">
+                <div key={podcast.id} className="card" style={{ cursor: 'pointer' }}>
+                  <div className="card-image" style={{ position: 'relative' }}>
                     {podcast.cover_art_url ? (
                       <Image
                         src={podcast.cover_art_url}
@@ -690,7 +850,96 @@ export default function DiscoverPage() {
                         <Mic size={32} />
                       </div>
                     )}
-                    <div className="play-button">▶</div>
+                    {/* Play Button */}
+                    <div 
+                      className="play-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePlayTrack(podcast);
+                      }}
+                      style={{ 
+                        cursor: 'pointer',
+                        backgroundColor: currentTrack?.id === podcast.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
+                      }}
+                    >
+                      {currentTrack?.id === podcast.id && isPlaying ? (
+                        <Pause size={20} />
+                      ) : (
+                        <Play size={20} />
+                      )}
+                    </div>
+                    {/* Like Button */}
+                    <div 
+                      className="like-button"
+                      onClick={(e) => handleLikeTrack(podcast, e)}
+                      style={{ 
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Heart 
+                        size={16} 
+                        style={{ 
+                          color: likedTracks.has(podcast.id) ? '#EC4899' : 'white',
+                          fill: likedTracks.has(podcast.id) ? '#EC4899' : 'none'
+                        }} 
+                      />
+                    </div>
+                    {/* Share Button */}
+                    <div 
+                      className="share-button"
+                      onClick={(e) => handleShareTrack(podcast, e)}
+                      style={{ 
+                        position: 'absolute',
+                        top: '10px',
+                        right: '50px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Share2 
+                        size={16} 
+                        style={{ 
+                          color: 'white'
+                        }} 
+                      />
+                    </div>
                   </div>
                   <div style={{ fontWeight: '600' }}>{podcast.title}</div>
                   <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.creator_name}</div>
@@ -1061,6 +1310,14 @@ export default function DiscoverPage() {
           <div>Mike joined Gospel Night event</div>
         </div>
       </FloatingCard>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        content={selectedTrackForShare}
+        contentType="track"
+      />
     </>
   );
 }
