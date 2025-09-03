@@ -311,7 +311,7 @@ export default function CreatorsPage() {
         {/* Creators Grid */}
         <section className="section">
           <div className="section-header">
-            <h2 className="section-title">
+            <h2 className="section-title" style={{ fontSize: '0.72rem' }}>
               {loading ? 'Loading creators...' : `${creators.length} Creators Found`}
             </h2>
           </div>
@@ -352,9 +352,9 @@ export default function CreatorsPage() {
             <>
               {/* Desktop Grid Layout */}
               <div className="hidden md:block">
-                <div className="grid grid-4">
+                <div className="grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem' }}>
                   {creators.map((creator) => (
-                    <div key={creator.id} className="card">
+                    <div key={creator.id} className="card" style={{ transform: 'scale(0.6)', transformOrigin: 'center' }}>
                       <div style={{ position: 'relative' }}>
                         {/* Avatar */}
                         <div style={{
