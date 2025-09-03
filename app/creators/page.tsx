@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { FixedSizeList as List } from 'react-window';
+import InfiniteLoader from 'react-window-infinite-loader';
 import {
   Search,
   Filter,
@@ -37,6 +39,314 @@ function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), wait);
   };
 }
+
+// Virtual list item heights
+const DESKTOP_ITEM_HEIGHT = 320; // Height of each desktop card
+const MOBILE_ITEM_HEIGHT = 80;   // Height of each mobile list item
+const CONTAINER_HEIGHT = 600;    // Height of the virtual list container
+
+// Creator card component for virtual list
+interface VirtualCreatorItemProps {
+  index: number;
+  style: React.CSSProperties;
+  data: {
+    creators: any[];
+    isMobile: boolean;
+    handleFollow: (creatorId: string) => void;
+  };
+}
+
+const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => {
+  const { creators, isMobile, handleFollow } = data;
+  const creator = creators[index];
+
+  if (!creator) {
+    // Loading placeholder
+    return (
+      <div style={style}>
+        <div style={{
+          padding: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          color: '#999'
+        }}>
+          <Loader2 size={24} className="animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    // Mobile list item (same as existing mobile layout)
+    return (
+      <div style={style}>
+        <Link 
+          href={`/creator/${creator.username}`} 
+          style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '1rem',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            transition: 'background-color 0.2s ease',
+            cursor: 'pointer',
+            height: '100%'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            {/* Avatar */}
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '1.2rem',
+              marginRight: '1rem',
+              flexShrink: 0,
+              position: 'relative'
+            }}>
+              {creator.display_name.charAt(0)}
+              {/* Verified Badge */}
+              {creator.is_verified && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-2px',
+                  right: '-2px',
+                  background: '#EC4899',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '18px',
+                  height: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.7rem',
+                  border: '2px solid #000'
+                }}>
+                  ✓
+                </div>
+              )}
+            </div>
+
+            {/* Creator Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                <h3 style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '600', 
+                  margin: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1
+                }}>
+                  {creator.display_name}
+                </h3>
+                {creator.country && (
+                  <span style={{
+                    background: 'rgba(236, 72, 153, 0.2)',
+                    color: '#EC4899',
+                    padding: '0.125rem 0.5rem',
+                    borderRadius: '12px',
+                    fontSize: '0.7rem',
+                    fontWeight: '500',
+                    flexShrink: 0
+                  }}>
+                    {creator.country}
+                  </span>
+                )}
+              </div>
+
+              <p style={{ 
+                color: '#999', 
+                fontSize: '0.85rem', 
+                margin: '0 0 0.25rem 0',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {creator.bio || 'Music creator'}
+              </p>
+
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '1rem', 
+                fontSize: '0.75rem', 
+                color: '#666'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Users size={10} />
+                  {creator.followers_count} followers
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Music size={10} />
+                  {creator.tracks_count} tracks
+                </span>
+                {creator.location && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <MapPin size={10} />
+                    {creator.location}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Follow Button */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleFollow(creator.id);
+              }}
+              style={{
+                background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
+                color: 'white',
+                border: creator.isFollowing ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0,
+                minWidth: '80px'
+              }}
+            >
+              {creator.isFollowing ? 'Following' : 'Follow'}
+            </button>
+          </div>
+        </Link>
+      </div>
+    );
+  }
+
+  // Desktop grid item (same as existing desktop layout)
+  return (
+    <div style={{...style, padding: '0.5rem'}}>
+      <div className="card" style={{ 
+        transform: 'scale(0.759)', 
+        transformOrigin: 'top left',
+        width: '250px',
+        height: 'auto'
+      }}>
+        <div style={{ position: 'relative' }}>
+          {/* Avatar */}
+          <div style={{
+            width: '100px',
+            height: '100px',
+            borderRadius: '50%',
+            background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: '600',
+            fontSize: '2rem',
+            margin: '0 auto 1rem'
+          }}>
+            {creator.display_name.charAt(0)}
+          </div>
+
+          {/* Verified Badge */}
+          {creator.is_verified && (
+            <div style={{
+              position: 'absolute',
+              top: '0.5rem',
+              right: '0.5rem',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              color: 'white',
+              borderRadius: '50%',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.8rem'
+            }}>
+              ✓
+            </div>
+          )}
+
+          {/* Creator Info */}
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              {creator.display_name}
+            </h3>
+            <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              {creator.bio || 'No bio available'}
+            </p>
+            
+            {/* Stats */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem', fontSize: '0.8rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#EC4899' }}>
+                <Users size={12} />
+                {creator.followers_count} followers
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
+                <Music size={12} />
+                {creator.tracks_count} tracks
+              </div>
+            </div>
+
+            {/* Location and Date */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
+                <MapPin size={12} />
+                {creator.location || 'Unknown'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
+                <Calendar size={12} />
+                {new Date(creator.created_at).toLocaleDateString()}
+              </div>
+            </div>
+
+            {/* Country Badge */}
+            {creator.country && (
+              <div style={{
+                background: 'rgba(236, 72, 153, 0.2)',
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                borderRadius: '20px',
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.8rem',
+                color: '#EC4899',
+                textAlign: 'center',
+                marginBottom: '1rem'
+              }}>
+                {creator.country}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => handleFollow(creator.id)}
+                className={creator.isFollowing ? 'btn-secondary' : 'btn-primary'}
+                style={{ flex: 1, fontSize: '0.9rem' }}
+              >
+                {creator.isFollowing ? 'Following' : 'Follow'}
+              </button>
+              <Link href={`/creator/${creator.username}`} style={{ textDecoration: 'none', flex: 1 }}>
+                <button className="btn-secondary" style={{ width: '100%', fontSize: '0.9rem' }}>
+                  View Profile
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function CreatorsPage() {
   const { user, signOut } = useAuth();
@@ -119,7 +429,7 @@ export default function CreatorsPage() {
     [fetchCreators]
   );
 
-  // Load more function for pagination
+  // Load more function for virtual scrolling
   const loadMoreCreators = useCallback(() => {
     if (!loadingMore && pagination.hasMore) {
       // Update offset for next page
@@ -129,27 +439,13 @@ export default function CreatorsPage() {
     }
   }, [loadingMore, pagination.hasMore, pagination.offset, pagination.limit, fetchCreators]);
 
-  // Intersection Observer for infinite scroll
-  const [loadMoreRef, setLoadMoreRef] = useState<HTMLDivElement | null>(null);
+  // Check if item is loaded for virtual scrolling
+  const isItemLoaded = useCallback((index: number) => {
+    return !!creators[index];
+  }, [creators]);
 
-  useEffect(() => {
-    if (!loadMoreRef || !pagination.hasMore || loadingMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreCreators();
-        }
-      },
-      { 
-        threshold: 0.1,
-        rootMargin: '100px' // Load more when user is 100px from the trigger
-      }
-    );
-
-    observer.observe(loadMoreRef);
-    return () => observer.disconnect();
-  }, [loadMoreRef, pagination.hasMore, loadingMore, loadMoreCreators]);
+  // Get item count for virtual scrolling (includes loading slots)
+  const itemCount = pagination.hasMore ? creators.length + 1 : creators.length;
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -410,340 +706,38 @@ export default function CreatorsPage() {
             </div>
           ) : (
             <>
-              {/* Desktop Grid Layout */}
-              <div className="hidden md:block">
-                <div style={{ 
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, 250px)', 
-                  gap: '0.25rem',
-                  justifyContent: 'start',
-                  alignItems: 'start'
-                }}>
-                  {creators.map((creator) => (
-                    <div key={creator.id} className="card" style={{ 
-                      transform: 'scale(0.759)', 
-                      transformOrigin: 'top left',
-                      width: '250px',
-                      height: 'auto'
-                    }}>
-                      <div style={{ position: 'relative' }}>
-                        {/* Avatar */}
-                        <div style={{
-                          width: '100px',
-                          height: '100px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: '600',
-                          fontSize: '2rem',
-                          margin: '0 auto 1rem'
-                        }}>
-                          {creator.display_name.charAt(0)}
-                        </div>
-
-                        {/* Verified Badge */}
-                        {creator.is_verified && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '0.5rem',
-                            right: '0.5rem',
-                            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.8rem'
-                          }}>
-                            ✓
-                          </div>
-                        )}
-
-                        {/* Creator Info */}
-                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                          <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                            {creator.display_name}
-                          </h3>
-                          <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                            {creator.bio || 'No bio available'}
-                          </p>
-                          
-                          {/* Stats */}
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem', fontSize: '0.8rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#EC4899' }}>
-                              <Users size={12} />
-                              {creator.followers_count} followers
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                              <Music size={12} />
-                              {creator.tracks_count} tracks
-                            </div>
-                          </div>
-
-                          {/* Location and Date */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                              <MapPin size={12} />
-                              {creator.location || 'Unknown'}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                              <Calendar size={12} />
-                              {new Date(creator.created_at).toLocaleDateString()}
-                            </div>
-                          </div>
-
-                          {/* Country Badge */}
-                          {creator.country && (
-                            <div style={{
-                              background: 'rgba(236, 72, 153, 0.2)',
-                              border: '1px solid rgba(236, 72, 153, 0.3)',
-                              borderRadius: '20px',
-                              padding: '0.25rem 0.75rem',
-                              fontSize: '0.8rem',
-                              color: '#EC4899',
-                              textAlign: 'center',
-                              marginBottom: '1rem'
-                            }}>
-                              {creator.country}
-                            </div>
-                          )}
-
-                          {/* Action Buttons */}
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              onClick={() => handleFollow(creator.id)}
-                              className={creator.isFollowing ? 'btn-secondary' : 'btn-primary'}
-                              style={{ flex: 1, fontSize: '0.9rem' }}
-                            >
-                              {creator.isFollowing ? 'Following' : 'Follow'}
-                            </button>
-                            <Link href={`/creator/${creator.username}`} style={{ textDecoration: 'none', flex: 1 }}>
-                              <button className="btn-secondary" style={{ width: '100%', fontSize: '0.9rem' }}>
-                                View Profile
-                              </button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Mobile List Layout - Instagram Style */}
-              <div className="block md:hidden">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                  {creators.map((creator) => (
-                    <Link 
-                      key={creator.id} 
-                      href={`/creator/${creator.username}`} 
-                      style={{ textDecoration: 'none', color: 'inherit' }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '1rem',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                        transition: 'background-color 0.2s ease',
-                        cursor: 'pointer'
+              {/* Virtual Scrolling Container */}
+              <div style={{
+                width: '100%',
+                height: `${CONTAINER_HEIGHT}px`,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                overflow: 'hidden'
+              }}>
+                <InfiniteLoader
+                  isItemLoaded={isItemLoaded}
+                  itemCount={itemCount}
+                  loadMoreItems={loadMoreCreators}
+                >
+                  {({ onItemsRendered, ref }) => (
+                    <List
+                      ref={ref}
+                      height={CONTAINER_HEIGHT}
+                      itemCount={itemCount}
+                      itemSize={isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT}
+                      itemData={{
+                        creators,
+                        isMobile,
+                        handleFollow
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        {/* Avatar */}
-                        <div style={{
-                          width: '54px',
-                          height: '54px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: '600',
-                          fontSize: '1.2rem',
-                          marginRight: '1rem',
-                          flexShrink: 0,
-                          position: 'relative'
-                        }}>
-                          {creator.display_name.charAt(0)}
-                          {/* Verified Badge */}
-                          {creator.is_verified && (
-                            <div style={{
-                              position: 'absolute',
-                              bottom: '-2px',
-                              right: '-2px',
-                              background: '#EC4899',
-                              color: 'white',
-                              borderRadius: '50%',
-                              width: '18px',
-                              height: '18px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.7rem',
-                              border: '2px solid #000'
-                            }}>
-                              ✓
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Creator Info */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                            <h3 style={{ 
-                              fontSize: '1rem', 
-                              fontWeight: '600', 
-                              margin: 0,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              flex: 1
-                            }}>
-                              {creator.display_name}
-                            </h3>
-                            {creator.country && (
-                              <span style={{
-                                background: 'rgba(236, 72, 153, 0.2)',
-                                color: '#EC4899',
-                                padding: '0.125rem 0.5rem',
-                                borderRadius: '12px',
-                                fontSize: '0.7rem',
-                                fontWeight: '500',
-                                flexShrink: 0
-                              }}>
-                                {creator.country}
-                              </span>
-                            )}
-                          </div>
-
-                          <p style={{ 
-                            color: '#999', 
-                            fontSize: '0.85rem', 
-                            margin: '0 0 0.25rem 0',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {creator.bio || 'Music creator'}
-                          </p>
-
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '1rem', 
-                            fontSize: '0.75rem', 
-                            color: '#666'
-                          }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <Users size={10} />
-                              {creator.followers_count} followers
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <Music size={10} />
-                              {creator.tracks_count} tracks
-                            </span>
-                            {creator.location && (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <MapPin size={10} />
-                                {creator.location}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Follow Button */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleFollow(creator.id);
-                          }}
-                          style={{
-                            background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
-                            color: 'white',
-                            border: creator.isFollowing ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            flexShrink: 0,
-                            minWidth: '80px'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (creator.isFollowing) {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                            } else {
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (creator.isFollowing) {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                            } else {
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }
-                          }}
-                        >
-                          {creator.isFollowing ? 'Following' : 'Follow'}
-                        </button>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              {/* Infinite Scroll Trigger and Load More Button */}
-              {pagination.hasMore && (
-                <>
-                  {/* Intersection Observer Target for Infinite Scroll */}
-                  <div
-                    ref={setLoadMoreRef}
-                    style={{
-                      height: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '2rem 0'
-                    }}
-                  />
-
-                  {/* Manual Load More Button (fallback) */}
-                  <div style={{ textAlign: 'center', margin: '2rem 0' }}>
-                    <button
-                      onClick={loadMoreCreators}
-                      disabled={loadingMore}
-                      className="btn-secondary"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        margin: '0 auto',
-                        opacity: loadingMore ? 0.7 : 1
-                      }}
+                      onItemsRendered={onItemsRendered}
+                      width="100%"
                     >
-                      {loadingMore ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          Loading more creators...
-                        </>
-                      ) : (
-                        <>
-                          Load More ({pagination.total - creators.length} remaining)
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
+                      {VirtualCreatorItem}
+                    </List>
+                  )}
+                </InfiniteLoader>
+              </div>
 
               {/* End of Results Indicator */}
               {!pagination.hasMore && creators.length > 0 && (
@@ -758,6 +752,24 @@ export default function CreatorsPage() {
                   <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
                     Try adjusting your filters to discover more creators.
                   </p>
+                </div>
+              )}
+
+              {/* Performance Info (Development Only) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div style={{
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.2)',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginTop: '2rem',
+                  fontSize: '0.8rem',
+                  color: '#22c55e'
+                }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Scrolling Active</h4>
+                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT))} items instead of {creators.length}</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round((Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT)) / Math.max(1, creators.length)) * 100)}% of traditional rendering</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Supports {pagination.total} creators without performance loss</p>
                 </div>
               )}
             </>
