@@ -1390,22 +1390,22 @@ export default function DiscoverPage() {
 
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Link href="/upload" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'transparent',
               border: '1px solid white',
-              padding: '0.375rem 0.75rem',
+              padding: '0.6rem 1rem',
               borderRadius: '8px',
-              textAlign: 'center',
               cursor: 'pointer',
               color: 'white',
-              fontSize: '0.75rem',
+              fontSize: '0.875rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              justifyContent: 'center',
-              transition: 'all 0.3s ease'
+              gap: '0.75rem',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              width: '100%',
+              fontWeight: '500'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
@@ -1414,7 +1414,7 @@ export default function DiscoverPage() {
               e.currentTarget.style.background = 'transparent';
             }}
             >
-              <Music size={16} color="white" />
+              <Music size={18} color="white" />
               Upload Music
             </div>
           </Link>
@@ -1440,7 +1440,7 @@ export default function DiscoverPage() {
             e.currentTarget.style.background = 'transparent';
           }}
           >
-            <Mic size={16} color="white" />
+            <Mic size={18} color="white" />
             Start Podcast
           </div>
           <div style={{
@@ -1465,7 +1465,7 @@ export default function DiscoverPage() {
             e.currentTarget.style.background = 'transparent';
           }}
           >
-            <Calendar size={16} color="white" />
+            <Calendar size={18} color="white" />
             Create Event
           </div>
           <div style={{
@@ -1490,7 +1490,7 @@ export default function DiscoverPage() {
             e.currentTarget.style.background = 'transparent';
           }}
           >
-            <Users size={16} color="white" />
+            <Users size={18} color="white" />
             Find Collaborators
           </div>
         </div>

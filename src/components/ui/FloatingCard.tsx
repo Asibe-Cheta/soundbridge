@@ -77,17 +77,19 @@ export function FloatingCard({
   // Full card when visible
   return (
     <div
-              style={{
-          ...getPositionStyles(),
-          background: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '12px',
-          padding: '1rem',
-          width: '250px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-          transition: 'all 0.3s ease',
-        }}
+                    style={{
+        ...getPositionStyles(),
+        background: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '12px',
+        padding: '1rem',
+        width: '280px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transformOrigin: 'top',
+        animation: isVisible ? 'slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : undefined,
+      }}
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -148,6 +150,24 @@ export function FloatingCard({
           {children}
         </div>
       )}
+      
+      {/* CSS Animation */}
+      <style jsx>{`
+        @keyframes slideDown {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+          }
+          50% {
+            opacity: 0.7;
+            transform: translateY(2px) scale(0.99);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
