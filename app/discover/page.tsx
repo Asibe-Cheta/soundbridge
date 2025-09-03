@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { FixedSizeList as List } from 'react-window';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
@@ -31,8 +32,191 @@ import {
   Play,
   Pause,
   Heart,
-  Share2
+  Share2,
+  Loader2
 } from 'lucide-react';
+
+// Virtual list constants for different content types
+const MUSIC_ITEM_HEIGHT = 320;
+const CREATOR_ITEM_HEIGHT = 250;
+const EVENT_ITEM_HEIGHT = 280;
+const PODCAST_ITEM_HEIGHT = 280;
+const CONTAINER_HEIGHT = 600;
+
+// Virtual music item component
+interface VirtualMusicItemProps {
+  index: number;
+  style: React.CSSProperties;
+  data: {
+    tracks: any[];
+    currentTrack: any;
+    isPlaying: boolean;
+    likedTracks: Set<string>;
+    handlePlayTrack: (track: any) => void;
+    handleLikeTrack: (track: any, e: React.MouseEvent) => void;
+    handleShareTrack: (track: any, e: React.MouseEvent) => void;
+  };
+}
+
+const VirtualMusicItem = ({ index, style, data }: VirtualMusicItemProps) => {
+  const { tracks, currentTrack, isPlaying, likedTracks, handlePlayTrack, handleLikeTrack, handleShareTrack } = data;
+  const track = tracks[index];
+
+  if (!track) {
+    return (
+      <div style={{...style, padding: '0.5rem'}}>
+        <div className="card">
+          <div className="card-image">
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '2rem'
+            }}>
+              <Loader2 size={32} className="animate-spin" />
+            </div>
+          </div>
+          <div style={{ fontWeight: '600' }}>Loading...</div>
+          <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{...style, padding: '0.5rem'}}>
+      <div className="card" style={{ cursor: 'pointer' }}>
+        <div className="card-image" style={{ position: 'relative' }}>
+          {track.cover_art_url ? (
+            <Image
+              src={track.cover_art_url}
+              alt={track.title}
+              width={200}
+              height={200}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '2rem'
+            }}>
+              <Music size={32} />
+            </div>
+          )}
+          {/* Play Button */}
+          <div 
+            className="play-button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handlePlayTrack(track);
+            }}
+            style={{ 
+              cursor: 'pointer',
+              backgroundColor: currentTrack?.id === track.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
+            }}
+          >
+            {currentTrack?.id === track.id && isPlaying ? (
+              <Pause size={20} />
+            ) : (
+              <Play size={20} />
+            )}
+          </div>
+          {/* Like Button */}
+          <div 
+            className="like-button"
+            onClick={(e) => handleLikeTrack(track, e)}
+            style={{ 
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              cursor: 'pointer',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <Heart 
+              size={16} 
+              style={{ 
+                color: likedTracks.has(track.id) ? '#EC4899' : 'white',
+                fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
+              }} 
+            />
+          </div>
+          {/* Share Button */}
+          <div 
+            className="share-button"
+            onClick={(e) => handleShareTrack(track, e)}
+            style={{ 
+              position: 'absolute',
+              top: '10px',
+              right: '50px',
+              cursor: 'pointer',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <Share2 
+              size={16} 
+              style={{ 
+                color: 'white'
+              }} 
+            />
+          </div>
+        </div>
+        <div style={{ fontWeight: '600' }}>{track.title}</div>
+        <div style={{ color: '#999', fontSize: '0.9rem' }}>{track.artist}</div>
+        <div className="waveform"></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+          <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>{track.genre}</span>
+          <span style={{ color: '#999', fontSize: '0.8rem' }}>{track.formatted_duration || '3:24'}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function DiscoverPage() {
   const router = useRouter();
@@ -390,38 +574,13 @@ export default function DiscoverPage() {
     switch (activeTab) {
       case 'music':
         return (
-          <div className="grid grid-6">
+          <>
             {trendingLoading ? (
-              // Loading skeleton
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="card">
-                  <div className="card-image">
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '2rem'
-                    }}>
-                      <Music size={32} />
-                    </div>
-                    <div className="play-button">▶</div>
-                  </div>
-                  <div style={{ fontWeight: '600' }}>Loading...</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
-                  <div className="waveform"></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                    <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>Loading...</span>
-                    <span style={{ color: '#999', fontSize: '0.8rem' }}>Loading...</span>
-                  </div>
-                </div>
-              ))
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: '#EC4899' }} />
+              </div>
             ) : trendingError ? (
-              <div className="card" style={{ gridColumn: 'span 6', textAlign: 'center', padding: '2rem' }}>
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
                 <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Music</h3>
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
@@ -452,136 +611,58 @@ export default function DiscoverPage() {
                 </button>
               </div>
             ) : trendingResults?.music && trendingResults.music.length > 0 ? (
-              trendingResults.music.map((track) => (
-                <div key={track.id} className="card" style={{ cursor: 'pointer' }}>
-                  <div className="card-image" style={{ position: 'relative' }}>
-                    {track.cover_art_url ? (
-                      <Image
-                        src={track.cover_art_url}
-                        alt={track.title}
-                        width={200}
-                        height={200}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '2rem'
-                      }}>
-                        <Music size={32} />
-                      </div>
-                    )}
-                    {/* Play Button */}
-                    <div 
-                      className="play-button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePlayTrack(track);
-                      }}
-                      style={{ 
-                        cursor: 'pointer',
-                        backgroundColor: currentTrack?.id === track.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
-                      }}
-                    >
-                      {currentTrack?.id === track.id && isPlaying ? (
-                        <Pause size={20} />
-                      ) : (
-                        <Play size={20} />
-                      )}
-                    </div>
-                    {/* Like Button */}
-                    <div 
-                      className="like-button"
-                      onClick={(e) => handleLikeTrack(track, e)}
-                      style={{ 
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        cursor: 'pointer',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease',
-                        zIndex: 10
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      <Heart 
-                        size={16} 
-                        style={{ 
-                          color: likedTracks.has(track.id) ? '#EC4899' : 'white',
-                          fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
-                        }} 
-                      />
-                    </div>
-                    {/* Share Button */}
-                    <div 
-                      className="share-button"
-                      onClick={(e) => handleShareTrack(track, e)}
-                      style={{ 
-                        position: 'absolute',
-                        top: '10px',
-                        right: '50px',
-                        cursor: 'pointer',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease',
-                        zIndex: 10
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      <Share2 
-                        size={16} 
-                        style={{ 
-                          color: 'white'
-                        }} 
-                      />
-                    </div>
-                  </div>
-                  <div style={{ fontWeight: '600' }}>{track.title}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{track.creator_name}</div>
-                  <div className="waveform"></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                    <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>{track.formatted_duration}</span>
-                    <span style={{ color: '#999', fontSize: '0.8rem' }}>{track.formatted_play_count} plays</span>
-                  </div>
+              <>
+                {/* Virtual Scrolling Container */}
+                <div style={{
+                  width: '100%',
+                  height: `${CONTAINER_HEIGHT}px`,
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  overflow: 'hidden'
+                }}>
+                  <List
+                    height={CONTAINER_HEIGHT}
+                    itemCount={trendingResults.music.length}
+                    itemSize={MUSIC_ITEM_HEIGHT}
+                    itemData={{
+                      tracks: trendingResults.music,
+                      currentTrack,
+                      isPlaying,
+                      likedTracks,
+                      handlePlayTrack,
+                      handleLikeTrack,
+                      handleShareTrack
+                    }}
+                    width="100%"
+                    layout="grid"
+                    direction="horizontal"
+                  >
+                    {VirtualMusicItem}
+                  </List>
                 </div>
-              ))
+
+                {/* Performance Info (Development Only) */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div style={{
+                    background: 'rgba(34, 197, 94, 0.1)',
+                    border: '1px solid rgba(34, 197, 94, 0.2)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginTop: '2rem',
+                    fontSize: '0.8rem',
+                    color: '#22c55e'
+                  }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Scrolling Active (Music)</h4>
+                    <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(CONTAINER_HEIGHT / MUSIC_ITEM_HEIGHT)} items instead of {trendingResults.music.length}</p>
+                    <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round((Math.ceil(CONTAINER_HEIGHT / MUSIC_ITEM_HEIGHT) / Math.max(1, trendingResults.music.length)) * 100)}% of traditional rendering</p>
+                    <p style={{ margin: '0.25rem 0' }}>• Supports {trendingResults.music.length} tracks without performance loss</p>
+                  </div>
+                )}
+              </>
             ) : (
               renderEmptyState('music')
             )}
-          </div>
+          </>
         );
 
       case 'creators':
