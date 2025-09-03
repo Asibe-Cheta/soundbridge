@@ -516,6 +516,37 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
+/* Creator card specific styles - remove hover effects and fix borders */
+.creator-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border-radius: 15px;
+  padding: 1.5rem;
+  transition: none;
+  cursor: pointer;
+}
+
+/* Light mode creator card borders */
+@media (prefers-color-scheme: light) {
+  .creator-card {
+    border: 1px solid #333;
+  }
+}
+
+/* Dark mode creator card borders */
+@media (prefers-color-scheme: dark) {
+  .creator-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Remove hover effects for creator cards */
+.creator-card:hover {
+  transform: none !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: none !important;
+}
+
 .card-hover:hover {
   transform: translateY(-5px);
   background: rgba(255, 255, 255, 0.1);
@@ -725,18 +756,150 @@ body {
 }
 
 .quick-action {
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: #DC2626;
+  background: transparent;
+  border: 1px solid;
   padding: 0.75rem;
   border-radius: 10px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-weight: 400;
 }
 
-.quick-action:hover {
-  background: rgba(220, 38, 38, 0.2);
+/* Light mode styling */
+@media (prefers-color-scheme: light) {
+  .quick-action {
+    border-color: #333;
+    color: #333;
+  }
+  
+  .quick-action:hover {
+    background: #DC2626;
+    color: white;
+    border-color: #DC2626;
+  }
+}
+
+/* Dark mode styling */
+@media (prefers-color-scheme: dark) {
+  .quick-action {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #DC2626;
+  }
+  
+  .quick-action:hover {
+    background: rgba(220, 38, 38, 0.2);
+    color: #DC2626;
+    border-color: rgba(220, 38, 38, 0.3);
+  }
+}
+
+/* View button styling */
+.view-button {
+  border: 1px solid;
+}
+
+/* Light mode View button */
+@media (prefers-color-scheme: light) {
+  .view-button {
+    border-color: #333;
+    color: #333;
+  }
+  
+  .view-button:hover {
+    background: #DC2626 !important;
+    color: white !important;
+    border-color: #DC2626;
+  }
+}
+
+/* Dark mode View button */
+@media (prefers-color-scheme: dark) {
+  .view-button {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .view-button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Floating card content styling */
+/* Light mode floating card text and buttons */
+@media (prefers-color-scheme: light) {
+  /* Make "Quick Actions" title website black for visibility */
+  .floating-card-title {
+    color: #1a1a1a !important;
+  }
+  
+  /* Make floating card content heading and text black */
+  .floating-card-content h3 {
+    color: #1a1a1a !important;
+  }
+  
+  .floating-card-content div {
+    color: #333 !important;
+  }
+  
+  /* Fix quick-action button hover effect for light mode */
+  .quick-action:hover {
+    background: linear-gradient(45deg, #DC2626, #EC4899) !important;
+    color: white !important;
+    border-color: #DC2626 !important;
+  }
+}
+
+/* Dark mode floating card text - match reference design */
+@media (prefers-color-scheme: dark) {
+  /* "Quick Actions" title should be white */
+  .floating-card-title {
+    color: white !important;
+  }
+  
+  /* Quick action buttons should be pink/red colored text with transparent background */
+  .floating-card .quick-action {
+    color: #EC4899 !important;
+    border-color: #EC4899 !important;
+    background: transparent !important;
+  }
+  
+  .floating-card .quick-action:hover {
+    background: #EC4899 !important;
+    color: white !important;
+    border-color: #EC4899 !important;
+  }
+  
+  /* "Friends Activity" heading should be pink (but override inline styles) */
+  .floating-card-content h3 {
+    color: #EC4899 !important;
+  }
+  
+  /* Friends activity content text should be white */
+  .floating-card-content div {
+    color: white !important;
+  }
+  
+  /* Make sure floating card icons are visible in dark mode */
+  .floating-card svg,
+  .floating-card button {
+    color: white !important;
+  }
+}
+
+/* Light mode floating card icons */
+@media (prefers-color-scheme: light) {
+  /* Make sure floating card icons are visible in light mode */
+  .floating-card svg {
+    color: #1a1a1a !important;
+  }
+  
+  .floating-card button {
+    color: #1a1a1a !important;
+  }
 }
 
 /* Waveform */

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FixedSizeList } from 'react-window';
+import { FixedSizeGrid as Grid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import {
   Calendar,
   MapPin,
@@ -23,41 +24,32 @@ import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import type { EventCategory } from '../../src/lib/types/event';
 
-// Virtual list constants
-const EVENT_ITEM_HEIGHT = 350;
+// Virtual grid constants
+const EVENT_CARD_WIDTH = 320;     // Width of each event card
+const EVENT_ITEM_HEIGHT = 350;    // Height of each event card
 const EVENT_CONTAINER_HEIGHT = 700;
+const GRID_GAP = 20;              // Gap between grid items
 
-// Virtual event item component
+// Virtual event item component for grid
 interface VirtualEventItemProps {
-  index: number;
+  columnIndex: number;
+  rowIndex: number;
   style: React.CSSProperties;
   data: {
     events: any[];
+    columnsCount: number;
     onEventClick: (event: any) => void;
   };
 }
 
-const VirtualEventItem = ({ index, style, data }: VirtualEventItemProps) => {
-  const { events, onEventClick } = data;
+const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventItemProps) => {
+  const { events, columnsCount, onEventClick } = data;
+  const index = rowIndex * columnsCount + columnIndex;
   const event = events[index];
 
   if (!event) {
-    return (
-      <div style={{...style, padding: '0.75rem'}}>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          height: '300px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Loader2 size={32} className="animate-spin" style={{ color: '#EC4899' }} />
-        </div>
-      </div>
-    );
+    // Empty cell (no event data)
+    return <div style={style}></div>;
   }
 
   return (
@@ -234,6 +226,7 @@ export default function EventsPage() {
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [showFilters, setShowFilters] = useState(false);
+  const [columnsCount, setColumnsCount] = useState(3); // Number of columns in grid
   // Note: Navigation and authentication are handled by the layout Header component
 
   const locations = [
@@ -276,6 +269,13 @@ export default function EventsPage() {
     { value: 'high', label: 'Over £50' }
   ];
 
+  // Calculate columns based on container width
+  const calculateColumns = (containerWidth: number) => {
+    const availableWidth = containerWidth - GRID_GAP;
+    const cardWidthWithGap = EVENT_CARD_WIDTH + GRID_GAP;
+    return Math.max(1, Math.floor(availableWidth / cardWidthWithGap));
+  };
+
   // Apply filters when they change
   useEffect(() => {
     const filters = {
@@ -315,6 +315,9 @@ export default function EventsPage() {
   const filteredEvents = eventsState.events;
   const hasActiveFilters = searchQuery || selectedLocation !== 'all' || selectedGenre !== 'all' ||
     selectedDate !== 'all' || selectedPrice !== 'all';
+  
+  // Calculate grid dimensions
+  const rowCount = Math.ceil(filteredEvents.length / columnsCount);
 
   return (
     <>
@@ -499,7 +502,7 @@ export default function EventsPage() {
             </div>
           ) : (
             <>
-              {/* Virtual Scrolling Container */}
+              {/* Virtual Grid Container */}
               <div style={{
                 width: '100%',
                 height: `${EVENT_CONTAINER_HEIGHT}px`,
@@ -507,18 +510,33 @@ export default function EventsPage() {
                 borderRadius: '8px',
                 overflow: 'hidden'
               }}>
-                <FixedSizeList
-                  height={EVENT_CONTAINER_HEIGHT}
-                  itemCount={filteredEvents.length}
-                  itemSize={EVENT_ITEM_HEIGHT}
-                  itemData={{
-                    events: filteredEvents,
-                    onEventClick: (event: any) => router.push(`/events/${event.id}`)
+                <AutoSizer>
+                  {({ height, width }) => {
+                    // Recalculate columns based on actual container width
+                    const actualColumns = calculateColumns(width);
+                    if (actualColumns !== columnsCount) {
+                      setColumnsCount(actualColumns);
+                    }
+                    
+                    return (
+                      <Grid
+                        columnCount={columnsCount}
+                        columnWidth={(width - GRID_GAP) / columnsCount}
+                        height={height}
+                        rowCount={rowCount}
+                        rowHeight={EVENT_ITEM_HEIGHT}
+                        width={width}
+                        itemData={{
+                          events: filteredEvents,
+                          columnsCount,
+                          onEventClick: (event: any) => router.push(`/events/${event.id}`)
+                        }}
+                      >
+                        {VirtualEventItem}
+                      </Grid>
+                    );
                   }}
-                  width="100%"
-                >
-                  {VirtualEventItem}
-                </FixedSizeList>
+                </AutoSizer>
               </div>
 
               {/* Performance Info (Development Only) */}
@@ -532,9 +550,10 @@ export default function EventsPage() {
                   fontSize: '0.8rem',
                   color: '#22c55e'
                 }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Scrolling Active (Events)</h4>
-                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(EVENT_CONTAINER_HEIGHT / EVENT_ITEM_HEIGHT)} items instead of {filteredEvents.length}</p>
-                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round((Math.ceil(EVENT_CONTAINER_HEIGHT / EVENT_ITEM_HEIGHT) / Math.max(1, filteredEvents.length)) * 100)}% of traditional rendering</p>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Grid Active (Events)</h4>
+                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(EVENT_CONTAINER_HEIGHT / EVENT_ITEM_HEIGHT) * columnsCount} items instead of {filteredEvents.length}</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Grid: {columnsCount} columns × {rowCount} rows</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round(((Math.ceil(EVENT_CONTAINER_HEIGHT / EVENT_ITEM_HEIGHT) * columnsCount) / Math.max(1, filteredEvents.length)) * 100)}% of traditional rendering</p>
                   <p style={{ margin: '0.25rem 0' }}>• Supports {filteredEvents.length} events without performance loss</p>
                 </div>
               )}

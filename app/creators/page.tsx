@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FixedSizeList } from 'react-window';
-import InfiniteLoader from 'react-window-infinite-loader';
+import { FixedSizeGrid as Grid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import {
   Search,
   Filter,
@@ -40,42 +40,34 @@ function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-// Virtual list item heights
-const DESKTOP_ITEM_HEIGHT = 320; // Height of each desktop card
-const MOBILE_ITEM_HEIGHT = 80;   // Height of each mobile list item
-const CONTAINER_HEIGHT = 600;    // Height of the virtual list container
+// Virtual grid constants
+const DESKTOP_CARD_WIDTH = 240;   // Width of each desktop card
+const DESKTOP_CARD_HEIGHT = 300;  // Height of each desktop card (increased to fit buttons)
+const MOBILE_ITEM_HEIGHT = 70;    // Height of each mobile list item
+const CONTAINER_HEIGHT = 600;     // Height of the virtual grid container
+const GRID_GAP = 16;              // Gap between grid items
 
-// Creator card component for virtual list
+// Creator card component for virtual grid
 interface VirtualCreatorItemProps {
-  index: number;
+  columnIndex: number;
+  rowIndex: number;
   style: React.CSSProperties;
   data: {
     creators: any[];
     isMobile: boolean;
+    columnsCount: number;
     handleFollow: (creatorId: string) => void;
   };
 }
 
-const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => {
-  const { creators, isMobile, handleFollow } = data;
+const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreatorItemProps) => {
+  const { creators, isMobile, columnsCount, handleFollow } = data;
+  const index = rowIndex * columnsCount + columnIndex;
   const creator = creators[index];
 
   if (!creator) {
-    // Loading placeholder
-    return (
-      <div style={style}>
-        <div style={{
-          padding: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          color: '#999'
-        }}>
-          <Loader2 size={24} className="animate-spin" />
-        </div>
-      </div>
-    );
+    // Empty cell (no creator data)
+    return <div style={style}></div>;
   }
 
   if (isMobile) {
@@ -100,8 +92,8 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
           >
             {/* Avatar */}
             <div style={{
-              width: '54px',
-              height: '54px',
+              width: '48px',
+              height: '48px',
               borderRadius: '50%',
               background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
               display: 'flex',
@@ -109,8 +101,8 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
               justifyContent: 'center',
               color: 'white',
               fontWeight: '600',
-              fontSize: '1.2rem',
-              marginRight: '1rem',
+              fontSize: '1.1rem',
+              marginRight: '0.75rem',
               flexShrink: 0,
               position: 'relative'
             }}>
@@ -124,12 +116,12 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
                   background: '#EC4899',
                   color: 'white',
                   borderRadius: '50%',
-                  width: '18px',
-                  height: '18px',
+                  width: '16px',
+                  height: '16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.7rem',
+                  fontSize: '0.6rem',
                   border: '2px solid #000'
                 }}>
                   ✓
@@ -151,19 +143,7 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
                 }}>
                   {creator.display_name}
                 </h3>
-                {creator.country && (
-                  <span style={{
-                    background: 'rgba(236, 72, 153, 0.2)',
-                    color: '#EC4899',
-                    padding: '0.125rem 0.5rem',
-                    borderRadius: '12px',
-                    fontSize: '0.7rem',
-                    fontWeight: '500',
-                    flexShrink: 0
-                  }}>
-                    {creator.country}
-                  </span>
-                )}
+
               </div>
 
               <p style={{ 
@@ -212,14 +192,14 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
                 background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
                 color: 'white',
                 border: creator.isFollowing ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
+                padding: '0.375rem 0.75rem',
+                borderRadius: '16px',
+                fontSize: '0.75rem',
                 fontWeight: '600',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 flexShrink: 0,
-                minWidth: '80px'
+                minWidth: '70px'
               }}
             >
               {creator.isFollowing ? 'Following' : 'Follow'}
@@ -230,20 +210,20 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
     );
   }
 
-  // Desktop grid item (same as existing desktop layout)
+  // Desktop grid item (adjusted for grid layout)
   return (
-    <div style={{...style, padding: '0.5rem'}}>
-      <div className="card" style={{ 
-        transform: 'scale(0.759)', 
-        transformOrigin: 'top left',
-        width: '250px',
-        height: 'auto'
+    <div style={{...style, padding: `${GRID_GAP / 2}px`}}>
+      <div className="creator-card" style={{ 
+        width: '100%',
+        height: `${DESKTOP_CARD_HEIGHT - GRID_GAP}px`,
+        transform: 'none',
+        padding: '1rem 0.75rem'
       }}>
         <div style={{ position: 'relative' }}>
           {/* Avatar */}
           <div style={{
-            width: '100px',
-            height: '100px',
+            width: '70px',
+            height: '70px',
             borderRadius: '50%',
             background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
             display: 'flex',
@@ -251,8 +231,8 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
             justifyContent: 'center',
             color: 'white',
             fontWeight: '600',
-            fontSize: '2rem',
-            margin: '0 auto 1rem'
+            fontSize: '1.5rem',
+            margin: '0 auto 0.75rem'
           }}>
             {creator.display_name.charAt(0)}
           </div>
@@ -278,66 +258,99 @@ const VirtualCreatorItem = ({ index, style, data }: VirtualCreatorItemProps) => 
           )}
 
           {/* Creator Info */}
-          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
               {creator.display_name}
             </h3>
-            <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-              {creator.bio || 'No bio available'}
+            <p style={{ 
+              color: '#ccc', 
+              fontSize: '0.75rem', 
+              marginBottom: '0.5rem', 
+              lineHeight: '1.2',
+              height: '2.25rem', // Fixed height for 2 lines
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical' as any
+            }}>
+              {creator.bio && creator.bio.length > 30 ? creator.bio.substring(0, 30) + '...' : creator.bio || 'Music creator'}
             </p>
             
             {/* Stats */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem', fontSize: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '0.375rem', fontSize: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#EC4899' }}>
-                <Users size={12} />
-                {creator.followers_count} followers
+                <Users size={10} />
+                {creator.followers_count}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                <Music size={12} />
-                {creator.tracks_count} tracks
+                <Music size={10} />
+                {creator.tracks_count}
               </div>
             </div>
 
-            {/* Location and Date */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                <MapPin size={12} />
-                {creator.location || 'Unknown'}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                <Calendar size={12} />
-                {new Date(creator.created_at).toLocaleDateString()}
-              </div>
-            </div>
-
-            {/* Country Badge */}
-            {creator.country && (
-              <div style={{
-                background: 'rgba(236, 72, 153, 0.2)',
-                border: '1px solid rgba(236, 72, 153, 0.3)',
-                borderRadius: '20px',
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.8rem',
-                color: '#EC4899',
-                textAlign: 'center',
-                marginBottom: '1rem'
+            {/* Location */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '0.25rem', 
+              fontSize: '0.7rem', 
+              marginBottom: '0.375rem', 
+              color: '#999',
+              height: '1rem' // Fixed height
+            }}>
+              <MapPin size={10} />
+              <span style={{ 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'nowrap',
+                maxWidth: '120px' // Limit location width
               }}>
-                {creator.country}
-              </div>
-            )}
+                {creator.location && creator.location.length > 15 ? creator.location.substring(0, 15) + '...' : creator.location || 'Unknown'}
+              </span>
+            </div>
+
+            {/* Country Badge - Removed to give buttons more space */}
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.375rem' }}>
               <button
-                onClick={() => handleFollow(creator.id)}
-                className={creator.isFollowing ? 'btn-secondary' : 'btn-primary'}
-                style={{ flex: 1, fontSize: '0.9rem' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleFollow(creator.id);
+                }}
+                style={{
+                  flex: 1,
+                  fontSize: '0.75rem',
+                  padding: '0.375rem 0.75rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease',
+                  background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  ...(creator.isFollowing && { border: '1px solid rgba(255, 255, 255, 0.2)' })
+                }}
               >
                 {creator.isFollowing ? 'Following' : 'Follow'}
               </button>
               <Link href={`/creator/${creator.username}`} style={{ textDecoration: 'none', flex: 1 }}>
-                <button className="btn-secondary" style={{ width: '100%', fontSize: '0.9rem' }}>
-                  View Profile
+                <button 
+                  className="view-button"
+                  style={{
+                    width: '100%',
+                    fontSize: '0.75rem',
+                    padding: '0.375rem 0.75rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '400',
+                    transition: 'all 0.2s ease',
+                    background: 'transparent'
+                  }}
+                >
+                  View
                 </button>
               </Link>
             </div>
@@ -363,6 +376,7 @@ export default function CreatorsPage() {
   const [pagination, setPagination] = useState({ total: 0, limit: 20, offset: 0, hasMore: false });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [columnsCount, setColumnsCount] = useState(4); // Number of columns in grid
 
   // Fetch creators function - supports both initial load and pagination
   const fetchCreators = useCallback(async (loadMore = false) => {
@@ -397,7 +411,7 @@ export default function CreatorsPage() {
       const response = await fetch(`/api/creators?${params.toString()}`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch creators');
+        throw new Error(`Failed to fetch creators: ${response.status}`);
       }
 
       const result = await response.json();
@@ -444,19 +458,36 @@ export default function CreatorsPage() {
     return !!creators[index];
   }, [creators]);
 
-  // Get item count for virtual scrolling (includes loading slots)
-  const itemCount = pagination.hasMore ? creators.length + 1 : creators.length;
+  // Calculate grid dimensions
+  const rowCount = Math.ceil(creators.length / columnsCount);
 
-  // Handle mobile responsiveness
+  // Calculate columns based on container width
+  const calculateColumns = useCallback((containerWidth: number) => {
+    if (isMobile) return 1;
+    const availableWidth = containerWidth - GRID_GAP;
+    const cardWidthWithGap = DESKTOP_CARD_WIDTH + GRID_GAP;
+    return Math.max(1, Math.floor(availableWidth / cardWidthWithGap));
+  }, [isMobile]);
+
+  // Handle mobile responsiveness and column calculation
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // Calculate columns for desktop
+      if (!mobile) {
+        const containerWidth = Math.min(window.innerWidth - 100, 1200); // Max container width
+        setColumnsCount(calculateColumns(containerWidth));
+      } else {
+        setColumnsCount(1);
+      }
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [calculateColumns]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -509,7 +540,8 @@ export default function CreatorsPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${isFollowing ? 'unfollow' : 'follow'} creator`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to ${isFollowing ? 'unfollow' : 'follow'} creator: ${errorText}`);
       }
 
       // Update local state
@@ -526,6 +558,7 @@ export default function CreatorsPage() {
       ));
     } catch (error) {
       console.error('Error updating follow status:', error);
+      // Silently fail to avoid UI disruption
     }
   };
 
@@ -550,6 +583,8 @@ export default function CreatorsPage() {
     { value: 'birmingham', label: 'Birmingham, UK' },
     { value: 'liverpool', label: 'Liverpool, UK' }
   ];
+
+  // Removed global unhandled rejection handler to prevent console noise
 
   // Initial load
   useEffect(() => {
@@ -706,7 +741,7 @@ export default function CreatorsPage() {
             </div>
           ) : (
             <>
-              {/* Virtual Scrolling Container */}
+              {/* Virtual Grid Container */}
               <div style={{
                 width: '100%',
                 height: `${CONTAINER_HEIGHT}px`,
@@ -714,29 +749,34 @@ export default function CreatorsPage() {
                 borderRadius: '8px',
                 overflow: 'hidden'
               }}>
-                <InfiniteLoader
-                  isItemLoaded={isItemLoaded}
-                  itemCount={itemCount}
-                  loadMoreItems={loadMoreCreators}
-                >
-                  {({ onItemsRendered, ref }) => (
-                    <FixedSizeList
-                      ref={ref}
-                      height={CONTAINER_HEIGHT}
-                      itemCount={itemCount}
-                      itemSize={isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT}
-                      itemData={{
-                        creators,
-                        isMobile,
-                        handleFollow
-                      }}
-                      onItemsRendered={onItemsRendered}
-                      width="100%"
-                    >
-                      {VirtualCreatorItem}
-                    </FixedSizeList>
-                  )}
-                </InfiniteLoader>
+                <AutoSizer>
+                  {({ height, width }) => {
+                    // Recalculate columns based on actual container width
+                    const actualColumns = calculateColumns(width);
+                    if (actualColumns !== columnsCount) {
+                      setColumnsCount(actualColumns);
+                    }
+                    
+                    return (
+                      <Grid
+                        columnCount={columnsCount}
+                        columnWidth={isMobile ? width : (width - GRID_GAP) / columnsCount}
+                        height={height}
+                        rowCount={rowCount}
+                        rowHeight={isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_CARD_HEIGHT}
+                        width={width}
+                        itemData={{
+                          creators,
+                          isMobile,
+                          columnsCount,
+                          handleFollow
+                        }}
+                      >
+                        {VirtualCreatorItem}
+                      </Grid>
+                    );
+                  }}
+                </AutoSizer>
               </div>
 
               {/* End of Results Indicator */}
@@ -766,9 +806,10 @@ export default function CreatorsPage() {
                   fontSize: '0.8rem',
                   color: '#22c55e'
                 }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Scrolling Active</h4>
-                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT))} items instead of {creators.length}</p>
-                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round((Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_ITEM_HEIGHT)) / Math.max(1, creators.length)) * 100)}% of traditional rendering</p>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Grid Active</h4>
+                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_CARD_HEIGHT)) * columnsCount} items instead of {creators.length}</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Grid: {columnsCount} columns × {rowCount} rows</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round(((Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_CARD_HEIGHT)) * columnsCount) / Math.max(1, creators.length)) * 100)}% of traditional rendering</p>
                   <p style={{ margin: '0.25rem 0' }}>• Supports {pagination.total} creators without performance loss</p>
                 </div>
               )}

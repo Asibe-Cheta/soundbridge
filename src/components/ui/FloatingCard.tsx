@@ -71,10 +71,10 @@ export function FloatingCard({
         exit={{ opacity: 0, y: -20, scale: 0.9 }}
         transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
       >
-        <Card variant="glass" className="shadow-2xl" style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(20px)' }}>
+        <Card variant="glass" className="floating-card shadow-2xl" style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(20px)' }}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">{title}</h3>
+              <h3 className="floating-card-title text-lg font-semibold text-white">{title}</h3>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -104,7 +104,7 @@ export function FloatingCard({
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 floating-card-content">
                   {children}
                 </CardContent>
               </motion.div>

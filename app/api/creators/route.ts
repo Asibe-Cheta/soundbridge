@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createApiClientWithCookies();
+    const supabase = createServiceClient();
 
     // Get query parameters
     const search = searchParams.get('search') || '';
