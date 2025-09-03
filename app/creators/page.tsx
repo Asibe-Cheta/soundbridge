@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList } from 'react-window';
 import InfiniteLoader from 'react-window-infinite-loader';
 import {
   Search,
@@ -720,7 +720,7 @@ export default function CreatorsPage() {
                   loadMoreItems={loadMoreCreators}
                 >
                   {({ onItemsRendered, ref }) => (
-                    <List
+                    <FixedSizeList
                       ref={ref}
                       height={CONTAINER_HEIGHT}
                       itemCount={itemCount}
@@ -734,7 +734,7 @@ export default function CreatorsPage() {
                       width="100%"
                     >
                       {VirtualCreatorItem}
-                    </List>
+                    </FixedSizeList>
                   )}
                 </InfiniteLoader>
               </div>

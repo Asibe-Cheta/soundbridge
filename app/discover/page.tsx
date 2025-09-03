@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList } from 'react-window';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
@@ -620,7 +620,7 @@ export default function DiscoverPage() {
                   borderRadius: '8px',
                   overflow: 'hidden'
                 }}>
-                  <List
+                  <FixedSizeList
                     height={CONTAINER_HEIGHT}
                     itemCount={trendingResults.music.length}
                     itemSize={MUSIC_ITEM_HEIGHT}
@@ -634,11 +634,9 @@ export default function DiscoverPage() {
                       handleShareTrack
                     }}
                     width="100%"
-                    layout="grid"
-                    direction="horizontal"
                   >
                     {VirtualMusicItem}
-                  </List>
+                  </FixedSizeList>
                 </div>
 
                 {/* Performance Info (Development Only) */}
