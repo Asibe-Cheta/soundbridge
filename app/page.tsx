@@ -10,7 +10,7 @@ import { useSocial } from '@/src/hooks/useSocial';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2 } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
@@ -28,6 +28,8 @@ export default function HomePage() {
   const [likedTracks, setLikedTracks] = React.useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedTrackForShare, setSelectedTrackForShare] = useState<any>(null);
+  const [hotCreators, setHotCreators] = useState<any[]>([]);
+  const [hotCreatorsLoading, setHotCreatorsLoading] = useState(true);
   
   // Events state
   const [events, setEvents] = useState<any[]>([]);
@@ -175,6 +177,28 @@ export default function HomePage() {
     console.log('🎵 Converted to AudioTrack:', audioTrack);
     playTrack(audioTrack);
   };
+
+  // Fetch hot creators based on algorithm
+  useEffect(() => {
+    const fetchHotCreators = async () => {
+      try {
+        setHotCreatorsLoading(true);
+        const response = await fetch('/api/creators/hot?limit=6');
+        const data = await response.json();
+        
+        if (data.data) {
+          setHotCreators(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching hot creators:', error);
+        setHotCreators([]);
+      } finally {
+        setHotCreatorsLoading(false);
+      }
+    };
+
+    fetchHotCreators();
+  }, []);
 
   const handleLikeTrack = async (track: any, e: React.MouseEvent) => {
     e.preventDefault();
@@ -1753,57 +1777,140 @@ export default function HomePage() {
         <section className="section">
           <div className="section-header">
                             <h2 className="heading-3 text-display">Hot Creators Right Now</h2>
-            <a href="#" className="view-all">View All</a>
+            <Link href="/creators?sortBy=hot" className="view-all">View All</Link>
           </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: isMobile ? '1rem' : '1.5rem'
           }}>
-            <Link href="/creator/adunni-adebayo" style={{ textDecoration: 'none' }}>
-              <div className="card">
-                <div className="card-image">
-                  Creator Photo
-                  <div className="play-button">
-                    <Play size={20} />
+            {hotCreatorsLoading ? (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="card">
+                  <div className="card-image">
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#666'
+                    }}>
+                      <Loader2 size={24} className="animate-spin" />
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: '600', color: '#666' }}>Loading...</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+                  <div className="stats">
+                    <span style={{ color: '#666' }}>...</span>
+                    <span style={{ color: '#666' }}>...</span>
                   </div>
                 </div>
-                <div style={{ fontWeight: '600' }}>Adunni Adebayo</div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>Afrobeats • Lagos</div>
-                <div className="stats">
-                  <span>125K followers</span>
-                  <span>45 tracks</span>
+              ))
+            ) : hotCreators.length > 0 ? (
+              hotCreators.map((creator) => (
+                <Link 
+                  key={creator.id} 
+                  href={`/creator/${creator.username}`} 
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div className="card">
+                    <div className="card-image">
+                      {creator.avatar_url ? (
+                        <Image
+                          src={creator.avatar_url}
+                          alt={creator.display_name}
+                          width={200}
+                          height={200}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '2rem',
+                          fontWeight: '600'
+                        }}>
+                          {creator.display_name?.substring(0, 2).toUpperCase() || 'C'}
+                        </div>
+                      )}
+                      <div className="play-button">
+                        <Play size={20} />
+                      </div>
+                      {/* Hot Score Badge */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        color: 'white',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '12px',
+                        fontSize: '0.7rem',
+                        fontWeight: '600',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                      }}>
+                        🔥 {creator.hot_score}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: '600' }}>{creator.display_name}</div>
+                    <div style={{ color: '#999', fontSize: '0.9rem' }}>
+                      {creator.genre ? `${creator.genre} • ` : ''}
+                      {creator.location || 'Location not set'}
+                      {creator.content_types && (
+                        <span style={{ marginLeft: '0.5rem' }}>
+                          {creator.content_types.has_music && creator.content_types.has_podcasts && '🎵🎙️'}
+                          {creator.content_types.has_music && !creator.content_types.has_podcasts && '🎵'}
+                          {!creator.content_types.has_music && creator.content_types.has_podcasts && '🎙️'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="stats">
+                      <span>{creator.followers_count?.toLocaleString() || 0} followers</span>
+                      <span>{creator.tracks_count || 0} tracks</span>
+                      {creator.recent_tracks_count > 0 && (
+                        <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>
+                          +{creator.recent_tracks_count} recent
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              // Empty state
+              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
+                <div style={{ color: '#EC4899', marginBottom: '1rem' }}>
+                  <Star size={48} style={{ opacity: 0.5 }} />
                 </div>
+                <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Hot Creators Yet</h3>
+                <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+                  Be the first to upload amazing content and become a hot creator!
+                </p>
+                <Link href="/upload" style={{ textDecoration: 'none' }}>
+                  <button style={{ 
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}>
+                    Start Creating
+                  </button>
+                </Link>
               </div>
-            </Link>
-            <div className="card">
-              <div className="card-image">
-                Creator Photo
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>James Mitchell</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Gospel • London</div>
-              <div className="stats">
-                <span>89K followers</span>
-                <span>32 tracks</span>
-              </div>
-            </div>
-            <div className="card">
-              <div className="card-image">
-                Creator Photo
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-              </div>
-              <div style={{ fontWeight: '600' }}>Chiamaka Okonkwo</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Highlife • Abuja</div>
-              <div className="stats">
-                <span>67K followers</span>
-                <span>28 tracks</span>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 

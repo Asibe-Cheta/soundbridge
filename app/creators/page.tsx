@@ -389,26 +389,38 @@ export default function CreatorsPage() {
       }
       setError(null);
 
-      const params = new URLSearchParams();
+      let response;
       
-      if (searchQuery.trim()) {
-        params.append('search', searchQuery.trim());
-      }
-      if (selectedGenre !== 'all') {
-        params.append('genre', selectedGenre);
-      }
-      if (selectedLocation !== 'all') {
-        params.append('location', selectedLocation);
-      }
-      params.append('sortBy', sortBy);
-      params.append('limit', pagination.limit.toString());
-      params.append('offset', loadMore ? pagination.offset.toString() : '0');
-      
-      if (user?.id) {
-        params.append('currentUserId', user.id);
-      }
+      // Check if we're using the hot creators algorithm
+      if (sortBy === 'hot') {
+        // Use the hot creators API endpoint
+        const params = new URLSearchParams({
+          limit: pagination.limit.toString()
+        });
+        response = await fetch(`/api/creators/hot?${params.toString()}`);
+      } else {
+        // Use the regular creators API
+        const params = new URLSearchParams();
+        
+        if (searchQuery.trim()) {
+          params.append('search', searchQuery.trim());
+        }
+        if (selectedGenre !== 'all') {
+          params.append('genre', selectedGenre);
+        }
+        if (selectedLocation !== 'all') {
+          params.append('location', selectedLocation);
+        }
+        params.append('sortBy', sortBy);
+        params.append('limit', pagination.limit.toString());
+        params.append('offset', loadMore ? pagination.offset.toString() : '0');
+        
+        if (user?.id) {
+          params.append('currentUserId', user.id);
+        }
 
-      const response = await fetch(`/api/creators?${params.toString()}`);
+        response = await fetch(`/api/creators?${params.toString()}`);
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to fetch creators: ${response.status}`);
@@ -674,6 +686,7 @@ export default function CreatorsPage() {
                   onChange={(e) => setSortBy(e.target.value)}
                   style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
+                  <option value="hot">🔥 Hot Creators</option>
                   <option value="followers">Followers</option>
                   <option value="rating">Rating</option>
                   <option value="tracks">Tracks</option>
