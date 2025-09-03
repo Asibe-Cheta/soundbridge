@@ -29,12 +29,6 @@ import {
   Send,
   UserPlus,
   UserMinus,
-  LogOut,
-  Upload,
-  Search,
-  Bell,
-  Settings,
-  Home,
   AlertCircle,
   CheckCircle,
   Loader2
@@ -52,7 +46,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [chatMessage, setChatMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [creator, setCreator] = useState<CreatorProfile>(initialCreator);
+  const [creator] = useState<CreatorProfile>(initialCreator);
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -67,7 +61,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [proposedEndDate, setProposedEndDate] = useState('');
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [availabilityState, availabilityActions] = useAvailability();
   const router = useRouter();
 
@@ -133,7 +127,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     };
 
     loadCreatorData();
-  }, [creator.id, username, user?.id]);
+  }, [creator.id, username, user, availabilityActions, tracks.length]);
 
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
@@ -638,7 +632,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                   <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2 text-white">No Availability Set</h3>
                   <p className="text-gray-400">
-                    This creator hasn't set their availability yet. Check back later!
+                    This creator hasn&apos;t set their availability yet. Check back later!
                   </p>
                 </div>
               )}
