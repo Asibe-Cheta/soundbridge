@@ -355,13 +355,13 @@ export default function CreatorsPage() {
                 <div style={{ 
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, 250px)', 
-                  gap: '1rem',
+                  gap: '0.5rem',
                   justifyContent: 'start',
                   alignItems: 'start'
                 }}>
                   {creators.map((creator) => (
                     <div key={creator.id} className="card" style={{ 
-                      transform: 'scale(0.6)', 
+                      transform: 'scale(0.69)', 
                       transformOrigin: 'top left',
                       width: '250px',
                       height: 'auto'
