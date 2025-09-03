@@ -47,15 +47,22 @@ export default function CreatorsPage() {
   const [sortBy, setSortBy] = useState('followers');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creators, setCreators] = useState<any[]>([]);
+  const [pagination, setPagination] = useState({ total: 0, limit: 20, offset: 0, hasMore: false });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Debounced fetch function
-  const fetchCreators = useCallback(async () => {
+  // Fetch creators function - supports both initial load and pagination
+  const fetchCreators = useCallback(async (loadMore = false) => {
     try {
-      setLoading(true);
+      if (loadMore) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setCreators([]); // Clear existing creators for new search
+      }
       setError(null);
 
       const params = new URLSearchParams();
@@ -70,7 +77,8 @@ export default function CreatorsPage() {
         params.append('location', selectedLocation);
       }
       params.append('sortBy', sortBy);
-      params.append('limit', '20');
+      params.append('limit', pagination.limit.toString());
+      params.append('offset', loadMore ? pagination.offset.toString() : '0');
       
       if (user?.id) {
         params.append('currentUserId', user.id);
@@ -83,21 +91,65 @@ export default function CreatorsPage() {
       }
 
       const result = await response.json();
-      setCreators(result.data || []);
+      
+      if (loadMore) {
+        // Append new creators to existing list
+        setCreators(prev => [...prev, ...(result.data || [])]);
+      } else {
+        // Replace creators list
+        setCreators(result.data || []);
+      }
+      
+      setPagination(result.pagination || { total: 0, limit: 20, offset: 0, hasMore: false });
     } catch (err) {
       console.error('Error fetching creators:', err);
       setError('Failed to load creators');
-      setCreators([]);
+      if (!loadMore) {
+        setCreators([]);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [searchQuery, selectedGenre, selectedLocation, sortBy, user?.id]);
+  }, [searchQuery, selectedGenre, selectedLocation, sortBy, user?.id, pagination.limit]);
 
   // Debounce the fetch function
   const debouncedFetchCreators = useCallback(
-    debounce(fetchCreators, 300),
+    debounce(() => fetchCreators(false), 300),
     [fetchCreators]
   );
+
+  // Load more function for pagination
+  const loadMoreCreators = useCallback(() => {
+    if (!loadingMore && pagination.hasMore) {
+      // Update offset for next page
+      const nextOffset = pagination.offset + pagination.limit;
+      setPagination(prev => ({ ...prev, offset: nextOffset }));
+      fetchCreators(true);
+    }
+  }, [loadingMore, pagination.hasMore, pagination.offset, pagination.limit, fetchCreators]);
+
+  // Intersection Observer for infinite scroll
+  const [loadMoreRef, setLoadMoreRef] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!loadMoreRef || !pagination.hasMore || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreCreators();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '100px' // Load more when user is 100px from the trigger
+      }
+    );
+
+    observer.observe(loadMoreRef);
+    return () => observer.disconnect();
+  }, [loadMoreRef, pagination.hasMore, loadingMore, loadMoreCreators]);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -203,13 +255,14 @@ export default function CreatorsPage() {
     { value: 'liverpool', label: 'Liverpool, UK' }
   ];
 
-  // Initial load and filter changes
+  // Initial load
   useEffect(() => {
-    fetchCreators();
+    fetchCreators(false);
   }, []);
 
-  // Debounced filter changes
+  // Reset pagination and fetch when filters change
   useEffect(() => {
+    setPagination(prev => ({ ...prev, offset: 0 }));
     debouncedFetchCreators();
   }, [searchQuery, selectedGenre, selectedLocation, sortBy, debouncedFetchCreators]);
 
@@ -218,6 +271,7 @@ export default function CreatorsPage() {
     setSelectedGenre('all');
     setSelectedLocation('all');
     setSortBy('followers');
+    setPagination(prev => ({ ...prev, offset: 0 }));
   };
 
   const hasActiveFilters = searchQuery || selectedGenre !== 'all' || selectedLocation !== 'all';
@@ -312,8 +366,14 @@ export default function CreatorsPage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title" style={{ fontSize: '0.72rem' }}>
-              {loading ? 'Loading creators...' : `${creators.length} Creators Found`}
+              {loading ? 'Loading creators...' : `${creators.length} of ${pagination.total} Creators Found`}
             </h2>
+            {pagination.total > 0 && !loading && (
+              <p style={{ fontSize: '0.6rem', color: '#999', marginTop: '0.25rem' }}>
+                Showing {Math.min(creators.length, pagination.total)} creators
+                {pagination.hasMore && ` • ${pagination.total - creators.length} more available`}
+              </p>
+            )}
           </div>
 
           {/* Error Display */}
@@ -640,10 +700,68 @@ export default function CreatorsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Infinite Scroll Trigger and Load More Button */}
+              {pagination.hasMore && (
+                <>
+                  {/* Intersection Observer Target for Infinite Scroll */}
+                  <div
+                    ref={setLoadMoreRef}
+                    style={{
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '2rem 0'
+                    }}
+                  />
+
+                  {/* Manual Load More Button (fallback) */}
+                  <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+                    <button
+                      onClick={loadMoreCreators}
+                      disabled={loadingMore}
+                      className="btn-secondary"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        margin: '0 auto',
+                        opacity: loadingMore ? 0.7 : 1
+                      }}
+                    >
+                      {loadingMore ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Loading more creators...
+                        </>
+                      ) : (
+                        <>
+                          Load More ({pagination.total - creators.length} remaining)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* End of Results Indicator */}
+              {!pagination.hasMore && creators.length > 0 && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  color: '#999',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                  marginTop: '2rem'
+                }}>
+                  <p>You've seen all {pagination.total} creators!</p>
+                  <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    Try adjusting your filters to discover more creators.
+                  </p>
+                </div>
+              )}
             </>
           )}
-
-          {/* Load More Button - Removed for performance optimization */}
         </section>
 
         <Footer />
