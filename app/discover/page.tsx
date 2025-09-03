@@ -1390,17 +1390,113 @@ export default function DiscoverPage() {
 
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions">
-        <div className="quick-actions">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           <Link href="/upload" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">Upload Music</div>
+            <div style={{
+              background: 'transparent',
+              border: '1px solid white',
+              padding: '0.375rem 0.75rem',
+              borderRadius: '8px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+            >
+              <Music size={16} color="white" />
+              Upload Music
+            </div>
           </Link>
-          <div className="quick-action">Start Podcast</div>
-          <div className="quick-action">Create Event</div>
-          <div className="quick-action">Find Collaborators</div>
+          <div style={{
+            background: 'transparent',
+            border: '1px solid white',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '8px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+          >
+            <Mic size={16} color="white" />
+            Start Podcast
+          </div>
+          <div style={{
+            background: 'transparent',
+            border: '1px solid white',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '8px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+          >
+            <Calendar size={16} color="white" />
+            Create Event
+          </div>
+          <div style={{
+            background: 'transparent',
+            border: '1px solid white',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '8px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+          >
+            <Users size={16} color="white" />
+            Find Collaborators
+          </div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.7)' }}>
           <div>John is listening to &quot;Praise Medley&quot;</div>
           <div>Sarah posted a new track</div>
           <div>Mike joined Gospel Night event</div>

@@ -16,7 +16,8 @@ import {
   Search,
   AlertCircle,
   Loader2,
-  Music
+  Music,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
@@ -577,15 +578,111 @@ export default function EventsPage() {
 
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions">
-        <div className="quick-actions">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           <Link href="/events/create" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">Create Event</div>
+            <div style={{
+              background: 'transparent',
+              border: '1px solid white',
+              padding: '0.375rem 0.75rem',
+              borderRadius: '8px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+            >
+              <Calendar size={16} color="white" />
+              Create Event
+            </div>
           </Link>
           <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">My Events</div>
+            <div style={{
+              background: 'transparent',
+              border: '1px solid white',
+              padding: '0.375rem 0.75rem',
+              borderRadius: '8px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+            >
+              <Settings size={16} color="white" />
+              My Events
+            </div>
           </Link>
-          <div className="quick-action">Upload Music</div>
-          <div className="quick-action">Find Collaborators</div>
+          <div style={{
+            background: 'transparent',
+            border: '1px solid white',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '8px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+          >
+            <Music size={16} color="white" />
+            Upload Music
+          </div>
+          <div style={{
+            background: 'transparent',
+            border: '1px solid white',
+            padding: '0.375rem 0.75rem',
+            borderRadius: '8px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+          >
+            <Users size={16} color="white" />
+            Find Collaborators
+          </div>
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Categories</h3>
@@ -597,7 +694,7 @@ export default function EventsPage() {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: selectedGenre === genre.value ? '#EC4899' : '#ccc',
+                color: selectedGenre === genre.value ? '#EC4899' : 'rgba(255, 255, 255, 0.7)',
                 textAlign: 'left',
                 cursor: 'pointer',
                 padding: '0.25rem 0'

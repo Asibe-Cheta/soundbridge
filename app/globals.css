@@ -752,46 +752,123 @@ body {
 .quick-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .quick-action {
   background: transparent;
   border: 1px solid;
-  padding: 0.75rem;
-  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 400;
+  font-size: 0.875rem;
+  margin-bottom: 0.375rem;
 }
 
-/* Light mode styling */
+/* Light mode styling - NUCLEAR APPROACH */
 @media (prefers-color-scheme: light) {
-  .quick-action {
-    border-color: #333;
-    color: #333;
+  /* FloatingCard container and all children */
+  .floating-card,
+  .floating-card *,
+  .floating-card-content,
+  .floating-card-content *,
+  .floating-card h3,
+  .floating-card-title,
+  h3.floating-card-title,
+  h3.text-lg,
+  h3.heading-5,
+  h3.text-display {
+    color: white !important;
   }
   
-  .quick-action:hover {
-    background: #DC2626;
-    color: white;
-    border-color: #DC2626;
+  /* Quick action buttons */
+  .quick-action,
+  .quick-actions .quick-action,
+  .quick-actions div.quick-action,
+  div.quick-action,
+  .floating-card .quick-action,
+  .floating-card-content .quick-action,
+  .quick-action *,
+  .quick-action svg,
+  .quick-action span,
+  .quick-action div {
+    border: 1px solid white !important;
+    color: white !important;
+    background: transparent !important;
+    border-color: white !important;
+    fill: white !important;
+    stroke: white !important;
+  }
+  
+  .quick-action:hover,
+  .quick-actions .quick-action:hover,
+  .quick-actions div.quick-action:hover,
+  div.quick-action:hover,
+  .floating-card .quick-action:hover,
+  .floating-card-content .quick-action:hover,
+  .quick-action:hover *,
+  .quick-action:hover svg {
+    background: linear-gradient(45deg, #DC2626, #EC4899) !important;
+    color: white !important;
+    border: 1px solid white !important;
+    border-color: white !important;
+    fill: white !important;
+    stroke: white !important;
   }
 }
 
-/* Dark mode styling */
+/* Dark mode styling - NUCLEAR APPROACH */
 @media (prefers-color-scheme: dark) {
-  .quick-action {
-    background: rgba(220, 38, 38, 0.1);
-    border-color: rgba(220, 38, 38, 0.3);
-    color: #DC2626;
+  /* FloatingCard container and all children */
+  .floating-card,
+  .floating-card *,
+  .floating-card-content,
+  .floating-card-content *,
+  .floating-card h3,
+  .floating-card-title,
+  h3.floating-card-title,
+  h3.text-lg,
+  h3.heading-5,
+  h3.text-display {
+    color: white !important;
   }
   
-  .quick-action:hover {
-    background: rgba(220, 38, 38, 0.2);
-    color: #DC2626;
-    border-color: rgba(220, 38, 38, 0.3);
+  /* Quick action buttons */
+  .quick-action,
+  .quick-actions .quick-action,
+  .quick-actions div.quick-action,
+  div.quick-action,
+  .floating-card .quick-action,
+  .floating-card-content .quick-action,
+  .quick-action *,
+  .quick-action svg,
+  .quick-action span,
+  .quick-action div {
+    background: transparent !important;
+    border: 1px solid white !important;
+    color: white !important;
+    border-color: white !important;
+    fill: white !important;
+    stroke: white !important;
+  }
+  
+  .quick-action:hover,
+  .quick-actions .quick-action:hover,
+  .quick-actions div.quick-action:hover,
+  div.quick-action:hover,
+  .floating-card .quick-action:hover,
+  .floating-card-content .quick-action:hover,
+  .quick-action:hover *,
+  .quick-action:hover svg {
+    background: linear-gradient(45deg, #DC2626, #EC4899) !important;
+    color: white !important;
+    border-color: white !important;
+    border: 1px solid white !important;
+    fill: white !important;
+    stroke: white !important;
   }
 }
 
@@ -828,77 +905,155 @@ body {
   }
 }
 
-/* Floating card content styling */
-/* Light mode floating card text and buttons */
-@media (prefers-color-scheme: light) {
-  /* Make "Quick Actions" title website black for visibility */
-  .floating-card-title {
-    color: #1a1a1a !important;
-  }
-  
-  /* Make floating card content heading and text black */
-  .floating-card-content h3 {
-    color: #1a1a1a !important;
-  }
-  
-  .floating-card-content div {
-    color: #333 !important;
-  }
-  
-  /* Fix quick-action button hover effect for light mode */
-  .quick-action:hover {
-    background: linear-gradient(45deg, #DC2626, #EC4899) !important;
-    color: white !important;
-    border-color: #DC2626 !important;
-  }
-}
+/* QUICK ACTIONS TOGGLE BUTTON GLASSMORPHISM */
 
-/* Dark mode floating card text - match reference design */
+/* Dark Mode Quick Actions Toggle Button */
 @media (prefers-color-scheme: dark) {
-  /* "Quick Actions" title should be white */
-  .floating-card-title {
+  .quick-actions-toggle {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: white !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
   }
   
-  /* Quick action buttons should be pink/red colored text with transparent background */
-  .floating-card .quick-action {
-    color: #EC4899 !important;
-    border-color: #EC4899 !important;
-    background: transparent !important;
-  }
-  
-  .floating-card .quick-action:hover {
-    background: #EC4899 !important;
+  .quick-actions-toggle:hover {
+    background: linear-gradient(45deg, #DC2626, #EC4899) !important;
+    border: 1px solid rgba(220, 38, 38, 0.8) !important;
     color: white !important;
-    border-color: #EC4899 !important;
-  }
-  
-  /* "Friends Activity" heading should be pink (but override inline styles) */
-  .floating-card-content h3 {
-    color: #EC4899 !important;
-  }
-  
-  /* Friends activity content text should be white */
-  .floating-card-content div {
-    color: white !important;
-  }
-  
-  /* Make sure floating card icons are visible in dark mode */
-  .floating-card svg,
-  .floating-card button {
-    color: white !important;
+    box-shadow: 0 8px 32px rgba(220, 38, 38, 0.3) !important;
   }
 }
 
-/* Light mode floating card icons */
+/* Light Mode Quick Actions Toggle Button */
 @media (prefers-color-scheme: light) {
-  /* Make sure floating card icons are visible in light mode */
-  .floating-card svg {
-    color: #1a1a1a !important;
+  .quick-actions-toggle {
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: white !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
   }
   
-  .floating-card button {
-    color: #1a1a1a !important;
+  .quick-actions-toggle:hover {
+    background: linear-gradient(45deg, #DC2626, #EC4899) !important;
+    border: 1px solid rgba(220, 38, 38, 0.9) !important;
+    color: white !important;
+    box-shadow: 0 8px 32px rgba(220, 38, 38, 0.3) !important;
+  }
+}
+
+/* FRESH FLOATING CARD STYLING - MAXIMUM SPECIFICITY */
+
+/* Dark Mode FloatingCard - Nuclear approach */
+@media (prefers-color-scheme: dark) {
+  /* Target ALL possible FloatingCard containers */
+  aside[class*="fixed"][class*="z-50"],
+  div[class*="fixed"][class*="z-50"],
+  .fixed.z-50 {
+    
+    /* TITLE/HEADER: White text (no border by default) */
+    h3.floating-card-title,
+    h3.text-lg,
+    h3:first-child {
+      color: white !important;
+      background: transparent !important;
+      margin-bottom: 1rem !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+    
+    /* QUICK ACTION BUTTONS: White text with thin #DC2626 border */
+    .quick-action,
+    .quick-actions .quick-action,
+    .quick-actions > div,
+    .quick-actions > a {
+      color: white !important;
+      border: 1px solid #DC2626 !important;
+      background: transparent !important;
+      padding: 0.5rem 0.75rem !important;
+      border-radius: 6px !important;
+      margin-bottom: 0.375rem !important;
+      text-align: center !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      text-decoration: none !important;
+      display: block !important;
+      font-size: 0.875rem !important;
+    }
+    
+    /* BUTTON HOVER: #DC2626 background */
+    .quick-action:hover,
+    .quick-actions .quick-action:hover,
+    .quick-actions > div:hover,
+    .quick-actions > a:hover {
+      background: #DC2626 !important;
+      color: white !important;
+      border-color: #DC2626 !important;
+      transform: translateY(-1px) !important;
+    }
+    
+    /* FRIENDS ACTIVITY HEADING: Pink #EC4899 */
+    h3[style*="color: #EC4899"],
+    .floating-card-content h3,
+    h3:not(:first-child) {
+      color: #EC4899 !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 2rem 0 1rem !important;
+      background: transparent !important;
+    }
+    
+    /* FRIENDS ACTIVITY TEXT: White */
+    .floating-card-content div,
+    .floating-card-content > div:last-child,
+    .floating-card-content > div:last-child > div {
+      color: white !important;
+    }
+    
+    /* CLOSE/CONTROL BUTTONS: White with #DC2626 border */
+    button[class*="hover"],
+    button.w-8,
+    button.h-8,
+    svg {
+      color: white !important;
+      border: 1px solid #DC2626 !important;
+      background: transparent !important;
+    }
+  }
+}
+
+/* Light Mode FloatingCard */
+@media (prefers-color-scheme: light) {
+  aside[class*="fixed"][class*="z-50"],
+  div[class*="fixed"][class*="z-50"],
+  .fixed.z-50 {
+    
+    /* TITLE: Website black */
+    h3.floating-card-title,
+    h3.text-lg,
+    h3:first-child {
+      color: #1a1a1a !important;
+    }
+    
+    /* CONTENT TEXT: Black */
+    .floating-card-content h3,
+    .floating-card-content div {
+      color: #333 !important;
+    }
+    
+    /* BUTTONS: Proper light mode styling */
+    .quick-action:hover {
+      background: linear-gradient(45deg, #DC2626, #EC4899) !important;
+      color: white !important;
+      border-color: #DC2626 !important;
+    }
+    
+    /* ICONS: Black */
+    svg,
+    button {
+      color: #1a1a1a !important;
+    }
   }
 }
 

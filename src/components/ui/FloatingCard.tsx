@@ -1,117 +1,153 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
-import { Card, CardContent, CardHeader } from './Card';
-import { Button } from './Button';
-import { cn } from '../../lib/utils';
+import { ChevronUp, ChevronDown, X } from 'lucide-react';
 
 interface FloatingCardProps {
   title: string;
   children: React.ReactNode;
-  className?: string;
+  position?: 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left';
   defaultVisible?: boolean;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 }
 
 export function FloatingCard({ 
   title, 
   children, 
-  className = '', 
-  defaultVisible = true,
-  position = 'top-right'
+  position = 'top-right',
+  defaultVisible = false 
 }: FloatingCardProps) {
   const [isVisible, setIsVisible] = useState(defaultVisible);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // console.log('🎯 FloatingCard rendered:', { title, position, isVisible, isCollapsed });
+  const getPositionStyles = () => {
+    const baseStyles = {
+      position: 'fixed' as const,
+      zIndex: 1000,
+    };
 
-  const getPositionClasses = () => {
     switch (position) {
-      case 'top-left':
-        return 'top-32 left-5 hidden lg:block';
       case 'top-right':
-        return 'top-32 right-5 hidden lg:block';
-      case 'bottom-left':
-        return 'bottom-20 left-5 hidden lg:block';
+        return { ...baseStyles, top: '140px', right: '20px' };
       case 'bottom-right':
-        return 'bottom-20 right-5 hidden lg:block';
+        return { ...baseStyles, bottom: '20px', right: '20px' };
+      case 'top-left':
+        return { ...baseStyles, top: '140px', left: '20px' };
+      case 'bottom-left':
+        return { ...baseStyles, bottom: '20px', left: '20px' };
       default:
-        return 'top-32 right-5 hidden lg:block';
+        return { ...baseStyles, top: '140px', right: '20px' };
     }
   };
 
+  // Toggle button when card is not visible
   if (!isVisible) {
     return (
-      <motion.div 
-        className={cn("fixed z-50", getPositionClasses())}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+      <button
+        onClick={() => setIsVisible(true)}
+        style={{
+          ...getPositionStyles(),
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '12px',
+          padding: '0.5rem 1rem',
+          color: 'white',
+          cursor: 'pointer',
+          fontSize: '0.875rem',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+        }}
       >
-        <Button
-          variant="glassmorphism"
-          onClick={() => setIsVisible(true)}
-          className="flex items-center gap-2 px-4 py-2"
-        >
-          <ChevronUp size={16} />
-          Show {title}
-        </Button>
-      </motion.div>
+        <ChevronUp size={14} color="white" />
+        {title}
+      </button>
     );
   }
 
+  // Full card when visible
   return (
-    <AnimatePresence>
-      <motion.aside 
-        className={cn("fixed z-50 w-80 max-w-sm", getPositionClasses())}
-        initial={{ opacity: 0, y: -20, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -20, scale: 0.9 }}
-        transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-      >
-        <Card variant="glass" className="floating-card shadow-2xl" style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(20px)' }}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <h3 className="floating-card-title text-lg font-semibold text-white">{title}</h3>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="w-8 h-8 hover:bg-white/10"
-                >
-                  {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsVisible(false)}
-                  className="w-8 h-8 hover:bg-red-500/20 hover:text-red-400"
-                >
-                  <X size={16} />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
+    <div
+              style={{
+          ...getPositionStyles(),
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '12px',
+          padding: '1rem',
+          width: '250px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          transition: 'all 0.3s ease',
+        }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+          {title}
+        </h3>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '0.25rem',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </button>
+          <button
+            onClick={() => setIsVisible(false)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '0.25rem',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
 
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <CardContent className="pt-0 floating-card-content">
-                  {children}
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Card>
-      </motion.aside>
-    </AnimatePresence>
+      {/* Content */}
+      {!isCollapsed && (
+        <div>
+          {children}
+        </div>
+      )}
+    </div>
   );
-} 
+}
