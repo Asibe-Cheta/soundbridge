@@ -352,17 +352,19 @@ export default function CreatorsPage() {
             <>
               {/* Desktop Grid Layout */}
               <div className="hidden md:block">
-                <div className="grid" style={{ 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                  gap: '1.5rem',
-                  padding: '1rem',
-                  justifyItems: 'center'
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, 250px)', 
+                  gap: '1rem',
+                  justifyContent: 'start',
+                  alignItems: 'start'
                 }}>
                   {creators.map((creator) => (
                     <div key={creator.id} className="card" style={{ 
                       transform: 'scale(0.6)', 
-                      transformOrigin: 'center',
-                      width: 'fit-content'
+                      transformOrigin: 'top left',
+                      width: '250px',
+                      height: 'auto'
                     }}>
                       <div style={{ position: 'relative' }}>
                         {/* Avatar */}
