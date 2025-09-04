@@ -216,10 +216,16 @@ export default function ProfilePage() {
           throw new Error(result.error || 'Failed to save profile');
         }
       } else {
-        throw new Error('Failed to save profile');
+        const errorText = await response.text();
+        console.error('❌ API Response Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Failed to save profile: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error('❌ Error saving profile:', error);
       // Show error message
     }
   };
