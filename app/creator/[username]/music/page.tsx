@@ -304,9 +304,6 @@ export default function MusicPage({ params }: MusicPageProps) {
     } catch (error) {
       console.error('❌ Failed to copy link:', error);
       
-      // Show error feedback
-      alert(`Failed to copy link: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
       // Still show visual feedback
       setCopiedTrackId(track.id);
       setTimeout(() => {
@@ -1108,19 +1105,6 @@ export default function MusicPage({ params }: MusicPageProps) {
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                       
-                      {/* Test button - temporary for debugging */}
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('🧪 TEST BUTTON CLICKED for track:', track.id);
-                          copyTrackLink(track);
-                        }}
-                        className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded"
-                        style={{ zIndex: 1000 }}
-                      >
-                        TEST
-                      </button>
                       
                       {/* Dropdown Menu */}
                       {activeMenuId === track.id && (
@@ -1130,7 +1114,10 @@ export default function MusicPage({ params }: MusicPageProps) {
                               e.preventDefault();
                               e.stopPropagation();
                               console.log('Copy button clicked for track:', track.id);
-                              copyTrackLink(track);
+                              // Small delay to ensure the click is processed before menu closes
+                              setTimeout(() => {
+                                copyTrackLink(track);
+                              }, 10);
                             }}
                             className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
                             style={{ zIndex: 1000 }}
