@@ -280,11 +280,9 @@ export default function MusicPage({ params }: MusicPageProps) {
                   {/* Cover Art */}
                   <div className="w-12 h-12 flex-shrink-0">
                     {track.cover_art_url && track.cover_art_url.trim() !== '' ? (
-                      <Image
+                      <img
                         src={track.cover_art_url}
                         alt={track.title}
-                        width={48}
-                        height={48}
                         className="w-12 h-12 rounded object-cover"
                         onError={(e) => {
                           console.error('Image load error for track:', track.title, track.cover_art_url);

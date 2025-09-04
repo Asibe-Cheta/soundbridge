@@ -534,11 +534,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                       <div key={song.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer" onClick={() => handlePlayTrack(song)}>
                         <div className="w-12 h-12 flex-shrink-0">
                           {song.cover_art_url ? (
-                            <Image
+                            <img
                               src={song.cover_art_url}
                               alt={song.title}
-                              width={48}
-                              height={48}
                               className="w-12 h-12 rounded-lg object-cover"
                             />
                           ) : (
@@ -575,11 +573,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                       <div key={track.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer" onClick={() => handlePlayTrack(track)}>
                         <div className="w-12 h-12 flex-shrink-0">
                           {track.cover_art_url ? (
-                            <Image
+                            <img
                               src={track.cover_art_url}
                               alt={track.title}
-                              width={48}
-                              height={48}
                               className="w-12 h-12 rounded-lg object-cover"
                             />
                           ) : (
