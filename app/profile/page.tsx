@@ -189,8 +189,8 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     try {
-      const response = await fetch('/api/profile/upload-image', {
-        method: 'PUT',
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -198,11 +198,7 @@ export default function ProfilePage() {
           display_name: profileData.displayName,
           username: profileData.username,
           bio: profileData.bio,
-          location: profileData.location,
-          website: profileData.website,
-          phone: profileData.phone,
-          genre: profileData.genre,
-          experience: profileData.experience
+          location: profileData.location
         }),
       });
       

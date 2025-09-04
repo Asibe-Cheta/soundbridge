@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       display_name, 
+      username,
       avatar_url, 
       location, 
       bio, 
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
     const updateData: any = {};
     
     if (display_name) updateData.display_name = display_name;
+    if (username) updateData.username = username;
     if (avatar_url) updateData.avatar_url = avatar_url;
     if (location) updateData.location = location;
     if (bio) updateData.bio = bio;

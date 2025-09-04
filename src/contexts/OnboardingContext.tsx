@@ -49,15 +49,29 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   useEffect(() => {
     if (user) {
       checkOnboardingStatus();
+    } else {
+      // Reset onboarding state when user logs out
+      setOnboardingState({
+        currentStep: 'role_selection',
+        selectedRole: null,
+        profileCompleted: false,
+        firstActionCompleted: false,
+        isOnboardingActive: false,
+        showOnboarding: false,
+      });
     }
   }, [user]);
 
   const checkOnboardingStatus = async () => {
     try {
+      console.log('🔍 Checking onboarding status for user:', user?.id);
       const response = await fetch('/api/user/onboarding-status');
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Onboarding status response:', data);
+        
         if (data.needsOnboarding) {
+          console.log('🎯 User needs onboarding, showing modal');
           setOnboardingState(prev => ({
             ...prev,
             isOnboardingActive: true,
@@ -67,10 +81,14 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             profileCompleted: data.profileCompleted || false,
             firstActionCompleted: data.firstActionCompleted || false,
           }));
+        } else {
+          console.log('✅ User onboarding already completed');
         }
+      } else {
+        console.error('❌ Failed to check onboarding status:', response.status);
       }
     } catch (error) {
-      console.error('Error checking onboarding status:', error);
+      console.error('❌ Error checking onboarding status:', error);
     }
   };
 
