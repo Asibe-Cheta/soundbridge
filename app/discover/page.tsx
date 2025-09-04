@@ -54,10 +54,10 @@ export default function DiscoverPage() {
   // Handle URL parameters for tab selection
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get('tab');
-      if (tabParam && ['music', 'creators', 'events', 'podcasts'].includes(tabParam)) {
-        setActiveTab(tabParam);
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['music', 'creators', 'events', 'podcasts'].includes(tabParam)) {
+      setActiveTab(tabParam);
       }
     }
   }, []);
@@ -499,8 +499,8 @@ export default function DiscoverPage() {
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                         />
                       ) : (
-                        <div style={{
-                          width: '100%',
+                <div style={{
+                  width: '100%',
                           height: '100%',
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           borderRadius: '12px',
@@ -531,7 +531,7 @@ export default function DiscoverPage() {
                         ) : (
                           <Play size={20} />
                         )}
-                      </div>
+                </div>
                       {/* Like Button */}
                       <div 
                         className="like-button"
@@ -617,7 +617,7 @@ export default function DiscoverPage() {
             ) : (
               <>
                 {/* Fallback content when trending content fails to load */}
-                <div style={{ 
+                  <div style={{
                   background: 'rgba(255, 255, 255, 0.02)', 
                   border: '1px dashed rgba(255, 255, 255, 0.1)',
                   borderRadius: '12px',
@@ -658,7 +658,7 @@ export default function DiscoverPage() {
                   >
                     Try Again
                   </button>
-                </div>
+                  </div>
                 {renderEmptyState('music')}
               </>
             )}
@@ -1505,9 +1505,9 @@ export default function DiscoverPage() {
 
       {/* Share Modal */}
       {selectedTrackForShare && (
-        <ShareModal
-          isOpen={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
           content={{
             id: selectedTrackForShare.id,
             title: selectedTrackForShare.title,

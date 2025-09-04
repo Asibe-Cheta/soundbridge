@@ -1043,7 +1043,7 @@ body {
     }
     
     /* BUTTONS: Proper light mode styling */
-    .quick-action:hover {
+.quick-action:hover {
       background: linear-gradient(45deg, #DC2626, #EC4899) !important;
       color: white !important;
       border-color: #DC2626 !important;
