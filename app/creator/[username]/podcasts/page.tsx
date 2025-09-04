@@ -206,20 +206,38 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
       // Always use the public podcast page URL from soundbridge.live
       const podcastUrl = `https://soundbridge.live/podcast/${podcast.id}`;
       
-      // Check if clipboard API is available
-      if (!navigator.clipboard) {
-        // Fallback for older browsers
+      console.log('Attempting to copy:', podcastUrl);
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(podcastUrl);
+          console.log('✅ Copied using modern clipboard API:', podcastUrl);
+        } catch (clipboardError) {
+          console.warn('Modern clipboard failed, trying fallback:', clipboardError);
+          throw clipboardError; // This will trigger the fallback
+        }
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        console.log('Using fallback copy method');
         const textArea = document.createElement('textarea');
         textArea.value = podcastUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
         document.body.appendChild(textArea);
+        textArea.focus();
         textArea.select();
-        document.execCommand('copy');
+        
+        const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-      } else {
-        await navigator.clipboard.writeText(podcastUrl);
+        
+        if (successful) {
+          console.log('✅ Copied using fallback method:', podcastUrl);
+        } else {
+          throw new Error('Fallback copy failed');
+        }
       }
-      
-      console.log('Podcast link copied to clipboard:', podcastUrl);
       
       // Show feedback immediately
       setCopiedPodcastId(podcast.id);
@@ -229,9 +247,14 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
         setActiveMenuId(null);
         setCopiedPodcastId(null);
       }, 1500);
+      
     } catch (error) {
-      console.error('Failed to copy link:', error);
-      // Still show feedback even if copy fails
+      console.error('❌ Failed to copy link:', error);
+      
+      // Show error feedback
+      alert(`Failed to copy link: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Still show visual feedback
       setCopiedPodcastId(podcast.id);
       setTimeout(() => {
         setActiveMenuId(null);

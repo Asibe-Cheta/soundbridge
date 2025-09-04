@@ -253,20 +253,38 @@ export default function MusicPage({ params }: MusicPageProps) {
       // Always use the public track page URL from soundbridge.live
       const trackUrl = `https://soundbridge.live/track/${track.id}`;
       
-      // Check if clipboard API is available
-      if (!navigator.clipboard) {
-        // Fallback for older browsers
+      console.log('Attempting to copy:', trackUrl);
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(trackUrl);
+          console.log('✅ Copied using modern clipboard API:', trackUrl);
+        } catch (clipboardError) {
+          console.warn('Modern clipboard failed, trying fallback:', clipboardError);
+          throw clipboardError; // This will trigger the fallback
+        }
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        console.log('Using fallback copy method');
         const textArea = document.createElement('textarea');
         textArea.value = trackUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
         document.body.appendChild(textArea);
+        textArea.focus();
         textArea.select();
-        document.execCommand('copy');
+        
+        const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-      } else {
-        await navigator.clipboard.writeText(trackUrl);
+        
+        if (successful) {
+          console.log('✅ Copied using fallback method:', trackUrl);
+        } else {
+          throw new Error('Fallback copy failed');
+        }
       }
-      
-      console.log('Track link copied to clipboard:', trackUrl);
       
       // Show feedback immediately
       setCopiedTrackId(track.id);
@@ -276,9 +294,14 @@ export default function MusicPage({ params }: MusicPageProps) {
         setActiveMenuId(null);
         setCopiedTrackId(null);
       }, 1500);
+      
     } catch (error) {
-      console.error('Failed to copy link:', error);
-      // Still show feedback even if copy fails
+      console.error('❌ Failed to copy link:', error);
+      
+      // Show error feedback
+      alert(`Failed to copy link: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Still show visual feedback
       setCopiedTrackId(track.id);
       setTimeout(() => {
         setActiveMenuId(null);
