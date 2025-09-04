@@ -203,9 +203,22 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
 
   const copyPodcastLink = async (podcast: Podcast) => {
     try {
-      // Use the actual podcast URL from the podcast data, or construct a proper URL
-      const podcastUrl = podcast.file_url || `${window.location.origin}/podcast/${podcast.id}`;
-      await navigator.clipboard.writeText(podcastUrl);
+      // Always use the public podcast page URL from soundbridge.live
+      const podcastUrl = `https://soundbridge.live/podcast/${podcast.id}`;
+      
+      // Check if clipboard API is available
+      if (!navigator.clipboard) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = podcastUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(podcastUrl);
+      }
+      
       console.log('Podcast link copied to clipboard:', podcastUrl);
       
       // Show feedback immediately
@@ -218,6 +231,12 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
       }, 1500);
     } catch (error) {
       console.error('Failed to copy link:', error);
+      // Still show feedback even if copy fails
+      setCopiedPodcastId(podcast.id);
+      setTimeout(() => {
+        setActiveMenuId(null);
+        setCopiedPodcastId(null);
+      }, 1500);
     }
   };
 

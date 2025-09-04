@@ -83,9 +83,22 @@ export default function EventsPage({ params }: EventsPageProps) {
 
   const copyEventLink = async (event: Event) => {
     try {
-      // Use the actual event URL - this should be the public event page URL
-      const eventUrl = `${window.location.origin}/events/${event.id}`;
-      await navigator.clipboard.writeText(eventUrl);
+      // Always use the public event page URL from soundbridge.live
+      const eventUrl = `https://soundbridge.live/events/${event.id}`;
+      
+      // Check if clipboard API is available
+      if (!navigator.clipboard) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = eventUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(eventUrl);
+      }
+      
       console.log('Event link copied to clipboard:', eventUrl);
       
       // Show feedback immediately
@@ -98,6 +111,12 @@ export default function EventsPage({ params }: EventsPageProps) {
       }, 1500);
     } catch (error) {
       console.error('Failed to copy link:', error);
+      // Still show feedback even if copy fails
+      setCopiedEventId(event.id);
+      setTimeout(() => {
+        setActiveMenuId(null);
+        setCopiedEventId(null);
+      }, 1500);
     }
   };
 

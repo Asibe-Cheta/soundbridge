@@ -49,6 +49,7 @@ export default function MusicPage({ params }: MusicPageProps) {
   const [copiedTrackId, setCopiedTrackId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   const { user, signOut } = useAuth();
   const audioPlayer = useAudioPlayer();
@@ -70,16 +71,27 @@ export default function MusicPage({ params }: MusicPageProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Add error boundary for the component
-  React.useEffect(() => {
-    const handleError = (error: ErrorEvent) => {
-      console.error('Component error:', error);
-      setError(`Component error: ${error.message}`);
+  // Global error handler for script errors
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error caught:', event.error);
+      // Don't set error state for script errors that don't affect our functionality
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      // Don't set error state for unhandled rejections that don't affect our functionality
     };
 
     window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
   }, []);
+
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -121,7 +133,19 @@ export default function MusicPage({ params }: MusicPageProps) {
         setError(null);
         
         console.log('Loading tracks for username:', resolvedParams.username);
-        const response = await fetch(`/api/creator/${resolvedParams.username}/tracks`);
+        
+        // Add a timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(`/api/creator/${resolvedParams.username}/tracks`, {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -130,7 +154,7 @@ export default function MusicPage({ params }: MusicPageProps) {
         const data = await response.json();
         console.log('API response:', data);
         
-        if (data.success) {
+        if (data.success && Array.isArray(data.data)) {
           // Sort by release date (created_at) with latest on top
           const sortedTracks = data.data.sort((a: AudioTrack, b: AudioTrack) => 
             new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
@@ -138,12 +162,20 @@ export default function MusicPage({ params }: MusicPageProps) {
           console.log('Sorted tracks:', sortedTracks);
           setTracks(sortedTracks);
         } else {
-          console.error('API returned error:', data.error);
-          setError(data.error || 'Failed to load tracks');
+          console.error('API returned error or invalid data:', data);
+          setError(data.error || 'Failed to load tracks - invalid response');
         }
       } catch (err) {
         console.error('Error loading tracks:', err);
-        setError(`Failed to load tracks: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            setError('Request timed out. Please try again.');
+          } else {
+            setError(`Failed to load tracks: ${err.message}`);
+          }
+        } else {
+          setError('Failed to load tracks: Unknown error');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -218,9 +250,22 @@ export default function MusicPage({ params }: MusicPageProps) {
 
   const copyTrackLink = async (track: AudioTrack) => {
     try {
-      // Use the actual track URL from the track data, or construct a proper URL
-      const trackUrl = track.file_url || `${window.location.origin}/track/${track.id}`;
-      await navigator.clipboard.writeText(trackUrl);
+      // Always use the public track page URL from soundbridge.live
+      const trackUrl = `https://soundbridge.live/track/${track.id}`;
+      
+      // Check if clipboard API is available
+      if (!navigator.clipboard) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = trackUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(trackUrl);
+      }
+      
       console.log('Track link copied to clipboard:', trackUrl);
       
       // Show feedback immediately
@@ -233,6 +278,12 @@ export default function MusicPage({ params }: MusicPageProps) {
       }, 1500);
     } catch (error) {
       console.error('Failed to copy link:', error);
+      // Still show feedback even if copy fails
+      setCopiedTrackId(track.id);
+      setTimeout(() => {
+        setActiveMenuId(null);
+        setCopiedTrackId(null);
+      }, 1500);
     }
   };
 
@@ -875,12 +926,55 @@ export default function MusicPage({ params }: MusicPageProps) {
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Error Loading Music</h3>
             <p className="text-gray-400 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Try Again
-            </button>
+            <div className="space-x-4">
+              <button
+                onClick={() => {
+                  setError(null);
+                  setRetryCount(prev => prev + 1);
+                  // Trigger a reload of tracks
+                  if (resolvedParams) {
+                    const loadTracks = async () => {
+                      try {
+                        setIsLoading(true);
+                        setError(null);
+                        
+                        const response = await fetch(`/api/creator/${resolvedParams.username}/tracks`);
+                        
+                        if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (data.success && Array.isArray(data.data)) {
+                          const sortedTracks = data.data.sort((a: AudioTrack, b: AudioTrack) => 
+                            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+                          );
+                          setTracks(sortedTracks);
+                        } else {
+                          setError(data.error || 'Failed to load tracks - invalid response');
+                        }
+                      } catch (err) {
+                        console.error('Error loading tracks:', err);
+                        setError(`Failed to load tracks: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    };
+                    loadTracks();
+                  }
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         ) : tracks.length > 0 ? (
           <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
