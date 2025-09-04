@@ -114,7 +114,12 @@ export default function MusicPage({ params }: MusicPageProps) {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (activeMenuId) {
-        setActiveMenuId(null);
+        const target = event.target as Element;
+        // Don't close if clicking inside the dropdown menu
+        if (!target.closest('.dropdown-menu')) {
+          console.log('Clicking outside dropdown, closing menu');
+          setActiveMenuId(null);
+        }
       }
     };
 
@@ -249,6 +254,7 @@ export default function MusicPage({ params }: MusicPageProps) {
   };
 
   const copyTrackLink = async (track: AudioTrack) => {
+    console.log('🚀 copyTrackLink function called with track:', track);
     try {
       // Always use the public track page URL from soundbridge.live
       const trackUrl = `https://soundbridge.live/track/${track.id}`;
@@ -1102,12 +1108,32 @@ export default function MusicPage({ params }: MusicPageProps) {
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                       
+                      {/* Test button - temporary for debugging */}
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('🧪 TEST BUTTON CLICKED for track:', track.id);
+                          copyTrackLink(track);
+                        }}
+                        className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded"
+                        style={{ zIndex: 1000 }}
+                      >
+                        TEST
+                      </button>
+                      
                       {/* Dropdown Menu */}
                       {activeMenuId === track.id && (
-                        <div className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                        <div className="dropdown-menu absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                           <button
-                            onClick={() => copyTrackLink(track)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Copy button clicked for track:', track.id);
+                              copyTrackLink(track);
+                            }}
                             className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+                            style={{ zIndex: 1000 }}
                           >
                             <Copy className="h-4 w-4" />
                             <span>{copiedTrackId === track.id ? 'Link Copied!' : 'Copy Link'}</span>
