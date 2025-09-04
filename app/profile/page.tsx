@@ -188,6 +188,7 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
+    console.log('🔧 Save button clicked!', { profileData });
     try {
       const response = await fetch('/api/profile/update', {
         method: 'POST',
@@ -701,9 +702,21 @@ export default function ProfilePage() {
                   <h1 className="profile-name">{profileData.displayName}</h1>
                 )}
                 <div className="profile-actions">
+                  {console.log('🔍 isEditing state:', isEditing)}
                   {isEditing ? (
                     <>
-                      <button onClick={handleSaveProfile} className="btn-primary">
+                      <button 
+                        onClick={handleSaveProfile} 
+                        className="btn-primary"
+                        disabled={false}
+                        style={{
+                          position: 'relative',
+                          zIndex: 1000,
+                          pointerEvents: 'auto',
+                          cursor: 'pointer',
+                          opacity: 1
+                        }}
+                      >
                         <Save size={16} />
                         Save
                       </button>
@@ -713,7 +726,19 @@ export default function ProfilePage() {
                       </button>
                     </>
                   ) : (
-                    <button onClick={() => setIsEditing(true)} className="btn-primary">
+                    <button 
+                      onClick={() => {
+                        console.log('🔧 Edit Profile button clicked!');
+                        setIsEditing(true);
+                      }} 
+                      className="btn-primary"
+                      style={{
+                        position: 'relative',
+                        zIndex: 1000,
+                        pointerEvents: 'auto',
+                        cursor: 'pointer'
+                      }}
+                    >
                       <Edit3 size={16} />
                       Edit Profile
                     </button>
