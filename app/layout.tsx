@@ -7,6 +7,8 @@ import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
 import { SocialScripts } from "@/src/components/SocialScripts";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
+import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
+import { OnboardingManager } from "@/src/components/onboarding/OnboardingManager";
 import { StructuredData, organizationStructuredData, websiteStructuredData } from "@/src/components/seo/StructuredData";
 import Script from 'next/script';
 
@@ -178,10 +180,13 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <AuthProvider>
-            <AudioPlayerProvider>
-              {children}
-              <GlobalAudioPlayer />
-            </AudioPlayerProvider>
+            <OnboardingProvider>
+              <AudioPlayerProvider>
+                {children}
+                <GlobalAudioPlayer />
+                <OnboardingManager />
+              </AudioPlayerProvider>
+            </OnboardingProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
