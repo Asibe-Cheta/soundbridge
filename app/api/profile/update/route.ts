@@ -42,19 +42,59 @@ export async function POST(request: NextRequest) {
     if (profile_completed !== undefined) updateData.profile_completed = profile_completed;
 
     console.log('📝 Updating profile with data:', updateData);
-    const { data: updatedProfile, error: updateError } = await supabase
+    
+    // First, check if profile exists
+    const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
-      .update(updateData)
+      .select('id')
       .eq('id', user.id)
-      .select()
-      .single();
+      .maybeSingle();
 
-    if (updateError) {
-      console.error('❌ Error updating profile:', updateError);
+    if (checkError) {
+      console.error('❌ Error checking profile:', checkError);
       return NextResponse.json(
-        { success: false, error: `Failed to update profile: ${updateError.message}` },
+        { success: false, error: `Failed to check profile: ${checkError.message}` },
         { status: 500 }
       );
+    }
+
+    let updatedProfile;
+    if (existingProfile) {
+      // Profile exists, update it
+      const { data, error: updateError } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Error updating profile:', updateError);
+        return NextResponse.json(
+          { success: false, error: `Failed to update profile: ${updateError.message}` },
+          { status: 500 }
+        );
+      }
+      updatedProfile = data;
+    } else {
+      // Profile doesn't exist, create it
+      const { data, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          ...updateData
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('❌ Error creating profile:', createError);
+        return NextResponse.json(
+          { success: false, error: `Failed to create profile: ${createError.message}` },
+          { status: 500 }
+        );
+      }
+      updatedProfile = data;
     }
 
     console.log('✅ Profile updated successfully:', updatedProfile);
