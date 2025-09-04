@@ -31,7 +31,8 @@ import {
   UserMinus,
   AlertCircle,
   CheckCircle,
-  Loader2
+  Loader2,
+  Mic
 } from 'lucide-react';
 
 interface CreatorProfileClientProps {
@@ -71,6 +72,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const tabs = [
     { id: 'music', label: 'Music', icon: Music },
     { id: 'events', label: 'Events', icon: Calendar },
+    { id: 'podcasts', label: 'Podcasts', icon: Mic },
     { id: 'about', label: 'About', icon: User },
     { id: 'collaborate', label: 'Collaborate', icon: Send },
     { id: 'messages', label: 'Messages', icon: MessageCircle }
@@ -490,12 +492,15 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white">Top Songs</h2>
                   {tracks.length > 3 && (
-                    <button className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center">
+                    <Link 
+                      href={`/creator/${username}/music`}
+                      className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center"
+                    >
                       View All
                       <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
+                    </Link>
                   )}
                 </div>
                 
@@ -589,12 +594,15 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white">Top Events</h2>
                   {events.length > 3 && (
-                    <button className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center">
+                    <Link 
+                      href={`/creator/${username}/events`}
+                      className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center"
+                    >
                       View All
                       <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
+                    </Link>
                   )}
                 </div>
                 
@@ -643,6 +651,40 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                     <p className="text-gray-400">No events scheduled yet</p>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'podcasts' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Latest Podcast */}
+              <div>
+                <h2 className="text-xl font-bold mb-4 text-white">Latest Podcast</h2>
+                <div className="bg-gray-700 rounded-lg p-8 border border-gray-600 text-center">
+                  <Mic className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No podcasts yet</p>
+                </div>
+              </div>
+
+              {/* Top Podcasts */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-white">Top Podcasts</h2>
+                  <Link 
+                    href={`/creator/${username}/podcasts`}
+                    className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center"
+                  >
+                    View All
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+                
+                <div className="bg-gray-700 rounded-lg p-8 border border-gray-600 text-center">
+                  <Mic className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No podcasts uploaded yet</p>
+                </div>
               </div>
             </div>
           )}
