@@ -25,23 +25,16 @@ export async function GET(
       );
     }
 
-    // Get all tracks for this creator using the same query as getCreatorTracks
+    // Get all tracks for this creator - simplified query first
     const { data, error } = await supabase
       .from('audio_tracks')
-      .select(`
-        *,
-        creator:profiles!audio_tracks_creator_id_fkey(
-          id,
-          username,
-          display_name,
-          avatar_url,
-          location,
-          country
-        )
-      `)
+      .select('*')
       .eq('creator_id', creator.id)
       .eq('is_public', true)
       .order('created_at', { ascending: false });
+
+    console.log('Raw tracks data:', data);
+    console.log('Query error:', error);
 
     if (error) {
       console.error('Error fetching tracks:', error);
@@ -51,36 +44,36 @@ export async function GET(
       );
     }
 
-    // Transform the data to match AudioTrack interface (same as getCreatorTracks)
+    // Transform the data to match AudioTrack interface - simplified
     const transformedData = (data || []).map(track => ({
       id: track.id,
-      title: track.title,
-      description: track.description,
+      title: track.title || 'Untitled',
+      description: track.description || '',
       creator_id: track.creator_id,
-      file_url: track.file_url,
-      cover_art_url: track.cover_art_url,
-      duration: track.duration,
-      genre: track.genre,
-      tags: track.tags,
+      file_url: track.file_url || '',
+      cover_art_url: track.cover_art_url || null,
+      duration: track.duration || 0,
+      genre: track.genre || 'Unknown',
+      tags: track.tags || [],
       play_count: track.play_count || 0,
-      like_count: track.likes_count || 0,
+      like_count: track.like_count || 0,
       is_public: track.is_public !== false,
-      created_at: track.created_at,
-      creator: track.creator ? {
-        id: track.creator.id,
-        username: track.creator.username,
-        display_name: track.creator.display_name,
-        avatar_url: track.creator.avatar_url,
+      created_at: track.created_at || new Date().toISOString(),
+      creator: {
+        id: creator.id,
+        username: username,
+        display_name: username, // Fallback
+        avatar_url: null,
         banner_url: null,
-        location: track.creator.location,
-        country: track.creator.country,
+        location: null,
+        country: null,
         bio: null,
         role: 'creator' as const,
         is_verified: false,
         social_links: {},
         created_at: '',
         updated_at: ''
-      } : undefined
+      }
     }));
 
     return NextResponse.json({

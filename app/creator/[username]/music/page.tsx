@@ -34,8 +34,24 @@ export default function MusicPage({ params }: MusicPageProps) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   
   const { user } = useAuth();
-  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
+  const audioPlayer = useAudioPlayer();
   const router = useRouter();
+
+  // Safely destructure audio player with fallbacks
+  const playTrack = audioPlayer?.playTrack || (() => console.warn('Audio player not available'));
+  const currentTrack = audioPlayer?.currentTrack || null;
+  const isPlaying = audioPlayer?.isPlaying || false;
+
+  // Add error boundary for the component
+  React.useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Component error:', error);
+      setError(`Component error: ${error.message}`);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
 
   useEffect(() => {
     const resolveParams = async () => {
@@ -67,22 +83,30 @@ export default function MusicPage({ params }: MusicPageProps) {
         setIsLoading(true);
         setError(null);
         
-        // Get creator ID from username (you might need to implement this)
+        console.log('Loading tracks for username:', resolvedParams.username);
         const response = await fetch(`/api/creator/${resolvedParams.username}/tracks`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('API response:', data);
         
         if (data.success) {
           // Sort by release date (created_at) with latest on top
           const sortedTracks = data.data.sort((a: AudioTrack, b: AudioTrack) => 
             new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
           );
+          console.log('Sorted tracks:', sortedTracks);
           setTracks(sortedTracks);
         } else {
+          console.error('API returned error:', data.error);
           setError(data.error || 'Failed to load tracks');
         }
       } catch (err) {
         console.error('Error loading tracks:', err);
-        setError('Failed to load tracks');
+        setError(`Failed to load tracks: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {
         setIsLoading(false);
       }
@@ -92,18 +116,23 @@ export default function MusicPage({ params }: MusicPageProps) {
   }, [resolvedParams]);
 
   const handlePlayTrack = (track: AudioTrack) => {
-    const audioTrack = {
-      id: track.id,
-      title: track.title,
-      artist: track.creator?.display_name || 'Unknown Artist',
-      album: '',
-      duration: track.duration || 0,
-      artwork: track.cover_art_url || '',
-      url: track.file_url || '',
-      liked: likedTracks.has(track.id)
-    };
-    
-    playTrack(audioTrack);
+    try {
+      const audioTrack = {
+        id: track.id,
+        title: track.title,
+        artist: track.creator?.display_name || 'Unknown Artist',
+        album: '',
+        duration: track.duration || 0,
+        artwork: track.cover_art_url || '',
+        url: track.file_url || '',
+        liked: likedTracks.has(track.id)
+      };
+      
+      console.log('Playing track:', audioTrack);
+      playTrack(audioTrack);
+    } catch (error) {
+      console.error('Error playing track:', error);
+    }
   };
 
   const handleLikeTrack = async (track: AudioTrack, e: React.MouseEvent) => {
@@ -250,19 +279,31 @@ export default function MusicPage({ params }: MusicPageProps) {
 
                   {/* Cover Art */}
                   <div className="w-12 h-12 flex-shrink-0">
-                    {track.cover_art_url ? (
+                    {track.cover_art_url && track.cover_art_url.trim() !== '' ? (
                       <Image
                         src={track.cover_art_url}
                         alt={track.title}
                         width={48}
                         height={48}
                         className="w-12 h-12 rounded object-cover"
+                        onError={(e) => {
+                          console.error('Image load error for track:', track.title, track.cover_art_url);
+                          // Hide the image and show fallback
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully for track:', track.title);
+                        }}
                       />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded flex items-center justify-center">
-                        <Music className="h-6 w-6 text-white" />
-                      </div>
-                    )}
+                    ) : null}
+                    <div 
+                      className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded flex items-center justify-center"
+                      style={{ display: (track.cover_art_url && track.cover_art_url.trim() !== '') ? 'none' : 'flex' }}
+                    >
+                      <Music className="h-6 w-6 text-white" />
+                    </div>
                   </div>
 
                   {/* Track Info */}
