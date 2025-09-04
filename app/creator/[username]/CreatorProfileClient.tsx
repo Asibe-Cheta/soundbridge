@@ -45,6 +45,8 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [chatMessage, setChatMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creator] = useState<CreatorProfile>(initialCreator);
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
@@ -84,15 +86,29 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
         // Load tracks only if not already loaded
         if (tracks.length === 0) {
-          const { data: tracksData } = await getCreatorTracks(creator.id);
-          if (tracksData && tracksData.length > 0) {
-            setTracks(tracksData);
+          setIsLoadingTracks(true);
+          try {
+            const { data: tracksData } = await getCreatorTracks(creator.id);
+            setTracks(tracksData || []);
+          } catch (trackError) {
+            console.error('Error loading tracks:', trackError);
+            setTracks([]);
+          } finally {
+            setIsLoadingTracks(false);
           }
         }
 
         // Load events
-        const { data: eventsData } = await getCreatorEvents(creator.id);
-        setEvents(eventsData || []);
+        setIsLoadingEvents(true);
+        try {
+          const { data: eventsData } = await getCreatorEvents(creator.id);
+          setEvents(eventsData || []);
+        } catch (eventError) {
+          console.error('Error loading events:', eventError);
+          setEvents([]);
+        } finally {
+          setIsLoadingEvents(false);
+        }
 
         // Load availability
         availabilityActions.fetchAvailability(creator.id);
@@ -127,7 +143,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     };
 
     loadCreatorData();
-  }, [creator.id, username, user, availabilityActions, tracks.length]);
+  }, [creator.id, username, user, availabilityActions]);
 
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
@@ -278,7 +294,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     return links;
   };
 
-  if (isLoading) {
+  if (isLoading && tracks.length === 0 && events.length === 0) {
     return <CreatorProfileSkeleton />;
   }
 
@@ -301,8 +317,6 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* Creator Header */}
@@ -421,7 +435,12 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
           {activeTab === 'music' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-white">Music</h2>
-              {tracks.length > 0 ? (
+              {isLoadingTracks ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-red-500" />
+                  <span className="ml-2 text-gray-400">Loading tracks...</span>
+                </div>
+              ) : tracks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {tracks.map((track) => (
                     <div 
@@ -477,7 +496,12 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
           {activeTab === 'events' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-white">Events</h2>
-              {events.length > 0 ? (
+              {isLoadingEvents ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-red-500" />
+                  <span className="ml-2 text-gray-400">Loading events...</span>
+                </div>
+              ) : events.length > 0 ? (
                 <div className="space-y-4">
                   {events.map((event) => (
                     <div key={event.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:bg-gray-600 transition-all duration-200 hover:shadow-lg hover:border-gray-500">
