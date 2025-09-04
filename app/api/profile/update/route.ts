@@ -4,7 +4,7 @@ import { createApiClientWithCookies } from '@/src/lib/supabase-api';
 export async function POST(request: NextRequest) {
   try {
     console.log('🔧 Profile update API called');
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
