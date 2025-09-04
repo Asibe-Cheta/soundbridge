@@ -17,7 +17,8 @@ import {
   Share2, 
   MoreHorizontal,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Copy
 } from 'lucide-react';
 
 interface MusicPageProps {
@@ -30,6 +31,7 @@ export default function MusicPage({ params }: MusicPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
@@ -42,6 +44,20 @@ export default function MusicPage({ params }: MusicPageProps) {
     };
     resolveParams();
   }, [params]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeMenuId) {
+        setActiveMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeMenuId]);
 
   useEffect(() => {
     if (!resolvedParams) return;
@@ -134,6 +150,17 @@ export default function MusicPage({ params }: MusicPageProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const copyTrackLink = async (track: AudioTrack) => {
+    try {
+      const trackUrl = `${window.location.origin}/track/${track.id}`;
+      await navigator.clipboard.writeText(trackUrl);
+      // You could add a toast notification here
+      console.log('Track link copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
+  };
+
   if (!resolvedParams) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex items-center justify-center">
@@ -221,6 +248,23 @@ export default function MusicPage({ params }: MusicPageProps) {
                     </span>
                   </div>
 
+                  {/* Cover Art */}
+                  <div className="w-12 h-12 flex-shrink-0">
+                    {track.cover_art_url ? (
+                      <Image
+                        src={track.cover_art_url}
+                        alt={track.title}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded flex items-center justify-center">
+                        <Music className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                  </div>
+
                   {/* Track Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-white truncate">
@@ -247,9 +291,30 @@ export default function MusicPage({ params }: MusicPageProps) {
                         fill={likedTracks.has(track.id) ? 'currentColor' : 'none'}
                       />
                     </button>
-                    <button className="text-gray-400 hover:text-white transition-colors">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setActiveMenuId(activeMenuId === track.id ? null : track.id)}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      {activeMenuId === track.id && (
+                        <div className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                          <button
+                            onClick={() => {
+                              copyTrackLink(track);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            <span>Copy Link</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

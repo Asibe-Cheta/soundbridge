@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { CreatorProfileSkeleton } from '../../../src/components/ui/Skeleton';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useAudioPlayer } from '../../../src/contexts/AudioPlayerContext';
 import { useAvailability } from '../../../src/hooks/useAvailability';
 import {
   getCreatorTracks,
@@ -32,7 +33,9 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Mic
+  Mic,
+  Play,
+  Pause
 } from 'lucide-react';
 
 interface CreatorProfileClientProps {
@@ -66,6 +69,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   const { user } = useAuth();
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const [availabilityState, availabilityActions] = useAvailability();
   const router = useRouter();
 
@@ -313,6 +317,21 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     return links;
   };
 
+  const handlePlayTrack = (track: AudioTrack) => {
+    const audioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.display_name || 'Unknown Artist',
+      album: '',
+      duration: track.duration || 0,
+      artwork: track.cover_art_url || '',
+      url: track.file_url || '',
+      liked: false
+    };
+    
+    playTrack(audioTrack);
+  };
+
   if (isLoading && tracks.length === 0 && events.length === 0) {
     return <CreatorProfileSkeleton />;
   }
@@ -512,9 +531,21 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                 ) : topSongs.length > 0 ? (
                   <div className="space-y-2">
                     {topSongs.slice(0, 3).map((song) => (
-                      <div key={song.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group">
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
-                          <Music className="h-5 w-5 text-gray-400" />
+                      <div key={song.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer" onClick={() => handlePlayTrack(song)}>
+                        <div className="w-12 h-12 flex-shrink-0">
+                          {song.cover_art_url ? (
+                            <Image
+                              src={song.cover_art_url}
+                              alt={song.title}
+                              width={48}
+                              height={48}
+                              className="w-12 h-12 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
+                              <Music className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-white truncate">{song.title}</h4>
@@ -522,16 +553,40 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                             {song.genre} - Single · {new Date(song.created_at || Date.now()).getFullYear()}
                           </p>
                         </div>
-                        <div className="w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayTrack(song);
+                          }}
+                          className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          {currentTrack?.id === song.id && isPlaying ? (
+                            <Pause className="h-4 w-4 text-white" />
+                          ) : (
+                            <Play className="h-4 w-4 text-white" />
+                          )}
+                        </button>
                       </div>
                     ))}
                   </div>
                 ) : tracks.length > 0 ? (
                   <div className="space-y-2">
                     {tracks.slice(0, 3).map((track) => (
-                      <div key={track.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group">
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
-                          <Music className="h-5 w-5 text-gray-400" />
+                      <div key={track.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer" onClick={() => handlePlayTrack(track)}>
+                        <div className="w-12 h-12 flex-shrink-0">
+                          {track.cover_art_url ? (
+                            <Image
+                              src={track.cover_art_url}
+                              alt={track.title}
+                              width={48}
+                              height={48}
+                              className="w-12 h-12 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
+                              <Music className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-white truncate">{track.title}</h4>
@@ -539,7 +594,19 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                             {track.genre || 'Music'} - Single · {new Date(track.created_at || Date.now()).getFullYear()}
                           </p>
                         </div>
-                        <div className="w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayTrack(track);
+                          }}
+                          className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          {currentTrack?.id === track.id && isPlaying ? (
+                            <Pause className="h-4 w-4 text-white" />
+                          ) : (
+                            <Play className="h-4 w-4 text-white" />
+                          )}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -557,30 +624,45 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Latest Event */}
               <div>
-                <h2 className="text-xl font-bold mb-4 text-white">Latest Event</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-white">Latest Event</h2>
+                  {events.length > 0 && (
+                    <Link 
+                      href={`/creator/${username}/events`}
+                      className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center"
+                    >
+                      View All
+                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  )}
+                </div>
                 {events.length > 0 ? (
-                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-                    <div className="flex space-x-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <Calendar className="h-8 w-8 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-400 mb-1">
-                          {new Date(events[0].event_date).toLocaleDateString('en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          }).toUpperCase()}
-                        </p>
-                        <h3 className="font-semibold text-white mb-1">
-                          {events[0].title}
-                        </h3>
-                        <p className="text-sm text-gray-400">
-                          {events.length} Event{events.length !== 1 ? 's' : ''}
-                        </p>
+                  <Link href={`/events/${events[0].id}`} className="block">
+                    <div className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:bg-gray-600 transition-colors cursor-pointer">
+                      <div className="flex space-x-4">
+                        <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                          <Calendar className="h-8 w-8 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-400 mb-1">
+                            {new Date(events[0].event_date).toLocaleDateString('en-US', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            }).toUpperCase()}
+                          </p>
+                          <h3 className="font-semibold text-white mb-1">
+                            {events[0].title}
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            {events.length} Event{events.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ) : (
                   <div className="bg-gray-700 rounded-lg p-8 border border-gray-600 text-center">
                     <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
@@ -614,35 +696,39 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                 ) : topEvents.length > 0 ? (
                   <div className="space-y-2">
                     {topEvents.slice(0, 3).map((event) => (
-                      <div key={event.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group">
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-gray-400" />
+                      <Link key={event.id} href={`/events/${event.id}`} className="block">
+                        <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer">
+                          <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-gray-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-white truncate">{event.title}</h4>
+                            <p className="text-sm text-gray-400 truncate">
+                              {formatDate(event.event_date)} · {event.formatted_price || 'Free'}
+                            </p>
+                          </div>
+                          <div className="w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white truncate">{event.title}</h4>
-                          <p className="text-sm text-gray-400 truncate">
-                            {formatDate(event.event_date)} · {event.formatted_price || 'Free'}
-                          </p>
-                        </div>
-                        <div className="w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 ) : events.length > 0 ? (
                   <div className="space-y-2">
                     {events.slice(0, 3).map((event) => (
-                      <div key={event.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group">
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-gray-400" />
+                      <Link key={event.id} href={`/events/${event.id}`} className="block">
+                        <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer">
+                          <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-gray-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-white truncate">{event.title}</h4>
+                            <p className="text-sm text-gray-400 truncate">
+                              {formatDate(event.event_date)} · {event.formatted_price || 'Free'}
+                            </p>
+                          </div>
+                          <div className="w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white truncate">{event.title}</h4>
-                          <p className="text-sm text-gray-400 truncate">
-                            {formatDate(event.event_date)} · {event.formatted_price || 'Free'}
-                          </p>
-                        </div>
-                        <div className="w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 ) : (

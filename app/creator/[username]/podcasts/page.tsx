@@ -16,7 +16,8 @@ import {
   MoreHorizontal,
   Loader2,
   AlertCircle,
-  Clock
+  Clock,
+  Copy
 } from 'lucide-react';
 
 interface Podcast {
@@ -46,6 +47,7 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [likedPodcasts, setLikedPodcasts] = useState<Set<string>>(new Set());
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
@@ -58,6 +60,20 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
     };
     resolveParams();
   }, [params]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeMenuId) {
+        setActiveMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeMenuId]);
 
   useEffect(() => {
     if (!resolvedParams) return;
@@ -147,6 +163,16 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const copyPodcastLink = async (podcast: Podcast) => {
+    try {
+      const podcastUrl = `${window.location.origin}/podcast/${podcast.id}`;
+      await navigator.clipboard.writeText(podcastUrl);
+      console.log('Podcast link copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -296,9 +322,30 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
                       <button className="p-2 text-gray-400 hover:text-white transition-colors">
                         <Share2 className="h-5 w-5" />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                        <MoreHorizontal className="h-5 w-5" />
-                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={() => setActiveMenuId(activeMenuId === podcast.id ? null : podcast.id)}
+                          className="p-2 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {activeMenuId === podcast.id && (
+                          <div className="absolute right-0 top-12 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                            <button
+                              onClick={() => {
+                                copyPodcastLink(podcast);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+                            >
+                              <Copy className="h-4 w-4" />
+                              <span>Copy Link</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
