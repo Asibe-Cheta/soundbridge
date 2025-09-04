@@ -25,42 +25,67 @@ export async function GET(
       );
     }
 
-    // Get all tracks for this creator
-    const { data: tracks, error: tracksError } = await supabase
+    // Get all tracks for this creator using the same query as getCreatorTracks
+    const { data, error } = await supabase
       .from('audio_tracks')
       .select(`
-        id,
-        title,
-        description,
-        file_url,
-        cover_art_url,
-        duration,
-        genre,
-        created_at,
-        updated_at,
-        play_count,
-        like_count,
-        creator:profiles!audio_tracks_creator_id_fkey (
+        *,
+        creator:profiles!audio_tracks_creator_id_fkey(
           id,
           username,
           display_name,
-          avatar_url
+          avatar_url,
+          location,
+          country
         )
       `)
       .eq('creator_id', creator.id)
+      .eq('is_public', true)
       .order('created_at', { ascending: false });
 
-    if (tracksError) {
-      console.error('Error fetching tracks:', tracksError);
+    if (error) {
+      console.error('Error fetching tracks:', error);
       return NextResponse.json(
         { success: false, error: 'Failed to fetch tracks' },
         { status: 500 }
       );
     }
 
+    // Transform the data to match AudioTrack interface (same as getCreatorTracks)
+    const transformedData = (data || []).map(track => ({
+      id: track.id,
+      title: track.title,
+      description: track.description,
+      creator_id: track.creator_id,
+      file_url: track.file_url,
+      cover_art_url: track.cover_art_url,
+      duration: track.duration,
+      genre: track.genre,
+      tags: track.tags,
+      play_count: track.play_count || 0,
+      like_count: track.likes_count || 0,
+      is_public: track.is_public !== false,
+      created_at: track.created_at,
+      creator: track.creator ? {
+        id: track.creator.id,
+        username: track.creator.username,
+        display_name: track.creator.display_name,
+        avatar_url: track.creator.avatar_url,
+        banner_url: null,
+        location: track.creator.location,
+        country: track.creator.country,
+        bio: null,
+        role: 'creator' as const,
+        is_verified: false,
+        social_links: {},
+        created_at: '',
+        updated_at: ''
+      } : undefined
+    }));
+
     return NextResponse.json({
       success: true,
-      data: tracks || []
+      data: transformedData
     });
 
   } catch (error) {

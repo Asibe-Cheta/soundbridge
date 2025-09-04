@@ -25,51 +25,77 @@ export async function GET(
       );
     }
 
-    // Get all events for this creator
-    const { data: events, error: eventsError } = await supabase
+    // Get all events for this creator using the same query as getCreatorEvents
+    const { data, error } = await supabase
       .from('events')
       .select(`
-        id,
-        title,
-        description,
-        event_date,
-        location,
-        price,
-        attendee_count,
-        created_at,
-        updated_at,
-        creator:profiles!events_creator_id_fkey (
+        *,
+        creator:profiles!events_creator_id_fkey(
           id,
           username,
           display_name,
-          avatar_url
-        )
+          avatar_url,
+          location,
+          country
+        ),
+        attendees:event_attendees!event_attendees_event_id_fkey(count)
       `)
       .eq('creator_id', creator.id)
       .order('event_date', { ascending: false });
 
-    if (eventsError) {
-      console.error('Error fetching events:', eventsError);
+    if (error) {
+      console.error('Error fetching events:', error);
       return NextResponse.json(
         { success: false, error: 'Failed to fetch events' },
         { status: 500 }
       );
     }
 
-    // Format the events data
-    const formattedEvents = (events || []).map(event => ({
-      ...event,
-      formatted_price: event.price === 0 ? 'Free' : `£${event.price}`,
+    // Transform the data to match Event interface (same as getCreatorEvents)
+    const transformedData = (data || []).map(event => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      creator_id: event.creator_id,
+      event_date: event.event_date,
+      location: event.location,
+      venue: event.venue,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      category: event.category,
+      price_gbp: event.price_gbp,
+      price_ngn: event.price_ngn,
+      max_attendees: event.max_attendees,
+      current_attendees: event.current_attendees,
+      attendee_count: event.attendees?.[0]?.count || 0,
+      image_url: event.image_url,
+      created_at: event.created_at,
+      formatted_price: event.price_gbp === 0 ? 'Free' : `£${event.price_gbp}`,
       formatted_date: new Date(event.event_date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-      })
+      }),
+      creator: event.creator ? {
+        id: event.creator.id,
+        username: event.creator.username,
+        display_name: event.creator.display_name,
+        avatar_url: event.creator.avatar_url,
+        banner_url: null,
+        location: event.creator.location,
+        country: event.creator.country,
+        bio: null,
+        role: 'creator' as const,
+        is_verified: false,
+        social_links: {},
+        created_at: '',
+        updated_at: ''
+      } : undefined
     }));
 
     return NextResponse.json({
       success: true,
-      data: formattedEvents
+      data: transformedData
     });
 
   } catch (error) {
