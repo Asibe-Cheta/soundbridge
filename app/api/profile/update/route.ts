@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('🔧 Profile update API called');
-    const supabase = await createApiClientWithCookies();
     
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get the user ID from the request body or headers
+    const body = await request.json();
+    const userId = body.userId;
     
-    if (authError || !user) {
-      console.error('❌ Authentication failed:', authError);
+    if (!userId) {
+      console.error('❌ No user ID provided');
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: 'User ID required' },
+        { status: 400 }
       );
     }
 
-    console.log('✅ User authenticated:', user.id);
-    const body = await request.json();
+    console.log('✅ User ID provided:', userId);
+    const supabase = createServiceClient();
     console.log('📝 Profile update data:', body);
     const { 
       display_name, 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle();
 
     if (checkError) {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       const { data, error: updateError } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('id', user.id)
+        .eq('id', userId)
         .select()
         .single();
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       const { data, error: createError } = await supabase
         .from('profiles')
         .insert({
-          id: user.id,
+          id: userId,
           ...updateData
         })
         .select()

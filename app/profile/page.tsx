@@ -196,6 +196,7 @@ export default function ProfilePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userId: user?.id,
           display_name: profileData.displayName,
           username: profileData.username,
           bio: profileData.bio,
