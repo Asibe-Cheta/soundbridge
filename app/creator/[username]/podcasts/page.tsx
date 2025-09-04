@@ -316,14 +316,16 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
               alignItems: 'center',
               flex: 1
             }}>
-              <Image
-                src="/images/logos/logo-trans-lockup.png"
-                alt="SoundBridge Logo"
-                width={80}
-                height={22}
-                priority
-                style={{ height: 'auto' }}
-              />
+              <Link href="/" style={{ textDecoration: 'none' }}>
+                <Image
+                  src="/images/logos/logo-trans-lockup.png"
+                  alt="SoundBridge Logo"
+                  width={80}
+                  height={22}
+                  priority
+                  style={{ height: 'auto' }}
+                />
+              </Link>
             </div>
 
             {/* RIGHT - Sign In / Profile */}
@@ -556,14 +558,16 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
               flexShrink: 0
             }}>
               <div className="logo">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={120}
-                  height={32}
-                  priority
-                  style={{ height: 'auto' }}
-                />
+                <Link href="/" style={{ textDecoration: 'none' }}>
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={120}
+                    height={32}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </Link>
               </div>
               {/* Desktop Navigation */}
               <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
