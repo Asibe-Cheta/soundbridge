@@ -61,6 +61,7 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [likedPodcasts, setLikedPodcasts] = useState<Set<string>>(new Set());
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [copiedPodcastId, setCopiedPodcastId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -205,6 +206,15 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
       const podcastUrl = `${window.location.origin}/podcast/${podcast.id}`;
       await navigator.clipboard.writeText(podcastUrl);
       console.log('Podcast link copied to clipboard');
+      
+      // Show feedback
+      setCopiedPodcastId(podcast.id);
+      setActiveMenuId(null); // Close the menu
+      
+      // Reset feedback after 2 seconds
+      setTimeout(() => {
+        setCopiedPodcastId(null);
+      }, 2000);
     } catch (error) {
       console.error('Failed to copy link:', error);
     }
@@ -970,18 +980,22 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
                         {activeMenuId === podcast.id && (
                           <div className="absolute right-0 top-12 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                             <button
-                              onClick={() => {
-                                copyPodcastLink(podcast);
-                                setActiveMenuId(null);
-                              }}
+                              onClick={() => copyPodcastLink(podcast)}
                               className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
                             >
                               <Copy className="h-4 w-4" />
-                              <span>Copy Link</span>
+                              <span>{copiedPodcastId === podcast.id ? 'Link Copied!' : 'Copy Link'}</span>
                             </button>
                           </div>
                         )}
                       </div>
+                      
+                      {/* Copy Success Indicator */}
+                      {copiedPodcastId === podcast.id && (
+                        <div className="absolute top-0 right-0 bg-green-600 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+                          ✓ Copied!
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

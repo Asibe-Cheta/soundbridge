@@ -26,7 +26,9 @@ import {
   Mic,
   Menu,
   X,
-  LogOut
+  LogOut,
+  MoreHorizontal,
+  Copy
 } from 'lucide-react';
 
 interface EventsPageProps {
@@ -38,6 +40,8 @@ export default function EventsPage({ params }: EventsPageProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -61,6 +65,38 @@ export default function EventsPage({ params }: EventsPageProps) {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeMenuId) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeMenuId]);
+
+  const copyEventLink = async (event: Event) => {
+    try {
+      const eventUrl = `${window.location.origin}/events/${event.id}`;
+      await navigator.clipboard.writeText(eventUrl);
+      console.log('Event link copied to clipboard');
+      
+      // Show feedback
+      setCopiedEventId(event.id);
+      setActiveMenuId(null); // Close the menu
+      
+      // Reset feedback after 2 seconds
+      setTimeout(() => {
+        setCopiedEventId(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
     }
   };
 
@@ -771,12 +807,14 @@ export default function EventsPage({ params }: EventsPageProps) {
         ) : events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => (
-              <Link
+              <div
                 key={event.id}
-                href={`/events/${event.id}`}
-                className="block bg-gray-800 rounded-lg border border-gray-700 hover:border-red-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10 group"
+                className="relative bg-gray-800 rounded-lg border border-gray-700 hover:border-red-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10 group"
               >
-                <div className="p-6">
+                <Link
+                  href={`/events/${event.id}`}
+                  className="block p-6"
+                >
                   {/* Event Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -828,8 +866,48 @@ export default function EventsPage({ params }: EventsPageProps) {
                       </span>
                     </div>
                   </div>
+                </Link>
+                
+                {/* Three Dots Menu */}
+                <div className="absolute top-4 right-4">
+                  <div className="relative">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === event.id ? null : event.id);
+                      }}
+                      className="text-gray-400 hover:text-white transition-colors p-1"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {activeMenuId === event.id && (
+                      <div className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            copyEventLink(event);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
+                        >
+                          <Copy className="h-4 w-4" />
+                          <span>{copiedEventId === event.id ? 'Link Copied!' : 'Copy Link'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Copy Success Indicator */}
+                  {copiedEventId === event.id && (
+                    <div className="absolute top-0 right-0 bg-green-600 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+                      ✓ Copied!
+                    </div>
+                  )}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (
