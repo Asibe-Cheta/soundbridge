@@ -100,7 +100,8 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (activeMenuId) {
+      const target = event.target as Element;
+      if (activeMenuId && !target.closest('.dropdown-menu')) {
         setActiveMenuId(null);
       }
     };
@@ -250,9 +251,6 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
       
     } catch (error) {
       console.error('❌ Failed to copy link:', error);
-      
-      // Show error feedback
-      alert(`Failed to copy link: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Still show visual feedback
       setCopiedPodcastId(podcast.id);
@@ -1021,9 +1019,17 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
                         
                         {/* Dropdown Menu */}
                         {activeMenuId === podcast.id && (
-                          <div className="absolute right-0 top-12 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                          <div className="dropdown-menu absolute right-0 top-12 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                             <button
-                              onClick={() => copyPodcastLink(podcast)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Copy button clicked for podcast:', podcast.id);
+                                // Small delay to ensure the click is processed before menu closes
+                                setTimeout(() => {
+                                  copyPodcastLink(podcast);
+                                }, 10);
+                              }}
                               className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
                             >
                               <Copy className="h-4 w-4" />

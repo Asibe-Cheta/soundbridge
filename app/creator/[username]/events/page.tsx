@@ -71,7 +71,8 @@ export default function EventsPage({ params }: EventsPageProps) {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (activeMenuId) {
+      const target = event.target as Element;
+      if (activeMenuId && !target.closest('.dropdown-menu')) {
         setActiveMenuId(null);
       }
     };
@@ -130,9 +131,6 @@ export default function EventsPage({ params }: EventsPageProps) {
       
     } catch (error) {
       console.error('❌ Failed to copy link:', error);
-      
-      // Show error feedback
-      alert(`Failed to copy link: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Still show visual feedback
       setCopiedEventId(event.id);
@@ -927,12 +925,16 @@ export default function EventsPage({ params }: EventsPageProps) {
                     
                     {/* Dropdown Menu */}
                     {activeMenuId === event.id && (
-                      <div className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                      <div className="dropdown-menu absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            copyEventLink(event);
+                            console.log('Copy button clicked for event:', event.id);
+                            // Small delay to ensure the click is processed before menu closes
+                            setTimeout(() => {
+                              copyEventLink(event);
+                            }, 10);
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center space-x-2"
                         >
