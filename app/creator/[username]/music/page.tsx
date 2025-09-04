@@ -218,18 +218,19 @@ export default function MusicPage({ params }: MusicPageProps) {
 
   const copyTrackLink = async (track: AudioTrack) => {
     try {
-      const trackUrl = `${window.location.origin}/track/${track.id}`;
+      // Use the actual track URL from the track data, or construct a proper URL
+      const trackUrl = track.file_url || `${window.location.origin}/track/${track.id}`;
       await navigator.clipboard.writeText(trackUrl);
-      console.log('Track link copied to clipboard');
+      console.log('Track link copied to clipboard:', trackUrl);
       
-      // Show feedback
+      // Show feedback immediately
       setCopiedTrackId(track.id);
-      setActiveMenuId(null); // Close the menu
       
-      // Reset feedback after 2 seconds
+      // Keep menu open for 1.5 seconds to show feedback, then close
       setTimeout(() => {
+        setActiveMenuId(null);
         setCopiedTrackId(null);
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Failed to copy link:', error);
     }

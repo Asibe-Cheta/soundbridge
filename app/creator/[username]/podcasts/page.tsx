@@ -203,18 +203,19 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
 
   const copyPodcastLink = async (podcast: Podcast) => {
     try {
-      const podcastUrl = `${window.location.origin}/podcast/${podcast.id}`;
+      // Use the actual podcast URL from the podcast data, or construct a proper URL
+      const podcastUrl = podcast.file_url || `${window.location.origin}/podcast/${podcast.id}`;
       await navigator.clipboard.writeText(podcastUrl);
-      console.log('Podcast link copied to clipboard');
+      console.log('Podcast link copied to clipboard:', podcastUrl);
       
-      // Show feedback
+      // Show feedback immediately
       setCopiedPodcastId(podcast.id);
-      setActiveMenuId(null); // Close the menu
       
-      // Reset feedback after 2 seconds
+      // Keep menu open for 1.5 seconds to show feedback, then close
       setTimeout(() => {
+        setActiveMenuId(null);
         setCopiedPodcastId(null);
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Failed to copy link:', error);
     }

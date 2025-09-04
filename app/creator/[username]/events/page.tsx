@@ -83,18 +83,19 @@ export default function EventsPage({ params }: EventsPageProps) {
 
   const copyEventLink = async (event: Event) => {
     try {
+      // Use the actual event URL - this should be the public event page URL
       const eventUrl = `${window.location.origin}/events/${event.id}`;
       await navigator.clipboard.writeText(eventUrl);
-      console.log('Event link copied to clipboard');
+      console.log('Event link copied to clipboard:', eventUrl);
       
-      // Show feedback
+      // Show feedback immediately
       setCopiedEventId(event.id);
-      setActiveMenuId(null); // Close the menu
       
-      // Reset feedback after 2 seconds
+      // Keep menu open for 1.5 seconds to show feedback, then close
       setTimeout(() => {
+        setActiveMenuId(null);
         setCopiedEventId(null);
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Failed to copy link:', error);
     }
