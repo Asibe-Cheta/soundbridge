@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           data: metadata,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
         },
       });
       return { data, error };
