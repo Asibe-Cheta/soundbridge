@@ -11,30 +11,31 @@ export interface ProfileData {
 
 export async function createProfile(userId: string, profileData: ProfileData) {
   try {
-    const supabase = createBrowserClient();
+    console.log('🔧 Creating profile via API for user:', userId);
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        username: profileData.username,
-        display_name: profileData.display_name,
-        role: profileData.role,
-        location: profileData.location,
-        country: profileData.country,
-        bio: profileData.bio || '',
-      })
-      .select()
-      .single();
+    // Use the API route instead of direct database access
+    const response = await fetch('/api/profile/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        ...profileData
+      }),
+    });
 
-    if (error) {
-      console.error('Error creating profile:', error);
-      return { data: null, error };
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('❌ Profile creation API error:', errorData);
+      return { data: null, error: new Error(errorData.error || 'Failed to create profile') };
     }
 
-    return { data, error: null };
+    const result = await response.json();
+    console.log('✅ Profile created successfully via API:', result);
+    return { data: result.profile, error: null };
   } catch (error) {
-    console.error('Unexpected error creating profile:', error);
+    console.error('❌ Unexpected error creating profile:', error);
     return { data: null, error: error as Error };
   }
 }

@@ -4,16 +4,20 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔧 Profile creation API called');
     const supabase = createRouteHandlerClient({ cookies });
 
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
+
+    console.log('✅ User authenticated:', user.id);
 
     // Check if profile already exists
     const { data: existingProfile } = await supabase
@@ -30,21 +34,36 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create profile data
+    // Get profile data from request body
+    const body = await request.json();
+    const { userId, username, display_name, role, location, country, bio } = body;
+
+    // Use provided data or fallback to user metadata
     const email = user.email || '';
     const firstName = user.user_metadata?.first_name || email.split('@')[0];
     const lastName = user.user_metadata?.last_name || '';
-    const role = user.user_metadata?.role || 'creator';
-    const location = user.user_metadata?.location || 'london';
 
     const profileData = {
       id: user.id,
-      username: `${firstName}${lastName}${Math.random().toString(36).substring(2, 6)}`.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      display_name: `${firstName} ${lastName}`.trim() || email.split('@')[0],
-      role: role,
-      location: location,
-      country: location.includes('Nigeria') ? 'Nigeria' : 'UK',
-      bio: '',
+      username: username || `${firstName}${lastName}${Math.random().toString(36).substring(2, 6)}`.toLowerCase().replace(/[^a-z0-9]/g, ''),
+      display_name: display_name || `${firstName} ${lastName}`.trim() || email.split('@')[0],
+      role: (() => {
+        const userRole = role || user.user_metadata?.role || 'listener';
+        // Map onboarding roles to database roles
+        if (['musician', 'podcaster', 'event_promoter'].includes(userRole)) {
+          return 'creator';
+        }
+        return 'listener';
+      })(),
+      location: location || user.user_metadata?.location || 'london',
+      country: country || (location?.includes('Nigeria') ? 'Nigeria' : 'UK'),
+      bio: bio || '',
+      onboarding_completed: false,
+      onboarding_step: 'role_selection',
+      selected_role: role || user.user_metadata?.role || 'listener', // Store the onboarding role
+      profile_completed: false,
+      first_action_completed: false,
+      onboarding_skipped: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
