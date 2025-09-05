@@ -189,7 +189,7 @@ export async function GET() {
     console.log('📤 Getting profile data...');
     
     // Create a route handler client that can access cookies
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();
