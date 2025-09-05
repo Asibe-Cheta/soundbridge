@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
+import { createApiClientWithCookies } from '@/src/lib/supabase-api';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
+    console.log('🔍 Onboarding status API called');
+    const supabase = await createApiClientWithCookies();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
+    console.log('✅ User authenticated:', user.id);
+
     // Check if user has completed onboarding
+    console.log('🔍 Checking profile for user:', user.id);
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('onboarding_completed, onboarding_step, selected_role, profile_completed, first_action_completed')
@@ -23,12 +28,14 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('Error fetching profile:', profileError);
+      console.error('❌ Error fetching profile:', profileError);
       return NextResponse.json(
         { success: false, error: 'Failed to fetch profile' },
         { status: 500 }
       );
     }
+
+    console.log('📊 Profile data:', profile);
 
     // If onboarding is already completed, return false
     if (profile?.onboarding_completed) {
