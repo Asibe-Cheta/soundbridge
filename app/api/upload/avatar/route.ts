@@ -3,20 +3,22 @@ import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
+    console.log('📤 Avatar upload API called');
     
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const userId = formData.get('userId') as string;
     
-    if (authError || !user) {
+    if (!userId) {
+      console.error('❌ No user ID provided');
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: 'User ID required' },
+        { status: 400 }
       );
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    console.log('✅ User ID provided:', userId);
+    const supabase = createServiceClient();
     
     if (!file) {
       return NextResponse.json(
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
     // Convert file to buffer
@@ -71,9 +73,28 @@ export async function POST(request: NextRequest) {
       .from('avatars')
       .getPublicUrl(filePath);
 
+    const publicUrl = urlData.publicUrl;
+    console.log('🔗 Public URL:', publicUrl);
+
+    // Update user's profile with the new avatar URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('❌ Error updating profile with avatar URL:', updateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update profile with avatar URL' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Avatar uploaded and profile updated successfully');
+
     return NextResponse.json({
       success: true,
-      url: urlData.publicUrl,
+      url: publicUrl,
       path: filePath
     });
 

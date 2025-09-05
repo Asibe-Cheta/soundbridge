@@ -241,9 +241,10 @@ export default function ProfilePage() {
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('userId', user?.id || '');
       
       // Upload avatar to API
-      const response = await fetch('/api/profile/upload-image', {
+      const response = await fetch('/api/upload/avatar', {
         method: 'POST',
         body: formData,
       });
@@ -254,11 +255,11 @@ export default function ProfilePage() {
       
       const result = await response.json();
       
-      if (result.success && result.avatarUrl) {
+      if (result.success && result.url) {
         // Update the user's avatar URL in the profile data
         setProfileData(prev => ({
           ...prev,
-          avatarUrl: result.avatarUrl
+          avatarUrl: result.url
         }));
         
         // Update the user context if available
