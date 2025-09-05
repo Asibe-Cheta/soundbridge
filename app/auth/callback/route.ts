@@ -32,6 +32,28 @@ export async function GET(request: NextRequest) {
 
       if (data.user) {
         console.log('Email confirmed successfully for user:', data.user.email);
+        
+        // Check if user needs onboarding
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed, onboarding_step')
+            .eq('id', data.user.id)
+            .single();
+
+          // If no profile exists or onboarding not completed, redirect to onboarding
+          if (!profile || !profile.onboarding_completed) {
+            console.log('User needs onboarding, redirecting to home for onboarding flow');
+            return NextResponse.redirect(new URL('/', request.url));
+          }
+          
+          console.log('User onboarding completed, redirecting to dashboard');
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+          // If we can't check onboarding status, redirect to home for onboarding flow
+          return NextResponse.redirect(new URL('/', request.url));
+        }
+        
         // Redirect to dashboard or specified next page
         return NextResponse.redirect(new URL(next, request.url));
       }
