@@ -10,13 +10,12 @@ export async function POST(request: NextRequest) {
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
+    // Get request body once
+    const body = await request.json();
+    const { userId: bodyUserId, username, display_name, role, location, country, bio } = body;
+    
     // If no user from auth, try to get userId from request body (for signup flow)
-    let userId = user?.id;
-    if (!userId) {
-      const body = await request.json();
-      userId = body.userId;
-      console.log('🔧 Using userId from request body:', userId);
-    }
+    let userId = user?.id || bodyUserId;
     
     if (!userId) {
       console.error('❌ No user ID available');
@@ -42,10 +41,6 @@ export async function POST(request: NextRequest) {
         profile: existingProfile
       });
     }
-
-    // Get profile data from request body
-    const body = await request.json();
-    const { username, display_name, role, location, country, bio } = body;
 
     // Use provided data or fallback to user metadata
     const email = user?.email || '';
