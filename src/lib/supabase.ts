@@ -109,6 +109,35 @@ export const createApiClient = () => {
   }
 };
 
+// API route client with cookies (for Next.js API routes)
+export const createApiClientWithCookies = async (cookies: any) => {
+  try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ Supabase environment variables not configured for API client with cookies');
+      console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
+      throw new Error('Supabase environment variables not configured for API client with cookies. Check your .env.local file.');
+    }
+    
+    // Create client with cookies for session handling
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          'Cookie': cookies.toString(),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error creating API client with cookies:', error);
+    throw error;
+  }
+};
+
 // Service role client (for admin operations that bypass RLS)
 export const createServiceClient = () => {
   try {
