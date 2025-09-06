@@ -28,7 +28,7 @@ export async function DELETE(request: NextRequest) {
     const { error: tracksError } = await supabase
       .from('audio_tracks')
       .delete()
-      .eq('user_id', user.id);
+      .eq('creator_id', user.id);
     
     if (tracksError) {
       console.error('❌ Error deleting tracks:', tracksError);
@@ -40,22 +40,22 @@ export async function DELETE(request: NextRequest) {
     const { error: eventsError } = await supabase
       .from('events')
       .delete()
-      .eq('organizer_id', user.id);
+      .eq('creator_id', user.id);
     
     if (eventsError) {
       console.error('❌ Error deleting events:', eventsError);
       // Continue anyway
     }
 
-    // 3. Delete user's podcasts
-    console.log('🗑️ Deleting user podcasts...');
-    const { error: podcastsError } = await supabase
-      .from('podcasts')
+    // 3. Delete user's playlists
+    console.log('🗑️ Deleting user playlists...');
+    const { error: playlistsError } = await supabase
+      .from('playlists')
       .delete()
-      .eq('user_id', user.id);
+      .eq('creator_id', user.id);
     
-    if (podcastsError) {
-      console.error('❌ Error deleting podcasts:', podcastsError);
+    if (playlistsError) {
+      console.error('❌ Error deleting playlists:', playlistsError);
       // Continue anyway
     }
 
@@ -83,15 +83,15 @@ export async function DELETE(request: NextRequest) {
       // Continue anyway
     }
 
-    // 6. Delete user's notifications
-    console.log('🗑️ Deleting user notifications...');
-    const { error: notificationsError } = await supabase
-      .from('notifications')
+    // 6. Delete user's comments
+    console.log('🗑️ Deleting user comments...');
+    const { error: commentsError } = await supabase
+      .from('comments')
       .delete()
       .eq('user_id', user.id);
     
-    if (notificationsError) {
-      console.error('❌ Error deleting notifications:', notificationsError);
+    if (commentsError) {
+      console.error('❌ Error deleting comments:', commentsError);
       // Continue anyway
     }
 
@@ -107,7 +107,103 @@ export async function DELETE(request: NextRequest) {
       // Continue anyway
     }
 
-    // 8. Delete user's profile (this should be last)
+    // 8. Delete user's bookmarks
+    console.log('🗑️ Deleting user bookmarks...');
+    const { error: bookmarksError } = await supabase
+      .from('bookmarks')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (bookmarksError) {
+      console.error('❌ Error deleting bookmarks:', bookmarksError);
+      // Continue anyway
+    }
+
+    // 9. Delete user's messages (sent and received)
+    console.log('🗑️ Deleting user messages...');
+    const { error: messagesError } = await supabase
+      .from('messages')
+      .delete()
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
+    
+    if (messagesError) {
+      console.error('❌ Error deleting messages:', messagesError);
+      // Continue anyway
+    }
+
+    // 10. Delete user's event attendees
+    console.log('🗑️ Deleting user event attendees...');
+    const { error: attendeesError } = await supabase
+      .from('event_attendees')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (attendeesError) {
+      console.error('❌ Error deleting event attendees:', attendeesError);
+      // Continue anyway
+    }
+
+    // 11. Delete user's notifications
+    console.log('🗑️ Deleting user notifications...');
+    const { error: notificationsError } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (notificationsError) {
+      console.error('❌ Error deleting notifications:', notificationsError);
+      // Continue anyway
+    }
+
+    // 12. Delete user's preferences
+    console.log('🗑️ Deleting user preferences...');
+    const { error: preferencesError } = await supabase
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (preferencesError) {
+      console.error('❌ Error deleting user preferences:', preferencesError);
+      // Continue anyway
+    }
+
+    // 13. Delete user's collaborations (as initiator)
+    console.log('🗑️ Deleting user collaborations...');
+    const { error: collaborationsError } = await supabase
+      .from('collaborations')
+      .delete()
+      .or(`initiator_id.eq.${user.id},collaborator_id.eq.${user.id}`);
+    
+    if (collaborationsError) {
+      console.error('❌ Error deleting collaborations:', collaborationsError);
+      // Continue anyway
+    }
+
+    // 14. Delete user's feed
+    console.log('🗑️ Deleting user feed...');
+    const { error: feedError } = await supabase
+      .from('user_feed')
+      .delete()
+      .or(`user_id.eq.${user.id},source_user_id.eq.${user.id}`);
+    
+    if (feedError) {
+      console.error('❌ Error deleting user feed:', feedError);
+      // Continue anyway
+    }
+
+    // 15. Delete user's analytics
+    console.log('🗑️ Deleting user analytics...');
+    const { error: analyticsError } = await supabase
+      .from('social_analytics')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (analyticsError) {
+      console.error('❌ Error deleting user analytics:', analyticsError);
+      // Continue anyway
+    }
+
+    // 16. Delete user's profile (this should be last)
     console.log('🗑️ Deleting user profile...');
     const { error: profileError } = await supabase
       .from('profiles')
@@ -122,7 +218,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 9. Finally, delete the user from Supabase Auth using service client
+    // 17. Finally, delete the user from Supabase Auth using service client
     console.log('🗑️ Deleting user from auth using service client...');
     
     try {
