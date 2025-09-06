@@ -84,15 +84,23 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
   const Icon = content.icon;
 
   const handleActionClick = () => {
-    router.push(content.href);
-    setFirstActionCompleted(true);
-    setShowCelebration(true);
-    
-    // Show celebration for 2 seconds, then complete onboarding
-    setTimeout(() => {
+    try {
+      router.push(content.href);
+      setFirstActionCompleted(true);
+      setShowCelebration(true);
+      
+      // Show celebration for 2 seconds, then complete onboarding
+      setTimeout(() => {
+        completeOnboarding();
+        onClose();
+      }, 2000);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback to dashboard
+      router.push('/dashboard');
       completeOnboarding();
       onClose();
-    }, 2000);
+    }
   };
 
   const handleSkip = () => {
@@ -103,7 +111,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
       <div 
-        className="relative w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto"
+        className="relative w-full max-w-4xl mx-auto max-h-[75vh] overflow-y-auto"
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
@@ -178,16 +186,16 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer - Sticky at bottom */}
         {!showCelebration && (
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-6 border-t border-white/10 bg-black/20 backdrop-blur-sm sticky bottom-0 rounded-b-2xl">
             <button
               onClick={handleSkip}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="text-white/70 hover:text-white transition-colors"
             >
               Skip for now
             </button>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-white/50">
               This will help you get started quickly
             </div>
           </div>

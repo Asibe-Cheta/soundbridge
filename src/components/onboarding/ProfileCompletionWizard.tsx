@@ -260,7 +260,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
       <div 
-        className="relative w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto"
+        className="relative w-full max-w-4xl mx-auto max-h-[75vh] overflow-y-auto"
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
@@ -306,16 +306,16 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 pb-4">
           {renderStepContent()}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-white/10">
+        {/* Footer - Sticky at bottom */}
+        <div className="flex items-center justify-between p-6 border-t border-white/10 bg-black/20 backdrop-blur-sm sticky bottom-0 rounded-b-2xl">
           <button
             onClick={handleBack}
             disabled={currentStep === 0}
-            className="flex items-center space-x-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back</span>

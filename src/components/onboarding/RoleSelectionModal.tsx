@@ -55,7 +55,7 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
       <div 
-        className="relative w-full max-w-6xl mx-auto max-h-[85vh] overflow-y-auto"
+        className="relative w-full max-w-6xl mx-auto max-h-[75vh] overflow-y-auto"
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
