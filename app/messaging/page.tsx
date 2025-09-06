@@ -246,7 +246,7 @@ export default function MessagingPage() {
                 <Link href="/events" style={{ color: 'white', textDecoration: 'none', fontSize: '1rem' }}>
                   Events
                 </Link>
-                <Link href="/podcast/upload" style={{ color: 'white', textDecoration: 'none', fontSize: '1rem' }}>
+                <Link href="/upload" style={{ color: 'white', textDecoration: 'none', fontSize: '1rem' }}>
                   Upload Podcast
                 </Link>
               </nav>

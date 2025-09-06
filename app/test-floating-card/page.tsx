@@ -30,7 +30,7 @@ export default function TestFloatingCardPage() {
               Upload Music
             </div>
           </Link>
-          <Link href="/podcast/upload" style={{ textDecoration: 'none' }}>
+          <Link href="/upload" style={{ textDecoration: 'none' }}>
             <div className="quick-action">
               <Mic size={16} />
               Start Podcast

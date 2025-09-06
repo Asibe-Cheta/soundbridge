@@ -11,6 +11,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import {
   Upload,
   Music,
+  Mic,
   FileAudio,
   Globe,
   Users,
@@ -24,36 +25,94 @@ import {
   AlertCircle,
   AlertTriangle,
   Loader2,
-  User
+  User,
+  Headphones,
+  ArrowLeft,
+  Menu,
+  Home,
+  Bell,
+  Settings,
+  LogOut,
+  Search
 } from 'lucide-react';
 
-export default function UploadPage() {
-  const { user, loading } = useAuth();
+type ContentType = 'music' | 'podcast';
+
+export default function UnifiedUploadPage() {
+  const { user, loading, signOut } = useAuth();
   const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Form states
+  // Content type selection
+  const [contentType, setContentType] = useState<ContentType>('music');
+
+  // Form states - shared
   const [title, setTitle] = useState('');
-  const [artistName, setArtistName] = useState('');
   const [description, setDescription] = useState('');
-  const [genre, setGenre] = useState('');
   const [tags, setTags] = useState('');
   const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
-  
 
+  // Music-specific states
+  const [artistName, setArtistName] = useState('');
+  const [genre, setGenre] = useState('');
+
+  // Podcast-specific states
+  const [episodeNumber, setEpisodeNumber] = useState('');
+  const [podcastCategory, setPodcastCategory] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const genres = [
+  // Content type options
+  const contentTypes = [
+    {
+      id: 'music' as ContentType,
+      label: 'Music Track',
+      icon: Music,
+      description: 'Upload your music, beats, or audio tracks',
+      color: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)'
+    },
+    {
+      id: 'podcast' as ContentType,
+      label: 'Podcast Episode',
+      icon: Mic,
+      description: 'Share your podcast episodes and audio content',
+      color: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)'
+    }
+  ];
+
+  // Music genres
+  const musicGenres = [
     'Afrobeats', 'Gospel', 'UK Drill', 'Highlife', 'Jazz', 'Hip Hop',
     'R&B', 'Pop', 'Rock', 'Electronic', 'Classical', 'Folk', 'Country'
   ];
+
+  // Podcast categories
+  const podcastCategories = [
+    'Music Industry', 'Artist Interviews', 'Music Production', 'Gospel & Worship',
+    'Afrobeats', 'UK Drill', 'Hip Hop', 'R&B', 'Jazz', 'Classical', 'Rock',
+    'Pop', 'Electronic', 'Folk', 'Country', 'Business', 'Education',
+    'Entertainment', 'Culture', 'Lifestyle', 'Technology', 'Other'
+  ];
+
+  // Handle mobile responsiveness
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -89,7 +148,6 @@ export default function UploadPage() {
       handleFileUpload(e.target.files[0]);
     }
   };
-
 
   const handleCoverArtSelect = (file: File) => {
     uploadActions.setCoverArtFile(file);
@@ -139,8 +197,14 @@ export default function UploadPage() {
       return;
     }
 
-    if (!artistName.trim()) {
+    // Validate content-specific required fields
+    if (contentType === 'music' && !artistName.trim()) {
       console.error('No artist name provided');
+      return;
+    }
+
+    if (contentType === 'podcast' && !episodeNumber.trim()) {
+      console.error('No episode number provided');
       return;
     }
 
@@ -166,6 +230,11 @@ export default function UploadPage() {
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            userId: user.id,
+            display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
+            role: 'creator' // Default to creator for upload functionality
+          }),
         });
         
         const profileCreateResult = await profileCreateResponse.json();
@@ -180,38 +249,47 @@ export default function UploadPage() {
         console.log('Profile already exists');
       }
 
-      // Now proceed with upload
+      // Prepare track data based on content type
       const trackData = {
         title: title.trim(),
-        artistName: artistName.trim(),
         description: description.trim(),
-        genre,
         tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
         privacy,
         publishOption,
-        scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined
+        scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined,
+        contentType,
+        // Content-specific data
+        ...(contentType === 'music' ? {
+          artistName: artistName.trim(),
+          genre
+        } : {
+          episodeNumber: episodeNumber.trim(),
+          podcastCategory
+        })
       };
 
       console.log('Uploading track with data:', trackData);
       const success = await uploadActions.uploadTrack(trackData);
 
-             if (success) {
-         // Reset form
-         setTitle('');
-         setArtistName('');
-         setDescription('');
-         setGenre('');
-         setTags('');
-         setPrivacy('public');
-         setPublishOption('now');
-         setScheduleDate('');
-         uploadActions.resetUpload();
-         
-         // Redirect to success page with track details
-         console.log('Redirecting to success page...');
-         const successUrl = `/upload/success?title=${encodeURIComponent(title.trim())}`;
-         window.location.href = successUrl;
-       } else {
+      if (success) {
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setTags('');
+        setPrivacy('public');
+        setPublishOption('now');
+        setScheduleDate('');
+        setArtistName('');
+        setGenre('');
+        setEpisodeNumber('');
+        setPodcastCategory('');
+        uploadActions.resetUpload();
+        
+        // Redirect to success page with track details
+        console.log('Redirecting to success page...');
+        const successUrl = `/upload/success?title=${encodeURIComponent(title.trim())}&type=${contentType}`;
+        window.location.href = successUrl;
+      } else {
         console.error('Failed to upload track. Please try again.');
       }
     } catch (error) {
@@ -223,35 +301,14 @@ export default function UploadPage() {
     uploadActions.cancelUpload();
   };
 
-  // Debug authentication state
-  console.log('UploadPage Auth State:', { 
-    user: user?.email, 
-    loading, 
-    hasUser: !!user,
-    userId: user?.id 
-  });
-
-  // Force refresh authentication state
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { createBrowserClient } = await import('@/src/lib/supabase');
-        const supabase = createBrowserClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('Manual auth check:', { 
-          hasSession: !!session, 
-          userEmail: session?.user?.email 
-        });
-      } catch (error) {
-        console.error('Auth check error:', error);
-      }
-    };
-    
-    if (!user && !loading) {
-      console.log('No user found, checking auth manually...');
-      checkAuth();
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  }, [user, loading]);
+  };
 
   // Ensure profile exists before upload
   React.useEffect(() => {
@@ -279,6 +336,11 @@ export default function UploadPage() {
             headers: {
               'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+              userId: user.id,
+              display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
+              role: 'creator' // Default to creator for upload functionality
+            }),
           });
           
           const createResult = await createResponse.json();
@@ -325,7 +387,7 @@ export default function UploadPage() {
           <AlertTriangle size={48} style={{ color: '#EC4899', marginBottom: '1rem' }} />
           <h2 style={{ marginBottom: '1rem' }}>Authentication Required</h2>
           <p style={{ color: '#999', marginBottom: '2rem' }}>
-            You need to be logged in to upload tracks to SoundBridge.
+            You need to be logged in to upload content to SoundBridge.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <Link href="/login" style={{ textDecoration: 'none' }}>
@@ -365,31 +427,31 @@ export default function UploadPage() {
         <div className="search-bar">
           <input type="search" placeholder="Search creators, events, podcasts..." />
         </div>
-                 <div className="auth-buttons">
-           {user ? (
-             <div style={{ position: 'relative' }}>
-               <Link href="/profile" style={{ textDecoration: 'none' }}>
-                 <button
-                   style={{
-                     background: 'rgba(255, 255, 255, 0.1)',
-                     border: '1px solid rgba(255, 255, 255, 0.2)',
-                     borderRadius: '50%',
-                     width: '40px',
-                     height: '40px',
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     cursor: 'pointer',
-                     transition: 'all 0.3s ease'
-                   }}
-                   onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                   onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                 >
-                   <User size={20} color="white" />
-                 </button>
-               </Link>
-             </div>
-           ) : (
+        <div className="auth-buttons">
+          {user ? (
+            <div style={{ position: 'relative' }}>
+              <Link href="/profile" style={{ textDecoration: 'none' }}>
+                <button
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                >
+                  <User size={20} color="white" />
+                </button>
+              </Link>
+            </div>
+          ) : (
             <>
               <Link href="/login" style={{ textDecoration: 'none' }}>
                 <button className="btn-secondary">Login</button>
@@ -405,10 +467,80 @@ export default function UploadPage() {
       {/* Main Content */}
       <main className="main-container">
         <div className="section-header">
-          <h1 className="section-title">Upload Audio</h1>
+          <h1 className="section-title">Upload Content</h1>
           <p style={{ color: '#ccc', marginTop: '0.5rem' }}>
             Share your music, podcasts, or audio content with the SoundBridge community
           </p>
+        </div>
+
+        {/* Content Type Selection */}
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontWeight: '600', marginBottom: '1.5rem', color: '#EC4899' }}>
+            <Upload size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
+            Choose Content Type
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+            {contentTypes.map((type) => {
+              const Icon = type.icon;
+              const isSelected = contentType === type.id;
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => setContentType(type.id)}
+                  style={{
+                    background: isSelected ? type.color : 'rgba(255, 255, 255, 0.05)',
+                    border: `2px solid ${isSelected ? 'transparent' : 'rgba(255, 255, 255, 0.2)'}`,
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    textAlign: 'left',
+                    color: 'white',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    boxShadow: isSelected ? '0 8px 25px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    <Icon size={24} />
+                    <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{type.label}</span>
+                  </div>
+                  <p style={{ color: isSelected ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', margin: 0 }}>
+                    {type.description}
+                  </p>
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '0.5rem',
+                      right: '0.5rem',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <CheckCircle size={16} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Error/Success Messages */}
@@ -425,13 +557,11 @@ export default function UploadPage() {
           </div>
         )}
 
-        
-
         <div className="grid grid-2" style={{ gap: '2rem' }}>
           {/* Upload Area */}
           <div className="card">
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <Upload size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
+              <FileAudio size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
               Upload Audio File
             </h3>
 
@@ -570,33 +700,103 @@ export default function UploadPage() {
           {/* Metadata Form */}
           <div className="card">
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-              <Music size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              Track Details
+              {contentType === 'music' ? (
+                <Music size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
+              ) : (
+                <Mic size={20} style={{ marginRight: '0.5rem', display: 'inline' }} />
+              )}
+              {contentType === 'music' ? 'Track Details' : 'Episode Details'}
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Title */}
-              <div>
-                <label className="form-label">Title *</label>
+              <div style={{ 
+                transition: 'all 0.3s ease',
+                opacity: 1,
+                transform: 'translateY(0)'
+              }}>
+                <label className="form-label">
+                  {contentType === 'music' ? 'Track Title' : 'Episode Title'} *
+                </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter track title"
+                  placeholder={contentType === 'music' ? 'Enter track title' : 'Enter episode title'}
                   className="form-input"
                 />
               </div>
 
-              {/* Artist Name */}
-              <div>
-                <label className="form-label">Artist Name *</label>
-                <input
-                  type="text"
-                  value={artistName}
-                  onChange={(e) => setArtistName(e.target.value)}
-                  placeholder="Enter artist name"
-                  className="form-input"
-                />
+              {/* Content-specific fields with smooth transitions */}
+              <div style={{ 
+                transition: 'all 0.4s ease',
+                opacity: 1,
+                transform: 'translateY(0)',
+                overflow: 'hidden'
+              }}>
+                {contentType === 'music' ? (
+                  <div style={{ 
+                    animation: 'slideInFromLeft 0.4s ease-out'
+                  }}>
+                    {/* Artist Name */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label className="form-label">Artist Name *</label>
+                      <input
+                        type="text"
+                        value={artistName}
+                        onChange={(e) => setArtistName(e.target.value)}
+                        placeholder="Enter artist name"
+                        className="form-input"
+                      />
+                    </div>
+
+                    {/* Genre */}
+                    <div>
+                      <label className="form-label">Genre</label>
+                      <select
+                        value={genre}
+                        onChange={(e) => setGenre(e.target.value)}
+                        className="form-input"
+                      >
+                        <option value="">Select genre</option>
+                        {musicGenres.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    animation: 'slideInFromRight 0.4s ease-out'
+                  }}>
+                    {/* Episode Number */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label className="form-label">Episode Number *</label>
+                      <input
+                        type="text"
+                        value={episodeNumber}
+                        onChange={(e) => setEpisodeNumber(e.target.value)}
+                        placeholder="e.g., Episode 1, S01E01"
+                        className="form-input"
+                      />
+                    </div>
+
+                    {/* Podcast Category */}
+                    <div>
+                      <label className="form-label">Category</label>
+                      <select
+                        value={podcastCategory}
+                        onChange={(e) => setPodcastCategory(e.target.value)}
+                        className="form-input"
+                      >
+                        <option value="">Select category</option>
+                        {podcastCategories.map((category) => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -605,25 +805,10 @@ export default function UploadPage() {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Tell us about your track..."
+                  placeholder={contentType === 'music' ? 'Tell us about your track...' : 'Tell us about this episode...'}
                   rows={4}
                   className="form-textarea"
                 />
-              </div>
-
-              {/* Genre */}
-              <div>
-                <label className="form-label">Genre</label>
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="form-input"
-                >
-                  <option value="">Select genre</option>
-                  {genres.map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
               </div>
 
               {/* Tags */}
@@ -778,7 +963,7 @@ export default function UploadPage() {
                 Uploading...
               </div>
             ) : (
-              'Publish Track'
+              `Publish ${contentType === 'music' ? 'Track' : 'Episode'}`
             )}
           </button>
         </div>
@@ -793,7 +978,13 @@ export default function UploadPage() {
           <div>Use high-quality audio files for best results</div>
           <div>Add detailed descriptions to help discovery</div>
           <div>Use relevant tags to reach your audience</div>
-          <div>Upload cover art to make your track stand out</div>
+          <div>Upload cover art to make your content stand out</div>
+          {contentType === 'music' && (
+            <div>Choose the right genre to help listeners find your music</div>
+          )}
+          {contentType === 'podcast' && (
+            <div>Number your episodes consistently for better organization</div>
+          )}
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Recent Uploads</h3>
@@ -810,8 +1001,45 @@ export default function UploadPage() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        
+        @keyframes slideInFromLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideInFromRight {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .content-type-transition {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
       `
       }} />
     </>
   );
-} 
+}
