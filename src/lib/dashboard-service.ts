@@ -750,18 +750,23 @@ export class DashboardService {
    */
   async deleteUserAccount(userId: string): Promise<{ error: unknown }> {
     try {
-      // This would typically be handled by Supabase Auth
-      // For now, we'll just delete the profile
-      const { error } = await this.supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      console.log('🗑️ Deleting user account:', userId);
+      
+      const response = await fetch('/api/user/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) {
-        console.error('Error deleting user account:', error);
-        return { error };
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error deleting user account:', result.error);
+        return { error: result.error };
       }
 
+      console.log('✅ Account deleted successfully');
       return { error: null };
     } catch (error) {
       console.error('Unexpected error deleting user account:', error);

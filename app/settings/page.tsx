@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { dashboardService } from '@/src/lib/dashboard-service';
 import {
   User,
   Settings,
@@ -243,12 +244,32 @@ export default function SettingsPage() {
     }
 
     try {
-      // Here you would typically make an API call to delete the account
-      console.log('Deleting account');
+      if (!user) {
+        console.error('No user found');
+        setIsDeletingAccount(false);
+        return;
+      }
+
+      console.log('🗑️ Deleting account for user:', user.id);
+      
+      const { error } = await dashboardService.deleteUserAccount(user.id);
+      
+      if (error) {
+        console.error('Error deleting account:', error);
+        alert(`Failed to delete account: ${error}`);
+        setIsDeletingAccount(false);
+        return;
+      }
+
+      console.log('✅ Account deleted successfully');
+      
+      // Sign out and redirect
       await signOut();
       router.push('/');
+      
     } catch (error) {
       console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again.');
       setIsDeletingAccount(false);
     }
   };
