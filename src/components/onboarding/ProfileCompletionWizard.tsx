@@ -258,37 +258,46 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pt-20">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div 
+        className="relative w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
+        style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-xl font-bold text-white">
               {steps[currentStep].title}
             </h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">
+            <p className="text-white/70 text-sm">
               {steps[currentStep].description}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-white/70 hover:text-white" strokeWidth={2} />
           </button>
         </div>
 
         {/* Progress Bar */}
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600 dark:text-gray-300">
+            <span className="text-sm text-white/70">
               Step {currentStep + 1} of {steps.length}
             </span>
-            <span className="text-sm text-gray-600 dark:text-gray-300">
+            <span className="text-sm text-white/70">
               {Math.round(((currentStep + 1) / steps.length) * 100)}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-white/10 rounded-full h-2">
             <div
               className="bg-gradient-to-r from-red-500 to-pink-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
@@ -302,7 +311,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-t border-white/10">
           <button
             onClick={handleBack}
             disabled={currentStep === 0}

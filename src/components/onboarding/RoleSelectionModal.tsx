@@ -3,6 +3,7 @@
 import React from 'react';
 import { useOnboarding, UserRole } from '@/src/contexts/OnboardingContext';
 import { Music, Mic, Calendar, Users, X } from 'lucide-react';
+import Image from 'next/image';
 
 interface RoleSelectionModalProps {
   isOpen: boolean;
@@ -15,32 +16,28 @@ const roleOptions = [
     title: 'Musician / Artist',
     description: 'Upload tracks, build your fanbase, and connect with other artists',
     icon: Music,
-    color: 'from-red-500 to-pink-500',
-    priority: 1
+    gradient: 'from-red-500 to-pink-500'
   },
   {
     id: 'podcaster' as UserRole,
     title: 'Podcaster',
     description: 'Share your episodes, grow your audience, and find collaborators',
     icon: Mic,
-    color: 'from-blue-500 to-purple-500',
-    priority: 2
+    gradient: 'from-purple-500 to-indigo-500'
   },
   {
     id: 'event_promoter' as UserRole,
     title: 'Event Promoter',
     description: 'Create events, manage attendees, and promote your shows',
     icon: Calendar,
-    color: 'from-green-500 to-teal-500',
-    priority: 3
+    gradient: 'from-green-500 to-emerald-500'
   },
   {
     id: 'listener' as UserRole,
     title: 'Music Lover',
     description: 'Discover new music, attend events, and support your favorite artists',
     icon: Users,
-    color: 'from-gray-500 to-slate-500',
-    priority: 4
+    gradient: 'from-gray-500 to-slate-500'
   }
 ];
 
@@ -56,28 +53,47 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pt-20">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div 
+        className="relative w-full max-w-2xl mx-auto"
+        style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome to SoundBridge! 🎵
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 mt-1">
-              What kind of creator are you? This helps us personalize your experience.
-            </p>
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/images/logos/logo-trans.png"
+              alt="SoundBridge"
+              width={120}
+              height={36}
+              style={{ height: 'auto' }}
+            />
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-white/70 hover:text-white" strokeWidth={2} />
           </button>
         </div>
 
-        {/* Role Options */}
         <div className="p-6">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Choose Your Role
+            </h2>
+            <p className="text-white/70">
+              What kind of creator are you? This helps us personalize your experience.
+            </p>
+          </div>
+
+          {/* Role Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {roleOptions.map((role) => {
               const Icon = role.icon;
@@ -85,17 +101,35 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
                 <button
                   key={role.id}
                   onClick={() => handleRoleSelect(role.id)}
-                  className="group p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-red-500 dark:hover:border-red-400 transition-all duration-200 hover:shadow-lg text-left"
+                  className="group p-4 text-left rounded-xl transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
                 >
                   <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-lg bg-gradient-to-r ${role.color} flex-shrink-0`}>
-                      <Icon className="h-6 w-6 text-white" />
+                    <div 
+                      className={`p-3 rounded-lg bg-gradient-to-r ${role.gradient}`}
+                      style={{
+                        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                      }}
+                    >
+                      <Icon className="h-5 w-5 text-white" strokeWidth={2} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white group-hover:text-pink-400 transition-colors">
                         {role.title}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm leading-relaxed">
+                      <p className="text-white/70 mt-1 text-sm leading-relaxed">
                         {role.description}
                       </p>
                     </div>
@@ -107,8 +141,8 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+        <div className="p-6 border-t border-white/10">
+          <p className="text-sm text-white/50 text-center">
             Don't worry, you can always change this later in your profile settings.
           </p>
         </div>
