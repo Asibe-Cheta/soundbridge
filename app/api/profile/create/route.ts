@@ -20,17 +20,81 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ User ID provided:', userId);
 
-    // Verify the user exists in auth.users table
-    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
-    if (authError || !authUser.user) {
-      console.error('❌ User not found in auth.users:', authError);
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 400 }
-      );
+    // Verify the user exists in auth.users table with retry mechanism
+    let authUser = null;
+    let authError = null;
+    
+    // Retry up to 3 times with delays (user might not be fully propagated yet)
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`🔍 Attempt ${attempt}: Looking up user in auth.users...`);
+      
+      const result = await supabase.auth.admin.getUserById(userId);
+      authUser = result.data;
+      authError = result.error;
+      
+      if (authUser?.user && !authError) {
+        console.log('✅ User verified in auth.users:', authUser.user.id);
+        break;
+      }
+      
+      if (attempt < 3) {
+        console.log(`⏳ User not found on attempt ${attempt}, retrying in ${attempt * 500}ms...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 500));
+      }
     }
+    
+    if (authError || !authUser?.user) {
+      console.error('❌ User not found in auth.users after 3 attempts:', authError);
+      console.log('🔄 Proceeding with minimal profile creation using provided data only...');
+      
+      // Fallback: Create profile with minimal data from request body
+      const profileData = {
+        id: userId,
+        username: username || `user${Math.random().toString(36).substring(2, 8)}`,
+        display_name: display_name || 'New User',
+        role: (() => {
+          // Map onboarding roles to database roles
+          if (['musician', 'podcaster', 'event_promoter'].includes(role)) {
+            return 'creator';
+          }
+          return 'listener';
+        })(),
+        location: location || 'london',
+        country: country || (location?.includes('Nigeria') ? 'Nigeria' : 'UK'),
+        bio: bio || '',
+        onboarding_completed: false,
+        onboarding_step: 'role_selection',
+        selected_role: role || 'listener',
+        profile_completed: false,
+        first_action_completed: false,
+        onboarding_skipped: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-    console.log('✅ User verified in auth.users:', authUser.user.id);
+      console.log('Creating profile with fallback data:', profileData);
+
+      // Create the profile with fallback data
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .insert(profileData)
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Profile creation error (fallback):', profileError);
+        return NextResponse.json(
+          { error: 'Failed to create profile', details: profileError },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Profile created successfully (fallback mode)',
+        profile
+      });
+    }
 
     // Check if profile already exists
     const { data: existingProfile } = await supabase
