@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceClient } from '@/src/lib/supabase';
+import { cookies } from 'next/headers';
 
 export async function DELETE(request: NextRequest) {
   try {
     console.log('🗑️ Delete account request received');
     
-    const supabase = await createApiClientWithCookies(request.cookies);
+    const supabase = createServerComponentClient({ cookies });
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
