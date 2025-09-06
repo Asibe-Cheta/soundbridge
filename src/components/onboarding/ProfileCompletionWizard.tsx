@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward } from 'lucide-react';
 
 interface ProfileCompletionWizardProps {
   isOpen: boolean;
@@ -314,14 +314,27 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
 
         {/* Footer - Sticky at bottom */}
         <div className="flex items-center justify-between p-6 border-t border-white/10 bg-black/20 backdrop-blur-sm sticky bottom-0 rounded-b-2xl">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 0}
-            className="flex items-center space-x-2 px-4 py-2 text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBack}
+              disabled={currentStep === 0}
+              className="flex items-center space-x-2 px-4 py-2 text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </button>
+            <button
+              onClick={() => {
+                setProfileCompleted(true);
+                setCurrentStep('first_action');
+                onClose();
+              }}
+              className="flex items-center space-x-2 px-3 py-2 text-white/50 hover:text-white/70 transition-colors text-sm"
+            >
+              <SkipForward className="h-4 w-4" />
+              <span>Skip profile setup</span>
+            </button>
+          </div>
 
           <button
             onClick={handleNext}

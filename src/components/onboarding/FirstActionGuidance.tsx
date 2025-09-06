@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useRouter } from 'next/navigation';
-import { Upload, Calendar, Mic, Music, X, ArrowRight, Sparkles } from 'lucide-react';
+import { Upload, Calendar, Mic, Music, X, ArrowRight, Sparkles, Lightbulb } from 'lucide-react';
 
 interface FirstActionGuidanceProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
     switch (selectedRole) {
       case 'musician':
         return {
-          title: "Upload Your First Track! 🎵",
+          title: "Upload Your First Track",
           description: "Share your music with the world and start building your fanbase.",
           action: "Upload Track",
           icon: Music,
@@ -37,7 +37,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
         };
       case 'podcaster':
         return {
-          title: "Share Your First Episode! 🎙️",
+          title: "Share Your First Episode",
           description: "Upload your podcast and start growing your audience.",
           action: "Upload Podcast",
           icon: Mic,
@@ -51,7 +51,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
         };
       case 'event_promoter':
         return {
-          title: "Create Your First Event! 🎪",
+          title: "Create Your First Event",
           description: "List your event and start attracting attendees.",
           action: "Create Event",
           icon: Calendar,
@@ -65,7 +65,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
         };
       default:
         return {
-          title: "Explore SoundBridge! 🎵",
+          title: "Explore SoundBridge",
           description: "Discover amazing music, events, and creators.",
           action: "Start Exploring",
           icon: Sparkles,
@@ -146,7 +146,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
                 <Sparkles className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Awesome! 🎉
+                Awesome
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
                 You're all set! Welcome to the SoundBridge community.
@@ -168,8 +168,9 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
 
               {/* Tips */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  💡 Pro Tips:
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-yellow-500" />
+                  Pro Tips
                 </h3>
                 <ul className="space-y-3">
                   {content.tips.map((tip, index) => (
@@ -189,12 +190,23 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
         {/* Footer - Sticky at bottom */}
         {!showCelebration && (
           <div className="flex items-center justify-between p-6 border-t border-white/10 bg-black/20 backdrop-blur-sm sticky bottom-0 rounded-b-2xl">
-            <button
-              onClick={handleSkip}
-              className="text-white/70 hover:text-white transition-colors"
-            >
-              Skip for now
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleSkip}
+                className="text-white/70 hover:text-white transition-colors"
+              >
+                Skip for now
+              </button>
+              <button
+                onClick={() => {
+                  completeOnboarding();
+                  onClose();
+                }}
+                className="text-white/50 hover:text-white/70 transition-colors text-sm"
+              >
+                Skip entire onboarding
+              </button>
+            </div>
             <div className="text-sm text-white/50">
               This will help you get started quickly
             </div>

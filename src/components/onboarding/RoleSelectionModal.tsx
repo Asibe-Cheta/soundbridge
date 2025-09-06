@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useOnboarding, UserRole } from '@/src/contexts/OnboardingContext';
-import { Music, Mic, Calendar, Users, X } from 'lucide-react';
+import { Music, Mic, Calendar, Users, X, SkipForward } from 'lucide-react';
 import Image from 'next/image';
 
 interface RoleSelectionModalProps {
@@ -136,9 +136,22 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
 
         {/* Footer */}
         <div className="p-6 border-t border-white/10">
-          <p className="text-sm text-white/50 text-center">
-            Don't worry, you can always change this later in your profile settings.
-          </p>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => {
+                setSelectedRole('listener');
+                setCurrentStep('profile_setup');
+                onClose();
+              }}
+              className="flex items-center space-x-2 px-3 py-2 text-white/50 hover:text-white/70 transition-colors text-sm"
+            >
+              <SkipForward className="h-4 w-4" />
+              <span>Skip role selection</span>
+            </button>
+            <p className="text-sm text-white/50 text-center">
+              Don't worry, you can always change this later in your profile settings.
+            </p>
+          </div>
         </div>
       </div>
     </div>
