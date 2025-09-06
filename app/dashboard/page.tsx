@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
@@ -34,6 +35,7 @@ import Image from 'next/image';
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const { theme } = useTheme();
+  const router = useRouter();
   const {
     stats,
     profile,
@@ -70,9 +72,14 @@ export default function DashboardPage() {
       const result = await deleteUserAccount();
       if (result?.success) {
         await signOut();
+        router.push('/');
+      } else {
+        // Show error message if deletion failed
+        alert('Failed to delete account. Please try again.');
       }
     } catch (error) {
       console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again.');
     }
   };
 
