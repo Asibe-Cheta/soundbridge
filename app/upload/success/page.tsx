@@ -138,7 +138,7 @@ function UploadSuccessContent() {
         <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
           {/* Success Card */}
           <div className="card" style={{ 
-            maxWidth: '600px', 
+            maxWidth: '360px', 
             margin: '0 auto',
             background: 'rgba(34, 197, 94, 0.05)',
             border: '2px solid rgba(34, 197, 94, 0.2)'
@@ -148,18 +148,18 @@ function UploadSuccessContent() {
               <div style={{
                 background: 'linear-gradient(45deg, #22C55E, #16A34A)',
                 borderRadius: '50%',
-                width: '80px',
-                height: '80px',
+                width: '60px',
+                height: '60px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1rem'
               }}>
-                <CheckCircle size={40} color="white" />
+                <CheckCircle size={30} color="white" />
               </div>
               <h1 style={{ 
                 color: '#22C55E', 
-                fontSize: '2.5rem', 
+                fontSize: '1.8rem', 
                 fontWeight: '700',
                 marginBottom: '0.5rem'
               }}>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -37,7 +38,9 @@ import {
   Star,
   Clock,
   Eye,
-  Clock3
+  Clock3,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 
 interface ProfileStats {
@@ -59,6 +62,8 @@ interface RecentTrack {
   likes: number;
   uploadedAt: string;
   coverArt?: string;
+  fileUrl?: string;
+  artist?: string;
 }
 
 interface RecentEvent {
@@ -70,8 +75,163 @@ interface RecentEvent {
   status: 'upcoming' | 'past' | 'cancelled';
 }
 
+// Track Dropdown Menu Component
+function TrackDropdownMenu({ track }: { track: RecentTrack }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    const trackUrl = `${window.location.origin}/track/${track.id}`;
+    try {
+      await navigator.clipboard.writeText(trackUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
+  const shareTrack = async () => {
+    const trackUrl = `${window.location.origin}/track/${track.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: track.title,
+          text: `Check out this track: ${track.title}`,
+          url: trackUrl,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      copyLink();
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button 
+        className="btn-icon"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          backgroundColor: isOpen ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+        }}
+      >
+        <MoreVertical size={16} />
+      </button>
+      
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10
+            }}
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Dropdown Menu */}
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: '0.5rem',
+            background: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '0.5rem',
+            minWidth: '160px',
+            zIndex: 20,
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+          }}>
+            <button
+              onClick={copyLink}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem',
+                color: 'white',
+                background: 'none',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <Copy size={14} />
+              {copied ? 'Copied!' : 'Copy Link'}
+            </button>
+            
+            <button
+              onClick={shareTrack}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem',
+                color: 'white',
+                background: 'none',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <Share2 size={14} />
+              Share
+            </button>
+            
+            <button
+              onClick={() => {
+                const trackUrl = `${window.location.origin}/track/${track.id}`;
+                window.open(trackUrl, '_blank');
+                setIsOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem',
+                color: 'white',
+                background: 'none',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <ExternalLink size={14} />
+              View Track
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { user, signOut, loading } = useAuth();
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -381,12 +541,36 @@ export default function ProfilePage() {
                      </div>
                    </div>
                    <div className="track-actions">
-                     <button className="btn-icon">
-                       <Play size={16} />
+                     <button 
+                       className="btn-icon"
+                       onClick={() => {
+                         if (track.fileUrl) {
+                           const audioTrack = {
+                             id: track.id,
+                             title: track.title,
+                             artist: track.artist || user?.user_metadata?.full_name || 'Unknown Artist',
+                             album: '',
+                             duration: 0, // Will be set when audio loads
+                             artwork: track.coverArt || '',
+                             url: track.fileUrl,
+                             liked: false
+                           };
+                           playTrack(audioTrack);
+                         } else {
+                           console.warn('No file URL available for track:', track.title);
+                         }
+                       }}
+                       style={{
+                         backgroundColor: currentTrack?.id === track.id && isPlaying ? 'rgba(236, 72, 153, 0.2)' : 'transparent'
+                       }}
+                     >
+                       {currentTrack?.id === track.id && isPlaying ? (
+                         <Pause size={16} />
+                       ) : (
+                         <Play size={16} />
+                       )}
                      </button>
-                     <button className="btn-icon">
-                       <MoreVertical size={16} />
-                     </button>
+                     <TrackDropdownMenu track={track} />
                    </div>
                  </div>
                ))

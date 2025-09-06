@@ -535,6 +535,31 @@ export function GlobalAudioPlayer() {
               >
                 <Share2 size={18} />
               </button>
+
+              <button
+                onClick={() => window.open('/player', '_blank')}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Expand Player"
+              >
+                <Maximize2 size={18} />
+              </button>
             </div>
           </div>
         </div>
