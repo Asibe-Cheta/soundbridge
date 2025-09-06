@@ -752,7 +752,7 @@ export class DashboardService {
     try {
       console.log('🗑️ Deleting user account:', userId);
       
-      const response = await fetch('/api/user/delete-account-simple', {
+      const response = await fetch('/api/user/delete-account', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
