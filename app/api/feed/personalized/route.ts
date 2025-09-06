@@ -37,18 +37,51 @@ export async function GET(request: NextRequest) {
 
     if (profileError || !profile) {
       console.error('❌ Error fetching user profile:', profileError);
-      return NextResponse.json(
-        { success: false, error: 'User profile not found' },
-        { status: 404 }
-      );
+      // Return empty personalized data instead of error
+      return NextResponse.json({
+        success: true,
+        data: {
+          profile: {
+            role: 'listener',
+            location: '',
+            genres: [],
+            country: ''
+          },
+          music: [],
+          creators: [],
+          events: [],
+          podcasts: []
+        }
+      });
     }
 
     console.log('👤 User profile:', {
       role: profile.selected_role,
       location: profile.location,
       genres: profile.genres,
-      country: profile.country
+      country: profile.country,
+      onboarding_completed: profile.onboarding_completed
     });
+
+    // Check if user has completed onboarding
+    if (!profile.onboarding_completed) {
+      console.log('🎯 User has not completed onboarding, returning empty data');
+      return NextResponse.json({
+        success: true,
+        data: {
+          profile: {
+            role: profile.selected_role || 'listener',
+            location: profile.location || '',
+            genres: profile.genres || [],
+            country: profile.country || ''
+          },
+          music: [],
+          creators: [],
+          events: [],
+          podcasts: []
+        }
+      });
+    }
 
     // Get personalized content based on user preferences
     const personalizedContent = await getPersonalizedContent(supabase, profile);

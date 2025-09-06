@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useOnboarding } from '@/src/contexts/OnboardingContext';
 
 export interface PersonalizedContent {
   music: any[];
@@ -23,12 +24,21 @@ export interface PersonalizedFeedData {
 
 export function usePersonalizedFeed() {
   const { user } = useAuth();
+  const { onboardingState } = useOnboarding();
   const [data, setData] = useState<PersonalizedFeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPersonalizedFeed = async () => {
     if (!user?.id) {
+      console.log('🎯 No user ID available, skipping personalized feed');
+      setLoading(false);
+      return;
+    }
+
+    // Don't fetch personalized data if user is still in onboarding
+    if (onboardingState.isOnboardingActive || onboardingState.showOnboarding) {
+      console.log('🎯 User is in onboarding, skipping personalized feed');
       setLoading(false);
       return;
     }
@@ -40,6 +50,14 @@ export function usePersonalizedFeed() {
       console.log('🎯 Fetching personalized feed for user:', user.id);
       
       const response = await fetch(`/api/feed/personalized?userId=${user.id}`);
+      
+      if (!response.ok) {
+        console.error('❌ API response not ok:', response.status, response.statusText);
+        setError(`API error: ${response.status}`);
+        setLoading(false);
+        return;
+      }
+      
       const result = await response.json();
       
       if (result.success) {
@@ -59,7 +77,7 @@ export function usePersonalizedFeed() {
 
   useEffect(() => {
     fetchPersonalizedFeed();
-  }, [user?.id]);
+  }, [user?.id, onboardingState.isOnboardingActive, onboardingState.showOnboarding]);
 
   const refetch = () => {
     fetchPersonalizedFeed();
