@@ -33,8 +33,46 @@ export async function GET(request: NextRequest) {
       if (data.user) {
         console.log('Email confirmed successfully for user:', data.user.email);
         
-        // Check if user needs onboarding
+        // Create profile if it doesn't exist (after email verification, user should be fully propagated)
         try {
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', data.user.id)
+            .single();
+
+          if (!existingProfile) {
+            console.log('Profile does not exist, creating profile for user:', data.user.id);
+            
+            // Create profile with default data
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: data.user.id,
+                username: `user${data.user.id.substring(0, 8)}`,
+                display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'New User',
+                role: 'listener',
+                location: 'london',
+                country: 'UK',
+                bio: '',
+                onboarding_completed: false,
+                onboarding_step: 'role_selection',
+                selected_role: 'listener',
+                profile_completed: false,
+                first_action_completed: false,
+                onboarding_skipped: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (profileError) {
+              console.error('Error creating profile:', profileError);
+            } else {
+              console.log('Profile created successfully');
+            }
+          }
+          
+          // Check if user needs onboarding
           const { data: profile } = await supabase
             .from('profiles')
             .select('onboarding_completed, onboarding_step')
@@ -49,7 +87,7 @@ export async function GET(request: NextRequest) {
           
           console.log('User onboarding completed, redirecting to dashboard');
         } catch (error) {
-          console.error('Error checking onboarding status:', error);
+          console.error('Error checking/creating profile:', error);
           // If we can't check onboarding status, redirect to home for onboarding flow
           return NextResponse.redirect(new URL('/', request.url));
         }

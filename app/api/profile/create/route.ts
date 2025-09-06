@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     let authUser = null;
     let authError = null;
     
-    // Retry up to 3 times with delays (user might not be fully propagated yet)
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // Retry up to 5 times with increasing delays (user might not be fully propagated yet)
+    for (let attempt = 1; attempt <= 5; attempt++) {
       console.log(`🔍 Attempt ${attempt}: Looking up user in auth.users...`);
       
       const result = await supabase.auth.admin.getUserById(userId);
@@ -34,12 +34,31 @@ export async function POST(request: NextRequest) {
       
       if (authUser?.user && !authError) {
         console.log('✅ User verified in auth.users:', authUser.user.id);
-        break;
+        console.log('✅ User email:', authUser.user.email);
+        console.log('✅ User created at:', authUser.user.created_at);
+        
+        // Double-check by querying auth.users directly
+        const { data: directUserCheck, error: directError } = await supabase
+          .from('auth.users')
+          .select('id, email, created_at')
+          .eq('id', userId)
+          .single();
+          
+        if (directUserCheck && !directError) {
+          console.log('✅ Direct auth.users query confirmed:', directUserCheck.id);
+          break;
+        } else {
+          console.log('⚠️ Direct auth.users query failed:', directError);
+          // Continue with the admin API result since it worked
+          break;
+        }
       }
       
-      if (attempt < 3) {
-        console.log(`⏳ User not found on attempt ${attempt}, retrying in ${attempt * 500}ms...`);
-        await new Promise(resolve => setTimeout(resolve, attempt * 500));
+      if (attempt < 5) {
+        const delay = attempt * 1000; // 1s, 2s, 3s, 4s delays
+        console.log(`⏳ User not found on attempt ${attempt}, retrying in ${delay}ms...`);
+        console.log(`❌ Auth error:`, authError);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
     

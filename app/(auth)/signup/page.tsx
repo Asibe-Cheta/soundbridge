@@ -70,22 +70,18 @@ export default function SignupPage() {
       }
 
       if (data?.user) {
-        // Create profile in database
-        const profileData = {
-          username,
-          display_name: `${formData.firstName} ${formData.lastName}`,
-          role: selectedRole,
-          location: formData.location,
-          country: formData.location.includes('Nigeria') ? 'Nigeria' as const : 'UK' as const,
-          bio: '',
-        };
-
-        const { error: profileError } = await createProfile(data.user.id, profileData);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          // Don't fail the signup if profile creation fails
-          // The user can still sign in and complete their profile later
+        // Store signup data for profile creation after email verification
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('signup_email', formData.email);
+          localStorage.setItem('signup_profile_data', JSON.stringify({
+            userId: data.user.id,
+            username,
+            display_name: `${formData.firstName} ${formData.lastName}`,
+            role: selectedRole,
+            location: formData.location,
+            country: formData.location.includes('Nigeria') ? 'Nigeria' : 'UK',
+            bio: '',
+          }));
         }
 
         // Supabase will automatically send signup confirmation email via Auth hook
@@ -96,10 +92,7 @@ export default function SignupPage() {
           // User is automatically signed in, redirect to dashboard
           router.push('/dashboard');
         } else {
-          // Email confirmation required - store email and redirect to verification page
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('signup_email', formData.email);
-          }
+          // Email confirmation required - redirect to verification page
           router.push('/verify-email');
         }
       }
