@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     
     const sendGridData = {
       from: { 
-        email: process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live', 
+        email: process.env.SENDGRID_FROM_EMAIL || 'contact@em361.soundbridge.live', 
         name: process.env.SENDGRID_FROM_NAME || 'SoundBridge Team' 
       },
       personalizations: [{
