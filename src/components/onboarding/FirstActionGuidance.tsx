@@ -101,7 +101,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 pt-20">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
       <div 
         className="relative w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto"
         style={{

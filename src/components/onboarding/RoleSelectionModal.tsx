@@ -53,7 +53,7 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 pt-20">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
       <div 
         className="relative w-full max-w-6xl mx-auto max-h-[85vh] overflow-y-auto"
         style={{
@@ -95,42 +95,34 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
 
           {/* Role Options */}
           <div className="overflow-x-auto">
-            <div className="flex gap-6 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-0">
+            <div className="flex gap-8 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-0">
             {roleOptions.map((role) => {
               const Icon = role.icon;
               return (
                 <button
                   key={role.id}
                   onClick={() => handleRoleSelect(role.id)}
-                  className="group p-6 text-left rounded-xl transition-all duration-300 hover:scale-105 min-w-[280px]"
+                  className="group p-4 text-left rounded-xl transition-all duration-200 hover:bg-white/10 min-w-[200px]"
                   style={{
                     background: 'rgba(255, 255, 255, 0.05)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  }}
                 >
-                  <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="flex flex-col items-center text-center space-y-3">
                     <div 
-                      className={`p-4 rounded-xl bg-gradient-to-r ${role.gradient}`}
+                      className={`p-3 rounded-lg bg-gradient-to-r ${role.gradient}`}
                       style={{
-                        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
                       }}
                     >
-                      <Icon className="h-6 w-6 text-white" strokeWidth={2} />
+                      <Icon className="h-5 w-5 text-white" strokeWidth={2} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white group-hover:text-pink-400 transition-colors mb-2">
+                      <h3 className="text-base font-semibold text-white group-hover:text-pink-300 transition-colors mb-1">
                         {role.title}
                       </h3>
-                      <p className="text-white/70 text-sm leading-relaxed">
+                      <p className="text-white/70 text-xs leading-relaxed">
                         {role.description}
                       </p>
                     </div>
