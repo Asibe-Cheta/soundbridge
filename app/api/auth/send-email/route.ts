@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       let confirmationUrl;
       if (email_data.token && email_data.token_hash) {
         // Use Supabase's built-in confirmation URL structure
-        confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/auth/callback?token_hash=${email_data.token_hash}&type=signup&next=/dashboard`;
+        confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/auth/callback?token_hash=${email_data.token_hash}&type=signup&next=/`;
       } else if (email_data.redirect_to) {
         // Fallback to redirect_to if available
         confirmationUrl = email_data.redirect_to;
