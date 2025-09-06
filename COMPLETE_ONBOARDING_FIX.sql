@@ -188,5 +188,25 @@ FOR DELETE USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+-- Enable RLS on profiles table
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for profiles table
+DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
+CREATE POLICY "Users can view all profiles" ON profiles
+FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+CREATE POLICY "Users can insert their own profile" ON profiles
+FOR INSERT WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+CREATE POLICY "Users can update their own profile" ON profiles
+FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can delete their own profile" ON profiles;
+CREATE POLICY "Users can delete their own profile" ON profiles
+FOR DELETE USING (auth.uid() = id);
+
 -- Success message
 SELECT 'Onboarding fix completed successfully!' as status;
