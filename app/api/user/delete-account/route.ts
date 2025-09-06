@@ -21,197 +21,72 @@ export async function DELETE(request: NextRequest) {
 
     console.log('✅ User authenticated:', user.id);
 
+    // Helper function to safely delete from a table
+    const safeDelete = async (tableName: string, condition: string, value: string) => {
+      try {
+        console.log(`🗑️ Attempting to delete from ${tableName}...`);
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq(condition, value);
+        
+        if (error) {
+          console.log(`⚠️ Could not delete from ${tableName}:`, error.message);
+          return false;
+        }
+        console.log(`✅ Successfully deleted from ${tableName}`);
+        return true;
+      } catch (err) {
+        console.log(`⚠️ Error deleting from ${tableName}:`, err);
+        return false;
+      }
+    };
+
+    // Helper function to safely delete with OR condition
+    const safeDeleteOr = async (tableName: string, condition1: string, value1: string, condition2: string, value2: string) => {
+      try {
+        console.log(`🗑️ Attempting to delete from ${tableName} with OR condition...`);
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .or(`${condition1}.eq.${value1},${condition2}.eq.${value2}`);
+        
+        if (error) {
+          console.log(`⚠️ Could not delete from ${tableName}:`, error.message);
+          return false;
+        }
+        console.log(`✅ Successfully deleted from ${tableName}`);
+        return true;
+      } catch (err) {
+        console.log(`⚠️ Error deleting from ${tableName}:`, err);
+        return false;
+      }
+    };
+
     // Delete user data in the correct order to avoid foreign key constraint issues
+    // Using safe helper functions that won't crash if tables don't exist
     
-    // 1. Delete user's tracks (and related data)
-    console.log('🗑️ Deleting user tracks...');
-    const { error: tracksError } = await supabase
-      .from('audio_tracks')
-      .delete()
-      .eq('creator_id', user.id);
-    
-    if (tracksError) {
-      console.error('❌ Error deleting tracks:', tracksError);
-      // Continue anyway, as this might be due to RLS policies
-    }
-
-    // 2. Delete user's events
-    console.log('🗑️ Deleting user events...');
-    const { error: eventsError } = await supabase
-      .from('events')
-      .delete()
-      .eq('creator_id', user.id);
-    
-    if (eventsError) {
-      console.error('❌ Error deleting events:', eventsError);
-      // Continue anyway
-    }
-
-    // 3. Delete user's playlists
-    console.log('🗑️ Deleting user playlists...');
-    const { error: playlistsError } = await supabase
-      .from('playlists')
-      .delete()
-      .eq('creator_id', user.id);
-    
-    if (playlistsError) {
-      console.error('❌ Error deleting playlists:', playlistsError);
-      // Continue anyway
-    }
-
-    // 4. Delete user's follows (both following and followers)
-    console.log('🗑️ Deleting user follows...');
-    const { error: followsError } = await supabase
-      .from('follows')
-      .delete()
-      .or(`follower_id.eq.${user.id},following_id.eq.${user.id}`);
-    
-    if (followsError) {
-      console.error('❌ Error deleting follows:', followsError);
-      // Continue anyway
-    }
-
-    // 5. Delete user's likes
-    console.log('🗑️ Deleting user likes...');
-    const { error: likesError } = await supabase
-      .from('likes')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (likesError) {
-      console.error('❌ Error deleting likes:', likesError);
-      // Continue anyway
-    }
-
-    // 6. Delete user's comments
-    console.log('🗑️ Deleting user comments...');
-    const { error: commentsError } = await supabase
-      .from('comments')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (commentsError) {
-      console.error('❌ Error deleting comments:', commentsError);
-      // Continue anyway
-    }
-
-    // 7. Delete user's shares
-    console.log('🗑️ Deleting user shares...');
-    const { error: sharesError } = await supabase
-      .from('shares')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (sharesError) {
-      console.error('❌ Error deleting shares:', sharesError);
-      // Continue anyway
-    }
-
-    // 8. Delete user's bookmarks
-    console.log('🗑️ Deleting user bookmarks...');
-    const { error: bookmarksError } = await supabase
-      .from('bookmarks')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (bookmarksError) {
-      console.error('❌ Error deleting bookmarks:', bookmarksError);
-      // Continue anyway
-    }
-
-    // 9. Delete user's messages (sent and received)
-    console.log('🗑️ Deleting user messages...');
-    const { error: messagesError } = await supabase
-      .from('messages')
-      .delete()
-      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
-    
-    if (messagesError) {
-      console.error('❌ Error deleting messages:', messagesError);
-      // Continue anyway
-    }
-
-    // 10. Delete user's event attendees
-    console.log('🗑️ Deleting user event attendees...');
-    const { error: attendeesError } = await supabase
-      .from('event_attendees')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (attendeesError) {
-      console.error('❌ Error deleting event attendees:', attendeesError);
-      // Continue anyway
-    }
-
-    // 11. Delete user's notifications
-    console.log('🗑️ Deleting user notifications...');
-    const { error: notificationsError } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (notificationsError) {
-      console.error('❌ Error deleting notifications:', notificationsError);
-      // Continue anyway
-    }
-
-    // 12. Delete user's preferences
-    console.log('🗑️ Deleting user preferences...');
-    const { error: preferencesError } = await supabase
-      .from('user_preferences')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (preferencesError) {
-      console.error('❌ Error deleting user preferences:', preferencesError);
-      // Continue anyway
-    }
-
-    // 13. Delete user's collaborations (as initiator)
-    console.log('🗑️ Deleting user collaborations...');
-    const { error: collaborationsError } = await supabase
-      .from('collaborations')
-      .delete()
-      .or(`initiator_id.eq.${user.id},collaborator_id.eq.${user.id}`);
-    
-    if (collaborationsError) {
-      console.error('❌ Error deleting collaborations:', collaborationsError);
-      // Continue anyway
-    }
-
-    // 14. Delete user's feed
-    console.log('🗑️ Deleting user feed...');
-    const { error: feedError } = await supabase
-      .from('user_feed')
-      .delete()
-      .or(`user_id.eq.${user.id},source_user_id.eq.${user.id}`);
-    
-    if (feedError) {
-      console.error('❌ Error deleting user feed:', feedError);
-      // Continue anyway
-    }
-
-    // 15. Delete user's analytics
-    console.log('🗑️ Deleting user analytics...');
-    const { error: analyticsError } = await supabase
-      .from('social_analytics')
-      .delete()
-      .eq('user_id', user.id);
-    
-    if (analyticsError) {
-      console.error('❌ Error deleting user analytics:', analyticsError);
-      // Continue anyway
-    }
+    await safeDelete('audio_tracks', 'creator_id', user.id);
+    await safeDelete('events', 'creator_id', user.id);
+    await safeDelete('playlists', 'creator_id', user.id);
+    await safeDeleteOr('follows', 'follower_id', user.id, 'following_id', user.id);
+    await safeDelete('likes', 'user_id', user.id);
+    await safeDelete('comments', 'user_id', user.id);
+    await safeDelete('shares', 'user_id', user.id);
+    await safeDelete('bookmarks', 'user_id', user.id);
+    await safeDeleteOr('messages', 'sender_id', user.id, 'recipient_id', user.id);
+    await safeDelete('event_attendees', 'user_id', user.id);
+    await safeDelete('notifications', 'user_id', user.id);
+    await safeDelete('user_preferences', 'user_id', user.id);
+    await safeDeleteOr('collaborations', 'initiator_id', user.id, 'collaborator_id', user.id);
+    await safeDeleteOr('user_feed', 'user_id', user.id, 'source_user_id', user.id);
+    await safeDelete('social_analytics', 'user_id', user.id);
 
     // 16. Delete user's profile (this should be last)
-    console.log('🗑️ Deleting user profile...');
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', user.id);
+    const profileDeleted = await safeDelete('profiles', 'id', user.id);
     
-    if (profileError) {
-      console.error('❌ Error deleting profile:', profileError);
+    if (!profileDeleted) {
+      console.error('❌ Failed to delete profile - this is critical');
       return NextResponse.json(
         { error: 'Failed to delete profile' },
         { status: 500 }
