@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Sending test payload to auth hook:', JSON.stringify(authHookPayload, null, 2));
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/send-email`, {
+    const response = await fetch(`https://soundbridge.live/api/auth/send-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
