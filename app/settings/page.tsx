@@ -518,6 +518,39 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Danger Zone */}
+      <div className="card border-red-500">
+        <div className="card-header">
+          <h3 className="card-title text-red-500">Danger Zone</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-white">Delete Account</div>
+              <div className="text-sm text-gray-400">
+                Permanently delete your account and all associated data
+              </div>
+            </div>
+            <button
+              onClick={handleDeleteAccount}
+              className={`btn-danger ${isDeletingAccount ? 'confirming' : ''}`}
+            >
+              {isDeletingAccount ? (
+                <>
+                  <AlertTriangle size={16} />
+                  Click again to confirm
+                </>
+              ) : (
+                <>
+                  <Trash2 size={16} />
+                  Delete Account
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -903,39 +936,6 @@ export default function SettingsPage() {
     </div>
   );
 
-  const renderDangerZone = () => (
-    <div className="card border-red-500">
-      <div className="card-header">
-        <h3 className="card-title text-red-500">Danger Zone</h3>
-      </div>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-medium text-white">Delete Account</div>
-            <div className="text-sm text-gray-400">
-              Permanently delete your account and all associated data
-            </div>
-          </div>
-          <button
-            onClick={handleDeleteAccount}
-            className={`btn-danger ${isDeletingAccount ? 'confirming' : ''}`}
-          >
-            {isDeletingAccount ? (
-              <>
-                <AlertTriangle size={16} />
-                Click again to confirm
-              </>
-            ) : (
-              <>
-                <Trash2 size={16} />
-                Delete Account
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   if (!user) {
     return (
@@ -1058,9 +1058,6 @@ export default function SettingsPage() {
           {activeTab === 'privacy' && renderPrivacyTab()}
           {activeTab === 'app' && renderAppTab()}
         </div>
-
-        {/* Danger Zone */}
-        {renderDangerZone()}
       </main>
     </div>
   );

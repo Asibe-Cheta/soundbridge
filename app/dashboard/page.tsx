@@ -555,6 +555,151 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div style={{
+              background: 'var(--bg-secondary)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: '1rem',
+              padding: '2rem'
+            }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                color: 'var(--text-primary)',
+                margin: '0 0 2rem 0'
+              }}>
+                Account Settings
+              </h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {/* Account Information */}
+                <div>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    color: 'var(--text-primary)',
+                    margin: '0 0 1rem 0'
+                  }}>
+                    Account Information
+                  </h3>
+                  <div style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
+                    borderRadius: '0.75rem',
+                    padding: '1.5rem'
+                  }}>
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: 'var(--text-secondary)',
+                          marginBottom: '0.5rem'
+                        }}>
+                          Email
+                        </label>
+                        <div style={{
+                          padding: '0.75rem',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: '0.5rem',
+                          color: 'var(--text-primary)'
+                        }}>
+                          {user?.email || 'Not available'}
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: 'var(--text-secondary)',
+                          marginBottom: '0.5rem'
+                        }}>
+                          User ID
+                        </label>
+                        <div style={{
+                          padding: '0.75rem',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: '0.5rem',
+                          color: 'var(--text-primary)',
+                          fontFamily: 'monospace',
+                          fontSize: '0.875rem'
+                        }}>
+                          {user?.id || 'Not available'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Danger Zone */}
+                <div>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    color: 'var(--error)',
+                    margin: '0 0 1rem 0'
+                  }}>
+                    Danger Zone
+                  </h3>
+                  <div style={{
+                    background: 'rgba(220, 38, 38, 0.05)',
+                    border: '1px solid rgba(220, 38, 38, 0.2)',
+                    borderRadius: '0.75rem',
+                    padding: '1.5rem'
+                  }}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <h4 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: 'var(--text-primary)',
+                        margin: '0 0 0.5rem 0'
+                      }}>
+                        Delete Account
+                      </h4>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        color: 'var(--text-secondary)',
+                        margin: '0 0 1rem 0',
+                        lineHeight: '1.5'
+                      }}>
+                        Permanently delete your account and all associated data. This action cannot be undone.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteAccount(true)}
+                      style={{
+                        background: 'var(--error)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#b91c1c'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'var(--error)'}
+                    >
+                      <AlertTriangle size={16} />
+                      Delete Account
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Other tabs would go here - keeping it simple for now */}
           {activeTab === 'availability' && (
             <div style={{
