@@ -114,47 +114,97 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const updateOnboardingProgress = async (updates: Partial<OnboardingState>) => {
     try {
+      if (!user?.id) {
+        console.error('❌ No user ID available for updating onboarding progress');
+        return;
+      }
+
       await fetch('/api/user/onboarding-progress', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({
+          ...updates,
+          userId: user.id
+        }),
       });
     } catch (error) {
-      console.error('Error updating onboarding progress:', error);
+      console.error('❌ Error updating onboarding progress:', error);
     }
   };
 
   const completeOnboarding = async () => {
     try {
-      await fetch('/api/user/complete-onboarding', {
+      if (!user?.id) {
+        console.error('❌ No user ID available for completing onboarding');
+        return;
+      }
+
+      console.log('🔧 Completing onboarding for user:', user.id);
+      
+      const response = await fetch('/api/user/complete-onboarding', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id
+        }),
       });
-      setOnboardingState(prev => ({
-        ...prev,
-        isOnboardingActive: false,
-        showOnboarding: false,
-        currentStep: 'completed',
-      }));
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Onboarding completed successfully');
+        setOnboardingState(prev => ({
+          ...prev,
+          isOnboardingActive: false,
+          showOnboarding: false,
+          currentStep: 'completed',
+        }));
+      } else {
+        console.error('❌ Failed to complete onboarding:', result.error);
+      }
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error completing onboarding:', error);
     }
   };
 
   const skipOnboarding = async () => {
     try {
-      await fetch('/api/user/skip-onboarding', {
+      if (!user?.id) {
+        console.error('❌ No user ID available for skipping onboarding');
+        return;
+      }
+
+      console.log('🔧 Skipping onboarding for user:', user.id);
+      
+      const response = await fetch('/api/user/skip-onboarding', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id
+        }),
       });
-      setOnboardingState(prev => ({
-        ...prev,
-        isOnboardingActive: false,
-        showOnboarding: false,
-        currentStep: 'completed',
-      }));
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Onboarding skipped successfully');
+        setOnboardingState(prev => ({
+          ...prev,
+          isOnboardingActive: false,
+          showOnboarding: false,
+          currentStep: 'completed',
+        }));
+      } else {
+        console.error('❌ Failed to skip onboarding:', result.error);
+      }
     } catch (error) {
-      console.error('Error skipping onboarding:', error);
+      console.error('❌ Error skipping onboarding:', error);
     }
   };
 

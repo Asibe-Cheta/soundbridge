@@ -3,17 +3,22 @@ import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
+    console.log('🔧 Skip onboarding API called');
     
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get the user ID from the request body or headers
+    const body = await request.json();
+    const userId = body.userId;
     
-    if (authError || !user) {
+    if (!userId) {
+      console.error('❌ No user ID provided');
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: 'User ID required' },
+        { status: 400 }
       );
     }
+
+    console.log('✅ User ID provided:', userId);
+    const supabase = createServiceClient();
 
     // Mark onboarding as skipped
     const { error: updateError } = await supabase
@@ -24,15 +29,17 @@ export async function POST(request: NextRequest) {
         onboarding_skipped: true,
         onboarding_completed_at: new Date().toISOString()
       })
-      .eq('id', user.id);
+      .eq('id', userId);
 
     if (updateError) {
-      console.error('Error skipping onboarding:', updateError);
+      console.error('❌ Error skipping onboarding:', updateError);
       return NextResponse.json(
         { success: false, error: 'Failed to skip onboarding' },
         { status: 500 }
       );
     }
+
+    console.log('✅ Onboarding skipped successfully for user:', userId);
 
     return NextResponse.json({
       success: true,
@@ -40,7 +47,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error skipping onboarding:', error);
+    console.error('❌ Error skipping onboarding:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

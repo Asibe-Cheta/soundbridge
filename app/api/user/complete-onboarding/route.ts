@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerComponentClient({ cookies });
+    console.log('🔧 Complete onboarding API called');
     
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get the user ID from the request body or headers
+    const body = await request.json();
+    const userId = body.userId;
     
-    if (authError || !user) {
+    if (!userId) {
+      console.error('❌ No user ID provided');
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: 'User ID required' },
+        { status: 400 }
       );
     }
+
+    console.log('✅ User ID provided:', userId);
+    const supabase = createServiceClient();
 
     // Mark onboarding as completed
     const { error: updateError } = await supabase
@@ -24,15 +28,17 @@ export async function POST(request: NextRequest) {
         onboarding_step: 'completed',
         onboarding_completed_at: new Date().toISOString()
       })
-      .eq('id', user.id);
+      .eq('id', userId);
 
     if (updateError) {
-      console.error('Error completing onboarding:', updateError);
+      console.error('❌ Error completing onboarding:', updateError);
       return NextResponse.json(
         { success: false, error: 'Failed to complete onboarding' },
         { status: 500 }
       );
     }
+
+    console.log('✅ Onboarding completed successfully for user:', userId);
 
     return NextResponse.json({
       success: true,
@@ -40,7 +46,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error completing onboarding:', error);
+    console.error('❌ Error completing onboarding:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

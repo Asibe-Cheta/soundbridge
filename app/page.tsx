@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
+import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
@@ -19,6 +20,7 @@ export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const { toggleLike, isLiked } = useSocial();
+  const { data: personalizedFeed, loading: personalizedLoading, error: personalizedError, hasPersonalizedData } = usePersonalizedFeed();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -75,11 +77,21 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
-  // Fetch events for homepage
+  // Fetch events - use personalized data if available, fallback to global
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setIsLoadingEvents(true);
+        
+        // Use personalized events if available and user is logged in
+        if (personalizedFeed && personalizedFeed.events && personalizedFeed.events.length > 0) {
+          console.log('🎯 Using personalized events data:', personalizedFeed.events.length);
+          setEvents(personalizedFeed.events);
+          setIsLoadingEvents(false);
+          return;
+        }
+        
+        // Fallback to global events
         const response = await fetch('/api/events?limit=4');
         
         if (response.ok) {
@@ -99,13 +111,23 @@ export default function HomePage() {
     };
 
     fetchEvents();
-  }, []);
+  }, [personalizedFeed]);
 
-  // Fetch podcasts for homepage
+  // Fetch podcasts - use personalized data if available, fallback to global
   useEffect(() => {
     const fetchPodcasts = async () => {
       try {
         setIsLoadingPodcasts(true);
+        
+        // Use personalized podcasts if available and user is logged in
+        if (personalizedFeed && personalizedFeed.podcasts && personalizedFeed.podcasts.length > 0) {
+          console.log('🎯 Using personalized podcasts data:', personalizedFeed.podcasts.length);
+          setPodcasts(personalizedFeed.podcasts);
+          setIsLoadingPodcasts(false);
+          return;
+        }
+        
+        // Fallback to global podcasts
         console.log('🎙️ Fetching podcasts from API...');
         const response = await fetch('/api/podcasts/recent?limit=4');
         
@@ -128,7 +150,7 @@ export default function HomePage() {
     };
 
     fetchPodcasts();
-  }, []);
+  }, [personalizedFeed]);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -178,11 +200,21 @@ export default function HomePage() {
     playTrack(audioTrack);
   };
 
-  // Fetch hot creators based on algorithm
+  // Fetch hot creators - use personalized data if available, fallback to global
   useEffect(() => {
     const fetchHotCreators = async () => {
       try {
         setHotCreatorsLoading(true);
+        
+        // Use personalized creators if available and user is logged in
+        if (personalizedFeed && personalizedFeed.creators && personalizedFeed.creators.length > 0) {
+          console.log('🎯 Using personalized creators data:', personalizedFeed.creators.length);
+          setHotCreators(personalizedFeed.creators);
+          setHotCreatorsLoading(false);
+          return;
+        }
+        
+        // Fallback to global hot creators
         const response = await fetch('/api/creators/hot?limit=6');
         const data = await response.json();
         
@@ -198,7 +230,7 @@ export default function HomePage() {
     };
 
     fetchHotCreators();
-  }, []);
+  }, [personalizedFeed]);
 
   const handleLikeTrack = async (track: any, e: React.MouseEvent) => {
     e.preventDefault();
@@ -293,12 +325,22 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Load recent tracks from all creators globally
+  // Load recent tracks - use personalized data if available, fallback to global
   React.useEffect(() => {
     const loadRecentTracks = async () => {
       try {
         console.log('🔄 Loading recent tracks...');
         setIsLoadingTracks(true);
+        
+        // Use personalized tracks if available and user is logged in
+        if (personalizedFeed && personalizedFeed.music && personalizedFeed.music.length > 0) {
+          console.log('🎯 Using personalized music data:', personalizedFeed.music.length);
+          setRecentTracks(personalizedFeed.music);
+          setIsLoadingTracks(false);
+          return;
+        }
+        
+        // Fallback to global recent tracks
         const response = await fetch('/api/audio/recent?t=' + Date.now());
         
         if (response.ok) {
@@ -327,9 +369,9 @@ export default function HomePage() {
       }
     };
 
-    // Load tracks regardless of user authentication status
+    // Load tracks
     loadRecentTracks();
-  }, []);
+  }, [personalizedFeed]);
 
   // Check which tracks are liked by the current user
   React.useEffect(() => {
@@ -1590,10 +1632,29 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Recently Added Music - REAL DATA */}
+        {/* Recently Added Music - PERSONALIZED */}
         <section className="section">
           <div className="section-header">
-                            <h2 className="heading-3 text-display">Recently Added Music</h2>
+            <h2 className="heading-3 text-display">
+              {hasPersonalizedData && user ? (
+                <>
+                  Your Personalized Music
+                  <span style={{ 
+                    fontSize: '0.8rem', 
+                    color: '#EC4899', 
+                    marginLeft: '0.5rem',
+                    background: 'rgba(236, 72, 153, 0.1)',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '12px',
+                    fontWeight: '500'
+                  }}>
+                    ✨ Personalized
+                  </span>
+                </>
+              ) : (
+                'Recently Added Music'
+              )}
+            </h2>
             <Link href="/discover?tab=music" className="view-all">View All</Link>
           </div>
           
@@ -1776,7 +1837,26 @@ export default function HomePage() {
         {/* Hot Creators */}
         <section className="section">
           <div className="section-header">
-                            <h2 className="heading-3 text-display">Hot Creators Right Now</h2>
+            <h2 className="heading-3 text-display">
+              {hasPersonalizedData && user ? (
+                <>
+                  Creators You'll Love
+                  <span style={{ 
+                    fontSize: '0.8rem', 
+                    color: '#EC4899', 
+                    marginLeft: '0.5rem',
+                    background: 'rgba(236, 72, 153, 0.1)',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '12px',
+                    fontWeight: '500'
+                  }}>
+                    ✨ Personalized
+                  </span>
+                </>
+              ) : (
+                'Hot Creators Right Now'
+              )}
+            </h2>
             <Link href="/creators?sortBy=hot" className="view-all">View All</Link>
           </div>
           <div style={{
@@ -1917,7 +1997,26 @@ export default function HomePage() {
         {/* Live Events This Week */}
         <section className="section">
           <div className="section-header">
-                            <h2 className="heading-3 text-display">Live Events This Week</h2>
+            <h2 className="heading-3 text-display">
+              {hasPersonalizedData && user ? (
+                <>
+                  Events Near You
+                  <span style={{ 
+                    fontSize: '0.8rem', 
+                    color: '#EC4899', 
+                    marginLeft: '0.5rem',
+                    background: 'rgba(236, 72, 153, 0.1)',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '12px',
+                    fontWeight: '500'
+                  }}>
+                    ✨ Personalized
+                  </span>
+                </>
+              ) : (
+                'Live Events This Week'
+              )}
+            </h2>
             <Link href="/events" className="view-all">View All</Link>
           </div>
           <div style={{
@@ -1973,7 +2072,26 @@ export default function HomePage() {
         {/* Trending Podcasts */}
         <section className="section">
           <div className="section-header">
-                            <h2 className="heading-3 text-display">Trending Podcasts</h2>
+            <h2 className="heading-3 text-display">
+              {hasPersonalizedData && user ? (
+                <>
+                  Podcasts for You
+                  <span style={{ 
+                    fontSize: '0.8rem', 
+                    color: '#EC4899', 
+                    marginLeft: '0.5rem',
+                    background: 'rgba(236, 72, 153, 0.1)',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '12px',
+                    fontWeight: '500'
+                  }}>
+                    ✨ Personalized
+                  </span>
+                </>
+              ) : (
+                'Trending Podcasts'
+              )}
+            </h2>
             <Link href="/search?tab=podcasts" className="view-all">View All</Link>
           </div>
           <div style={{
@@ -2055,6 +2173,38 @@ export default function HomePage() {
 
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions" position="top-right">
+        {/* Personalized Feed Status */}
+        {user && (
+          <div style={{ 
+            marginBottom: '1rem',
+            padding: '0.75rem',
+            background: hasPersonalizedData ? 'rgba(236, 72, 153, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+            border: `1px solid ${hasPersonalizedData ? 'rgba(236, 72, 153, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+            borderRadius: '12px',
+            textAlign: 'center'
+          }}>
+            {hasPersonalizedData ? (
+              <>
+                <div style={{ color: '#EC4899', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                  ✨ Personalized Feed Active
+                </div>
+                <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
+                  Content tailored to your preferences
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ color: '#999', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                  📋 Generic Feed
+                </div>
+                <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem' }}>
+                  Complete onboarding for personalized content
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Link href="/upload" style={{ textDecoration: 'none' }}>
             <div style={{

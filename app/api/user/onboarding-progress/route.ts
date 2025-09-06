@@ -3,20 +3,21 @@ import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
+    console.log('🔧 Onboarding progress API called');
     
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const body = await request.json();
+    const { currentStep, selectedRole, profileCompleted, firstActionCompleted, userId } = body;
     
-    if (authError || !user) {
+    if (!userId) {
+      console.error('❌ No user ID provided');
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: 'User ID required' },
+        { status: 400 }
       );
     }
 
-    const body = await request.json();
-    const { currentStep, selectedRole, profileCompleted, firstActionCompleted } = body;
+    console.log('✅ User ID provided:', userId);
+    const supabase = createServiceClient();
 
     // Update the user's onboarding progress
     const updateData: any = {};
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     const { error: updateError } = await supabase
       .from('profiles')
       .update(updateData)
-      .eq('id', user.id);
+      .eq('id', userId);
 
     if (updateError) {
       console.error('Error updating onboarding progress:', updateError);
