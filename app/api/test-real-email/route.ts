@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     
     const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
     const SENDGRID_SIGNUP_TEMPLATE_ID = process.env.SENDGRID_SIGNUP_TEMPLATE_ID;
-    const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contact@em361.soundbridge.live';
+    const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live';
     
     if (!SENDGRID_API_KEY || !SENDGRID_SIGNUP_TEMPLATE_ID) {
       return NextResponse.json({ error: 'SendGrid configuration missing' }, { status: 500 });
