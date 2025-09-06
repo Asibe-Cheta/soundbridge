@@ -1,31 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('🔧 Profile creation API called');
-    const supabase = createServerComponentClient({ cookies });
-
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const supabase = createServiceClient();
     
-    // Get request body once
+    // Get request body
     const body = await request.json();
-    const { userId: bodyUserId, username, display_name, role, location, country, bio } = body;
-    
-    // If no user from auth, try to get userId from request body (for signup flow)
-    let userId = user?.id || bodyUserId;
+    const { userId, username, display_name, role, location, country, bio } = body;
     
     if (!userId) {
-      console.error('❌ No user ID available');
+      console.error('❌ No user ID provided');
       return NextResponse.json(
         { error: 'User ID required' },
         { status: 400 }
       );
     }
 
-    console.log('✅ User ID available:', userId);
+    console.log('✅ User ID provided:', userId);
+
+    // Verify the user exists in auth.users table
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
+    if (authError || !authUser.user) {
+      console.error('❌ User not found in auth.users:', authError);
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 400 }
+      );
+    }
+
+    console.log('✅ User verified in auth.users:', authUser.user.id);
 
     // Check if profile already exists
     const { data: existingProfile } = await supabase
@@ -43,28 +48,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Use provided data or fallback to user metadata
-    const email = user?.email || '';
-    const firstName = user?.user_metadata?.first_name || email.split('@')[0];
-    const lastName = user?.user_metadata?.last_name || '';
+    const email = authUser.user.email || '';
+    const firstName = authUser.user.user_metadata?.first_name || email.split('@')[0];
+    const lastName = authUser.user.user_metadata?.last_name || '';
 
     const profileData = {
       id: userId,
       username: username || `${firstName}${lastName}${Math.random().toString(36).substring(2, 6)}`.toLowerCase().replace(/[^a-z0-9]/g, ''),
       display_name: display_name || `${firstName} ${lastName}`.trim() || email.split('@')[0],
       role: (() => {
-        const userRole = role || user?.user_metadata?.role || 'listener';
+        const userRole = role || authUser.user.user_metadata?.role || 'listener';
         // Map onboarding roles to database roles
         if (['musician', 'podcaster', 'event_promoter'].includes(userRole)) {
           return 'creator';
         }
         return 'listener';
       })(),
-      location: location || user?.user_metadata?.location || 'london',
+      location: location || authUser.user.user_metadata?.location || 'london',
       country: country || (location?.includes('Nigeria') ? 'Nigeria' : 'UK'),
       bio: bio || '',
       onboarding_completed: false,
       onboarding_step: 'role_selection',
-      selected_role: role || user?.user_metadata?.role || 'listener', // Store the onboarding role
+      selected_role: role || authUser.user.user_metadata?.role || 'listener', // Store the onboarding role
       profile_completed: false,
       first_action_completed: false,
       onboarding_skipped: false,
@@ -106,7 +111,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createServiceClient();
 
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
