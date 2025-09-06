@@ -53,9 +53,9 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 pt-20">
       <div 
-        className="relative w-full max-w-2xl mx-auto"
+        className="relative w-full max-w-6xl mx-auto max-h-[85vh] overflow-y-auto"
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
@@ -83,25 +83,26 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">
+        <div className="p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-white mb-3">
               Choose Your Role
             </h2>
-            <p className="text-white/70">
+            <p className="text-white/70 text-lg">
               What kind of creator are you? This helps us personalize your experience.
             </p>
           </div>
 
           {/* Role Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="overflow-x-auto">
+            <div className="flex gap-6 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-0">
             {roleOptions.map((role) => {
               const Icon = role.icon;
               return (
                 <button
                   key={role.id}
                   onClick={() => handleRoleSelect(role.id)}
-                  className="group p-4 text-left rounded-xl transition-all duration-300 hover:scale-105"
+                  className="group p-6 text-left rounded-xl transition-all duration-300 hover:scale-105 min-w-[280px]"
                   style={{
                     background: 'rgba(255, 255, 255, 0.05)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -116,20 +117,20 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
                     e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                   }}
                 >
-                  <div className="flex items-start space-x-4">
+                  <div className="flex flex-col items-center text-center space-y-4">
                     <div 
-                      className={`p-3 rounded-lg bg-gradient-to-r ${role.gradient}`}
+                      className={`p-4 rounded-xl bg-gradient-to-r ${role.gradient}`}
                       style={{
                         boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
                       }}
                     >
-                      <Icon className="h-5 w-5 text-white" strokeWidth={2} />
+                      <Icon className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white group-hover:text-pink-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white group-hover:text-pink-400 transition-colors mb-2">
                         {role.title}
                       </h3>
-                      <p className="text-white/70 mt-1 text-sm leading-relaxed">
+                      <p className="text-white/70 text-sm leading-relaxed">
                         {role.description}
                       </p>
                     </div>
@@ -137,6 +138,7 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
                 </button>
               );
             })}
+            </div>
           </div>
         </div>
 
