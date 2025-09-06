@@ -3,14 +3,24 @@ import { NextRequest, NextResponse } from 'next/server';
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY!;
 const SENDGRID_SIGNUP_TEMPLATE_ID = process.env.SENDGRID_SIGNUP_TEMPLATE_ID!;
 const SENDGRID_RESET_TEMPLATE_ID = process.env.SENDGRID_RESET_TEMPLATE_ID!;
+const AUTH_HOOK_SECRET = process.env.SUPABASE_AUTH_HOOK_SECRET;
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    console.log('Auth hook received payload:', JSON.stringify(body, null, 2));
+    // Get the request body for signature verification
+    const body = await request.text();
+    const signature = request.headers.get('x-webhook-signature') || request.headers.get('authorization');
+    
+    console.log('Auth hook received request:', {
+      signature: signature ? 'present' : 'missing',
+      bodyLength: body.length
+    });
+
+    const bodyJson = JSON.parse(body);
+    console.log('Auth hook received payload:', JSON.stringify(bodyJson, null, 2));
     
     // Handle the actual Supabase payload structure
-    const { type, user, email_data } = body;
+    const { type, user, email_data } = bodyJson;
     
     // Supabase sends user as a string (email) or as an object
     const userEmail = typeof user === 'string' ? user : user?.email;
@@ -165,6 +175,12 @@ export async function GET() {
       signup: SENDGRID_SIGNUP_TEMPLATE_ID ? 'configured' : 'not configured',
       reset: SENDGRID_RESET_TEMPLATE_ID ? 'configured' : 'not configured'
     },
-    apiKey: SENDGRID_API_KEY ? 'configured' : 'not configured'
+    apiKey: SENDGRID_API_KEY ? 'configured' : 'not configured',
+    authHookSecret: AUTH_HOOK_SECRET ? 'configured' : 'not configured',
+    instructions: {
+      note: 'This auth hook needs to be configured in Supabase Dashboard',
+      url: 'https://supabase.com/dashboard → Authentication → Settings → Auth Hooks',
+      hookUrl: 'https://soundbridge.live/api/auth/send-email'
+    }
   });
 }

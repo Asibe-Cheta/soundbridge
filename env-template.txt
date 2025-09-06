@@ -1,32 +1,18 @@
-# SoundBridge Environment Variables Template
-# Copy this content to a new file named .env.local in your project root
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Supabase Configuration (REQUIRED)
-# Get these from your Supabase project dashboard: https://supabase.com/dashboard
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+# SendGrid Configuration
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_SIGNUP_TEMPLATE_ID=your_signup_template_id
+SENDGRID_RESET_TEMPLATE_ID=your_reset_template_id
+SENDGRID_FROM_EMAIL=contact@soundbridge.live
+SENDGRID_FROM_NAME=SoundBridge Team
 
-# Optional: Direct database URL (for advanced use cases)
-# SUPABASE_DATABASE_URL=postgresql://postgres:[password]@[host]:[port]/postgres
+# Supabase Auth Hook Secret (copy from Supabase dashboard)
+# This should match the secret shown in your Supabase Auth Hooks settings
+SUPABASE_AUTH_HOOK_SECRET=v1,whsec_uSQqTD/sYuYLTwQECV2m5SyJ813LNQ/Q03pnelolZ0jh
 
-# Development settings
-NODE_ENV=development
-
-# =============================================================================
-# HOW TO GET YOUR SUPABASE KEYS:
-# =============================================================================
-# 1. Go to https://supabase.com/dashboard
-# 2. Select your project
-# 3. Go to Settings → API
-# 4. Copy the Project URL (NEXT_PUBLIC_SUPABASE_URL)
-# 5. Copy the anon public key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
-# 6. Copy the service_role key (SUPABASE_SERVICE_ROLE_KEY)
-# =============================================================================
-
-# IMPORTANT NOTES:
-# - No spaces around the = sign
-# - No quotes around the values
-# - File must be named .env.local (not env-template.txt)
-# - File must be in the project root (same level as package.json)
-# - Restart your development server after creating this file 
+# Site Configuration
+NEXT_PUBLIC_SITE_URL=https://soundbridge.live
