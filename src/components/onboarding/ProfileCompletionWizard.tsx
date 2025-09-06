@@ -67,6 +67,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
       if (formData.avatar) {
         const formDataUpload = new FormData();
         formDataUpload.append('file', formData.avatar);
+        formDataUpload.append('userId', user?.id || '');
         
         const uploadResponse = await fetch('/api/upload/avatar', {
           method: 'POST',
@@ -86,6 +87,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userId: user?.id,
           display_name: formData.displayName,
           avatar_url: avatarUrl,
           location: formData.location,
