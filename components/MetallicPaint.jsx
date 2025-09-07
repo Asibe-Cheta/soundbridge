@@ -362,6 +362,8 @@ export default function MetallicPaint({ imageData, params = defaultParams }) {
   const totalAnimationTime = useRef(0);
   const lastRenderTime = useRef(0);
 
+  console.log('MetallicPaint: Component render with imageData:', !!imageData, 'params:', params);
+
   function updateUniforms() {
     if (!gl || !uniforms) return;
     gl.uniform1f(uniforms.u_edge, params.edge);
@@ -380,8 +382,11 @@ export default function MetallicPaint({ imageData, params = defaultParams }) {
         alpha: true
       });
       if (!canvas || !gl) {
+        console.log('MetallicPaint: Failed to get WebGL context:', { canvas: !!canvas, gl: !!gl });
         return;
       }
+      
+      console.log('MetallicPaint: WebGL context created successfully');
 
       function createShader(gl, sourceCode, type) {
         const shader = gl.createShader(type);
@@ -405,17 +410,22 @@ export default function MetallicPaint({ imageData, params = defaultParams }) {
       const fragmentShader = createShader(gl, liquidFragSource, gl.FRAGMENT_SHADER);
       const program = gl.createProgram();
       if (!program || !vertexShader || !fragmentShader) {
+        console.log('MetallicPaint: Failed to create shaders or program:', { program: !!program, vertexShader: !!vertexShader, fragmentShader: !!fragmentShader });
         return;
       }
+      
+      console.log('MetallicPaint: Shaders created successfully');
 
       gl.attachShader(program, vertexShader);
       gl.attachShader(program, fragmentShader);
       gl.linkProgram(program);
 
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
+        console.error('MetallicPaint: Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
         return null;
       }
+      
+      console.log('MetallicPaint: Shader program linked successfully');
 
       function getUniforms(program, gl) {
         let uniforms = {};
@@ -444,6 +454,7 @@ export default function MetallicPaint({ imageData, params = defaultParams }) {
       gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
       setGl(gl);
+      console.log('MetallicPaint: WebGL setup completed successfully');
     }
 
     initShader();
@@ -504,7 +515,12 @@ export default function MetallicPaint({ imageData, params = defaultParams }) {
   }, [gl, uniforms, imageData]);
 
   useEffect(() => {
-    if (!gl || !uniforms) return;
+    if (!gl || !uniforms || !imageData) {
+      console.log('MetallicPaint: Missing dependencies for texture upload:', { gl: !!gl, uniforms: !!uniforms, imageData: !!imageData });
+      return;
+    }
+
+    console.log('MetallicPaint: Uploading texture with imageData:', { width: imageData.width, height: imageData.height });
 
     const existingTexture = gl.getParameter(gl.TEXTURE_BINDING_2D);
     if (existingTexture) {
@@ -527,17 +543,18 @@ export default function MetallicPaint({ imageData, params = defaultParams }) {
         gl.TEXTURE_2D,
         0,
         gl.RGBA,
-        imageData?.width,
-        imageData?.height,
+        imageData.width,
+        imageData.height,
         0,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        imageData?.data
+        imageData.data
       );
 
       gl.uniform1i(uniforms.u_image_texture, 0);
+      console.log('MetallicPaint: Texture uploaded successfully');
     } catch (e) {
-      console.error('Error uploading texture:', e);
+      console.error('MetallicPaint: Error uploading texture:', e);
     }
 
     return () => {
