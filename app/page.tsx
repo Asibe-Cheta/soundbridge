@@ -2189,8 +2189,9 @@ export default function HomePage() {
           }}>
             {hasPersonalizedData ? (
               <>
-                <div style={{ color: '#EC4899', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                  ✨ Personalized Feed Active
+                <div style={{ color: '#EC4899', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <Sparkles size={12} />
+                  Personalized Feed Active
                 </div>
                 <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
                   Content tailored to your preferences
