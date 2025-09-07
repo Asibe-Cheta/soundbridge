@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import './MetallicPaint.css';
 
 type ShaderParams = {
@@ -372,35 +372,80 @@ export default function MetallicPaint({
   params: ShaderParams;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gl, setGl] = useState<WebGL2RenderingContext | null>(null);
+  const [gl, setGl] = useState<WebGL2RenderingContext | WebGLRenderingContext | null>(null);
   const [uniforms, setUniforms] = useState<Record<string, WebGLUniformLocation>>({});
   const totalAnimationTime = useRef(0);
   const lastRenderTime = useRef(0);
 
-  function updateUniforms() {
+  console.log('MetallicPaint: Component render with imageData:', !!imageData, 'size:', imageData ? `${imageData.width}x${imageData.height}` : 'null');
+
+  const updateUniforms = useCallback(() => {
     if (!gl || !uniforms) return;
+    
+    // Set all the metallic shader uniforms
     gl.uniform1f(uniforms.u_edge, params.edge);
     gl.uniform1f(uniforms.u_patternBlur, params.patternBlur);
     gl.uniform1f(uniforms.u_time, 0);
     gl.uniform1f(uniforms.u_patternScale, params.patternScale);
     gl.uniform1f(uniforms.u_refraction, params.refraction);
     gl.uniform1f(uniforms.u_liquid, params.liquid);
-  }
+    
+    // Set ratio uniforms (these were missing!)
+    if (uniforms.u_ratio) {
+      gl.uniform1f(uniforms.u_ratio, gl.canvas.width / gl.canvas.height);
+    }
+    if (uniforms.u_img_ratio) {
+      gl.uniform1f(uniforms.u_img_ratio, 1.0); // Default aspect ratio
+    }
+    
+    console.log('MetallicPaint: All uniforms updated successfully');
+  }, [gl, uniforms, params]);
 
   useEffect(() => {
     function initShader() {
       const canvas = canvasRef.current;
-      const gl = canvas?.getContext('webgl2', {
+      console.log('MetallicPaint: Attempting to get WebGL context, canvas:', !!canvas);
+      console.log('MetallicPaint: Canvas element:', canvas);
+      
+      if (!canvas) {
+        console.log('MetallicPaint: No canvas element found');
+        return;
+      }
+      
+      console.log('MetallicPaint: Canvas dimensions:', canvas.width, 'x', canvas.height);
+      
+      const gl = canvas.getContext('webgl2', {
         antialias: true,
         alpha: true
       });
-      if (!canvas || !gl) {
+      
+      if (!gl) {
+        console.log('MetallicPaint: Failed to get WebGL2 context, trying WebGL1');
+        const gl1 = canvas.getContext('webgl', {
+          antialias: true,
+          alpha: true
+        });
+        if (!gl1) {
+          console.log('MetallicPaint: Failed to get any WebGL context');
+          return;
+        }
+        console.log('MetallicPaint: Using WebGL1 context');
+        // Use WebGL1 context instead
+        initWebGL(gl1);
         return;
       }
+      
+      initWebGL(gl);
+    }
+    
+    function initWebGL(gl: WebGL2RenderingContext | WebGLRenderingContext) {
+      console.log('MetallicPaint: Initializing WebGL context');
 
-      function createShader(gl: WebGL2RenderingContext, sourceCode: string, type: number) {
+      function createShader(gl: WebGL2RenderingContext | WebGLRenderingContext, sourceCode: string, type: number) {
+        console.log('MetallicPaint: Creating shader, type:', type === gl.VERTEX_SHADER ? 'VERTEX' : 'FRAGMENT');
         const shader = gl.createShader(type);
         if (!shader) {
+          console.log('MetallicPaint: Failed to create shader');
           return null;
         }
 
@@ -408,35 +453,42 @@ export default function MetallicPaint({
         gl.compileShader(shader);
 
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-          console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+          console.error('MetallicPaint: Shader compilation error:', gl.getShaderInfoLog(shader));
           gl.deleteShader(shader);
           return null;
         }
 
+        console.log('MetallicPaint: Shader compiled successfully');
         return shader;
       }
 
+      console.log('MetallicPaint: Creating vertex shader...');
       const vertexShader = createShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
+      console.log('MetallicPaint: Creating fragment shader...');
       const fragmentShader = createShader(gl, liquidFragSource, gl.FRAGMENT_SHADER);
+      console.log('MetallicPaint: Creating shader program...');
       const program = gl.createProgram();
       if (!program || !vertexShader || !fragmentShader) {
+        console.log('MetallicPaint: Failed to create shaders or program');
         return;
       }
 
       gl.attachShader(program, vertexShader);
       gl.attachShader(program, fragmentShader);
+      console.log('MetallicPaint: Linking shader program...');
       gl.linkProgram(program);
 
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
+        console.error('MetallicPaint: Program linking error:', gl.getProgramInfoLog(program));
         return null;
       }
+      console.log('MetallicPaint: Shader program linked successfully');
 
-      function getUniforms(program: WebGLProgram, gl: WebGL2RenderingContext) {
-        let uniforms: Record<string, WebGLUniformLocation> = {};
-        let uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+      function getUniforms(program: WebGLProgram, gl: WebGL2RenderingContext | WebGLRenderingContext) {
+        const uniforms: Record<string, WebGLUniformLocation> = {};
+        const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
         for (let i = 0; i < uniformCount; i++) {
-          let uniformName = gl.getActiveUniform(program, i)?.name;
+          const uniformName = gl.getActiveUniform(program, i)?.name;
           if (!uniformName) continue;
           uniforms[uniformName] = gl.getUniformLocation(program, uniformName) as WebGLUniformLocation;
         }
@@ -459,29 +511,108 @@ export default function MetallicPaint({
       gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
       setGl(gl);
+      console.log('MetallicPaint: WebGL setup completed successfully');
+      
+      // Force a re-render to ensure the gl state is available for other useEffect hooks
+      setTimeout(() => {
+        console.log('MetallicPaint: Forcing re-render after gl state update');
+        // Trigger the dependent useEffect hooks by updating a dummy state
+        setGl(gl); // This will trigger the useEffect hooks that depend on gl
+      }, 0);
     }
 
     initShader();
-    updateUniforms();
+    // Don't call updateUniforms here - it will be called by the other useEffect when gl and uniforms are ready
   }, []);
 
   useEffect(() => {
-    if (!gl || !uniforms) return;
+    if (!gl || !uniforms) {
+      console.log('MetallicPaint: Skipping updateUniforms - gl:', !!gl, 'uniforms:', !!uniforms);
+      return;
+    }
+    console.log('MetallicPaint: Updating uniforms...');
     updateUniforms();
-  }, [gl, params, uniforms]);
+  }, [gl, params, uniforms, updateUniforms]);
 
   useEffect(() => {
-    if (!gl || !uniforms) return;
+    if (!gl || !uniforms) {
+      console.log('MetallicPaint: Skipping render loop - gl:', !!gl, 'uniforms:', !!uniforms);
+      return;
+    }
 
+    console.log('MetallicPaint: Starting render loop...');
+    console.log('MetallicPaint: Canvas dimensions for rendering:', gl.canvas.width, 'x', gl.canvas.height);
+    console.log('MetallicPaint: Viewport set to:', gl.canvas.width, 'x', gl.canvas.height);
+    
+    // Debug: Check canvas visibility and CSS
+    const canvasElement = gl.canvas as HTMLCanvasElement;
+    const computedStyle = window.getComputedStyle(canvasElement);
+    console.log('MetallicPaint: Canvas CSS debug:', {
+      display: computedStyle.display,
+      visibility: computedStyle.visibility,
+      opacity: computedStyle.opacity,
+      zIndex: computedStyle.zIndex,
+      position: computedStyle.position,
+      width: computedStyle.width,
+      height: computedStyle.height,
+      overflow: computedStyle.overflow
+    });
     let renderId: number;
+    let frameCount = 0;
 
     function render(currentTime: number) {
+      if (!gl || !uniforms) {
+        console.log('MetallicPaint: Render loop stopped - missing gl or uniforms');
+        return;
+      }
+
+      frameCount++;
+      if (frameCount === 1) {
+        console.log('MetallicPaint: First frame rendered');
+      }
+
       const deltaTime = currentTime - lastRenderTime.current;
       lastRenderTime.current = currentTime;
 
       totalAnimationTime.current += deltaTime * params.speed;
+      
+      // Debug: Log uniform values with actual values
+      if (frameCount === 1) {
+        console.log('MetallicPaint: Uniform values:', {
+          u_time: totalAnimationTime.current,
+          u_ratio: uniforms.u_ratio,
+          u_img_ratio: uniforms.u_img_ratio,
+          u_patternScale: uniforms.u_patternScale,
+          u_patternBlur: uniforms.u_patternBlur,
+          u_refraction: uniforms.u_refraction,
+          u_edge: uniforms.u_edge,
+          u_liquid: uniforms.u_liquid
+        });
+        
+        // Check if texture is bound
+        const currentTexture = gl!.getParameter(gl!.TEXTURE_BINDING_2D);
+        console.log('MetallicPaint: Current texture binding:', currentTexture);
+        
+        // Check if program is active
+        const currentProgram = gl!.getParameter(gl!.CURRENT_PROGRAM);
+        console.log('MetallicPaint: Current program:', currentProgram);
+      }
+      
       gl!.uniform1f(uniforms.u_time, totalAnimationTime.current);
+      
+      // Clear the canvas with a test color to see if anything is being drawn
+      gl!.clearColor(0.1, 0.1, 0.1, 1.0); // Dark gray instead of black
+      gl!.clear(gl!.COLOR_BUFFER_BIT);
+      
+      // Draw the full-screen quad (4 vertices for triangle strip)
       gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+      
+      // Check for WebGL errors
+      const error = gl!.getError();
+      if (error !== gl!.NO_ERROR) {
+        console.error('MetallicPaint: WebGL error during render:', error);
+      }
+      
       renderId = requestAnimationFrame(render);
     }
 
@@ -489,9 +620,10 @@ export default function MetallicPaint({
     renderId = requestAnimationFrame(render);
 
     return () => {
+      console.log('MetallicPaint: Cleaning up render loop');
       cancelAnimationFrame(renderId);
     };
-  }, [gl, params.speed]);
+  }, [gl, params.speed, uniforms]);
 
   useEffect(() => {
     const canvasEl = canvasRef.current;

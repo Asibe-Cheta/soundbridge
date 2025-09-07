@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import MetallicPaint, { parseLogoImage } from '../../../components/MetallicPaint';
 
+
 interface HomepageMetallicLogoProps {
   className?: string;
   style?: React.CSSProperties;
@@ -19,21 +20,21 @@ const HomepageMetallicLogo: React.FC<HomepageMetallicLogoProps> = ({
     async function loadLogoImage() {
       try {
         setIsLoading(true);
+        console.log('🔄 Loading SoundBridge logo from:', '/images/logos/soundbridge-logo-main.svg');
         
-        const response = await fetch('/images/logo-trans-lockup.svg');
-        if (!response.ok) {
-          throw new Error('Failed to load logo');
-        }
-        
+        // Follow React Bits pattern exactly - fetch the imported logo
+        const response = await fetch('/images/logos/soundbridge-logo-main.svg');
         const blob = await response.blob();
         const file = new File([blob], "soundbridge-logo.svg", { type: blob.type });
-        const parsedData = await parseLogoImage(file);
         
-        if (parsedData?.imageData) {
-          setImageData(parsedData.imageData);
-        }
+        console.log('📁 Logo blob loaded:', { size: blob.size, type: blob.type });
+        
+        const parsedData = await parseLogoImage(file);
+        console.log('✅ Logo parsed successfully:', parsedData);
+        
+        setImageData(parsedData?.imageData ?? null);
       } catch (err) {
-        console.error("Error loading SoundBridge logo:", err);
+        console.error("❌ Error loading SoundBridge logo:", err);
       } finally {
         setIsLoading(false);
       }

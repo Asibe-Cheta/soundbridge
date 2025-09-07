@@ -2,6 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import MetallicPaint, { parseLogoImage } from '../../../components/MetallicPaint';
+// Import the SVG file directly
+
+
+// Default shader parameters
+const defaultParams = {
+  patternScale: 2,
+  refraction: 0.015,
+  edge: 1,
+  patternBlur: 0.005,
+  liquid: 0.07,
+  speed: 0.3
+};
 
 interface SoundBridgeMetallicLogoProps {
   className?: string;
@@ -38,10 +50,10 @@ const SoundBridgeMetallicLogo: React.FC<SoundBridgeMetallicLogoProps> = ({
         setIsLoading(true);
         setError(null);
         
-        console.log('🔄 Loading SoundBridge logo from:', '/images/logo-trans-lockup.svg');
+        console.log('🔄 Loading SoundBridge logo from public path');
         
-        // Load the SoundBridge logo SVG
-        const response = await fetch('/images/logo-trans-lockup.svg');
+        // Follow React Bits pattern exactly - fetch the imported logo
+        const response = await fetch('/images/logos/soundbridge-logo-main.svg');
         if (!response.ok) {
           throw new Error(`Failed to load logo: ${response.status} ${response.statusText}`);
         }
@@ -138,6 +150,27 @@ const SoundBridgeMetallicLogo: React.FC<SoundBridgeMetallicLogoProps> = ({
     );
   }
 
+  // Only render MetallicPaint when we have valid imageData
+  if (!imageData) {
+    return (
+      <div 
+        className={className}
+        style={{
+          background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(26, 26, 26, 0.9) 100%)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          overflow: 'hidden',
+          position: 'relative',
+          ...style
+        }}
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="text-white text-sm opacity-75">Loading metallic effect...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className={className}
@@ -151,8 +184,8 @@ const SoundBridgeMetallicLogo: React.FC<SoundBridgeMetallicLogoProps> = ({
       }}
     >
       <MetallicPaint 
-        imageData={imageData ?? new ImageData(1, 1)} 
-        params={params}
+        imageData={imageData} 
+        params={{ ...defaultParams, ...params }}
       />
     </div>
   );
