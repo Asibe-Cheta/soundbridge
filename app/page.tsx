@@ -11,7 +11,7 @@ import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
@@ -1648,7 +1648,8 @@ export default function HomePage() {
                     borderRadius: '12px',
                     fontWeight: '500'
                   }}>
-                    ✨ Personalized
+                    <Sparkles size={12} style={{ marginRight: '4px' }} />
+                    Personalized
                   </span>
                 </>
               ) : (
@@ -1850,7 +1851,8 @@ export default function HomePage() {
                     borderRadius: '12px',
                     fontWeight: '500'
                   }}>
-                    ✨ Personalized
+                    <Sparkles size={12} style={{ marginRight: '4px' }} />
+                    Personalized
                   </span>
                 </>
               ) : (
@@ -2010,7 +2012,8 @@ export default function HomePage() {
                     borderRadius: '12px',
                     fontWeight: '500'
                   }}>
-                    ✨ Personalized
+                    <Sparkles size={12} style={{ marginRight: '4px' }} />
+                    Personalized
                   </span>
                 </>
               ) : (
@@ -2085,7 +2088,8 @@ export default function HomePage() {
                     borderRadius: '12px',
                     fontWeight: '500'
                   }}>
-                    ✨ Personalized
+                    <Sparkles size={12} style={{ marginRight: '4px' }} />
+                    Personalized
                   </span>
                 </>
               ) : (

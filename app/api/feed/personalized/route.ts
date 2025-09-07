@@ -194,7 +194,25 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
     return [];
   }
 
-  return tracks || [];
+  // Format tracks to match the expected frontend structure
+  const formattedTracks = (tracks || []).map(track => ({
+    id: track.id,
+    title: track.title,
+    artist: track.artist_name || 'Unknown Artist',
+    coverArt: track.cover_art_url, // Map cover_art_url to coverArt
+    url: track.file_url,
+    duration: track.duration || 0,
+    plays: track.play_count || 0,
+    likes: track.like_count || 0,
+    creator: {
+      id: track.creator_id,
+      name: track.artist_name || 'Unknown Artist',
+      username: track.creator?.username || 'unknown',
+      avatar: track.creator?.avatar_url || null
+    }
+  }));
+
+  return formattedTracks;
 }
 
 async function getPersonalizedCreators(supabase: any, genres: string[], location: string, country: string, role: string) {
