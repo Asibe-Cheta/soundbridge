@@ -872,6 +872,18 @@ export default function HomePage() {
                   >
                     Creators
                   </Link>
+                  <Link href="/about" style={{ 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    transition: 'all 0.3s ease',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    About
+                  </Link>
                 </nav>
                 
                 {/* Spacer between navigation and search */}

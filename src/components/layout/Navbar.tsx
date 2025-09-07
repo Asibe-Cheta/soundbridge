@@ -95,6 +95,9 @@ export default function Navbar() {
               <Link href="/creators" className="text-foreground hover:bg-accent transition-all duration-300 px-4 py-2 rounded-lg">
                 Creators
               </Link>
+              <Link href="/about" className="text-foreground hover:bg-accent transition-all duration-300 px-4 py-2 rounded-lg">
+                About
+              </Link>
             </nav>
             
             {/* Spacer between navigation and search */}
