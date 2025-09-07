@@ -879,7 +879,7 @@ export default function TrackPage({ params }: TrackPageProps) {
             <div className="mb-6">
               <button
                 onClick={handlePlayTrack}
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-semibold text-lg transition-colors flex items-center space-x-3"
+                className="bg-gradient-to-r from-primary-red to-accent-pink text-white border-none px-6 py-3 rounded-lg cursor-pointer font-semibold text-lg flex items-center gap-3 transition-all duration-300 shadow-lg hover:-translate-y-0.5 hover:shadow-xl"
               >
                 {currentTrack?.id === track.id && isPlaying ? (
                   <Pause className="h-6 w-6" />

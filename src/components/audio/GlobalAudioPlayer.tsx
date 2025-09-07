@@ -36,6 +36,7 @@ export function GlobalAudioPlayer() {
   const [isMuted, setIsMuted] = useState(false);
   const [isTrackLiked, setIsTrackLiked] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Check if current track is liked
   useEffect(() => {
@@ -158,35 +159,350 @@ export function GlobalAudioPlayer() {
     <AnimatePresence>
       <motion.div
         initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        animate={{ 
+          y: 0, 
+          opacity: 1,
+          height: isExpanded ? '100vh' : '90px'
+        }}
         exit={{ y: 100, opacity: 0 }}
+        transition={{ 
+          duration: 0.3,
+          ease: 'easeInOut'
+        }}
         style={{ 
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
           zIndex: 9999,
-          backgroundColor: 'rgba(26, 26, 26, 0.98)',
+          backgroundColor: isExpanded 
+            ? 'rgba(15, 15, 35, 0.98)'
+            : 'rgba(26, 26, 26, 0.98)',
           backdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          height: '90px',
-          maxHeight: '90px',
-          overflow: 'hidden',
+          borderTop: isExpanded ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
+          maxHeight: isExpanded ? '100vh' : '90px',
+          overflow: isExpanded ? 'auto' : 'hidden',
           display: 'flex',
-          alignItems: 'center',
-          padding: '0 24px'
+          alignItems: isExpanded ? 'center' : 'center',
+          justifyContent: isExpanded ? 'center' : 'flex-start',
+          padding: isExpanded ? '2rem' : '0 24px'
         }}
       >
-        <div style={{ 
-          width: '100%', 
-          maxWidth: '1400px', 
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          color: 'white',
-          fontSize: '14px'
-        }}>
+        {isExpanded ? (
+          // Expanded Player Layout
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            padding: '2rem',
+            position: 'relative'
+          }}>
+            {/* Background Blur Effect */}
+            {currentTrack.artwork && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: `url(${currentTrack.artwork})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(40px)',
+                opacity: 0.3,
+                zIndex: 0
+              }} />
+            )}
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsExpanded(false)}
+              style={{
+                position: 'absolute',
+                top: '2rem',
+                right: '2rem',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                color: 'white',
+                zIndex: 10
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            >
+              <Minimize2 size={20} />
+            </button>
+
+            {/* Main Content */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '3rem',
+              zIndex: 1,
+              maxWidth: '1200px',
+              width: '100%'
+            }}>
+              {/* Album Art */}
+              <div style={{
+                flexShrink: 0,
+                position: 'relative'
+              }}>
+                <div style={{
+                  width: '400px',
+                  height: '400px',
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
+                  position: 'relative'
+                }}>
+                  {currentTrack.artwork ? (
+                    <img
+                      src={currentTrack.artwork}
+                      alt={currentTrack.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '4rem'
+                    }}>
+                      🎵
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Track Info and Controls */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                textAlign: 'left',
+                maxWidth: '500px'
+              }}>
+                {/* Track Info */}
+                <div style={{ marginBottom: '2rem' }}>
+                  <h1 style={{
+                    fontSize: '3rem',
+                    fontWeight: '700',
+                    marginBottom: '0.5rem',
+                    color: 'white'
+                  }}>
+                    {currentTrack.title}
+                  </h1>
+                  <p style={{
+                    fontSize: '1.5rem',
+                    color: '#ccc',
+                    marginBottom: '0.5rem'
+                  }}>
+                    {currentTrack.artist}
+                  </p>
+                  {currentTrack.album && (
+                    <p style={{
+                      fontSize: '1rem',
+                      color: '#999'
+                    }}>
+                      {currentTrack.album}
+                    </p>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                <div style={{
+                  width: '100%',
+                  marginBottom: '2rem'
+                }}>
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    height: '6px',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                    marginBottom: '0.5rem'
+                  }}>
+                    <div style={{
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      height: '100%',
+                      width: `${(currentTime / duration) * 100}%`,
+                      transition: 'width 0.1s ease'
+                    }} />
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.9rem',
+                    color: '#ccc'
+                  }}>
+                    <span>{formatTimeDisplay(currentTime)}</span>
+                    <span>{formatTimeDisplay(duration)}</span>
+                  </div>
+                </div>
+
+                {/* Main Controls */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1rem',
+                  marginBottom: '2rem'
+                }}>
+                  <button
+                    onClick={handlePlayPause}
+                    style={{
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '70px',
+                      height: '70px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: 'white',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 8px 25px rgba(220, 38, 38, 0.4)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 12px 35px rgba(220, 38, 38, 0.6)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                    }}
+                  >
+                    {isPlaying ? <Pause size={28} /> : <Play size={28} />}
+                  </button>
+                </div>
+
+                {/* Secondary Controls */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1rem',
+                  width: '100%'
+                }}>
+                  <button
+                    onClick={toggleMute}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: 'white',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                  </button>
+
+                  <div style={{
+                    flex: 1,
+                    maxWidth: '200px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      style={{
+                        flex: 1,
+                        height: '4px',
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '2px',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleLikeTrack}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: isTrackLiked ? '#EC4899' : 'white',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Heart size={20} style={{ fill: isTrackLiked ? '#EC4899' : 'none' }} />
+                  </button>
+
+                  <button
+                    onClick={handleShareTrack}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: 'white',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Share2 size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Collapsed Player Layout
+          <div style={{ 
+            width: '100%', 
+            maxWidth: '1400px', 
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: 'white',
+            fontSize: '14px'
+          }}>
           {/* Left Section - Track Info & Cover Art */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1', minWidth: 0 }}>
             {/* Cover Art */}
@@ -537,7 +853,7 @@ export function GlobalAudioPlayer() {
               </button>
 
               <button
-                onClick={() => window.open('/player', '_blank')}
+                onClick={() => setIsExpanded(!isExpanded)}
                 style={{ 
                   background: 'none', 
                   border: 'none', 
@@ -556,13 +872,14 @@ export function GlobalAudioPlayer() {
                   e.currentTarget.style.color = '#9CA3AF';
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
-                title="Expand Player"
+                title={isExpanded ? "Minimize Player" : "Expand Player"}
               >
-                <Maximize2 size={18} />
+                {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
               </button>
             </div>
           </div>
         </div>
+        )}
 
         <style dangerouslySetInnerHTML={{
           __html: `
