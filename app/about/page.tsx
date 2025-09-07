@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
+import SoundBridgeMetallicLogo from '../../src/components/ui/SoundBridgeMetallicLogo';
 import {
   Music,
   Users,
@@ -279,36 +280,241 @@ export default function AboutPage() {
 
       {/* Main Content */}
       <main className="main-container">
-        {/* Hero Section */}
-        <section style={{
-          padding: '4rem 2rem',
-          textAlign: 'center',
-          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
-          borderRadius: '20px',
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .desktop-hero {
+              display: none !important;
+            }
+            .mobile-hero {
+              display: flex !important;
+            }
+          }
+          @media (min-width: 769px) {
+            .desktop-hero {
+              display: grid !important;
+            }
+            .mobile-hero {
+              display: none !important;
+            }
+          }
+        `}</style>
+        {/* Hero Section with Metallic Logo */}
+        <section className="desktop-hero" style={{
+          padding: '2rem',
           margin: '2rem',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '3rem',
+          alignItems: 'center',
+          minHeight: '60vh'
         }}>
-          <h1 style={{
-            fontSize: '3.5rem',
-            fontWeight: '800',
-            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '1rem',
-            lineHeight: '1.1'
+          {/* Left Side - Text Content */}
+          <div style={{ textAlign: 'left' }}>
+            <h1 style={{
+              fontSize: '3.5rem',
+              fontWeight: '800',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              marginBottom: '1.5rem',
+              lineHeight: '1.1'
+            }}>
+              About SoundBridge
+            </h1>
+            <p style={{
+              fontSize: '1.25rem',
+              color: 'rgba(255, 255, 255, 0.9)',
+              lineHeight: '1.6',
+              marginBottom: '2rem'
+            }}>
+              The world&apos;s first truly level playing field for musicians and creators, 
+              where discovery meets collaboration and every voice has the potential to be heard.
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap'
+            }}>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                }}
+                >
+                  Join SoundBridge
+                  <ArrowRight size={16} />
+                </button>
+              </Link>
+              <Link href="/discover" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'transparent',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '1rem 2rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+                >
+                  Explore Platform
+                  <Music size={16} />
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Side - Metallic Logo */}
+          <div style={{
+            height: '500px',
+            position: 'relative'
           }}>
-            About SoundBridge
-          </h1>
-          <p style={{
-            fontSize: '1.25rem',
-            color: 'rgba(255, 255, 255, 0.8)',
-            maxWidth: '800px',
-            margin: '0 auto',
-            lineHeight: '1.6'
+            <SoundBridgeMetallicLogo 
+              style={{
+                height: '100%',
+                width: '100%'
+              }}
+              params={{
+                edge: 2,
+                patternBlur: 0.005,
+                patternScale: 2,
+                refraction: 0.015,
+                speed: 0.3,
+                liquid: 0.07
+              }}
+            />
+          </div>
+        </section>
+
+        {/* Mobile Responsive Hero */}
+        <section style={{
+          padding: '2rem',
+          margin: '2rem',
+          display: 'none',
+          textAlign: 'center',
+          flexDirection: 'column',
+          gap: '2rem',
+          alignItems: 'center'
+        }} className="mobile-hero">
+          <div style={{
+            height: '300px',
+            width: '100%',
+            maxWidth: '400px'
           }}>
-            The world&apos;s first truly level playing field for musicians and creators, 
-            where discovery meets collaboration and every voice has the potential to be heard.
-          </p>
+            <SoundBridgeMetallicLogo 
+              style={{
+                height: '100%',
+                width: '100%'
+              }}
+              params={{
+                edge: 2,
+                patternBlur: 0.005,
+                patternScale: 2,
+                refraction: 0.015,
+                speed: 0.3,
+                liquid: 0.07
+              }}
+            />
+          </div>
+          <div>
+            <h1 style={{
+              fontSize: '2.5rem',
+              fontWeight: '800',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              marginBottom: '1rem',
+              lineHeight: '1.1'
+            }}>
+              About SoundBridge
+            </h1>
+            <p style={{
+              fontSize: '1.1rem',
+              color: 'rgba(255, 255, 255, 0.9)',
+              lineHeight: '1.6',
+              marginBottom: '2rem'
+            }}>
+              The world&apos;s first truly level playing field for musicians and creators, 
+              where discovery meets collaboration and every voice has the potential to be heard.
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <Link href="/signup" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 2rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  Join SoundBridge
+                  <ArrowRight size={16} />
+                </button>
+              </Link>
+              <Link href="/discover" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: 'transparent',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '1rem 2rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  Explore Platform
+                  <Music size={16} />
+                </button>
+              </Link>
+            </div>
+          </div>
         </section>
 
         {/* The Story Section */}
