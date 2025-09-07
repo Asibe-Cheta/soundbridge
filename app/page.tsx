@@ -11,7 +11,7 @@ import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles, MoreHorizontal } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
@@ -30,6 +30,7 @@ export default function HomePage() {
   const [likedTracks, setLikedTracks] = React.useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedTrackForShare, setSelectedTrackForShare] = useState<any>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [hotCreators, setHotCreators] = useState<any[]>([]);
   const [hotCreatorsLoading, setHotCreatorsLoading] = useState(true);
   
@@ -70,6 +71,12 @@ export default function HomePage() {
           !userMenu.contains(event.target as Node) && 
           !userMenuButton.contains(event.target as Node)) {
         userMenu.style.display = 'none';
+      }
+
+      // Close dropdown menus when clicking outside
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
+        setOpenDropdownId(null);
       }
     };
 
@@ -278,7 +285,27 @@ export default function HomePage() {
     }
   };
 
+  const handleCopyLink = async (track: any) => {
+    const trackUrl = `${window.location.origin}/track/${track.id}`;
+    try {
+      await navigator.clipboard.writeText(trackUrl);
+      // You could add a toast notification here
+      console.log('Link copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+    setOpenDropdownId(null);
+  };
 
+  const handleShareTrack = (track: any) => {
+    setSelectedTrackForShare(track);
+    setShareModalOpen(true);
+    setOpenDropdownId(null);
+  };
+
+  const toggleDropdown = (trackId: string) => {
+    setOpenDropdownId(openDropdownId === trackId ? null : trackId);
+  };
 
   // Format event date for display
   const formatEventDate = (eventDate: string) => {
@@ -1657,19 +1684,26 @@ export default function HomePage() {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: isMobile ? '1rem' : '1.5rem'
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: isMobile ? '1rem' : '1.25rem'
           }}>
             {isLoadingTracks ? (
               // Loading state
               Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="card">
-                  <div className="card-image" style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={index} className="modern-music-card">
+                  <div className="card-image-container" style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderRadius: '50%', borderTopColor: 'white', animation: 'spin 1s linear infinite' }}></div>
                   </div>
-                  <div style={{ fontWeight: '600', background: '#333', height: '16px', borderRadius: '4px', marginBottom: '0.5rem' }}></div>
-                  <div style={{ color: '#999', fontSize: '0.9rem', background: '#333', height: '14px', borderRadius: '4px', width: '60%' }}></div>
-                  <div className="waveform"></div>
+                  <div className="card-content">
+                    <div style={{ fontWeight: '600', background: '#333', height: '16px', borderRadius: '4px', marginBottom: '0.5rem' }}></div>
+                    <div style={{ color: '#999', fontSize: '0.9rem', background: '#333', height: '14px', borderRadius: '4px', width: '60%' }}></div>
+                  </div>
+                  <div className="waveform-visual">
+                    <div className="waveform-bar" style={{ height: '20%' }}></div>
+                    <div className="waveform-bar" style={{ height: '60%' }}></div>
+                    <div className="waveform-bar" style={{ height: '40%' }}></div>
+                    <div className="waveform-bar" style={{ height: '80%' }}></div>
+                  </div>
                 </div>
               ))
             ) : recentTracks.length > 0 ? (
@@ -1731,19 +1765,46 @@ export default function HomePage() {
                       </button>
                       
                       {/* Three Dots Menu */}
-                      <div className="dropdown-container">
+                      <div className="dropdown-container" style={{ position: 'relative' }}>
                         <button 
                           className="action-button menu-button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setSelectedTrackForShare(track);
-                            setShareModalOpen(true);
+                            toggleDropdown(track.id);
                           }}
                           title="More options"
                         >
                           <MoreHorizontal size={16} />
                         </button>
+                        
+                        {/* Apple Music-style Dropdown */}
+                        {openDropdownId === track.id && (
+                          <div className="dropdown-menu open">
+                            <button 
+                              className="dropdown-item"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleCopyLink(track);
+                              }}
+                            >
+                              <LinkIcon className="dropdown-icon" />
+                              Copy Link
+                            </button>
+                            <button 
+                              className="dropdown-item"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleShareTrack(track);
+                              }}
+                            >
+                              <Share2 className="dropdown-icon" />
+                              Share
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1082,16 +1082,16 @@ body {
 }
 
 .modern-music-card:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(236, 72, 153, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(236, 72, 153, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .card-image-container {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 160px;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
 }
@@ -1177,14 +1177,9 @@ body {
   right: 12px;
   display: flex;
   gap: 8px;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-}
-
-.modern-music-card:hover .card-actions-overlay {
   opacity: 1;
   transform: translateY(0);
+  transition: all 0.3s ease;
 }
 
 .action-button {
@@ -1212,6 +1207,70 @@ body {
 
 .menu-button:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Apple Music-style Dropdown */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 160px;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.dropdown-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.dropdown-item:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.dropdown-item:only-child {
+  border-radius: 8px;
+}
+
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .card-content {
@@ -1296,16 +1355,12 @@ body {
 
 /* Responsive adjustments for modern cards */
 @media (max-width: 768px) {
-  .modern-music-card {
-    transform: none;
-  }
-  
   .modern-music-card:hover {
-    transform: translateY(-4px) scale(1.01);
+    transform: translateY(-2px);
   }
   
   .card-image-container {
-    height: 160px;
+    height: 140px;
   }
   
   .play-button-overlay {
