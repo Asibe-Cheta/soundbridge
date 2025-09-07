@@ -249,6 +249,10 @@ export default function HomePage() {
     }
 
     try {
+      // Check current like status
+      const isCurrentlyLiked = likedTracks.has(track.id);
+      
+      // Update the like in the social system (likes table)
       const result = await toggleLike({
         content_id: track.id,
         content_type: 'track'
@@ -257,7 +261,6 @@ export default function HomePage() {
       if (!result.error) {
         // Update local state
         const newLikedTracks = new Set(likedTracks);
-        const isCurrentlyLiked = newLikedTracks.has(track.id);
         
         if (isCurrentlyLiked) {
           newLikedTracks.delete(track.id);
@@ -279,6 +282,43 @@ export default function HomePage() {
             return t;
           })
         );
+
+        // Update the like count in the database
+        const updateResponse = await fetch('/api/audio/update-likes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            trackId: track.id,
+            action: isCurrentlyLiked ? 'unlike' : 'like'
+          }),
+        });
+
+        if (!updateResponse.ok) {
+          console.error('Failed to update like count in database');
+          // Revert local changes if database update failed
+          const revertedLikedTracks = new Set(likedTracks);
+          if (isCurrentlyLiked) {
+            revertedLikedTracks.add(track.id);
+          } else {
+            revertedLikedTracks.delete(track.id);
+          }
+          setLikedTracks(revertedLikedTracks);
+          
+          setRecentTracks(prevTracks => 
+            prevTracks.map(t => {
+              if (t.id === track.id) {
+                const currentLikes = t.likes || 0;
+                return {
+                  ...t,
+                  likes: isCurrentlyLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
+                };
+              }
+              return t;
+            })
+          );
+        }
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -345,6 +385,32 @@ export default function HomePage() {
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Load user's liked tracks
+  React.useEffect(() => {
+    const loadLikedTracks = async () => {
+      if (!user) {
+        setLikedTracks(new Set());
+        return;
+      }
+
+      try {
+        // Get all liked tracks for the user
+        const response = await fetch('/api/social/likes?content_type=track');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data && Array.isArray(result.data)) {
+            const likedTrackIds = new Set(result.data.map((like: any) => like.content_id));
+            setLikedTracks(likedTrackIds);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading liked tracks:', error);
+      }
+    };
+
+    loadLikedTracks();
+  }, [user]);
 
   // Load recent tracks - use personalized data if available, fallback to global
   React.useEffect(() => {
@@ -1684,13 +1750,14 @@ export default function HomePage() {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: isMobile ? '0.75rem' : '1rem',
-            maxWidth: '100%'
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+            gap: isMobile ? '0.5rem' : '0.75rem',
+            maxWidth: '100%',
+            justifyContent: 'center'
           }}>
             {isLoadingTracks ? (
               // Loading state
-              Array.from({ length: 6 }).map((_, index) => (
+              Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="modern-music-card">
                   <div className="card-image-container" style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderRadius: '50%', borderTopColor: 'white', animation: 'spin 1s linear infinite' }}></div>
@@ -1708,19 +1775,19 @@ export default function HomePage() {
                 </div>
               ))
             ) : recentTracks.length > 0 ? (
-              // REAL TRACKS FROM DATABASE - REDESIGNED CARDS
-              recentTracks.map((track) => (
+              // REAL TRACKS FROM DATABASE - REDESIGNED CARDS (LIMITED TO 5)
+              recentTracks.slice(0, 5).map((track) => (
                 <div key={track.id} style={{
                   background: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '12px',
-                  padding: '12px',
-                  maxWidth: '160px',
+                  padding: '8px',
+                  width: '100%',
                   transition: 'all 0.3s ease',
                   cursor: 'pointer'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                 }}
                 onMouseLeave={(e) => {
@@ -1729,16 +1796,16 @@ export default function HomePage() {
                 }}
                 >
                   {/* Image Container */}
-                  <div style={{ position: 'relative', marginBottom: '12px' }}>
+                  <div style={{ position: 'relative', marginBottom: '8px' }}>
                     {track.coverArt ? (
                       <Image
                         src={track.coverArt}
                         alt={track.title}
                         width={140}
-                        height={120}
+                        height={140}
                         style={{ 
                           width: '100%', 
-                          height: '120px', 
+                          height: '140px', 
                           objectFit: 'cover', 
                           borderRadius: '8px' 
                         }}
@@ -1746,7 +1813,7 @@ export default function HomePage() {
                     ) : (
                       <div style={{
                         width: '100%',
-                        height: '120px',
+                        height: '140px',
                         background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                         borderRadius: '8px',
                         display: 'flex',
@@ -1763,17 +1830,19 @@ export default function HomePage() {
                       style={{
                         position: 'absolute',
                         bottom: '8px',
-                        left: '8px',
-                        width: '36px',
-                        height: '36px',
-                        background: 'rgba(0, 0, 0, 0.8)',
-                        border: '1px solid white',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '40px',
+                        height: '40px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: '1px solid rgba(255, 255, 255, 0.8)',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        backdropFilter: 'blur(10px)'
                       }}
                       onClick={(e) => {
                         e.preventDefault();
@@ -1781,18 +1850,18 @@ export default function HomePage() {
                         handlePlayTrack(track);
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
-                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
                       }}
                     >
                       {currentTrack?.id === track.id && isPlaying ? (
-                        <Pause size={16} color="white" />
+                        <Pause size={18} color="white" />
                       ) : (
-                        <Play size={16} color="white" />
+                        <Play size={18} color="white" />
                       )}
                     </button>
 
@@ -1802,29 +1871,30 @@ export default function HomePage() {
                         position: 'absolute',
                         top: '8px',
                         right: '8px',
-                        width: '28px',
-                        height: '28px',
-                        background: 'rgba(0, 0, 0, 0.8)',
-                        border: '1px solid white',
+                        width: '32px',
+                        height: '32px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: '1px solid rgba(255, 255, 255, 0.8)',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        backdropFilter: 'blur(10px)'
                       }}
                       onClick={(e) => handleLikeTrack(track, e)}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                        e.currentTarget.style.transform = 'scale(1.05)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
                         e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       <Heart 
-                        size={14} 
+                        size={16} 
                         color={likedTracks.has(track.id) ? '#EC4899' : 'white'}
                         fill={likedTracks.has(track.id) ? '#EC4899' : 'none'}
                       />
@@ -1834,18 +1904,19 @@ export default function HomePage() {
                     <button 
                       style={{
                         position: 'absolute',
-                        top: '8px',
-                        right: '44px',
-                        width: '28px',
-                        height: '28px',
-                        background: 'rgba(0, 0, 0, 0.8)',
-                        border: '1px solid white',
+                        top: '48px',
+                        right: '8px',
+                        width: '32px',
+                        height: '32px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: '1px solid rgba(255, 255, 255, 0.8)',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        backdropFilter: 'blur(10px)'
                       }}
                       onClick={(e) => {
                         e.preventDefault();
@@ -1853,23 +1924,23 @@ export default function HomePage() {
                         toggleDropdown(track.id);
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                        e.currentTarget.style.transform = 'scale(1.05)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
                         e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
-                      <MoreHorizontal size={14} color="white" />
+                      <MoreHorizontal size={16} color="white" />
                     </button>
 
                     {/* Dropdown Menu */}
                     {openDropdownId === track.id && (
                       <div style={{
                         position: 'absolute',
-                        top: '40px',
-                        right: '44px',
+                        top: '88px',
+                        right: '8px',
                         background: 'rgba(0, 0, 0, 0.9)',
                         backdropFilter: 'blur(20px)',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -1949,9 +2020,9 @@ export default function HomePage() {
                   <div>
                     <h3 style={{
                       color: 'white',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: '600',
-                      margin: '0 0 4px 0',
+                      margin: '0 0 2px 0',
                       lineHeight: '1.2',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -1961,8 +2032,8 @@ export default function HomePage() {
                     </h3>
                     <p style={{
                       color: '#999',
-                      fontSize: '12px',
-                      margin: '0 0 8px 0',
+                      fontSize: '11px',
+                      margin: '0 0 4px 0',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -1973,15 +2044,15 @@ export default function HomePage() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      fontSize: '11px',
+                      fontSize: '10px',
                       color: '#666'
                     }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Play size={10} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Play size={8} />
                         {track.plays || 0}
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Heart size={10} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Heart size={8} />
                         {track.likes || 0}
                       </span>
                     </div>

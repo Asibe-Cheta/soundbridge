@@ -28,7 +28,15 @@ export async function GET() {
     // Exclude podcasts (genre = 'podcast') - podcasts should only appear in the podcasts section
     const { data: tracks, error } = await supabase
       .from('audio_tracks')
-      .select('*')
+      .select(`
+        *,
+        creator:profiles!audio_tracks_creator_id_fkey(
+          id,
+          username,
+          display_name,
+          avatar_url
+        )
+      `)
       .not('genre', 'eq', 'podcast')
       .not('genre', 'eq', 'Podcast')
       .not('genre', 'eq', 'PODCAST')
@@ -55,7 +63,7 @@ export async function GET() {
     const formattedTracks = tracks.map(track => ({
       id: track.id,
       title: track.title,
-      artist: track.artist_name || 'Unknown Artist',
+      artist: track.creator?.display_name || track.artist_name || 'Unknown Artist',
       coverArt: track.cover_art_url,
       url: track.file_url,
       duration: track.duration || 0,
@@ -63,9 +71,9 @@ export async function GET() {
       likes: track.like_count || 0,
       creator: {
         id: track.creator_id,
-        name: track.artist_name || 'Unknown Artist',
-        username: 'unknown',
-        avatar: null
+        name: track.creator?.display_name || track.artist_name || 'Unknown Artist',
+        username: track.creator?.username || 'unknown',
+        avatar: track.creator?.avatar_url || null
       }
     }));
 

@@ -198,7 +198,7 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
   const formattedTracks = (tracks || []).map(track => ({
     id: track.id,
     title: track.title,
-    artist: track.artist_name || 'Unknown Artist',
+    artist: track.creator?.display_name || track.artist_name || 'Unknown Artist',
     coverArt: track.cover_art_url, // Map cover_art_url to coverArt
     url: track.file_url,
     duration: track.duration || 0,
@@ -206,7 +206,7 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
     likes: track.like_count || 0,
     creator: {
       id: track.creator_id,
-      name: track.artist_name || 'Unknown Artist',
+      name: track.creator?.display_name || track.artist_name || 'Unknown Artist',
       username: track.creator?.username || 'unknown',
       avatar: track.creator?.avatar_url || null
     }
