@@ -1175,20 +1175,20 @@ body {
 
 .card-actions-overlay {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   display: flex;
-  gap: 8px;
+  gap: 4px;
   opacity: 1;
   transform: translateY(0);
   transition: all 0.3s ease;
 }
 
 .action-button {
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 2px solid white;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid white;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1198,20 +1198,30 @@ body {
   backdrop-filter: blur(10px);
 }
 
+.action-button svg {
+  color: white;
+  width: 14px;
+  height: 14px;
+}
+
 .action-button:hover {
   background: linear-gradient(45deg, #DC2626, #EC4899);
-  border: 2px solid white;
+  border: 1px solid white;
   transform: scale(1.1);
+}
+
+.action-button:hover svg {
+  color: white;
 }
 
 .like-button:hover {
   background: linear-gradient(45deg, #DC2626, #EC4899);
-  border: 2px solid white;
+  border: 1px solid white;
 }
 
 .menu-button:hover {
   background: linear-gradient(45deg, #DC2626, #EC4899);
-  border: 2px solid white;
+  border: 1px solid white;
 }
 
 /* Apple Music-style Dropdown */
@@ -1380,11 +1390,17 @@ body {
   .card-actions-overlay {
     top: 6px;
     right: 6px;
+    gap: 3px;
   }
   
   .action-button {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .action-button svg {
+    width: 12px;
+    height: 12px;
   }
   
   .track-title {
