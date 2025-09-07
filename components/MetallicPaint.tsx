@@ -382,24 +382,27 @@ export default function MetallicPaint({
   const updateUniforms = useCallback(() => {
     if (!gl || !uniforms) return;
     
-    // Set all the metallic shader uniforms
-    gl.uniform1f(uniforms.u_edge, params.edge);
-    gl.uniform1f(uniforms.u_patternBlur, params.patternBlur);
-    gl.uniform1f(uniforms.u_time, 0);
-    gl.uniform1f(uniforms.u_patternScale, params.patternScale);
-    gl.uniform1f(uniforms.u_refraction, params.refraction);
-    gl.uniform1f(uniforms.u_liquid, params.liquid);
+    // Check if uniforms exist before setting them (for debug shader compatibility)
+    if (uniforms.u_edge) gl.uniform1f(uniforms.u_edge, params.edge);
+    if (uniforms.u_patternBlur) gl.uniform1f(uniforms.u_patternBlur, params.patternBlur);
+    if (uniforms.u_patternScale) gl.uniform1f(uniforms.u_patternScale, params.patternScale);
+    if (uniforms.u_refraction) gl.uniform1f(uniforms.u_refraction, params.refraction);
+    if (uniforms.u_liquid) gl.uniform1f(uniforms.u_liquid, params.liquid);
     
-    // Set ratio uniforms (these were missing!)
-    if (uniforms.u_ratio) {
-      gl.uniform1f(uniforms.u_ratio, gl.canvas.width / gl.canvas.height);
-    }
-    if (uniforms.u_img_ratio) {
-      gl.uniform1f(uniforms.u_img_ratio, 1.0); // Default aspect ratio
-    }
+    // These were missing in the original updateUniforms:
+    if (uniforms.u_ratio) gl.uniform1f(uniforms.u_ratio, gl.canvas.width / gl.canvas.height);
+    if (uniforms.u_img_ratio) gl.uniform1f(uniforms.u_img_ratio, imageData.width / imageData.height);
     
-    console.log('MetallicPaint: All uniforms updated successfully');
-  }, [gl, uniforms, params]);
+    console.log('All uniforms set with values:', {
+      edge: params.edge,
+      patternBlur: params.patternBlur,
+      patternScale: params.patternScale,
+      refraction: params.refraction,
+      liquid: params.liquid,
+      ratio: gl.canvas.width / gl.canvas.height,
+      img_ratio: imageData.width / imageData.height
+    });
+  }, [gl, uniforms, params, imageData]);
 
   useEffect(() => {
     function initShader() {
@@ -638,6 +641,12 @@ export default function MetallicPaint({
       canvasEl.width = side * devicePixelRatio;
       canvasEl.height = side * devicePixelRatio;
       gl.viewport(0, 0, canvasEl.height, canvasEl.height);
+      
+      // DEBUG: Log canvas and viewport info
+      console.log('Canvas resize - canvas size:', canvasEl.width, 'x', canvasEl.height);
+      console.log('Canvas resize - display size:', canvasEl.clientWidth, 'x', canvasEl.clientHeight);
+      console.log('Canvas resize - viewport:', canvasEl.height, 'x', canvasEl.height);
+      console.log('Canvas resize - devicePixelRatio:', devicePixelRatio);
       gl.uniform1f(uniforms.u_ratio, 1);
       gl.uniform1f(uniforms.u_img_ratio, imgRatio);
     }
@@ -670,6 +679,11 @@ export default function MetallicPaint({
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
     try {
+      // DEBUG: Log texture upload details
+      console.log('Texture upload - imageData dimensions:', imageData?.width, imageData?.height);
+      console.log('Texture upload - sample pixels:', imageData?.data?.slice(0, 12));
+      console.log('Texture upload - data length:', imageData?.data?.length);
+      
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
