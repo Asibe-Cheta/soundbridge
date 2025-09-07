@@ -48,7 +48,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [collaborationSubject, setCollaborationSubject] = useState('');
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [chatMessage, setChatMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start as true since we need to load data
   const [error, setError] = useState<string | null>(null);
   const [creator] = useState<CreatorProfile>(initialCreator);
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
@@ -88,6 +88,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   useEffect(() => {
     const loadCreatorData = async () => {
       try {
+        console.log('🔄 Loading creator data for:', username);
         setIsLoading(true);
         setError(null);
 
@@ -139,6 +140,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
           setError('Failed to load creator data');
         }
       } finally {
+        console.log('✅ Finished loading creator data for:', username);
         setIsLoading(false);
       }
     };
@@ -332,7 +334,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     playTrack(audioTrack);
   };
 
-  if (isLoading && tracks.length === 0 && events.length === 0) {
+  // Only show skeleton if we're still loading the initial profile data
+  if (isLoading && !creator) {
+    console.log('🔄 Showing skeleton - isLoading:', isLoading, 'creator:', !!creator);
     return <CreatorProfileSkeleton />;
   }
 
