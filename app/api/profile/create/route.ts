@@ -21,49 +21,18 @@ export async function POST(request: NextRequest) {
     console.log('✅ User ID provided:', userId);
 
     // Verify the user exists in auth.users table with retry mechanism
-    let authUser = null;
-    let authError = null;
+    // Single auth check - no retries to prevent rate limiting
+    console.log('🔍 Looking up user in auth.users...');
     
-    // Retry up to 5 times with increasing delays (user might not be fully propagated yet)
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      console.log(`🔍 Attempt ${attempt}: Looking up user in auth.users...`);
-      
-      const result = await supabase.auth.admin.getUserById(userId);
-      authUser = result.data;
-      authError = result.error;
-      
-      if (authUser?.user && !authError) {
-        console.log('✅ User verified in auth.users:', authUser.user.id);
-        console.log('✅ User email:', authUser.user.email);
-        console.log('✅ User created at:', authUser.user.created_at);
-        
-        // Double-check by querying auth.users directly
-        const { data: directUserCheck, error: directError } = await supabase
-          .from('auth.users')
-          .select('id, email, created_at')
-          .eq('id', userId)
-          .single();
-          
-        if (directUserCheck && !directError) {
-          console.log('✅ Direct auth.users query confirmed:', directUserCheck.id);
-          break;
-        } else {
-          console.log('⚠️ Direct auth.users query failed:', directError);
-          // Continue with the admin API result since it worked
-          break;
-        }
-      }
-      
-      if (attempt < 5) {
-        const delay = attempt * 1000; // 1s, 2s, 3s, 4s delays
-        console.log(`⏳ User not found on attempt ${attempt}, retrying in ${delay}ms...`);
-        console.log(`❌ Auth error:`, authError);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
+    const result = await supabase.auth.admin.getUserById(userId);
+    const authUser = result.data;
+    const authError = result.error;
     
-    if (authError || !authUser?.user) {
-      console.error('❌ User not found in auth.users after 3 attempts:', authError);
+    if (authUser?.user && !authError) {
+      console.log('✅ User verified in auth.users:', authUser.user.id);
+      console.log('✅ User email:', authUser.user.email);
+    } else {
+      console.error('❌ User not found in auth.users:', authError);
       console.log('🔄 Proceeding with minimal profile creation using provided data only...');
       
       // Fallback: Create profile with minimal data from request body
