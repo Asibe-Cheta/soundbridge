@@ -50,13 +50,46 @@ const SoundBridgeMetallicLogo: React.FC<SoundBridgeMetallicLogoProps> = ({
         console.log('📁 Logo blob loaded:', { size: blob.size, type: blob.type });
         
         const file = new File([blob], "soundbridge-logo.svg", { type: blob.type });
-        const parsedData = await parseLogoImage(file);
         
-        if (parsedData?.imageData) {
-          console.log('✅ Logo image data parsed successfully');
-          setImageData(parsedData.imageData);
-        } else {
-          throw new Error('Failed to parse logo image - no image data returned');
+        try {
+          const parsedData = await parseLogoImage(file);
+          
+          if (parsedData?.imageData) {
+            console.log('✅ Logo image data parsed successfully');
+            setImageData(parsedData.imageData);
+          } else {
+            throw new Error('Failed to parse logo image - no image data returned');
+          }
+        } catch (parseError) {
+          console.error('❌ SVG parsing failed, creating fallback image data:', parseError);
+          
+          // Create a simple fallback image data for testing
+          const canvas = document.createElement('canvas');
+          canvas.width = 1000;
+          canvas.height = 1000;
+          const ctx = canvas.getContext('2d');
+          
+          if (ctx) {
+            // Create a simple gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 1000, 1000);
+            gradient.addColorStop(0, '#DC2626');
+            gradient.addColorStop(1, '#EC4899');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1000, 1000);
+            
+            // Add some text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 120px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('SB', 500, 500);
+            
+            const fallbackImageData = ctx.getImageData(0, 0, 1000, 1000);
+            console.log('✅ Fallback image data created');
+            setImageData(fallbackImageData);
+          } else {
+            throw new Error('Failed to create fallback image data');
+          }
         }
       } catch (err) {
         console.error("❌ Error loading SoundBridge logo:", err);
