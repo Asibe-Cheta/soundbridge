@@ -67,9 +67,42 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
         setCurrentTime(audio.currentTime);
       };
       
-      const handleEnded = () => {
+      const handleEnded = async () => {
         setIsPlaying(false);
         setCurrentTime(0);
+        
+        // Update play count when track completes
+        if (currentTrack?.id) {
+          try {
+            const response = await fetch('/api/audio/update-play-count', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                trackId: currentTrack.id
+              }),
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              console.log('✅ Play count updated:', result.playCount);
+              
+              // Dispatch custom event to notify components of play count update
+              const event = new CustomEvent('playCountUpdated', {
+                detail: {
+                  trackId: currentTrack.id,
+                  newPlayCount: result.playCount
+                }
+              });
+              window.dispatchEvent(event);
+            } else {
+              console.error('❌ Failed to update play count');
+            }
+          } catch (error) {
+            console.error('❌ Error updating play count:', error);
+          }
+        }
       };
       
       const handleError = (event: Event) => {

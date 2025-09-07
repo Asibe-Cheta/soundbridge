@@ -207,6 +207,33 @@ export default function HomePage() {
     playTrack(audioTrack);
   };
 
+  // Listen for play count updates from the audio player
+  React.useEffect(() => {
+    const handlePlayCountUpdate = (event: CustomEvent) => {
+      const { trackId, newPlayCount } = event.detail;
+      
+      // Update the local state to reflect the new play count
+      setRecentTracks(prevTracks =>
+        prevTracks.map(t => {
+          if (t.id === trackId) {
+            return {
+              ...t,
+              plays: newPlayCount
+            };
+          }
+          return t;
+        })
+      );
+    };
+
+    // Listen for custom play count update events
+    window.addEventListener('playCountUpdated', handlePlayCountUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('playCountUpdated', handlePlayCountUpdate as EventListener);
+    };
+  }, []);
+
   // Fetch hot creators - use personalized data if available, fallback to global
   useEffect(() => {
     const fetchHotCreators = async () => {
@@ -1783,16 +1810,7 @@ export default function HomePage() {
                   borderRadius: '12px',
                   padding: '8px',
                   width: '100%',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  minHeight: '200px'
                 }}
                 >
                   {/* Image Container */}
@@ -1805,7 +1823,7 @@ export default function HomePage() {
                         height={140}
                         style={{ 
                           width: '100%', 
-                          height: '140px', 
+                          height: '160px', 
                           objectFit: 'cover', 
                           borderRadius: '8px' 
                         }}
@@ -1813,7 +1831,7 @@ export default function HomePage() {
                     ) : (
                       <div style={{
                         width: '100%',
-                        height: '140px',
+                        height: '160px',
                         background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                         borderRadius: '8px',
                         display: 'flex',
@@ -1835,7 +1853,7 @@ export default function HomePage() {
                         width: '40px',
                         height: '40px',
                         background: 'rgba(0, 0, 0, 0.7)',
-                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                        border: 'none',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -1851,11 +1869,9 @@ export default function HomePage() {
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
                       }}
                     >
                       {currentTrack?.id === track.id && isPlaying ? (
@@ -1874,7 +1890,7 @@ export default function HomePage() {
                         width: '32px',
                         height: '32px',
                         background: 'rgba(0, 0, 0, 0.7)',
-                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                        border: 'none',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -1886,11 +1902,9 @@ export default function HomePage() {
                       onClick={(e) => handleLikeTrack(track, e)}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-                        e.currentTarget.style.transform = 'scale(1.05)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       <Heart 
@@ -1909,7 +1923,7 @@ export default function HomePage() {
                         width: '32px',
                         height: '32px',
                         background: 'rgba(0, 0, 0, 0.7)',
-                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                        border: 'none',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -1925,11 +1939,9 @@ export default function HomePage() {
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-                        e.currentTarget.style.transform = 'scale(1.05)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       <MoreHorizontal size={16} color="white" />
