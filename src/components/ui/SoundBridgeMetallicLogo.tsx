@@ -38,10 +38,10 @@ const SoundBridgeMetallicLogo: React.FC<SoundBridgeMetallicLogoProps> = ({
         setIsLoading(true);
         setError(null);
         
-        console.log('🔄 Loading SoundBridge logo from:', '/images/logos/logo-trans-lockup.svg');
+        console.log('🔄 Loading SoundBridge logo from:', '/images/logo-trans-lockup.svg');
         
         // Load the SoundBridge logo SVG
-        const response = await fetch('/images/logos/logo-trans-lockup.svg');
+        const response = await fetch('/images/logo-trans-lockup.svg');
         if (!response.ok) {
           throw new Error(`Failed to load logo: ${response.status} ${response.statusText}`);
         }

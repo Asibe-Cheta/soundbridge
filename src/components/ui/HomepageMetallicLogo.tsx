@@ -20,7 +20,7 @@ const HomepageMetallicLogo: React.FC<HomepageMetallicLogoProps> = ({
       try {
         setIsLoading(true);
         
-        const response = await fetch('/images/logos/logo-trans-lockup.svg');
+        const response = await fetch('/images/logo-trans-lockup.svg');
         if (!response.ok) {
           throw new Error('Failed to load logo');
         }
