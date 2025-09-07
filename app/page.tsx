@@ -1684,8 +1684,9 @@ export default function HomePage() {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: isMobile ? '1rem' : '1.25rem'
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: isMobile ? '0.75rem' : '1rem',
+            maxWidth: '100%'
           }}>
             {isLoadingTracks ? (
               // Loading state

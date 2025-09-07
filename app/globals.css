@@ -1072,13 +1072,15 @@ body {
 .modern-music-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   overflow: hidden;
   position: relative;
   group: hover;
+  width: 100%;
+  max-width: 160px;
 }
 
 .modern-music-card:hover {
@@ -1091,9 +1093,9 @@ body {
 .card-image-container {
   position: relative;
   width: 100%;
-  height: 160px;
+  height: 140px;
   overflow: hidden;
-  border-radius: 12px 12px 0 0;
+  border-radius: 8px 8px 0 0;
 }
 
 .card-cover-image {
@@ -1186,7 +1188,7 @@ body {
   width: 32px;
   height: 32px;
   background: rgba(0, 0, 0, 0.7);
-  border: none;
+  border: 2px solid white;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1197,16 +1199,19 @@ body {
 }
 
 .action-button:hover {
-  background: rgba(0, 0, 0, 0.9);
+  background: linear-gradient(45deg, #DC2626, #EC4899);
+  border: 2px solid white;
   transform: scale(1.1);
 }
 
 .like-button:hover {
-  background: rgba(236, 72, 153, 0.2);
+  background: linear-gradient(45deg, #DC2626, #EC4899);
+  border: 2px solid white;
 }
 
 .menu-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(45deg, #DC2626, #EC4899);
+  border: 2px solid white;
 }
 
 /* Apple Music-style Dropdown */
@@ -1274,27 +1279,27 @@ body {
 }
 
 .card-content {
-  padding: 1rem;
+  padding: 0.75rem;
   background: rgba(255, 255, 255, 0.02);
 }
 
 .track-title {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: white;
   margin: 0 0 0.25rem 0;
-  line-height: 1.3;
+  line-height: 1.2;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .track-artist {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #999;
-  margin: 0 0 0.75rem 0;
-  line-height: 1.3;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -1317,11 +1322,11 @@ body {
 }
 
 .waveform-visual {
-  height: 24px;
+  height: 20px;
   display: flex;
   align-items: end;
   gap: 2px;
-  padding: 0 1rem 0.75rem 1rem;
+  padding: 0 0.75rem 0.5rem 0.75rem;
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -1355,35 +1360,48 @@ body {
 
 /* Responsive adjustments for modern cards */
 @media (max-width: 768px) {
+  .modern-music-card {
+    max-width: 140px;
+  }
+  
   .modern-music-card:hover {
     transform: translateY(-2px);
   }
   
   .card-image-container {
-    height: 140px;
+    height: 120px;
   }
   
   .play-button-overlay {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
   }
   
   .card-actions-overlay {
-    top: 8px;
-    right: 8px;
+    top: 6px;
+    right: 6px;
   }
   
   .action-button {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
   
   .track-title {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   
   .track-artist {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+  }
+  
+  .card-content {
+    padding: 0.5rem;
+  }
+  
+  .waveform-visual {
+    height: 16px;
+    padding: 0 0.5rem 0.25rem 0.5rem;
   }
 }
 
