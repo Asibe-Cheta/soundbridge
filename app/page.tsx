@@ -1757,10 +1757,11 @@ export default function HomePage() {
                         title="Like track"
                       >
                         <Heart 
-                          size={16} 
+                          size={14} 
                           style={{ 
                             color: likedTracks.has(track.id) ? '#EC4899' : 'white',
-                            fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
+                            fill: likedTracks.has(track.id) ? '#EC4899' : 'none',
+                            display: 'block'
                           }} 
                         />
                       </button>
@@ -1776,7 +1777,13 @@ export default function HomePage() {
                           }}
                           title="More options"
                         >
-                          <MoreHorizontal size={16} />
+                          <MoreHorizontal 
+                            size={14} 
+                            style={{ 
+                              color: 'white',
+                              display: 'block'
+                            }} 
+                          />
                         </button>
                         
                         {/* Apple Music-style Dropdown */}

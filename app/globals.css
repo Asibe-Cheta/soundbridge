@@ -1199,9 +1199,12 @@ body {
 }
 
 .action-button svg {
-  color: white;
-  width: 14px;
-  height: 14px;
+  color: white !important;
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
 }
 
 .action-button:hover {
@@ -1211,7 +1214,9 @@ body {
 }
 
 .action-button:hover svg {
-  color: white;
+  color: white !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
 }
 
 .like-button:hover {
