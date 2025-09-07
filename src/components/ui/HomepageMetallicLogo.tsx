@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import MetallicPaint, { parseLogoImage } from './MetallicPaint';
+import MetallicPaint, { parseLogoImage } from '../../../components/MetallicPaint';
 
 interface HomepageMetallicLogoProps {
   className?: string;
