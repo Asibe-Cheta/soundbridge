@@ -11,7 +11,7 @@ import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles, MoreHorizontal } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
@@ -20,7 +20,7 @@ export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const { toggleLike, isLiked } = useSocial();
-  const { data: personalizedFeed, loading: personalizedLoading, error: personalizedError, hasPersonalizedData } = usePersonalizedFeed();
+  const { data: personalizedFeed, hasPersonalizedData } = usePersonalizedFeed();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -278,13 +278,7 @@ export default function HomePage() {
     }
   };
 
-  const handleShareTrack = async (track: any, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setSelectedTrackForShare(track);
-    setShareModalOpen(true);
-  };
+
 
   // Format event date for display
   const formatEventDate = (eventDate: string) => {
@@ -1679,145 +1673,112 @@ export default function HomePage() {
                 </div>
               ))
             ) : recentTracks.length > 0 ? (
-              // REAL TRACKS FROM DATABASE
+              // REAL TRACKS FROM DATABASE - REDESIGNED CARDS
               recentTracks.map((track) => (
-                <div key={track.id} className="card">
-                  <div className="card-image">
+                <div key={track.id} className="modern-music-card">
+                  {/* Card Image Container */}
+                  <div className="card-image-container">
                     {track.coverArt ? (
                       <Image
                         src={track.coverArt}
                         alt={track.title}
                         width={200}
                         height={200}
-                        style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+                        className="card-cover-image"
                       />
                     ) : (
-                      <div style={{ 
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        borderRadius: '8px',
-                        color: 'white',
-                        fontSize: '0.9rem',
-                        height: '200px',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}>
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          textAlign: 'center'
-                        }}>
-                          <Mic size={32} style={{ marginBottom: '8px', opacity: 0.8 }} />
-                          <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
-                            {track.title ? track.title.substring(0, 20) + (track.title.length > 20 ? '...' : '') : 'No Cover'}
-                          </div>
+                      <div className="card-placeholder">
+                        <Mic size={32} style={{ opacity: 0.8 }} />
+                        <div className="placeholder-text">
+                          {track.title ? track.title.substring(0, 20) + (track.title.length > 20 ? '...' : '') : 'No Cover'}
                         </div>
                       </div>
                     )}
-                    <div 
-                      className="play-button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePlayTrack(track);
-                      }}
-                      style={{ 
-                        cursor: 'pointer',
-                        backgroundColor: currentTrack?.id === track.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
-                      }}
-                    >
-                      {currentTrack?.id === track.id && isPlaying ? (
-                        <Pause size={20} />
-                      ) : (
-                        <Play size={20} />
-                      )}
+                    
+                    {/* Overlay with Play Button */}
+                    <div className="card-overlay">
+                      <button 
+                        className="play-button-overlay"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePlayTrack(track);
+                        }}
+                      >
+                        {currentTrack?.id === track.id && isPlaying ? (
+                          <Pause size={24} />
+                        ) : (
+                          <Play size={24} />
+                        )}
+                      </button>
                     </div>
-                    {/* Like Button */}
-                    <div 
-                      className="like-button"
-                      onClick={(e) => handleLikeTrack(track, e)}
-                      style={{ 
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        cursor: 'pointer',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease',
-                        zIndex: 10
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      <Heart 
-                        size={16} 
-                        style={{ 
-                          color: likedTracks.has(track.id) ? '#EC4899' : 'white',
-                          fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
-                        }} 
-                      />
-                    </div>
-                    {/* Share Button */}
-                    <div 
-                      className="share-button"
-                      onClick={(e) => handleShareTrack(track, e)}
-                      style={{ 
-                        position: 'absolute',
-                        top: '10px',
-                        right: '50px',
-                        cursor: 'pointer',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease',
-                        zIndex: 10
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      <Share2 
-                        size={16} 
-                        style={{ 
-                          color: 'white'
-                        }} 
-                      />
+
+                    {/* Action Buttons */}
+                    <div className="card-actions-overlay">
+                      {/* Like Button */}
+                      <button 
+                        className="action-button like-button"
+                        onClick={(e) => handleLikeTrack(track, e)}
+                        title="Like track"
+                      >
+                        <Heart 
+                          size={16} 
+                          style={{ 
+                            color: likedTracks.has(track.id) ? '#EC4899' : 'white',
+                            fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
+                          }} 
+                        />
+                      </button>
+                      
+                      {/* Three Dots Menu */}
+                      <div className="dropdown-container">
+                        <button 
+                          className="action-button menu-button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedTrackForShare(track);
+                            setShareModalOpen(true);
+                          }}
+                          title="More options"
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
-                    {track.title || 'Untitled Track'}
+
+                  {/* Card Content */}
+                  <div className="card-content">
+                    <h3 className="track-title">
+                      {track.title || 'Untitled Track'}
+                    </h3>
+                    <p className="track-artist">
+                      {track.artist || track.creator?.name || 'Unknown Artist'}
+                    </p>
+                    <div className="track-stats">
+                      <span className="stat-item">
+                        <Play size={12} />
+                        {track.plays || 0}
+                      </span>
+                      <span className="stat-item">
+                        <Heart size={12} />
+                        {track.likes || 0}
+                      </span>
+                    </div>
                   </div>
-                  <div style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                    {track.artist || track.creator?.name || 'Unknown Artist'}
+
+                  {/* Waveform Visual */}
+                  <div className="waveform-visual">
+                    <div className="waveform-bar" style={{ height: '20%' }}></div>
+                    <div className="waveform-bar" style={{ height: '60%' }}></div>
+                    <div className="waveform-bar" style={{ height: '40%' }}></div>
+                    <div className="waveform-bar" style={{ height: '80%' }}></div>
+                    <div className="waveform-bar" style={{ height: '30%' }}></div>
+                    <div className="waveform-bar" style={{ height: '70%' }}></div>
+                    <div className="waveform-bar" style={{ height: '50%' }}></div>
+                    <div className="waveform-bar" style={{ height: '90%' }}></div>
                   </div>
-                  <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                    {track.plays || 0} plays • {track.likes || 0} likes
-                  </div>
-                  <div className="waveform"></div>
                 </div>
               ))
             ) : (
@@ -1841,7 +1802,7 @@ export default function HomePage() {
             <h2 className="heading-3 text-display">
               {hasPersonalizedData && user ? (
                 <>
-                  Creators You'll Love
+                  Creators You&apos;ll Love
                   <span style={{ 
                     fontSize: '0.8rem', 
                     color: '#EC4899', 
