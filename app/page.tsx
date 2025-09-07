@@ -1710,143 +1710,281 @@ export default function HomePage() {
             ) : recentTracks.length > 0 ? (
               // REAL TRACKS FROM DATABASE - REDESIGNED CARDS
               recentTracks.map((track) => (
-                <div key={track.id} className="modern-music-card">
-                  {/* Card Image Container */}
-                  <div className="card-image-container">
+                <div key={track.id} style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  maxWidth: '160px',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                }}
+                >
+                  {/* Image Container */}
+                  <div style={{ position: 'relative', marginBottom: '12px' }}>
                     {track.coverArt ? (
                       <Image
                         src={track.coverArt}
                         alt={track.title}
-                        width={200}
-                        height={200}
-                        className="card-cover-image"
+                        width={140}
+                        height={120}
+                        style={{ 
+                          width: '100%', 
+                          height: '120px', 
+                          objectFit: 'cover', 
+                          borderRadius: '8px' 
+                        }}
                       />
                     ) : (
-                      <div className="card-placeholder">
-                        <Mic size={32} style={{ opacity: 0.8 }} />
-                        <div className="placeholder-text">
-                          {track.title ? track.title.substring(0, 20) + (track.title.length > 20 ? '...' : '') : 'No Cover'}
-                        </div>
+                      <div style={{
+                        width: '100%',
+                        height: '120px',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white'
+                      }}>
+                        <Music size={24} />
                       </div>
                     )}
                     
-                    {/* Overlay with Play Button */}
-                    <div className="card-overlay">
-                      <button 
-                        className="play-button-overlay"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handlePlayTrack(track);
-                        }}
-                      >
-                        {currentTrack?.id === track.id && isPlaying ? (
-                          <Pause size={24} />
-                        ) : (
-                          <Play size={24} />
-                        )}
-                      </button>
-                    </div>
+                    {/* Play Button */}
+                    <button 
+                      style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        left: '8px',
+                        width: '36px',
+                        height: '36px',
+                        background: 'rgba(0, 0, 0, 0.8)',
+                        border: '1px solid white',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePlayTrack(track);
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <Pause size={16} color="white" />
+                      ) : (
+                        <Play size={16} color="white" />
+                      )}
+                    </button>
 
-                    {/* Action Buttons */}
-                    <div className="card-actions-overlay">
-                      {/* Like Button */}
-                      <button 
-                        className="action-button like-button"
-                        onClick={(e) => handleLikeTrack(track, e)}
-                        title="Like track"
-                      >
-                        <Heart 
-                          size={14} 
-                          style={{ 
-                            color: likedTracks.has(track.id) ? '#EC4899' : 'white',
-                            fill: likedTracks.has(track.id) ? '#EC4899' : 'none',
-                            display: 'block'
-                          }} 
-                        />
-                      </button>
-                      
-                      {/* Three Dots Menu */}
-                      <div className="dropdown-container" style={{ position: 'relative' }}>
+                    {/* Heart Button */}
+                    <button 
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '28px',
+                        height: '28px',
+                        background: 'rgba(0, 0, 0, 0.8)',
+                        border: '1px solid white',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={(e) => handleLikeTrack(track, e)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <Heart 
+                        size={14} 
+                        color={likedTracks.has(track.id) ? '#EC4899' : 'white'}
+                        fill={likedTracks.has(track.id) ? '#EC4899' : 'none'}
+                      />
+                    </button>
+
+                    {/* Three Dots Button */}
+                    <button 
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '44px',
+                        width: '28px',
+                        height: '28px',
+                        background: 'rgba(0, 0, 0, 0.8)',
+                        border: '1px solid white',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleDropdown(track.id);
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <MoreHorizontal size={14} color="white" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {openDropdownId === track.id && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '40px',
+                        right: '44px',
+                        background: 'rgba(0, 0, 0, 0.9)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        padding: '8px',
+                        minWidth: '120px',
+                        zIndex: 1000,
+                        boxShadow: '0 8px 25px rgba(0, 0, 0, 0.5)'
+                      }}>
                         <button 
-                          className="action-button menu-button"
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'white',
+                            textAlign: 'left',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '14px',
+                            transition: 'background 0.2s ease'
+                          }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            toggleDropdown(track.id);
+                            handleCopyLink(track);
                           }}
-                          title="More options"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
                         >
-                          <MoreHorizontal 
-                            size={14} 
-                            style={{ 
-                              color: 'white',
-                              display: 'block'
-                            }} 
-                          />
+                          <LinkIcon size={14} />
+                          Copy Link
                         </button>
-                        
-                        {/* Apple Music-style Dropdown */}
-                        {openDropdownId === track.id && (
-                          <div className="dropdown-menu open">
-                            <button 
-                              className="dropdown-item"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleCopyLink(track);
-                              }}
-                            >
-                              <LinkIcon className="dropdown-icon" />
-                              Copy Link
-                            </button>
-                            <button 
-                              className="dropdown-item"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleShareTrack(track);
-                              }}
-                            >
-                              <Share2 className="dropdown-icon" />
-                              Share
-                            </button>
-                          </div>
-                        )}
+                        <button 
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'white',
+                            textAlign: 'left',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '14px',
+                            transition: 'background 0.2s ease'
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleShareTrack(track);
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <Share2 size={14} />
+                          Share
+                        </button>
                       </div>
-                    </div>
+                    )}
                   </div>
-
-                  {/* Card Content */}
-                  <div className="card-content">
-                    <h3 className="track-title">
+                  
+                  {/* Track Info */}
+                  <div>
+                    <h3 style={{
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      margin: '0 0 4px 0',
+                      lineHeight: '1.2',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
                       {track.title || 'Untitled Track'}
                     </h3>
-                    <p className="track-artist">
+                    <p style={{
+                      color: '#999',
+                      fontSize: '12px',
+                      margin: '0 0 8px 0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
                       {track.artist || track.creator?.name || 'Unknown Artist'}
                     </p>
-                    <div className="track-stats">
-                      <span className="stat-item">
-                        <Play size={12} />
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '11px',
+                      color: '#666'
+                    }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Play size={10} />
                         {track.plays || 0}
                       </span>
-                      <span className="stat-item">
-                        <Heart size={12} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Heart size={10} />
                         {track.likes || 0}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Waveform Visual */}
-                  <div className="waveform-visual">
-                    <div className="waveform-bar" style={{ height: '20%' }}></div>
-                    <div className="waveform-bar" style={{ height: '60%' }}></div>
-                    <div className="waveform-bar" style={{ height: '40%' }}></div>
-                    <div className="waveform-bar" style={{ height: '80%' }}></div>
-                    <div className="waveform-bar" style={{ height: '30%' }}></div>
-                    <div className="waveform-bar" style={{ height: '70%' }}></div>
-                    <div className="waveform-bar" style={{ height: '50%' }}></div>
-                    <div className="waveform-bar" style={{ height: '90%' }}></div>
                   </div>
                 </div>
               ))
