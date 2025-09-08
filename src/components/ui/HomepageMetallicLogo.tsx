@@ -20,12 +20,12 @@ const HomepageMetallicLogo: React.FC<HomepageMetallicLogoProps> = ({
     async function loadLogoImage() {
       try {
         setIsLoading(true);
-        console.log('🔄 Loading SoundBridge logo from:', '/images/logos/soundbridge-logo-main.svg');
+        console.log('🔄 Loading SoundBridge logo from public path');
         
-        // Follow React Bits pattern exactly - fetch the imported logo
-        const response = await fetch('/images/logos/soundbridge-logo-main.svg');
+        // Fetch the PNG directly from public path
+        const response = await fetch('/images/logos/soundbridge-logo-main.png');
         const blob = await response.blob();
-        const file = new File([blob], "soundbridge-logo.svg", { type: blob.type });
+        const file = new File([blob], "soundbridge-logo-main.png", { type: blob.type });
         
         console.log('📁 Logo blob loaded:', { size: blob.size, type: blob.type });
         

@@ -11,10 +11,12 @@ import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon } from 'lucide-react';
+import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon, Music } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
+import type { AudioTrack } from '@/src/lib/types/search';
+import type { CreatorSearchResult, Event } from '@/src/lib/types/creator';
 
 export default function HomePage() {
   const { user, signOut, loading, error: authError } = useAuth();
@@ -25,21 +27,21 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [recentTracks, setRecentTracks] = React.useState<any[]>([]);
+  const [recentTracks, setRecentTracks] = React.useState<AudioTrack[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
   const [likedTracks, setLikedTracks] = React.useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [selectedTrackForShare, setSelectedTrackForShare] = useState<any>(null);
+  const [selectedTrackForShare, setSelectedTrackForShare] = useState<AudioTrack | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [hotCreators, setHotCreators] = useState<any[]>([]);
+  const [hotCreators, setHotCreators] = useState<CreatorSearchResult[]>([]);
   const [hotCreatorsLoading, setHotCreatorsLoading] = useState(true);
   
   // Events state
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   
   // Podcasts state
-  const [podcasts, setPodcasts] = useState<any[]>([]);
+  const [podcasts, setPodcasts] = useState<AudioTrack[]>([]);
   const [isLoadingPodcasts, setIsLoadingPodcasts] = useState(true);
 
   // Handle mobile responsiveness
@@ -188,18 +190,18 @@ export default function HomePage() {
     }
   };
 
-  const handlePlayTrack = (track: any) => {
+  const handlePlayTrack = (track: AudioTrack) => {
     console.log('🎵 handlePlayTrack called with:', track);
     
     // Convert track data to AudioTrack format
     const audioTrack = {
       id: track.id,
       title: track.title,
-      artist: track.artist || track.creator?.name || 'Unknown Artist',
+      artist: track.creator?.display_name || track.creator_name || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
-      artwork: track.coverArt || '',
-      url: track.url || '',
+      artwork: track.cover_art_url || '',
+      url: track.file_url || '',
       liked: false
     };
     
@@ -266,7 +268,7 @@ export default function HomePage() {
     fetchHotCreators();
   }, [personalizedFeed]);
 
-  const handleLikeTrack = async (track: any, e: React.MouseEvent) => {
+  const handleLikeTrack = async (track: AudioTrack, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -300,7 +302,7 @@ export default function HomePage() {
         setRecentTracks(prevTracks => 
           prevTracks.map(t => {
             if (t.id === track.id) {
-              const currentLikes = t.likes || 0;
+              const currentLikes = t.like_count || 0;
               return {
                 ...t,
                 likes: isCurrentlyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1
@@ -336,7 +338,7 @@ export default function HomePage() {
           setRecentTracks(prevTracks => 
             prevTracks.map(t => {
               if (t.id === track.id) {
-                const currentLikes = t.likes || 0;
+                const currentLikes = t.like_count || 0;
                 return {
                   ...t,
                   likes: isCurrentlyLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
@@ -352,7 +354,7 @@ export default function HomePage() {
     }
   };
 
-  const handleCopyLink = async (track: any) => {
+  const handleCopyLink = async (track: AudioTrack) => {
     const trackUrl = `${window.location.origin}/track/${track.id}`;
     try {
       await navigator.clipboard.writeText(trackUrl);
@@ -364,7 +366,7 @@ export default function HomePage() {
     setOpenDropdownId(null);
   };
 
-  const handleShareTrack = (track: any) => {
+  const handleShareTrack = (track: AudioTrack) => {
     setSelectedTrackForShare(track);
     setShareModalOpen(true);
     setOpenDropdownId(null);
@@ -391,7 +393,7 @@ export default function HomePage() {
   };
 
   // Format event price for display
-  const formatEventPrice = (event: any) => {
+  const formatEventPrice = (event: Event) => {
     if (event.price_gbp && event.price_gbp > 0) {
       return `£${event.price_gbp}`;
     } else if (event.price_ngn && event.price_ngn > 0) {
@@ -427,7 +429,7 @@ export default function HomePage() {
         if (response.ok) {
           const result = await response.json();
           if (result.data && Array.isArray(result.data)) {
-            const likedTrackIds = new Set(result.data.map((like: any) => like.content_id));
+            const likedTrackIds = new Set<string>(result.data.map((like: { content_id: string }) => like.content_id));
             setLikedTracks(likedTrackIds);
           }
         }
@@ -463,8 +465,8 @@ export default function HomePage() {
           if (result.success && result.tracks) {
             console.log('✅ Setting tracks:', result.tracks.length);
             // Log each track's cover art status
-            result.tracks.forEach((track: any, index: number) => {
-              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'}`);
+            result.tracks.forEach((track: AudioTrack, index: number) => {
+              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.cover_art_url ? 'Yes' : 'No'}`);
             });
             setRecentTracks(result.tracks);
           } else {
@@ -1827,9 +1829,9 @@ export default function HomePage() {
                 >
                   {/* Image Container */}
                   <div style={{ position: 'relative', marginBottom: '8px' }}>
-                    {track.coverArt ? (
+                    {track.cover_art_url ? (
                       <Image
-                        src={track.coverArt}
+                        src={track.cover_art_url}
                         alt={track.title}
                         width={140}
                         height={140}
@@ -2062,7 +2064,7 @@ export default function HomePage() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {track.artist || track.creator?.name || 'Unknown Artist'}
+                      {track.creator?.display_name || track.creator_name || 'Unknown Artist'}
                     </p>
                     <div style={{
                       display: 'flex',
@@ -2073,11 +2075,11 @@ export default function HomePage() {
                     }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Play size={8} />
-                        {track.plays || 0}
+                        {track.play_count || 0}
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Heart size={8} />
-                        {track.likes || 0}
+                        {track.like_count || 0}
                       </span>
                     </div>
                   </div>
@@ -2158,16 +2160,16 @@ export default function HomePage() {
             ) : hotCreators.length > 0 ? (
               hotCreators.map((creator) => (
                 <Link 
-                  key={creator.id} 
-                  href={`/creator/${creator.username}`} 
+                  key={creator.profile.id} 
+                  href={`/creator/${creator.profile.username}`} 
                   style={{ textDecoration: 'none' }}
                 >
                   <div className="card">
                     <div className="card-image">
-                      {creator.avatar_url ? (
+                      {creator.profile.avatar_url ? (
                         <Image
-                          src={creator.avatar_url}
-                          alt={creator.display_name}
+                          src={creator.profile.avatar_url}
+                          alt={creator.profile.display_name}
                           width={200}
                           height={200}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
@@ -2185,7 +2187,7 @@ export default function HomePage() {
                           fontSize: '2rem',
                           fontWeight: '600'
                         }}>
-                          {creator.display_name?.substring(0, 2).toUpperCase() || 'C'}
+                          {creator.profile.display_name?.substring(0, 2).toUpperCase() || 'C'}
                         </div>
                       )}
                       <div className="play-button">
@@ -2204,27 +2206,19 @@ export default function HomePage() {
                         fontWeight: '600',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                       }}>
-                        🔥 {creator.hot_score}
+                        🔥 {creator.stats.total_plays}
                       </div>
                     </div>
-                    <div style={{ fontWeight: '600' }}>{creator.display_name}</div>
+                    <div style={{ fontWeight: '600' }}>{creator.profile.display_name}</div>
                     <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                      {creator.genre ? `${creator.genre} • ` : ''}
-                      {creator.location || 'Location not set'}
-                      {creator.content_types && (
-                        <span style={{ marginLeft: '0.5rem' }}>
-                          {creator.content_types.has_music && creator.content_types.has_podcasts && '🎵🎙️'}
-                          {creator.content_types.has_music && !creator.content_types.has_podcasts && '🎵'}
-                          {!creator.content_types.has_music && creator.content_types.has_podcasts && '🎙️'}
-                        </span>
-                      )}
+                      {creator.profile.location || 'Location not set'}
                     </div>
                     <div className="stats">
-                      <span>{creator.followers_count?.toLocaleString() || 0} followers</span>
-                      <span>{creator.tracks_count || 0} tracks</span>
-                      {creator.recent_tracks_count > 0 && (
+                      <span>{creator.stats.followers_count?.toLocaleString() || 0} followers</span>
+                      <span>{creator.stats.tracks_count || 0} tracks</span>
+                      {creator.recent_tracks.length > 0 && (
                         <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>
-                          +{creator.recent_tracks_count} recent
+                          +{creator.recent_tracks.length} recent
                         </span>
                       )}
                     </div>
@@ -2603,11 +2597,11 @@ export default function HomePage() {
             title: selectedTrackForShare.title,
             type: 'track',
             creator: {
-              name: selectedTrackForShare.artist || selectedTrackForShare.creator?.name || 'Unknown Artist',
+              name: selectedTrackForShare.creator?.display_name || selectedTrackForShare.creator_name || 'Unknown Artist',
               username: selectedTrackForShare.creator?.username || 'unknown'
             },
-            coverArt: selectedTrackForShare.coverArt,
-            url: selectedTrackForShare.url
+            coverArt: selectedTrackForShare.cover_art_url,
+            url: selectedTrackForShare.file_url
           }}
         />
       )}

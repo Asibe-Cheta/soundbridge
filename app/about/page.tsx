@@ -398,20 +398,20 @@ export default function AboutPage() {
           {/* Right Side - Metallic Logo */}
           <div style={{
             height: '500px',
-            position: 'relative'
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <SoundBridgeMetallicLogo 
-              style={{
-                height: '100%',
-                width: '100%'
-              }}
+            <SoundBridgeMetallicLogo
+              className="hero-logo"
               params={{
-                edge: 2,
-                patternBlur: 0.005,
                 patternScale: 2,
                 refraction: 0.015,
-                speed: 0.3,
-                liquid: 0.07
+                edge: 2,
+                patternBlur: 0.005,
+                liquid: 0.07,
+                speed: 0.3
               }}
             />
           </div>
@@ -430,20 +430,20 @@ export default function AboutPage() {
           <div style={{
             height: '300px',
             width: '100%',
-            maxWidth: '400px'
+            maxWidth: '400px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <SoundBridgeMetallicLogo 
-              style={{
-                height: '100%',
-                width: '100%'
-              }}
+            <SoundBridgeMetallicLogo
+              className="mobile-hero-logo"
               params={{
-                edge: 2,
-                patternBlur: 0.005,
                 patternScale: 2,
                 refraction: 0.015,
-                speed: 0.3,
-                liquid: 0.07
+                edge: 2,
+                patternBlur: 0.005,
+                liquid: 0.07,
+                speed: 0.3
               }}
             />
           </div>
