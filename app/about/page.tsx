@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
 import RiveLogo from '../../src/components/ui/RiveLogo';
+import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import {
   Music,
   Users,
@@ -55,12 +56,88 @@ export default function AboutPage() {
             />
           </Link>
         </div>
-        <nav className="nav">
-          <Link href="/" style={{ textDecoration: 'none', color: 'white' }}>For You</Link>
-          <Link href="/discover" style={{ textDecoration: 'none', color: 'white' }}>Discover</Link>
-          <Link href="/events" style={{ textDecoration: 'none', color: 'white' }}>Events</Link>
-          <Link href="/creators" style={{ textDecoration: 'none', color: 'white' }}>Creators</Link>
-          <Link href="/about" style={{ textDecoration: 'none', color: '#EC4899' }}>About</Link>
+        <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link href="/" style={{ 
+            textDecoration: 'none', 
+            color: 'var(--text-primary)',
+            transition: 'all 0.3s ease',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--hover-bg)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          >For You</Link>
+          <Link href="/discover" style={{ 
+            textDecoration: 'none', 
+            color: 'var(--text-primary)',
+            transition: 'all 0.3s ease',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--hover-bg)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          >Discover</Link>
+          <Link href="/events" style={{ 
+            textDecoration: 'none', 
+            color: 'var(--text-primary)',
+            transition: 'all 0.3s ease',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--hover-bg)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          >Events</Link>
+          <Link href="/creators" style={{ 
+            textDecoration: 'none', 
+            color: 'var(--text-primary)',
+            transition: 'all 0.3s ease',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--hover-bg)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          >Creators</Link>
+          <Link href="/about" style={{ 
+            textDecoration: 'none', 
+            color: 'var(--accent-primary)',
+            transition: 'all 0.3s ease',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            background: 'var(--hover-bg)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--accent-primary)';
+            e.currentTarget.style.color = 'white';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--hover-bg)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }}
+          >About</Link>
         </nav>
         <div style={{ 
           flex: 1, 
@@ -70,7 +147,7 @@ export default function AboutPage() {
           marginRight: '2rem'
         }}>
           <div style={{ position: 'relative', width: '100%' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', zIndex: 1 }} />
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
             <input
               type="search"
               className="search-bar"
@@ -78,7 +155,11 @@ export default function AboutPage() {
               style={{ 
                 width: '100%', 
                 paddingLeft: '40px',
-                fontSize: '16px'
+                fontSize: '16px',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-primary)',
+                color: 'var(--text-primary)',
+                borderRadius: '25px'
               }}
             />
           </div>
@@ -100,8 +181,8 @@ export default function AboutPage() {
                   }
                 }}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: '50%',
                   width: '40px',
                   height: '40px',
@@ -111,10 +192,10 @@ export default function AboutPage() {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
               >
-                <User size={20} color="white" />
+                <User size={20} style={{ color: 'var(--text-primary)' }} />
               </button>
               
               <div
@@ -124,15 +205,15 @@ export default function AboutPage() {
                   top: '100%',
                   right: 0,
                   marginTop: '0.5rem',
-                  background: 'rgba(255, 255, 255, 0.05)',
+                  background: 'var(--bg-card)',
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: '12px',
                   padding: '0.5rem',
                   minWidth: '200px',
                   display: 'none',
                   zIndex: 1000,
-                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                  boxShadow: 'var(--shadow-lg)'
                 }}
               >
                 <Link href="/dashboard" style={{ textDecoration: 'none' }}>
@@ -141,11 +222,11 @@ export default function AboutPage() {
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem',
-                    color: 'white',
+                    color: 'var(--text-primary)',
                     borderRadius: '8px',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     <User size={16} />
@@ -158,11 +239,11 @@ export default function AboutPage() {
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem',
-                    color: 'white',
+                    color: 'var(--text-primary)',
                     borderRadius: '8px',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     <Bell size={16} />
@@ -175,11 +256,11 @@ export default function AboutPage() {
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem',
-                    color: 'white',
+                    color: 'var(--text-primary)',
                     borderRadius: '8px',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     <User size={16} />
@@ -192,18 +273,22 @@ export default function AboutPage() {
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem',
-                    color: 'white',
+                    color: 'var(--text-primary)',
                     borderRadius: '8px',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     <Settings size={16} />
                     Settings
                   </div>
                 </Link>
-                <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.2)', margin: '0.5rem 0' }}></div>
+                
+                {/* Theme Toggle */}
+                <ThemeToggle />
+                
+                <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
                 <button
                   onClick={handleSignOut}
                   style={{
@@ -211,7 +296,7 @@ export default function AboutPage() {
                     alignItems: 'center',
                     gap: '0.75rem',
                     padding: '0.75rem',
-                    color: '#FCA5A5',
+                    color: 'var(--error)',
                     background: 'none',
                     border: 'none',
                     width: '100%',
@@ -220,7 +305,7 @@ export default function AboutPage() {
                     cursor: 'pointer',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--error)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   <LogOut size={16} />
@@ -233,8 +318,8 @@ export default function AboutPage() {
               <Link href="/login" style={{ textDecoration: 'none' }}>
                 <button style={{
                   background: 'transparent',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-primary)',
                   padding: '0.75rem 1.5rem',
                   borderRadius: '12px',
                   cursor: 'pointer',
@@ -242,7 +327,7 @@ export default function AboutPage() {
                   fontSize: '0.9rem',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   Sign in
@@ -250,7 +335,7 @@ export default function AboutPage() {
               </Link>
               <Link href="/signup" style={{ textDecoration: 'none' }}>
                 <button style={{
-                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  background: 'var(--gradient-primary)',
                   color: 'white',
                   border: 'none',
                   padding: '0.75rem 1.5rem',
@@ -259,15 +344,15 @@ export default function AboutPage() {
                   fontWeight: '600',
                   fontSize: '0.9rem',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  boxShadow: 'var(--shadow-md)'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                 }}
                 >
                   Sign up

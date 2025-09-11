@@ -26,12 +26,19 @@ export default function RiveLogo({
   // const booleanInput = useStateMachineInput(rive, 'State Machine 1', 'booleanInputName');
 
   return (
-    <div className={`rive-logo-container ${className}`} style={{ width, height }}>
+    <div className={`rive-logo-container ${className}`} style={{ 
+      width, 
+      height,
+      backgroundColor: 'var(--bg-primary)',
+      borderRadius: '12px',
+      overflow: 'hidden'
+    }}>
       <RiveComponent 
         style={{ 
           width: '100%', 
           height: '100%',
-          objectFit: 'contain'
+          objectFit: 'contain',
+          backgroundColor: 'transparent'
         }}
       />
     </div>
