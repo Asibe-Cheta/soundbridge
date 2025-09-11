@@ -1,24 +1,22 @@
 'use client';
 
 import React from 'react';
-import { useRive, useStateMachineInput } from '@rive-app/react-canvas';
+import { useRive } from '@rive-app/react-canvas';
 
 interface RiveLogoProps {
   className?: string;
   width?: number;
   height?: number;
   autoplay?: boolean;
-  loop?: boolean;
 }
 
 export default function RiveLogo({ 
   className = '',
   width = 500,
   height = 500,
-  autoplay = true,
-  loop = true
+  autoplay = true
 }: RiveLogoProps) {
-  const { rive, RiveComponent } = useRive({
+  const { RiveComponent } = useRive({
     src: '/animations/soundbridge-logo.riv', // Update this path to match your .riv file
     autoplay,
     stateMachines: 'State Machine 1', // Update this to match your Rive file's state machine name
