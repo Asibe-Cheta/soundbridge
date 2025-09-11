@@ -35,7 +35,11 @@ import {
   Pause,
   Heart,
   Share2,
-  Loader2
+  Loader2,
+  Upload,
+  Menu,
+  X,
+  Home
 } from 'lucide-react';
 
 export default function DiscoverPage() {
