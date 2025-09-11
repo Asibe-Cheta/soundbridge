@@ -2045,7 +2045,7 @@ export default function HomePage() {
                   {/* Track Info */}
                   <div>
                     <h3 style={{
-                      color: 'white',
+                      color: 'var(--text-primary)',
                       fontSize: '13px',
                       fontWeight: '600',
                       margin: '0 0 2px 0',
@@ -2057,8 +2057,9 @@ export default function HomePage() {
                       {track.title || 'Untitled Track'}
                     </h3>
                     <p style={{
-                      color: '#999',
+                      color: 'var(--text-primary)',
                       fontSize: '11px',
+                      fontWeight: '700',
                       margin: '0 0 4px 0',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
