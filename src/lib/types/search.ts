@@ -37,6 +37,7 @@ export interface AudioTrack {
   creator_id: string;
   file_url: string;
   cover_art_url?: string;
+  coverArt?: string; // Added for API compatibility
   duration: number;
   genre?: string;
   tags?: string[];

@@ -466,7 +466,7 @@ export default function HomePage() {
             console.log('✅ Setting tracks:', result.tracks.length);
             // Log each track's cover art status
             result.tracks.forEach((track: AudioTrack, index: number) => {
-              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.cover_art_url ? 'Yes' : 'No'}`);
+              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'}`);
             });
             setRecentTracks(result.tracks);
           } else {
@@ -1829,9 +1829,9 @@ export default function HomePage() {
                 >
                   {/* Image Container */}
                   <div style={{ position: 'relative', marginBottom: '8px' }}>
-                    {track.cover_art_url ? (
+                    {track.coverArt ? (
                       <Image
-                        src={track.cover_art_url}
+                        src={track.coverArt}
                         alt={track.title}
                         width={140}
                         height={140}
