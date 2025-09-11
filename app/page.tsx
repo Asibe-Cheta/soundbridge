@@ -1746,7 +1746,15 @@ export default function HomePage() {
             border: '1px solid var(--border-color)',
             display: isMobile ? 'none' : 'block'
           }}>
-                            <h3 className="heading-5 text-display" style={{ marginBottom: '1rem', color: 'var(--accent-primary)' }}>Trending Now</h3>
+                            <h3 style={{ 
+                              marginBottom: '1rem', 
+                              color: 'var(--accent-primary)',
+                              fontFamily: 'var(--font-display)',
+                              fontSize: 'var(--text-xl)',
+                              fontWeight: '600',
+                              lineHeight: 'var(--leading-snug)',
+                              letterSpacing: 'var(--tracking-tight)'
+                            }}>Trending Now</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {isLoadingTrending ? (
                 // Loading state
