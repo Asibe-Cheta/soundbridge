@@ -352,51 +352,7 @@ export default function EventsPage() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
-        {isMobile ? (
-          /* Mobile Header - Apple Music Style */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
-            {/* LEFT - Hamburger Menu */}
-            <button
-              id="mobile-menu-button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <Menu size={24} color="white" />
-            </button>
-
-            {/* CENTER - Small Logo */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              flex: 1
-            }}>
-              <Image
-                src="/images/logos/logo-trans-lockup.png"
-                alt="SoundBridge Logo"
-                width={80}
-                height={22}
-                priority
-                style={{ height: 'auto' }}
-              />
+      {/* Main Content */}
             </div>
 
             {/* RIGHT - Sign In / Profile */}
