@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import '../src/styles/themes.css';
@@ -102,16 +102,6 @@ export const metadata: Metadata = {
   category: 'music',
   classification: 'Music Platform',
   referrer: 'origin-when-cross-origin',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#DC2626' },
-    { media: '(prefers-color-scheme: dark)', color: '#DC2626' }
-  ],
-  colorScheme: 'light dark',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
   applicationName: 'SoundBridge',
   appleWebApp: {
     capable: true,
@@ -122,6 +112,17 @@ export const metadata: Metadata = {
     'msapplication-TileColor': '#DC2626',
     'msapplication-config': '/browserconfig.xml',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#DC2626' },
+    { media: '(prefers-color-scheme: dark)', color: '#DC2626' }
+  ],
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({

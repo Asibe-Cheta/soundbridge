@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
-import SoundBridgeMetallicLogo from '../../src/components/ui/SoundBridgeMetallicLogo';
+import RiveLogo from '../../src/components/ui/RiveLogo';
 import {
   Music,
   Users,
@@ -298,7 +298,7 @@ export default function AboutPage() {
             }
           }
         `}</style>
-        {/* Hero Section with Metallic Logo */}
+        {/* Hero Section with Rive Logo */}
         <section className="desktop-hero" style={{
           padding: '2rem',
           margin: '2rem',
@@ -395,7 +395,7 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* Right Side - Metallic Logo */}
+          {/* Right Side - Rive Logo */}
           <div style={{
             height: '500px',
             position: 'relative',
@@ -403,16 +403,12 @@ export default function AboutPage() {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <SoundBridgeMetallicLogo
+            <RiveLogo
               className="hero-logo"
-              params={{
-                patternScale: 2,
-                refraction: 0.015,
-                edge: 2,
-                patternBlur: 0.005,
-                liquid: 0.07,
-                speed: 0.3
-              }}
+              width={500}
+              height={500}
+              autoplay={true}
+              loop={true}
             />
           </div>
         </section>
@@ -435,16 +431,12 @@ export default function AboutPage() {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <SoundBridgeMetallicLogo
+            <RiveLogo
               className="mobile-hero-logo"
-              params={{
-                patternScale: 2,
-                refraction: 0.015,
-                edge: 2,
-                patternBlur: 0.005,
-                liquid: 0.07,
-                speed: 0.3
-              }}
+              width={400}
+              height={300}
+              autoplay={true}
+              loop={true}
             />
           </div>
           <div>
@@ -617,415 +609,6 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* How It Works Section */}
-        <section style={{ padding: '4rem 2rem', background: 'rgba(255, 255, 255, 0.02)' }}>
-          <div style={{
-            maxWidth: '1000px',
-            margin: '0 auto'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '3rem'
-            }}>
-              <div style={{
-                width: '60px',
-                height: '60px',
-                background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Target size={24} color="white" />
-              </div>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                margin: 0
-              }}>
-                How SoundBridge Works: LinkedIn Meets Spotify
-              </h2>
-            </div>
-
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '16px',
-              padding: '3rem',
-              marginBottom: '3rem'
-            }}>
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                SoundBridge fundamentally reimagines creator connections by combining the professional networking 
-                power of LinkedIn with the music discovery magic of Spotify. We&apos;ve created the world&apos;s first 
-                truly level playing field for musicians and creators.
-              </p>
-
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                Unlike traditional platforms where success depends on follower counts or algorithmic favor, 
-                SoundBridge ensures every creator - from bedroom producers to established artists - has equal 
-                opportunity to connect and collaborate. There&apos;s no hierarchy, no verified badges creating 
-                artificial barriers, and no need to hope your DM gets noticed in a crowded inbox.
-              </p>
-
-              <h3 style={{
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                color: '#EC4899',
-                marginBottom: '1.5rem',
-                marginTop: '2rem'
-              }}>
-                Real Collaboration, Made Simple:
-              </h3>
-
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                Every creator on SoundBridge sets their collaboration availability directly in their profile - 
-                it&apos;s a platform rule, not an option. Want to work with that producer whose track you love? 
-                Check their availability calendar. Interested in collaborating with a vocalist? See exactly 
-                when they&apos;re open for projects. No more sending messages into the void, hoping for a response.
-              </p>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1.5rem',
-                marginTop: '2rem'
-              }}>
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  textAlign: 'center'
-                }}>
-                  <Upload size={32} color="#EC4899" style={{ marginBottom: '1rem' }} />
-                  <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>Upload Freely</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
-                    No gatekeepers, no approval processes
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  textAlign: 'center'
-                }}>
-                  <Play size={32} color="#EC4899" style={{ marginBottom: '1rem' }} />
-                  <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>Stream Unlimited</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
-                    Discover music without restrictions
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  textAlign: 'center'
-                }}>
-                  <DollarSign size={32} color="#EC4899" style={{ marginBottom: '1rem' }} />
-                  <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>Get Paid Directly</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
-                    Fair compensation without excessive fees
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  textAlign: 'center'
-                }}>
-                  <Users size={32} color="#EC4899" style={{ marginBottom: '1rem' }} />
-                  <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>Connect Authentically</h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
-                    Meaningful professional relationships
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Mission Section */}
-        <section style={{ padding: '4rem 2rem' }}>
-          <div style={{
-            maxWidth: '1000px',
-            margin: '0 auto'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '3rem'
-            }}>
-              <div style={{
-                width: '60px',
-                height: '60px',
-                background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Heart size={24} color="white" />
-              </div>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                margin: 0
-              }}>
-                Our Mission
-              </h2>
-            </div>
-
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '16px',
-              padding: '3rem',
-              marginBottom: '3rem'
-            }}>
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                SoundBridge exists to democratize music discovery and creator success by building genuine 
-                connections between artists and their ideal audiences.
-              </p>
-
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                We believe that exceptional music and meaningful live experiences shouldn&apos;t depend on 
-                marketing budgets or algorithmic chance. Every creator deserves to find their community, 
-                and every music lover deserves to discover their next favorite artist or unmissable event.
-              </p>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '1.5rem',
-                marginTop: '2rem'
-              }}>
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h4 style={{ color: '#EC4899', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Users size={20} />
-                    Creator Control
-                  </h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    Creators control their destiny through direct audience relationships rather than platform dependence
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h4 style={{ color: '#EC4899', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Sparkles size={20} />
-                    Natural Discovery
-                  </h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    Discovery feels natural because it&apos;s built on genuine musical affinity rather than promotional spend
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h4 style={{ color: '#EC4899', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <MapPin size={20} />
-                    Local Scenes Thrive
-                  </h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    Local scenes thrive by connecting communities around shared musical passion
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h4 style={{ color: '#EC4899', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Globe size={20} />
-                    Global Connections
-                  </h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    Global connections form while maintaining the intimacy of local music culture
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h4 style={{ color: '#EC4899', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <DollarSign size={20} />
-                    Fair Compensation
-                  </h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    Fair compensation flows directly to artists without excessive intermediary fees
-                  </p>
-                </div>
-
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h4 style={{ color: '#EC4899', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Calendar size={20} />
-                    Seamless Collaboration
-                  </h4>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    Professional collaboration happens seamlessly through transparent availability and direct connection tools
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Vision Section */}
-        <section style={{ padding: '4rem 2rem', background: 'rgba(255, 255, 255, 0.02)' }}>
-          <div style={{
-            maxWidth: '1000px',
-            margin: '0 auto'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '3rem'
-            }}>
-              <div style={{
-                width: '60px',
-                height: '60px',
-                background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Globe size={24} color="white" />
-              </div>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                margin: 0
-              }}>
-                Our Vision for the Future
-              </h2>
-            </div>
-
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '16px',
-              padding: '3rem',
-              marginBottom: '3rem'
-            }}>
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                We envision a world where the distance between creators and their audiences disappears. 
-                Where a talented musician in Lagos can effortlessly connect with fans in London who share 
-                their musical sensibilities. Where live events find their perfect attendees not through 
-                expensive advertising, but through community-driven discovery.
-              </p>
-
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
-              }}>
-                SoundBridge is building the infrastructure for a more equitable music economy - one where 
-                success is determined by artistic merit and community connection rather than marketing reach 
-                or platform politics.
-              </p>
-
-              <div style={{
-                background: 'linear-gradient(45deg, rgba(220, 38, 38, 0.1), rgba(236, 72, 153, 0.1))',
-                border: '1px solid rgba(220, 38, 38, 0.3)',
-                borderRadius: '12px',
-                padding: '2rem',
-                marginTop: '2rem'
-              }}>
-                <p style={{
-                  fontSize: '1.1rem',
-                  lineHeight: '1.8',
-                  color: 'white',
-                  margin: 0
-                }}>
-                  Our ultimate goal is to foster a global community of music creators and enthusiasts who 
-                  support each other&apos;s growth, celebrate diverse musical expressions, and keep the power 
-                  of music discovery in the hands of the people who create and truly appreciate it.
-                </p>
-              </div>
-
-              <p style={{
-                fontSize: '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginTop: '2rem',
-                marginBottom: 0
-              }}>
-                Through technology that serves artistry and community that amplifies creativity, we&apos;re 
-                creating a future where every voice has the potential to be heard and every listener can 
-                discover their next musical obsession.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Call to Action */}
         <section style={{
           padding: '4rem 2rem',
@@ -1118,10 +701,10 @@ export default function AboutPage() {
             </Link>
           </div>
         </section>
-
-        {/* Footer */}
-        <Footer />
       </main>
+
+      {/* Footer */}
+      <Footer />
     </>
   );
 }

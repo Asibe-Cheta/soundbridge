@@ -2614,11 +2614,3 @@ select.form-input option:focus {
   }
 }
 
-/* MetallicPaint canvas container styles */
-.paint-container {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 200px;
-  min-height: 200px;
-}
