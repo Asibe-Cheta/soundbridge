@@ -197,7 +197,7 @@ export default function HomePage() {
     const audioTrack = {
       id: track.id,
       title: track.title,
-      artist: track.creator?.display_name || track.creator_name || 'Unknown Artist',
+      artist: track.artist || track.creator?.name || track.creator?.display_name || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
       artwork: track.cover_art_url || '',
@@ -464,9 +464,9 @@ export default function HomePage() {
           console.log('📊 API Response:', result);
           if (result.success && result.tracks) {
             console.log('✅ Setting tracks:', result.tracks.length);
-            // Log each track's cover art status
+            // Log each track's cover art and artist status
             result.tracks.forEach((track: AudioTrack, index: number) => {
-              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'}`);
+              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'} - Artist: "${track.artist || track.creator?.name || 'No artist data'}"`);
             });
             setRecentTracks(result.tracks);
           } else {
@@ -2064,7 +2064,7 @@ export default function HomePage() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {track.creator?.display_name || track.creator_name || 'Unknown Artist'}
+                      {track.artist || track.creator?.name || track.creator?.display_name || 'Unknown Artist'}
                     </p>
                     <div style={{
                       display: 'flex',
