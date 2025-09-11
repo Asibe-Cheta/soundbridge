@@ -83,7 +83,7 @@ export default function AboutPage() {
   };
 
   return (
-    <>
+    <div style={{ backgroundColor: '#000000', minHeight: '100vh' }}>
       {/* Header */}
       <header className="header">
         {isMobile ? (
@@ -861,7 +861,7 @@ export default function AboutPage() {
         )}
 
       {/* Main Content */}
-      <main className="main-container">
+      <main className="main-container" style={{ backgroundColor: '#000000' }}>
         <style jsx>{`
           @media (max-width: 768px) {
             .desktop-hero {
@@ -1287,6 +1287,6 @@ export default function AboutPage() {
 
       {/* Footer */}
       <Footer />
-    </>
+    </div>
   );
 }

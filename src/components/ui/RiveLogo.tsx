@@ -29,7 +29,7 @@ export default function RiveLogo({
     <div className={`rive-logo-container ${className}`} style={{ 
       width, 
       height,
-      backgroundColor: 'var(--bg-primary)',
+      backgroundColor: '#000000',
       borderRadius: '12px',
       overflow: 'hidden'
     }}>
@@ -38,7 +38,7 @@ export default function RiveLogo({
           width: '100%', 
           height: '100%',
           objectFit: 'contain',
-          backgroundColor: 'transparent'
+          backgroundColor: '#000000'
         }}
       />
     </div>
