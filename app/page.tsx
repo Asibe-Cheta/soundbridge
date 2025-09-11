@@ -28,7 +28,9 @@ export default function HomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [recentTracks, setRecentTracks] = React.useState<AudioTrack[]>([]);
+  const [trendingTracks, setTrendingTracks] = React.useState<AudioTrack[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
+  const [isLoadingTrending, setIsLoadingTrending] = React.useState(true);
   const [likedTracks, setLikedTracks] = React.useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedTrackForShare, setSelectedTrackForShare] = useState<AudioTrack | null>(null);
@@ -488,6 +490,40 @@ export default function HomePage() {
     // Load tracks
     loadRecentTracks();
   }, [personalizedFeed]);
+
+  // Load trending tracks
+  React.useEffect(() => {
+    const loadTrendingTracks = async () => {
+      try {
+        console.log('🔥 Loading trending tracks...');
+        setIsLoadingTrending(true);
+        
+        const response = await fetch('/api/audio/trending?t=' + Date.now());
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('🔥 Trending API Response:', result);
+          if (result.success && result.tracks) {
+            console.log('✅ Setting trending tracks:', result.tracks.length);
+            result.tracks.forEach((track: AudioTrack, index: number) => {
+              console.log(`🔥 Track ${index + 1}: "${track.title}" - Plays: ${track.plays} - Artist: "${track.artist}"`);
+            });
+            setTrendingTracks(result.tracks);
+          } else {
+            console.log('❌ No trending tracks in response');
+          }
+        } else {
+          console.error('❌ Trending API Error:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('❌ Error loading trending tracks:', error);
+      } finally {
+        setIsLoadingTrending(false);
+      }
+    };
+
+    loadTrendingTracks();
+  }, []);
 
   // Check which tracks are liked by the current user
   React.useEffect(() => {
@@ -1710,52 +1746,64 @@ export default function HomePage() {
             border: '1px solid var(--border-color)',
             display: isMobile ? 'none' : 'block'
           }}>
-                            <h3 className="heading-5 text-display" style={{ marginBottom: '1rem', color: '#EC4899' }}>Trending Now</h3>
+                            <h3 className="heading-5 text-display" style={{ marginBottom: '1rem', color: 'var(--accent-primary)' }}>Trending Now</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: '50px', height: '50px', background: '#333', borderRadius: '8px' }}></div>
-                <div>
-                  <div style={{ fontWeight: '600' }}>Gospel Fusion</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Ada Grace</div>
+              {isLoadingTrending ? (
+                // Loading state
+                Array.from({ length: 2 }).map((_, index) => (
+                  <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ width: '50px', height: '50px', background: 'var(--bg-secondary)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: '16px', background: 'var(--bg-secondary)', borderRadius: '4px', marginBottom: '4px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                      <div style={{ height: '12px', background: 'var(--bg-secondary)', borderRadius: '4px', width: '60%', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                    </div>
+                  </div>
+                ))
+              ) : trendingTracks.length > 0 ? (
+                // Show trending tracks
+                trendingTracks.slice(0, 2).map((track, index) => (
+                  <div key={track.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ width: '50px', height: '50px', background: 'var(--bg-secondary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {track.coverArt ? (
+                        <Image
+                          src={track.coverArt}
+                          alt={track.title}
+                          width={50}
+                          height={50}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                        />
+                      ) : (
+                        <Music size={20} color="var(--text-secondary)" />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{track.title}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700' }}>{track.artist}</div>
+                    </div>
+                    <button 
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: 'var(--accent-primary)', 
+                        fontSize: '1.2rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        transform: 'scale(1)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      onClick={() => handlePlayTrack(track)}
+                    >
+                      <Play size={20} />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                // No trending tracks
+                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem' }}>
+                  No trending tracks available
                 </div>
-                <button 
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: '#DC2626', 
-                    fontSize: '1.2rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    transform: 'scale(1)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <Play size={20} />
-                </button>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: '50px', height: '50px', background: '#333', borderRadius: '8px' }}></div>
-                <div>
-                  <div style={{ fontWeight: '600' }}>Lagos Nights</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>DJ Emeka</div>
-                </div>
-                <button 
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: '#DC2626', 
-                    fontSize: '1.2rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    transform: 'scale(1)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <Play size={20} />
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </section>
