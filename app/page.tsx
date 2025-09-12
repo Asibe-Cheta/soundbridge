@@ -538,16 +538,20 @@ export default function HomePage() {
       }
 
       try {
+        console.log('🔥 Loading friends activities...');
         setIsLoadingFriends(true);
         const response = await fetch('/api/friends/activities');
+        console.log('🔥 Friends activities response status:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('🔥 Friends activities data:', data);
           setFriendsActivities(data.activities || []);
         } else {
-          console.error('Failed to fetch friends activities');
+          const errorData = await response.json();
+          console.error('❌ Failed to fetch friends activities:', errorData);
         }
       } catch (error) {
-        console.error('Error fetching friends activities:', error);
+        console.error('❌ Error fetching friends activities:', error);
       } finally {
         setIsLoadingFriends(false);
       }
@@ -2529,40 +2533,46 @@ export default function HomePage() {
 
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions" position="top-right">
-        {/* Personalized Feed Status */}
-        {user && (
-          <div style={{ 
-            marginBottom: '1rem',
-            padding: '0.75rem',
-            background: hasPersonalizedData ? 'rgba(236, 72, 153, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-            border: `1px solid ${hasPersonalizedData ? 'rgba(236, 72, 153, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
-            borderRadius: '12px',
-            textAlign: 'center'
-          }}>
-            {hasPersonalizedData ? (
-              <>
-                <div style={{ color: '#EC4899', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <Sparkles size={12} />
-                  Personalized Feed Active
-                </div>
-                <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
-                  Content tailored to your preferences
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ color: '#999', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                  Generic Feed
-                </div>
-                <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem' }}>
-                  Complete onboarding for personalized content
-                </div>
-              </>
-            )}
-          </div>
-        )}
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{
+          maxHeight: '500px',
+          overflowY: 'auto',
+          paddingRight: '8px'
+        }}
+        className="scrollbar-thin">
+          {/* Personalized Feed Status */}
+          {user && (
+            <div style={{ 
+              marginBottom: '1rem',
+              padding: '0.75rem',
+              background: hasPersonalizedData ? 'rgba(236, 72, 153, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+              border: `1px solid ${hasPersonalizedData ? 'rgba(236, 72, 153, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+              borderRadius: '12px',
+              textAlign: 'center'
+            }}>
+              {hasPersonalizedData ? (
+                <>
+                  <div style={{ color: '#EC4899', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <Sparkles size={12} />
+                    Personalized Feed Active
+                  </div>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
+                    Content tailored to your preferences
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ color: '#999', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Generic Feed
+                  </div>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem' }}>
+                    Complete onboarding for personalized content
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Link href="/upload" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'transparent',
@@ -2717,6 +2727,7 @@ export default function HomePage() {
               {user ? 'No friends activities yet' : 'Sign in to see friends activities'}
             </div>
           )}
+        </div>
         </div>
       </FloatingCard>
 

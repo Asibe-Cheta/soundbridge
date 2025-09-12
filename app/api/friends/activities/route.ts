@@ -3,16 +3,20 @@ import { createApiClientWithCookies } from '@/src/lib/supabase-api';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔥 Friends Activities API called');
     const supabase = await createApiClientWithCookies();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.log('❌ Authentication error:', authError);
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
+
+    console.log('✅ User authenticated:', user.id);
 
     // Get friends (mutual follows - people who follow each other)
     const { data: friends, error: friendsError } = await supabase
@@ -29,21 +33,26 @@ export async function GET(request: NextRequest) {
       .eq('follower_id', user.id);
 
     if (friendsError) {
-      console.error('Error fetching friends:', friendsError);
+      console.error('❌ Error fetching friends:', friendsError);
       return NextResponse.json(
         { error: 'Failed to fetch friends' },
         { status: 500 }
       );
     }
 
+    console.log('👥 Friends found:', friends?.length || 0);
+
     // Filter to get mutual follows only
     const friendIds = friends?.map(f => f.following_id) || [];
     
     if (friendIds.length === 0) {
+      console.log('❌ No friends found, returning empty activities');
       return NextResponse.json({
         activities: []
       });
     }
+
+    console.log('🔍 Friend IDs:', friendIds);
 
     // Get mutual follows (people who also follow the current user)
     const { data: mutualFollows, error: mutualError } = await supabase
@@ -175,6 +184,9 @@ export async function GET(request: NextRequest) {
     const sortedActivities = activities
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
+
+    console.log('🎉 Final activities count:', sortedActivities.length);
+    console.log('🎉 Activities:', sortedActivities);
 
     return NextResponse.json({
       activities: sortedActivities,
