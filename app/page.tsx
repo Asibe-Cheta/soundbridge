@@ -46,6 +46,10 @@ export default function HomePage() {
   const [podcasts, setPodcasts] = useState<AudioTrack[]>([]);
   const [isLoadingPodcasts, setIsLoadingPodcasts] = useState(true);
 
+  // Friends activities state
+  const [friendsActivities, setFriendsActivities] = useState<any[]>([]);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(true);
+
   // Handle mobile responsiveness
   useEffect(() => {
     const handleResize = () => {
@@ -524,6 +528,33 @@ export default function HomePage() {
 
     loadTrendingTracks();
   }, []);
+
+  // Load friends activities
+  React.useEffect(() => {
+    const loadFriendsActivities = async () => {
+      if (!user) {
+        setIsLoadingFriends(false);
+        return;
+      }
+
+      try {
+        setIsLoadingFriends(true);
+        const response = await fetch('/api/friends/activities');
+        if (response.ok) {
+          const data = await response.json();
+          setFriendsActivities(data.activities || []);
+        } else {
+          console.error('Failed to fetch friends activities');
+        }
+      } catch (error) {
+        console.error('Error fetching friends activities:', error);
+      } finally {
+        setIsLoadingFriends(false);
+      }
+    };
+
+    loadFriendsActivities();
+  }, [user]);
 
   // Check which tracks are liked by the current user
   React.useEffect(() => {
@@ -1758,15 +1789,11 @@ export default function HomePage() {
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '1rem',
-              maxHeight: '300px',
-              overflowY: 'auto',
-              paddingRight: '8px'
-            }}
-            className="scrollbar-thin">
+              gap: '1rem'
+            }}>
               {isLoadingTrending ? (
                 // Loading state
-                Array.from({ length: 5 }).map((_, index) => (
+                Array.from({ length: 3 }).map((_, index) => (
                   <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '50px', height: '50px', background: 'var(--bg-secondary)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
                     <div style={{ flex: 1 }}>
@@ -1776,8 +1803,8 @@ export default function HomePage() {
                   </div>
                 ))
               ) : trendingTracks.length > 0 ? (
-                // Show all trending tracks with scroll
-                trendingTracks.map((track, index) => (
+                // Show only first 3 trending tracks
+                trendingTracks.slice(0, 3).map((track, index) => (
                   <div key={track.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
@@ -2646,9 +2673,50 @@ export default function HomePage() {
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-          <div>John is listening to &quot;Praise Medley&quot;</div>
-          <div>Sarah posted a new track</div>
-          <div>Mike joined Gospel Night event</div>
+          {isLoadingFriends ? (
+            // Loading state
+            Array.from({ length: 2 }).map((_, index) => (
+              <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '32px', height: '32px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: '12px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', marginBottom: '4px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                  <div style={{ height: '10px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', width: '70%', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                </div>
+              </div>
+            ))
+          ) : friendsActivities.length > 0 ? (
+            // Show friends activities
+            friendsActivities.slice(0, 2).map((activity, index) => (
+              <div key={activity.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '32px', height: '32px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {activity.creator.profile_image_url ? (
+                    <Image
+                      src={activity.creator.profile_image_url}
+                      alt={activity.creator.display_name}
+                      width={32}
+                      height={32}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <User size={16} color="rgba(255, 255, 255, 0.6)" />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: '500' }}>
+                    {activity.creator.display_name}
+                  </div>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activity.action} "{activity.content.title}"
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            // No friends activities
+            <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)', padding: '1rem', fontSize: '0.8rem' }}>
+              {user ? 'No friends activities yet' : 'Sign in to see friends activities'}
+            </div>
+          )}
         </div>
       </FloatingCard>
 
