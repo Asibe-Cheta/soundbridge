@@ -1,21 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
 import {
-  LogOut,
   Settings,
   Upload,
   Calendar,
   Music,
   BarChart3,
   Users,
-  Bell,
   Activity,
   AlertCircle,
   X,
@@ -30,7 +27,6 @@ import {
   Home,
   Clock3
 } from 'lucide-react';
-import Image from 'next/image';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -107,140 +103,6 @@ export default function DashboardPage() {
         background: 'var(--bg-primary)',
         color: 'var(--text-primary)'
       }}>
-        {/* Header */}
-        <header style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-          width: '100%',
-          borderBottom: '1px solid var(--border-primary)',
-          background: 'var(--bg-secondary)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)'
-        }}>
-          <div style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            padding: isMobile ? '0 0.5rem' : '0 1rem',
-            height: isMobile ? '3.5rem' : '4rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            {/* Left Side - SoundBridge Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1rem' }}>
-              <Link 
-                href="/" 
-                style={{ 
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  transition: 'opacity 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                <Image
-                  src="/images/logos/logo-trans.png"
-                  alt="SoundBridge"
-                  width={isMobile ? 150 : 200}
-                  height={isMobile ? 45 : 60}
-                  style={{
-                    height: 'auto'
-                  }}
-                />
-              </Link>
-            </div>
-
-            {/* Center - Dashboard Title and Welcome */}
-            <div style={{ 
-              display: isMobile ? 'none' : 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem' 
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                  borderRadius: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
-                }}>
-                  <Activity size={20} style={{ color: 'white' }} />
-                </div>
-                <div>
-                  <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>Welcome back, {profile?.display_name || user.email}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Dashboard Title */}
-            {isMobile && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{
-                  width: '2rem',
-                  height: '2rem',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                  borderRadius: '0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
-                }}>
-                  <Activity size={16} style={{ color: 'white' }} />
-                </div>
-                <h1 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
-              </div>
-            )}
-
-            {/* Right Side - Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '0.75rem' }}>
-              <button style={{
-                padding: isMobile ? '0.5rem' : '0.5rem 1rem',
-                background: 'var(--hover-bg)',
-                border: '1px solid var(--border-primary)',
-                borderRadius: '0.5rem',
-                color: 'var(--text-primary)',
-                fontSize: isMobile ? '0.75rem' : '0.875rem',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}>
-                <Bell size={isMobile ? 14 : 16} />
-                {!isMobile && 'Notifications'}
-              </button>
-              <button
-                onClick={handleSignOut}
-                style={{
-                  padding: isMobile ? '0.5rem' : '0.5rem 1rem',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: 'white',
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <LogOut size={isMobile ? 14 : 16} />
-                {!isMobile && 'Sign Out'}
-              </button>
-            </div>
-          </div>
-        </header>
 
         {/* Main Content */}
         <main style={{ 

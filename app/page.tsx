@@ -316,13 +316,19 @@ export default function HomePage() {
     } catch (err) {
       console.error('Failed to copy link:', err);
     }
-    setOpenDropdownId(null);
+    // Add a small delay before closing the dropdown to ensure the click is fully processed
+    setTimeout(() => {
+      setOpenDropdownId(null);
+    }, 150);
   };
 
   const handleShareTrack = (track: AudioTrack) => {
     setSelectedTrackForShare(track);
     setShareModalOpen(true);
-    setOpenDropdownId(null);
+    // Add a small delay before closing the dropdown to ensure the click is fully processed
+    setTimeout(() => {
+      setOpenDropdownId(null);
+    }, 150);
   };
 
   const toggleDropdown = (trackId: string) => {
@@ -980,6 +986,7 @@ export default function HomePage() {
 
                     {/* Three Dots Button */}
                     <button 
+                      className="dropdown-container"
                       style={{ 
                         position: 'absolute',
                         top: '48px',
@@ -1013,7 +1020,7 @@ export default function HomePage() {
 
                     {/* Dropdown Menu */}
                     {openDropdownId === track.id && (
-                      <div style={{
+                      <div className="dropdown-container" style={{
                         position: 'absolute',
                         top: '88px',
                         right: '8px',
@@ -1042,7 +1049,7 @@ export default function HomePage() {
                             fontSize: '14px',
                             transition: 'background 0.2s ease'
                           }}
-                          onClick={(e) => {
+                          onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleCopyLink(track);
@@ -1073,7 +1080,7 @@ export default function HomePage() {
                             fontSize: '14px',
                             transition: 'background 0.2s ease'
                           }}
-                          onClick={(e) => {
+                          onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleShareTrack(track);

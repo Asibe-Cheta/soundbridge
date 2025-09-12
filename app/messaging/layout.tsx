@@ -1,5 +1,4 @@
 import { AuthProvider } from "@/src/contexts/AuthContext";
-import { Header } from "@/src/components/layout/Header";
 import { Toaster } from "@/src/components/ui/Toast";
 
 export default function MessagingLayout({
@@ -9,8 +8,7 @@ export default function MessagingLayout({
 }) {
   return (
     <AuthProvider>
-      <Header />
-      <main className="pt-16">
+      <main>
         {children}
       </main>
       <Toaster />
