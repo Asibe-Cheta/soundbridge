@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { Footer } from '../../src/components/layout/Footer';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
-import SearchDropdown from '@/src/components/search/SearchDropdown';
 import {
+  Users,
   User,
   Bell,
   Settings,
@@ -16,10 +17,21 @@ import {
   Menu,
   X,
   Upload,
-  Calendar
+  Calendar,
+  Mic,
+  BookOpen,
+  FileText,
+  HelpCircle,
+  ExternalLink,
+  Download,
+  PlayCircle,
+  ArrowRight,
+  CheckCircle,
+  Star
 } from 'lucide-react';
+import SearchDropdown from '@/src/components/search/SearchDropdown';
 
-export default function Navbar() {
+export default function ResourcesPage() {
   const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -70,7 +82,7 @@ export default function Navbar() {
   };
 
   return (
-    <>
+    <div style={{ backgroundColor: 'var(--bg-primary)', minHeight: '100vh' }}>
       {/* Header */}
       <header className="header">
         {isMobile ? (
@@ -667,191 +679,266 @@ export default function Navbar() {
     )}
   </header>
 
-      {/* Mobile Menu Overlay - Apple Music Style */}
-      {isMobile && isMobileMenuOpen && (
-        <div
-          id="mobile-menu"
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            background: 'rgba(0, 0, 0, 0.95)',
-            backdropFilter: 'blur(20px)',
-            zIndex: 999,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '1rem',
-            animation: 'slideIn 0.3s ease-out'
-          }}
-        >
-          {/* Mobile Menu Header - Apple Music Style */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '2rem',
-            padding: '1rem 0'
-          }}>
-            <div className="logo">
-              <Link href="/">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={100}
-                  height={28}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </Link>
+        {/* Mobile Menu Overlay - Apple Music Style */}
+        {isMobile && isMobileMenuOpen && (
+          <div
+            id="mobile-menu"
+            style={{
+              position: 'fixed',
+              top: '0',
+              left: '0',
+              right: '0',
+              bottom: '0',
+              background: 'rgba(0, 0, 0, 0.95)',
+              backdropFilter: 'blur(20px)',
+              zIndex: 999,
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '1rem',
+              animation: 'slideIn 0.3s ease-out'
+            }}
+          >
+            {/* Mobile Menu Header - Apple Music Style */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '2rem',
+              padding: '1rem 0'
+            }}>
+              <div className="logo">
+                <Link href="/">
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={100}
+                    height={28}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </Link>
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+              >
+                <X size={16} color="white" />
+              </button>
             </div>
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            >
-              <X size={16} color="white" />
-            </button>
-          </div>
 
-          {/* Mobile Navigation - Apple Music Style */}
-          <nav style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '0.5rem',
-            marginBottom: '2rem'
+            {/* Mobile Navigation - Apple Music Style */}
+            <nav style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.5rem',
+              marginBottom: '2rem'
+            }}>
+              <Link 
+                href="/" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'white',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  fontSize: '17px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <Home size={20} style={{ color: '#DC2626' }} />
+                For You
+              </Link>
+              <Link 
+                href="/discover" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'white',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  fontSize: '17px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <Search size={20} style={{ color: '#EC4899' }} />
+                Discover
+              </Link>
+              <Link 
+                href="/events" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'white',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  fontSize: '17px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <Calendar size={20} style={{ color: '#F97316' }} />
+                Events
+              </Link>
+              <Link 
+                href="/creators" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'white',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  fontSize: '17px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <Users size={20} style={{ color: '#10B981' }} />
+                Creators
+              </Link>
+              <Link 
+                href="/about" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'white',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  fontSize: '17px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <Users size={20} style={{ color: '#8B5CF6' }} />
+                About
+              </Link>
+            </nav>
+          </div>
+        )}
+
+      {/* Main Content */}
+      <main className="main-container" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        {/* Hero Section */}
+        <section style={{
+          padding: '4rem 2rem',
+          textAlign: 'center',
+          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
+          borderBottom: '1px solid var(--border-color)'
+        }}>
+          <div style={{
+            maxWidth: '800px',
+            margin: '0 auto'
           }}>
-            <Link 
-              href="/" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <Home size={20} style={{ color: '#DC2626' }} />
-              For You
-            </Link>
-            <Link 
-              href="/discover" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <Search size={20} style={{ color: '#EC4899' }} />
-              Discover
-            </Link>
-            <Link 
-              href="/events" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <Calendar size={20} style={{ color: '#F97316' }} />
-              Events
-            </Link>
-            <Link 
-              href="/creators" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <User size={20} style={{ color: '#10B981' }} />
-              Creators
-            </Link>
-            <Link 
-              href="/about" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <User size={20} style={{ color: '#8B5CF6' }} />
-              About
-            </Link>
-          </nav>
-        </div>
-      )}
-    </>
+            <h1 style={{
+              fontSize: '3rem',
+              fontWeight: '800',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              marginBottom: '1rem',
+              lineHeight: '1.2'
+            }}>
+              Resources
+            </h1>
+            <p style={{
+              fontSize: '1.25rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.6',
+              marginBottom: '2rem'
+            }}>
+              Everything you need to succeed on SoundBridge. From getting started guides to advanced tips for creators.
+            </p>
+          </div>
+        </section>
+
+        {/* Placeholder Content Section */}
+        <section style={{
+          padding: '4rem 2rem',
+          maxWidth: '1200px',
+          margin: '0 auto'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '4rem 2rem',
+            background: 'var(--bg-secondary)',
+            borderRadius: '16px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <BookOpen size={64} color="var(--accent-primary)" style={{ marginBottom: '2rem' }} />
+            <h2 style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem'
+            }}>
+              Content Coming Soon
+            </h2>
+            <p style={{
+              fontSize: '1.1rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.6',
+              maxWidth: '500px',
+              margin: '0 auto'
+            }}>
+              We're preparing comprehensive resources to help you make the most of SoundBridge. 
+              Check back soon for guides, tutorials, and helpful content.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <Footer />
+    </div>
   );
 }

@@ -60,7 +60,6 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
   const event = events[index];
 
   if (!event) {
-    // Empty cell (no event data)
     return <div style={style}></div>;
   }
 
@@ -70,117 +69,135 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
         href={`/events/${event.id}`} 
         style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}
       >
-        <div style={{
+        <div className="event-card" style={{ 
+          width: '100%',
+          height: `${EVENT_ITEM_HEIGHT - GRID_GAP}px`,
           background: 'var(--bg-card)',
           border: '1px solid var(--border-primary)',
-          borderRadius: '12px',
-          padding: '1rem',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
+          borderRadius: '16px',
+          overflow: 'hidden',
           transition: 'all 0.3s ease',
           cursor: 'pointer',
-          boxShadow: 'var(--shadow-sm)'
+          position: 'relative'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+          e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+          e.currentTarget.style.borderColor = 'var(--accent-primary)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'var(--border-primary)';
         }}
-      >
-        {/* Event Image */}
-        <div style={{ 
-                width: '100%',
-            height: '120px',
-              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-            borderRadius: '8px',
-            marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '1.2rem',
-            fontWeight: '600'
-          }}>
-            {event.title?.charAt(0) || 'E'}
-        </div>
-
-        {/* Event Details */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ 
-              color: 'var(--text-primary)',
-            fontSize: '1.1rem', 
-            fontWeight: '600', 
-            marginBottom: '0.5rem',
-            lineHeight: '1.3',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
+        >
+          {/* Event Image */}
+          <div style={{
+            width: '100%',
+            height: '180px',
+            background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+            position: 'relative',
             overflow: 'hidden'
           }}>
-              {event.title || 'Untitled Event'}
-          </h3>
+            {event.image_url ? (
+              <Image
+                src={event.image_url}
+                alt={event.title}
+                fill
+                style={{ objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                color: 'white',
+                fontSize: '3rem'
+              }}>
+                <Music />
+              </div>
+            )}
             
-            <p style={{
-              color: 'var(--text-secondary)',
-              fontSize: '0.9rem',
-              marginBottom: '0.75rem',
+            {/* Event Category Badge */}
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              background: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              textTransform: 'uppercase'
+            }}>
+              {event.category}
+            </div>
+
+            {/* Price Badge */}
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              fontWeight: '600'
+            }}>
+              {event.price === 0 ? 'Free' : `$${event.price}`}
+            </div>
+          </div>
+
+          {/* Event Details */}
+          <div style={{ padding: '1rem' }}>
+            <h3 style={{
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              marginBottom: '0.5rem',
+              color: 'var(--text-primary)',
+              lineHeight: '1.3',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              lineHeight: '1.4'
+              WebkitBoxOrient: 'vertical' as const,
+              overflow: 'hidden'
             }}>
-              {event.description || 'No description available'}
+              {event.title}
+            </h3>
+
+            <p style={{
+              fontSize: '0.9rem',
+              color: 'var(--text-secondary)',
+              marginBottom: '0.75rem',
+              lineHeight: '1.4',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical' as const,
+              overflow: 'hidden'
+            }}>
+              {event.description}
             </p>
 
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-              gap: '0.5rem',
-              marginBottom: '0.75rem',
-              color: 'var(--text-secondary)',
-            fontSize: '0.85rem'
-          }}>
-              <Calendar size={14} />
-              <span>{event.event_date || 'Date TBD'}</span>
-          </div>
+            {/* Event Meta */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                <Calendar size={14} />
+                <span>{new Date(event.date).toLocaleDateString()}</span>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                <User size={14} />
+                <span>{event.location}</span>
+              </div>
 
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-              gap: '0.5rem',
-              marginBottom: '1rem',
-              color: 'var(--text-secondary)',
-            fontSize: '0.85rem'
-          }}>
-              <Users size={14} />
-              <span>{event.attendeeCount || 0} attendees</span>
-          </div>
-
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginTop: 'auto',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid var(--border-primary)'
-            }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-                gap: '0.25rem',
-                color: 'var(--accent-primary)',
-                fontSize: '0.9rem',
-                fontWeight: '500'
-              }}>
-                <span>{event.category || 'General'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                <Users size={14} />
+                <span>{event.attendeeCount || 0} attendees</span>
+              </div>
             </div>
-        </div>
-      </div>
+          </div>
         </div>
       </Link>
     </div>
@@ -190,28 +207,18 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
 export default function EventsPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const [eventsState, eventsActions] = useEvents();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedDate, setSelectedDate] = useState('all');
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
-  const [columnsCount, setColumnsCount] = useState(3);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Handle mobile responsiveness
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+  // Get events data from the hook
+  const [eventsState, eventsActions] = useEvents();
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Events are loaded automatically by the useEvents hook
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -227,11 +234,12 @@ export default function EventsPage() {
     let filtered = [...(eventsState.events || [])];
 
     // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(event =>
-        event.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(event => 
+        event.title.toLowerCase().includes(query) ||
+        event.description.toLowerCase().includes(query) ||
+        event.location.toLowerCase().includes(query)
       );
     }
 
@@ -249,15 +257,22 @@ export default function EventsPage() {
     if (selectedDate !== 'all') {
       const now = new Date();
       filtered = filtered.filter(event => {
-        const eventDate = new Date(event.event_date);
+        const eventDate = new Date(event.date);
         switch (selectedDate) {
           case 'today':
             return eventDate.toDateString() === now.toDateString();
+          case 'tomorrow':
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            return eventDate.toDateString() === tomorrow.toDateString();
           case 'this-week':
-            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const weekFromNow = new Date(now);
+            weekFromNow.setDate(weekFromNow.getDate() + 7);
             return eventDate >= now && eventDate <= weekFromNow;
           case 'this-month':
-            return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear();
+            const monthFromNow = new Date(now);
+            monthFromNow.setMonth(monthFromNow.getMonth() + 1);
+            return eventDate >= now && eventDate <= monthFromNow;
           default:
             return true;
         }
@@ -271,12 +286,10 @@ export default function EventsPage() {
         switch (selectedPrice) {
           case 'free':
             return price === 0;
-          case 'under-25':
-            return price > 0 && price <= 25;
           case 'under-50':
-            return price > 25 && price <= 50;
+            return price > 0 && price < 50;
           case 'over-50':
-            return price > 50;
+            return price >= 50;
           default:
             return true;
         }
@@ -288,14 +301,17 @@ export default function EventsPage() {
       case 'recent':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
+      case 'upcoming':
+        filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        break;
       case 'popular':
         filtered.sort((a, b) => (b.attendeeCount || 0) - (a.attendeeCount || 0));
         break;
-      case 'upcoming':
-        filtered.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+      case 'price-low':
+        filtered.sort((a, b) => ((a as any).price || 0) - ((b as any).price || 0));
         break;
-      case 'alphabetical':
-        filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'price-high':
+        filtered.sort((a, b) => ((b as any).price || 0) - ((a as any).price || 0));
         break;
     }
 
@@ -304,29 +320,24 @@ export default function EventsPage() {
 
   // Calculate grid dimensions
   const calculateColumns = useCallback((containerWidth: number) => {
-    const availableWidth = containerWidth - (GRID_GAP * 2);
-    const cols = Math.floor(availableWidth / (EVENT_CARD_WIDTH + GRID_GAP));
-    return Math.max(1, Math.min(cols, 4));
+    const availableWidth = containerWidth - GRID_GAP;
+    const cardWidthWithGap = EVENT_CARD_WIDTH + GRID_GAP;
+    return Math.max(1, Math.floor(availableWidth / cardWidthWithGap));
   }, []);
 
-  // Update columns count when container width changes
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      const container = document.querySelector('.events-grid-container');
-      if (container) {
-        const newColumns = calculateColumns(container.clientWidth);
-        setColumnsCount(newColumns);
+      // Trigger re-render when window resizes
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('resize'));
       }
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [calculateColumns]);
-
-  const rowCount = Math.ceil(filteredEvents.length / columnsCount);
-
-  const hasActiveFilters = searchQuery || selectedGenre !== 'all' || selectedLocation !== 'all' || selectedDate !== 'all' || selectedPrice !== 'all';
+  }, []);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -337,765 +348,49 @@ export default function EventsPage() {
     setSortBy('recent');
   };
 
-  // Mock data for filters
-  const genres = [
+  const hasActiveFilters = searchQuery || selectedGenre !== 'all' || selectedLocation !== 'all' || selectedDate !== 'all' || selectedPrice !== 'all';
+
+  // Event categories
+  const categories = [
     { value: 'all', label: 'All Categories' },
-    { value: 'Music', label: 'Music' },
-    { value: 'Comedy', label: 'Comedy' },
-    { value: 'Art', label: 'Art' },
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Business', label: 'Business' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Sports', label: 'Sports' },
-    { value: 'Food', label: 'Food & Drink' },
-    { value: 'Health', label: 'Health & Wellness' }
+    { value: 'music', label: 'Music' },
+    { value: 'comedy', label: 'Comedy' },
+    { value: 'sports', label: 'Sports' },
+    { value: 'art', label: 'Art & Culture' },
+    { value: 'food', label: 'Food & Drink' },
+    { value: 'business', label: 'Business' },
+    { value: 'education', label: 'Education' },
+    { value: 'technology', label: 'Technology' },
+    { value: 'health', label: 'Health & Wellness' }
   ];
 
   const locations = [
     { value: 'all', label: 'All Locations' },
-    { value: 'New York', label: 'New York' },
-    { value: 'Los Angeles', label: 'Los Angeles' },
-    { value: 'Chicago', label: 'Chicago' },
-    { value: 'Houston', label: 'Houston' },
-    { value: 'Phoenix', label: 'Phoenix' },
-    { value: 'Philadelphia', label: 'Philadelphia' },
-    { value: 'San Antonio', label: 'San Antonio' },
-    { value: 'San Diego', label: 'San Diego' },
-    { value: 'Dallas', label: 'Dallas' }
+    { value: 'london', label: 'London, UK' },
+    { value: 'lagos', label: 'Lagos, Nigeria' },
+    { value: 'abuja', label: 'Abuja, Nigeria' },
+    { value: 'manchester', label: 'Manchester, UK' },
+    { value: 'birmingham', label: 'Birmingham, UK' },
+    { value: 'liverpool', label: 'Liverpool, UK' }
   ];
 
-  const dateRanges = [
-    { value: 'all', label: 'Any Date' },
+  const dateFilters = [
+    { value: 'all', label: 'All Dates' },
     { value: 'today', label: 'Today' },
+    { value: 'tomorrow', label: 'Tomorrow' },
     { value: 'this-week', label: 'This Week' },
     { value: 'this-month', label: 'This Month' }
   ];
 
-  const priceRanges = [
-    { value: 'all', label: 'Any Price' },
+  const priceFilters = [
+    { value: 'all', label: 'All Prices' },
     { value: 'free', label: 'Free' },
-    { value: 'under-25', label: 'Under $25' },
     { value: 'under-50', label: 'Under $50' },
     { value: 'over-50', label: 'Over $50' }
   ];
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
-        {isMobile ? (
-          /* Mobile Header - Apple Music Style */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
-            {/* LEFT - Hamburger Menu */}
-            <button
-              id="mobile-menu-button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <Menu size={24} color="white" />
-            </button>
-
-            {/* CENTER - Small Logo */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              flex: 1
-            }}>
-              <Link href="/">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={80}
-                  height={22}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </Link>
-            </div>
-
-            {/* RIGHT - Sign In / Profile */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    id="user-menu-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        const menu = document.getElementById('user-menu');
-                        if (menu) {
-                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                        }
-                      } catch (error) {
-                        console.error('Error toggling user menu:', error);
-                      }
-                    }}
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '2px solid var(--accent-primary)',
-                      borderRadius: '50%',
-                      width: '40px',
-                      height: '40px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--hover-bg)';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--bg-card)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
-                    <User size={20} color="var(--accent-primary)" />
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" style={{ textDecoration: 'none' }}>
-                  <button
-                    style={{
-                      background: 'var(--accent-primary)',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: 'white',
-                      fontWeight: '500',
-                      fontSize: '14px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                  >
-                    Sign In
-                  </button>
-                </Link>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Desktop Header - Original Style */
-          <div className="navbar-main" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%',
-            gap: '1rem'
-          }}>
-            {/* LEFT SIDE */}
-            <div className="navbar-left" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem',
-              flexShrink: 0
-            }}>
-              <div className="logo">
-                <Link href="/">
-                  <Image
-                    src="/images/logos/logo-trans-lockup.png"
-                    alt="SoundBridge Logo"
-                    width={120}
-                    height={32}
-                    priority
-                    style={{ height: 'auto' }}
-                  />
-                </Link>
-              </div>
-              {/* Desktop Navigation */}
-              <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link href="/" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  For You
-                </Link>
-                <Link href="/discover" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Discover
-                </Link>
-                <Link href="/events" className="active" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Events
-                </Link>
-                <Link href="/creators" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Creators
-                </Link>
-                <Link href="/about" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  About
-                </Link>
-              </nav>
-              
-              {/* Spacer between navigation and search */}
-              <div style={{ width: '0.25rem' }}></div>
-            </div>
-
-            {/* CENTER - Search Bar */}
-            <div className="navbar-center">
-              <SearchDropdown placeholder="Search creators, events, podcasts..." />
-            </div>
-
-            {/* RIGHT SIDE */}
-            <div className="navbar-right" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem',
-              flexShrink: 0
-            }}>
-              {/* Upload Button */}
-              <Link href="/upload" style={{ textDecoration: 'none' }}>
-                <button 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.8rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
-                >
-                  <Upload size={16} />
-                  Upload
-                </button>
-              </Link>
-
-              {/* User Menu */}
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    id="user-menu-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        const menu = document.getElementById('user-menu');
-                        if (menu) {
-                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                        }
-                      } catch (error) {
-                        console.error('Error toggling user menu:', error);
-                      }
-                    }}
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '2px solid var(--accent-primary)',
-                      borderRadius: '50%',
-                      width: '40px',
-                      height: '40px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--hover-bg)';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--bg-card)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
-                    <User size={20} color="var(--accent-primary)" />
-                  </button>
-                  
-                  <div
-                    id="user-menu"
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '0.5rem',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      padding: '0.5rem',
-                      minWidth: '200px',
-                      display: 'none',
-                      zIndex: 1000,
-                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-                    }}
-                  >
-                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Home size={16} />
-                        Dashboard
-                      </div>
-                    </Link>
-                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Bell size={16} />
-                        Notifications
-                      </div>
-                    </Link>
-                    <Link href="/profile" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <User size={16} />
-                        Profile
-                      </div>
-                    </Link>
-                    <Link href="/settings" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Settings size={16} />
-                        Settings
-                      </div>
-                    </Link>
-                   
-                   {/* Theme Toggle */}
-                   <ThemeToggle />
-                   
-                   <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
-                   <button
-                     onClick={handleSignOut}
-                     style={{
-                       display: 'flex',
-                       alignItems: 'center',
-                       gap: '0.75rem',
-                       padding: '0.75rem',
-                       color: '#FCA5A5',
-                       background: 'none',
-                       border: 'none',
-                       width: '100%',
-                       textAlign: 'left',
-                       borderRadius: '8px',
-                       cursor: 'pointer',
-                       transition: 'all 0.3s ease'
-                     }}
-                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                   >
-                     <LogOut size={16} />
-                     Sign Out
-                   </button>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/login" style={{ textDecoration: 'none' }}>
-                  <button
-                    style={{
-                      background: 'var(--accent-primary)',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: 'white',
-                      fontWeight: '500',
-                      fontSize: '14px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                  >
-                    Sign In
-                  </button>
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Mobile Menu Overlay - Apple Music Style */}
-      {isMobile && isMobileMenuOpen && (
-        <div
-          id="mobile-menu"
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            background: 'rgba(0, 0, 0, 0.95)',
-            backdropFilter: 'blur(20px)',
-            zIndex: 999,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '1rem',
-            animation: 'slideIn 0.3s ease-out'
-          }}
-        >
-          {/* Mobile Menu Header - Apple Music Style */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '2rem',
-            padding: '1rem 0'
-          }}>
-            <div className="logo">
-              <Link href="/">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={100}
-                  height={28}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </Link>
-            </div>
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            >
-              <X size={16} color="white" />
-            </button>
-          </div>
-
-          {/* Mobile Navigation Links */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <Home size={20} />
-                For You
-              </div>
-            </Link>
-            
-            <Link href="/discover" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <Search size={20} />
-                Discover
-              </div>
-            </Link>
-            
-            <Link href="/events" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-primary)',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid var(--accent-primary)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '600',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              >
-                <Calendar size={20} />
-                Events
-              </div>
-            </Link>
-            
-            <Link href="/creators" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <Users size={20} />
-                Creators
-              </div>
-            </Link>
-            
-            <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <User size={20} />
-                About
-              </div>
-            </Link>
-          </div>
-
-          {/* Mobile User Actions */}
-          {user ? (
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '1rem',
-              marginTop: 'auto',
-              paddingTop: '2rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-            }}>
-              <Link href="/upload" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  color: 'white',
-                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  <Upload size={20} />
-                  Upload Content
-                </div>
-              </Link>
-              
-              <button
-                onClick={(e) => {
-                  setIsMobileMenuOpen(false);
-                  handleSignOut(e);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  color: '#FCA5A5',
-                  background: 'rgba(220, 38, 38, 0.08)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  width: '100%',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '17px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)'}
-              >
-                <LogOut size={20} />
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div style={{ 
-              marginTop: 'auto',
-              paddingTop: '2rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-            }}>
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  color: 'white',
-                  background: 'var(--accent-primary)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                >
-                  Sign In
-                </div>
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Main Content */}
       <main className="main-container">
         {/* Hero Section */}
@@ -1132,60 +427,43 @@ export default function EventsPage() {
                   }} 
                   onFocus={(e) => e.target.style.borderColor = 'var(--accent-primary)'}
                   onBlur={(e) => e.target.style.borderColor = 'var(--border-primary)'}
-              />
+                />
+              </div>
             </div>
+
             <button
               onClick={() => setShowFilters(!showFilters)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '16px 20px',
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-primary)',
-                  borderRadius: '12px',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontWeight: '500'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-              >
-                <Filter size={18} />
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Filter size={16} />
               Filters
             </button>
           </div>
 
-            {/* Filters Panel */}
           {showFilters && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1rem',
-                marginTop: '1.5rem',
-                padding: '1.5rem',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-primary)',
-                borderRadius: '12px'
-              }}>
-                {/* Location Filter */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                    Location
-                  </label>
+            <div className="filters-panel">
+              <div className="filter-group">
+                <label>Category</label>
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                >
+                  {categories.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Location</label>
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-primary)',
-                      borderRadius: '8px',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px'
-                    }}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
                   {locations.map((location) => (
                     <option key={location.value} value={location.value}>
@@ -1195,51 +473,14 @@ export default function EventsPage() {
                 </select>
               </div>
 
-                {/* Category Filter */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                    Category
-                  </label>
-                <select
-                  value={selectedGenre}
-                  onChange={(e) => setSelectedGenre(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-primary)',
-                      borderRadius: '8px',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px'
-                    }}
-                >
-                  {genres.map((genre) => (
-                    <option key={genre.value} value={genre.value}>
-                      {genre.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-                {/* Date Filter */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                    Date
-                  </label>
+              <div className="filter-group">
+                <label>Date</label>
                 <select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-primary)',
-                      borderRadius: '8px',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px'
-                    }}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
-                  {dateRanges.map((date) => (
+                  {dateFilters.map((date) => (
                     <option key={date.value} value={date.value}>
                       {date.label}
                     </option>
@@ -1247,25 +488,14 @@ export default function EventsPage() {
                 </select>
               </div>
 
-                {/* Price Filter */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                    Price
-                  </label>
+              <div className="filter-group">
+                <label>Price</label>
                 <select
                   value={selectedPrice}
                   onChange={(e) => setSelectedPrice(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-primary)',
-                      borderRadius: '8px',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px'
-                    }}
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
                 >
-                  {priceRanges.map((price) => (
+                  {priceFilters.map((price) => (
                     <option key={price.value} value={price.value}>
                       {price.label}
                     </option>
@@ -1273,62 +503,32 @@ export default function EventsPage() {
                 </select>
               </div>
 
-                {/* Sort By */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                    Sort By
-                  </label>
+              <div className="filter-group">
+                <label>Sort By</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-primary)',
-                      borderRadius: '8px',
-                      color: 'var(--text-primary)',
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value="recent">Most Recent</option>
-                    <option value="popular">Most Popular</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="alphabetical">A-Z</option>
+                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                >
+                  <option value="recent">Most Recent</option>
+                  <option value="upcoming">Upcoming</option>
+                  <option value="popular">Most Popular</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
                 </select>
               </div>
 
-                {/* Clear Filters */}
               {hasActiveFilters && (
-                  <div style={{ display: 'flex', alignItems: 'end' }}>
                 <button
                   onClick={clearFilters}
-                      style={{
-                        padding: '12px 20px',
-                        background: 'transparent',
-                        border: '1px solid var(--border-primary)',
-                        borderRadius: '8px',
-                        color: 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                        e.currentTarget.style.color = 'var(--accent-primary)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border-primary)';
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }}
-                    >
-                      Clear All
+                  className="btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  Clear Filters
                 </button>
-                  </div>
               )}
             </div>
           )}
-          </div>
         </section>
 
         {/* Events Grid */}
@@ -1339,71 +539,58 @@ export default function EventsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-secondary)' }}>
                   <Loader2 size={24} className="animate-spin" />
                   <span>Loading events...</span>
-            </div>
-          </div>
+                </div>
+              </div>
             ) : eventsState.error ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--error)' }}>
                   <AlertCircle size={24} />
                   <span>Error loading events: {eventsState.error}</span>
                 </div>
-            </div>
-          ) : filteredEvents.length === 0 ? (
+              </div>
+            ) : filteredEvents.length === 0 ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                  <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                    {hasActiveFilters ? 'No events match your filters' : 'No events found'}
-                  </h3>
-                  <p style={{ marginBottom: '1rem' }}>
-                    {hasActiveFilters ? 'Try adjusting your search criteria' : 'Check back later for new events'}
-                  </p>
-              {hasActiveFilters && (
-                    <button
-                      onClick={clearFilters}
-                      style={{
-                        padding: '12px 24px',
-                        background: 'var(--accent-primary)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: 'white',
-                        cursor: 'pointer',
-                        fontWeight: '500',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                    >
-                  Clear Filters
-                </button>
-              )}
+                  <Calendar size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
+                  <h3>No events found</h3>
+                  <p>Try adjusting your search criteria or filters.</p>
+                  {hasActiveFilters && (
+                    <button onClick={clearFilters} className="btn-primary" style={{ marginTop: '1rem' }}>
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
-            </div>
-          ) : (
-                <AutoSizer>
-                {({ width, height }) => (
-                      <Grid
-                        columnCount={columnsCount}
-                    columnWidth={EVENT_CARD_WIDTH + GRID_GAP}
-                        height={height}
-                        rowCount={rowCount}
-                    rowHeight={EVENT_ITEM_HEIGHT + GRID_GAP}
-                        width={width}
-                        itemData={{
-                          events: filteredEvents,
-                      columnsCount
-                        }}
-                      >
-                        {VirtualEventItem}
-                      </Grid>
-                )}
-                </AutoSizer>
+              </div>
+            ) : (
+              <AutoSizer>
+                {({ height, width }) => {
+                  const columnsCount = Math.max(1, Math.floor((width - GRID_GAP) / (EVENT_CARD_WIDTH + GRID_GAP)));
+                  const rowCount = Math.ceil(filteredEvents.length / columnsCount);
+
+                  return (
+                    <Grid
+                      columnCount={columnsCount}
+                      columnWidth={EVENT_CARD_WIDTH}
+                      height={height}
+                      rowCount={rowCount}
+                      rowHeight={EVENT_ITEM_HEIGHT}
+                      width={width}
+                      itemData={{
+                        events: filteredEvents,
+                        columnsCount
+                      }}
+                    >
+                      {VirtualEventItem}
+                    </Grid>
+                  );
+                }}
+              </AutoSizer>
             )}
-            </div>
+          </div>
         </section>
 
         <Footer />
       </main>
     </>
   );
-} 
+}

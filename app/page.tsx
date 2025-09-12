@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
@@ -11,22 +10,16 @@ import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
-import { LogOut, User, Upload, Play, Pause, Heart, MessageCircle, Search, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon, Music } from 'lucide-react';
+import { User, Upload, Play, Pause, Heart, MessageCircle, Calendar, Mic, Users, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon, Music } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
-import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
-import SearchDropdown from '@/src/components/search/SearchDropdown';
 import type { AudioTrack } from '@/src/lib/types/search';
 import type { CreatorSearchResult, Event } from '@/src/lib/types/creator';
 
 export default function HomePage() {
-  const { user, signOut, loading, error: authError } = useAuth();
+  const { user, loading, error: authError } = useAuth();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const { toggleLike, isLiked } = useSocial();
   const { data: personalizedFeed, hasPersonalizedData } = usePersonalizedFeed();
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [recentTracks, setRecentTracks] = React.useState<AudioTrack[]>([]);
   const [trendingTracks, setTrendingTracks] = React.useState<AudioTrack[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = React.useState(true);
@@ -47,41 +40,23 @@ export default function HomePage() {
   const [isLoadingPodcasts, setIsLoadingPodcasts] = useState(true);
 
   // Friends activities state
-  const [friendsActivities, setFriendsActivities] = useState<any[]>([]);
+  const [friendsActivities, setFriendsActivities] = useState<Array<{
+    id: string;
+    creator: {
+      display_name: string;
+      profile_image_url?: string;
+    };
+    action: string;
+    content: {
+      title: string;
+    };
+  }>>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
 
-  // Handle mobile responsiveness
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Close mobile menu when clicking outside
+  // Close dropdown menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const mobileMenu = document.getElementById('mobile-menu');
-      const mobileMenuButton = document.getElementById('mobile-menu-button');
-      const userMenu = document.getElementById('user-menu');
-      const userMenuButton = document.getElementById('user-menu-button');
-      
-      if (mobileMenu && mobileMenuButton && 
-          !mobileMenu.contains(event.target as Node) && 
-          !mobileMenuButton.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
-      }
-      
-      if (userMenu && userMenuButton && 
-          !userMenu.contains(event.target as Node) && 
-          !userMenuButton.contains(event.target as Node)) {
-        userMenu.style.display = 'none';
-      }
-
-      // Close dropdown menus when clicking outside
       const target = event.target as Element;
       if (!target.closest('.dropdown-container')) {
         setOpenDropdownId(null);
@@ -90,7 +65,7 @@ export default function HomePage() {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobileMenuOpen]);
+  }, []);
 
   // Fetch events - use personalized data if available, fallback to global
   useEffect(() => {
@@ -167,34 +142,6 @@ export default function HomePage() {
     fetchPodcasts();
   }, [personalizedFeed]);
 
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      e.preventDefault();
-      try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}&limit=10`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Search results:', data);
-          router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        } else {
-          console.error('Search failed:', response.statusText);
-          router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        }
-      } catch (error) {
-        console.error('Search error:', error);
-        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      }
-    }
-  };
 
   const handlePlayTrack = (track: AudioTrack) => {
     console.log('🎵 handlePlayTrack called with:', track);
@@ -203,7 +150,7 @@ export default function HomePage() {
     const audioTrack = {
       id: track.id,
       title: track.title,
-      artist: track.artist || track.creator?.name || track.creator?.display_name || 'Unknown Artist',
+      artist: track.creator_name || track.creator?.display_name || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
       artwork: track.cover_art_url || '',
@@ -472,7 +419,7 @@ export default function HomePage() {
             console.log('✅ Setting tracks:', result.tracks.length);
             // Log each track's cover art and artist status
             result.tracks.forEach((track: AudioTrack, index: number) => {
-              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'} - Artist: "${track.artist || track.creator?.name || 'No artist data'}"`);
+              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'} - Artist: "${track.creator_name || track.creator?.display_name || 'No artist data'}"`);
             });
             setRecentTracks(result.tracks);
           } else {
@@ -510,7 +457,7 @@ export default function HomePage() {
           if (result.success && result.tracks) {
             console.log('✅ Setting trending tracks:', result.tracks.length);
             result.tracks.forEach((track: AudioTrack, index: number) => {
-              console.log(`🔥 Track ${index + 1}: "${track.title}" - Plays: ${track.plays} - Artist: "${track.artist}"`);
+              console.log(`🔥 Track ${index + 1}: "${track.title}" - Plays: ${track.play_count} - Artist: "${track.creator_name || track.creator?.display_name || 'Unknown'}"`);
             });
             setTrendingTracks(result.tracks);
           } else {
@@ -633,1061 +580,66 @@ export default function HomePage() {
     );
   }
 
-  try {
-    return (
-      <>
-        <HomePageSEO />
-        {/* Header */}
-        <header className="header">
-          {isMobile ? (
-            /* Mobile Header - Apple Music Style */
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              width: '100%'
-            }}>
-              {/* LEFT - Hamburger Menu */}
-              <button
-                id="mobile-menu-button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '8px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                <Menu size={24} color="white" />
-              </button>
+  return (
+    <>
+      <HomePageSEO />
 
-              {/* CENTER - Small Logo */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                flex: 1
-              }}>
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={80}
-                  height={22}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </div>
-
-              {/* RIGHT - Sign In / Profile */}
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                {user ? (
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      id="user-menu-button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        try {
-                          const menu = document.getElementById('user-menu');
-                          if (menu) {
-                            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                          }
-                        } catch (error) {
-                          console.error('Error toggling user menu:', error);
-                        }
-                      }}
-                      style={{
-                        background: 'var(--bg-card)',
-                        border: '2px solid var(--accent-primary)',
-                        borderRadius: '50%',
-                        width: '40px',
-                        height: '40px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--hover-bg)';
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'var(--bg-card)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                      }}
-                    >
-                      <User size={20} color="var(--accent-primary)" />
-                    </button>
-                    
-                    <div
-                      id="user-menu"
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '0.5rem',
-                        background: 'var(--bg-secondary)',
-                        backdropFilter: 'blur(20px)',
-                        border: '2px solid var(--accent-primary)',
-                        borderRadius: '12px',
-                        padding: '0.5rem',
-                        minWidth: '200px',
-                        display: 'none',
-                        zIndex: 1000,
-                        boxShadow: 'var(--shadow-lg)'
-                      }}
-                    >
-                                             <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <Home size={16} />
-                           Dashboard
-                         </div>
-                       </Link>
-                       <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <Bell size={16} />
-                           Notifications
-                         </div>
-                       </Link>
-                       <Link href="/profile" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <User size={16} />
-                           Profile
-                         </div>
-                       </Link>
-                       <Link href="/settings" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <Settings size={16} />
-                           Settings
-                         </div>
-                       </Link>
-                      
-                      {/* Theme Toggle */}
-                      <ThemeToggle />
-                      
-                      <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
-                      <button
-                        onClick={handleSignOut}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: '#FCA5A5',
-                          background: 'none',
-                          border: 'none',
-                          width: '100%',
-                          textAlign: 'left',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <LogOut size={16} />
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <Link href="/login" style={{ textDecoration: 'none' }}>
-                    <button 
-                      style={{
-                        background: 'none',
-                        color: '#DC2626',
-                        border: 'none',
-                        padding: '8px 16px',
-                        cursor: 'pointer',
-                        fontWeight: '500',
-                        fontSize: '16px',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                    >
-                      Sign In
-                    </button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Desktop Header - Original Style */
-            <div className="navbar-main" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              width: '100%',
-              gap: '1rem'
-            }}>
-              {/* LEFT SIDE */}
-              <div className="navbar-left" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '1rem',
-                flexShrink: 0
-              }}>
-                <div className="logo">
-                  <Image
-                    src="/images/logos/logo-trans-lockup.png"
-                    alt="SoundBridge Logo"
-                    width={120}
-                    height={32}
-                    priority
-                    style={{ height: 'auto' }}
-                  />
-                </div>
-                {/* Desktop Navigation */}
-                <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Link href="/" className="active" style={{ 
-                    textDecoration: 'none', 
-                    color: 'var(--text-primary)',
-                    transition: 'all 0.3s ease',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    For You
-                  </Link>
-                  <Link href="/discover" style={{ 
-                    textDecoration: 'none', 
-                    color: 'var(--text-primary)',
-                    transition: 'all 0.3s ease',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    Discover
-                  </Link>
-                  <Link href="/events" style={{ 
-                    textDecoration: 'none', 
-                    color: 'var(--text-primary)',
-                    transition: 'all 0.3s ease',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    Events
-                  </Link>
-                  <Link href="/creators" style={{ 
-                    textDecoration: 'none', 
-                    color: 'var(--text-primary)',
-                    transition: 'all 0.3s ease',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    Creators
-                  </Link>
-                  <Link href="/about" style={{ 
-                    textDecoration: 'none', 
-                    color: 'var(--text-primary)',
-                    transition: 'all 0.3s ease',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    About
-                  </Link>
-                </nav>
-                
-                {/* Spacer between navigation and search */}
-                <div style={{ width: '0.25rem' }}></div>
-              </div>
-
-              {/* CENTER - Search Bar */}
-              <div className="navbar-center">
-                <SearchDropdown placeholder="Search creators, events, podcasts..." />
-              </div>
-
-              {/* RIGHT SIDE */}
-              <div className="navbar-right" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem',
-                flexShrink: 0
-              }}>
-                {/* Upload Button */}
-                <Link href="/upload" style={{ textDecoration: 'none' }}>
-                  <button 
-                    style={{
-                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '0.8rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                    }}
-                  >
-                    <Upload size={16} />
-                    Upload
-                  </button>
-                </Link>
-
-                {/* User Menu */}
-                {user ? (
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      id="user-menu-button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        try {
-                          const menu = document.getElementById('user-menu');
-                          if (menu) {
-                            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                          }
-                        } catch (error) {
-                          console.error('Error toggling user menu:', error);
-                        }
-                      }}
-                      style={{
-                        background: 'var(--bg-card)',
-                        border: '2px solid var(--accent-primary)',
-                        borderRadius: '50%',
-                        width: '40px',
-                        height: '40px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--hover-bg)';
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'var(--bg-card)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                      }}
-                    >
-                      <User size={20} color="var(--accent-primary)" />
-                    </button>
-                    
-                                         <div
-                       id="user-menu"
-                       style={{
-                         position: 'absolute',
-                         top: '100%',
-                         right: 0,
-                         marginTop: '0.5rem',
-                         background: 'rgba(255, 255, 255, 0.05)',
-                         backdropFilter: 'blur(20px)',
-                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                         borderRadius: '12px',
-                         padding: '0.5rem',
-                         minWidth: '200px',
-                         display: 'none',
-                         zIndex: 1000,
-                         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-                       }}
-                     >
-                       <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <Home size={16} />
-                           Dashboard
-                         </div>
-                       </Link>
-                       <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <Bell size={16} />
-                           Notifications
-                         </div>
-                       </Link>
-                       <Link href="/profile" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <User size={16} />
-                           Profile
-                         </div>
-                       </Link>
-                       <Link href="/settings" style={{ textDecoration: 'none' }}>
-                         <div style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.75rem',
-                           padding: '0.75rem',
-                           color: 'var(--text-primary)',
-                           borderRadius: '8px',
-                           transition: 'all 0.3s ease',
-                           fontWeight: '500'
-                         }}
-                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                         >
-                           <Settings size={16} />
-                           Settings
-                         </div>
-                       </Link>
-                      
-                      {/* Theme Toggle */}
-                      <ThemeToggle />
-                      
-                      <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
-                      <button
-                        onClick={handleSignOut}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.75rem',
-                          color: '#FCA5A5',
-                          background: 'none',
-                          border: 'none',
-                          width: '100%',
-                          textAlign: 'left',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <LogOut size={16} />
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                                         <Link href="/login" style={{ textDecoration: 'none' }}>
-                       <button 
-                         style={{
-                           background: 'transparent',
-                           color: '#374151',
-                           border: '1px solid #d1d5db',
-                           padding: '0.75rem 1.5rem',
-                           borderRadius: '12px',
-                           cursor: 'pointer',
-                           fontWeight: '600',
-                           fontSize: '0.9rem',
-                           transition: 'all 0.3s ease'
-                         }}
-                         onMouseEnter={(e) => {
-                           e.currentTarget.style.background = '#f3f4f6';
-                           e.currentTarget.style.borderColor = '#9ca3af';
-                         }}
-                         onMouseLeave={(e) => {
-                           e.currentTarget.style.background = 'transparent';
-                           e.currentTarget.style.borderColor = '#d1d5db';
-                         }}
-                       >
-                         Sign in
-                       </button>
-                     </Link>
-                    <Link href="/signup" style={{ textDecoration: 'none' }}>
-                                             <button 
-                         style={{
-                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                           color: 'white',
-                           border: 'none',
-                           padding: '0.75rem 1.5rem',
-                           borderRadius: '12px',
-                           cursor: 'pointer',
-                           fontWeight: '600',
-                           fontSize: '0.9rem',
-                           transition: 'all 0.3s ease',
-                           boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                        }}
-                      >
-                        Sign up
-                      </button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </header>
-
-        {/* Mobile Menu Overlay - Apple Music Style */}
-        {isMobile && isMobileMenuOpen && (
-          <div
-            id="mobile-menu"
-            style={{
-              position: 'fixed',
-              top: '0',
-              left: '0',
-              right: '0',
-              bottom: '0',
-              background: 'rgba(0, 0, 0, 0.95)',
-              backdropFilter: 'blur(20px)',
-              zIndex: 999,
-              display: 'flex',
-              flexDirection: 'column',
-              padding: '1rem',
-              animation: 'slideIn 0.3s ease-out'
-            }}
-          >
-            {/* Mobile Menu Header - Apple Music Style */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              marginBottom: '2rem',
-              padding: '1rem 0'
-            }}>
-              <div className="logo">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={100}
-                  height={28}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </div>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              >
-                <X size={16} color="white" />
-              </button>
-            </div>
-
-            {/* Mobile Search Bar - Apple Music Style */}
-            <div style={{ 
-              marginBottom: '2rem',
-              position: 'relative'
-            }}>
-              <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#999', zIndex: 1 }} />
-              <input 
-                type="search" 
-                placeholder="Search creators, events, podcasts..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearch}
-                style={{ 
-                  width: '100%', 
-                  padding: '16px 16px 16px 48px',
-                  fontSize: '16px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  outline: 'none',
-                  transition: 'all 0.2s ease'
-                }} 
-                onFocus={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.12)'}
-                onBlur={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.08)'}
-              />
-            </div>
-
-            {/* Mobile Navigation - Apple Music Style */}
-            <nav style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '0.5rem',
-              marginBottom: '2rem'
-            }}>
-              <Link 
-                href="/" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                style={{ 
-                  textDecoration: 'none', 
-                  color: 'white',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  fontSize: '17px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-              >
-                <Home size={20} style={{ color: '#DC2626' }} />
-                For You
-              </Link>
-              <Link 
-                href="/discover" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                style={{ 
-                  textDecoration: 'none', 
-                  color: 'white',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  fontSize: '17px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-              >
-                <Search size={20} style={{ color: '#EC4899' }} />
-                Discover
-              </Link>
-              <Link 
-                href="/events" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                style={{ 
-                  textDecoration: 'none', 
-                  color: 'white',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  fontSize: '17px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-              >
-                <Calendar size={20} style={{ color: '#F97316' }} />
-                Events
-              </Link>
-              <Link 
-                href="/creators" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                style={{ 
-                  textDecoration: 'none', 
-                  color: 'white',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'none',
-                  fontSize: '17px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-              >
-                <Users size={20} style={{ color: '#10B981' }} />
-                Creators
-              </Link>
-            </nav>
-
-            {/* Mobile Action Buttons - Apple Music Style */}
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '0.5rem',
-              marginBottom: '2rem'
-            }}>
-              <Link 
-                href="/upload" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                style={{ textDecoration: 'none' }}
-              >
-                <div 
-                  style={{
-                    width: '100%',
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '17px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                >
-                  <Upload size={20} />
-                  Upload Content
-                </div>
-              </Link>
-            </div>
-
-            {/* Mobile User Section - Apple Music Style */}
-            {user ? (
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0.5rem',
-                paddingTop: '1rem',
-                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '12px',
-                  padding: '16px 20px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  borderRadius: '12px'
-                }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <User size={18} color="white" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'white' }}>
-                      {user.email}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-                      Signed in
-                    </div>
-                  </div>
-                </div>
-                
-                <Link 
-                  href="/dashboard" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '16px 20px',
-                    color: 'white',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    fontSize: '17px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-                  >
-                    <Home size={20} style={{ color: '#DC2626' }} />
-                    Dashboard
-                  </div>
-                </Link>
-                
-                <Link 
-                  href="/shares" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '16px 20px',
-                    color: 'white',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    fontSize: '17px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-                  >
-                    <Share2 size={20} style={{ color: '#3B82F6' }} />
-                    Shared Content
-                  </div>
-                </Link>
-                
-                <button
-                  onClick={(e) => {
-                    setIsMobileMenuOpen(false);
-                    handleSignOut(e);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '16px 20px',
-                    color: '#FCA5A5',
-                    background: 'rgba(220, 38, 38, 0.08)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    width: '100%',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '17px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.12)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)'}
-                >
-                  <LogOut size={20} />
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0.5rem',
-                paddingTop: '1rem',
-                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-              }}>
-                <Link 
-                  href="/login" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div 
-                    style={{
-                      width: '100%',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '16px 20px',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '17px',
-                      transition: 'all 0.2s ease',
-                      textAlign: 'center'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-                  >
-                    Sign in
-                  </div>
-                </Link>
-                <Link 
-                  href="/signup" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div 
-                    style={{
-                      width: '100%',
-                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '16px 20px',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '17px',
-                      transition: 'all 0.2s ease',
-                      textAlign: 'center'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                  >
-                    Sign up
-                  </div>
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-
-                {/* Main Content */}
-        <main style={{
-          padding: isMobile ? '1rem' : '2rem',
-          paddingBottom: isMobile ? '6rem' : '7rem',
-          maxWidth: '1400px',
-          margin: '0 auto'
-        }}>
+      {/* Main Content */}
+      <main style={{
+        padding: '2rem',
+        paddingBottom: '7rem',
+        maxWidth: '1400px',
+        margin: '0 auto'
+      }}>
         {/* Hero Section */}
         <section style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr',
-          gap: isMobile ? '1rem' : '2rem',
-          marginBottom: isMobile ? '2rem' : '3rem',
-          height: isMobile ? 'auto' : '400px'
+          gridTemplateColumns: '2fr 1fr',
+          gap: '2rem',
+          marginBottom: '3rem',
+          height: '400px'
         }}>
           <Link href="/creator/kwame-asante" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/800/400?random=hero")',
               backgroundSize: 'cover',
               borderRadius: '20px',
-              padding: isMobile ? '1.5rem' : '2rem',
+              padding: '2rem',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-end',
               position: 'relative',
               overflow: 'hidden',
-              minHeight: isMobile ? '300px' : '400px'
+              minHeight: '400px'
             }}>
               <div style={{
                 position: 'relative',
                 zIndex: 2
               }}>
-                <h2 className={isMobile ? "heading-4 text-display" : "heading-2 text-display"} style={{ 
+                <h2 className="heading-2 text-display" style={{ 
                   marginBottom: '0.5rem',
                   color: 'white'
                 }}>Featured Creator: Kwame Asante</h2>
-                <p className={isMobile ? "text-base text-body" : "text-large text-body"} style={{ 
+                <p className="text-large text-body" style={{ 
                   color: '#ccc',
                   marginBottom: '1rem'
                 }}>Afrobeats sensation taking UK by storm!</p>
                 <div style={{ 
                   display: 'flex', 
-                  gap: isMobile ? '0.5rem' : '1rem', 
+                  gap: '1rem', 
                   marginTop: '1rem',
-                  flexWrap: isMobile ? 'wrap' : 'nowrap'
+                  flexWrap: 'nowrap'
                 }}>
                   <button 
                     style={{
                       background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
                       color: 'white',
                       border: 'none',
-                      padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+                      padding: '0.75rem 1.5rem',
                       borderRadius: '25px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: isMobile ? '0.8rem' : '0.9rem',
+                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
@@ -1704,7 +656,7 @@ export default function HomePage() {
                       e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
                     }}
                   >
-                    <Play size={isMobile ? 14 : 16} />
+                    <Play size={16} />
                     Play Latest
                   </button>
                   <button 
@@ -1713,11 +665,11 @@ export default function HomePage() {
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       color: 'white',
-                      padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+                      padding: '0.75rem 1.5rem',
                       borderRadius: '25px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: isMobile ? '0.8rem' : '0.9rem',
+                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
@@ -1735,7 +687,7 @@ export default function HomePage() {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    <Heart size={isMobile ? 14 : 16} />
+                    <Heart size={16} />
                     Follow
                   </button>
                   <button 
@@ -1744,11 +696,11 @@ export default function HomePage() {
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       color: 'white',
-                      padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+                      padding: '0.75rem 1.5rem',
                       borderRadius: '25px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: isMobile ? '0.8rem' : '0.9rem',
+                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
@@ -1766,7 +718,7 @@ export default function HomePage() {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    <MessageCircle size={isMobile ? 14 : 16} />
+                    <MessageCircle size={16} />
                     Message
                   </button>
                 </div>
@@ -1777,9 +729,9 @@ export default function HomePage() {
             background: 'var(--card-bg)',
             backdropFilter: 'blur(20px)',
             borderRadius: '20px',
-            padding: isMobile ? '1rem' : '1.5rem',
+            padding: '1.5rem',
             border: '1px solid var(--border-color)',
-            display: isMobile ? 'none' : 'block'
+            display: 'block'
           }}>
                             <h3 style={{ 
                               marginBottom: '1rem', 
@@ -1803,12 +755,12 @@ export default function HomePage() {
                     <div style={{ flex: 1 }}>
                       <div style={{ height: '16px', background: 'var(--bg-secondary)', borderRadius: '4px', marginBottom: '4px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
                       <div style={{ height: '12px', background: 'var(--bg-secondary)', borderRadius: '4px', width: '60%', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
-                    </div>
-                  </div>
+                </div>
+              </div>
                 ))
               ) : trendingTracks.length > 0 ? (
                 // Show only first 3 trending tracks
-                trendingTracks.slice(0, 3).map((track, index) => (
+                trendingTracks.slice(0, 3).map((track) => (
                   <div key={track.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
@@ -1827,26 +779,26 @@ export default function HomePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.title}</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
-                    </div>
-                    <button 
-                      style={{ 
-                        background: 'none', 
-                        border: 'none', 
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.creator_name || track.creator?.display_name || 'Unknown Artist'}</div>
+                </div>
+                <button 
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
                         color: 'var(--accent-primary)', 
-                        fontSize: '1.2rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
+                    fontSize: '1.2rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
                         transform: 'scale(1)',
                         flexShrink: 0
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                       onClick={() => handlePlayTrack(track)}
-                    >
-                      <Play size={20} />
-                    </button>
-                  </div>
+                >
+                  <Play size={20} />
+                </button>
+              </div>
                 ))
               ) : (
                 // No trending tracks
@@ -1889,8 +841,8 @@ export default function HomePage() {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
-            gap: isMobile ? '0.5rem' : '0.75rem',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '0.75rem',
             maxWidth: '100%',
             justifyContent: 'center'
           }}>
@@ -1902,8 +854,8 @@ export default function HomePage() {
                     <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderRadius: '50%', borderTopColor: 'white', animation: 'spin 1s linear infinite' }}></div>
                   </div>
                   <div className="card-content">
-                    <div style={{ fontWeight: '600', background: '#333', height: '16px', borderRadius: '4px', marginBottom: '0.5rem' }}></div>
-                    <div style={{ color: '#999', fontSize: '0.9rem', background: '#333', height: '14px', borderRadius: '4px', width: '60%' }}></div>
+                  <div style={{ fontWeight: '600', background: '#333', height: '16px', borderRadius: '4px', marginBottom: '0.5rem' }}></div>
+                  <div style={{ color: '#999', fontSize: '0.9rem', background: '#333', height: '14px', borderRadius: '4px', width: '60%' }}></div>
                   </div>
                   <div className="waveform-visual">
                     <div className="waveform-bar" style={{ height: '20%' }}></div>
@@ -1941,13 +893,13 @@ export default function HomePage() {
                         }}
                       />
                     ) : (
-                      <div style={{
+                      <div style={{ 
                         width: '100%',
                         height: '160px',
                         background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                         borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: 'flex', 
+                        alignItems: 'center', 
                         justifyContent: 'center',
                         color: 'white'
                       }}>
@@ -1995,7 +947,7 @@ export default function HomePage() {
 
                     {/* Heart Button */}
                     <button 
-                      style={{
+                      style={{ 
                         position: 'absolute',
                         top: '8px',
                         right: '8px',
@@ -2028,7 +980,7 @@ export default function HomePage() {
 
                     {/* Three Dots Button */}
                     <button 
-                      style={{
+                      style={{ 
                         position: 'absolute',
                         top: '48px',
                         right: '8px',
@@ -2075,7 +1027,7 @@ export default function HomePage() {
                         boxShadow: '0 8px 25px rgba(0, 0, 0, 0.5)'
                       }}>
                         <button 
-                          style={{
+                        style={{ 
                             width: '100%',
                             padding: '8px 12px',
                             background: 'transparent',
@@ -2136,7 +1088,7 @@ export default function HomePage() {
                           <Share2 size={14} />
                           Share
                         </button>
-                      </div>
+                    </div>
                     )}
                   </div>
                   
@@ -2152,7 +1104,7 @@ export default function HomePage() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {track.title || 'Untitled Track'}
+                    {track.title || 'Untitled Track'}
                     </h3>
                     <p style={{
                       color: 'var(--text-primary)',
@@ -2163,7 +1115,7 @@ export default function HomePage() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {track.artist || track.creator?.name || track.creator?.display_name || 'Unknown Artist'}
+                      {track.creator_name || track.creator?.display_name || 'Unknown Artist'}
                     </p>
                     <div style={{
                       display: 'flex',
@@ -2180,7 +1132,7 @@ export default function HomePage() {
                         <Heart size={8} />
                         {track.like_count || 0}
                       </span>
-                    </div>
+                  </div>
                   </div>
                 </div>
               ))
@@ -2227,14 +1179,14 @@ export default function HomePage() {
           </div>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: isMobile ? '1rem' : '1.5rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '1.5rem'
           }}>
             {hotCreatorsLoading ? (
               // Loading skeleton
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="card">
-                  <div className="card-image">
+                <div className="card-image">
                     <div style={{
                       width: '100%',
                       height: '100%',
@@ -2246,15 +1198,15 @@ export default function HomePage() {
                       color: '#666'
                     }}>
                       <Loader2 size={24} className="animate-spin" />
-                    </div>
-                  </div>
-                  <div style={{ fontWeight: '600', color: '#666' }}>Loading...</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
-                  <div className="stats">
-                    <span style={{ color: '#666' }}>...</span>
-                    <span style={{ color: '#666' }}>...</span>
                   </div>
                 </div>
+                  <div style={{ fontWeight: '600', color: '#666' }}>Loading...</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+                <div className="stats">
+                    <span style={{ color: '#666' }}>...</span>
+                    <span style={{ color: '#666' }}>...</span>
+                </div>
+              </div>
               ))
             ) : hotCreators.length > 0 ? (
               hotCreators.map((creator) => (
@@ -2263,8 +1215,8 @@ export default function HomePage() {
                   href={`/creator/${creator.profile.username}`} 
                   style={{ textDecoration: 'none' }}
                 >
-                  <div className="card">
-                    <div className="card-image">
+            <div className="card">
+              <div className="card-image">
                       {creator.profile.avatar_url ? (
                         <Image
                           src={creator.profile.avatar_url}
@@ -2289,9 +1241,9 @@ export default function HomePage() {
                           {creator.profile.display_name?.substring(0, 2).toUpperCase() || 'C'}
                         </div>
                       )}
-                      <div className="play-button">
-                        <Play size={20} />
-                      </div>
+                <div className="play-button">
+                  <Play size={20} />
+                </div>
                       {/* Hot Score Badge */}
                       <div style={{
                         position: 'absolute',
@@ -2306,12 +1258,12 @@ export default function HomePage() {
                         boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                       }}>
                         🔥 {creator.stats.total_plays}
-                      </div>
-                    </div>
+              </div>
+              </div>
                     <div style={{ fontWeight: '600' }}>{creator.profile.display_name}</div>
                     <div style={{ color: '#999', fontSize: '0.9rem' }}>
                       {creator.profile.location || 'Location not set'}
-                    </div>
+            </div>
                     <div className="stats">
                       <span>{creator.stats.followers_count?.toLocaleString() || 0} followers</span>
                       <span>{creator.stats.tracks_count || 0} tracks</span>
@@ -2320,8 +1272,8 @@ export default function HomePage() {
                           +{creator.recent_tracks.length} recent
                         </span>
                       )}
-                    </div>
-                  </div>
+                </div>
+              </div>
                 </Link>
               ))
             ) : (
@@ -2329,7 +1281,7 @@ export default function HomePage() {
               <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
                 <div style={{ color: '#EC4899', marginBottom: '1rem' }}>
                   <Star size={48} style={{ opacity: 0.5 }} />
-                </div>
+              </div>
                 <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Hot Creators Yet</h3>
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>
                   Be the first to upload amazing content and become a hot creator!
@@ -2347,7 +1299,7 @@ export default function HomePage() {
                     Start Creating
                   </button>
                 </Link>
-              </div>
+            </div>
             )}
           </div>
         </section>
@@ -2380,8 +1332,8 @@ export default function HomePage() {
           </div>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: isMobile ? '1rem' : '1.5rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '1.5rem'
           }}>
             {isLoadingEvents ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
@@ -2456,8 +1408,8 @@ export default function HomePage() {
           </div>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: isMobile ? '1rem' : '1.5rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '1.5rem'
           }}>
             {isLoadingPodcasts ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
@@ -2696,7 +1648,7 @@ export default function HomePage() {
             ))
           ) : friendsActivities.length > 0 ? (
             // Show friends activities
-            friendsActivities.slice(0, 2).map((activity, index) => (
+            friendsActivities.slice(0, 2).map((activity) => (
               <div key={activity.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: '32px', height: '32px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {activity.creator.profile_image_url ? (
@@ -2716,7 +1668,7 @@ export default function HomePage() {
                     {activity.creator.display_name}
                   </div>
                   <div style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {activity.action} "{activity.content.title}"
+                    {activity.action} &ldquo;{activity.content.title}&rdquo;
                   </div>
                 </div>
               </div>
@@ -2754,38 +1706,4 @@ export default function HomePage() {
       )}
     </>
   );
-  } catch (error) {
-    console.error('Error in HomePage component:', error);
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
-        color: 'white',
-        padding: '2rem',
-        textAlign: 'center'
-      }}>
-        <div>
-          <h1 style={{ marginBottom: '1rem' }}>Something went wrong</h1>
-          <p>Please refresh the page or try again later.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-              color: 'white',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              marginTop: '1rem'
-            }}
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
-  }
 }

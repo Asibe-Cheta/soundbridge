@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { FixedSizeGrid as Grid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import {
@@ -12,58 +10,46 @@ import {
   User,
   Music,
   MapPin,
-  Star,
   Users,
-  Calendar,
-  Upload,
-  Bell,
-  Settings,
-  Home,
-  Menu,
-  X,
-  LogOut,
   Loader2,
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
-import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
-import SearchDropdown from '@/src/components/search/SearchDropdown';
 
-// Simple debounce function
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 // Virtual grid constants
 const DESKTOP_CARD_WIDTH = 240;   // Width of each desktop card
 const DESKTOP_CARD_HEIGHT = 300;  // Height of each desktop card (increased to fit buttons)
-const MOBILE_ITEM_HEIGHT = 70;    // Height of each mobile list item
 const CONTAINER_HEIGHT = 600;     // Height of the virtual grid container
 const GRID_GAP = 16;              // Gap between grid items
 
 // Creator card component for virtual grid
+interface Creator {
+  id: string;
+  username: string;
+  display_name: string;
+  bio?: string;
+  followers_count: number;
+  tracks_count: number;
+  location?: string;
+  is_verified: boolean;
+  isFollowing: boolean;
+}
+
 interface VirtualCreatorItemProps {
   columnIndex: number;
   rowIndex: number;
   style: React.CSSProperties;
   data: {
-    creators: any[];
-    isMobile: boolean;
+    creators: Creator[];
     columnsCount: number;
     handleFollow: (creatorId: string) => void;
   };
 }
 
 const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreatorItemProps) => {
-  const { creators, isMobile, columnsCount, handleFollow } = data;
+  const { creators, columnsCount, handleFollow } = data;
   const index = rowIndex * columnsCount + columnIndex;
   const creator = creators[index];
 
@@ -72,145 +58,6 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
     return <div style={style}></div>;
   }
 
-  if (isMobile) {
-    // Mobile list item (same as existing mobile layout)
-    return (
-      <div style={style}>
-        <Link 
-          href={`/creator/${creator.username}`} 
-          style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}
-        >
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '1rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-            transition: 'background-color 0.2s ease',
-            cursor: 'pointer',
-            height: '100%'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            {/* Avatar */}
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: '600',
-              fontSize: '1.1rem',
-              marginRight: '0.75rem',
-              flexShrink: 0,
-              position: 'relative'
-            }}>
-              {creator.display_name.charAt(0)}
-              {/* Verified Badge */}
-              {creator.is_verified && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-2px',
-                  right: '-2px',
-                  background: '#EC4899',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '16px',
-                  height: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.6rem',
-                  border: '2px solid #000'
-                }}>
-                  ✓
-                </div>
-              )}
-            </div>
-
-            {/* Creator Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <h3 style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '600', 
-                  margin: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flex: 1
-                }}>
-                  {creator.display_name}
-                </h3>
-
-              </div>
-
-              <p style={{ 
-                color: '#999', 
-                fontSize: '0.85rem', 
-                margin: '0 0 0.25rem 0',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                {creator.bio || 'Music creator'}
-              </p>
-
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '1rem', 
-                fontSize: '0.75rem', 
-                color: '#666'
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <Users size={10} />
-                  {creator.followers_count} followers
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <Music size={10} />
-                  {creator.tracks_count} tracks
-                </span>
-                {creator.location && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <MapPin size={10} />
-                    {creator.location}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Follow Button */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleFollow(creator.id);
-              }}
-              style={{
-                background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
-                color: 'white',
-                border: creator.isFollowing ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
-                padding: '0.375rem 0.75rem',
-                borderRadius: '16px',
-                fontSize: '0.75rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                flexShrink: 0,
-                minWidth: '70px'
-              }}
-            >
-              {creator.isFollowing ? 'Following' : 'Follow'}
-            </button>
-          </div>
-        </Link>
-      </div>
-    );
-  }
 
   // Desktop grid item (adjusted for grid layout)
   return (
@@ -273,7 +120,7 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical' as any
+              WebkitBoxOrient: 'vertical' as const
             }}>
               {creator.bio && creator.bio.length > 30 ? creator.bio.substring(0, 30) + '...' : creator.bio || 'Music creator'}
             </p>
@@ -364,28 +211,22 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
 };
 
 export default function CreatorsPage() {
-  const { user, signOut } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [sortBy, setSortBy] = useState('followers');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [creators, setCreators] = useState<any[]>([]);
+  const [creators, setCreators] = useState<Creator[]>([]);
   const [pagination, setPagination] = useState({ total: 0, limit: 20, offset: 0, hasMore: false });
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [columnsCount, setColumnsCount] = useState(4); // Number of columns in grid
 
   // Fetch creators function - supports both initial load and pagination
   const fetchCreators = useCallback(async (loadMore = false) => {
     try {
-      if (loadMore) {
-        setLoadingMore(true);
-      } else {
+      if (!loadMore) {
         setLoading(true);
         setCreators([]); // Clear existing creators for new search
       }
@@ -447,95 +288,29 @@ export default function CreatorsPage() {
       }
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [searchQuery, selectedGenre, selectedLocation, sortBy, user?.id, pagination.limit]);
+  }, [searchQuery, selectedGenre, selectedLocation, sortBy, user?.id, pagination.limit, pagination.offset]);
 
   // Debounce the fetch function
-  const debouncedFetchCreators = useCallback(
-    debounce(() => fetchCreators(false), 300),
-    [fetchCreators]
-  );
+  const debouncedFetchCreators = useCallback(() => {
+    const timeoutId = setTimeout(() => fetchCreators(false), 300);
+    return () => clearTimeout(timeoutId);
+  }, [fetchCreators]);
 
-  // Load more function for virtual scrolling
-  const loadMoreCreators = useCallback(() => {
-    if (!loadingMore && pagination.hasMore) {
-      // Update offset for next page
-      const nextOffset = pagination.offset + pagination.limit;
-      setPagination(prev => ({ ...prev, offset: nextOffset }));
-      fetchCreators(true);
-    }
-  }, [loadingMore, pagination.hasMore, pagination.offset, pagination.limit, fetchCreators]);
-
-  // Check if item is loaded for virtual scrolling
-  const isItemLoaded = useCallback((index: number) => {
-    return !!creators[index];
-  }, [creators]);
 
   // Calculate grid dimensions
   const rowCount = Math.ceil(creators.length / columnsCount);
 
   // Calculate columns based on container width
   const calculateColumns = useCallback((containerWidth: number) => {
-    if (isMobile) return 1;
+    // For now, assume desktop layout (can be enhanced later with proper mobile detection)
     const availableWidth = containerWidth - GRID_GAP;
     const cardWidthWithGap = DESKTOP_CARD_WIDTH + GRID_GAP;
     return Math.max(1, Math.floor(availableWidth / cardWidthWithGap));
-  }, [isMobile]);
+  }, []);
 
-  // Handle mobile responsiveness and column calculation
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      
-      // Calculate columns for desktop
-      if (!mobile) {
-        const containerWidth = Math.min(window.innerWidth - 100, 1200); // Max container width
-        setColumnsCount(calculateColumns(containerWidth));
-      } else {
-        setColumnsCount(1);
-      }
-    };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [calculateColumns]);
 
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const mobileMenu = document.getElementById('mobile-menu');
-      const mobileMenuButton = document.getElementById('mobile-menu-button');
-      if (mobileMenu && mobileMenuButton && 
-          !mobileMenu.contains(event.target as Node) && 
-          !mobileMenuButton.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobileMenuOpen]);
-
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      // Search will be triggered by useEffect when searchQuery changes
-    }
-  };
 
   const handleFollow = async (creatorId: string) => {
     const creator = creators.find(c => c.id === creatorId);
@@ -603,7 +378,7 @@ export default function CreatorsPage() {
   // Initial load
   useEffect(() => {
     fetchCreators(false);
-  }, []);
+  }, [fetchCreators]);
 
   // Reset pagination and fetch when filters change
   useEffect(() => {
@@ -623,720 +398,6 @@ export default function CreatorsPage() {
 
   return (
     <>
-      {/* Header */}
-      <header className="header">
-        {isMobile ? (
-          /* Mobile Header - Apple Music Style */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
-            {/* LEFT - Hamburger Menu */}
-            <button
-              id="mobile-menu-button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <Menu size={24} color="white" />
-            </button>
-
-            {/* CENTER - Small Logo */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              flex: 1
-            }}>
-              <Link href="/">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={80}
-                  height={22}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </Link>
-            </div>
-
-            {/* RIGHT - Sign In / Profile */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    id="user-menu-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        const menu = document.getElementById('user-menu');
-                        if (menu) {
-                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                        }
-                      } catch (error) {
-                        console.error('Error toggling user menu:', error);
-                      }
-                    }}
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '2px solid var(--accent-primary)',
-                      borderRadius: '50%',
-                      width: '40px',
-                      height: '40px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--hover-bg)';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--bg-card)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
-                    <User size={20} color="var(--accent-primary)" />
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" style={{ textDecoration: 'none' }}>
-                  <button
-                    style={{
-                      background: 'var(--accent-primary)',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: 'white',
-                      fontWeight: '500',
-                      fontSize: '14px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                  >
-                    Sign In
-                  </button>
-                </Link>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Desktop Header - Original Style */
-          <div className="navbar-main" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%',
-            gap: '1rem'
-          }}>
-            {/* LEFT SIDE */}
-            <div className="navbar-left" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem',
-              flexShrink: 0
-            }}>
-              <div className="logo">
-                <Link href="/">
-                  <Image
-                    src="/images/logos/logo-trans-lockup.png"
-                    alt="SoundBridge Logo"
-                    width={120}
-                    height={32}
-                    priority
-                    style={{ height: 'auto' }}
-                  />
-                </Link>
-              </div>
-              {/* Desktop Navigation */}
-              <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link href="/" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  For You
-                </Link>
-                <Link href="/discover" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Discover
-                </Link>
-                <Link href="/events" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Events
-                </Link>
-                <Link href="/creators" className="active" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Creators
-                </Link>
-                <Link href="/about" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  About
-                </Link>
-              </nav>
-              
-              {/* Spacer between navigation and search */}
-              <div style={{ width: '0.25rem' }}></div>
-            </div>
-
-            {/* CENTER - Search Bar */}
-            <div className="navbar-center">
-              <SearchDropdown placeholder="Search creators, events, podcasts..." />
-            </div>
-
-            {/* RIGHT SIDE */}
-            <div className="navbar-right" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem',
-              flexShrink: 0
-            }}>
-              {/* Upload Button */}
-              <Link href="/upload" style={{ textDecoration: 'none' }}>
-                <button 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.8rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
-                >
-                  <Upload size={16} />
-                  Upload
-                </button>
-              </Link>
-
-              {/* User Menu */}
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    id="user-menu-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        const menu = document.getElementById('user-menu');
-                        if (menu) {
-                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                        }
-                      } catch (error) {
-                        console.error('Error toggling user menu:', error);
-                      }
-                    }}
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '2px solid var(--accent-primary)',
-                      borderRadius: '50%',
-                      width: '40px',
-                      height: '40px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--hover-bg)';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--bg-card)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
-                    <User size={20} color="var(--accent-primary)" />
-                  </button>
-                  
-                  <div
-                    id="user-menu"
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '0.5rem',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      padding: '0.5rem',
-                      minWidth: '200px',
-                      display: 'none',
-                      zIndex: 1000,
-                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-                    }}
-                  >
-                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Home size={16} />
-                        Dashboard
-                      </div>
-                    </Link>
-                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Bell size={16} />
-                        Notifications
-                      </div>
-                    </Link>
-                    <Link href="/profile" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <User size={16} />
-                        Profile
-                      </div>
-                    </Link>
-                    <Link href="/settings" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Settings size={16} />
-                        Settings
-                      </div>
-                    </Link>
-                   
-                   {/* Theme Toggle */}
-                   <ThemeToggle />
-                   
-                   <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
-                   <button
-                     onClick={handleSignOut}
-                     style={{
-                       display: 'flex',
-                       alignItems: 'center',
-                       gap: '0.75rem',
-                       padding: '0.75rem',
-                       color: '#FCA5A5',
-                       background: 'none',
-                       border: 'none',
-                       width: '100%',
-                       textAlign: 'left',
-                       borderRadius: '8px',
-                       cursor: 'pointer',
-                       transition: 'all 0.3s ease'
-                     }}
-                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                   >
-                     <LogOut size={16} />
-                     Sign Out
-                   </button>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/login" style={{ textDecoration: 'none' }}>
-                  <button
-                    style={{
-                      background: 'var(--accent-primary)',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: 'white',
-                      fontWeight: '500',
-                      fontSize: '14px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                  >
-                    Sign In
-                  </button>
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Mobile Menu Overlay - Apple Music Style */}
-      {isMobile && isMobileMenuOpen && (
-        <div
-          id="mobile-menu"
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            background: 'rgba(0, 0, 0, 0.95)',
-            backdropFilter: 'blur(20px)',
-            zIndex: 999,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '1rem',
-            animation: 'slideIn 0.3s ease-out'
-          }}
-        >
-          {/* Mobile Menu Header - Apple Music Style */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '2rem',
-            padding: '1rem 0'
-          }}>
-            <div className="logo">
-              <Link href="/">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={100}
-                  height={28}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </Link>
-            </div>
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            >
-              <X size={16} color="white" />
-            </button>
-          </div>
-
-          {/* Mobile Navigation Links */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <Home size={20} />
-                For You
-              </div>
-            </Link>
-            
-            <Link href="/discover" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <Search size={20} />
-                Discover
-              </div>
-            </Link>
-            
-            <Link href="/events" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <Calendar size={20} />
-                Events
-              </div>
-            </Link>
-            
-            <Link href="/creators" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-primary)',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid var(--accent-primary)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '600',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              >
-                <Users size={20} />
-                Creators
-              </div>
-            </Link>
-            
-            <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 20px',
-                color: 'var(--text-secondary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                fontSize: '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                <User size={20} />
-                About
-              </div>
-            </Link>
-          </div>
-
-          {/* Mobile User Actions */}
-          {user ? (
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '1rem',
-              marginTop: 'auto',
-              paddingTop: '2rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-            }}>
-              <Link href="/upload" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  color: 'white',
-                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  <Upload size={20} />
-                  Upload Content
-                </div>
-              </Link>
-              
-              <button
-                onClick={(e) => {
-                  setIsMobileMenuOpen(false);
-                  handleSignOut(e);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  color: '#FCA5A5',
-                  background: 'rgba(220, 38, 38, 0.08)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  width: '100%',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '17px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.12)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)'}
-              >
-                <LogOut size={20} />
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div style={{ 
-              marginTop: 'auto',
-              paddingTop: '2rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-            }}>
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  color: 'white',
-                  background: 'var(--accent-primary)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
-                >
-                  Sign In
-                </div>
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
 
       <main className="main-container">
         {/* Search and Filters */}
@@ -1490,14 +551,13 @@ export default function CreatorsPage() {
                     return (
                       <Grid
                         columnCount={columnsCount}
-                        columnWidth={isMobile ? width : (width - GRID_GAP) / columnsCount}
+                        columnWidth={(width - GRID_GAP) / columnsCount}
                         height={height}
                         rowCount={rowCount}
-                        rowHeight={isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_CARD_HEIGHT}
+                        rowHeight={DESKTOP_CARD_HEIGHT}
                         width={width}
                         itemData={{
                           creators,
-                          isMobile,
                           columnsCount,
                           handleFollow
                         }}
@@ -1518,7 +578,7 @@ export default function CreatorsPage() {
                   borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                   marginTop: '2rem'
                 }}>
-                  <p>You've seen all {pagination.total} creators!</p>
+                  <p>You&apos;ve seen all {pagination.total} creators!</p>
                   <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
                     Try adjusting your filters to discover more creators.
                   </p>
@@ -1537,9 +597,9 @@ export default function CreatorsPage() {
                   color: '#22c55e'
                 }}>
                   <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Grid Active</h4>
-                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_CARD_HEIGHT)) * columnsCount} items instead of {creators.length}</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Only rendering ~{Math.ceil(CONTAINER_HEIGHT / DESKTOP_CARD_HEIGHT) * columnsCount} items instead of {creators.length}</p>
                   <p style={{ margin: '0.25rem 0' }}>• Grid: {columnsCount} columns × {rowCount} rows</p>
-                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round(((Math.ceil(CONTAINER_HEIGHT / (isMobile ? MOBILE_ITEM_HEIGHT : DESKTOP_CARD_HEIGHT)) * columnsCount) / Math.max(1, creators.length)) * 100)}% of traditional rendering</p>
+                  <p style={{ margin: '0.25rem 0' }}>• Memory usage: ~{Math.round(((Math.ceil(CONTAINER_HEIGHT / DESKTOP_CARD_HEIGHT) * columnsCount) / Math.max(1, creators.length)) * 100)}% of traditional rendering</p>
                   <p style={{ margin: '0.25rem 0' }}>• Supports {pagination.total} creators without performance loss</p>
                 </div>
               )}
