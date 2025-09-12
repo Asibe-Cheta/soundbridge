@@ -383,13 +383,14 @@ export default function EventsPage() {
       {/* Header */}
       <header className="header">
         {isMobile ? (
-          /* Mobile Header */
+          /* Mobile Header - Apple Music Style */
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
             width: '100%'
           }}>
+            {/* LEFT - Hamburger Menu */}
             <button
               id="mobile-menu-button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -397,33 +398,79 @@ export default function EventsPage() {
                 background: 'none',
                 border: 'none',
                 padding: '8px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
             >
-              <Menu size={24} style={{ color: 'var(--text-primary)' }} />
+              <Menu size={24} color="white" />
             </button>
-            <div className="logo">
+
+            {/* CENTER - Small Logo */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              flex: 1
+            }}>
               <Image
                 src="/images/logos/logo-trans-lockup.png"
                 alt="SoundBridge Logo"
-                width={100}
-                height={28}
+                width={80}
+                height={22}
                 priority
                 style={{ height: 'auto' }}
               />
             </div>
-            <div style={{ position: 'relative' }}>
+
+            {/* RIGHT - Sign In / Profile */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
               {user ? (
-                <button
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <User size={20} style={{ color: 'var(--text-primary)' }} />
-                </button>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    id="user-menu-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        const menu = document.getElementById('user-menu');
+                        if (menu) {
+                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                        }
+                      } catch (error) {
+                        console.error('Error toggling user menu:', error);
+                      }
+                    }}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '2px solid var(--accent-primary)',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--hover-bg)';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--bg-card)';
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                    }}
+                  >
+                    <User size={20} color="var(--accent-primary)" />
+                  </button>
+                </div>
               ) : (
                 <Link href="/login" style={{ textDecoration: 'none' }}>
                   <button
@@ -435,8 +482,11 @@ export default function EventsPage() {
                       cursor: 'pointer',
                       color: 'white',
                       fontWeight: '500',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      transition: 'all 0.2s ease'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
                   >
                     Sign In
                   </button>
@@ -445,7 +495,7 @@ export default function EventsPage() {
             </div>
           </div>
         ) : (
-          /* Desktop Header */
+          /* Desktop Header - Original Style */
           <div className="navbar-main" style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -453,6 +503,7 @@ export default function EventsPage() {
             width: '100%',
             gap: '1rem'
           }}>
+            {/* LEFT SIDE */}
             <div className="navbar-left" style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -469,83 +520,159 @@ export default function EventsPage() {
                   style={{ height: 'auto' }}
                 />
               </div>
-              <nav className="navbar-nav">
+              {/* Desktop Navigation */}
+              <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
                 <Link href="/" style={{ 
                   textDecoration: 'none', 
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500',
-                  fontSize: '16px'
-                }}>
+                  color: 'var(--text-primary)',
+                  transition: 'all 0.3s ease',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
                   For You
                 </Link>
                 <Link href="/discover" style={{ 
                   textDecoration: 'none', 
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500',
-                  fontSize: '16px'
-                }}>
+                  color: 'var(--text-primary)',
+                  transition: 'all 0.3s ease',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
                   Discover
                 </Link>
-                <Link href="/events" style={{ 
+                <Link href="/events" className="active" style={{ 
                   textDecoration: 'none', 
                   color: 'var(--text-primary)',
-                  fontWeight: '600',
-                  fontSize: '16px'
-                }}>
+                  transition: 'all 0.3s ease',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
                   Events
                 </Link>
                 <Link href="/creators" style={{ 
                   textDecoration: 'none', 
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500',
-                  fontSize: '16px'
-                }}>
+                  color: 'var(--text-primary)',
+                  transition: 'all 0.3s ease',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
                   Creators
                 </Link>
+                <Link href="/about" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-primary)',
+                  transition: 'all 0.3s ease',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  About
+                </Link>
               </nav>
+              
+              {/* Spacer between navigation and search */}
+              <div style={{ width: '0.25rem' }}></div>
             </div>
-            <div className="navbar-center" style={{ 
-              flex: 1, 
-              maxWidth: '600px',
-              position: 'relative'
-            }}>
-              <SearchDropdown />
+
+            {/* CENTER - Search Bar */}
+            <div className="navbar-center">
+              <SearchDropdown placeholder="Search creators, events, podcasts..." />
             </div>
+
+            {/* RIGHT SIDE */}
             <div className="navbar-right" style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '1rem',
+              gap: '0.75rem',
               flexShrink: 0
             }}>
+              {/* Upload Button */}
               <Link href="/upload" style={{ textDecoration: 'none' }}>
-                <button className="upload-button" style={{
-                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
+                <button 
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
                   <Upload size={16} />
                   Upload
                 </button>
               </Link>
+
+              {/* User Menu */}
               {user ? (
                 <div style={{ position: 'relative' }}>
                   <button
+                    id="user-menu-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        const menu = document.getElementById('user-menu');
+                        if (menu) {
+                          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                        }
+                      } catch (error) {
+                        console.error('Error toggling user menu:', error);
+                      }
+                    }}
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: '8px',
-                      cursor: 'pointer'
+                      background: 'var(--bg-card)',
+                      border: '2px solid var(--accent-primary)',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--hover-bg)';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--bg-card)';
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
                     }}
                   >
-                    <User size={20} style={{ color: 'var(--text-primary)' }} />
+                    <User size={20} color="var(--accent-primary)" />
                   </button>
                 </div>
               ) : (
@@ -554,13 +681,16 @@ export default function EventsPage() {
                     style={{
                       background: 'var(--accent-primary)',
                       border: 'none',
-                      padding: '10px 20px',
+                      padding: '8px 16px',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       color: 'white',
                       fontWeight: '500',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      transition: 'all 0.2s ease'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
                   >
                     Sign In
                   </button>
