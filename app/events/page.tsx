@@ -33,6 +33,7 @@ import {
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
 import { Footer } from '../../src/components/layout/Footer';
+import SearchDropdown from '../../src/components/search/SearchDropdown';
 import type { EventCategory } from '../../src/lib/types/event';
 
 // Virtual grid constants
@@ -88,39 +89,39 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
         }}
-        >
-          {/* Event Image */}
-          <div style={{
-            width: '100%',
+      >
+        {/* Event Image */}
+        <div style={{ 
+                width: '100%',
             height: '120px',
-            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
             borderRadius: '8px',
             marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
+              display: 'flex',
+              alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
             fontSize: '1.2rem',
             fontWeight: '600'
           }}>
             {event.title?.charAt(0) || 'E'}
-          </div>
+        </div>
 
-          {/* Event Details */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{
+        {/* Event Details */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ 
               color: 'var(--text-primary)',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              marginBottom: '0.5rem',
-              lineHeight: '1.3',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden'
-            }}>
+            fontSize: '1.1rem', 
+            fontWeight: '600', 
+            marginBottom: '0.5rem',
+            lineHeight: '1.3',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          }}>
               {event.title || 'Untitled Event'}
-            </h3>
+          </h3>
             
             <p style={{
               color: 'var(--text-secondary)',
@@ -135,29 +136,29 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
               {event.description || 'No description available'}
             </p>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
               gap: '0.5rem',
               marginBottom: '0.75rem',
               color: 'var(--text-secondary)',
-              fontSize: '0.85rem'
-            }}>
+            fontSize: '0.85rem'
+          }}>
               <Calendar size={14} />
               <span>{event.event_date || 'Date TBD'}</span>
-            </div>
+          </div>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
               gap: '0.5rem',
               marginBottom: '1rem',
               color: 'var(--text-secondary)',
-              fontSize: '0.85rem'
-            }}>
+            fontSize: '0.85rem'
+          }}>
               <Users size={14} />
               <span>{event.attendeeCount || 0} attendees</span>
-            </div>
+          </div>
 
             <div style={{
               display: 'flex',
@@ -167,18 +168,18 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
               paddingTop: '0.75rem',
               borderTop: '1px solid var(--border-primary)'
             }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center',
                 gap: '0.25rem',
                 color: 'var(--accent-primary)',
                 fontSize: '0.9rem',
                 fontWeight: '500'
               }}>
                 <span>{event.category || 'General'}</span>
-              </div>
             </div>
-          </div>
+        </div>
+      </div>
         </div>
       </Link>
     </div>
@@ -186,7 +187,7 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
 };
 
 export default function EventsPage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const [eventsState, eventsActions] = useEvents();
   const [searchQuery, setSearchQuery] = useState('');
@@ -197,6 +198,28 @@ export default function EventsPage() {
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [columnsCount, setColumnsCount] = useState(3);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Handle mobile responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   // Filter and sort events
   const filteredEvents = React.useMemo(() => {
@@ -357,6 +380,197 @@ export default function EventsPage() {
 
   return (
     <>
+      {/* Header */}
+      <header className="header">
+        {isMobile ? (
+          /* Mobile Header */
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            width: '100%'
+          }}>
+            <button
+              id="mobile-menu-button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              <Menu size={24} style={{ color: 'var(--text-primary)' }} />
+            </button>
+            <div className="logo">
+              <Image
+                src="/images/logos/logo-trans-lockup.png"
+                alt="SoundBridge Logo"
+                width={100}
+                height={28}
+                priority
+                style={{ height: 'auto' }}
+              />
+            </div>
+            <div style={{ position: 'relative' }}>
+              {user ? (
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <User size={20} style={{ color: 'var(--text-primary)' }} />
+                </button>
+              ) : (
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <button
+                    style={{
+                      background: 'var(--accent-primary)',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: 'white',
+                      fontWeight: '500',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Desktop Header */
+          <div className="navbar-main" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            width: '100%',
+            gap: '1rem'
+          }}>
+            <div className="navbar-left" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              flexShrink: 0
+            }}>
+              <div className="logo">
+                <Image
+                  src="/images/logos/logo-trans-lockup.png"
+                  alt="SoundBridge Logo"
+                  width={120}
+                  height={32}
+                  priority
+                  style={{ height: 'auto' }}
+                />
+              </div>
+              <nav className="navbar-nav">
+                <Link href="/" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500',
+                  fontSize: '16px'
+                }}>
+                  For You
+                </Link>
+                <Link href="/discover" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500',
+                  fontSize: '16px'
+                }}>
+                  Discover
+                </Link>
+                <Link href="/events" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-primary)',
+                  fontWeight: '600',
+                  fontSize: '16px'
+                }}>
+                  Events
+                </Link>
+                <Link href="/creators" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500',
+                  fontSize: '16px'
+                }}>
+                  Creators
+                </Link>
+              </nav>
+            </div>
+            <div className="navbar-center" style={{ 
+              flex: 1, 
+              maxWidth: '600px',
+              position: 'relative'
+            }}>
+              <SearchDropdown />
+            </div>
+            <div className="navbar-right" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              flexShrink: 0
+            }}>
+              <Link href="/upload" style={{ textDecoration: 'none' }}>
+                <button className="upload-button" style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Upload size={16} />
+                  Upload
+                </button>
+              </Link>
+              {user ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <User size={20} style={{ color: 'var(--text-primary)' }} />
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <button
+                    style={{
+                      background: 'var(--accent-primary)',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: 'white',
+                      fontWeight: '500',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
+
       {/* Main Content */}
       <main className="main-container">
         {/* Hero Section */}
@@ -375,11 +589,11 @@ export default function EventsPage() {
             <div className="search-bar-container">
               <div style={{ position: 'relative', flex: 1 }}>
                 <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#999', zIndex: 1 }} />
-                <input 
+              <input
                   type="search" 
-                  placeholder="Search events..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                   style={{ 
                     width: '100%', 
                     padding: '16px 16px 16px 48px',
@@ -393,10 +607,10 @@ export default function EventsPage() {
                   }} 
                   onFocus={(e) => e.target.style.borderColor = 'var(--accent-primary)'}
                   onBlur={(e) => e.target.style.borderColor = 'var(--border-primary)'}
-                />
-              </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -414,12 +628,12 @@ export default function EventsPage() {
                 onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
               >
                 <Filter size={18} />
-                Filters
-              </button>
-            </div>
+              Filters
+            </button>
+          </div>
 
             {/* Filters Panel */}
-            {showFilters && (
+          {showFilters && (
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -435,9 +649,9 @@ export default function EventsPage() {
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
                     Location
                   </label>
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -447,23 +661,23 @@ export default function EventsPage() {
                       color: 'var(--text-primary)',
                       fontSize: '14px'
                     }}
-                  >
-                    {locations.map((location) => (
-                      <option key={location.value} value={location.value}>
-                        {location.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                >
+                  {locations.map((location) => (
+                    <option key={location.value} value={location.value}>
+                      {location.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
                 {/* Category Filter */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
                     Category
                   </label>
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => setSelectedGenre(e.target.value)}
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -473,23 +687,23 @@ export default function EventsPage() {
                       color: 'var(--text-primary)',
                       fontSize: '14px'
                     }}
-                  >
-                    {genres.map((genre) => (
-                      <option key={genre.value} value={genre.value}>
-                        {genre.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                >
+                  {genres.map((genre) => (
+                    <option key={genre.value} value={genre.value}>
+                      {genre.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
                 {/* Date Filter */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
                     Date
                   </label>
-                  <select
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -499,23 +713,23 @@ export default function EventsPage() {
                       color: 'var(--text-primary)',
                       fontSize: '14px'
                     }}
-                  >
-                    {dateRanges.map((date) => (
-                      <option key={date.value} value={date.value}>
-                        {date.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                >
+                  {dateRanges.map((date) => (
+                    <option key={date.value} value={date.value}>
+                      {date.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
                 {/* Price Filter */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
                     Price
                   </label>
-                  <select
-                    value={selectedPrice}
-                    onChange={(e) => setSelectedPrice(e.target.value)}
+                <select
+                  value={selectedPrice}
+                  onChange={(e) => setSelectedPrice(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -525,23 +739,23 @@ export default function EventsPage() {
                       color: 'var(--text-primary)',
                       fontSize: '14px'
                     }}
-                  >
-                    {priceRanges.map((price) => (
-                      <option key={price.value} value={price.value}>
-                        {price.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                >
+                  {priceRanges.map((price) => (
+                    <option key={price.value} value={price.value}>
+                      {price.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
                 {/* Sort By */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: '500' }}>
                     Sort By
                   </label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -556,14 +770,14 @@ export default function EventsPage() {
                     <option value="popular">Most Popular</option>
                     <option value="upcoming">Upcoming</option>
                     <option value="alphabetical">A-Z</option>
-                  </select>
-                </div>
+                </select>
+              </div>
 
                 {/* Clear Filters */}
-                {hasActiveFilters && (
+              {hasActiveFilters && (
                   <div style={{ display: 'flex', alignItems: 'end' }}>
-                    <button
-                      onClick={clearFilters}
+                <button
+                  onClick={clearFilters}
                       style={{
                         padding: '12px 20px',
                         background: 'transparent',
@@ -584,11 +798,11 @@ export default function EventsPage() {
                       }}
                     >
                       Clear All
-                    </button>
+                </button>
                   </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
+          )}
           </div>
         </section>
 
@@ -600,16 +814,16 @@ export default function EventsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-secondary)' }}>
                   <Loader2 size={24} className="animate-spin" />
                   <span>Loading events...</span>
-                </div>
-              </div>
+            </div>
+          </div>
             ) : eventsState.error ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--error)' }}>
                   <AlertCircle size={24} />
                   <span>Error loading events: {eventsState.error}</span>
                 </div>
-              </div>
-            ) : filteredEvents.length === 0 ? (
+            </div>
+          ) : filteredEvents.length === 0 ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
                   <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
@@ -619,7 +833,7 @@ export default function EventsPage() {
                   <p style={{ marginBottom: '1rem' }}>
                     {hasActiveFilters ? 'Try adjusting your search criteria' : 'Check back later for new events'}
                   </p>
-                  {hasActiveFilters && (
+              {hasActiveFilters && (
                     <button
                       onClick={clearFilters}
                       style={{
@@ -635,36 +849,36 @@ export default function EventsPage() {
                       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
                     >
-                      Clear Filters
-                    </button>
-                  )}
+                  Clear Filters
+                </button>
+              )}
                 </div>
-              </div>
-            ) : (
-              <AutoSizer>
+            </div>
+          ) : (
+                <AutoSizer>
                 {({ width, height }) => (
-                  <Grid
-                    columnCount={columnsCount}
+                      <Grid
+                        columnCount={columnsCount}
                     columnWidth={EVENT_CARD_WIDTH + GRID_GAP}
-                    height={height}
-                    rowCount={rowCount}
+                        height={height}
+                        rowCount={rowCount}
                     rowHeight={EVENT_ITEM_HEIGHT + GRID_GAP}
-                    width={width}
-                    itemData={{
-                      events: filteredEvents,
+                        width={width}
+                        itemData={{
+                          events: filteredEvents,
                       columnsCount
-                    }}
-                  >
-                    {VirtualEventItem}
-                  </Grid>
+                        }}
+                      >
+                        {VirtualEventItem}
+                      </Grid>
                 )}
-              </AutoSizer>
+                </AutoSizer>
             )}
-          </div>
+            </div>
         </section>
 
         <Footer />
       </main>
     </>
   );
-}
+} 

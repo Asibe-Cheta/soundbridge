@@ -20,6 +20,7 @@ import {
   Settings,
   Home,
   Menu,
+  X,
   LogOut,
   Loader2,
   AlertCircle
@@ -622,8 +623,196 @@ export default function CreatorsPage() {
 
   return (
     <>
-      {/* Header removed */}
-
+      {/* Header */}
+      <header className="header">
+        {isMobile ? (
+          /* Mobile Header */
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            width: '100%'
+          }}>
+            <button
+              id="mobile-menu-button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              <Menu size={24} style={{ color: 'var(--text-primary)' }} />
+            </button>
+            <div className="logo">
+              <Image
+                src="/images/logos/logo-trans-lockup.png"
+                alt="SoundBridge Logo"
+                width={100}
+                height={28}
+                priority
+                style={{ height: 'auto' }}
+              />
+            </div>
+            <div style={{ position: 'relative' }}>
+              {user ? (
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <User size={20} style={{ color: 'var(--text-primary)' }} />
+                </button>
+              ) : (
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <button
+                    style={{
+                      background: 'var(--accent-primary)',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: 'white',
+                      fontWeight: '500',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Desktop Header */
+          <div className="navbar-main" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            width: '100%',
+            gap: '1rem'
+          }}>
+            <div className="navbar-left" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              flexShrink: 0
+            }}>
+              <div className="logo">
+                <Image
+                  src="/images/logos/logo-trans-lockup.png"
+                  alt="SoundBridge Logo"
+                  width={120}
+                  height={32}
+                  priority
+                  style={{ height: 'auto' }}
+                />
+              </div>
+              <nav className="navbar-nav">
+                <Link href="/" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500',
+                  fontSize: '16px'
+                }}>
+                  For You
+                </Link>
+                <Link href="/discover" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500',
+                  fontSize: '16px'
+                }}>
+                  Discover
+                </Link>
+                <Link href="/events" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500',
+                  fontSize: '16px'
+                }}>
+                  Events
+                </Link>
+                <Link href="/creators" style={{ 
+                  textDecoration: 'none', 
+                  color: 'var(--text-primary)',
+                  fontWeight: '600',
+                  fontSize: '16px'
+                }}>
+                  Creators
+                </Link>
+              </nav>
+            </div>
+            <div className="navbar-center" style={{ 
+              flex: 1, 
+              maxWidth: '600px',
+              position: 'relative'
+            }}>
+              <SearchDropdown />
+            </div>
+            <div className="navbar-right" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              flexShrink: 0
+            }}>
+              <Link href="/upload" style={{ textDecoration: 'none' }}>
+                <button className="upload-button" style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Upload size={16} />
+                  Upload
+                </button>
+              </Link>
+              {user ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <User size={20} style={{ color: 'var(--text-primary)' }} />
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <button
+                    style={{
+                      background: 'var(--accent-primary)',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: 'white',
+                      fontWeight: '500',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
 
       <main className="main-container">
         {/* Search and Filters */}
