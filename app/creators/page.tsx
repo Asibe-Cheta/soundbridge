@@ -660,14 +660,16 @@ export default function CreatorsPage() {
               alignItems: 'center',
               flex: 1
             }}>
-              <Image
-                src="/images/logos/logo-trans-lockup.png"
-                alt="SoundBridge Logo"
-                width={80}
-                height={22}
-                priority
-                style={{ height: 'auto' }}
-              />
+              <Link href="/">
+                <Image
+                  src="/images/logos/logo-trans-lockup.png"
+                  alt="SoundBridge Logo"
+                  width={80}
+                  height={22}
+                  priority
+                  style={{ height: 'auto' }}
+                />
+              </Link>
             </div>
 
             {/* RIGHT - Sign In / Profile */}
@@ -754,14 +756,16 @@ export default function CreatorsPage() {
               flexShrink: 0
             }}>
               <div className="logo">
-                <Image
-                  src="/images/logos/logo-trans-lockup.png"
-                  alt="SoundBridge Logo"
-                  width={120}
-                  height={32}
-                  priority
-                  style={{ height: 'auto' }}
-                />
+                <Link href="/">
+                  <Image
+                    src="/images/logos/logo-trans-lockup.png"
+                    alt="SoundBridge Logo"
+                    width={120}
+                    height={32}
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </Link>
               </div>
               {/* Desktop Navigation */}
               <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1091,14 +1095,16 @@ export default function CreatorsPage() {
             padding: '1rem 0'
           }}>
             <div className="logo">
-              <Image
-                src="/images/logos/logo-trans-lockup.png"
-                alt="SoundBridge Logo"
-                width={100}
-                height={28}
-                priority
-                style={{ height: 'auto' }}
-              />
+              <Link href="/">
+                <Image
+                  src="/images/logos/logo-trans-lockup.png"
+                  alt="SoundBridge Logo"
+                  width={100}
+                  height={28}
+                  priority
+                  style={{ height: 'auto' }}
+                />
+              </Link>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
