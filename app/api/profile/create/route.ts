@@ -40,13 +40,16 @@ export async function POST(request: NextRequest) {
         id: userId,
         username: username || `user${Math.random().toString(36).substring(2, 8)}`,
         display_name: display_name || 'New User',
-        role: (() => {
-          // Map onboarding roles to database roles
-          if (['musician', 'podcaster', 'event_promoter'].includes(role)) {
-            return 'creator';
-          }
-          return 'listener';
-        })(),
+      role: (() => {
+        // Map onboarding roles to database roles
+        const userRole = role || 'listener';
+        if (['musician', 'podcaster', 'event_promoter'].includes(userRole)) {
+          console.log(`✅ Mapping role '${userRole}' to 'creator'`);
+          return 'creator';
+        }
+        console.log(`✅ Mapping role '${userRole}' to 'listener'`);
+        return 'listener';
+      })(),
         location: location || 'london',
         country: country || (location?.includes('Nigeria') ? 'Nigeria' : 'UK'),
         bio: bio || '',
@@ -112,8 +115,10 @@ export async function POST(request: NextRequest) {
         const userRole = role || authUser.user.user_metadata?.role || 'listener';
         // Map onboarding roles to database roles
         if (['musician', 'podcaster', 'event_promoter'].includes(userRole)) {
+          console.log(`✅ Mapping role '${userRole}' to 'creator'`);
           return 'creator';
         }
+        console.log(`✅ Mapping role '${userRole}' to 'listener'`);
         return 'listener';
       })(),
       location: location || authUser.user.user_metadata?.location || 'london',
