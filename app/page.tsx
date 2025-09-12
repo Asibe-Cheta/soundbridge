@@ -1755,10 +1755,18 @@ export default function HomePage() {
                               lineHeight: 'var(--leading-snug)',
                               letterSpacing: 'var(--tracking-tight)'
                             }}>Trending Now</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1rem',
+              maxHeight: '300px',
+              overflowY: 'auto',
+              paddingRight: '8px'
+            }}
+            className="scrollbar-thin">
               {isLoadingTrending ? (
                 // Loading state
-                Array.from({ length: 2 }).map((_, index) => (
+                Array.from({ length: 5 }).map((_, index) => (
                   <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '50px', height: '50px', background: 'var(--bg-secondary)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
                     <div style={{ flex: 1 }}>
@@ -1768,9 +1776,11 @@ export default function HomePage() {
                   </div>
                 ))
               ) : trendingTracks.length > 0 ? (
-                // Show trending tracks
-                trendingTracks.slice(0, 2).map((track, index) => (
-                  <div key={track.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                // Show all trending tracks with scroll
+                trendingTracks.map((track, index) => (
+                  <div key={track.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
+                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                     <div style={{ width: '50px', height: '50px', background: 'var(--bg-secondary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {track.coverArt ? (
                         <Image
@@ -1784,9 +1794,9 @@ export default function HomePage() {
                         <Music size={20} color="var(--text-secondary)" />
                       )}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{track.title}</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700' }}>{track.artist}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.title}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
                     </div>
                     <button 
                       style={{ 
@@ -1796,7 +1806,8 @@ export default function HomePage() {
                         fontSize: '1.2rem',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        transform: 'scale(1)'
+                        transform: 'scale(1)',
+                        flexShrink: 0
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
@@ -2514,7 +2525,7 @@ export default function HomePage() {
             ) : (
               <>
                 <div style={{ color: '#999', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                  📋 Generic Feed
+                  Generic Feed
                 </div>
                 <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem' }}>
                   Complete onboarding for personalized content
