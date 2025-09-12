@@ -2534,7 +2534,7 @@ export default function HomePage() {
       {/* Floating Quick Actions Card */}
       <FloatingCard title="Quick Actions" position="top-right">
         <div style={{
-          maxHeight: '500px',
+          maxHeight: '350px',
           overflowY: 'auto',
           paddingRight: '8px'
         }}

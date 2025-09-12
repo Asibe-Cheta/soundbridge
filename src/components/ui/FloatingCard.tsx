@@ -85,6 +85,7 @@ export function FloatingCard({
         borderRadius: '12px',
         padding: '1rem',
         width: '280px',
+        maxHeight: '500px',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         transformOrigin: 'top',
@@ -146,7 +147,7 @@ export function FloatingCard({
 
       {/* Content */}
       {!isCollapsed && (
-        <div>
+        <div style={{ overflow: 'hidden' }}>
           {children}
         </div>
       )}

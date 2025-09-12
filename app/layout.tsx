@@ -9,7 +9,6 @@ import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
 import { OnboardingManager } from "@/src/components/onboarding/OnboardingManager";
-import { OnboardingDebug } from "@/src/components/onboarding/OnboardingDebug";
 import { StructuredData, organizationStructuredData, websiteStructuredData } from "@/src/components/seo/StructuredData";
 import Script from 'next/script';
 
@@ -187,7 +186,6 @@ export default function RootLayout({
                 {children}
                 <GlobalAudioPlayer />
                 <OnboardingManager />
-                <OnboardingDebug />
               </AudioPlayerProvider>
             </OnboardingProvider>
           </AuthProvider>
