@@ -128,6 +128,17 @@ export default function SettingsPage() {
   const [is2FAVerifying, setIs2FAVerifying] = useState(false);
   const [twoFAError, setTwoFAError] = useState<string | null>(null);
   const [twoFASuccess, setTwoFASuccess] = useState(false);
+  const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
+  const [isLoginAlertsLoading, setIsLoginAlertsLoading] = useState(false);
+  const [loginAlertsError, setLoginAlertsError] = useState<string | null>(null);
+  const [recentLogins, setRecentLogins] = useState<any[]>([]);
+  const [isRecentLoginsLoading, setIsRecentLoginsLoading] = useState(false);
+  const [showRecentLogins, setShowRecentLogins] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState<any[]>([]);
+  const [isSessionDetailsLoading, setIsSessionDetailsLoading] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState(30);
+  const [isSessionTimeoutLoading, setIsSessionTimeoutLoading] = useState(false);
+  const [sessionTimeoutError, setSessionTimeoutError] = useState<string | null>(null);
 
   const [accountData, setAccountData] = useState({
     email: user?.email || '',
@@ -205,6 +216,19 @@ export default function SettingsPage() {
       router.push('/login');
     }
   }, [user, router]);
+
+  useEffect(() => {
+    if (user) {
+      setAccountData(prev => ({
+        ...prev,
+        email: user.email || '',
+        phone: user.phone || ''
+      }));
+      
+      // Load session details on mount
+      handleLoadSessionDetails();
+    }
+  }, [user]);
 
   const handleSaveAccount = async () => {
     try {
@@ -406,6 +430,152 @@ export default function SettingsPage() {
     setTwoFASecret(null);
     setTwoFAToken('');
     setTwoFAError(null);
+  };
+
+  const handleToggleLoginAlerts = async () => {
+    try {
+      setIsLoginAlertsLoading(true);
+      setLoginAlertsError(null);
+
+      const newStatus = !loginAlertsEnabled;
+
+      const response = await fetch('/api/auth/login-alerts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          enabled: newStatus,
+          emailNotifications: newStatus,
+          pushNotifications: newStatus
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setLoginAlertsError(data.error || 'Failed to update login alerts');
+        setIsLoginAlertsLoading(false);
+        return;
+      }
+
+      setLoginAlertsEnabled(newStatus);
+      setIsLoginAlertsLoading(false);
+
+    } catch (error) {
+      console.error('Error toggling login alerts:', error);
+      setLoginAlertsError('An unexpected error occurred. Please try again.');
+      setIsLoginAlertsLoading(false);
+    }
+  };
+
+  const handleViewRecentLogins = async () => {
+    try {
+      setIsRecentLoginsLoading(true);
+      setShowRecentLogins(true);
+
+      const response = await fetch('/api/auth/recent-logins');
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('Failed to fetch recent logins:', data.error);
+        return;
+      }
+
+      setRecentLogins(data.sessions);
+      setIsRecentLoginsLoading(false);
+
+    } catch (error) {
+      console.error('Error fetching recent logins:', error);
+      setIsRecentLoginsLoading(false);
+    }
+  };
+
+  const handleTerminateSession = async (sessionId: string) => {
+    try {
+      const response = await fetch('/api/auth/recent-logins', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('Failed to terminate session:', data.error);
+        return;
+      }
+
+      // Remove the session from the list
+      setRecentLogins(prev => prev.filter(session => session.id !== sessionId));
+      setSessionDetails(prev => prev.filter(session => session.id !== sessionId));
+
+    } catch (error) {
+      console.error('Error terminating session:', error);
+    }
+  };
+
+  const handleLoadSessionDetails = async () => {
+    try {
+      setIsSessionDetailsLoading(true);
+      setSessionTimeoutError(null);
+
+      const response = await fetch('/api/auth/session-details');
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setSessionTimeoutError(data.error || 'Failed to load session details');
+        setIsSessionDetailsLoading(false);
+        return;
+      }
+
+      setSessionDetails(data.sessions);
+      setIsSessionDetailsLoading(false);
+
+    } catch (error) {
+      console.error('Error loading session details:', error);
+      setSessionTimeoutError('An unexpected error occurred. Please try again.');
+      setIsSessionDetailsLoading(false);
+    }
+  };
+
+  const handleUpdateSessionTimeout = async (newTimeout: number) => {
+    try {
+      setIsSessionTimeoutLoading(true);
+      setSessionTimeoutError(null);
+
+      const response = await fetch('/api/auth/session-timeout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          timeoutMinutes: newTimeout,
+          autoLogout: true,
+          warningTime: 5
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setSessionTimeoutError(data.error || 'Failed to update session timeout');
+        setIsSessionTimeoutLoading(false);
+        return;
+      }
+
+      setSessionTimeout(newTimeout);
+      setIsSessionTimeoutLoading(false);
+
+    } catch (error) {
+      console.error('Error updating session timeout:', error);
+      setSessionTimeoutError('An unexpected error occurred. Please try again.');
+      setIsSessionTimeoutLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -662,11 +832,11 @@ export default function SettingsPage() {
           <div className="form-group">
             <label className="form-label">Confirm New Password</label>
             <div className="relative">
-              <input
+            <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 className="form-input pr-10"
-                value={passwordData.confirmPassword}
-                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+              value={passwordData.confirmPassword}
+              onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
                 disabled={isChangingPassword}
               />
               <button
@@ -677,7 +847,7 @@ export default function SettingsPage() {
               >
                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </div>
+          </div>
           </div>
           
           <button 
@@ -692,7 +862,7 @@ export default function SettingsPage() {
               </>
             ) : (
               <>
-                <Key size={16} />
+            <Key size={16} />
                 <span>Change Password</span>
               </>
             )}
@@ -837,8 +1007,8 @@ export default function SettingsPage() {
                 </>
               ) : (
                 <>
-                  <Shield size={16} />
-                  Set Up Two-Factor Authentication
+              <Shield size={16} />
+              Set Up Two-Factor Authentication
                 </>
               )}
             </button>
@@ -855,7 +1025,7 @@ export default function SettingsPage() {
                 >
                   <X size={20} />
                 </button>
-              </div>
+        </div>
               
               <div className="space-y-4">
                 <p className="text-gray-300 text-sm">
@@ -932,15 +1102,130 @@ export default function SettingsPage() {
         <div className="card-header">
           <h3 className="card-title">Login Alerts</h3>
           <button
-            onClick={() => setSecuritySettings(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }))}
-            className={`btn-toggle ${securitySettings.loginAlerts ? 'enabled' : ''}`}
+            onClick={handleToggleLoginAlerts}
+            className={`btn-toggle ${loginAlertsEnabled ? 'enabled' : ''}`}
+            disabled={isLoginAlertsLoading}
           >
-            {securitySettings.loginAlerts ? 'Enabled' : 'Disabled'}
+            {isLoginAlertsLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : loginAlertsEnabled ? (
+              'Enabled'
+            ) : (
+              'Disabled'
+            )}
           </button>
         </div>
+        <div className="space-y-4">
         <p className="text-gray-400">
           Get notified when someone logs into your account from a new device or location.
         </p>
+          
+          {/* Error Message */}
+          {loginAlertsError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <span className="text-red-300 text-sm">{loginAlertsError}</span>
+              </div>
+            </div>
+          )}
+
+          {loginAlertsEnabled && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-white">Active Sessions</div>
+                  <div className="text-sm text-gray-400">Manage your active login sessions</div>
+                </div>
+                <button 
+                  onClick={handleViewRecentLogins}
+                  className="btn-secondary"
+                  disabled={isRecentLoginsLoading}
+                >
+                  {isRecentLoginsLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    'View All'
+                  )}
+                </button>
+              </div>
+
+              {/* Recent Logins Modal */}
+              {showRecentLogins && (
+                <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-white">Active Sessions</h4>
+                    <button
+                      onClick={() => setShowRecentLogins(false)}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {(sessionDetails.length > 0 ? sessionDetails : recentLogins).map((session) => (
+                      <div key={session.id} className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${session.isCurrent ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                            <div>
+                              <div className="font-medium text-white">{session.device || session.browser}</div>
+                              <div className="text-sm text-gray-400">{session.location}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-300">
+                              {new Date(session.loginTime || session.timestamp).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {new Date(session.loginTime || session.timestamp).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <span className="text-gray-400">IP:</span>
+                            <span className="text-white ml-1">{session.ipAddress}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Duration:</span>
+                            <span className="text-white ml-1">{session.sessionDuration || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Browser:</span>
+                            <span className="text-white ml-1">{session.browser || 'Unknown'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">OS:</span>
+                            <span className="text-white ml-1">{session.os || 'Unknown'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-gray-500">
+                          Last activity: {new Date(session.lastActivity || session.timestamp).toLocaleString()}
+                        </div>
+                        
+                        {!session.isCurrent && (
+                          <button
+                            onClick={() => handleTerminateSession(session.id)}
+                            className="btn-danger text-xs px-3 py-1"
+                          >
+                            Terminate Session
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Session Management */}
@@ -949,27 +1234,119 @@ export default function SettingsPage() {
           <h3 className="card-title">Session Management</h3>
         </div>
         <div className="space-y-4">
+          {/* Error Message */}
+          {sessionTimeoutError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <span className="text-red-300 text-sm">{sessionTimeoutError}</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium text-white">Active Sessions</div>
-              <div className="text-sm text-gray-400">{securitySettings.activeSessions} devices</div>
+              <div className="text-sm text-gray-400">
+                {sessionDetails.length > 0 ? sessionDetails.filter(s => s.isCurrent).length : 0} devices
+              </div>
             </div>
-            <button className="btn-secondary">View All</button>
+            <button 
+              onClick={handleViewRecentLogins}
+              className="btn-secondary"
+              disabled={isRecentLoginsLoading || isSessionDetailsLoading}
+            >
+              {(isRecentLoginsLoading || isSessionDetailsLoading) ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                'View All'
+              )}
+            </button>
           </div>
+
+          {/* Session Details Preview */}
+          {sessionDetails.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-white">Recent Sessions</div>
+              {sessionDetails.slice(0, 2).map((session) => (
+                <div key={session.id} className="bg-gray-700/30 rounded-lg p-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${session.isCurrent ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                      <span className="text-white text-sm">{session.device}</span>
+                    </div>
+                    <span className="text-xs text-gray-400">{session.sessionDuration}</span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {session.location} • {session.ipAddress}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Last active: {new Date(session.lastActivity).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label">Session Timeout (minutes)</label>
             <select
               className="form-input"
-              value={securitySettings.sessionTimeout}
-              onChange={(e) => setSecuritySettings(prev => ({ ...prev, sessionTimeout: parseInt(e.target.value) }))}
+              value={sessionTimeout}
+              onChange={(e) => {
+                const newTimeout = parseInt(e.target.value);
+                setSessionTimeout(newTimeout);
+                handleUpdateSessionTimeout(newTimeout);
+              }}
+              disabled={isSessionTimeoutLoading}
             >
               <option value={15}>15 minutes</option>
               <option value={30}>30 minutes</option>
               <option value={60}>1 hour</option>
               <option value={120}>2 hours</option>
+              <option value={240}>4 hours</option>
               <option value={0}>Never</option>
             </select>
+            {isSessionTimeoutLoading && (
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                <span className="text-xs text-gray-400">Updating timeout...</span>
+              </div>
+            )}
           </div>
+
+          {/* Session Statistics */}
+          {sessionDetails.length > 0 && (
+            <div className="bg-gray-700/20 rounded-lg p-4 space-y-2">
+              <div className="text-sm font-medium text-white">Session Statistics</div>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-gray-400">Total Sessions:</span>
+                  <span className="text-white ml-2">{sessionDetails.length}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Active Now:</span>
+                  <span className="text-green-400 ml-2">{sessionDetails.filter(s => s.isCurrent).length}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Longest Session:</span>
+                  <span className="text-white ml-2">
+                    {sessionDetails.reduce((max, session) => {
+                      const duration = session.sessionDuration;
+                      return duration > max ? duration : max;
+                    }, '0h 0m')}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Current Timeout:</span>
+                  <span className="text-white ml-2">{sessionTimeout} min</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
