@@ -120,6 +120,14 @@ export default function SettingsPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [is2FASetupOpen, setIs2FASetupOpen] = useState(false);
+  const [is2FASetupLoading, setIs2FASetupLoading] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [twoFASecret, setTwoFASecret] = useState<string | null>(null);
+  const [twoFAToken, setTwoFAToken] = useState('');
+  const [is2FAVerifying, setIs2FAVerifying] = useState(false);
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
+  const [twoFASuccess, setTwoFASuccess] = useState(false);
 
   const [accountData, setAccountData] = useState({
     email: user?.email || '',
@@ -276,17 +284,128 @@ export default function SettingsPage() {
     }
   };
 
-  const handleToggleTwoFactor = async () => {
+  const handleSetupTwoFactor = async () => {
     try {
+      setIs2FASetupLoading(true);
+      setTwoFAError(null);
+      setQrCodeUrl(null);
+      setTwoFASecret(null);
+
+      const response = await fetch('/api/auth/2fa/setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setTwoFAError(data.error || 'Failed to setup 2FA');
+        setIs2FASetupLoading(false);
+        return;
+      }
+
+      setQrCodeUrl(data.qrCode);
+      setTwoFASecret(data.secret);
+      setIs2FASetupOpen(true);
+      setIs2FASetupLoading(false);
+
+    } catch (error) {
+      console.error('Error setting up 2FA:', error);
+      setTwoFAError('An unexpected error occurred. Please try again.');
+      setIs2FASetupLoading(false);
+    }
+  };
+
+  const handleVerifyTwoFactor = async () => {
+    try {
+      setIs2FAVerifying(true);
+      setTwoFAError(null);
+      setTwoFASuccess(false);
+
+      if (!twoFAToken || !twoFASecret) {
+        setTwoFAError('Please enter the verification code');
+        setIs2FAVerifying(false);
+        return;
+      }
+
+      const response = await fetch('/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: twoFAToken,
+          secret: twoFASecret
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setTwoFAError(data.error || 'Failed to verify 2FA code');
+        setIs2FAVerifying(false);
+        return;
+      }
+
+      // Enable 2FA
+      await handleToggleTwoFactor(true);
+      setTwoFASuccess(true);
+      setIs2FASetupOpen(false);
+      setTwoFAToken('');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setTwoFASuccess(false);
+      }, 5000);
+
+    } catch (error) {
+      console.error('Error verifying 2FA:', error);
+      setTwoFAError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIs2FAVerifying(false);
+    }
+  };
+
+  const handleToggleTwoFactor = async (enabled?: boolean) => {
+    try {
+      const newStatus = enabled !== undefined ? enabled : !securitySettings.twoFactorEnabled;
+      
+      const response = await fetch('/api/auth/2fa/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          enabled: newStatus
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('Failed to update 2FA status:', data.error);
+        return;
+      }
+
       setSecuritySettings(prev => ({
         ...prev,
-        twoFactorEnabled: !prev.twoFactorEnabled
+        twoFactorEnabled: newStatus
       }));
-      // Here you would typically make an API call to enable/disable 2FA
-      console.log('Toggling 2FA:', !securitySettings.twoFactorEnabled);
+
+      console.log('2FA status updated:', newStatus);
     } catch (error) {
       console.error('Error toggling 2FA:', error);
     }
+  };
+
+  const handleCancelTwoFactorSetup = () => {
+    setIs2FASetupOpen(false);
+    setQrCodeUrl(null);
+    setTwoFASecret(null);
+    setTwoFAToken('');
+    setTwoFAError(null);
   };
 
   const handleDeleteAccount = async () => {
@@ -668,13 +787,24 @@ export default function SettingsPage() {
 
   const renderSecurityTab = () => (
     <div className="space-y-6">
+      {/* Success Message */}
+      {twoFASuccess && (
+        <div className="bg-green-900/20 border border-green-500/50 rounded-lg p-3">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-4 w-4 text-green-400" />
+            <span className="text-green-300 text-sm">Two-Factor Authentication enabled successfully!</span>
+          </div>
+        </div>
+      )}
+
       {/* Two-Factor Authentication */}
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">Two-Factor Authentication</h3>
           <button
-            onClick={handleToggleTwoFactor}
+            onClick={() => handleToggleTwoFactor()}
             className={`btn-toggle ${securitySettings.twoFactorEnabled ? 'enabled' : ''}`}
+            disabled={is2FASetupOpen}
           >
             {securitySettings.twoFactorEnabled ? 'Enabled' : 'Disabled'}
           </button>
@@ -683,11 +813,116 @@ export default function SettingsPage() {
           <p className="text-gray-400">
             Add an extra layer of security to your account by enabling two-factor authentication.
           </p>
-          {!securitySettings.twoFactorEnabled && (
-            <button className="btn-primary">
-              <Shield size={16} />
-              Set Up Two-Factor Authentication
+          
+          {/* Error Message */}
+          {twoFAError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <span className="text-red-300 text-sm">{twoFAError}</span>
+              </div>
+            </div>
+          )}
+
+          {!securitySettings.twoFactorEnabled && !is2FASetupOpen && (
+            <button 
+              onClick={handleSetupTwoFactor}
+              className="btn-primary"
+              disabled={is2FASetupLoading}
+            >
+              {is2FASetupLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Setting up 2FA...</span>
+                </>
+              ) : (
+                <>
+                  <Shield size={16} />
+                  Set Up Two-Factor Authentication
+                </>
+              )}
             </button>
+          )}
+
+          {/* 2FA Setup Modal */}
+          {is2FASetupOpen && (
+            <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-semibold text-white">Set Up Two-Factor Authentication</h4>
+                <button
+                  onClick={handleCancelTwoFactorSetup}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-gray-300 text-sm">
+                  Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):
+                </p>
+                
+                {qrCodeUrl && (
+                  <div className="flex justify-center">
+                    <img src={qrCodeUrl} alt="2FA QR Code" className="w-48 h-48 bg-white p-2 rounded-lg" />
+                  </div>
+                )}
+                
+                {twoFASecret && (
+                  <div className="space-y-2">
+                    <p className="text-gray-300 text-sm">Or enter this code manually:</p>
+                    <div className="bg-gray-700 p-3 rounded-lg">
+                      <code className="text-white font-mono text-sm break-all">{twoFASecret}</code>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <label className="form-label">Enter verification code from your app:</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={twoFAToken}
+                    onChange={(e) => {
+                      setTwoFAToken(e.target.value);
+                      if (twoFAError) {
+                        setTwoFAError(null);
+                      }
+                    }}
+                    placeholder="000000"
+                    maxLength={6}
+                    disabled={is2FAVerifying}
+                  />
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleVerifyTwoFactor}
+                    className="btn-primary flex-1"
+                    disabled={is2FAVerifying || !twoFAToken}
+                  >
+                    {is2FAVerifying ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={16} />
+                        <span>Verify & Enable</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCancelTwoFactorSetup}
+                    className="btn-secondary"
+                    disabled={is2FAVerifying}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
