@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription } from '../../hooks/useSubscription';
 import { DollarSign, TrendingUp, CreditCard, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface RevenueTrackerProps {

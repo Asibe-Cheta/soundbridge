@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription } from '../../hooks/useSubscription';
 import { X, Crown, Check, Loader2, Zap, Star } from 'lucide-react';
 
 interface UpgradeModalProps {

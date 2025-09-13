@@ -28,7 +28,7 @@ import {
   Clock3,
   Crown
 } from 'lucide-react';
-import SubscriptionDashboard from '@/src/components/subscription/SubscriptionDashboard';
+import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();

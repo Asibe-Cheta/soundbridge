@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useSubscription, SubscriptionData } from '@/hooks/useSubscription';
+import { useSubscription, SubscriptionData } from '../../hooks/useSubscription';
 import { Crown, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface SubscriptionStatusProps {

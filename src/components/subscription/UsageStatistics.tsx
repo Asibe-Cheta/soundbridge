@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription } from '../../hooks/useSubscription';
 import { Music, Mic, Calendar, HardDrive, Play, Users, Loader2, AlertCircle } from 'lucide-react';
 
 interface UsageStatisticsProps {

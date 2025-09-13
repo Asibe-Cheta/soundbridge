@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionStatus from './SubscriptionStatus';
 import UsageStatistics from './UsageStatistics';
 import RevenueTracker from './RevenueTracker';
