@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useSubscription } from '../../hooks/useSubscription';
 import { DollarSign, TrendingUp, CreditCard, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -118,11 +119,28 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
   ];
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
+    <div 
+      className={`rounded-lg p-6 ${className}`}
+      style={{
+        background: 'var(--bg-secondary)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: '1rem'
+      }}
+    >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Revenue Tracker</h3>
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Revenue Tracker
+        </h3>
         {subscription.tier === 'free' && (
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+          <span 
+            className="px-3 py-1 rounded-full text-sm font-medium"
+            style={{
+              background: '#3b82f6',
+              color: 'white'
+            }}
+          >
             Upgrade to Pro for Revenue Sharing
           </span>
         )}
@@ -130,37 +148,70 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
 
       {subscription.tier === 'free' ? (
         <div className="text-center py-8">
-          <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">Revenue Sharing Available</h4>
-          <p className="text-gray-600 mb-4">
+          <DollarSign className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+          <h4 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            Revenue Sharing Available
+          </h4>
+          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
             Upgrade to Pro or Enterprise to start earning from your content and access revenue sharing features.
           </p>
-          <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+          <Link
+            href="/pricing"
+            className="px-4 py-2 rounded-lg font-medium transition-all duration-300"
+            style={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+            }}
+          >
             Upgrade to Pro
-          </button>
+          </Link>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {revenueItems.map((item, index) => (
-              <div key={index} className={`p-4 rounded-lg border ${item.color}`}>
+              <div 
+                key={index} 
+                className="p-4 rounded-lg border"
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  borderColor: 'var(--border-primary)'
+                }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     {item.icon}
-                    <h4 className="text-sm font-medium text-gray-700">{item.title}</h4>
+                    <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      {item.title}
+                    </h4>
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{item.value}</p>
-                <p className="text-xs text-gray-600">{item.description}</p>
+                <p className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  {item.value}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-gray-200 pt-6">
+          <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '1.5rem' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="text-sm font-medium text-gray-900">Payout Information</h4>
-                <p className="text-xs text-gray-600">
+                <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Payout Information
+                </h4>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   Minimum payout threshold: {revenue.formatted_payout_threshold}
                 </p>
               </div>
@@ -201,7 +252,7 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
               </div>
             )}
 
-            <div className="text-xs text-gray-500">
+            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               <p>Last payout: {formatDate(revenue.last_payout_at)}</p>
               <p className="mt-1">
                 Payouts are processed within 5-7 business days after request.
@@ -209,14 +260,22 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div 
+            className="mt-6 p-4 rounded-lg border"
+            style={{
+              background: 'var(--bg-tertiary)',
+              borderColor: 'var(--border-primary)'
+            }}
+          >
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
-                <TrendingUp className="h-5 w-5 text-blue-500 mt-0.5" />
+                <TrendingUp className="h-5 w-5 mt-0.5" style={{ color: '#3b82f6' }} />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-blue-900">Revenue Sharing</h4>
-                <p className="text-xs text-blue-700 mt-1">
+                <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Revenue Sharing
+                </h4>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                   {subscription.tier === 'pro' 
                     ? 'Keep 95% of your earnings with Pro features'
                     : 'Keep 90% of your earnings with Enterprise features'

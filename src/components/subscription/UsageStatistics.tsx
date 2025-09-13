@@ -101,52 +101,96 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
   ];
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
+    <div 
+      className={`rounded-lg p-6 ${className}`}
+      style={{
+        background: 'var(--bg-secondary)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: '1rem'
+      }}
+    >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Usage Statistics</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Usage Statistics
+        </h3>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           Last activity: {formatDate(usage.last_upload_at)}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {usageItems.map((item, index) => (
-          <div key={index} className={`p-4 rounded-lg border ${item.color}`}>
+          <div 
+            key={index} 
+            className="p-4 rounded-lg border"
+            style={{
+              background: 'var(--bg-tertiary)',
+              borderColor: 'var(--border-primary)'
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2">
                 {item.icon}
-                <h4 className="text-sm font-medium text-gray-700">{item.title}</h4>
+                <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {item.title}
+                </h4>
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{item.value}</p>
-            <p className="text-xs text-gray-600">{item.description}</p>
+            <p className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+              {item.value}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              {item.description}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+      <div 
+        className="mt-6 p-4 rounded-lg"
+        style={{
+          background: 'var(--bg-tertiary)',
+          border: '1px solid var(--border-primary)'
+        }}
+      >
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-sm font-medium text-gray-900">Total Uploads</h4>
-            <p className="text-xs text-gray-600">All content types combined</p>
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              Total Uploads
+            </h4>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              All content types combined
+            </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
               {usage.music_uploads + usage.podcast_uploads + usage.event_uploads}
             </p>
-            <p className="text-xs text-gray-600">unlimited</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              unlimited
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <div 
+        className="mt-4 p-4 rounded-lg border"
+        style={{
+          background: 'var(--bg-tertiary)',
+          borderColor: 'var(--border-primary)'
+        }}
+      >
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
-            <Music className="h-5 w-5 text-blue-500 mt-0.5" />
+            <Music className="h-5 w-5 mt-0.5" style={{ color: '#3b82f6' }} />
           </div>
           <div>
-            <h4 className="text-sm font-medium text-blue-900">Unlimited Uploads</h4>
-            <p className="text-xs text-blue-700 mt-1">
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              Unlimited Uploads
+            </h4>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               You can upload unlimited music, podcasts, and events. No restrictions, no limits!
             </p>
           </div>

@@ -121,86 +121,155 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
+    <div 
+      className={`rounded-lg p-6 ${className}`}
+      style={{
+        background: 'var(--bg-secondary)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: '1rem'
+      }}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           {tierInfo.icon}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Current Plan</h3>
-            <p className="text-sm text-gray-600">{tierInfo.description}</p>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Current Plan
+            </h3>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {tierInfo.description}
+            </p>
           </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${tierInfo.color}`}>
+        <span 
+          className="px-3 py-1 rounded-full text-sm font-medium"
+          style={{
+            background: tierInfo.name === 'Free' ? '#3b82f6' : tierInfo.name === 'Pro' ? '#8b5cf6' : '#eab308',
+            color: 'white'
+          }}
+        >
           {tierInfo.name}
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
-          <p className="text-sm font-medium text-gray-700">Status</p>
-          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(subscription.status)}`}>
+          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Status</p>
+          <span 
+            className="inline-flex px-2 py-1 rounded-full text-xs font-medium"
+            style={{
+              background: subscription.status === 'active' ? '#10b981' : subscription.status === 'cancelled' ? '#f59e0b' : '#ef4444',
+              color: 'white'
+            }}
+          >
             {getStatusText(subscription.status)}
           </span>
         </div>
         
         {subscription.tier !== 'free' && (
           <div>
-            <p className="text-sm font-medium text-gray-700">Billing Cycle</p>
-            <p className="text-sm text-gray-600 capitalize">{subscription.billing_cycle}</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Billing Cycle</p>
+            <p className="text-sm capitalize" style={{ color: 'var(--text-primary)' }}>
+              {subscription.billing_cycle}
+            </p>
           </div>
         )}
 
         {subscription.subscription_ends_at && (
           <div>
-            <p className="text-sm font-medium text-gray-700">Next Billing Date</p>
-            <p className="text-sm text-gray-600">{formatDate(subscription.subscription_ends_at)}</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Next Billing Date</p>
+            <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+              {formatDate(subscription.subscription_ends_at)}
+            </p>
           </div>
         )}
 
         {subscription.trial_ends_at && (
           <div>
-            <p className="text-sm font-medium text-gray-700">Trial Ends</p>
-            <p className="text-sm text-gray-600">{formatDate(subscription.trial_ends_at)}</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Trial Ends</p>
+            <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+              {formatDate(subscription.trial_ends_at)}
+            </p>
           </div>
         )}
       </div>
 
-      <div className="border-t border-gray-200 pt-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Plan Features</h4>
+      <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '1rem' }}>
+        <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
+          Plan Features
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="flex items-center space-x-2">
-            <CheckCircle className={`h-4 w-4 ${features.unlimitedUploads ? 'text-green-500' : 'text-gray-300'}`} />
-            <span className={`text-sm ${features.unlimitedUploads ? 'text-gray-900' : 'text-gray-400'}`}>
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.unlimitedUploads ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.unlimitedUploads ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
               Unlimited Uploads
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className={`h-4 w-4 ${features.advancedAnalytics ? 'text-green-500' : 'text-gray-300'}`} />
-            <span className={`text-sm ${features.advancedAnalytics ? 'text-gray-900' : 'text-gray-400'}`}>
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.advancedAnalytics ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.advancedAnalytics ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
               Advanced Analytics
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className={`h-4 w-4 ${features.customBranding ? 'text-green-500' : 'text-gray-300'}`} />
-            <span className={`text-sm ${features.customBranding ? 'text-gray-900' : 'text-gray-400'}`}>
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.customBranding ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.customBranding ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
               Custom Branding
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className={`h-4 w-4 ${features.revenueSharing ? 'text-green-500' : 'text-gray-300'}`} />
-            <span className={`text-sm ${features.revenueSharing ? 'text-gray-900' : 'text-gray-400'}`}>
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.revenueSharing ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.revenueSharing ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
               Revenue Sharing
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className={`h-4 w-4 ${features.prioritySupport ? 'text-green-500' : 'text-gray-300'}`} />
-            <span className={`text-sm ${features.prioritySupport ? 'text-gray-900' : 'text-gray-400'}`}>
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.prioritySupport ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.prioritySupport ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
               Priority Support
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className={`h-4 w-4 ${features.whiteLabel ? 'text-green-500' : 'text-gray-300'}`} />
-            <span className={`text-sm ${features.whiteLabel ? 'text-gray-900' : 'text-gray-400'}`}>
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.whiteLabel ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.whiteLabel ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
               White Label
             </span>
           </div>

@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import Link from 'next/link';
 import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionStatus from './SubscriptionStatus';
 import UsageStatistics from './UsageStatistics';
 import RevenueTracker from './RevenueTracker';
-import UpgradeModal from './UpgradeModal';
 import { Crown, TrendingUp, BarChart3, DollarSign } from 'lucide-react';
 
 interface SubscriptionDashboardProps {
@@ -14,92 +14,50 @@ interface SubscriptionDashboardProps {
 
 const SubscriptionDashboard: React.FC<SubscriptionDashboardProps> = ({ className = '' }) => {
   const { data } = useSubscription();
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-
   const currentTier = data?.subscription.tier || 'free';
-
-  const quickActions = [
-    {
-      title: 'Upgrade Plan',
-      description: 'Unlock premium features',
-      icon: <Crown className="h-5 w-5 text-purple-500" />,
-      action: () => setIsUpgradeModalOpen(true),
-      disabled: false,
-      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
-    },
-    {
-      title: 'View Analytics',
-      description: 'Track your performance',
-      icon: <BarChart3 className="h-5 w-5 text-blue-500" />,
-      action: () => {/* Navigate to analytics */},
-      disabled: currentTier === 'free',
-      color: currentTier === 'free' 
-        ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-50' 
-        : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-    },
-    {
-      title: 'Revenue Dashboard',
-      description: 'Manage your earnings',
-      icon: <DollarSign className="h-5 w-5 text-green-500" />,
-      action: () => {/* Navigate to revenue */},
-      disabled: currentTier === 'free',
-      color: currentTier === 'free' 
-        ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-50' 
-        : 'bg-green-50 border-green-200 hover:bg-green-100'
-    },
-    {
-      title: 'Growth Tools',
-      description: 'Professional creator tools',
-      icon: <TrendingUp className="h-5 w-5 text-orange-500" />,
-      action: () => {/* Navigate to growth tools */},
-      disabled: currentTier === 'free',
-      color: currentTier === 'free' 
-        ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-50' 
-        : 'bg-orange-50 border-orange-200 hover:bg-orange-100'
-    }
-  ];
 
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div style={{
+        background: 'var(--bg-secondary)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: '1rem',
+        padding: '2rem'
+      }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Subscription Dashboard</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Subscription Dashboard
+            </h1>
+            <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
               Manage your plan, track usage, and access premium features
             </p>
           </div>
           {currentTier === 'free' && (
-            <button
-              onClick={() => setIsUpgradeModalOpen(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+            <Link
+              href="/pricing"
+              className="px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2"
+              style={{
+                background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                color: 'white',
+                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+              }}
             >
               <Crown className="h-4 w-4" />
               <span>Upgrade Now</span>
-            </button>
+            </Link>
           )}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.action}
-              disabled={action.disabled}
-              className={`p-4 rounded-lg border transition-colors text-left ${action.color}`}
-            >
-              <div className="flex items-center space-x-3 mb-2">
-                {action.icon}
-                <h3 className="font-medium text-gray-900">{action.title}</h3>
-              </div>
-              <p className="text-sm text-gray-600">{action.description}</p>
-            </button>
-          ))}
         </div>
       </div>
 
@@ -123,11 +81,16 @@ const SubscriptionDashboard: React.FC<SubscriptionDashboardProps> = ({ className
 
       {/* Free Tier Upgrade Prompt */}
       {currentTier === 'free' && (
-        <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-6 text-white">
+        <div style={{
+          background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+          borderRadius: '1rem',
+          padding: '2rem',
+          color: 'white'
+        }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold mb-2">Ready to Go Pro?</h3>
-              <p className="text-purple-100 mb-4">
+              <p className="text-white/90 mb-4">
                 Unlock advanced analytics, revenue sharing, and professional tools to grow your audience.
               </p>
               <div className="flex items-center space-x-4 text-sm">
@@ -145,21 +108,15 @@ const SubscriptionDashboard: React.FC<SubscriptionDashboardProps> = ({ className
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setIsUpgradeModalOpen(true)}
-              className="px-6 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            <Link
+              href="/pricing"
+              className="px-6 py-3 bg-white text-red-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
             >
               Upgrade Now
-            </button>
+            </Link>
           </div>
         </div>
       )}
-
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
     </div>
   );
 };
