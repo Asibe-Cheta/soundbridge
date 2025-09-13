@@ -52,11 +52,17 @@ export interface AudioTrack {
     avatar_url?: string;
     location?: string;
     country?: string;
+    name?: string; // Added for API compatibility
   };
   formatted_duration?: string;
   formatted_play_count?: string;
   formatted_like_count?: string;
   creator_name?: string;
+  // API response fields
+  artist?: string;
+  plays?: number;
+  likes?: number;
+  url?: string; // Alternative to file_url
 }
 
 export interface Event {

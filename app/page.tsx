@@ -425,7 +425,8 @@ export default function HomePage() {
             console.log('✅ Setting tracks:', result.tracks.length);
             // Log each track's cover art and artist status
             result.tracks.forEach((track: AudioTrack, index: number) => {
-              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'} - Artist: "${track.creator_name || track.creator?.display_name || 'No artist data'}"`);
+              console.log(`Track ${index + 1}: "${track.title}" - Cover Art: ${track.coverArt ? 'Yes' : 'No'} - Artist: "${track.artist || track.creator?.name || track.creator?.display_name || 'No artist data'}"`);
+              console.log('Track object:', track);
             });
             setRecentTracks(result.tracks);
           } else {
@@ -463,7 +464,8 @@ export default function HomePage() {
           if (result.success && result.tracks) {
             console.log('✅ Setting trending tracks:', result.tracks.length);
             result.tracks.forEach((track: AudioTrack, index: number) => {
-              console.log(`🔥 Track ${index + 1}: "${track.title}" - Plays: ${track.play_count} - Artist: "${track.creator_name || track.creator?.display_name || 'Unknown'}"`);
+              console.log(`🔥 Track ${index + 1}: "${track.title}" - Plays: ${track.plays || track.play_count} - Artist: "${track.artist || track.creator?.name || track.creator?.display_name || 'Unknown'}"`);
+              console.log('Trending track object:', track);
             });
             setTrendingTracks(result.tracks);
           } else {
@@ -785,7 +787,7 @@ export default function HomePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.title}</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.creator_name || track.creator?.display_name || 'Unknown Artist'}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist || track.creator?.name || track.creator?.display_name || 'Unknown Artist'}</div>
                 </div>
                 <button 
                   style={{ 
@@ -1122,7 +1124,7 @@ export default function HomePage() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {track.creator_name || track.creator?.display_name || 'Unknown Artist'}
+                      {track.artist || track.creator?.name || track.creator?.display_name || 'Unknown Artist'}
                     </p>
                     <div style={{
                       display: 'flex',
@@ -1133,11 +1135,11 @@ export default function HomePage() {
                     }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Play size={8} />
-                        {track.play_count || 0}
+                        {track.plays || track.play_count || 0}
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Heart size={8} />
-                        {track.like_count || 0}
+                        {track.likes || track.like_count || 0}
                       </span>
                   </div>
                   </div>
