@@ -116,6 +116,9 @@ export default function SettingsPage() {
   const [sessionTimeout, setSessionTimeout] = useState(30);
   const [isSessionTimeoutLoading, setIsSessionTimeoutLoading] = useState(false);
   const [sessionTimeoutError, setSessionTimeoutError] = useState<string | null>(null);
+  const [isPrivacyLoading, setIsPrivacyLoading] = useState(false);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
+  const [privacySuccess, setPrivacySuccess] = useState(false);
 
   const [accountData, setAccountData] = useState({
     email: user?.email || '',
@@ -181,6 +184,9 @@ export default function SettingsPage() {
       
       // Load session details on mount
       handleLoadSessionDetails();
+      
+      // Load privacy settings on mount
+      handleLoadPrivacySettings();
     }
   }, [user]);
 
@@ -590,11 +596,81 @@ export default function SettingsPage() {
 
   // handleNotificationChange function removed - now handled by dedicated notifications page
 
-  const handlePrivacyChange = (setting: keyof PrivacySettings, value: any) => {
-    setPrivacySettings(prev => ({
-      ...prev,
-      [setting]: value
-    }));
+  const handleLoadPrivacySettings = async () => {
+    try {
+      setIsPrivacyLoading(true);
+      setPrivacyError(null);
+
+      const response = await fetch('/api/user/privacy-settings');
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('Failed to load privacy settings:', data.error);
+        setIsPrivacyLoading(false);
+        return;
+      }
+
+      setPrivacySettings(data.settings);
+      setIsPrivacyLoading(false);
+
+    } catch (error) {
+      console.error('Error loading privacy settings:', error);
+      setIsPrivacyLoading(false);
+    }
+  };
+
+  const handlePrivacyChange = async (setting: keyof PrivacySettings, value: any) => {
+    try {
+      setIsPrivacyLoading(true);
+      setPrivacyError(null);
+      setPrivacySuccess(false);
+
+      // Update local state immediately for better UX
+      setPrivacySettings(prev => ({
+        ...prev,
+        [setting]: value
+      }));
+
+      const updatedSettings = {
+        ...privacySettings,
+        [setting]: value
+      };
+
+      const response = await fetch('/api/user/privacy-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedSettings),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setPrivacyError(data.error || 'Failed to update privacy settings');
+        // Revert local state on error
+        setPrivacySettings(privacySettings);
+        setIsPrivacyLoading(false);
+        return;
+      }
+
+      setPrivacySettings(data.settings);
+      setPrivacySuccess(true);
+      setIsPrivacyLoading(false);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setPrivacySuccess(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error updating privacy settings:', error);
+      setPrivacyError('An unexpected error occurred. Please try again.');
+      // Revert local state on error
+      setPrivacySettings(privacySettings);
+      setIsPrivacyLoading(false);
+    }
   };
 
   const handleAppSettingChange = (setting: string, value: any) => {
@@ -1357,23 +1433,50 @@ export default function SettingsPage() {
 
   const renderPrivacyTab = () => (
     <div className="space-y-6">
+      {/* Success Message */}
+      {privacySuccess && (
+        <div className="bg-green-900/20 border border-green-500/50 rounded-lg p-3">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-4 w-4 text-green-400" />
+            <span className="text-green-300 text-sm">Privacy settings updated successfully!</span>
+          </div>
+        </div>
+      )}
+
       {/* Profile Privacy */}
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">Profile Privacy</h3>
         </div>
         <div className="space-y-4">
+          {/* Error Message */}
+          {privacyError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <span className="text-red-300 text-sm">{privacyError}</span>
+              </div>
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label">Profile Visibility</label>
             <select
               className="form-input"
               value={privacySettings.profileVisibility}
               onChange={(e) => handlePrivacyChange('profileVisibility', e.target.value)}
+              disabled={isPrivacyLoading}
             >
-              <option value="public">Public</option>
-              <option value="followers">Followers Only</option>
-              <option value="private">Private</option>
+              <option value="public">Public - Anyone can view your profile</option>
+              <option value="followers">Followers Only - Only your followers can view your profile</option>
+              <option value="private">Private - Only you can view your profile</option>
             </select>
+            {isPrivacyLoading && (
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                <span className="text-xs text-gray-400">Updating privacy settings...</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <div>
@@ -1383,8 +1486,15 @@ export default function SettingsPage() {
             <button
               onClick={() => handlePrivacyChange('showEmail', !privacySettings.showEmail)}
               className={`btn-toggle ${privacySettings.showEmail ? 'enabled' : ''}`}
+              disabled={isPrivacyLoading}
             >
-              {privacySettings.showEmail ? 'Public' : 'Private'}
+              {isPrivacyLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : privacySettings.showEmail ? (
+                'Public'
+              ) : (
+                'Private'
+              )}
             </button>
           </div>
           <div className="flex items-center justify-between">
@@ -1395,8 +1505,15 @@ export default function SettingsPage() {
             <button
               onClick={() => handlePrivacyChange('showPhone', !privacySettings.showPhone)}
               className={`btn-toggle ${privacySettings.showPhone ? 'enabled' : ''}`}
+              disabled={isPrivacyLoading}
             >
-              {privacySettings.showPhone ? 'Public' : 'Private'}
+              {isPrivacyLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : privacySettings.showPhone ? (
+                'Public'
+              ) : (
+                'Private'
+              )}
             </button>
           </div>
         </div>
@@ -1416,8 +1533,15 @@ export default function SettingsPage() {
             <button
               onClick={() => handlePrivacyChange('allowMessages', !privacySettings.allowMessages)}
               className={`btn-toggle ${privacySettings.allowMessages ? 'enabled' : ''}`}
+              disabled={isPrivacyLoading}
             >
-              {privacySettings.allowMessages ? 'Allowed' : 'Blocked'}
+              {isPrivacyLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : privacySettings.allowMessages ? (
+                'Allowed'
+              ) : (
+                'Blocked'
+              )}
             </button>
           </div>
           <div className="flex items-center justify-between">
@@ -1428,8 +1552,15 @@ export default function SettingsPage() {
             <button
               onClick={() => handlePrivacyChange('allowComments', !privacySettings.allowComments)}
               className={`btn-toggle ${privacySettings.allowComments ? 'enabled' : ''}`}
+              disabled={isPrivacyLoading}
             >
-              {privacySettings.allowComments ? 'Allowed' : 'Blocked'}
+              {isPrivacyLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : privacySettings.allowComments ? (
+                'Allowed'
+              ) : (
+                'Blocked'
+              )}
             </button>
           </div>
         </div>
@@ -1449,8 +1580,15 @@ export default function SettingsPage() {
             <button
               onClick={() => handlePrivacyChange('showOnlineStatus', !privacySettings.showOnlineStatus)}
               className={`btn-toggle ${privacySettings.showOnlineStatus ? 'enabled' : ''}`}
+              disabled={isPrivacyLoading}
             >
-              {privacySettings.showOnlineStatus ? 'Visible' : 'Hidden'}
+              {isPrivacyLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : privacySettings.showOnlineStatus ? (
+                'Visible'
+              ) : (
+                'Hidden'
+              )}
             </button>
           </div>
           <div className="flex items-center justify-between">
@@ -1461,8 +1599,15 @@ export default function SettingsPage() {
             <button
               onClick={() => handlePrivacyChange('showListeningActivity', !privacySettings.showListeningActivity)}
               className={`btn-toggle ${privacySettings.showListeningActivity ? 'enabled' : ''}`}
+              disabled={isPrivacyLoading}
             >
-              {privacySettings.showListeningActivity ? 'Visible' : 'Hidden'}
+              {isPrivacyLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : privacySettings.showListeningActivity ? (
+                'Visible'
+              ) : (
+                'Hidden'
+              )}
             </button>
           </div>
         </div>
