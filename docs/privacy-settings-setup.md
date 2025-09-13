@@ -78,8 +78,8 @@ Updates the user's privacy settings.
   "profileVisibility": "public",
   "showEmail": false,
   "showPhone": false,
-  "allowMessages": true,
-  "allowComments": true,
+  "allowMessages": "everyone",
+  "allowComments": "everyone",
   "showOnlineStatus": true,
   "showListeningActivity": true
 }
@@ -94,8 +94,8 @@ Updates the user's privacy settings.
     "profileVisibility": "public",
     "showEmail": false,
     "showPhone": false,
-    "allowMessages": true,
-    "allowComments": true,
+    "allowMessages": "everyone",
+    "allowComments": "everyone",
     "showOnlineStatus": true,
     "showListeningActivity": true
   }
@@ -114,8 +114,9 @@ The privacy settings are integrated into the Settings page (`app/settings/page.t
    - Show Phone toggle
 
 2. **Interaction Privacy Section**:
-   - Allow Messages toggle
-   - Allow Comments toggle
+   - Allow Messages dropdown (Everyone, Followers Only, Creators Only, No Messages)
+   - Allow Comments dropdown (Everyone, Followers Only, No Comments)
+   - Privacy tips and guidance
 
 3. **Activity Privacy Section**:
    - Show Online Status toggle
@@ -195,8 +196,15 @@ curl -X POST http://localhost:3000/api/user/privacy-settings \
 
 ### Interaction Settings
 
-- **Allow Messages**: Let other users send you messages
-- **Allow Comments**: Let other users comment on your content
+- **Allow Messages**: Control who can send you messages
+  - **Everyone**: Anyone can send you messages
+  - **Followers Only**: Only your followers can message you
+  - **Creators Only**: Only verified creators can message you
+  - **No Messages**: Disable all direct messages
+- **Allow Comments**: Control who can comment on your content
+  - **Everyone**: Anyone can comment on your content
+  - **Followers Only**: Only your followers can comment
+  - **No Comments**: Disable all comments on your content
 
 ### Activity Settings
 

@@ -1,7 +1,7 @@
--- Privacy Settings Database Schema
+-- Simple Privacy Settings Migration
 -- Run this in your Supabase SQL Editor
 
--- Create user_privacy_settings table to store user privacy preferences
+-- Step 1: Create the user_privacy_settings table if it doesn't exist
 CREATE TABLE IF NOT EXISTS user_privacy_settings (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -17,14 +17,19 @@ CREATE TABLE IF NOT EXISTS user_privacy_settings (
     UNIQUE(user_id)
 );
 
--- Create indexes for better performance
+-- Step 2: Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_privacy_settings_user_id ON user_privacy_settings(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_privacy_settings_visibility ON user_privacy_settings(profile_visibility);
 
--- Enable RLS (Row Level Security)
+-- Step 3: Enable RLS (Row Level Security)
 ALTER TABLE user_privacy_settings ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
+-- Step 4: Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own privacy settings" ON user_privacy_settings;
+DROP POLICY IF EXISTS "Users can insert their own privacy settings" ON user_privacy_settings;
+DROP POLICY IF EXISTS "Users can update their own privacy settings" ON user_privacy_settings;
+
+-- Step 5: Create RLS policies
 CREATE POLICY "Users can view their own privacy settings" ON user_privacy_settings
     FOR SELECT USING (auth.uid() = user_id);
 
@@ -34,7 +39,7 @@ CREATE POLICY "Users can insert their own privacy settings" ON user_privacy_sett
 CREATE POLICY "Users can update their own privacy settings" ON user_privacy_settings
     FOR UPDATE USING (auth.uid() = user_id);
 
--- Create function to automatically update updated_at timestamp
+-- Step 6: Create function to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_privacy_settings_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -43,19 +48,20 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create trigger for user_privacy_settings
+-- Step 7: Create trigger (drop existing one first to avoid conflicts)
+DROP TRIGGER IF EXISTS update_user_privacy_settings_updated_at ON user_privacy_settings;
 CREATE TRIGGER update_user_privacy_settings_updated_at 
     BEFORE UPDATE ON user_privacy_settings 
     FOR EACH ROW EXECUTE FUNCTION update_privacy_settings_updated_at();
 
--- Insert default privacy settings for existing users
+-- Step 8: Insert default privacy settings for existing users
 INSERT INTO user_privacy_settings (user_id, profile_visibility, show_email, show_phone, allow_messages, allow_comments, show_online_status, show_listening_activity)
 SELECT id, 'public', false, false, 'everyone', 'everyone', true, true
 FROM auth.users
 WHERE id NOT IN (SELECT user_id FROM user_privacy_settings)
 ON CONFLICT (user_id) DO NOTHING;
 
--- Create a view for easy access to user privacy settings
+-- Step 9: Create or replace the view for easy access to user privacy settings
 CREATE OR REPLACE VIEW user_privacy_settings_view AS
 SELECT 
     ups.id,

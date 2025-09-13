@@ -25,8 +25,10 @@ import {
   Plus,
   MessageCircle,
   Home,
-  Clock3
+  Clock3,
+  Crown
 } from 'lucide-react';
+import SubscriptionDashboard from '@/src/components/subscription/SubscriptionDashboard';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -39,7 +41,7 @@ export default function DashboardPage() {
     setError
   } = useDashboard();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'settings' | 'availability'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'settings' | 'availability'>('overview');
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -83,6 +85,7 @@ export default function DashboardPage() {
     { id: 'content', label: 'Content', icon: Music },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'followers', label: 'Followers', icon: Users },
+    { id: 'subscription', label: 'Subscription', icon: Crown },
     { id: 'availability', label: 'Availability', icon: Clock3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -121,7 +124,7 @@ export default function DashboardPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as 'overview' | 'content' | 'analytics' | 'followers' | 'settings')}
+                  onClick={() => setActiveTab(item.id as 'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'settings' | 'availability')}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -550,6 +553,20 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Subscription Tab */}
+          {activeTab === 'subscription' && (
+            <div style={{
+              background: 'var(--bg-secondary)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: '1rem',
+              padding: '2rem'
+            }}>
+              <SubscriptionDashboard />
             </div>
           )}
 

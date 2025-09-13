@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
         profileVisibility: 'public',
         showEmail: false,
         showPhone: false,
-        allowMessages: true,
-        allowComments: true,
+        allowMessages: 'everyone',
+        allowComments: 'everyone',
         showOnlineStatus: true,
         showListeningActivity: true
       };
@@ -50,16 +50,16 @@ export async function GET(request: NextRequest) {
       profileVisibility: privacySettings.profile_visibility || 'public',
       showEmail: privacySettings.show_email || false,
       showPhone: privacySettings.show_phone || false,
-      allowMessages: privacySettings.allow_messages !== false,
-      allowComments: privacySettings.allow_comments !== false,
+      allowMessages: privacySettings.allow_messages || 'everyone',
+      allowComments: privacySettings.allow_comments || 'everyone',
       showOnlineStatus: privacySettings.show_online_status !== false,
       showListeningActivity: privacySettings.show_listening_activity !== false
     } : {
       profileVisibility: 'public',
       showEmail: false,
       showPhone: false,
-      allowMessages: true,
-      allowComments: true,
+      allowMessages: 'everyone',
+      allowComments: 'everyone',
       showOnlineStatus: true,
       showListeningActivity: true
     };
@@ -113,6 +113,20 @@ export async function POST(request: NextRequest) {
     if (profileVisibility && !['public', 'private', 'followers'].includes(profileVisibility)) {
       return NextResponse.json(
         { success: false, error: 'Invalid profile visibility setting' },
+        { status: 400 }
+      );
+    }
+
+    if (allowMessages && !['everyone', 'followers', 'creators_only', 'none'].includes(allowMessages)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid messaging privacy setting' },
+        { status: 400 }
+      );
+    }
+
+    if (allowComments && !['everyone', 'followers', 'none'].includes(allowComments)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid comments privacy setting' },
         { status: 400 }
       );
     }

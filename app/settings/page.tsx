@@ -79,8 +79,8 @@ interface PrivacySettings {
   profileVisibility: 'public' | 'private' | 'followers';
   showEmail: boolean;
   showPhone: boolean;
-  allowMessages: boolean;
-  allowComments: boolean;
+  allowMessages: 'everyone' | 'followers' | 'creators_only' | 'none';
+  allowComments: 'everyone' | 'followers' | 'none';
   showOnlineStatus: boolean;
   showListeningActivity: boolean;
 }
@@ -153,8 +153,8 @@ export default function SettingsPage() {
     profileVisibility: 'public',
     showEmail: false,
     showPhone: false,
-    allowMessages: true,
-    allowComments: true,
+    allowMessages: 'everyone',
+    allowComments: 'everyone',
     showOnlineStatus: true,
     showListeningActivity: true
   });
@@ -1524,44 +1524,66 @@ export default function SettingsPage() {
         <div className="card-header">
           <h3 className="card-title">Interaction Privacy</h3>
         </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-white">Allow Messages</div>
-              <div className="text-sm text-gray-400">Let other users send you messages</div>
-            </div>
-            <button
-              onClick={() => handlePrivacyChange('allowMessages', !privacySettings.allowMessages)}
-              className={`btn-toggle ${privacySettings.allowMessages ? 'enabled' : ''}`}
+        <div className="space-y-6">
+          <div className="form-group">
+            <label className="form-label">Allow Messages</label>
+            <select
+              className="form-input"
+              value={privacySettings.allowMessages}
+              onChange={(e) => handlePrivacyChange('allowMessages', e.target.value as 'everyone' | 'followers' | 'creators_only' | 'none')}
               disabled={isPrivacyLoading}
             >
-              {isPrivacyLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : privacySettings.allowMessages ? (
-                'Allowed'
-              ) : (
-                'Blocked'
-              )}
-            </button>
+              <option value="everyone">Everyone - Anyone can send you messages</option>
+              <option value="followers">Followers Only - Only your followers can message you</option>
+              <option value="creators_only">Creators Only - Only verified creators can message you</option>
+              <option value="none">No Messages - Disable all direct messages</option>
+            </select>
+            {isPrivacyLoading && (
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                <span className="text-xs text-gray-400">Updating messaging settings...</span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-white">Allow Comments</div>
-              <div className="text-sm text-gray-400">Let other users comment on your content</div>
-            </div>
-            <button
-              onClick={() => handlePrivacyChange('allowComments', !privacySettings.allowComments)}
-              className={`btn-toggle ${privacySettings.allowComments ? 'enabled' : ''}`}
+
+          <div className="form-group">
+            <label className="form-label">Allow Comments</label>
+            <select
+              className="form-input"
+              value={privacySettings.allowComments}
+              onChange={(e) => handlePrivacyChange('allowComments', e.target.value as 'everyone' | 'followers' | 'none')}
               disabled={isPrivacyLoading}
             >
-              {isPrivacyLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : privacySettings.allowComments ? (
-                'Allowed'
-              ) : (
-                'Blocked'
-              )}
-            </button>
+              <option value="everyone">Everyone - Anyone can comment on your content</option>
+              <option value="followers">Followers Only - Only your followers can comment</option>
+              <option value="none">No Comments - Disable all comments on your content</option>
+            </select>
+            {isPrivacyLoading && (
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                <span className="text-xs text-gray-400">Updating comment settings...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Privacy Tips */}
+          <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">i</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-blue-300 font-medium text-sm mb-2">Privacy Tips</h4>
+                <ul className="text-xs text-blue-200 space-y-1">
+                  <li>• <strong>Creators Only</strong> messaging is great for professional collaborations</li>
+                  <li>• <strong>Followers Only</strong> comments help build engaged communities</li>
+                  <li>• These settings apply to your tracks, events, and profile content</li>
+                  <li>• You can always change these settings later</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
