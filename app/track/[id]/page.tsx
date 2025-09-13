@@ -440,20 +440,6 @@ function formatTime(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--hover-bg)';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--bg-card)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                    }}
-                  >
-                    <User size={20} color="var(--accent-primary)" />
-                  </button>
                   
                   <div
                     id="user-menu"
