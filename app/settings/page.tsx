@@ -65,30 +65,7 @@ import {
   Minus
 } from 'lucide-react';
 
-interface NotificationSettings {
-  email: {
-    newFollowers: boolean;
-    newLikes: boolean;
-    newComments: boolean;
-    newMessages: boolean;
-    eventReminders: boolean;
-    weeklyDigest: boolean;
-  };
-  push: {
-    newFollowers: boolean;
-    newLikes: boolean;
-    newComments: boolean;
-    newMessages: boolean;
-    eventReminders: boolean;
-  };
-  inApp: {
-    newFollowers: boolean;
-    newLikes: boolean;
-    newComments: boolean;
-    newMessages: boolean;
-    eventReminders: boolean;
-  };
-}
+// NotificationSettings interface removed - now handled by dedicated notifications page
 
 interface SecuritySettings {
   twoFactorEnabled: boolean;
@@ -159,30 +136,7 @@ export default function SettingsPage() {
     confirmPassword: ''
   });
 
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
-    email: {
-      newFollowers: true,
-      newLikes: true,
-      newComments: true,
-      newMessages: true,
-      eventReminders: true,
-      weeklyDigest: false
-    },
-    push: {
-      newFollowers: true,
-      newLikes: true,
-      newComments: false,
-      newMessages: true,
-      eventReminders: true
-    },
-    inApp: {
-      newFollowers: true,
-      newLikes: true,
-      newComments: true,
-      newMessages: true,
-      eventReminders: true
-    }
-  });
+  // notificationSettings state removed - now handled by dedicated notifications page
 
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
     twoFactorEnabled: false,
@@ -634,15 +588,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleNotificationChange = (type: keyof NotificationSettings, setting: string, value: boolean) => {
-    setNotificationSettings(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        [setting]: value
-      }
-    }));
-  };
+  // handleNotificationChange function removed - now handled by dedicated notifications page
 
   const handlePrivacyChange = (setting: keyof PrivacySettings, value: any) => {
     setPrivacySettings(prev => ({
@@ -916,6 +862,44 @@ export default function SettingsPage() {
               <option value="EUR">EUR (€)</option>
               <option value="NGN">NGN (₦)</option>
             </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Preferences */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Notification Preferences</h3>
+          <Link href="/notifications" className="btn-primary">
+            <Bell size={16} />
+            Manage All Notifications
+          </Link>
+        </div>
+        <div className="space-y-4">
+          <div className="bg-gray-700/20 rounded-lg p-4 space-y-3">
+            <div className="text-sm font-medium text-white">Quick Overview</div>
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-gray-400">Email Notifications:</span>
+                <span className="text-green-400 ml-2">Enabled</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Push Notifications:</span>
+                <span className="text-green-400 ml-2">Enabled</span>
+              </div>
+              <div>
+                <span className="text-gray-400">In-App Notifications:</span>
+                <span className="text-green-400 ml-2">Enabled</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Event Reminders:</span>
+                <span className="text-green-400 ml-2">Enabled</span>
+              </div>
+            </div>
+            <div className="text-xs text-gray-400 pt-2">
+              Click "Manage All Notifications" to customize your notification preferences, 
+              set quiet hours, and configure location-based notifications.
+            </div>
           </div>
         </div>
       </div>
@@ -1369,90 +1353,7 @@ export default function SettingsPage() {
     </div>
   );
 
-  const renderNotificationsTab = () => (
-    <div className="space-y-6">
-      {/* Email Notifications */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Email Notifications</h3>
-        </div>
-        <div className="space-y-4">
-          {Object.entries(notificationSettings.email).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-white">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Receive email notifications for {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                </div>
-              </div>
-              <button
-                onClick={() => handleNotificationChange('email', key, !value)}
-                className={`btn-toggle ${value ? 'enabled' : ''}`}
-              >
-                {value ? 'Enabled' : 'Disabled'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Push Notifications */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Push Notifications</h3>
-        </div>
-        <div className="space-y-4">
-          {Object.entries(notificationSettings.push).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-white">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Receive push notifications for {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                </div>
-              </div>
-              <button
-                onClick={() => handleNotificationChange('push', key, !value)}
-                className={`btn-toggle ${value ? 'enabled' : ''}`}
-              >
-                {value ? 'Enabled' : 'Disabled'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* In-App Notifications */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">In-App Notifications</h3>
-        </div>
-        <div className="space-y-4">
-          {Object.entries(notificationSettings.inApp).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-white">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Show in-app notifications for {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                </div>
-              </div>
-              <button
-                onClick={() => handleNotificationChange('inApp', key, !value)}
-                className={`btn-toggle ${value ? 'enabled' : ''}`}
-              >
-                {value ? 'Enabled' : 'Disabled'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  // renderNotificationsTab function removed - now handled by dedicated notifications page
 
   const renderPrivacyTab = () => (
     <div className="space-y-6">
@@ -1657,6 +1558,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
     </div>
   );
 
@@ -1699,13 +1601,6 @@ export default function SettingsPage() {
             Security
           </button>
           <button
-            onClick={() => setActiveTab('notifications')}
-            className={`tab-button ${activeTab === 'notifications' ? 'active' : ''}`}
-          >
-            <Bell size={16} />
-            Notifications
-          </button>
-          <button
             onClick={() => setActiveTab('privacy')}
             className={`tab-button ${activeTab === 'privacy' ? 'active' : ''}`}
           >
@@ -1733,7 +1628,6 @@ export default function SettingsPage() {
         <div className="tab-content">
           {activeTab === 'account' && renderAccountTab()}
           {activeTab === 'security' && renderSecurityTab()}
-          {activeTab === 'notifications' && renderNotificationsTab()}
           {activeTab === 'privacy' && renderPrivacyTab()}
           {activeTab === 'app' && renderAppTab()}
         </div>
