@@ -114,8 +114,12 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const [accountData, setAccountData] = useState({
     email: user?.email || '',
@@ -207,20 +211,68 @@ export default function SettingsPage() {
 
   const handleChangePassword = async () => {
     try {
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
-        alert('New passwords do not match');
+      setIsChangingPassword(true);
+      setPasswordError(null);
+      setPasswordSuccess(false);
+
+      // Client-side validation
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        setPasswordError('All password fields are required');
+        setIsChangingPassword(false);
         return;
       }
-      console.log('Changing password:', passwordData);
+
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setPasswordError('New passwords do not match');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      if (passwordData.newPassword.length < 8) {
+        setPasswordError('Password must be at least 8 characters long');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Call the API endpoint
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+          confirmPassword: passwordData.confirmPassword
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setPasswordError(data.error || 'Failed to change password');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Success
+      setPasswordSuccess(true);
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
-      // Show success message
+
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setPasswordSuccess(false);
+      }, 5000);
+
     } catch (error) {
       console.error('Error changing password:', error);
-      // Show error message
+      setPasswordError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -286,6 +338,11 @@ export default function SettingsPage() {
       ...prev,
       [field]: value
     }));
+    
+    // Clear error message when user starts typing
+    if (passwordError) {
+      setPasswordError(null);
+    }
   };
 
   const handleNotificationChange = (type: keyof NotificationSettings, setting: string, value: boolean) => {
@@ -417,6 +474,26 @@ export default function SettingsPage() {
           <h3 className="card-title">Change Password</h3>
         </div>
         <div className="space-y-4">
+          {/* Error Message */}
+          {passwordError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <span className="text-red-300 text-sm">{passwordError}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {passwordSuccess && (
+            <div className="bg-green-900/20 border border-green-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <span className="text-green-300 text-sm">Password changed successfully!</span>
+              </div>
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label">Current Password</label>
             <div className="relative">
@@ -425,46 +502,81 @@ export default function SettingsPage() {
                 className="form-input pr-10"
                 value={passwordData.currentPassword}
                 onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+                disabled={isChangingPassword}
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={isChangingPassword}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
+          
           <div className="form-group">
             <label className="form-label">New Password</label>
             <div className="relative">
               <input
-                type={showConfirmPassword ? 'text' : 'password'}
+                type={showNewPassword ? 'text' : 'password'}
                 className="form-input pr-10"
                 value={passwordData.newPassword}
                 onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                disabled={isChangingPassword}
+                placeholder="Minimum 8 characters"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                disabled={isChangingPassword}
+              >
+                {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Password must be at least 8 characters long
+            </p>
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Confirm New Password</label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                className="form-input pr-10"
+                value={passwordData.confirmPassword}
+                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                disabled={isChangingPassword}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={isChangingPassword}
               >
                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Confirm New Password</label>
-            <input
-              type="password"
-              className="form-input"
-              value={passwordData.confirmPassword}
-              onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-            />
-          </div>
-          <button onClick={handleChangePassword} className="btn-primary">
-            <Key size={16} />
-            Change Password
+          
+          <button 
+            onClick={handleChangePassword} 
+            className="btn-primary w-full flex items-center justify-center space-x-2"
+            disabled={isChangingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+          >
+            {isChangingPassword ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Changing Password...</span>
+              </>
+            ) : (
+              <>
+                <Key size={16} />
+                <span>Change Password</span>
+              </>
+            )}
           </button>
         </div>
       </div>
