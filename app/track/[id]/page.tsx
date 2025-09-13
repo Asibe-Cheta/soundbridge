@@ -229,16 +229,6 @@ export default function TrackPage({ params }: TrackPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      {/* Navbar */}
-      <header className="header">
-        {isMobile ? (
-          /* Mobile Header */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
             {/* LEFT - Back Button */}
             <button
               onClick={() => router.back()}
@@ -830,9 +820,6 @@ export default function TrackPage({ params }: TrackPageProps) {
               )}
             </div>
           </div>
-        )}
-      </header>
-
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
         {/* Track Header */}

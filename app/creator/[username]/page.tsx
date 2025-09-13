@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/src/lib/supabase';
 import { CreatorProfileClient } from './CreatorProfileClient';
-import Navbar from '@/src/components/layout/Navbar';
 import Link from 'next/link';
 
 interface CreatorProfilePageProps {
@@ -100,7 +99,6 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
     return (
       <>
-        <Navbar />
         <CreatorProfileClient username={username} initialCreator={creator} />
       </>
     );
@@ -110,7 +108,6 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
     // Return a fallback UI instead of crashing
     return (
       <>
-        <Navbar />
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">

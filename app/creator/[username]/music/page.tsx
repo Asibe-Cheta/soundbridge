@@ -323,16 +323,6 @@ export default function MusicPage({ params }: MusicPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      {/* Navbar */}
-      <header className="header">
-        {isMobile ? (
-          /* Mobile Header - Apple Music Style */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
             {/* LEFT - Hamburger Menu */}
             <button
               id="mobile-menu-button"
@@ -585,133 +575,6 @@ export default function MusicPage({ params }: MusicPageProps) {
               )}
             </div>
           </div>
-        ) : (
-          /* Desktop Header - Original Style */
-          <div className="navbar-main" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%',
-            gap: '1rem'
-          }}>
-            {/* LEFT SIDE */}
-            <div className="navbar-left" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem',
-              flexShrink: 0
-            }}>
-              <div className="logo">
-                <Link href="/" style={{ textDecoration: 'none' }}>
-                  <Image
-                    src="/images/logos/logo-trans-lockup.png"
-                    alt="SoundBridge Logo"
-                    width={120}
-                    height={32}
-                    priority
-                    style={{ height: 'auto' }}
-                  />
-                </Link>
-              </div>
-              {/* Desktop Navigation */}
-              <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link href="/" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  For You
-                </Link>
-                <Link href="/discover" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Discover
-                </Link>
-                <Link href="/events" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Events
-                </Link>
-                <Link href="/creators" style={{ 
-                  textDecoration: 'none', 
-                  color: 'var(--text-primary)',
-                  transition: 'all 0.3s ease',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  Creators
-                </Link>
-              </nav>
-              
-              {/* Spacer between navigation and search */}
-              <div style={{ width: '0.25rem' }}></div>
-            </div>
-
-            {/* CENTER - Search Bar */}
-            <div className="navbar-center">
-              <SearchDropdown placeholder="Search creators, events, podcasts..." />
-            </div>
-
-            {/* RIGHT SIDE */}
-            <div className="navbar-right" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem',
-              flexShrink: 0
-            }}>
-              {/* Upload Button */}
-              <Link href="/upload" style={{ textDecoration: 'none' }}>
-                <button 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.8rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
-                >
-                  <Upload size={16} />
-                  Upload
-                </button>
-              </Link>
 
               {/* User Menu */}
               {user ? (
@@ -925,9 +788,6 @@ export default function MusicPage({ params }: MusicPageProps) {
               )}
             </div>
           </div>
-        )}
-      </header>
-
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center space-x-4">
