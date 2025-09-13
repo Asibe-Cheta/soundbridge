@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
 import {
@@ -30,7 +29,6 @@ import {
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
-  const { theme } = useTheme();
   const router = useRouter();
   const {
     stats,
@@ -87,14 +85,6 @@ export default function DashboardPage() {
     { id: 'availability', label: 'Availability', icon: Clock3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
-
-  if (!user) {
-    return (
-      <ProtectedRoute>
-        <div>Loading...</div>
-      </ProtectedRoute>
-    );
-  }
 
   return (
     <ProtectedRoute>
