@@ -34,7 +34,7 @@ export const useStripe = (): UseStripeResult => {
       // Redirect to Stripe Checkout
       const stripe = await getStripe();
       if (!stripe) {
-        throw new Error('Failed to load Stripe');
+        throw new Error('Stripe is not configured. Please contact support.');
       }
 
       const { error: stripeError } = await stripe.redirectToCheckout({

@@ -1,14 +1,24 @@
 import Stripe from 'stripe';
 
 // Server-side Stripe instance
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
-});
+export const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-06-20',
+    })
+  : null;
 
 // Client-side Stripe instance
 export const getStripe = async () => {
   const { loadStripe } = await import('@stripe/stripe-js');
-  return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+  
+  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  
+  if (!publishableKey) {
+    console.warn('Stripe publishable key not found. Please add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to your environment variables.');
+    return null;
+  }
+  
+  return loadStripe(publishableKey);
 };
 
 // Stripe product and price IDs (you'll need to create these in your Stripe dashboard)

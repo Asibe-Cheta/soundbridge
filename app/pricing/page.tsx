@@ -40,7 +40,13 @@ export default function PricingPage() {
       return;
     }
     
-    await checkout(plan, billingCycle);
+    try {
+      await checkout(plan, billingCycle);
+    } catch (err) {
+      console.error('Upgrade error:', err);
+      // Fallback: redirect to contact page
+      window.location.href = '/contact?reason=subscription';
+    }
   };
 
   const plans = [
