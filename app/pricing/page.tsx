@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useStripe } from '../../src/hooks/useStripe';
 import { 
   Crown, 
   Star, 
@@ -28,8 +29,19 @@ import {
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { checkout, isLoading, error } = useStripe();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+
+  const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
+    if (!user) {
+      // Redirect to signup if not logged in
+      window.location.href = '/auth/signup';
+      return;
+    }
+    
+    await checkout(plan, billingCycle);
+  };
 
   const plans = [
     {
@@ -214,6 +226,13 @@ export default function PricingPage() {
               Grow your audience and monetize your content with professional tools.
             </p>
 
+            {/* Error Display */}
+            {error && (
+              <div className="mb-8 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300">
+                <p className="text-center">{error}</p>
+              </div>
+            )}
+
             {/* Billing Toggle */}
             <div className="flex items-center justify-center gap-4 mb-8">
               <span className={`text-lg ${billingCycle === 'monthly' ? 'text-white' : 'text-white/50'}`}>
@@ -269,7 +288,7 @@ export default function PricingPage() {
                   <div className={`
                     relative h-full bg-white/5 backdrop-blur-xl border rounded-2xl p-8 transition-all duration-500
                     ${isPopular ? 'border-purple-400/50 shadow-2xl shadow-purple-500/20' : plan.borderColor}
-                    ${isHovered ? 'transform scale-105 shadow-2xl' : ''}
+                    ${isHovered ? 'shadow-2xl' : ''}
                     hover:bg-white/10
                   `}>
                     {/* Gradient Overlay */}
@@ -320,13 +339,23 @@ export default function PricingPage() {
                             {user ? 'Go to Dashboard' : 'Get Started Free'}
                           </Link>
                         ) : (
-                          <Link
-                            href={user ? '/dashboard?tab=subscription' : '/auth/signup'}
-                            className={`w-full block text-center px-6 py-3 ${plan.buttonColor} text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105`}
+                          <button
+                            onClick={() => handleUpgrade(plan.id as 'pro' | 'enterprise')}
+                            disabled={isLoading}
+                            className={`w-full block text-center px-6 py-3 ${plan.buttonColor} text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
-                            Upgrade to {plan.name}
-                            <ArrowRight className="h-4 w-4 inline ml-2" />
-                          </Link>
+                            {isLoading ? (
+                              <>
+                                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                Upgrade to {plan.name}
+                                <ArrowRight className="h-4 w-4 inline ml-2" />
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -479,12 +508,29 @@ export default function PricingPage() {
                 Join thousands of creators who are already growing their audience and monetizing their content with SoundBridge.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href={user ? '/dashboard?tab=subscription' : '/auth/signup'}
-                  className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Start Free Today
-                </Link>
+                {user ? (
+                  <button
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={isLoading}
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      'Start Free Today'
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href="/auth/signup"
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Start Free Today
+                  </Link>
+                )}
                 <Link
                   href="/contact"
                   className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all duration-300 border border-white/20 hover:border-white/30"
