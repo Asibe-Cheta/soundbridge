@@ -8,15 +8,117 @@ export async function GET(request: NextRequest) {
     const tokenHash = searchParams.get('token_hash');
     const type = searchParams.get('type');
     const next = searchParams.get('next') || '/dashboard';
+    const code = searchParams.get('code');
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
 
-    console.log('Auth callback received:', { tokenHash, type, next });
-
-    if (!tokenHash) {
-      console.error('No token_hash provided');
-      return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
-    }
+    console.log('Auth callback received:', { tokenHash, type, next, code, error, errorDescription });
 
     const supabase = createRouteHandlerClient({ cookies });
+
+    // Handle OAuth errors
+    if (error) {
+      console.error('OAuth error:', error, errorDescription);
+      return NextResponse.redirect(new URL(`/login?error=oauth_failed&message=${encodeURIComponent(errorDescription || error)}`, request.url));
+    }
+
+    // Handle OAuth callback (Google, Facebook, Apple)
+    if (code) {
+      console.log('Processing OAuth callback with code:', code);
+      
+      try {
+        // Exchange the code for a session
+        const { data, error: oauthError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        if (oauthError) {
+          console.error('OAuth session exchange error:', oauthError);
+          return NextResponse.redirect(new URL(`/login?error=oauth_session_failed&message=${encodeURIComponent(oauthError.message)}`, request.url));
+        }
+
+        if (data.user) {
+          console.log('OAuth login successful for user:', data.user.email);
+          
+          // Create profile if it doesn't exist for OAuth users
+          try {
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .single();
+
+            if (!existingProfile) {
+              console.log('Creating profile for OAuth user:', data.user.id);
+              
+              // Extract name from user metadata (Google provides full_name)
+              const fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || '';
+              const firstName = fullName.split(' ')[0] || '';
+              const lastName = fullName.split(' ').slice(1).join(' ') || '';
+              const displayName = fullName || data.user.email?.split('@')[0] || 'New User';
+              
+              // Create profile with OAuth user data
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: data.user.id,
+                  username: `user${data.user.id.substring(0, 8)}`,
+                  display_name: displayName,
+                  first_name: firstName,
+                  last_name: lastName,
+                  avatar_url: data.user.user_metadata?.avatar_url || null,
+                  role: 'listener', // Default role, can be changed in onboarding
+                  location: 'london',
+                  country: 'UK',
+                  bio: '',
+                  onboarding_completed: false,
+                  onboarding_step: 'role_selection',
+                  selected_role: 'listener',
+                  profile_completed: false,
+                  first_action_completed: false,
+                  onboarding_skipped: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+
+              if (profileError) {
+                console.error('Error creating OAuth profile:', profileError);
+              } else {
+                console.log('OAuth profile created successfully');
+              }
+            }
+            
+            // Check if user needs onboarding
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('onboarding_completed, onboarding_step')
+              .eq('id', data.user.id)
+              .single();
+
+            if (profile && !profile.onboarding_completed) {
+              console.log('Redirecting to onboarding for OAuth user');
+              return NextResponse.redirect(new URL('/onboarding', request.url));
+            }
+            
+          } catch (profileError) {
+            console.error('Profile handling error for OAuth user:', profileError);
+            // Continue to dashboard even if profile creation fails
+          }
+        }
+
+        // Redirect to intended destination
+        console.log('Redirecting OAuth user to:', next);
+        return NextResponse.redirect(new URL(next, request.url));
+        
+      } catch (exchangeError) {
+        console.error('OAuth code exchange error:', exchangeError);
+        return NextResponse.redirect(new URL('/login?error=oauth_exchange_failed', request.url));
+      }
+    }
+
+    // Handle email confirmation (existing logic)
+    if (!tokenHash) {
+      console.error('No token_hash or code provided');
+      return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
+    }
 
     if (type === 'signup') {
       // Handle email confirmation
