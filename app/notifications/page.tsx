@@ -30,7 +30,7 @@ import {
   Save,
   Loader2
 } from 'lucide-react';
-import { useNotificationPreferences, NotificationPreferences } from '@/hooks/useNotificationPreferences';
+import { useNotificationPreferences, NotificationPreferences } from '../../src/hooks/useNotificationPreferences';
 
 interface NotificationSettings {
   locationRadius: number;
