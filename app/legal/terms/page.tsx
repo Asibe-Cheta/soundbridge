@@ -55,7 +55,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-            Last updated: January 1, 2025
+            Last updated: January 15, 2025
           </p>
         </div>
 
@@ -170,7 +170,37 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              5. Copyright and Intellectual Property
+              5. Upload Validation and File Processing
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              <p>
+                <strong>File Validation:</strong> All uploaded content undergoes automated validation to ensure compliance with our technical requirements, copyright policies, and community guidelines.
+              </p>
+              <p>
+                <strong>Tier-Based Limits:</strong> File upload limits vary by subscription tier: Free (100MB), Pro (500MB), and Enterprise (2GB). Processing times also vary by tier.
+              </p>
+              <p>
+                <strong>Content Analysis:</strong> We may analyze your content using automated systems to detect copyright violations, inappropriate content, or technical issues.
+              </p>
+              <p>
+                <strong>Processing Delays:</strong> Upload validation and processing may take time. We reserve the right to delay or reject uploads that fail validation or require manual review.
+              </p>
+              <p>
+                <strong>File Security:</strong> Uploaded files are processed securely and stored according to our data protection standards. We may temporarily store files for validation purposes.
+              </p>
+            </div>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              6. Copyright and Intellectual Property
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               <p>
@@ -194,7 +224,7 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              6. Privacy and Data Protection
+              7. Privacy and Data Protection
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Your privacy is important to us. Please review our <Link href="/legal/privacy" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Privacy Policy</Link> to understand how we collect, use, and protect your information.
@@ -210,7 +240,37 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              7. Prohibited Activities
+              8. Subscription Terms and Billing
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              <p>
+                <strong>Subscription Plans:</strong> We offer Free, Pro, and Enterprise subscription plans with different features, upload limits, and processing capabilities.
+              </p>
+              <p>
+                <strong>Billing and Payments:</strong> Paid subscriptions are billed monthly or annually. All fees are non-refundable except as required by law or as specified in our refund policy.
+              </p>
+              <p>
+                <strong>Automatic Renewal:</strong> Subscriptions automatically renew unless cancelled before the next billing cycle. You can cancel your subscription at any time through your account settings.
+              </p>
+              <p>
+                <strong>Feature Changes:</strong> We reserve the right to modify subscription features, limits, and pricing with 30 days' notice. Continued use constitutes acceptance of changes.
+              </p>
+              <p>
+                <strong>Downgrades:</strong> Downgrading your subscription may result in loss of access to premium features and increased upload limits. Your content remains accessible.
+              </p>
+            </div>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              9. Prohibited Activities
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>You agree not to:</p>
             <ul style={{ 
@@ -237,7 +297,7 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              8. Limitation of Liability
+              10. Limitation of Liability
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               To the maximum extent permitted by law, SoundBridge shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or use.
@@ -253,7 +313,7 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              9. Indemnification
+              11. Indemnification
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               You agree to indemnify and hold harmless SoundBridge from any claims, damages, or expenses arising from your use of the Platform or violation of these terms.
@@ -269,7 +329,7 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              10. Changes to Terms
+              12. Changes to Terms
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               We may modify these terms at any time. We will notify users of significant changes via email or through the Platform. Continued use of the Platform after changes constitutes acceptance of the new terms.
@@ -285,7 +345,7 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              11. Governing Law
+              13. Governing Law
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               These terms are governed by the laws of the United Kingdom. Any disputes shall be resolved in the courts of the United Kingdom.
@@ -301,7 +361,7 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              12. Contact Information
+              14. Contact Information
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               If you have questions about these Terms of Service, please contact us at:

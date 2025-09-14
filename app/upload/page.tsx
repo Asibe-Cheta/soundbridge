@@ -8,6 +8,8 @@ import { ImageUpload } from '../../src/components/ui/ImageUpload';
 import Image from 'next/image';
 import { useAudioUpload } from '../../src/hooks/useAudioUpload';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { UploadValidator } from '../../src/components/upload/UploadValidator';
+import type { UploadValidationResult } from '../../src/lib/types/upload-validation';
 import {
   Upload,
   Music,
@@ -68,8 +70,24 @@ export default function UnifiedUploadPage() {
   const [episodeNumber, setEpisodeNumber] = useState('');
   const [podcastCategory, setPodcastCategory] = useState('');
 
+  // Validation states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [validationResult, setValidationResult] = useState<UploadValidationResult | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Validation handlers
+  const handleValidationComplete = (result: UploadValidationResult) => {
+    setValidationResult(result);
+    setValidationError(null);
+  };
+
+  const handleValidationError = (error: string) => {
+    setValidationError(error);
+    setValidationResult(null);
+  };
 
   // Content type options
   const contentTypes = [
@@ -137,6 +155,7 @@ export default function UnifiedUploadPage() {
 
   const handleFileUpload = (file: File) => {
     uploadActions.setAudioFile(file);
+    setSelectedFile(file); // Set for validation
 
     // Auto-fill title from filename
     const fileName = file.name.replace(/\.[^/.]+$/, '');
@@ -696,6 +715,27 @@ export default function UnifiedUploadPage() {
               )}
             </div>
           </div>
+
+          {/* Upload Validation */}
+          {selectedFile && (
+            <div className="card">
+              <UploadValidator
+                file={selectedFile}
+                metadata={{
+                  title,
+                  description,
+                  genre: contentType === 'music' ? genre : podcastCategory,
+                  tags: tags ? tags.split(',').map(t => t.trim()) : [],
+                  privacy,
+                  publishOption,
+                  scheduleDate
+                }}
+                onValidationComplete={handleValidationComplete}
+                onValidationError={handleValidationError}
+                className="mb-6"
+              />
+            </div>
+          )}
 
           {/* Metadata Form */}
           <div className="card">

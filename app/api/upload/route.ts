@@ -1,27 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '../../../src/lib/supabase-api';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { uploadValidationService } from '../../../src/lib/upload-validation';
+import type { UploadValidationRequest } from '../../../src/lib/types/upload-validation';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    console.log('🎵 Upload API called with validation integration');
+    
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Get the current user session
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    // Extract user from token (simplified - in production, verify the token properly)
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid authentication' },
-        { status: 401 }
-      );
-    }
+    // Get user subscription tier
+    const { data: subscription, error: subError } = await supabase
+      .from('user_subscriptions')
+      .select('tier')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    const userTier = subscription?.tier || 'free';
+    console.log('👤 User tier:', userTier);
 
     const body = await request.json();
     const {
@@ -35,7 +44,11 @@ export async function POST(request: NextRequest) {
       scheduleDate,
       audioFileUrl,
       coverArtUrl,
-      duration
+      duration,
+      // New validation fields
+      fileData,
+      validationPassed,
+      validationId
     } = body;
 
     // Validate required fields
@@ -44,6 +57,62 @@ export async function POST(request: NextRequest) {
         { error: 'Title, artist name, and audio file are required' },
         { status: 400 }
       );
+    }
+
+    // Enhanced validation check if validation data is provided
+    if (fileData && !validationPassed) {
+      console.log('🔍 Performing upload validation...');
+      
+      try {
+        // Create File object from base64 data
+        const file = await createFileFromBase64(fileData);
+        
+        // Perform validation
+        const validationRequest: UploadValidationRequest = {
+          file,
+          metadata: {
+            title,
+            description,
+            genre,
+            tags: tags ? tags.split(',').map(t => t.trim()) : [],
+            privacy,
+            publishOption,
+            scheduleDate
+          },
+          userId: user.id,
+          userTier: userTier as 'free' | 'pro' | 'enterprise',
+          config: {
+            enableCopyrightCheck: false, // Start with basic validation
+            enableContentModeration: false,
+            enableCommunityGuidelines: true,
+            enableMetadataValidation: true,
+            enableFileIntegrityCheck: true,
+            strictMode: userTier === 'enterprise'
+          }
+        };
+        
+        const validationResult = await uploadValidationService.validateUpload(validationRequest);
+        
+        if (!validationResult.result.isValid) {
+          return NextResponse.json(
+            { 
+              error: 'Upload validation failed',
+              validationErrors: validationResult.result.errors,
+              validationWarnings: validationResult.result.warnings
+            },
+            { status: 400 }
+          );
+        }
+        
+        console.log('✅ Upload validation passed');
+        
+      } catch (validationError) {
+        console.error('❌ Upload validation error:', validationError);
+        return NextResponse.json(
+          { error: 'Upload validation failed' },
+          { status: 400 }
+        );
+      }
     }
 
     // Validate privacy setting
@@ -99,6 +168,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Log successful upload for statistics
+    await supabase.rpc('update_user_upload_stats', {
+      user_uuid: user.id,
+      upload_success: true,
+      file_size: track.file_url ? 0 : 0, // We'll need to get actual file size
+      user_tier: userTier
+    });
+
+    console.log('✅ Upload completed successfully');
+
     return NextResponse.json({
       success: true,
       track: {
@@ -108,7 +187,8 @@ export async function POST(request: NextRequest) {
         cover_art_url: track.cover_art_url,
         duration: track.duration,
         created_at: track.created_at
-      }
+      },
+      tier: userTier
     });
 
   } catch (error) {
@@ -120,23 +200,41 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to create File object from base64 data
+async function createFileFromBase64(base64Data: string): Promise<File> {
+  try {
+    // Parse base64 data (format: "data:audio/mp3;base64,iVBORw0KGgoAAAANSUhEUgAA...")
+    const [header, data] = base64Data.split(',');
+    const mimeMatch = header.match(/data:([^;]+)/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mp3';
+    
+    // Convert base64 to binary
+    const binaryString = atob(data);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // Create File object
+    const blob = new Blob([bytes], { type: mimeType });
+    const file = new File([blob], 'uploaded-file', { type: mimeType });
+    
+    return file;
+  } catch (error) {
+    throw new Error('Invalid file data format');
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Get the current user session
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Invalid authentication' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }

@@ -61,14 +61,19 @@ export default function PricingPage() {
       buttonColor: 'bg-blue-600 hover:bg-blue-700',
       features: [
         'Unlimited uploads',
+        '100MB file size limit',
+        'Standard processing (2-5 min)',
+        'Basic copyright protection',
         'Basic analytics',
         'Community features',
-        'Standard quality',
+        'Standard audio quality',
         'SoundBridge branding'
       ],
       limitations: [
+        '100MB max file size',
+        'Standard processing speed',
+        'Basic copyright protection',
         'Basic analytics only',
-        'Standard audio quality',
         'Community support'
       ],
       popular: false
@@ -84,13 +89,17 @@ export default function PricingPage() {
       buttonColor: 'bg-purple-600 hover:bg-purple-700',
       features: [
         'Everything in Free',
+        '500MB file size limit',
+        'Priority processing (1-2 min)',
+        'Advanced copyright protection',
         'Advanced analytics',
         'Custom branding',
         'Revenue sharing (95%)',
         'Priority support',
         'HD audio quality',
         'Direct fan messaging',
-        'Cross-platform distribution'
+        'Cross-platform distribution',
+        '3 concurrent uploads'
       ],
       limitations: [],
       popular: true,
@@ -107,14 +116,19 @@ export default function PricingPage() {
       buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
       features: [
         'Everything in Pro',
+        '2GB file size limit',
+        'Instant processing (< 1 min)',
+        'AI-powered copyright protection',
+        'Human + AI content moderation',
         'White-label platform',
         'Custom integrations',
-        'Revenue sharing (90%)',
+        'Revenue sharing (98%)',
         'Dedicated support',
         'API access',
         'Custom domain',
         'Advanced collaboration tools',
-        'Priority feature requests'
+        'Priority feature requests',
+        '5 concurrent uploads'
       ],
       limitations: [],
       popular: false,
@@ -130,6 +144,9 @@ export default function PricingPage() {
         { name: 'Music Tracks', free: 'Unlimited', pro: 'Unlimited', enterprise: 'Unlimited' },
         { name: 'Podcast Episodes', free: 'Unlimited', pro: 'Unlimited', enterprise: 'Unlimited' },
         { name: 'Events', free: 'Unlimited', pro: 'Unlimited', enterprise: 'Unlimited' },
+        { name: 'Max File Size', free: '100MB', pro: '500MB', enterprise: '2GB' },
+        { name: 'Processing Speed', free: 'Standard (2-5 min)', pro: 'Priority (1-2 min)', enterprise: 'Instant (< 1 min)' },
+        { name: 'Concurrent Uploads', free: '1', pro: '3', enterprise: '5' },
         { name: 'Storage Space', free: '1GB', pro: '100GB', enterprise: 'Unlimited' },
         { name: 'Audio Quality', free: 'Standard', pro: 'HD', enterprise: 'Lossless' }
       ]
@@ -166,6 +183,17 @@ export default function PricingPage() {
       ]
     },
     {
+      category: 'Security & Protection',
+      icon: <Shield className="h-6 w-6 text-red-500" />,
+      items: [
+        { name: 'Copyright Protection', free: 'Basic', pro: 'Advanced', enterprise: 'AI-Powered' },
+        { name: 'Content Moderation', free: 'Automated', pro: 'Priority Review', enterprise: 'Human + AI' },
+        { name: 'File Validation', free: 'Basic', pro: 'Enhanced', enterprise: 'AI-Enhanced' },
+        { name: 'Upload Security', free: 'Standard', pro: 'Enhanced', enterprise: 'Enterprise-Grade' },
+        { name: 'Data Encryption', free: '✓', pro: '✓', enterprise: '✓' }
+      ]
+    },
+    {
       category: 'Support & Collaboration',
       icon: <Users className="h-6 w-6 text-indigo-500" />,
       items: [
@@ -182,21 +210,21 @@ export default function PricingPage() {
     {
       name: 'Sarah Chen',
       role: 'Independent Musician',
-      content: 'The Pro plan helped me grow my audience by 300% in just 3 months. The analytics are incredible!',
+      content: 'The Pro plan helped me grow my audience by 300% in just 3 months. The 500MB upload limit and priority processing are game-changers!',
       avatar: 'SC',
       plan: 'Pro'
     },
     {
       name: 'Mike Rodriguez',
       role: 'Podcast Host',
-      content: 'Enterprise features let me create a professional platform for my podcast network. Worth every penny.',
+      content: 'Enterprise features let me create a professional platform for my podcast network. Instant processing and AI-powered copyright protection are incredible.',
       avatar: 'MR',
       plan: 'Enterprise'
     },
     {
       name: 'Emma Thompson',
       role: 'Event Organizer',
-      content: 'Free plan got me started, but Pro gave me the tools to turn my passion into a business.',
+      content: 'Free plan got me started, but Pro gave me the tools to turn my passion into a business. The advanced upload validation saves me so much time!',
       avatar: 'ET',
       plan: 'Pro'
     }
@@ -371,6 +399,86 @@ export default function PricingPage() {
             })}
           </div>
 
+          {/* Upload Benefits Highlight */}
+          <div className="mb-20">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Smart Upload System
+              </h2>
+              <p className="text-white/70 max-w-2xl mx-auto">
+                Our intelligent upload validation ensures your content meets quality standards while providing tier-based benefits for faster processing and better protection.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* File Size & Processing */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <HardDrive className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-4">File Size & Processing</h3>
+                <div className="space-y-3 text-white/70">
+                  <div className="flex justify-between items-center">
+                    <span>Free Tier</span>
+                    <span className="text-blue-400 font-semibold">100MB • 2-5 min</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Pro Tier</span>
+                    <span className="text-purple-400 font-semibold">500MB • 1-2 min</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Enterprise</span>
+                    <span className="text-yellow-400 font-semibold">2GB • &lt; 1 min</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Copyright Protection */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Shield className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-4">Copyright Protection</h3>
+                <div className="space-y-3 text-white/70">
+                  <div className="flex justify-between items-center">
+                    <span>Free Tier</span>
+                    <span className="text-blue-400 font-semibold">Basic</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Pro Tier</span>
+                    <span className="text-purple-400 font-semibold">Advanced</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Enterprise</span>
+                    <span className="text-yellow-400 font-semibold">AI-Powered</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content Moderation */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-4">Content Moderation</h3>
+                <div className="space-y-3 text-white/70">
+                  <div className="flex justify-between items-center">
+                    <span>Free Tier</span>
+                    <span className="text-blue-400 font-semibold">Automated</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Pro Tier</span>
+                    <span className="text-purple-400 font-semibold">Priority Review</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Enterprise</span>
+                    <span className="text-yellow-400 font-semibold">Human + AI</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Features Comparison */}
           <div className="mb-20">
             <div className="text-center mb-12">
@@ -491,6 +599,18 @@ export default function PricingPage() {
                 {
                   q: "Do you offer refunds?",
                   a: "We offer a 30-day money-back guarantee for all paid plans. If you're not satisfied, contact our support team for a full refund."
+                },
+                {
+                  q: "What file sizes can I upload?",
+                  a: "Free users can upload files up to 100MB, Pro users up to 500MB, and Enterprise users up to 2GB. All plans support unlimited uploads with our smart validation system."
+                },
+                {
+                  q: "How does the upload validation work?",
+                  a: "Our system automatically validates your files for size, format, and quality. Free tier gets standard processing (2-5 min), Pro gets priority (1-2 min), and Enterprise gets instant processing (< 1 min)."
+                },
+                {
+                  q: "What copyright protection do you offer?",
+                  a: "Free tier includes basic copyright protection, Pro tier has advanced protection, and Enterprise tier features AI-powered copyright detection to keep your content safe."
                 }
               ].map((faq, index) => (
                 <div

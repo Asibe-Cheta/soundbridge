@@ -55,7 +55,7 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-            Last updated: January 1, 2025
+            Last updated: January 15, 2025
           </p>
         </div>
 
@@ -138,7 +138,30 @@ export default function PrivacyPolicy() {
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
             }}>
-              2.3 Cookies and Tracking
+              2.3 Upload and File Processing Data
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>When you upload content, we collect:</p>
+            <ul style={{ 
+              listStyle: 'disc', 
+              paddingLeft: '1.5rem', 
+              color: 'var(--text-secondary)', 
+              marginBottom: '1rem' 
+            }}>
+              <li>File metadata (size, type, duration, format)</li>
+              <li>Upload timestamps and processing logs</li>
+              <li>Validation results and error messages</li>
+              <li>Copyright detection analysis data</li>
+              <li>Content moderation flags and decisions</li>
+              <li>Tier-based usage statistics</li>
+            </ul>
+
+            <h3 style={{
+              fontSize: '1.2rem',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem'
+            }}>
+              2.4 Cookies and Tracking
             </h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               We use cookies and similar technologies to enhance your experience, analyze usage, and provide personalized content. You can control cookie settings through your browser preferences.
@@ -165,6 +188,9 @@ export default function PrivacyPolicy() {
             }}>
               <li>Provide and maintain the Platform</li>
               <li>Process your uploads and manage your content</li>
+              <li>Validate and analyze uploaded content for compliance</li>
+              <li>Detect copyright violations and inappropriate content</li>
+              <li>Apply tier-based upload limits and processing rules</li>
               <li>Personalize your experience and recommendations</li>
               <li>Communicate with you about your account</li>
               <li>Detect and prevent fraud and abuse</li>
@@ -182,7 +208,38 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              4. Information Sharing
+              4. Automated Content Analysis
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              We use automated systems to analyze your uploaded content for various purposes:
+            </p>
+            <ul style={{ 
+              listStyle: 'disc', 
+              paddingLeft: '1.5rem', 
+              color: 'var(--text-secondary)', 
+              marginBottom: '1rem' 
+            }}>
+              <li><strong>Copyright Detection:</strong> We scan content for potential copyright violations using audio fingerprinting and content matching technologies.</li>
+              <li><strong>Content Moderation:</strong> Automated systems check for inappropriate content, spam, or violations of community guidelines.</li>
+              <li><strong>Technical Validation:</strong> Files are analyzed for format compatibility, quality standards, and technical specifications.</li>
+              <li><strong>Metadata Extraction:</strong> We extract and analyze audio metadata for cataloging and recommendation purposes.</li>
+              <li><strong>Usage Analytics:</strong> Content performance metrics are collected to improve our services and provide insights.</li>
+            </ul>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              This analysis is performed automatically and may result in content being flagged for manual review, delayed processing, or rejection if violations are detected.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              5. Information Sharing
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>We do not sell, trade, or rent your personal information. We may share your information in the following circumstances:</p>
             
@@ -232,7 +289,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              5. Data Security
+              6. Data Security
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               We implement appropriate technical and organizational measures to protect your information against unauthorized access, alteration, disclosure, or destruction. These measures include:
@@ -260,7 +317,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              6. Your Rights (GDPR)
+              7. Your Rights (GDPR)
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>If you are in the European Union, you have the following rights:</p>
             
@@ -299,7 +356,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              7. Data Retention
+              8. Data Retention
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>We retain your information for as long as necessary to:</p>
             <ul style={{ 
@@ -327,7 +384,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              8. Children's Privacy
+              9. Children's Privacy
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Our Platform is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately.
@@ -343,7 +400,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              9. International Transfers
+              10. International Transfers
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your information in accordance with this Privacy Policy.
@@ -359,7 +416,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              10. Third-Party Links
+              11. Third-Party Links
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Our Platform may contain links to third-party websites or services. We are not responsible for the privacy practices of these third parties. We encourage you to review their privacy policies.
@@ -375,7 +432,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              11. Changes to This Policy
+              12. Changes to This Policy
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               We may update this Privacy Policy from time to time. We will notify you of any material changes by email or through the Platform. Your continued use of the Platform after changes constitutes acceptance of the updated policy.
@@ -391,7 +448,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              12. Contact Us
+              13. Contact Us
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               If you have questions about this Privacy Policy or our data practices, please contact us:
@@ -420,7 +477,7 @@ export default function PrivacyPolicy() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              13. Cookie Policy
+              14. Cookie Policy
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>We use the following types of cookies:</p>
             

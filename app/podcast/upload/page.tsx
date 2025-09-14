@@ -7,6 +7,8 @@ import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import Image from 'next/image';
 import { useAudioUpload } from '../../../src/hooks/useAudioUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { UploadValidator } from '../../../src/components/upload/UploadValidator';
+import type { UploadValidationResult } from '../../../src/lib/types/upload-validation';
 import {
   Upload,
   Mic,
@@ -53,8 +55,24 @@ export default function PodcastUploadPage() {
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
 
+  // Validation states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [validationResult, setValidationResult] = useState<UploadValidationResult | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Validation handlers
+  const handleValidationComplete = (result: UploadValidationResult) => {
+    setValidationResult(result);
+    setValidationError(null);
+  };
+
+  const handleValidationError = (error: string) => {
+    setValidationError(error);
+    setValidationResult(null);
+  };
 
   const podcastCategories = [
     'Music Industry', 'Artist Interviews', 'Music Production', 'Gospel & Worship',
@@ -75,6 +93,7 @@ export default function PodcastUploadPage() {
 
   const handleFileUpload = useCallback((file: File) => {
     uploadActions.setAudioFile(file);
+    setSelectedFile(file); // Set for validation
 
     // Auto-fill title from filename
     const fileName = file.name.replace(/\.[^/.]+$/, '');
@@ -972,6 +991,27 @@ export default function PodcastUploadPage() {
                   )}
                 </div>
               </div>
+
+              {/* Upload Validation */}
+              {selectedFile && (
+                <div className="card">
+                  <UploadValidator
+                    file={selectedFile}
+                    metadata={{
+                      title,
+                      description,
+                      genre: podcastCategory,
+                      tags: tags ? tags.split(',').map(t => t.trim()) : [],
+                      privacy,
+                      publishOption,
+                      scheduleDate
+                    }}
+                    onValidationComplete={handleValidationComplete}
+                    onValidationError={handleValidationError}
+                    className="mb-6"
+                  />
+                </div>
+              )}
 
               {/* Cover Art Upload */}
               <div className="card">
