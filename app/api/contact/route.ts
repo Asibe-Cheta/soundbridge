@@ -33,13 +33,16 @@ export async function POST(request: NextRequest) {
     const emailContent = {
       personalizations: [
         {
-          to: [{ email: CONTACT_EMAIL }],
-          reply_to: { email: email, name: name }
+          to: [{ email: CONTACT_EMAIL }]
         }
       ],
       from: {
-        email: process.env.SENDGRID_FROM_EMAIL || 'noreply@soundbridge.live',
+        email: process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live',
         name: 'SoundBridge Contact Form'
+      },
+      reply_to: {
+        email: email,
+        name: name
       },
       subject: `Contact Form: ${subject}`,
       content: [
