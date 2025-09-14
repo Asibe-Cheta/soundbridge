@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Handle email confirmation (existing logic)
-    if (!tokenHash) {
+    if (!tokenHash && !code) {
       console.error('No token_hash or code provided');
       return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
     }
