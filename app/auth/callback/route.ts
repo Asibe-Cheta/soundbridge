@@ -86,16 +86,36 @@ export async function GET(request: NextRequest) {
               }
             }
             
-            // Check if user needs onboarding
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('onboarding_completed, onboarding_step')
-              .eq('id', data.user.id)
-              .single();
+            // Wait a moment for profile to be committed, then check onboarding status
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check if user needs onboarding with retry logic
+            let profile = null;
+            let attempts = 0;
+            const maxAttempts = 3;
+            
+            while (attempts < maxAttempts && !profile) {
+              const { data: profileData, error: profileFetchError } = await supabase
+                .from('profiles')
+                .select('onboarding_completed, onboarding_step')
+                .eq('id', data.user.id)
+                .single();
+              
+              if (profileData && !profileFetchError) {
+                profile = profileData;
+                break;
+              }
+              
+              console.log(`Profile fetch attempt ${attempts + 1} failed, retrying...`);
+              attempts++;
+              if (attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            }
 
             if (profile && !profile.onboarding_completed) {
-              console.log('Redirecting to onboarding for OAuth user');
-              return NextResponse.redirect(new URL('/onboarding', request.url));
+              console.log('OAuth user needs onboarding, redirecting to home for client-side onboarding');
+              return NextResponse.redirect(new URL('/?onboarding=true', request.url));
             }
             
           } catch (profileError) {
@@ -174,17 +194,37 @@ export async function GET(request: NextRequest) {
             }
           }
           
-          // Check if user needs onboarding
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('onboarding_completed, onboarding_step')
-            .eq('id', data.user.id)
-            .single();
+          // Wait a moment for profile to be committed, then check onboarding status
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check if user needs onboarding with retry logic
+          let profile = null;
+          let attempts = 0;
+          const maxAttempts = 3;
+          
+          while (attempts < maxAttempts && !profile) {
+            const { data: profileData, error: profileFetchError } = await supabase
+              .from('profiles')
+              .select('onboarding_completed, onboarding_step')
+              .eq('id', data.user.id)
+              .single();
+            
+            if (profileData && !profileFetchError) {
+              profile = profileData;
+              break;
+            }
+            
+            console.log(`Profile fetch attempt ${attempts + 1} failed, retrying...`);
+            attempts++;
+            if (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
 
-          // If no profile exists or onboarding not completed, redirect to onboarding
+          // If no profile exists or onboarding not completed, redirect to home for onboarding
           if (!profile || !profile.onboarding_completed) {
             console.log('User needs onboarding, redirecting to home for onboarding flow');
-            return NextResponse.redirect(new URL('/', request.url));
+            return NextResponse.redirect(new URL('/?onboarding=true', request.url));
           }
           
           console.log('User onboarding completed, redirecting to dashboard');

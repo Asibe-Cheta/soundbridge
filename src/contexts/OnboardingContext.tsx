@@ -48,7 +48,27 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   // Check if user needs onboarding on mount
   useEffect(() => {
     if (user) {
-      checkOnboardingStatus();
+      // Check for onboarding URL parameter (from OAuth callback)
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
+      
+      if (shouldStartOnboarding) {
+        console.log('🎯 Starting onboarding from URL parameter');
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+        // Force start onboarding
+        setTimeout(() => {
+          setOnboardingState(prev => ({
+            ...prev,
+            isOnboardingActive: true,
+            showOnboarding: true,
+            currentStep: 'role_selection',
+          }));
+        }, 1000); // Small delay to ensure user context is ready
+      } else {
+        // Normal onboarding check with retry logic
+        checkOnboardingStatusWithRetry();
+      }
     } else {
       // Reset onboarding state when user logs out
       setOnboardingState({
@@ -84,12 +104,46 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         } else {
           console.log('✅ User onboarding already completed');
         }
+        return true; // Success
       } else {
         console.error('❌ Failed to check onboarding status:', response.status);
+        return false; // Failed
       }
     } catch (error) {
       console.error('❌ Error checking onboarding status:', error);
+      return false; // Failed
     }
+  };
+
+  // Retry logic for onboarding status check
+  const checkOnboardingStatusWithRetry = async () => {
+    let attempts = 0;
+    const maxAttempts = 3;
+    const retryDelay = 1000;
+
+    while (attempts < maxAttempts) {
+      console.log(`🔄 Onboarding status check attempt ${attempts + 1}/${maxAttempts}`);
+      const success = await checkOnboardingStatus();
+      
+      if (success) {
+        return; // Success, exit retry loop
+      }
+      
+      attempts++;
+      if (attempts < maxAttempts) {
+        console.log(`⏳ Retrying onboarding check in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+    
+    console.error('❌ Failed to check onboarding status after all retries');
+    // If all retries failed, assume user needs onboarding as fallback
+    setOnboardingState(prev => ({
+      ...prev,
+      isOnboardingActive: true,
+      showOnboarding: true,
+      currentStep: 'role_selection',
+    }));
   };
 
   const setCurrentStep = (step: OnboardingStep) => {

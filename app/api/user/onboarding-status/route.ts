@@ -49,6 +49,15 @@ export async function GET(request: NextRequest) {
     // Check if user needs onboarding based on profile completeness
     const needsOnboarding = !profile?.onboarding_completed;
     
+    // Add additional logging for debugging
+    console.log('📊 Onboarding status check result:', {
+      userId: user.id,
+      hasProfile: !!profile,
+      onboardingCompleted: profile?.onboarding_completed,
+      needsOnboarding,
+      currentStep: profile?.onboarding_step
+    });
+    
     return NextResponse.json({
       success: true,
       needsOnboarding,
