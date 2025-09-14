@@ -29,19 +29,23 @@ export async function POST(request: NextRequest) {
 
     console.log('📧 Contact form submission:', { name, email, subject });
 
-    // Create email content
+    // Create email content using SendGrid v3 API format
     const emailContent = {
-      to: CONTACT_EMAIL,
+      personalizations: [
+        {
+          to: [{ email: CONTACT_EMAIL }],
+          reply_to: { email: email, name: name }
+        }
+      ],
       from: {
         email: process.env.SENDGRID_FROM_EMAIL || 'noreply@soundbridge.live',
         name: 'SoundBridge Contact Form'
       },
-      reply_to: {
-        email: email,
-        name: name
-      },
       subject: `Contact Form: ${subject}`,
-      text: `
+      content: [
+        {
+          type: 'text/plain',
+          value: `
 New contact form submission from SoundBridge website:
 
 Name: ${name}
@@ -53,32 +57,37 @@ ${message}
 
 ---
 This message was sent from the SoundBridge contact form.
-      `,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #DC2626; border-bottom: 2px solid #DC2626; padding-bottom: 10px;">
-            New Contact Form Submission
-          </h2>
-          
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-            <p><strong>Subject:</strong> ${subject}</p>
-          </div>
-          
-          <div style="margin: 20px 0;">
-            <h3 style="color: #333;">Message:</h3>
-            <div style="background-color: white; padding: 15px; border-left: 4px solid #DC2626; border-radius: 4px;">
-              ${message.replace(/\n/g, '<br>')}
+          `
+        },
+        {
+          type: 'text/html',
+          value: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #DC2626; border-bottom: 2px solid #DC2626; padding-bottom: 10px;">
+                New Contact Form Submission
+              </h2>
+              
+              <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+                <p><strong>Subject:</strong> ${subject}</p>
+              </div>
+              
+              <div style="margin: 20px 0;">
+                <h3 style="color: #333;">Message:</h3>
+                <div style="background-color: white; padding: 15px; border-left: 4px solid #DC2626; border-radius: 4px;">
+                  ${message.replace(/\n/g, '<br>')}
+                </div>
+              </div>
+              
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+                <p>This message was sent from the SoundBridge contact form at ${new Date().toLocaleString()}.</p>
+                <p>You can reply directly to this email to respond to ${name}.</p>
+              </div>
             </div>
-          </div>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
-            <p>This message was sent from the SoundBridge contact form at ${new Date().toLocaleString()}.</p>
-            <p>You can reply directly to this email to respond to ${name}.</p>
-          </div>
-        </div>
-      `
+          `
+        }
+      ]
     };
 
     // Send email via SendGrid
