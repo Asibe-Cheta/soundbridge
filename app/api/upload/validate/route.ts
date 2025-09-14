@@ -86,10 +86,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Upload validation error:', error);
     
+    // Ensure we always return valid JSON
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return NextResponse.json(
       { 
+        success: false,
         error: 'Upload validation failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: errorMessage
       },
       { status: 500 }
     );
@@ -104,20 +108,41 @@ async function createFileFromBase64(base64Data: string): Promise<File> {
     const mimeMatch = header.match(/data:([^;]+)/);
     const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mp3';
     
-    // Convert base64 to binary
-    const binaryString = atob(data);
-    const bytes = new Uint8Array(binaryString.length);
+    // Convert base64 to binary using Node.js Buffer (server-side compatible)
+    const binaryData = Buffer.from(data, 'base64');
     
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    // Create a File-like object that works on server side
+    const fileLike = {
+      name: 'uploaded-file',
+      type: mimeType,
+      size: binaryData.length,
+      stream: () => new ReadableStream({
+        start(controller) {
+          controller.enqueue(binaryData);
+          controller.close();
+        }
+      }),
+      arrayBuffer: async () => binaryData.buffer,
+      text: async () => binaryData.toString(),
+      slice: (start: number, end?: number) => {
+        const sliced = binaryData.slice(start, end);
+        return {
+          ...fileLike,
+          size: sliced.length,
+          arrayBuffer: async () => sliced.buffer,
+          stream: () => new ReadableStream({
+            start(controller) {
+              controller.enqueue(sliced);
+              controller.close();
+            }
+          })
+        };
+      }
+    } as File;
     
-    // Create File object
-    const blob = new Blob([bytes], { type: mimeType });
-    const file = new File([blob], 'uploaded-file', { type: mimeType });
-    
-    return file;
+    return fileLike;
   } catch (error) {
+    console.error('Error creating file from base64:', error);
     throw new Error('Invalid file data format');
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Bell,
@@ -26,8 +26,11 @@ import {
   MessageSquare,
   Share2,
   Zap,
-  Moon
+  Moon,
+  Save,
+  Loader2
 } from 'lucide-react';
+import { useNotificationPreferences, NotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 interface NotificationSettings {
   locationRadius: number;
@@ -82,7 +85,14 @@ const deliveryMethods = [
 ];
 
 export default function NotificationPreferencesPage() {
-  const [settings, setSettings] = useState<NotificationSettings>({
+  const { preferences, loading, error, savePreferences, refreshPreferences } = useNotificationPreferences();
+  const [activeSection, setActiveSection] = useState('location');
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // Use preferences from hook, with fallback defaults
+  const settings: NotificationPreferences = preferences || {
     locationRadius: 10,
     eventCategories: ['christian', 'gospel', 'afrobeats'],
     notificationTiming: '1-day',
@@ -106,44 +116,60 @@ export default function NotificationPreferencesPage() {
       requestReminders: true,
       deliveryMethods: ['push', 'email']
     }
-  });
-
-  const [activeSection, setActiveSection] = useState('location');
-
-  const updateSettings = (key: keyof NotificationSettings, value: unknown) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const updateSocialSettings = (key: keyof NotificationSettings['socialNotifications'], value: boolean) => {
-    setSettings(prev => ({
-      ...prev,
-      socialNotifications: { ...prev.socialNotifications, [key]: value }
-    }));
+  // Save settings with auto-save functionality
+  const saveSettings = async (section: string, data: any) => {
+    setSaving(true);
+    setSaveStatus('idle');
+    
+    try {
+      const success = await savePreferences(section, data);
+      if (success) {
+        setSaveStatus('success');
+        setSaveMessage(`${section} preferences saved successfully!`);
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      } else {
+        setSaveStatus('error');
+        setSaveMessage('Failed to save preferences');
+        setTimeout(() => setSaveStatus('idle'), 5000);
+      }
+    } catch (error) {
+      setSaveStatus('error');
+      setSaveMessage('Error saving preferences');
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateCollaborationSettings = (key: keyof NotificationSettings['collaborationRequests'], value: boolean | string[]) => {
-    setSettings(prev => ({
-      ...prev,
-      collaborationRequests: { ...prev.collaborationRequests, [key]: value }
-    }));
+  const updateSettings = async (key: keyof NotificationPreferences, value: unknown) => {
+    const newData = { [key]: value };
+    await saveSettings('general', newData);
   };
 
-  const toggleCategory = (categoryId: string) => {
-    setSettings(prev => ({
-      ...prev,
-      eventCategories: prev.eventCategories.includes(categoryId)
-        ? prev.eventCategories.filter(id => id !== categoryId)
-        : [...prev.eventCategories, categoryId]
-    }));
+  const updateSocialSettings = async (key: keyof NotificationPreferences['socialNotifications'], value: boolean) => {
+    const newSocialNotifications = { ...settings.socialNotifications, [key]: value };
+    await saveSettings('social', { socialNotifications: newSocialNotifications });
   };
 
-  const toggleDeliveryMethod = (methodId: string) => {
-    setSettings(prev => ({
-      ...prev,
-      deliveryMethods: prev.deliveryMethods.includes(methodId)
-        ? prev.deliveryMethods.filter(id => id !== methodId)
-        : [...prev.deliveryMethods, methodId]
-    }));
+  const updateCollaborationSettings = async (key: keyof NotificationPreferences['collaborationRequests'], value: boolean | string[]) => {
+    const newCollaborationRequests = { ...settings.collaborationRequests, [key]: value };
+    await saveSettings('collaboration-requests', { collaborationRequests: newCollaborationRequests });
+  };
+
+  const toggleCategory = async (categoryId: string) => {
+    const newCategories = settings.eventCategories.includes(categoryId)
+      ? settings.eventCategories.filter(id => id !== categoryId)
+      : [...settings.eventCategories, categoryId];
+    await saveSettings('categories', { eventCategories: newCategories });
+  };
+
+  const toggleDeliveryMethod = async (methodId: string) => {
+    const newMethods = settings.deliveryMethods.includes(methodId)
+      ? settings.deliveryMethods.filter(id => id !== methodId)
+      : [...settings.deliveryMethods, methodId];
+    await saveSettings('delivery', { deliveryMethods: newMethods });
   };
 
   const renderLocationSettings = () => (
@@ -927,9 +953,126 @@ export default function NotificationPreferencesPage() {
 
         {/* Main Content */}
         <div style={{ flex: 1, padding: '2rem' }}>
-          {renderContent()}
+          {/* Loading State */}
+          {loading && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              color: '#999'
+            }}>
+              <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
+              Loading notification preferences...
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              color: '#FCA5A5',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                ✗
+              </div>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Save Status */}
+          {saveStatus === 'success' && (
+            <div style={{
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              color: '#22C55E',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                ✓
+              </div>
+              <span>{saveMessage}</span>
+            </div>
+          )}
+
+          {saveStatus === 'error' && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              color: '#FCA5A5',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                ✗
+              </div>
+              <span>{saveMessage}</span>
+            </div>
+          )}
+
+          {/* Main Content */}
+          {!loading && renderContent()}
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `
+      }} />
     </div>
   );
 } 

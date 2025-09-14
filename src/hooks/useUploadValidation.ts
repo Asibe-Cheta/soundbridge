@@ -100,14 +100,21 @@ export function useUploadValidation(): UseUploadValidationReturn {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Validation failed');
+        let errorMessage = 'Validation failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || 'Validation failed';
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.error || 'Validation failed');
+        throw new Error(result.error || result.details || 'Validation failed');
       }
 
       const validationResponse: UploadValidationResponse = result.data;

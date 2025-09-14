@@ -19,31 +19,14 @@ import {
 
 // Audio metadata extraction utility
 async function extractAudioMetadata(file: File): Promise<Partial<FileValidationMetadata>> {
-  return new Promise((resolve) => {
-    const audio = new Audio();
-    const url = URL.createObjectURL(file);
-    
-    audio.addEventListener('loadedmetadata', () => {
-      resolve({
-        duration: audio.duration,
-        size: file.size,
-        type: file.type,
-        format: file.type.split('/')[1]?.toUpperCase()
-      });
-      URL.revokeObjectURL(url);
-    });
-    
-    audio.addEventListener('error', () => {
-      resolve({
-        size: file.size,
-        type: file.type,
-        format: file.type.split('/')[1]?.toUpperCase()
-      });
-      URL.revokeObjectURL(url);
-    });
-    
-    audio.src = url;
-  });
+  // For server-side validation, we'll return basic metadata
+  // Audio duration extraction would require a proper audio processing library
+  // For now, we'll skip duration validation on the server and let the client handle it
+  return {
+    size: file.size,
+    type: file.type,
+    format: file.type.split('/')[1]?.toUpperCase()
+  };
 }
 
 // Validation rules configuration
@@ -322,13 +305,20 @@ export class UploadValidationService {
       
       const audioMetadata = await extractAudioMetadata(file);
       
-      // Step 4: Duration validation
-      if (audioMetadata.duration) {
+      // Step 4: Duration validation (skip if duration not available)
+      if (audioMetadata.duration && audioMetadata.duration > 0) {
         progress.progress = 80;
         progress.message = 'Validating audio duration...';
         
         const durationError = this.validateDuration(audioMetadata.duration, userTier);
         if (durationError) errors.push(durationError);
+      } else {
+        // Add a warning if duration couldn't be determined
+        warnings.push({
+          code: 'DURATION_UNAVAILABLE',
+          message: 'Could not determine audio duration. Duration validation skipped.',
+          suggestion: 'Ensure your audio file is not corrupted and try again.'
+        });
       }
       
       // Step 5: Metadata validation
