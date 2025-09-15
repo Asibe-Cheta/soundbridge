@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const { 
       fileData, 
       metadata,
+      fileInfo, // For large files, we might only send file info
       config = {
         enableCopyrightCheck: false, // Start with basic validation
         enableContentModeration: false,
@@ -48,15 +49,34 @@ export async function POST(request: NextRequest) {
     } = body;
     
     // Validate required fields
-    if (!fileData || !metadata) {
+    if ((!fileData && !fileInfo) || !metadata) {
       return NextResponse.json(
-        { error: 'File data and metadata are required' },
+        { error: 'File data (or file info) and metadata are required' },
         { status: 400 }
       );
     }
     
-    // Create a File object from the base64 data
-    const file = await createFileFromBase64(fileData);
+    // Create a File object from the base64 data or file info
+    let file: File;
+    if (fileData) {
+      file = await createFileFromBase64(fileData);
+    } else if (fileInfo) {
+      // For large files, create a minimal file object with just the info we need
+      file = {
+        name: fileInfo.name,
+        size: fileInfo.size,
+        type: fileInfo.type,
+        stream: () => new ReadableStream(),
+        arrayBuffer: async () => new ArrayBuffer(0),
+        text: async () => '',
+        slice: () => file
+      } as File;
+    } else {
+      return NextResponse.json(
+        { error: 'Either file data or file info must be provided' },
+        { status: 400 }
+      );
+    }
     
     // Create validation request
     const validationRequest: UploadValidationRequest = {

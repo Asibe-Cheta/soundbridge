@@ -38,6 +38,13 @@ export function useUploadValidation(): UseUploadValidationReturn {
     });
   }, []);
 
+  // Check if file size is too large for base64 transmission
+  const isFileTooLarge = useCallback((file: File): boolean => {
+    // Base64 increases size by ~33%, so we limit to 25MB original size for 33MB base64
+    const MAX_BASE64_SIZE = 25 * 1024 * 1024; // 25MB
+    return file.size > MAX_BASE64_SIZE;
+  }, []);
+
   // Main validation function
   const validateFile = useCallback(async (
     file: File, 
@@ -77,27 +84,53 @@ export function useUploadValidation(): UseUploadValidationReturn {
         canCancel: true
       });
       
-      const fileData = await fileToBase64(file);
-      
-      setProgress({
-        stage: 'validation',
-        progress: 20,
-        message: 'Sending to validation service...',
-        canCancel: true
-      });
+      // For large files, only send file info instead of full file data
+      const requestBody: any = {
+        metadata,
+        config
+      };
 
-      // Call validation API
+      if (isFileTooLarge(file)) {
+        // For large files, only send file info
+        requestBody.fileInfo = {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        };
+        
+        setProgress({
+          stage: 'validation',
+          progress: 20,
+          message: 'Validating file info (large file mode)...',
+          canCancel: true
+        });
+      } else {
+        // For smaller files, send full file data
+        const fileData = await fileToBase64(file);
+        requestBody.fileData = fileData;
+        
+        setProgress({
+          stage: 'validation',
+          progress: 20,
+          message: 'Sending to validation service...',
+          canCancel: true
+        });
+      }
+
+      // Call validation API with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch('/api/upload/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fileData,
-          metadata,
-          config
-        }),
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errorMessage = 'Validation failed';
@@ -132,7 +165,18 @@ export function useUploadValidation(): UseUploadValidationReturn {
       return validationResponse;
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Validation failed';
+      let errorMessage = 'Validation failed';
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          errorMessage = 'Validation timed out. Please try again with a smaller file or check your connection.';
+        } else if (err.message.includes('NetworkError') || err.message.includes('fetch')) {
+          errorMessage = 'Network error occurred during validation. Please check your connection and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       console.error('❌ Validation error:', errorMessage);
       
       setError(errorMessage);

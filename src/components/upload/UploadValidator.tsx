@@ -62,14 +62,19 @@ export function UploadValidator({
   // Auto-validate when file and metadata are available
   useEffect(() => {
     if (file && metadata.title && metadata.genre) {
-      validateFile(file, metadata).then((result) => {
-        if (result) {
-          onValidationComplete(result.result);
-          setShowUpgradePrompt(result.upgradePrompt?.show || false);
-        } else if (error) {
-          onValidationError(error);
-        }
-      });
+      // Add a small delay to prevent rapid validation calls
+      const timeoutId = setTimeout(() => {
+        validateFile(file, metadata).then((result) => {
+          if (result) {
+            onValidationComplete(result.result);
+            setShowUpgradePrompt(result.upgradePrompt?.show || false);
+          } else if (error) {
+            onValidationError(error);
+          }
+        });
+      }, 500); // 500ms delay
+
+      return () => clearTimeout(timeoutId);
     }
   }, [file, metadata.title, metadata.genre, validateFile, onValidationComplete, onValidationError, error]);
 
