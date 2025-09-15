@@ -45,7 +45,91 @@ export function useUploadValidation(): UseUploadValidationReturn {
     return file.size > MAX_BASE64_SIZE;
   }, []);
 
-  // Main validation function
+  // Local validation function (no server calls)
+  const validateFileLocally = useCallback((file: File, metadata: UploadValidationRequest['metadata']): UploadValidationResult => {
+    const errors: UploadValidationError[] = [];
+    const warnings: UploadValidationWarning[] = [];
+    
+    // File size validation (Free tier: 50MB, Pro: 200MB, Enterprise: 500MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB for free tier
+    if (file.size > maxSize) {
+      errors.push({
+        code: 'FILE_SIZE_EXCEEDED',
+        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the free tier limit of 50MB`,
+        severity: 'error',
+        suggestion: 'Upgrade to Pro or Enterprise for larger file uploads'
+      });
+    }
+    
+    // File type validation
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/webm', 'audio/flac'];
+    if (!allowedTypes.includes(file.type)) {
+      errors.push({
+        code: 'INVALID_FILE_TYPE',
+        message: 'Invalid file type. Please upload MP3, WAV, M4A, AAC, OGG, or FLAC files.',
+        severity: 'error',
+        suggestion: 'Convert your file to a supported audio format'
+      });
+    }
+    
+    // Metadata validation
+    if (!metadata.title || metadata.title.trim() === '') {
+      errors.push({
+        code: 'MISSING_REQUIRED_METADATA',
+        message: 'Title is required',
+        field: 'title',
+        severity: 'error',
+        suggestion: 'Please provide a title for your track'
+      });
+    }
+    
+    if (!metadata.genre || metadata.genre.trim() === '') {
+      errors.push({
+        code: 'MISSING_REQUIRED_METADATA',
+        message: 'Genre is required',
+        field: 'genre',
+        severity: 'error',
+        suggestion: 'Please select a genre for your track'
+      });
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+      metadata: {
+        size: file.size,
+        type: file.type,
+        format: file.type.split('/')[1]?.toUpperCase()
+      },
+      tier: 'free',
+      appliedRules: {
+        fileSize: {
+          limit: maxSize,
+          actual: file.size,
+          tier: 'free'
+        },
+        format: {
+          allowed: allowedTypes,
+          actual: file.type,
+          valid: allowedTypes.includes(file.type)
+        },
+        metadata: {
+          required: ['title', 'genre'],
+          provided: Object.keys(metadata).filter(key => 
+            metadata[key as keyof typeof metadata] && 
+            String(metadata[key as keyof typeof metadata]).trim() !== ''
+          ),
+          missing: ['title', 'genre'].filter(field => 
+            !metadata[field as keyof typeof metadata] || 
+            String(metadata[field as keyof typeof metadata]).trim() === ''
+          )
+        }
+      }
+    };
+  }, []);
+
+  // Main validation function (now local only)
   const validateFile = useCallback(async (
     file: File, 
     metadata: UploadValidationRequest['metadata'],
@@ -69,114 +153,85 @@ export function useUploadValidation(): UseUploadValidationReturn {
     setProgress({
       stage: 'validation',
       progress: 0,
-      message: 'Preparing validation...',
+      message: 'Starting validation...',
       canCancel: true
     });
 
     try {
-      console.log('🔍 Starting file validation:', file.name, 'Size:', file.size);
+      console.log('🔍 Starting local file validation:', file.name, 'Size:', file.size);
       
-      // Convert file to base64
+      // Simulate validation steps with progress updates
       setProgress({
         stage: 'validation',
-        progress: 10,
-        message: 'Processing file...',
+        progress: 20,
+        message: 'Validating file size...',
         canCancel: true
       });
       
-      // For large files, only send file info instead of full file data
-      const requestBody: any = {
-        metadata,
-        config
-      };
-
-      if (isFileTooLarge(file)) {
-        // For large files, only send file info
-        requestBody.fileInfo = {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        };
-        
-        setProgress({
-          stage: 'validation',
-          progress: 20,
-          message: 'Validating file info (large file mode)...',
-          canCancel: true
-        });
-      } else {
-        // For smaller files, send full file data
-        const fileData = await fileToBase64(file);
-        requestBody.fileData = fileData;
-        
-        setProgress({
-          stage: 'validation',
-          progress: 20,
-          message: 'Sending to validation service...',
-          canCancel: true
-        });
-      }
-
-      // Call validation API with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch('/api/upload/validate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        let errorMessage = 'Validation failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.details || 'Validation failed';
-        } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
+      await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for UX
       
-      if (!result.success) {
-        throw new Error(result.error || result.details || 'Validation failed');
-      }
-
-      const validationResponse: UploadValidationResponse = result.data;
+      setProgress({
+        stage: 'validation',
+        progress: 50,
+        message: 'Validating file type...',
+        canCancel: true
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setProgress({
+        stage: 'validation',
+        progress: 80,
+        message: 'Validating metadata...',
+        canCancel: true
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Perform local validation
+      const result = validateFileLocally(file, metadata);
+      
+      setProgress({
+        stage: 'validation',
+        progress: 100,
+        message: 'Validation complete',
+        canCancel: false
+      });
       
       // Update state with results
-      setValidationResult(validationResponse.result);
-      setProgress(validationResponse.progress);
+      setValidationResult(result);
       
-      console.log('✅ Validation complete:', {
-        isValid: validationResponse.result.isValid,
-        errors: validationResponse.result.errors.length,
-        warnings: validationResponse.result.warnings.length
+      console.log('✅ Local validation complete:', {
+        isValid: result.isValid,
+        errors: result.errors.length,
+        warnings: result.warnings.length
       });
+
+      const validationResponse: UploadValidationResponse = {
+        success: result.isValid,
+        result,
+        progress: {
+          stage: 'validation',
+          progress: 100,
+          message: 'Validation complete',
+          canCancel: false
+        },
+        upgradePrompt: result.errors.some(e => e.code === 'FILE_SIZE_EXCEEDED') ? {
+          show: true,
+          reason: 'Your file exceeds the free tier limits',
+          benefits: [
+            'Upload files up to 200MB (Pro) or 500MB (Enterprise)',
+            'Priority processing and advanced features',
+            'HD audio quality and instant processing'
+          ],
+          cta: 'Upgrade Now'
+        } : { show: false, reason: '', benefits: [], cta: '' }
+      };
 
       return validationResponse;
 
     } catch (err) {
-      let errorMessage = 'Validation failed';
-      
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          errorMessage = 'Validation timed out. Please try again with a smaller file or check your connection.';
-        } else if (err.message.includes('NetworkError') || err.message.includes('fetch')) {
-          errorMessage = 'Network error occurred during validation. Please check your connection and try again.';
-        } else {
-          errorMessage = err.message;
-        }
-      }
-      
+      const errorMessage = err instanceof Error ? err.message : 'Validation failed';
       console.error('❌ Validation error:', errorMessage);
       
       setError(errorMessage);
@@ -191,7 +246,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
     } finally {
       setIsValidating(false);
     }
-  }, [user, fileToBase64]);
+  }, [user, validateFileLocally]);
 
   // Clear validation state
   const clearValidation = useCallback(() => {
@@ -201,29 +256,31 @@ export function useUploadValidation(): UseUploadValidationReturn {
     setIsValidating(false);
   }, []);
 
-  // Get tier limits for current user
+  // Get tier limits for current user (local version)
   const getTierLimits = useCallback(async () => {
     if (!user) return null;
 
-    try {
-      const response = await fetch('/api/upload/validate', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get tier limits');
+    // Return local tier limits (assuming free tier for now)
+    return {
+      tier: 'free',
+      limits: {
+        fileSize: { max: 50 * 1024 * 1024 }, // 50MB
+        processing: 'standard',
+        copyrightCheck: 'basic',
+        moderation: 'automated',
+        quality: 'standard',
+        concurrentUploads: 2,
+        dailyUploadLimit: 10
+      },
+      rules: {
+        universal: {
+          fileSize: { max: 50 * 1024 * 1024, min: 1024 * 1024 },
+          formats: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/webm', 'audio/flac'],
+          duration: { max: 10800, min: 10 }, // 3 hours max, 10 seconds min
+          metadata: { required: ['title', 'genre'], optional: ['description', 'tags', 'privacy', 'publishOption'] }
+        }
       }
-
-      const result = await response.json();
-      return result.data;
-
-    } catch (err) {
-      console.error('❌ Error getting tier limits:', err);
-      return null;
-    }
+    };
   }, [user]);
 
   return {
