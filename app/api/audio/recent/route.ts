@@ -26,6 +26,17 @@ export async function GET() {
 
     // Get recent tracks from all creators, ordered by creation date
     // Exclude podcasts (genre = 'podcast') - podcasts should only appear in the podcasts section
+    console.log('🔍 Querying audio_tracks with creator relationship...');
+    
+    // First, let's test if the relationship works with a simpler query
+    const { data: testTracks, error: testError } = await supabase
+      .from('audio_tracks')
+      .select('id, title, creator_id')
+      .limit(1);
+    
+    console.log('🔍 Test query result:', { testTracks, testError });
+    
+    // Now try the full query
     const { data: tracks, error } = await supabase
       .from('audio_tracks')
       .select(`
@@ -42,6 +53,8 @@ export async function GET() {
       .not('genre', 'eq', 'PODCAST')
       .order('created_at', { ascending: false })
       .limit(5);
+
+    console.log('🔍 Raw query result:', { tracks: tracks?.length, error });
 
     if (error) {
       console.error('❌ Error fetching recent tracks:', error);
@@ -61,26 +74,76 @@ export async function GET() {
           creator: track.creator,
           display_name: track.creator?.display_name
         });
+        console.log(`🎵 Track ${index + 1} FULL DATA:`, JSON.stringify(track, null, 2));
       });
     }
 
     // Format the tracks for the frontend
-    const formattedTracks = tracks.map(track => ({
-      id: track.id,
-      title: track.title,
-      artist: track.creator?.display_name || track.artist_name || 'Unknown Artist',
-      coverArt: track.cover_art_url,
-      url: track.file_url,
-      duration: track.duration || 0,
-      plays: track.play_count || 0,
-      likes: track.like_count || 0,
-      creator: {
-        id: track.creator_id,
-        name: track.creator?.display_name || track.artist_name || 'Unknown Artist',
-        username: track.creator?.username || 'unknown',
-        avatar: track.creator?.avatar_url || null
+    let formattedTracks;
+    
+    if (tracks && tracks.length > 0 && tracks[0].creator) {
+      // Creator relationship is working
+      console.log('✅ Creator relationship is working');
+      formattedTracks = tracks.map(track => ({
+        id: track.id,
+        title: track.title,
+        artist: track.creator?.display_name || 'Unknown Artist',
+        coverArt: track.cover_art_url,
+        url: track.file_url,
+        duration: track.duration || 0,
+        plays: track.play_count || 0,
+        likes: track.like_count || 0,
+        creator: {
+          id: track.creator_id,
+          name: track.creator?.display_name || 'Unknown Artist',
+          username: track.creator?.username || 'unknown',
+          avatar: track.creator?.avatar_url || null
+        }
+      }));
+    } else {
+      // Creator relationship is not working, fetch creator data manually
+      console.log('⚠️ Creator relationship not working, fetching manually...');
+      
+      // Get unique creator IDs
+      const creatorIds = [...new Set(tracks.map(track => track.creator_id))];
+      console.log('🔍 Unique creator IDs:', creatorIds);
+      
+      // Fetch creator data manually
+      const { data: creators, error: creatorsError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', creatorIds);
+      
+      console.log('🔍 Manual creator fetch result:', { creators, creatorsError });
+      
+      // Create a map of creator data
+      const creatorMap = new Map();
+      if (creators) {
+        creators.forEach(creator => {
+          creatorMap.set(creator.id, creator);
+        });
       }
-    }));
+      
+      formattedTracks = tracks.map(track => {
+        const creator = creatorMap.get(track.creator_id);
+        return {
+          id: track.id,
+          title: track.title,
+          artist: creator?.display_name || 'Unknown Artist',
+          coverArt: track.cover_art_url,
+          url: track.file_url,
+          duration: track.duration || 0,
+          plays: track.play_count || 0,
+          likes: track.like_count || 0,
+          creator: {
+            id: track.creator_id,
+            name: creator?.display_name || 'Unknown Artist',
+            username: creator?.username || 'unknown',
+            avatar: creator?.avatar_url || null
+          }
+        };
+      });
+    }
 
     console.log('✅ Returning formatted tracks:', formattedTracks.length);
     if (formattedTracks && formattedTracks.length > 0) {
