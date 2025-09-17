@@ -195,22 +195,71 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
   }
 
   // Format tracks to match the expected frontend structure
-  const formattedTracks = (tracks || []).map(track => ({
-    id: track.id,
-    title: track.title,
-    artist: track.creator?.display_name || track.artist_name || 'Unknown Artist',
-    coverArt: track.cover_art_url, // Map cover_art_url to coverArt
-    url: track.file_url,
-    duration: track.duration || 0,
-    plays: track.play_count || 0,
-    likes: track.like_count || 0,
-    creator: {
-      id: track.creator_id,
-      name: track.creator?.display_name || track.artist_name || 'Unknown Artist',
-      username: track.creator?.username || 'unknown',
-      avatar: track.creator?.avatar_url || null
+  let formattedTracks;
+  
+  if (tracks && tracks.length > 0 && tracks[0].creator) {
+    // Creator relationship is working
+    console.log('✅ Personalized feed: Creator relationship is working');
+    formattedTracks = (tracks || []).map(track => ({
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.display_name || 'Unknown Artist',
+      coverArt: track.cover_art_url, // Map cover_art_url to coverArt
+      url: track.file_url,
+      duration: track.duration || 0,
+      plays: track.play_count || 0,
+      likes: track.like_count || 0,
+      creator: {
+        id: track.creator_id,
+        name: track.creator?.display_name || 'Unknown Artist',
+        username: track.creator?.username || 'unknown',
+        avatar: track.creator?.avatar_url || null
+      }
+    }));
+  } else {
+    // Creator relationship is not working, fetch creator data manually
+    console.log('⚠️ Personalized feed: Creator relationship not working, fetching manually...');
+    
+    // Get unique creator IDs
+    const creatorIds = [...new Set(tracks.map(track => track.creator_id))];
+    console.log('🔍 Personalized feed: Unique creator IDs:', creatorIds);
+    
+    // Fetch creator data manually
+    const { data: creators, error: creatorsError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', creatorIds);
+    
+    console.log('🔍 Personalized feed: Manual creator fetch result:', { creators, creatorsError });
+    
+    // Create a map of creator data
+    const creatorMap = new Map();
+    if (creators) {
+      creators.forEach(creator => {
+        creatorMap.set(creator.id, creator);
+      });
     }
-  }));
+    
+    formattedTracks = (tracks || []).map(track => {
+      const creator = creatorMap.get(track.creator_id);
+      return {
+        id: track.id,
+        title: track.title,
+        artist: creator?.display_name || 'Unknown Artist',
+        coverArt: track.cover_art_url, // Map cover_art_url to coverArt
+        url: track.file_url,
+        duration: track.duration || 0,
+        plays: track.play_count || 0,
+        likes: track.like_count || 0,
+        creator: {
+          id: track.creator_id,
+          name: creator?.display_name || 'Unknown Artist',
+          username: creator?.username || 'unknown',
+          avatar: creator?.avatar_url || null
+        }
+      };
+    });
+  }
 
   return formattedTracks;
 }
