@@ -150,11 +150,11 @@ export default function HomePage() {
     const audioTrack = {
       id: track.id,
       title: track.title,
-      artist: track.creator_name || track.creator?.display_name || 'Unknown Artist',
+      artist: track.artist || track.creator?.display_name || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
-      artwork: track.cover_art_url || '',
-      url: track.file_url || '',
+      artwork: track.cover_art_url || track.coverArt || '',
+      url: track.file_url || track.url || '',
       liked: false
     };
     

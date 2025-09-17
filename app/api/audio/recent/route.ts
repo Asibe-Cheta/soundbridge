@@ -56,6 +56,11 @@ export async function GET() {
     if (tracks && tracks.length > 0) {
       tracks.forEach((track, index) => {
         console.log(`🎵 Track ${index + 1}: "${track.title}" - File URL: ${track.file_url}`);
+        console.log(`🎵 Track ${index + 1} creator data:`, {
+          creator_id: track.creator_id,
+          creator: track.creator,
+          display_name: track.creator?.display_name
+        });
       });
     }
 
@@ -78,6 +83,16 @@ export async function GET() {
     }));
 
     console.log('✅ Returning formatted tracks:', formattedTracks.length);
+    if (formattedTracks && formattedTracks.length > 0) {
+      formattedTracks.forEach((track, index) => {
+        console.log(`🎵 Formatted Track ${index + 1}:`, {
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          creator_name: track.creator.name
+        });
+      });
+    }
 
     return NextResponse.json({
       success: true,
