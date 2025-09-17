@@ -19,6 +19,10 @@ interface UploadValidatorProps {
   onValidationComplete: (result: UploadValidationResult) => void;
   onValidationError: (error: string) => void;
   className?: string;
+  // New props for manual validation
+  triggerValidation?: boolean;
+  onValidationStart?: () => void;
+  onValidationEnd?: () => void;
 }
 
 export function UploadValidator({
@@ -26,7 +30,10 @@ export function UploadValidator({
   metadata,
   onValidationComplete,
   onValidationError,
-  className = ''
+  className = '',
+  triggerValidation = false,
+  onValidationStart,
+  onValidationEnd
 }: UploadValidatorProps) {
   const {
     isValidating,
@@ -56,37 +63,45 @@ export function UploadValidator({
   }, [getTierLimits]);
 
   // Auto-validate when file and metadata are available (only once per file/metadata combination)
+  // Manual validation trigger
   useEffect(() => {
-    if (file && metadata.title && metadata.genre) {
-      // Create a unique key for this validation
-      const validationKey = `${file.name}-${file.size}-${metadata.title}-${metadata.genre}`;
-      
-      // Only validate if we haven't validated this exact combination before
-      if (validationKeyRef.current !== validationKey) {
-        console.log('🔄 Starting validation for new file/metadata combination');
-        validationKeyRef.current = validationKey;
-        setHasValidated(false);
-        
-        // Show modal and start validation
-        setShowModal(true);
-        
-        // Add a small delay to prevent rapid validation calls
-        const timeoutId = setTimeout(() => {
-          validateFile(file, metadata).then((result) => {
-            if (result) {
-              setHasValidated(true);
-              onValidationComplete(result.result);
-              setShowUpgradePrompt(result.upgradePrompt?.show || false);
-            } else if (error) {
-              onValidationError(error);
-            }
-          });
-        }, 500); // 500ms delay
+    console.log('🎯 UploadValidator useEffect triggered:', {
+      triggerValidation,
+      hasFile: !!file,
+      hasTitle: !!metadata.title,
+      hasGenre: !!metadata.genre,
+      file: file?.name
+    });
 
-        return () => clearTimeout(timeoutId);
-      }
+    if (triggerValidation && file && metadata.title && metadata.genre) {
+      console.log('🎯 Manual validation triggered via Publish button');
+      onValidationStart?.();
+      
+      // Show modal and start validation
+      console.log('🎯 Setting showModal to true');
+      setShowModal(true);
+      
+      validateFile(file, metadata).then((result) => {
+        console.log('🎯 Validation result:', result);
+        if (result) {
+          setHasValidated(true);
+          onValidationComplete(result.result);
+          setShowUpgradePrompt(result.upgradePrompt?.show || false);
+          onValidationEnd?.();
+        } else if (error) {
+          onValidationError(error);
+          onValidationEnd?.();
+        }
+      });
+    } else {
+      console.log('🎯 Validation not triggered - missing requirements:', {
+        triggerValidation,
+        file: !!file,
+        title: !!metadata.title,
+        genre: !!metadata.genre
+      });
     }
-  }, [file?.name, file?.size, metadata?.title, metadata?.genre]); // Only depend on the actual values, not functions
+  }, [triggerValidation, file, metadata.title, metadata.genre]);
 
   // Handle upgrade prompt
   const handleUpgrade = () => {
@@ -179,6 +194,7 @@ export function UploadValidator({
       </div>
 
       {/* Validation Modal */}
+      {showModal && console.log('🎯 ValidationModal should be visible, showModal:', showModal)}
       <ValidationModal
         isOpen={showModal}
         isValidating={isValidating}

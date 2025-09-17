@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { analyzeAudioFile, formatDuration, getQualityDescription } from '../lib/audio-analysis';
 import type { 
   UploadValidationRequest,
   UploadValidationResponse,
@@ -45,23 +46,28 @@ export function useUploadValidation(): UseUploadValidationReturn {
     return file.size > MAX_BASE64_SIZE;
   }, []);
 
-  // Local validation function (no server calls)
-  const validateFileLocally = useCallback((file: File, metadata: UploadValidationRequest['metadata']): UploadValidationResult => {
+  // Real audio analysis and validation function
+  const validateFileWithRealAnalysis = useCallback(async (
+    file: File, 
+    metadata: UploadValidationRequest['metadata']
+  ): Promise<UploadValidationResult> => {
     const errors: UploadValidationError[] = [];
     const warnings: UploadValidationWarning[] = [];
     
-    // File size validation (Free tier: 50MB, Pro: 200MB, Enterprise: 500MB)
-    const maxSize = 50 * 1024 * 1024; // 50MB for free tier
+    console.log('🔍 Starting real audio analysis for:', file.name);
+    
+    // Step 1: Basic file validation
+    const maxSize = 100 * 1024 * 1024; // 100MB for free tier
     if (file.size > maxSize) {
       errors.push({
         code: 'FILE_SIZE_EXCEEDED',
-        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the free tier limit of 50MB`,
+        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the free tier limit of 100MB`,
         severity: 'error',
         suggestion: 'Upgrade to Pro or Enterprise for larger file uploads'
       });
     }
     
-    // File type validation
+    // Step 2: File type validation
     const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/webm', 'audio/flac'];
     if (!allowedTypes.includes(file.type)) {
       errors.push({
@@ -72,7 +78,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
       });
     }
     
-    // Metadata validation
+    // Step 3: Metadata validation
     if (!metadata.title || metadata.title.trim() === '') {
       errors.push({
         code: 'MISSING_REQUIRED_METADATA',
@@ -92,12 +98,63 @@ export function useUploadValidation(): UseUploadValidationReturn {
         suggestion: 'Please select a genre for your track'
       });
     }
+
+    // Step 4: Real audio analysis (only if basic validations pass)
+    let audioAnalysis = null;
+    if (errors.length === 0) {
+      try {
+        console.log('🎵 Attempting to analyze audio file:', file.name);
+        audioAnalysis = await analyzeAudioFile(file);
+        console.log('🎵 Audio analysis result:', audioAnalysis);
+        
+        if (!audioAnalysis.success) {
+          console.log('❌ Audio analysis failed:', audioAnalysis.error);
+          errors.push({
+            code: 'FILE_CORRUPTED',
+            message: `Audio file analysis failed: ${audioAnalysis.error}`,
+            severity: 'error',
+            suggestion: 'The file may be corrupted or in an unsupported format. Try converting to MP3 or WAV format.'
+          });
+        } else if (!audioAnalysis.isValidAudio) {
+          console.log('❌ Audio file is invalid');
+          errors.push({
+            code: 'INVALID_AUDIO_FILE',
+            message: 'Invalid audio file - missing required audio properties',
+            severity: 'error',
+            suggestion: 'Ensure the file is a valid audio file with proper audio data'
+          });
+        } else {
+          console.log('✅ Audio analysis successful');
+          // Add audio quality warnings
+          if (audioAnalysis.quality === 'low') {
+            warnings.push({
+              code: 'LOW_AUDIO_QUALITY',
+              message: `Audio quality is low (${audioAnalysis.bitrate}kbps)`,
+              suggestion: 'Consider using a higher bitrate for better audio quality'
+            });
+          }
+
+          // Add duration information
+          if (audioAnalysis.duration > 0) {
+            console.log(`✅ Audio analysis successful: ${formatDuration(audioAnalysis.duration)}, ${audioAnalysis.bitrate}kbps, ${getQualityDescription(audioAnalysis.quality)}`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Audio analysis threw exception:', error);
+        errors.push({
+          code: 'AUDIO_ANALYSIS_FAILED',
+          message: `Failed to analyze audio file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          severity: 'error',
+          suggestion: 'Please try uploading a different audio file or convert to MP3/WAV format'
+        });
+      }
+    }
     
     return {
       isValid: errors.length === 0,
       errors,
       warnings,
-      metadata: {
+      metadata: audioAnalysis?.metadata || {
         size: file.size,
         type: file.type,
         format: file.type.split('/')[1]?.toUpperCase()
@@ -114,6 +171,11 @@ export function useUploadValidation(): UseUploadValidationReturn {
           actual: file.type,
           valid: allowedTypes.includes(file.type)
         },
+        duration: audioAnalysis ? {
+          limit: 3 * 60 * 60, // 3 hours for free tier
+          actual: audioAnalysis.duration,
+          valid: audioAnalysis.duration <= 3 * 60 * 60
+        } : undefined,
         metadata: {
           required: ['title', 'genre'],
           provided: Object.keys(metadata).filter(key => 
@@ -158,38 +220,32 @@ export function useUploadValidation(): UseUploadValidationReturn {
     });
 
     try {
-      console.log('🔍 Starting local file validation:', file.name, 'Size:', file.size);
+      console.log('🔍 Starting real audio file validation:', file.name, 'Size:', file.size);
       
-      // Simulate validation steps with progress updates
+      // Real validation steps with actual progress
       setProgress({
         stage: 'validation',
-        progress: 20,
-        message: 'Validating file size...',
+        progress: 10,
+        message: 'Validating file size and type...',
         canCancel: true
       });
       
-      await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for UX
-      
       setProgress({
         stage: 'validation',
-        progress: 50,
-        message: 'Validating file type...',
-        canCancel: true
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      setProgress({
-        stage: 'validation',
-        progress: 80,
+        progress: 30,
         message: 'Validating metadata...',
         canCancel: true
       });
       
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setProgress({
+        stage: 'validation',
+        progress: 50,
+        message: 'Analyzing audio file...',
+        canCancel: true
+      });
       
-      // Perform local validation
-      const result = validateFileLocally(file, metadata);
+      // Perform real audio analysis
+      const result = await validateFileWithRealAnalysis(file, metadata);
       
       setProgress({
         stage: 'validation',
@@ -246,7 +302,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
     } finally {
       setIsValidating(false);
     }
-  }, [user, validateFileLocally]);
+  }, [user, validateFileWithRealAnalysis]);
 
   // Clear validation state
   const clearValidation = useCallback(() => {
@@ -264,7 +320,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
     return {
       tier: 'free',
       limits: {
-        fileSize: { max: 50 * 1024 * 1024 }, // 50MB
+        fileSize: { max: 100 * 1024 * 1024 }, // 100MB
         processing: 'standard',
         copyrightCheck: 'basic',
         moderation: 'automated',
@@ -274,7 +330,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
       },
       rules: {
         universal: {
-          fileSize: { max: 50 * 1024 * 1024, min: 1024 * 1024 },
+          fileSize: { max: 100 * 1024 * 1024, min: 1024 * 1024 },
           formats: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/webm', 'audio/flac'],
           duration: { max: 10800, min: 10 }, // 3 hours max, 10 seconds min
           metadata: { required: ['title', 'genre'], optional: ['description', 'tags', 'privacy', 'publishOption'] }

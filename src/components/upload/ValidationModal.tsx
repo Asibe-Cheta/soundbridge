@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   CheckCircle, 
   AlertCircle, 
@@ -55,14 +56,28 @@ export function ValidationModal({
     }
   }, [validationResult?.isValid, isValidating, onClose]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  // Render modal using portal to ensure it's at the document root level
+  const modalContent = (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             {isValidating ? (
               <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
             ) : validationResult?.isValid ? (
@@ -73,7 +88,7 @@ export function ValidationModal({
               <FileAudio className="h-6 w-6 text-gray-500" />
             )}
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {isValidating ? 'Validating File' : 
+              {isValidating ? (progress?.message || 'Analyzing Audio') : 
                validationResult?.isValid ? 'Validation Complete' :
                error ? 'Validation Error' : 'File Validation'}
             </h2>
@@ -142,6 +157,26 @@ export function ValidationModal({
                     {(validationResult.appliedRules.fileSize.actual / (1024 * 1024)).toFixed(1)} MB
                   </span>
                 </div>
+                {validationResult.metadata?.duration && (
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm text-green-700 dark:text-green-300">
+                      Duration
+                    </span>
+                    <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                      {Math.floor(validationResult.metadata.duration / 60)}:{(validationResult.metadata.duration % 60).toFixed(0).padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
+                {validationResult.metadata?.bitrate && (
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm text-green-700 dark:text-green-300">
+                      Quality
+                    </span>
+                    <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                      {validationResult.metadata.bitrate} kbps {validationResult.metadata.format}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-sm text-green-700 dark:text-green-300">
                     Tier
@@ -285,4 +320,7 @@ function ValidationErrorItem({ error }: { error: UploadValidationError }) {
       </div>
     </div>
   );
+
+  // Use portal to render modal at document root
+  return createPortal(modalContent, document.body);
 }
