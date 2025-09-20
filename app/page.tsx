@@ -641,36 +641,52 @@ export default function HomePage() {
         .horizontal-scroll::-webkit-scrollbar-thumb:hover {
           background: rgba(236, 72, 153, 0.7);
         }
+        
+        /* Mobile viewport fixes */
+        @media (max-width: 768px) {
+          body {
+            overflow-x: hidden;
+          }
+          
+          main {
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+          }
+        }
       `}</style>
 
       {/* Main Content */}
       <main style={{
-        padding: isMobile ? '1rem' : '2rem',
+        padding: isMobile ? '0.5rem' : '2rem',
         paddingBottom: isMobile ? '4rem' : '7rem',
         maxWidth: '1400px',
-        margin: '0 auto'
+        margin: '0 auto',
+        overflowX: isMobile ? 'hidden' : 'visible'
       }}>
         {/* Hero Section */}
         <section style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr',
-          gap: isMobile ? '1rem' : '2rem',
-          marginBottom: isMobile ? '2rem' : '3rem',
-          height: isMobile ? 'auto' : '400px'
+          gap: isMobile ? '0.5rem' : '2rem',
+          marginBottom: isMobile ? '1.5rem' : '3rem',
+          height: isMobile ? 'auto' : '400px',
+          maxWidth: '100%',
+          overflow: 'hidden'
         }}>
           <Link href="/creator/kwame-asante" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/800/400?random=hero")',
               backgroundSize: 'cover',
-              borderRadius: isMobile ? '12px' : '20px',
-              padding: isMobile ? '1rem' : '2rem',
+              borderRadius: isMobile ? '10px' : '20px',
+              padding: isMobile ? '0.8rem' : '2rem',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-end',
               position: 'relative',
               overflow: 'hidden',
-              minHeight: isMobile ? '180px' : '400px',
-              maxWidth: isMobile ? '100%' : 'none'
+              minHeight: isMobile ? '160px' : '400px',
+              maxWidth: isMobile ? '100vw' : 'none',
+              width: isMobile ? 'calc(100vw - 2rem)' : '100%'
             }}>
               <div style={{
                 position: 'relative',
@@ -791,10 +807,12 @@ export default function HomePage() {
             background: isMobile ? 'rgba(255, 255, 255, 0.05)' : 'var(--card-bg)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderRadius: isMobile ? '12px' : '20px',
-            padding: isMobile ? '0.8rem' : '1.5rem',
+            borderRadius: isMobile ? '10px' : '20px',
+            padding: isMobile ? '0.6rem' : '1.5rem',
             border: isMobile ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid var(--border-color)',
-            display: 'block'
+            display: 'block',
+            maxWidth: isMobile ? '100vw' : 'none',
+            width: isMobile ? 'calc(100vw - 2rem)' : '100%'
           }}>
                             <div style={{ 
                               display: 'flex', 
@@ -1271,18 +1289,28 @@ export default function HomePage() {
             <Link href="/creators?sortBy=hot" className="view-all">View All</Link>
           </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '1.5rem'
-          }}>
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: isMobile ? '1rem' : '1.5rem',
+            maxWidth: '100%',
+            justifyContent: isMobile ? 'flex-start' : 'center',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            scrollbarWidth: isMobile ? 'thin' : 'auto',
+            scrollbarColor: isMobile ? 'rgba(236, 72, 153, 0.5) transparent' : 'auto'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
             {hotCreatorsLoading ? (
               // Loading skeleton
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="card">
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="card" style={{
+                  width: isMobile ? '200px' : 'auto',
+                  minWidth: isMobile ? '200px' : 'auto',
+                  flexShrink: isMobile ? '0' : '1'
+                }}>
                 <div className="card-image">
                     <div style={{
                       width: '100%',
-                      height: '100%',
+                      height: isMobile ? '150px' : '100%',
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
                       display: 'flex',
@@ -1290,25 +1318,29 @@ export default function HomePage() {
                       justifyContent: 'center',
                       color: '#666'
                     }}>
-                      <Loader2 size={24} className="animate-spin" />
+                      <Loader2 size={isMobile ? 20 : 24} className="animate-spin" />
                   </div>
                 </div>
-                  <div style={{ fontWeight: '600', color: '#666' }}>Loading...</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+                  <div style={{ fontWeight: '600', color: '#666', fontSize: isMobile ? '0.9rem' : 'inherit' }}>Loading...</div>
+                  <div style={{ color: '#999', fontSize: isMobile ? '0.8rem' : '0.9rem' }}>Loading...</div>
                 <div className="stats">
                     <span style={{ color: '#666' }}>...</span>
                     <span style={{ color: '#666' }}>...</span>
                 </div>
-              </div>
+                </div>
               ))
             ) : hotCreators.length > 0 ? (
-              hotCreators.map((creator) => (
+              hotCreators.slice(0, 5).map((creator) => (
                 <Link 
                   key={creator.profile.id} 
                   href={`/creator/${creator.profile.username}`} 
                   style={{ textDecoration: 'none' }}
                 >
-            <div className="card">
+            <div className="card" style={{
+              width: isMobile ? '200px' : 'auto',
+              minWidth: isMobile ? '200px' : 'auto',
+              flexShrink: isMobile ? '0' : '1'
+            }}>
               <div className="card-image">
                       {creator.profile.avatar_url ? (
                         <Image
@@ -1316,19 +1348,19 @@ export default function HomePage() {
                           alt={creator.profile.display_name}
                           width={200}
                           height={200}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                          style={{ width: '100%', height: isMobile ? '150px' : '100%', objectFit: 'cover', borderRadius: '8px' }}
                         />
                       ) : (
                         <div style={{
                           width: '100%',
-                          height: '100%',
+                          height: isMobile ? '150px' : '100%',
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           borderRadius: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                          fontSize: '2rem',
+                          fontSize: isMobile ? '1.5rem' : '2rem',
                           fontWeight: '600'
                         }}>
                           {creator.profile.display_name?.substring(0, 2).toUpperCase() || 'C'}
@@ -1424,17 +1456,23 @@ export default function HomePage() {
             <Link href="/events" className="view-all">View All</Link>
           </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem'
-          }}>
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: isMobile ? '1rem' : '1.5rem',
+            maxWidth: '100%',
+            justifyContent: isMobile ? 'flex-start' : 'center',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            scrollbarWidth: isMobile ? 'thin' : 'auto',
+            scrollbarColor: isMobile ? 'rgba(236, 72, 153, 0.5) transparent' : 'auto'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
             {isLoadingEvents ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
                 <Loader2 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                 <p>Loading events...</p>
               </div>
             ) : events.length > 0 ? (
-                             events.map((event) => {
+                             events.slice(0, 5).map((event) => {
                                console.log('🎯 Rendering event:', event.title, 'Image URL:', event.image_url);
                                return (
                  <Link key={event.id} href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
@@ -1445,7 +1483,10 @@ export default function HomePage() {
                          ? `linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(236, 72, 153, 0.3)), url('${event.image_url}')`
                          : `linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/400/300?random=${event.id}")`,
                        backgroundSize: 'cover',
-                       backgroundPosition: 'center'
+                       backgroundPosition: 'center',
+                       width: isMobile ? '250px' : 'auto',
+                       minWidth: isMobile ? '250px' : 'auto',
+                       flexShrink: isMobile ? '0' : '1'
                      }}
                    >
                      <div className="event-card-content">
@@ -1500,18 +1541,29 @@ export default function HomePage() {
             <Link href="/search?tab=podcasts" className="view-all">View All</Link>
           </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem'
-          }}>
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: isMobile ? '1rem' : '1.5rem',
+            maxWidth: '100%',
+            justifyContent: isMobile ? 'flex-start' : 'center',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            scrollbarWidth: isMobile ? 'thin' : 'auto',
+            scrollbarColor: isMobile ? 'rgba(236, 72, 153, 0.5) transparent' : 'auto'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
             {isLoadingPodcasts ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#999' }}>
                 <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                 <p>Loading podcasts...</p>
               </div>
             ) : podcasts && podcasts.length > 0 ? (
-              podcasts.map((podcast) => (
-                <div key={podcast.id} className="card" style={{ cursor: 'pointer' }} onClick={() => {
+              podcasts.slice(0, 5).map((podcast) => (
+                <div key={podcast.id} className="card" style={{ 
+                  cursor: 'pointer',
+                  width: isMobile ? '200px' : 'auto',
+                  minWidth: isMobile ? '200px' : 'auto',
+                  flexShrink: isMobile ? '0' : '1'
+                }} onClick={() => {
                   // Convert podcast to AudioTrack format
                   const audioTrack = {
                     id: podcast.id,

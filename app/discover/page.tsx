@@ -1208,7 +1208,9 @@ export default function DiscoverPage() {
             paddingBottom: '0.5rem',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch'
+            WebkitOverflowScrolling: 'touch',
+            flexWrap: 'nowrap',
+            whiteSpace: 'nowrap'
           }} className="tab-navigation">
             {categories.map((category) => {
               const Icon = category.icon;
@@ -1224,7 +1226,7 @@ export default function DiscoverPage() {
                     padding: '0.5rem 1rem',
                     borderRadius: '20px',
                     border: 'none',
-                    background: isActive ? '#EC4899' : 'rgba(255, 255, 255, 0.1)',
+                    background: isActive ? 'linear-gradient(45deg, #DC2626, #EC4899)' : 'rgba(255, 255, 255, 0.1)',
                     color: isActive ? 'white' : '#ccc',
                     fontSize: '0.9rem',
                     fontWeight: isActive ? '600' : '400',
