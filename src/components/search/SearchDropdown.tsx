@@ -116,14 +116,27 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
   }, [showSuggestions, searchSuggestions, selectedIndex, searchQuery, router, handleSuggestionClick]);
 
   const performSearch = async (query: string) => {
-    if (query.length < 2) return;
+    if (query.length < 1) return; // Trigger on single character like Instagram
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=8`);
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=8`);
       if (response.ok) {
         const data = await response.json();
         const suggestions: SearchSuggestion[] = [];
+
+        // Prioritize creators first (as requested)
+        if (data.data?.creators) {
+          data.data.creators.forEach((creator: { id: string; display_name?: string; username: string; avatar_url?: string }) => {
+            suggestions.push({
+              id: creator.id,
+              type: 'creator',
+              title: creator.display_name || creator.username,
+              subtitle: `@${creator.username}`,
+              image: creator.avatar_url
+            });
+          });
+        }
 
         // Add music suggestions
         if (data.data?.music) {
@@ -138,28 +151,28 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
           });
         }
 
-        // Add creator suggestions
-        if (data.data?.creators) {
-          data.data.creators.forEach((creator: { id: string; display_name?: string; username: string; avatar_url?: string }) => {
-            suggestions.push({
-              id: creator.id,
-              type: 'creator',
-              title: creator.display_name || creator.username,
-              subtitle: `@${creator.username}`,
-              image: creator.avatar_url
-            });
-          });
-        }
-
         // Add event suggestions
         if (data.data?.events) {
-          data.data.events.forEach((event: { id: string; title: string; location?: string; image_url?: string }) => {
+          data.data.events.forEach((event: { id: string; title: string; venue?: string; city?: string; image_url?: string }) => {
             suggestions.push({
               id: event.id,
               type: 'event',
               title: event.title,
-              subtitle: event.location || 'No location',
+              subtitle: event.venue || event.city || 'No location',
               image: event.image_url
+            });
+          });
+        }
+
+        // Add podcast suggestions
+        if (data.data?.podcasts) {
+          data.data.podcasts.forEach((podcast: { id: string; title: string; creator?: { display_name?: string }; cover_art_url?: string }) => {
+            suggestions.push({
+              id: podcast.id,
+              type: 'podcast',
+              title: podcast.title,
+              subtitle: podcast.creator?.display_name || 'Unknown Host',
+              image: podcast.cover_art_url
             });
           });
         }
@@ -169,7 +182,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
         setSelectedIndex(-1);
       }
     } catch (error) {
-      console.error('Search error:', error);
+      console.error('Enhanced search error:', error);
     } finally {
       setIsSearching(false);
     }
@@ -362,7 +375,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                 </div>
               ))}
             </div>
-          ) : searchQuery.length >= 2 ? (
+          ) : searchQuery.length >= 1 ? (
             <div style={{
               padding: '20px',
               textAlign: 'center',
