@@ -29,12 +29,12 @@ export async function GET() {
     console.log('🔍 Querying audio_tracks with creator relationship...');
     
     // First, let's test if the relationship works with a simpler query
-    const { data: testTracks, error: testError } = await supabase
+    const { data: testTracks, error: testRelationshipError } = await supabase
       .from('audio_tracks')
       .select('id, title, creator_id')
       .limit(1);
     
-    console.log('🔍 Test query result:', { testTracks, testError });
+    console.log('🔍 Test query result:', { testTracks, testRelationshipError });
     
     // Now try the full query
     const { data: tracks, error } = await supabase

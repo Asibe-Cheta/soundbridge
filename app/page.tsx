@@ -31,6 +31,10 @@ export default function HomePage() {
   const [hotCreators, setHotCreators] = useState<CreatorSearchResult[]>([]);
   const [hotCreatorsLoading, setHotCreatorsLoading] = useState(true);
   
+  // Mobile responsiveness states
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTrendingCollapsed, setIsTrendingCollapsed] = useState(true);
+  
   // Events state
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
@@ -65,6 +69,17 @@ export default function HomePage() {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Mobile responsiveness detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Fetch events - use personalized data if available, fallback to global
@@ -150,7 +165,7 @@ export default function HomePage() {
     const audioTrack = {
       id: track.id,
       title: track.title,
-      artist: track.artist || track.creator?.display_name || 'Unknown Artist',
+      artist: track.artist || track.creator?.display_name || track.creator?.name || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
       artwork: track.cover_art_url || track.coverArt || '',
@@ -410,9 +425,19 @@ export default function HomePage() {
         // Use personalized tracks if available and user is logged in
         if (personalizedFeed && personalizedFeed.music && personalizedFeed.music.length > 0) {
           console.log('🎯 Using personalized music data:', personalizedFeed.music.length);
-          setRecentTracks(personalizedFeed.music);
-          setIsLoadingTracks(false);
-          return;
+          // Validate that personalized tracks have proper artist data
+          const validPersonalizedTracks = personalizedFeed.music.filter(track => 
+            track.artist && track.artist !== 'Unknown Artist' && track.artist !== 'No artist data'
+          );
+          
+          if (validPersonalizedTracks.length > 0) {
+            console.log('✅ Using validated personalized tracks:', validPersonalizedTracks.length);
+            setRecentTracks(validPersonalizedTracks);
+            setIsLoadingTracks(false);
+            return;
+          } else {
+            console.log('⚠️ Personalized tracks have invalid artist data, falling back to global tracks');
+          }
         }
         
         // Fallback to global recent tracks
@@ -591,34 +616,60 @@ export default function HomePage() {
   return (
     <>
       <HomePageSEO />
+      
+      {/* Mobile horizontal scroll styles */}
+      <style jsx global>{`
+        .horizontal-scroll {
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(236, 72, 153, 0.5) transparent;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar {
+          height: 4px;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar-thumb {
+          background: rgba(236, 72, 153, 0.5);
+          border-radius: 2px;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(236, 72, 153, 0.7);
+        }
+      `}</style>
 
       {/* Main Content */}
       <main style={{
-        padding: '2rem',
-        paddingBottom: '7rem',
+        padding: isMobile ? '1rem' : '2rem',
+        paddingBottom: isMobile ? '4rem' : '7rem',
         maxWidth: '1400px',
         margin: '0 auto'
       }}>
         {/* Hero Section */}
         <section style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: '2rem',
-          marginBottom: '3rem',
-          height: '400px'
+          gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr',
+          gap: isMobile ? '1rem' : '2rem',
+          marginBottom: isMobile ? '2rem' : '3rem',
+          height: isMobile ? 'auto' : '400px'
         }}>
           <Link href="/creator/kwame-asante" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/800/400?random=hero")',
               backgroundSize: 'cover',
-              borderRadius: '20px',
-              padding: '2rem',
+              borderRadius: isMobile ? '16px' : '20px',
+              padding: isMobile ? '1.5rem' : '2rem',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-end',
               position: 'relative',
               overflow: 'hidden',
-              minHeight: '400px'
+              minHeight: isMobile ? '250px' : '400px'
             }}>
               <div style={{
                 position: 'relative',
@@ -734,26 +785,50 @@ export default function HomePage() {
             </div>
           </Link>
           <div style={{
-            background: 'var(--card-bg)',
+            background: isMobile ? 'rgba(255, 255, 255, 0.05)' : 'var(--card-bg)',
             backdropFilter: 'blur(20px)',
-            borderRadius: '20px',
-            padding: '1.5rem',
-            border: '1px solid var(--border-color)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderRadius: isMobile ? '16px' : '20px',
+            padding: isMobile ? '1rem' : '1.5rem',
+            border: isMobile ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid var(--border-color)',
             display: 'block'
           }}>
-                            <h3 style={{ 
-                              marginBottom: '1rem', 
-                              color: 'var(--accent-primary)',
-                              fontFamily: 'var(--font-display)',
-                              fontSize: 'var(--text-xl)',
-                              fontWeight: '600',
-                              lineHeight: 'var(--leading-snug)',
-                              letterSpacing: 'var(--tracking-tight)'
-                            }}>Trending Now</h3>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              marginBottom: '1rem',
+                              cursor: isMobile ? 'pointer' : 'default'
+                            }} onClick={() => isMobile && setIsTrendingCollapsed(!isTrendingCollapsed)}>
+                              <h3 style={{ 
+                                color: 'var(--accent-primary)',
+                                fontFamily: 'var(--font-display)',
+                                fontSize: 'var(--text-xl)',
+                                fontWeight: '600',
+                                lineHeight: 'var(--leading-snug)',
+                                letterSpacing: 'var(--tracking-tight)',
+                                margin: 0
+                              }}>Trending Now</h3>
+                              {isMobile && (
+                                <div style={{
+                                  transform: isTrendingCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+                                  transition: 'transform 0.3s ease',
+                                  color: 'var(--accent-primary)'
+                                }}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M7 10l5 5 5-5z"/>
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '1rem'
+              gap: '1rem',
+              maxHeight: isMobile && isTrendingCollapsed ? '0' : 'none',
+              overflow: isMobile ? 'hidden' : 'visible',
+              transition: isMobile ? 'max-height 0.3s ease, opacity 0.3s ease' : 'none',
+              opacity: isMobile && isTrendingCollapsed ? '0' : '1'
             }}>
               {isLoadingTrending ? (
                 // Loading state
@@ -848,12 +923,16 @@ export default function HomePage() {
           
 
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: '0.75rem',
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(5, 1fr)',
+            gap: isMobile ? '1rem' : '0.75rem',
             maxWidth: '100%',
-            justifyContent: 'center'
-          }}>
+            justifyContent: isMobile ? 'flex-start' : 'center',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            scrollbarWidth: isMobile ? 'thin' : 'auto',
+            scrollbarColor: isMobile ? 'rgba(236, 72, 153, 0.5) transparent' : 'auto'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
             {isLoadingTracks ? (
               // Loading state
               Array.from({ length: 5 }).map((_, index) => (
@@ -881,8 +960,10 @@ export default function HomePage() {
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '12px',
                   padding: '8px',
-                  width: '100%',
-                  minHeight: '200px'
+                  width: isMobile ? '140px' : '100%',
+                  minWidth: isMobile ? '140px' : 'auto',
+                  minHeight: isMobile ? '140px' : '200px',
+                  flexShrink: isMobile ? '0' : '1'
                 }}
                 >
                   {/* Image Container */}
@@ -895,7 +976,7 @@ export default function HomePage() {
                         height={140}
                         style={{ 
                           width: '100%', 
-                          height: '160px', 
+                          height: isMobile ? '120px' : '160px', 
                           objectFit: 'cover', 
                           borderRadius: '8px' 
                         }}
@@ -903,7 +984,7 @@ export default function HomePage() {
                     ) : (
                       <div style={{ 
                         width: '100%',
-                        height: '160px',
+                        height: isMobile ? '120px' : '160px',
                         background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                         borderRadius: '8px',
                         display: 'flex', 
@@ -911,7 +992,7 @@ export default function HomePage() {
                         justifyContent: 'center',
                         color: 'white'
                       }}>
-                        <Music size={24} />
+                        <Music size={isMobile ? 20 : 24} />
                       </div>
                     )}
                     
@@ -922,8 +1003,8 @@ export default function HomePage() {
                         bottom: '8px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        width: '40px',
-                        height: '40px',
+                        width: isMobile ? '32px' : '40px',
+                        height: isMobile ? '32px' : '40px',
                         background: 'rgba(0, 0, 0, 0.7)',
                         border: 'none',
                         borderRadius: '50%',
@@ -959,8 +1040,8 @@ export default function HomePage() {
                         position: 'absolute',
                         top: '8px',
                         right: '8px',
-                        width: '32px',
-                        height: '32px',
+                        width: isMobile ? '28px' : '32px',
+                        height: isMobile ? '28px' : '32px',
                         background: 'rgba(0, 0, 0, 0.7)',
                         border: 'none',
                         borderRadius: '50%',
@@ -991,10 +1072,10 @@ export default function HomePage() {
                       className="dropdown-container"
                       style={{ 
                         position: 'absolute',
-                        top: '48px',
+                        top: isMobile ? '44px' : '48px',
                         right: '8px',
-                        width: '32px',
-                        height: '32px',
+                        width: isMobile ? '28px' : '32px',
+                        height: isMobile ? '28px' : '32px',
                         background: 'rgba(0, 0, 0, 0.7)',
                         border: 'none',
                         borderRadius: '50%',
@@ -1105,7 +1186,7 @@ export default function HomePage() {
                   <div>
                     <h3 style={{
                       color: 'var(--text-primary)',
-                      fontSize: '13px',
+                      fontSize: isMobile ? '11px' : '13px',
                       fontWeight: '600',
                       margin: '0 0 2px 0',
                       lineHeight: '1.2',
@@ -1117,7 +1198,7 @@ export default function HomePage() {
                     </h3>
                     <p style={{
                       color: 'var(--text-primary)',
-                      fontSize: '11px',
+                      fontSize: isMobile ? '9px' : '11px',
                       fontWeight: '700',
                       margin: '0 0 4px 0',
                       overflow: 'hidden',
@@ -1130,15 +1211,15 @@ export default function HomePage() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      fontSize: '10px',
+                      fontSize: isMobile ? '8px' : '10px',
                       color: '#666'
                     }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <Play size={8} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <Play size={isMobile ? 6 : 8} />
                         {track.plays || track.play_count || 0}
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <Heart size={8} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <Heart size={isMobile ? 6 : 8} />
                         {track.likes || track.like_count || 0}
                       </span>
                   </div>
