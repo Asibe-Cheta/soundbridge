@@ -693,16 +693,16 @@ export default function HomePage() {
                 zIndex: 2
               }}>
                 <h2 className="heading-2 text-display" style={{ 
-                  marginBottom: '0.3rem',
+                  marginBottom: isMobile ? '0.3rem' : '0.5rem',
                   color: 'white',
-                  fontSize: isMobile ? '1rem' : 'inherit',
-                  lineHeight: isMobile ? '1.2' : 'inherit'
+                  fontSize: isMobile ? '1rem' : 'var(--text-4xl)',
+                  lineHeight: isMobile ? '1.2' : 'var(--leading-tight)'
                 }}>Featured Creator: Kwame Asante</h2>
                 <p className="text-large text-body" style={{ 
                   color: '#ccc',
                   marginBottom: isMobile ? '0.5rem' : '1rem',
-                  fontSize: isMobile ? '0.8rem' : 'inherit',
-                  lineHeight: isMobile ? '1.3' : 'inherit'
+                  fontSize: isMobile ? '0.8rem' : 'var(--text-lg)',
+                  lineHeight: isMobile ? '1.3' : 'var(--leading-relaxed)'
                 }}>Afrobeats sensation taking UK by storm!</p>
                 <div style={{ 
                   display: 'flex', 
@@ -832,9 +832,10 @@ export default function HomePage() {
                                 fontFamily: 'var(--font-display)',
                                 fontSize: isMobile ? '1rem' : 'var(--text-xl)',
                                 fontWeight: '600',
-                                lineHeight: 'var(--leading-snug)',
+                                lineHeight: isMobile ? '1.2' : 'var(--leading-snug)',
                                 letterSpacing: 'var(--tracking-tight)',
-                                margin: 0
+                                margin: 0,
+                                marginBottom: isMobile ? '0.3rem' : '0'
                               }}>Trending Now</h3>
                               {isMobile && (
                                 <div style={{
@@ -923,7 +924,11 @@ export default function HomePage() {
         {/* Recently Added Music - PERSONALIZED */}
         <section className="section">
           <div className="section-header">
-            <h2 className="heading-3 text-display">
+            <h2 className="heading-3 text-display" style={{
+              fontSize: isMobile ? '1rem' : 'var(--text-3xl)',
+              lineHeight: isMobile ? '1.2' : 'var(--leading-snug)',
+              marginBottom: isMobile ? '0.3rem' : '1.5rem'
+            }}>
               {hasPersonalizedData && user ? (
                 <>
                   Your Personalized Music
@@ -944,7 +949,10 @@ export default function HomePage() {
                 'Recently Added Music'
               )}
             </h2>
-            <Link href="/discover?tab=music" className="view-all">View All</Link>
+            <Link href="/discover?tab=music" className="view-all" style={{
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
+              lineHeight: isMobile ? '1.3' : 'inherit'
+            }}>View All</Link>
           </div>
           
           
@@ -1271,7 +1279,11 @@ export default function HomePage() {
         {/* Hot Creators */}
         <section className="section">
           <div className="section-header">
-            <h2 className="heading-3 text-display">
+            <h2 className="heading-3 text-display" style={{
+              fontSize: isMobile ? '1rem' : 'var(--text-3xl)',
+              lineHeight: isMobile ? '1.2' : 'var(--leading-snug)',
+              marginBottom: isMobile ? '0.3rem' : '1.5rem'
+            }}>
               {hasPersonalizedData && user ? (
                 <>
                   Creators You&apos;ll Love
@@ -1292,7 +1304,10 @@ export default function HomePage() {
                 'Hot Creators Right Now'
               )}
             </h2>
-            <Link href="/creators?sortBy=hot" className="view-all">View All</Link>
+            <Link href="/creators?sortBy=hot" className="view-all" style={{
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
+              lineHeight: isMobile ? '1.3' : 'inherit'
+            }}>View All</Link>
           </div>
           <div style={{
             display: isMobile ? 'flex' : 'grid',
@@ -1409,12 +1424,29 @@ export default function HomePage() {
               ))
             ) : (
               // Empty state
-              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
-                <div style={{ color: '#EC4899', marginBottom: '1rem' }}>
-                  <Star size={48} style={{ opacity: 0.5 }} />
+              <div className="card" style={{ 
+                gridColumn: 'span 3', 
+                textAlign: 'center', 
+                padding: isMobile ? '1rem' : '2rem' 
+              }}>
+                <div style={{ 
+                  color: '#EC4899', 
+                  marginBottom: isMobile ? '0.5rem' : '1rem' 
+                }}>
+                  <Star size={isMobile ? 32 : 48} style={{ opacity: 0.5 }} />
               </div>
-                <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>No Hot Creators Yet</h3>
-                <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+                <h3 style={{ 
+                  color: '#EC4899', 
+                  marginBottom: isMobile ? '0.5rem' : '1rem',
+                  fontSize: isMobile ? '1rem' : 'inherit',
+                  lineHeight: isMobile ? '1.2' : 'inherit'
+                }}>No Hot Creators Yet</h3>
+                <p style={{ 
+                  color: '#ccc', 
+                  marginBottom: isMobile ? '0.5rem' : '1rem',
+                  fontSize: isMobile ? '0.8rem' : 'inherit',
+                  lineHeight: isMobile ? '1.3' : 'inherit'
+                }}>
                   Be the first to upload amazing content and become a hot creator!
                 </p>
                 <Link href="/upload" style={{ textDecoration: 'none' }}>
@@ -1422,10 +1454,11 @@ export default function HomePage() {
                     background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                     color: 'white',
                     border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '12px',
+                    padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+                    borderRadius: isMobile ? '8px' : '12px',
                     cursor: 'pointer',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    fontSize: isMobile ? '0.8rem' : 'inherit'
                   }}>
                     Start Creating
                   </button>
@@ -1438,7 +1471,11 @@ export default function HomePage() {
         {/* Live Events This Week */}
         <section className="section">
           <div className="section-header">
-            <h2 className="heading-3 text-display">
+            <h2 className="heading-3 text-display" style={{
+              fontSize: isMobile ? '1rem' : 'var(--text-3xl)',
+              lineHeight: isMobile ? '1.2' : 'var(--leading-snug)',
+              marginBottom: isMobile ? '0.3rem' : '1.5rem'
+            }}>
               {hasPersonalizedData && user ? (
                 <>
                   Events Near You
@@ -1459,7 +1496,10 @@ export default function HomePage() {
                 'Live Events This Week'
               )}
             </h2>
-            <Link href="/events" className="view-all">View All</Link>
+            <Link href="/events" className="view-all" style={{
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
+              lineHeight: isMobile ? '1.3' : 'inherit'
+            }}>View All</Link>
           </div>
           <div style={{
             display: isMobile ? 'flex' : 'grid',
@@ -1523,7 +1563,11 @@ export default function HomePage() {
         {/* Trending Podcasts */}
         <section className="section">
           <div className="section-header">
-            <h2 className="heading-3 text-display">
+            <h2 className="heading-3 text-display" style={{
+              fontSize: isMobile ? '1rem' : 'var(--text-3xl)',
+              lineHeight: isMobile ? '1.2' : 'var(--leading-snug)',
+              marginBottom: isMobile ? '0.3rem' : '1.5rem'
+            }}>
               {hasPersonalizedData && user ? (
                 <>
                   Podcasts for You
@@ -1544,7 +1588,10 @@ export default function HomePage() {
                 'Trending Podcasts'
               )}
             </h2>
-            <Link href="/search?tab=podcasts" className="view-all">View All</Link>
+            <Link href="/search?tab=podcasts" className="view-all" style={{
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
+              lineHeight: isMobile ? '1.3' : 'inherit'
+            }}>View All</Link>
           </div>
           <div style={{
             display: isMobile ? 'flex' : 'grid',
