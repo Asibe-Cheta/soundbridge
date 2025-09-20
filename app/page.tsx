@@ -693,37 +693,41 @@ export default function HomePage() {
                 zIndex: 2
               }}>
                 <h2 className="heading-2 text-display" style={{ 
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.3rem',
                   color: 'white',
-                  fontSize: isMobile ? '1.2rem' : 'inherit'
+                  fontSize: isMobile ? '1rem' : 'inherit',
+                  lineHeight: isMobile ? '1.2' : 'inherit'
                 }}>Featured Creator: Kwame Asante</h2>
                 <p className="text-large text-body" style={{ 
                   color: '#ccc',
-                  marginBottom: isMobile ? '0.8rem' : '1rem',
-                  fontSize: isMobile ? '0.9rem' : 'inherit'
+                  marginBottom: isMobile ? '0.5rem' : '1rem',
+                  fontSize: isMobile ? '0.8rem' : 'inherit',
+                  lineHeight: isMobile ? '1.3' : 'inherit'
                 }}>Afrobeats sensation taking UK by storm!</p>
                 <div style={{ 
                   display: 'flex', 
-                  gap: isMobile ? '0.5rem' : '1rem', 
-                  marginTop: isMobile ? '0.5rem' : '1rem',
-                  flexWrap: 'nowrap'
+                  gap: isMobile ? '0.3rem' : '1rem', 
+                  marginTop: isMobile ? '0.3rem' : '1rem',
+                  flexWrap: 'nowrap',
+                  justifyContent: isMobile ? 'flex-start' : 'flex-start'
                 }}>
                   <button 
                     style={{
                       background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
                       color: 'white',
                       border: 'none',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
+                      padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                      borderRadius: isMobile ? '15px' : '25px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
+                      fontSize: isMobile ? '0.7rem' : '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: isMobile ? '0.3rem' : '0.5rem',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-                      transform: 'translateY(0)'
+                      transform: 'translateY(0)',
+                      whiteSpace: 'nowrap'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-2px)';
@@ -734,7 +738,7 @@ export default function HomePage() {
                       e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
                     }}
                   >
-                    <Play size={16} />
+                    <Play size={isMobile ? 12 : 16} />
                     Play Latest
                   </button>
                   <button 
@@ -743,16 +747,17 @@ export default function HomePage() {
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       color: 'white',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
+                      padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                      borderRadius: isMobile ? '15px' : '25px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
+                      fontSize: isMobile ? '0.7rem' : '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: isMobile ? '0.3rem' : '0.5rem',
                       transition: 'all 0.3s ease',
-                      transform: 'translateY(0)'
+                      transform: 'translateY(0)',
+                      whiteSpace: 'nowrap'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -765,7 +770,7 @@ export default function HomePage() {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    <Heart size={16} />
+                    <Heart size={isMobile ? 12 : 16} />
                     Follow
                   </button>
                   <button 
@@ -774,16 +779,17 @@ export default function HomePage() {
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       color: 'white',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
+                      padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                      borderRadius: isMobile ? '15px' : '25px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
+                      fontSize: isMobile ? '0.7rem' : '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: isMobile ? '0.3rem' : '0.5rem',
                       transition: 'all 0.3s ease',
-                      transform: 'translateY(0)'
+                      transform: 'translateY(0)',
+                      whiteSpace: 'nowrap'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -796,7 +802,7 @@ export default function HomePage() {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    <MessageCircle size={16} />
+                    <MessageCircle size={isMobile ? 12 : 16} />
                     Message
                   </button>
                 </div>

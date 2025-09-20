@@ -654,12 +654,12 @@ export default function DiscoverPage() {
                         />
                       </div>
                     </div>
-                                         <div style={{ fontWeight: '600' }}>{track.title}</div>
-                     <div style={{ color: '#999', fontSize: '0.9rem' }}>{track.creator?.display_name || 'Unknown Artist'}</div>
+                                         <div style={{ fontWeight: '600', fontSize: isMobile ? '0.8rem' : 'inherit' }}>{track.title}</div>
+                     <div style={{ color: '#999', fontSize: isMobile ? '0.7rem' : '0.9rem' }}>{track.creator?.display_name || 'Unknown Artist'}</div>
                     <div className="waveform"></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                      <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>{track.genre}</span>
-                      <span style={{ color: '#999', fontSize: '0.8rem' }}>{track.formatted_duration || '3:24'}</span>
+                      <span style={{ color: '#EC4899', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>{track.genre}</span>
+                      <span style={{ color: '#999', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>{track.formatted_duration || '3:24'}</span>
                     </div>
                   </div>
                 ))}
