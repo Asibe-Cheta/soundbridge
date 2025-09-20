@@ -86,6 +86,17 @@ export default function DiscoverPage() {
     getTrendingContent
   } = useSearch();
 
+  // Mobile responsiveness detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -127,7 +138,6 @@ export default function DiscoverPage() {
   };
 
   const categories = [
-    { id: 'all', label: 'All', icon: TrendingUp },
     { id: 'music', label: 'Music', icon: Music },
     { id: 'creators', label: 'Creators', icon: Users },
     { id: 'events', label: 'Events', icon: Calendar },
@@ -505,9 +515,25 @@ export default function DiscoverPage() {
                 </button>
               </div>
             ) : (trendingResults?.music && trendingResults.music.length > 0) ? (
-              <div className="grid grid-6">
+              <div style={{
+                display: isMobile ? 'flex' : 'grid',
+                gridTemplateColumns: isMobile ? 'none' : 'repeat(6, 1fr)',
+                gap: isMobile ? '1rem' : '1rem',
+                maxWidth: '100%',
+                justifyContent: isMobile ? 'flex-start' : 'center',
+                overflowX: isMobile ? 'auto' : 'visible',
+                paddingBottom: isMobile ? '1rem' : '0',
+                scrollbarWidth: isMobile ? 'thin' : 'auto',
+                scrollbarColor: isMobile ? 'rgba(236, 72, 153, 0.5) transparent' : 'auto'
+              }} className={isMobile ? 'horizontal-scroll' : ''}>
                 {trendingResults.music.map((track) => (
-                  <div key={track.id} className="card" style={{ cursor: 'pointer' }}>
+                  <div key={track.id} className="card" style={{ 
+                    cursor: 'pointer',
+                    width: isMobile ? '140px' : 'auto',
+                    minWidth: isMobile ? '140px' : 'auto',
+                    minHeight: isMobile ? '140px' : 'auto',
+                    flexShrink: isMobile ? '0' : '1'
+                  }}>
                     <div className="card-image" style={{ position: 'relative' }}>
                       {track.cover_art_url ? (
                         <Image
@@ -515,21 +541,26 @@ export default function DiscoverPage() {
                           alt={track.title}
                           width={200}
                           height={200}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                          style={{ 
+                            width: '100%', 
+                            height: isMobile ? '120px' : '100%', 
+                            objectFit: 'cover', 
+                            borderRadius: '8px' 
+                          }}
                         />
                       ) : (
                 <div style={{
                   width: '100%',
-                          height: '100%',
+                          height: isMobile ? '120px' : '100%',
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           borderRadius: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                          fontSize: '2rem'
+                          fontSize: isMobile ? '1.5rem' : '2rem'
                         }}>
-                          <Music size={32} />
+                          <Music size={isMobile ? 24 : 32} />
                         </div>
                       )}
                       {/* Play Button */}
@@ -546,9 +577,9 @@ export default function DiscoverPage() {
                         }}
                       >
                         {currentTrack?.id === track.id && isPlaying ? (
-                          <Pause size={20} />
+                          <Pause size={isMobile ? 16 : 20} />
                         ) : (
-                          <Play size={20} />
+                          <Play size={isMobile ? 16 : 20} />
                         )}
                 </div>
                       {/* Like Button */}
@@ -580,11 +611,11 @@ export default function DiscoverPage() {
                         }}
                       >
                         <Heart 
-                          size={16} 
+                          size={isMobile ? 12 : 16} 
                           style={{ 
                             color: likedTracks.has(track.id) ? '#EC4899' : 'white',
                             fill: likedTracks.has(track.id) ? '#EC4899' : 'none'
-                          }} 
+                          }}
                         />
                       </div>
                       {/* Share Button */}
@@ -1061,6 +1092,32 @@ export default function DiscoverPage() {
 
   return (
     <>
+      {/* Mobile horizontal scroll styles */}
+      <style jsx global>{`
+        .horizontal-scroll {
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(236, 72, 153, 0.5) transparent;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar {
+          height: 4px;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar-thumb {
+          background: rgba(236, 72, 153, 0.5);
+          border-radius: 2px;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(236, 72, 153, 0.7);
+        }
+      `}</style>
+      
       {/* Main Content */}
       <main className="main-container">
         {!pageLoaded && (

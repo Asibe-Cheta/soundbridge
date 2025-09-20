@@ -662,14 +662,15 @@ export default function HomePage() {
             <div style={{
               background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/800/400?random=hero")',
               backgroundSize: 'cover',
-              borderRadius: isMobile ? '16px' : '20px',
-              padding: isMobile ? '1.5rem' : '2rem',
+              borderRadius: isMobile ? '12px' : '20px',
+              padding: isMobile ? '1rem' : '2rem',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-end',
               position: 'relative',
               overflow: 'hidden',
-              minHeight: isMobile ? '250px' : '400px'
+              minHeight: isMobile ? '180px' : '400px',
+              maxWidth: isMobile ? '100%' : 'none'
             }}>
               <div style={{
                 position: 'relative',
@@ -677,16 +678,18 @@ export default function HomePage() {
               }}>
                 <h2 className="heading-2 text-display" style={{ 
                   marginBottom: '0.5rem',
-                  color: 'white'
+                  color: 'white',
+                  fontSize: isMobile ? '1.2rem' : 'inherit'
                 }}>Featured Creator: Kwame Asante</h2>
                 <p className="text-large text-body" style={{ 
                   color: '#ccc',
-                  marginBottom: '1rem'
+                  marginBottom: isMobile ? '0.8rem' : '1rem',
+                  fontSize: isMobile ? '0.9rem' : 'inherit'
                 }}>Afrobeats sensation taking UK by storm!</p>
                 <div style={{ 
                   display: 'flex', 
-                  gap: '1rem', 
-                  marginTop: '1rem',
+                  gap: isMobile ? '0.5rem' : '1rem', 
+                  marginTop: isMobile ? '0.5rem' : '1rem',
                   flexWrap: 'nowrap'
                 }}>
                   <button 
@@ -788,8 +791,8 @@ export default function HomePage() {
             background: isMobile ? 'rgba(255, 255, 255, 0.05)' : 'var(--card-bg)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderRadius: isMobile ? '16px' : '20px',
-            padding: isMobile ? '1rem' : '1.5rem',
+            borderRadius: isMobile ? '12px' : '20px',
+            padding: isMobile ? '0.8rem' : '1.5rem',
             border: isMobile ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid var(--border-color)',
             display: 'block'
           }}>
@@ -803,7 +806,7 @@ export default function HomePage() {
                               <h3 style={{ 
                                 color: 'var(--accent-primary)',
                                 fontFamily: 'var(--font-display)',
-                                fontSize: 'var(--text-xl)',
+                                fontSize: isMobile ? '1rem' : 'var(--text-xl)',
                                 fontWeight: '600',
                                 lineHeight: 'var(--leading-snug)',
                                 letterSpacing: 'var(--tracking-tight)',
