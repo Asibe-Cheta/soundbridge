@@ -1116,6 +1116,10 @@ export default function DiscoverPage() {
         .horizontal-scroll::-webkit-scrollbar-thumb:hover {
           background: rgba(236, 72, 153, 0.7);
         }
+        
+        .tab-navigation::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
       
       {/* Main Content */}
@@ -1197,14 +1201,51 @@ export default function DiscoverPage() {
 
         {/* Tab Navigation */}
         <section className="section">
-          <div className="tab-navigation">
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            overflowX: 'auto',
+            paddingBottom: '0.5rem',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch'
+          }} className="tab-navigation">
             {categories.map((category) => {
               const Icon = category.icon;
+              const isActive = activeTab === category.id;
               return (
                 <button
                   key={category.id}
                   onClick={() => setActiveTab(category.id)}
-                  className={`tab-button ${activeTab === category.id ? 'active' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '20px',
+                    border: 'none',
+                    background: isActive ? '#EC4899' : 'rgba(255, 255, 255, 0.1)',
+                    color: isActive ? 'white' : '#ccc',
+                    fontSize: '0.9rem',
+                    fontWeight: isActive ? '600' : '400',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap',
+                    flexShrink: '0',
+                    minWidth: 'fit-content'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                      e.currentTarget.style.color = 'white';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.color = '#ccc';
+                    }
+                  }}
                 >
                   <Icon size={16} />
                   {category.label}
