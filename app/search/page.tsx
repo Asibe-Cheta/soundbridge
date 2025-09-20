@@ -4,9 +4,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Footer } from '../../src/components/layout/Footer';
-import { FloatingCard } from '../../src/components/ui/FloatingCard';
-import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
-import { useSearch } from '../../src/hooks/useSearch';
 import {
   Search,
   Filter,
@@ -22,7 +19,10 @@ import {
   ArrowLeft,
   Sliders,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  User,
+  Clock,
+  Eye
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -45,148 +45,60 @@ function SearchLoading() {
   );
 }
 
-// Main search content component that uses useSearchParams
+// Main search content component
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get('q') || '';
 
   const [searchQuery, setSearchQuery] = useState(query);
-  const [activeTab, setActiveTab] = useState('music');
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedGenre, setSelectedGenre] = useState('all');
-  const [selectedLocation, setSelectedLocation] = useState('all');
-  const [selectedDate, setSelectedDate] = useState<'all' | 'today' | 'week' | 'month' | 'next-month'>('all');
-  const [selectedPrice, setSelectedPrice] = useState<'all' | 'free' | 'low' | 'medium' | 'high'>('all');
-  const [sortBy, setSortBy] = useState<'relevance' | 'trending' | 'latest' | 'popular' | 'nearest'>('relevance');
-  const [appliedFilters, setAppliedFilters] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState('creators'); // Start with creators as default
+  const [results, setResults] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Use the search hook
-  const {
-    results,
-    loading,
-    error,
-    search,
-    loadMore,
-    hasResults,
-    totalResults,
-    canLoadMore
-  } = useSearch();
+  // Mobile responsiveness detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Initialize search when component mounts or query changes
+  // Perform search using enhanced API
+  const performSearch = async (searchTerm: string) => {
+    if (!searchTerm.trim()) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('🔍 Searching for:', searchTerm);
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchTerm)}&limit=20`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Search results:', data);
+        setResults(data.data);
+      } else {
+        throw new Error('Search failed');
+      }
+    } catch (err) {
+      console.error('❌ Search error:', err);
+      setError(err instanceof Error ? err.message : 'Search failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Search when query changes
   useEffect(() => {
     if (query.trim()) {
-      const filters = {
-        genre: selectedGenre !== 'all' ? selectedGenre : undefined,
-        location: selectedLocation !== 'all' ? selectedLocation : undefined,
-        date_range: selectedDate !== 'all' ? selectedDate : undefined,
-        price_range: selectedPrice !== 'all' ? selectedPrice : undefined,
-        sort_by: sortBy,
-        content_types: [activeTab as 'music' | 'creators' | 'events' | 'podcasts']
-      };
-      search(query, filters);
+      performSearch(query);
     }
-  }, [query, selectedGenre, selectedLocation, selectedDate, selectedPrice, sortBy, activeTab, search]);
-
-  const genres = [
-    { value: 'all', label: 'All Genres' },
-    { value: 'afrobeats', label: 'Afrobeats' },
-    { value: 'gospel', label: 'Gospel' },
-    { value: 'uk-drill', label: 'UK Drill' },
-    { value: 'highlife', label: 'Highlife' },
-    { value: 'jazz', label: 'Jazz' },
-    { value: 'hip-hop', label: 'Hip Hop' }
-  ];
-
-  const locations = [
-    { value: 'all', label: 'All Locations' },
-    { value: 'london', label: 'London, UK' },
-    { value: 'lagos', label: 'Lagos, Nigeria' },
-    { value: 'abuja', label: 'Abuja, Nigeria' },
-    { value: 'manchester', label: 'Manchester, UK' },
-    { value: 'birmingham', label: 'Birmingham, UK' }
-  ];
-
-  const dateRanges = [
-    { value: 'all', label: 'All Dates' },
-    { value: 'today', label: 'Today' },
-    { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' },
-    { value: 'next-month', label: 'Next Month' }
-  ];
-
-  const priceRanges = [
-    { value: 'all', label: 'All Prices' },
-    { value: 'free', label: 'Free' },
-    { value: 'low', label: 'Under £10' },
-    { value: 'medium', label: '£10 - £50' },
-    { value: 'high', label: 'Over £50' }
-  ];
-
-  const sortOptions = [
-    { value: 'relevance', label: 'Relevance' },
-    { value: 'trending', label: 'Trending' },
-    { value: 'latest', label: 'Latest' },
-    { value: 'popular', label: 'Most Popular' },
-    { value: 'nearest', label: 'Nearest' }
-  ];
-
-  const categories = [
-    { id: 'all', label: 'All', icon: Filter },
-    { id: 'music', label: 'Music', icon: Music },
-    { id: 'creators', label: 'Creators', icon: Users },
-    { id: 'events', label: 'Events', icon: Calendar },
-    { id: 'podcasts', label: 'Podcasts', icon: Mic }
-  ];
-
-  const handleClearFilters = () => {
-    setSelectedGenre('all');
-    setSelectedLocation('all');
-    setSelectedDate('all');
-    setSelectedPrice('all');
-    setSortBy('relevance');
-    setAppliedFilters([]);
-  };
-
-  const handleGenreChange = (value: string) => {
-    setSelectedGenre(value);
-    if (value !== 'all') {
-      setAppliedFilters(prev => [...prev.filter(f => !f.startsWith('genre:')), `genre:${value}`]);
-    } else {
-      setAppliedFilters(prev => prev.filter(f => !f.startsWith('genre:')));
-    }
-  };
-
-  const handleLocationChange = (value: string) => {
-    setSelectedLocation(value);
-    if (value !== 'all') {
-      setAppliedFilters(prev => [...prev.filter(f => !f.startsWith('location:')), `location:${value}`]);
-    } else {
-      setAppliedFilters(prev => prev.filter(f => !f.startsWith('location:')));
-    }
-  };
-
-  const handleDateChange = (value: string) => {
-    setSelectedDate(value as 'all' | 'today' | 'week' | 'month' | 'next-month');
-    if (value !== 'all') {
-      setAppliedFilters(prev => [...prev.filter(f => !f.startsWith('date:')), `date:${value}`]);
-    } else {
-      setAppliedFilters(prev => prev.filter(f => !f.startsWith('date:')));
-    }
-  };
-
-  const handlePriceChange = (value: string) => {
-    setSelectedPrice(value as 'all' | 'free' | 'low' | 'medium' | 'high');
-    if (value !== 'all') {
-      setAppliedFilters(prev => [...prev.filter(f => !f.startsWith('price:')), `price:${value}`]);
-    } else {
-      setAppliedFilters(prev => prev.filter(f => !f.startsWith('price:')));
-    }
-  };
-
-  const handleSortChange = (value: string) => {
-    setSortBy(value as 'relevance' | 'trending' | 'latest' | 'popular' | 'nearest');
-  };
+  }, [query]);
 
   const handleSearch = (newQuery: string) => {
     setSearchQuery(newQuery);
@@ -209,8 +121,24 @@ function SearchContent() {
     }
   };
 
+  const totalResults = getResultCount('music') + getResultCount('creators') + getResultCount('events') + getResultCount('podcasts');
+
+  // Format duration helper
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Format play count helper
+  const formatPlayCount = (count: number) => {
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+    return count.toString();
+  };
+
   const renderContent = () => {
-    if (loading && !results) {
+    if (loading) {
       return (
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
@@ -232,17 +160,17 @@ function SearchContent() {
       );
     }
 
-    if (!hasResults) {
+    if (!results || totalResults === 0) {
       return (
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center py-8">
-            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-white mb-2">No results found</h3>
             <p className="text-gray-400 mb-4">
-              Try adjusting your search terms or filters to find what you&apos;re looking for.
+              Try adjusting your search terms to find what you&apos;re looking for.
             </p>
             <p className="text-gray-400">
-              You can also try searching for &quot;gospel&quot; or &quot;afrobeats&quot; to get started.
+              You can search for creators, music, events, or podcasts.
             </p>
           </div>
         </div>
@@ -256,76 +184,72 @@ function SearchContent() {
           <p className="text-white">
             Found {totalResults} results for &quot;{query}&quot;
           </p>
-          {appliedFilters.length > 0 && (
-            <button
-              onClick={handleClearFilters}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Clear all filters
-            </button>
-          )}
         </div>
 
-        {/* Active Filters */}
-        {appliedFilters.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {appliedFilters.map((filter, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-purple-600 text-white text-sm rounded-full"
-              >
-                {filter.split(':')[1]}
-                <button
-                  onClick={() => {
-                    const [type] = filter.split(':');
-                    setAppliedFilters(prev => prev.filter(f => f !== filter));
-                    // Reset the corresponding filter
-                    switch (type) {
-                      case 'genre':
-                        setSelectedGenre('all');
-                        break;
-                      case 'location':
-                        setSelectedLocation('all');
-                        break;
-                      case 'date':
-                        setSelectedDate('all');
-                        break;
-                      case 'price':
-                        setSelectedPrice('all');
-                        break;
-                    }
-                  }}
-                  className="ml-1 hover:text-red-300"
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
+        {/* Instagram-style Tab Navigation */}
+        <div style={{
+          display: 'flex',
+          gap: '0.5rem',
+          overflowX: 'auto',
+          paddingBottom: '0.5rem',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          flexWrap: 'nowrap',
+          whiteSpace: 'nowrap'
+        }} className="tab-navigation">
           {[
-            { id: 'music', label: 'Music', icon: Music, count: getResultCount('music') },
             { id: 'creators', label: 'Creators', icon: Users, count: getResultCount('creators') },
+            { id: 'music', label: 'Music', icon: Music, count: getResultCount('music') },
             { id: 'events', label: 'Events', icon: Calendar, count: getResultCount('events') },
             { id: 'podcasts', label: 'Podcasts', icon: Mic, count: getResultCount('podcasts') }
           ].map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-                  }`}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  background: isActive ? 'linear-gradient(45deg, #DC2626, #EC4899)' : 'rgba(255, 255, 255, 0.1)',
+                  color: isActive ? 'white' : '#ccc',
+                  fontSize: '0.9rem',
+                  fontWeight: isActive ? '600' : '400',
+                  flexShrink: '0',
+                  minWidth: 'fit-content',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.3s ease',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.color = 'white';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.color = '#ccc';
+                  }
+                }}
               >
                 <Icon size={16} />
                 {tab.label}
                 {tab.count > 0 && (
-                  <span className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-full">
+                  <span style={{
+                    background: isActive ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '10px',
+                    fontWeight: '500'
+                  }}>
                     {tab.count}
                   </span>
                 )}
@@ -334,189 +258,306 @@ function SearchContent() {
           })}
         </div>
 
-        {/* Results Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {activeTab === 'music' && results?.music?.map((track) => (
-            <div key={track.id} className="w-full">
-              <FloatingCard title={track.title || 'Untitled Track'} className="group h-full">
-                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                  {track.cover_art_url ? (
-                    <Image
-                      src={track.cover_art_url}
-                      alt={track.title}
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
-                      <p className="text-gray-400">No cover art</p>
+        {/* Results Grid/List */}
+        {activeTab === 'creators' && results?.creators && (
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '1rem',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            flexDirection: isMobile ? 'column' : 'row'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
+            {results.creators.map((creator: any) => (
+              <Link key={creator.id} href={`/creator/${creator.username}`} style={{ textDecoration: 'none' }}>
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer',
+                  width: isMobile ? '100%' : 'auto'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '1.5rem',
+                      fontWeight: '600'
+                    }}>
+                      {creator.avatar_url ? (
+                        <Image
+                          src={creator.avatar_url}
+                          alt={creator.display_name}
+                          width={60}
+                          height={60}
+                          style={{ borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        creator.display_name?.charAt(0)?.toUpperCase() || 'U'
+                      )}
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                      <Play size={20} className="text-white" />
-                    </button>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>
+                        {creator.display_name}
+                      </h3>
+                      <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                        @{creator.username}
+                      </p>
+                      {creator.bio && (
+                        <p style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                          {creator.bio.length > 100 ? `${creator.bio.substring(0, 100)}...` : creator.bio}
+                        </p>
+                      )}
+                      {creator.location && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem' }}>
+                          <MapPin size={12} color="#9ca3af" />
+                          <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>{creator.location}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <h3 className="font-semibold text-white mb-1 truncate">{track.title}</h3>
-                <p className="text-gray-400 text-sm mb-2">{track.creator?.display_name}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{track.duration}</span>
-                  <div className="flex items-center gap-2">
-                    <button className="text-gray-400 hover:text-red-400 transition-colors">
-                      <Heart size={16} />
-                    </button>
-                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                      <Share2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </FloatingCard>
-            </div>
-          ))}
+              </Link>
+            ))}
+          </div>
+        )}
 
-          {activeTab === 'creators' && results?.creators?.map((creator) => (
-            <div key={creator.id} className="w-full">
-              <FloatingCard title={creator.display_name || 'Unknown Creator'} className="group h-full">
-                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                  {creator.avatar_url ? (
-                    <Image
-                      src={creator.avatar_url}
-                      alt={creator.display_name}
-                      width={60}
-                      height={60}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-full">
-                      <p className="text-gray-400">No avatar</p>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                      <Users size={20} />
-                    </button>
+        {activeTab === 'music' && results?.music && (
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '1rem',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            flexDirection: isMobile ? 'column' : 'row'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
+            {results.music.map((track: any) => (
+              <div key={track.id} style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '12px',
+                padding: '1rem',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                width: isMobile ? '100%' : 'auto'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}>
+                <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                  <div style={{
+                    width: '100%',
+                    height: '200px',
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '2rem'
+                  }}>
+                    {track.cover_art_url ? (
+                      <Image
+                        src={track.cover_art_url}
+                        alt={track.title}
+                        width={200}
+                        height={200}
+                        style={{ borderRadius: '8px', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      '🎵'
+                    )}
                   </div>
+                  <button style={{
+                    position: 'absolute',
+                    bottom: '0.5rem',
+                    right: '0.5rem',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    cursor: 'pointer'
+                  }}>
+                    <Play size={16} fill="currentColor" />
+                  </button>
                 </div>
-                <h3 className="font-semibold text-white mb-1 truncate">{creator.display_name}</h3>
-                <p className="text-gray-400 text-sm mb-2">@{creator.username}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{creator.followers_count} followers</span>
-                  <div className="flex items-center gap-2">
-                    <button className="text-gray-400 hover:text-red-400 transition-colors">
-                      <Heart size={16} />
-                    </button>
-                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                      <Share2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </FloatingCard>
-            </div>
-          ))}
-
-          {activeTab === 'events' && results?.events?.map((event) => (
-            <div key={event.id} className="w-full">
-              <FloatingCard title={event.title || 'Untitled Event'} className="group h-full">
-                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                  {event.image_url ? (
-                    <Image
-                      src={event.image_url}
-                      alt={event.title}
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
-                      <p className="text-gray-400">No event image</p>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                      <Calendar size={20} className="text-white" />
-                    </button>
-                  </div>
-                </div>
-                <h3 className="font-semibold text-white mb-1 truncate">{event.title}</h3>
-                <p className="text-gray-400 text-sm mb-2">{event.formatted_date}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500 flex items-center gap-1">
-                    <MapPin size={14} />
-                    {event.location}
+                <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>
+                  {track.title}
+                </h3>
+                <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  {track.creator?.display_name || 'Unknown Artist'}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                    {track.duration ? formatDuration(track.duration) : '0:00'}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <button className="text-gray-400 hover:text-red-400 transition-colors">
-                      <Heart size={16} />
-                    </button>
-                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                      <Share2 size={16} />
-                    </button>
-                  </div>
+                  <span style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                    {track.play_count ? formatPlayCount(track.play_count) : '0'} plays
+                  </span>
                 </div>
-              </FloatingCard>
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
+        )}
 
-          {activeTab === 'podcasts' && results?.podcasts?.map((podcast) => (
-            <div key={podcast.id} className="w-full">
-              <FloatingCard title={podcast.title || 'Untitled Podcast'} className="group h-full">
-                <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden mb-4">
-                  {podcast.cover_art_url ? (
-                    <Image
-                      src={podcast.cover_art_url}
-                      alt={podcast.title}
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center rounded-lg">
-                      <p className="text-gray-400">No podcast cover art</p>
+        {activeTab === 'events' && results?.events && (
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '1rem',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            flexDirection: isMobile ? 'column' : 'row'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
+            {results.events.map((event: any) => (
+              <div key={event.id} style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '12px',
+                padding: '1rem',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                width: isMobile ? '100%' : 'auto'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <h3 style={{ color: 'white', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
+                    {event.title}
+                  </h3>
+                  <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    {event.description || 'No description available'}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Calendar size={14} color="#9ca3af" />
+                    <span style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                      {new Date(event.event_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <MapPin size={14} color="#9ca3af" />
+                    <span style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                      {event.venue || event.city || 'Location TBD'}
+                    </span>
+                  </div>
+                  {event.organizer && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <User size={14} color="#9ca3af" />
+                      <span style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                        {event.organizer.display_name}
+                      </span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-purple-600 p-3 rounded-full">
-                      <Mic size={20} />
-                    </button>
-                  </div>
                 </div>
-                <h3 className="font-semibold text-white mb-1 truncate">{podcast.title}</h3>
-                <p className="text-gray-400 text-sm mb-2">{podcast.creator?.display_name}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{podcast.duration || 'Unknown duration'}</span>
-                  <div className="flex items-center gap-2">
-                    <button className="text-gray-400 hover:text-red-400 transition-colors">
-                      <Heart size={16} />
-                    </button>
-                    <button className="text-gray-400 hover:text-purple-400 transition-colors">
-                      <Share2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </FloatingCard>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* Load More Button */}
-        {canLoadMore && (
-          <div className="text-center">
-            <button
-              onClick={loadMore}
-              disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin h-4 w-4" />
-                  Loading...
+        {activeTab === 'podcasts' && results?.podcasts && (
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '1rem',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '1rem' : '0',
+            flexDirection: isMobile ? 'column' : 'row'
+          }} className={isMobile ? 'horizontal-scroll' : ''}>
+            {results.podcasts.map((podcast: any) => (
+              <div key={podcast.id} style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '12px',
+                padding: '1rem',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                width: isMobile ? '100%' : 'auto'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(45deg, #F97316, #EC4899)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '1.5rem'
+                  }}>
+                    {podcast.cover_art_url ? (
+                      <Image
+                        src={podcast.cover_art_url}
+                        alt={podcast.title}
+                        width={60}
+                        height={60}
+                        style={{ borderRadius: '8px', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      '🎙️'
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>
+                      {podcast.title}
+                    </h3>
+                    <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                      {podcast.creator?.display_name || 'Unknown Host'}
+                    </p>
+                    {podcast.duration && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Clock size={12} color="#9ca3af" />
+                        <span style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                          {formatDuration(podcast.duration)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                'Load More'
-              )}
-            </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -525,84 +566,58 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      {/* Header */}
-      <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="text-white hover:text-purple-400 transition-colors"
-            >
-              <ArrowLeft size={24} />
-            </Link>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-2xl font-bold text-white">Search Results</h1>
+        </div>
 
-            {/* Search Bar */}
-            <div className="flex-1 max-w-2xl">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
-                  placeholder="Search for music, creators, events..."
-                  className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Filter Button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-3 rounded-lg transition-colors ${showFilters ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
-                }`}
-            >
-              <Sliders size={20} />
-            </button>
+        {/* Search Bar */}
+        <div className="mb-8">
+          <div className="relative max-w-md">
+            <Search size={20} style={{ 
+              position: 'absolute', 
+              left: '12px', 
+              top: '50%', 
+              transform: 'translateY(-50%)', 
+              color: '#9ca3af', 
+              zIndex: 1 
+            }} />
+            <input
+              type="text"
+              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Search creators, music, events, podcasts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch(searchQuery);
+                }
+              }}
+            />
           </div>
         </div>
-      </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <AdvancedFilters
-          categories={categories}
-          genres={genres}
-          locations={locations}
-          dateRanges={dateRanges}
-          priceRanges={priceRanges}
-          sortOptions={sortOptions}
-          selectedCategory={activeTab}
-          selectedGenre={selectedGenre}
-          selectedLocation={selectedLocation}
-          selectedDate={selectedDate}
-          selectedPrice={selectedPrice}
-          sortBy={sortBy}
-          onCategoryChange={setActiveTab}
-          onGenreChange={handleGenreChange}
-          onLocationChange={handleLocationChange}
-          onDateChange={handleDateChange}
-          onPriceChange={handlePriceChange}
-          onSortChange={handleSortChange}
-          onClearFilters={handleClearFilters}
-        />
-      )}
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+        {/* Results */}
         {renderContent()}
       </div>
-
+      
       <Footer />
     </div>
   );
 }
 
-// Main page component with Suspense boundary
-export default function SearchResultsPage() {
+// Main search page component with Suspense
+export default function SearchPage() {
   return (
     <Suspense fallback={<SearchLoading />}>
       <SearchContent />
     </Suspense>
   );
-} 
+}
