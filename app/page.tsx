@@ -42,6 +42,22 @@ export default function HomePage() {
   // Podcasts state
   const [podcasts, setPodcasts] = useState<AudioTrack[]>([]);
   const [isLoadingPodcasts, setIsLoadingPodcasts] = useState(true);
+  
+  // Featured creator state
+  const [featuredCreator, setFeaturedCreator] = useState<{
+    id: string;
+    username: string;
+    display_name: string;
+    bio: string;
+    avatar_url?: string;
+    banner_url?: string;
+    location?: string;
+    country?: string;
+    role: string;
+    created_at: string;
+    updated_at: string;
+  } | null>(null);
+  const [isLoadingFeaturedCreator, setIsLoadingFeaturedCreator] = useState(true);
 
   // Friends activities state
   const [friendsActivities, setFriendsActivities] = useState<Array<{
@@ -235,6 +251,35 @@ export default function HomePage() {
 
     fetchHotCreators();
   }, [personalizedFeed]);
+
+  // Fetch featured creator
+  useEffect(() => {
+    const fetchFeaturedCreator = async () => {
+      try {
+        setIsLoadingFeaturedCreator(true);
+        console.log('⭐ Fetching featured creator...');
+        
+        const response = await fetch('/api/creators/featured?limit=1');
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          const creator = data.data[0];
+          console.log('✅ Featured creator loaded:', creator.display_name, 'Source:', data.source);
+          setFeaturedCreator(creator);
+        } else {
+          console.log('❌ No featured creator available');
+          setFeaturedCreator(null);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching featured creator:', error);
+        setFeaturedCreator(null);
+      } finally {
+        setIsLoadingFeaturedCreator(false);
+      }
+    };
+
+    fetchFeaturedCreator();
+  }, []); // Run once on mount
 
   const handleLikeTrack = async (track: AudioTrack, e: React.MouseEvent) => {
     e.preventDefault();
@@ -673,8 +718,7 @@ export default function HomePage() {
           maxWidth: '100%',
           overflow: 'hidden'
         }}>
-          <Link href="/creator/kwame-asante" style={{ textDecoration: 'none' }}>
-            <div style={{
+          <div style={{
               background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6)), url("https://picsum.photos/800/400?random=hero")',
               backgroundSize: 'cover',
               borderRadius: isMobile ? '10px' : '20px',
@@ -692,18 +736,55 @@ export default function HomePage() {
                 position: 'relative',
                 zIndex: 2
               }}>
-                <h2 className="heading-2 text-display" style={{ 
-                  marginBottom: isMobile ? '0.3rem' : '0.5rem',
-                  color: 'white',
-                  fontSize: isMobile ? '1rem' : 'var(--text-4xl)',
-                  lineHeight: isMobile ? '1.2' : 'var(--leading-tight)'
-                }}>Featured Creator: Kwame Asante</h2>
-                <p className="text-large text-body" style={{ 
-                  color: '#ccc',
-                  marginBottom: isMobile ? '0.5rem' : '1rem',
-                  fontSize: isMobile ? '0.8rem' : 'var(--text-lg)',
-                  lineHeight: isMobile ? '1.3' : 'var(--leading-relaxed)'
-                }}>Afrobeats sensation taking UK by storm!</p>
+                {isLoadingFeaturedCreator ? (
+                  <>
+                    <h2 className="heading-2 text-display" style={{ 
+                      marginBottom: isMobile ? '0.3rem' : '0.5rem',
+                      color: 'white',
+                      fontSize: isMobile ? '1rem' : 'var(--text-4xl)',
+                      lineHeight: isMobile ? '1.2' : 'var(--leading-tight)'
+                    }}>Loading Featured Creator...</h2>
+                    <p className="text-large text-body" style={{ 
+                      color: '#ccc',
+                      marginBottom: isMobile ? '0.5rem' : '1rem',
+                      fontSize: isMobile ? '0.8rem' : 'var(--text-lg)',
+                      lineHeight: isMobile ? '1.3' : 'var(--leading-relaxed)'
+                    }}>Discovering amazing talent...</p>
+                  </>
+                ) : featuredCreator ? (
+                  <>
+                    <h2 className="heading-2 text-display" style={{ 
+                      marginBottom: isMobile ? '0.3rem' : '0.5rem',
+                      color: 'white',
+                      fontSize: isMobile ? '1rem' : 'var(--text-4xl)',
+                      lineHeight: isMobile ? '1.2' : 'var(--leading-tight)'
+                    }}>Featured Creator: {featuredCreator.display_name}</h2>
+                    <p className="text-large text-body" style={{ 
+                      color: '#ccc',
+                      marginBottom: isMobile ? '0.5rem' : '1rem',
+                      fontSize: isMobile ? '0.8rem' : 'var(--text-lg)',
+                      lineHeight: isMobile ? '1.3' : 'var(--leading-relaxed)'
+                    }}>
+                      {featuredCreator.bio || 
+                       `${featuredCreator.location ? `From ${featuredCreator.location}, ` : ''}${featuredCreator.country ? `${featuredCreator.country} ` : ''}creator making waves!`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="heading-2 text-display" style={{ 
+                      marginBottom: isMobile ? '0.3rem' : '0.5rem',
+                      color: 'white',
+                      fontSize: isMobile ? '1rem' : 'var(--text-4xl)',
+                      lineHeight: isMobile ? '1.2' : 'var(--leading-tight)'
+                    }}>Featured Creator: Coming Soon</h2>
+                    <p className="text-large text-body" style={{ 
+                      color: '#ccc',
+                      marginBottom: isMobile ? '0.5rem' : '1rem',
+                      fontSize: isMobile ? '0.8rem' : 'var(--text-lg)',
+                      lineHeight: isMobile ? '1.3' : 'var(--leading-relaxed)'
+                    }}>Amazing creators are joining every day!</p>
+                  </>
+                )}
                 <div style={{ 
                   display: 'flex', 
                   gap: isMobile ? '0.3rem' : '1rem', 
@@ -711,104 +792,187 @@ export default function HomePage() {
                   flexWrap: 'nowrap',
                   justifyContent: isMobile ? 'flex-start' : 'flex-start'
                 }}>
-                  <button 
-                    style={{
-                      background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
-                      color: 'white',
-                      border: 'none',
-                      padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
-                      borderRadius: isMobile ? '15px' : '25px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: isMobile ? '0.7rem' : '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: isMobile ? '0.3rem' : '0.5rem',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-                      transform: 'translateY(0)',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                    }}
-                  >
-                    <Play size={isMobile ? 12 : 16} />
-                    Play Latest
-                  </button>
-                  <button 
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: 'white',
-                      padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
-                      borderRadius: isMobile ? '15px' : '25px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: isMobile ? '0.7rem' : '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: isMobile ? '0.3rem' : '0.5rem',
-                      transition: 'all 0.3s ease',
-                      transform: 'translateY(0)',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <Heart size={isMobile ? 12 : 16} />
-                    Follow
-                  </button>
-                  <button 
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: 'white',
-                      padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
-                      borderRadius: isMobile ? '15px' : '25px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: isMobile ? '0.7rem' : '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: isMobile ? '0.3rem' : '0.5rem',
-                      transition: 'all 0.3s ease',
-                      transform: 'translateY(0)',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <MessageCircle size={isMobile ? 12 : 16} />
-                    Message
-                  </button>
+                  {featuredCreator ? (
+                    <Link href={`/creator/${featuredCreator.username}`} style={{ textDecoration: 'none' }}>
+                      <button 
+                        style={{
+                          background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
+                          color: 'white',
+                          border: 'none',
+                          padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                          borderRadius: isMobile ? '15px' : '25px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: isMobile ? '0.7rem' : '0.9rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: isMobile ? '0.3rem' : '0.5rem',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                          transform: 'translateY(0)',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                        }}
+                      >
+                        <Play size={isMobile ? 12 : 16} />
+                        Play Latest
+                      </button>
+                    </Link>
+                  ) : (
+                    <button 
+                      style={{
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899, #F97316)',
+                        color: 'white',
+                        border: 'none',
+                        padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                        borderRadius: isMobile ? '15px' : '25px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: isMobile ? '0.7rem' : '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isMobile ? '0.3rem' : '0.5rem',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                        transform: 'translateY(0)',
+                        whiteSpace: 'nowrap'
+                      }}
+                      disabled
+                    >
+                      <Play size={isMobile ? 12 : 16} />
+                      Play Latest
+                    </button>
+                  )}
+                  {featuredCreator ? (
+                    <Link href={`/creator/${featuredCreator.username}`} style={{ textDecoration: 'none' }}>
+                      <button 
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: 'white',
+                          padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                          borderRadius: isMobile ? '15px' : '25px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: isMobile ? '0.7rem' : '0.9rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: isMobile ? '0.3rem' : '0.5rem',
+                          transition: 'all 0.3s ease',
+                          transform: 'translateY(0)',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        <Heart size={isMobile ? 12 : 16} />
+                        Follow
+                      </button>
+                    </Link>
+                  ) : (
+                    <button 
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: 'white',
+                        padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                        borderRadius: isMobile ? '15px' : '25px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: isMobile ? '0.7rem' : '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isMobile ? '0.3rem' : '0.5rem',
+                        transition: 'all 0.3s ease',
+                        transform: 'translateY(0)',
+                        whiteSpace: 'nowrap'
+                      }}
+                      disabled
+                    >
+                      <Heart size={isMobile ? 12 : 16} />
+                      Follow
+                    </button>
+                  )}
+                  {featuredCreator ? (
+                    <Link href={`/creator/${featuredCreator.username}`} style={{ textDecoration: 'none' }}>
+                      <button 
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: 'white',
+                          padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                          borderRadius: isMobile ? '15px' : '25px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: isMobile ? '0.7rem' : '0.9rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: isMobile ? '0.3rem' : '0.5rem',
+                          transition: 'all 0.3s ease',
+                          transform: 'translateY(0)',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        <MessageCircle size={isMobile ? 12 : 16} />
+                        Message
+                      </button>
+                    </Link>
+                  ) : (
+                    <button 
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: 'white',
+                        padding: isMobile ? '0.5rem 0.8rem' : '0.75rem 1.5rem',
+                        borderRadius: isMobile ? '15px' : '25px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: isMobile ? '0.7rem' : '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isMobile ? '0.3rem' : '0.5rem',
+                        transition: 'all 0.3s ease',
+                        transform: 'translateY(0)',
+                        whiteSpace: 'nowrap'
+                      }}
+                      disabled
+                    >
+                      <MessageCircle size={isMobile ? 12 : 16} />
+                      Message
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-          </Link>
           <div style={{
             background: isMobile ? 'rgba(255, 255, 255, 0.05)' : 'var(--card-bg)',
             backdropFilter: 'blur(20px)',
