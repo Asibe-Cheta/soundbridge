@@ -12,7 +12,9 @@ import {
   MapPin,
   Users,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Mic,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
@@ -772,8 +774,12 @@ export default function CreatorsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
+                  <Mic size={14} />
                   Genre
                 </label>
                 <select
@@ -800,8 +806,12 @@ export default function CreatorsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
+                  <MapPin size={14} />
                   Location
                 </label>
                 <select
@@ -828,8 +838,12 @@ export default function CreatorsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
+                  <TrendingUp size={14} />
                   Sort By
                 </label>
                 <select
@@ -844,11 +858,11 @@ export default function CreatorsPage() {
                     fontSize: isMobile ? '0.8rem' : '0.9rem'
                   }}
                 >
-                  <option value="hot">🔥 Hot Creators</option>
-                  <option value="followers">👥 Most Followers</option>
-                  <option value="tracks">🎵 Most Tracks</option>
-                  <option value="name">🔤 Name (A-Z)</option>
-                  <option value="created_at">🆕 Newest</option>
+                  <option value="hot">Hot Creators</option>
+                  <option value="followers">Most Followers</option>
+                  <option value="tracks">Most Tracks</option>
+                  <option value="name">Name (A-Z)</option>
+                  <option value="created_at">Newest</option>
                 </select>
               </div>
 

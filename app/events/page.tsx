@@ -28,7 +28,11 @@ import {
   Upload,
   Menu,
   X,
-  Home
+  Home,
+  MapPin,
+  DollarSign,
+  ArrowUpDown,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
@@ -764,9 +768,13 @@ export default function EventsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  🎭 Category
+                  <Mic size={14} />
+                  Category
                 </label>
                 <select
                   value={selectedGenre}
@@ -792,9 +800,13 @@ export default function EventsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  📍 Location
+                  <MapPin size={14} />
+                  Location
                 </label>
                 <select
                   value={selectedLocation}
@@ -820,9 +832,13 @@ export default function EventsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  📅 Date
+                  <Calendar size={14} />
+                  Date
                 </label>
                 <select
                   value={selectedDate}
@@ -848,9 +864,13 @@ export default function EventsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  💰 Price
+                  <DollarSign size={14} />
+                  Price
                 </label>
                 <select
                   value={selectedPrice}
@@ -876,9 +896,13 @@ export default function EventsPage() {
                 <label style={{ 
                   fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
-                  color: '#EC4899' 
+                  color: '#EC4899',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  🔄 Sort By
+                  <ArrowUpDown size={14} />
+                  Sort By
                 </label>
                 <select
                   value={sortBy}
@@ -892,11 +916,11 @@ export default function EventsPage() {
                     fontSize: isMobile ? '0.8rem' : '0.9rem'
                   }}
                 >
-                  <option value="recent">🆕 Most Recent</option>
-                  <option value="upcoming">⏰ Upcoming Soon</option>
-                  <option value="popular">🔥 Most Popular</option>
-                  <option value="price-low">💰 Price: Low to High</option>
-                  <option value="price-high">💰 Price: High to Low</option>
+                  <option value="recent">Most Recent</option>
+                  <option value="upcoming">Upcoming Soon</option>
+                  <option value="popular">Most Popular</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
                 </select>
               </div>
 
