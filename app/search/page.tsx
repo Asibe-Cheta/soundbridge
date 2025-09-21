@@ -339,91 +339,273 @@ function SearchContent() {
         )}
 
         {activeTab === 'music' && results?.music && (
-          <div style={{
-            display: isMobile ? 'flex' : 'grid',
-            gridTemplateColumns: isMobile ? 'none' : 'repeat(auto-fill, minmax(250px, 1fr))',
-            gap: '1rem',
-            overflowX: isMobile ? 'auto' : 'visible',
-            paddingBottom: isMobile ? '1rem' : '0',
-            flexDirection: isMobile ? 'column' : 'row'
-          }} className={isMobile ? 'horizontal-scroll' : ''}>
-            {results.music.map((track: any) => (
-              <div key={track.id} style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: '12px',
-                padding: '1rem',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                width: isMobile ? '100%' : 'auto'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                e.currentTarget.style.transform = 'translateY(0)';
+          isMobile ? (
+            // Mobile: List layout (like creator music page)
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden'
+            }}>
+              {/* Header */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '0.75rem 1rem',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
               }}>
-                <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                  <div style={{
-                    width: '100%',
-                    height: '200px',
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '2rem'
-                  }}>
-                    {track.cover_art_url ? (
-                      <Image
-                        src={track.cover_art_url}
-                        alt={track.title}
-                        width={200}
-                        height={200}
-                        style={{ borderRadius: '8px', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      '🎵'
-                    )}
-                  </div>
-                  <button style={{
-                    position: 'absolute',
-                    bottom: '0.5rem',
-                    right: '0.5rem',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    cursor: 'pointer'
-                  }}>
-                    <Play size={16} fill="currentColor" />
-                  </button>
-                </div>
-                <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>
-                  {track.title}
-                </h3>
-                <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                  {track.creator?.display_name || 'Unknown Artist'}
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#ccc', fontSize: '0.8rem' }}>
-                    {track.duration ? formatDuration(track.duration) : '0:00'}
-                  </span>
-                  <span style={{ color: '#ccc', fontSize: '0.8rem' }}>
-                    {track.play_count ? formatPlayCount(track.play_count) : '0'} plays
-                  </span>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  fontSize: '0.875rem',
+                  color: '#9ca3af'
+                }}>
+                  <div style={{ width: '32px', textAlign: 'center' }}>#</div>
+                  <div style={{ flex: 1 }}>Title</div>
+                  <div style={{ width: '60px', textAlign: 'center' }}>Duration</div>
+                  <div style={{ width: '40px' }}></div>
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Track List */}
+              <div style={{ divide: 'rgba(255, 255, 255, 0.1)' }}>
+                {results.music.map((track: any, index: number) => (
+                  <div
+                    key={track.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      padding: '0.75rem 1rem',
+                      borderBottom: index < results.music.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    {/* Track Number */}
+                    <div style={{ width: '32px', textAlign: 'center', color: '#9ca3af', fontSize: '0.875rem' }}>
+                      {index + 1}
+                    </div>
+
+                    {/* Track Info */}
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      {/* Cover Art */}
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '1rem',
+                        flexShrink: '0'
+                      }}>
+                        {track.cover_art_url ? (
+                          <Image
+                            src={track.cover_art_url}
+                            alt={track.title}
+                            width={40}
+                            height={40}
+                            style={{ borderRadius: '6px', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          '🎵'
+                        )}
+                      </div>
+
+                      {/* Title & Artist */}
+                      <div style={{ flex: 1, minWidth: '0' }}>
+                        <h4 style={{
+                          color: 'white',
+                          fontSize: '0.9rem',
+                          marginBottom: '0.125rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {track.title}
+                        </h4>
+                        <p style={{
+                          color: '#9ca3af',
+                          fontSize: '0.8rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {track.creator?.display_name || 'Unknown Artist'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Duration */}
+                    <div style={{
+                      width: '60px',
+                      textAlign: 'center',
+                      color: '#9ca3af',
+                      fontSize: '0.8rem'
+                    }}>
+                      {track.duration ? formatDuration(track.duration) : '0:00'}
+                    </div>
+
+                    {/* Play Button */}
+                    <button style={{
+                      width: '32px',
+                      height: '32px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                      e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    >
+                      <Play size={14} fill="currentColor" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Desktop: Grid layout (like homepage)
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '1.5rem',
+              padding: '0'
+            }}>
+              {results.music.map((track: any) => (
+                <div key={track.id} style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}>
+                  {/* Cover Art Container */}
+                  <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+                    <div style={{
+                      width: '100%',
+                      height: '160px',
+                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '1.5rem'
+                    }}>
+                      {track.cover_art_url ? (
+                        <Image
+                          src={track.cover_art_url}
+                          alt={track.title}
+                          width={160}
+                          height={160}
+                          style={{ borderRadius: '8px', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Music size={32} />
+                      )}
+                    </div>
+
+                    {/* Play Button */}
+                    <button style={{
+                      position: 'absolute',
+                      bottom: '0.5rem',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '36px',
+                      height: '36px',
+                      background: 'rgba(0, 0, 0, 0.7)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                      e.currentTarget.style.transform = 'translateX(-50%) scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                      e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                    }}
+                    >
+                      <Play size={16} fill="currentColor" />
+                    </button>
+                  </div>
+
+                  {/* Track Info */}
+                  <div style={{ padding: '0 0.25rem' }}>
+                    <h3 style={{
+                      color: 'white',
+                      marginBottom: '0.25rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {track.title}
+                    </h3>
+                    <p style={{
+                      color: '#9ca3af',
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {track.creator?.display_name || 'Unknown Artist'}
+                    </p>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '0.75rem',
+                      color: '#ccc'
+                    }}>
+                      <span>{track.duration ? formatDuration(track.duration) : '0:00'}</span>
+                      <span>{track.play_count ? formatPlayCount(track.play_count) : '0'} plays</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
 
         {activeTab === 'events' && results?.events && (
