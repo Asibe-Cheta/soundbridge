@@ -1098,12 +1098,13 @@ export default function ProfilePage() {
       </main>
     </div>
 
-    {/* Branding Settings Modal */}
-    {showBrandingSettings && user && (
-      <BrandingSettings
-        userId={user.id}
-        onClose={() => setShowBrandingSettings(false)}
-      />
-    )}
+      {/* Branding Settings Modal */}
+      {showBrandingSettings && user && (
+        <BrandingSettings
+          userId={user.id}
+          onClose={() => setShowBrandingSettings(false)}
+        />
+      )}
+    </div>
   );
 }

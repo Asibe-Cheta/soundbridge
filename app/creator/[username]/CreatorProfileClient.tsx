@@ -1005,9 +1005,8 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         </div>
       </div>
 
-        <Footer />
-        </div>
-      </div>
+      <Footer />
+    </div>
     </CustomBranding>
   );
 }
