@@ -8,6 +8,8 @@ import { Footer } from '../../../src/components/layout/Footer';
 import { CreatorProfileSkeleton } from '../../../src/components/ui/Skeleton';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useAudioPlayer } from '../../../src/contexts/AudioPlayerContext';
+import { CustomBranding } from '../../../src/components/branding/CustomBranding';
+import { TipCreator } from '../../../src/components/revenue/TipCreator';
 import { useAvailability } from '../../../src/hooks/useAvailability';
 import {
   getCreatorTracks,
@@ -358,9 +360,10 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+    <CustomBranding userId={creator.id}>
+      <div className="min-h-screen text-white">
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-8">
         {/* Creator Header */}
         <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700 shadow-xl">
           <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
@@ -424,6 +427,14 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                       </>
                     )}
                   </button>
+                  
+                  {/* Tip Creator Button */}
+                  {user && user.id !== creator.id && (
+                    <TipCreator
+                      creatorId={creator.id}
+                      creatorName={creator.display_name || creator.username}
+                    />
+                  )}
 
                   <button className="flex items-center justify-center px-6 py-2 rounded-lg transition-all duration-200 bg-gray-700 text-white border border-gray-600 hover:bg-gray-600 hover:border-gray-500">
                     <Share2 className="h-4 w-4 mr-2" />
@@ -994,7 +1005,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         </div>
       </div>
 
-      <Footer />
-    </div>
+        <Footer />
+        </div>
+      </div>
+    </CustomBranding>
   );
 }

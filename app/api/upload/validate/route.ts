@@ -78,6 +78,41 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Check storage limits
+    const { data: storageCheck } = await supabase
+      .rpc('check_storage_limit', { 
+        user_uuid: user.id, 
+        file_size: file.size 
+      });
+    
+    if (!storageCheck) {
+      return NextResponse.json(
+        { 
+          error: 'Storage limit exceeded',
+          details: 'You have reached your storage limit. Please delete some files or upgrade your plan.'
+        },
+        { status: 413 }
+      );
+    }
+    
+    // Check upload count limits
+    const { data: uploadCheck } = await supabase
+      .rpc('check_upload_count_limit', { 
+        user_uuid: user.id 
+      });
+    
+    if (!uploadCheck) {
+      return NextResponse.json(
+        { 
+          error: 'Upload limit exceeded',
+          details: userTier === 'free' 
+            ? 'You have reached your limit of 3 uploads. Upgrade to Pro for 10 uploads per month.'
+            : 'You have reached your monthly upload limit. Upgrade to Enterprise for unlimited uploads.'
+        },
+        { status: 429 }
+      );
+    }
+    
     // Create validation request
     const validationRequest: UploadValidationRequest = {
       file,

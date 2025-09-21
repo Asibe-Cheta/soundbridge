@@ -5,6 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
+import { BrandingSettings } from '@/src/components/branding/BrandingSettings';
+import { RevenueDashboard } from '@/src/components/revenue/RevenueDashboard';
+import { BankAccountManager } from '@/src/components/revenue/BankAccountManager';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -40,7 +43,9 @@ import {
   Eye,
   Clock3,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Palette,
+  DollarSign
 } from 'lucide-react';
 
 interface ProfileStats {
@@ -236,6 +241,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showBrandingSettings, setShowBrandingSettings] = useState(false);
   const [profileData, setProfileData] = useState({
     displayName: 'Your Name',
     username: 'username',
@@ -726,6 +732,81 @@ export default function ProfilePage() {
     </div>
   );
 
+  const renderBrandingTab = () => (
+    <div className="space-y-6">
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Customize Your Profile Branding</h3>
+          <p className="text-gray-400 text-sm">
+            Customize the look and feel of your creator profile page
+          </p>
+        </div>
+        <div className="card-content">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+              <div>
+                <h4 className="font-medium text-white">Branding Settings</h4>
+                <p className="text-gray-400 text-sm">
+                  Customize colors, logos, and layout for your profile
+                </p>
+              </div>
+              <button
+                onClick={() => setShowBrandingSettings(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2"
+              >
+                <Palette size={16} />
+                <span>Customize</span>
+              </button>
+            </div>
+            
+            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Settings className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-300">Branding Features</h4>
+                  <ul className="mt-2 space-y-1 text-sm text-blue-200">
+                    <li>• Custom color schemes and themes</li>
+                    <li>• Upload your own logo</li>
+                    <li>• Choose from different layout styles</li>
+                    <li>• Control SoundBridge watermark visibility</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRevenueTab = () => (
+    <div className="space-y-6">
+      {/* Revenue Dashboard */}
+      {user && (
+        <RevenueDashboard userId={user.id} />
+      )}
+      
+      {/* Bank Account Management */}
+      {user && (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Bank Account & Payouts</h3>
+            <p className="text-gray-400 text-sm">
+              Manage your bank account for receiving payouts
+            </p>
+          </div>
+          <div className="card-content">
+            <BankAccountManager userId={user.id} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const renderSettingsTab = () => (
     <div className="space-y-6">
       {/* Profile Settings */}
@@ -983,6 +1064,20 @@ export default function ProfilePage() {
             Availability
           </button>
           <button
+            onClick={() => setActiveTab('branding')}
+            className={`tab-button ${activeTab === 'branding' ? 'active' : ''}`}
+          >
+            <Palette size={16} />
+            Branding
+          </button>
+          <button
+            onClick={() => setActiveTab('revenue')}
+            className={`tab-button ${activeTab === 'revenue' ? 'active' : ''}`}
+          >
+            <DollarSign size={16} />
+            Revenue
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
           >
@@ -996,9 +1091,19 @@ export default function ProfilePage() {
           {activeTab === 'overview' && renderOverviewTab()}
           {activeTab === 'analytics' && renderAnalyticsTab()}
           {activeTab === 'availability' && renderAvailabilityTab()}
+          {activeTab === 'branding' && renderBrandingTab()}
+          {activeTab === 'revenue' && renderRevenueTab()}
           {activeTab === 'settings' && renderSettingsTab()}
         </div>
       </main>
     </div>
+
+    {/* Branding Settings Modal */}
+    {showBrandingSettings && user && (
+      <BrandingSettings
+        userId={user.id}
+        onClose={() => setShowBrandingSettings(false)}
+      />
+    )}
   );
 }

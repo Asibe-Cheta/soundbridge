@@ -55,7 +55,8 @@ const VALIDATION_RULES: UploadValidationRules = {
       moderation: 'automated',
       quality: 'standard',
       concurrentUploads: VALIDATION_CONSTANTS.CONCURRENT_UPLOADS.FREE,
-      dailyUploadLimit: VALIDATION_CONSTANTS.DAILY_LIMITS.FREE
+      uploadLimit: VALIDATION_CONSTANTS.UPLOAD_LIMITS.FREE,
+      storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.FREE
     },
     pro: {
       fileSize: { max: VALIDATION_CONSTANTS.FILE_SIZES.PRO_MAX },
@@ -64,7 +65,8 @@ const VALIDATION_RULES: UploadValidationRules = {
       moderation: 'priority',
       quality: 'hd',
       concurrentUploads: VALIDATION_CONSTANTS.CONCURRENT_UPLOADS.PRO,
-      dailyUploadLimit: VALIDATION_CONSTANTS.DAILY_LIMITS.PRO
+      uploadLimit: VALIDATION_CONSTANTS.UPLOAD_LIMITS.PRO,
+      storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.PRO
     },
     enterprise: {
       fileSize: { max: VALIDATION_CONSTANTS.FILE_SIZES.ENTERPRISE_MAX },
@@ -73,7 +75,8 @@ const VALIDATION_RULES: UploadValidationRules = {
       moderation: 'human-ai',
       quality: 'lossless',
       concurrentUploads: VALIDATION_CONSTANTS.CONCURRENT_UPLOADS.ENTERPRISE,
-      dailyUploadLimit: VALIDATION_CONSTANTS.DAILY_LIMITS.ENTERPRISE
+      uploadLimit: VALIDATION_CONSTANTS.UPLOAD_LIMITS.ENTERPRISE,
+      storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.ENTERPRISE
     }
   }
 };

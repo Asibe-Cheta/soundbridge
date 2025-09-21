@@ -56,14 +56,20 @@ export function useUploadValidation(): UseUploadValidationReturn {
     
     console.log('🔍 Starting real audio analysis for:', file.name);
     
-    // Step 1: Basic file validation
-    const maxSize = 100 * 1024 * 1024; // 100MB for free tier
+    // Step 1: Basic file validation - get user tier and limits
+    const userTier = user?.subscription_tier || 'free';
+    const maxSize = userTier === 'free' ? 10 * 1024 * 1024 : 
+                   userTier === 'pro' ? 50 * 1024 * 1024 : 
+                   100 * 1024 * 1024; // enterprise
+    
     if (file.size > maxSize) {
+      const limitMB = (maxSize / (1024 * 1024)).toFixed(0);
       errors.push({
         code: 'FILE_SIZE_EXCEEDED',
-        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the free tier limit of 100MB`,
+        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the ${userTier} tier limit of ${limitMB}MB`,
         severity: 'error',
-        suggestion: 'Upgrade to Pro or Enterprise for larger file uploads'
+        suggestion: userTier === 'free' ? 'Upgrade to Pro for 50MB files or Enterprise for 100MB files' : 
+                   'Upgrade to Enterprise for 100MB files'
       });
     }
     

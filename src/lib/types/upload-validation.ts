@@ -170,9 +170,9 @@ export type ValidationErrorCode = typeof VALIDATION_ERROR_CODES[keyof typeof VAL
 export const VALIDATION_CONSTANTS = {
   // File size limits (in bytes)
   FILE_SIZES: {
-    FREE_MAX: 100 * 1024 * 1024, // 100MB
-    PRO_MAX: 500 * 1024 * 1024, // 500MB
-    ENTERPRISE_MAX: 2 * 1024 * 1024 * 1024, // 2GB
+    FREE_MAX: 10 * 1024 * 1024, // 10MB
+    PRO_MAX: 50 * 1024 * 1024, // 50MB
+    ENTERPRISE_MAX: 100 * 1024 * 1024, // 100MB
     MIN: 1024 * 1024, // 1MB
   },
   
@@ -213,10 +213,17 @@ export const VALIDATION_CONSTANTS = {
     ENTERPRISE: 5,
   },
   
-  // Daily upload limits (undefined = unlimited)
-  DAILY_LIMITS: {
-    FREE: undefined, // unlimited
-    PRO: undefined, // unlimited
+  // Upload limits (undefined = unlimited)
+  UPLOAD_LIMITS: {
+    FREE: 3, // 3 total uploads (lifetime)
+    PRO: 10, // 10 uploads per month
     ENTERPRISE: undefined, // unlimited
+  },
+  
+  // Storage limits (in bytes)
+  STORAGE_LIMITS: {
+    FREE: 100 * 1024 * 1024, // 100MB
+    PRO: 2 * 1024 * 1024 * 1024, // 2GB
+    ENTERPRISE: 10 * 1024 * 1024 * 1024, // 10GB
   }
 } as const;

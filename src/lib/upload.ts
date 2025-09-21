@@ -21,7 +21,7 @@ export const STORAGE_BUCKETS: Record<string, StorageBucket> = {
     id: 'audio-tracks',
     name: 'audio-tracks',
     public: false,
-    fileSizeLimit: 50 * 1024 * 1024, // 50MB
+    fileSizeLimit: 100 * 1024 * 1024, // 100MB (max for enterprise)
     allowedMimeTypes: [
       'audio/mpeg',
       'audio/mp3',
@@ -77,7 +77,7 @@ export const STORAGE_BUCKETS: Record<string, StorageBucket> = {
 };
 
 // File validation functions
-export function validateAudioFile(file: File): AudioValidationResult {
+export function validateAudioFile(file: File, userTier: 'free' | 'pro' | 'enterprise' = 'free'): AudioValidationResult {
   const result: AudioValidationResult = {
     isValid: true,
     errors: [],
@@ -85,11 +85,17 @@ export function validateAudioFile(file: File): AudioValidationResult {
   };
 
   const bucket = STORAGE_BUCKETS['audio-tracks'];
+  
+  // Get tier-specific file size limit
+  const tierLimit = userTier === 'free' ? 10 * 1024 * 1024 : 
+                   userTier === 'pro' ? 50 * 1024 * 1024 : 
+                   100 * 1024 * 1024; // enterprise
 
-  // Check file size
-  if (file.size > bucket.fileSizeLimit) {
+  // Check file size against tier limit
+  if (file.size > tierLimit) {
     result.isValid = false;
-    result.errors.push(`File size must be less than ${bucket.fileSizeLimit / 1024 / 1024}MB`);
+    const limitMB = (tierLimit / (1024 * 1024)).toFixed(0);
+    result.errors.push(`File size must be less than ${limitMB}MB for ${userTier} tier (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
   }
 
   // Check file type

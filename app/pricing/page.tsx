@@ -60,8 +60,9 @@ export default function PricingPage() {
       borderColor: 'border-blue-200/50',
       buttonColor: 'bg-blue-600 hover:bg-blue-700',
       features: [
-        'Unlimited uploads',
-        '100MB file size limit',
+        '3 uploads total',
+        '10MB file size limit',
+        '100MB total storage',
         'Standard processing (2-5 min)',
         'Basic copyright protection',
         'Basic analytics',
@@ -70,7 +71,9 @@ export default function PricingPage() {
         'SoundBridge branding'
       ],
       limitations: [
-        '100MB max file size',
+        '10MB max file size',
+        '100MB total storage',
+        '3 uploads total (lifetime)',
         'Standard processing speed',
         'Basic copyright protection',
         'Basic analytics only',
@@ -89,7 +92,9 @@ export default function PricingPage() {
       buttonColor: 'bg-purple-600 hover:bg-purple-700',
       features: [
         'Everything in Free',
-        '500MB file size limit',
+        '50MB file size limit',
+        '2GB total storage',
+        '10 uploads per month',
         'Priority processing (1-2 min)',
         'Advanced copyright protection',
         'Advanced analytics',
@@ -98,7 +103,6 @@ export default function PricingPage() {
         'Priority support',
         'HD audio quality',
         'Direct fan messaging',
-        'Cross-platform distribution',
         '3 concurrent uploads'
       ],
       limitations: [],
@@ -116,7 +120,9 @@ export default function PricingPage() {
       buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
       features: [
         'Everything in Pro',
-        '2GB file size limit',
+        '100MB file size limit',
+        '10GB total storage',
+        'Unlimited uploads',
         'Instant processing (< 1 min)',
         'AI-powered copyright protection',
         'Human + AI content moderation',
@@ -141,13 +147,13 @@ export default function PricingPage() {
       category: 'Content & Uploads',
       icon: <Music className="h-6 w-6 text-blue-500" />,
       items: [
-        { name: 'Music Tracks', free: 'Unlimited', pro: 'Unlimited', enterprise: 'Unlimited' },
-        { name: 'Podcast Episodes', free: 'Unlimited', pro: 'Unlimited', enterprise: 'Unlimited' },
-        { name: 'Events', free: 'Unlimited', pro: 'Unlimited', enterprise: 'Unlimited' },
-        { name: 'Max File Size', free: '100MB', pro: '500MB', enterprise: '2GB' },
+        { name: 'Music Tracks', free: '3 total', pro: '10/month', enterprise: 'Unlimited' },
+        { name: 'Podcast Episodes', free: '3 total', pro: '10/month', enterprise: 'Unlimited' },
+        { name: 'Events', free: '3 total', pro: '10/month', enterprise: 'Unlimited' },
+        { name: 'Max File Size', free: '10MB', pro: '50MB', enterprise: '100MB' },
         { name: 'Processing Speed', free: 'Standard (2-5 min)', pro: 'Priority (1-2 min)', enterprise: 'Instant (< 1 min)' },
         { name: 'Concurrent Uploads', free: '1', pro: '3', enterprise: '5' },
-        { name: 'Storage Space', free: '1GB', pro: '100GB', enterprise: 'Unlimited' },
+        { name: 'Storage Space', free: '100MB', pro: '2GB', enterprise: '10GB' },
         { name: 'Audio Quality', free: 'Standard', pro: 'HD', enterprise: 'Lossless' }
       ]
     },
