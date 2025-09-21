@@ -41,6 +41,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
           inputRef.current?.focus();
           inputRef.current?.click();
           setShowSuggestions(true);
+          console.log('SearchDropdown: Focus successful via ref');
           onFocusSuccess?.();
         }, 100);
       } else {
@@ -53,6 +54,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
             searchInput.focus();
             searchInput.click();
             setShowSuggestions(true);
+            console.log('SearchDropdown: Focus successful via DOM query');
             onFocusSuccess?.();
           } else {
             console.log('SearchDropdown: Could not find search input');

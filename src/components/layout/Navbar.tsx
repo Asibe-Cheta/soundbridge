@@ -43,11 +43,18 @@ export default function Navbar() {
         console.log('Dispatching global focus event');
         // Dispatch global event to focus search input
         window.dispatchEvent(new CustomEvent('focusSearchInput'));
+        
+        // Close menu after dispatching the event
+        setTimeout(() => {
+          console.log('Closing mobile menu after focus');
+          setIsMobileMenuOpen(false);
+        }, 200);
+        
         setShouldFocusSearch(false);
       };
       
-      // Much longer delay to ensure menu is fully closed and DOM is stable
-      setTimeout(focusSearch, 1000);
+      // Shorter delay since we're not closing menu immediately
+      setTimeout(focusSearch, 300);
     }
   }, [shouldFocusSearch]);
 
@@ -419,7 +426,13 @@ export default function Navbar() {
 
            {/* CENTER - Search Bar */}
            <div className="navbar-center">
-             <SearchDropdown placeholder="Search creators, events, podcasts..." />
+             <SearchDropdown 
+               placeholder="Search creators, events, podcasts..." 
+               onFocusSuccess={() => {
+                 console.log('Search focus successful, closing menu');
+                 setTimeout(() => setIsMobileMenuOpen(false), 100);
+               }}
+             />
            </div>
 
            {/* RIGHT SIDE */}
@@ -801,7 +814,7 @@ export default function Navbar() {
             <div 
               onClick={() => {
                 console.log('Mobile search option clicked');
-                setIsMobileMenuOpen(false);
+                // Don't close menu immediately - let focus handler close it
                 setShouldFocusSearch(true);
               }}
               style={{ 
