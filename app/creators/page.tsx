@@ -395,6 +395,8 @@ export default function CreatorsPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [pagination, setPagination] = useState({ total: 0, limit: 20, offset: 0, hasMore: false });
   const [columnsCount, setColumnsCount] = useState(4); // Number of columns in grid
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
 
   // Mobile detection
   useEffect(() => {
@@ -479,6 +481,35 @@ export default function CreatorsPage() {
     const timeoutId = setTimeout(() => fetchCreators(false), 300);
     return () => clearTimeout(timeoutId);
   }, [fetchCreators]);
+
+  // Fetch search suggestions
+  const fetchSearchSuggestions = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=5`);
+      if (response.ok) {
+        const data = await response.json();
+        const suggestions = data.data?.creators?.map((creator: { display_name?: string; username: string }) => creator.display_name || creator.username) || [];
+        setSearchSuggestions(suggestions.slice(0, 5));
+        setShowSearchSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Error fetching search suggestions:', error);
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+    }
+  }, []);
+
+  // Debounced search suggestions
+  const debouncedSearchSuggestions = useCallback(() => {
+    const timeoutId = setTimeout(() => fetchSearchSuggestions(searchQuery), 200);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, fetchSearchSuggestions]);
 
 
   // Calculate grid dimensions
@@ -569,6 +600,11 @@ export default function CreatorsPage() {
     debouncedFetchCreators();
   }, [searchQuery, selectedGenre, selectedLocation, sortBy, debouncedFetchCreators]);
 
+  // Trigger search suggestions when query changes
+  useEffect(() => {
+    debouncedSearchSuggestions();
+  }, [searchQuery, debouncedSearchSuggestions]);
+
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedGenre('all');
@@ -585,36 +621,172 @@ export default function CreatorsPage() {
       <main className="main-container">
         {/* Search and Filters */}
         <section className="section">
-          <div className="search-filters">
-            <div className="search-bar-container">
-              <Search size={20} style={{ color: '#999' }} />
-              <input
-                type="text"
-                placeholder="Search creators..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
-              />
+          <div className="search-filters" style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '1rem' : '1rem',
+            alignItems: isMobile ? 'stretch' : 'center'
+          }}>
+            <div className="search-bar-container" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              position: 'relative'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: isMobile ? '0.75rem' : '1rem',
+                gap: '0.75rem'
+              }}>
+                <Search size={isMobile ? 18 : 20} style={{ color: '#999', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Search creators by name, username, or bio..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    debouncedSearchSuggestions();
+                  }}
+                  onFocus={() => {
+                    if (searchSuggestions.length > 0) {
+                      setShowSearchSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow clicking on them
+                    setTimeout(() => setShowSearchSuggestions(false), 200);
+                  }}
+                  style={{ 
+                    flex: 1, 
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: 'white', 
+                    outline: 'none',
+                    fontSize: isMobile ? '0.9rem' : '1rem'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSearchSuggestions(false);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#999',
+                      cursor: 'pointer',
+                      padding: '0.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              {/* Search Suggestions Dropdown */}
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'rgba(0, 0, 0, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  marginTop: '0.25rem',
+                  zIndex: 1000,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setSearchQuery(suggestion);
+                        setShowSearchSuggestions(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: isMobile ? '0.9rem' : '1rem',
+                        borderBottom: index < searchSuggestions.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: isMobile ? '0.5rem' : '0.5rem',
+                padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem',
+                fontSize: isMobile ? '0.9rem' : '1rem',
+                whiteSpace: 'nowrap',
+                minWidth: isMobile ? 'auto' : '120px',
+                justifyContent: 'center'
+              }}
             >
-              <Filter size={16} />
-              Filters
+              <Filter size={isMobile ? 16 : 16} />
+              {isMobile ? 'Filters' : 'Filters'}
             </button>
           </div>
 
           {showFilters && (
-            <div className="filters-panel">
-              <div className="filter-group">
-                <label>Genre</label>
+            <div className="filters-panel" style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: isMobile ? '1rem' : '1.5rem',
+              marginTop: '1rem',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+              gap: isMobile ? '1rem' : '1.5rem'
+            }}>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  Genre
+                </label>
                 <select
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   {genres.map((genre) => (
                     <option key={genre.value} value={genre.value}>
@@ -624,12 +796,25 @@ export default function CreatorsPage() {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Location</label>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  Location
+                </label>
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   {locations.map((location) => (
                     <option key={location.value} value={location.value}>
@@ -639,29 +824,53 @@ export default function CreatorsPage() {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Sort By</label>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  Sort By
+                </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   <option value="hot">🔥 Hot Creators</option>
-                  <option value="followers">Followers</option>
-                  <option value="rating">Rating</option>
-                  <option value="tracks">Tracks</option>
-                  <option value="name">Name</option>
+                  <option value="followers">👥 Most Followers</option>
+                  <option value="tracks">🎵 Most Tracks</option>
+                  <option value="name">🔤 Name (A-Z)</option>
+                  <option value="created_at">🆕 Newest</option>
                 </select>
               </div>
 
               {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="btn-secondary"
-                  style={{ width: '100%' }}
-                >
-                  Clear Filters
-                </button>
+                <div style={{ 
+                  gridColumn: isMobile ? '1' : '1 / -1',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginTop: isMobile ? '0.5rem' : '0'
+                }}>
+                  <button
+                    onClick={clearFilters}
+                    className="btn-secondary"
+                    style={{ 
+                      width: isMobile ? '100%' : '200px',
+                      padding: isMobile ? '0.75rem 1rem' : '0.75rem 1.5rem',
+                      fontSize: isMobile ? '0.8rem' : '0.9rem'
+                    }}
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -670,11 +879,27 @@ export default function CreatorsPage() {
         {/* Creators Grid */}
         <section className="section">
           <div className="section-header">
-            <h2 className="section-title" style={{ fontSize: '0.72rem' }}>
-              {loading ? 'Loading creators...' : `${creators.length} of ${pagination.total} Creators Found`}
+            <h2 className="section-title" style={{ 
+              fontSize: isMobile ? '1rem' : '1.25rem',
+              marginBottom: isMobile ? '0.5rem' : '0.75rem'
+            }}>
+              {loading ? (
+                'Searching creators...'
+              ) : searchQuery.trim() ? (
+                `Found ${creators.length} of ${pagination.total} creators matching "${searchQuery}"`
+              ) : hasActiveFilters ? (
+                `Found ${creators.length} of ${pagination.total} creators with current filters`
+              ) : (
+                `Showing ${creators.length} of ${pagination.total} creators`
+              )}
             </h2>
             {pagination.total > 0 && !loading && (
-              <p style={{ fontSize: '0.6rem', color: '#999', marginTop: '0.25rem' }}>
+              <p style={{ 
+                fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                color: '#999', 
+                marginTop: '0.25rem',
+                lineHeight: '1.4'
+              }}>
                 Showing {Math.min(creators.length, pagination.total)} creators
                 {pagination.hasMore && ` • ${pagination.total - creators.length} more available`}
               </p>
