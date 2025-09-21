@@ -35,6 +35,7 @@ interface Creator {
   location?: string;
   is_verified: boolean;
   isFollowing: boolean;
+  avatar_url?: string;
 }
 
 interface VirtualCreatorItemProps {
@@ -74,16 +75,19 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
             width: '70px',
             height: '70px',
             borderRadius: '50%',
-            background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+            background: creator.avatar_url ? `url(${creator.avatar_url})` : 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
             fontWeight: '600',
             fontSize: '1.5rem',
-            margin: '0 auto 0.75rem'
+            margin: '0 auto 0.75rem',
+            border: '2px solid rgba(255, 255, 255, 0.1)'
           }}>
-            {creator.display_name.charAt(0)}
+            {!creator.avatar_url && creator.display_name.charAt(0)}
           </div>
 
           {/* Verified Badge */}
@@ -210,6 +214,174 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
   );
 };
 
+// Mobile list item component for Instagram-style layout
+interface MobileCreatorItemProps {
+  creator: Creator;
+  handleFollow: (creatorId: string) => void;
+}
+
+const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) => {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0.75rem',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      gap: '0.75rem'
+    }}>
+      {/* Profile Picture */}
+      <div style={{
+        width: '50px',
+        height: '50px',
+        borderRadius: '50%',
+        background: creator.avatar_url ? `url(${creator.avatar_url})` : 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: '600',
+        fontSize: '1.2rem',
+        flexShrink: 0,
+        position: 'relative',
+        border: '2px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        {!creator.avatar_url && creator.display_name.charAt(0)}
+        {/* Verified Badge */}
+        {creator.is_verified && (
+          <div style={{
+            position: 'absolute',
+            bottom: '-2px',
+            right: '-2px',
+            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+            color: 'white',
+            borderRadius: '50%',
+            width: '18px',
+            height: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.7rem',
+            border: '2px solid #000'
+          }}>
+            ✓
+          </div>
+        )}
+      </div>
+
+      {/* Creator Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+          <h3 style={{ 
+            fontSize: '0.9rem', 
+            fontWeight: '600', 
+            color: 'white',
+            margin: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {creator.display_name}
+          </h3>
+        </div>
+        
+        {/* Followed by info */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem',
+          marginBottom: '0.25rem'
+        }}>
+          <span style={{ 
+            color: '#999', 
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem'
+          }}>
+            <Users size={12} />
+            {creator.followers_count} followers
+          </span>
+          {creator.location && (
+            <span style={{ 
+              color: '#999', 
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}>
+              <MapPin size={12} />
+              {creator.location.length > 15 ? creator.location.substring(0, 15) + '...' : creator.location}
+            </span>
+          )}
+        </div>
+        
+        {/* Bio */}
+        {creator.bio && (
+          <p style={{ 
+            color: '#ccc', 
+            fontSize: '0.75rem', 
+            margin: 0,
+            lineHeight: '1.3',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical' as const
+          }}>
+            {creator.bio}
+          </p>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleFollow(creator.id);
+          }}
+          style={{
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.8rem',
+            transition: 'all 0.2s ease',
+            background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
+            color: 'white',
+            ...(creator.isFollowing && { border: '1px solid rgba(255, 255, 255, 0.2)' })
+          }}
+        >
+          {creator.isFollowing ? 'Following' : 'Follow'}
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          style={{
+            padding: '0.5rem',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            background: 'transparent',
+            color: '#999',
+            fontSize: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function CreatorsPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -220,8 +392,19 @@ export default function CreatorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creators, setCreators] = useState<Creator[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const [pagination, setPagination] = useState({ total: 0, limit: 20, offset: 0, hasMore: false });
   const [columnsCount, setColumnsCount] = useState(4); // Number of columns in grid
+
+  // Mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch creators function - supports both initial load and pagination
   const fetchCreators = useCallback(async (loadMore = false) => {
@@ -532,42 +715,59 @@ export default function CreatorsPage() {
             </div>
           ) : (
             <>
-              {/* Virtual Grid Container */}
-              <div style={{
-                width: '100%',
-                height: `${CONTAINER_HEIGHT}px`,
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}>
-                <AutoSizer>
-                  {({ height, width }) => {
-                    // Recalculate columns based on actual container width
-                    const actualColumns = calculateColumns(width);
-                    if (actualColumns !== columnsCount) {
-                      setColumnsCount(actualColumns);
-                    }
-                    
-                    return (
-                      <Grid
-                        columnCount={columnsCount}
-                        columnWidth={(width - GRID_GAP) / columnsCount}
-                        height={height}
-                        rowCount={rowCount}
-                        rowHeight={DESKTOP_CARD_HEIGHT}
-                        width={width}
-                        itemData={{
-                          creators,
-                          columnsCount,
-                          handleFollow
-                        }}
-                      >
-                        {VirtualCreatorItem}
-                      </Grid>
-                    );
-                  }}
-                </AutoSizer>
-              </div>
+              {/* Mobile List View */}
+              {isMobile ? (
+                <div style={{
+                  width: '100%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  overflow: 'hidden'
+                }}>
+                  {creators.map((creator) => (
+                    <Link key={creator.id} href={`/creator/${creator.username}`} style={{ textDecoration: 'none' }}>
+                      <MobileCreatorItem creator={creator} handleFollow={handleFollow} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                /* Desktop Grid View */
+                <div style={{
+                  width: '100%',
+                  height: `${CONTAINER_HEIGHT}px`,
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  overflow: 'hidden'
+                }}>
+                  <AutoSizer>
+                    {({ height, width }) => {
+                      // Recalculate columns based on actual container width
+                      const actualColumns = calculateColumns(width);
+                      if (actualColumns !== columnsCount) {
+                        setColumnsCount(actualColumns);
+                      }
+                      
+                      return (
+                        <Grid
+                          columnCount={columnsCount}
+                          columnWidth={(width - GRID_GAP) / columnsCount}
+                          height={height}
+                          rowCount={rowCount}
+                          rowHeight={DESKTOP_CARD_HEIGHT}
+                          width={width}
+                          itemData={{
+                            creators,
+                            columnsCount,
+                            handleFollow
+                          }}
+                        >
+                          {VirtualCreatorItem}
+                        </Grid>
+                      );
+                    }}
+                  </AutoSizer>
+                </div>
+              )}
 
               {/* End of Results Indicator */}
               {!pagination.hasMore && creators.length > 0 && (

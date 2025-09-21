@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward } from 'lucide-react';
@@ -32,7 +32,17 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
     bio: ''
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -129,40 +139,55 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.5rem' }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 Display Name *
               </label>
               <input
                 type="text"
                 value={formData.displayName}
                 onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-700 text-white"
+                style={{
+                  padding: isMobile ? '0.75rem' : '1rem',
+                  fontSize: isMobile ? '0.9rem' : '1rem'
+                }}
                 placeholder="How should people know you?"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 Profile Picture
               </label>
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center" style={{ gap: isMobile ? '0.75rem' : '1rem' }}>
+                <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center" style={{
+                  width: isMobile ? '48px' : '64px',
+                  height: isMobile ? '48px' : '64px'
+                }}>
                   {formData.avatar ? (
                     <img
                       src={URL.createObjectURL(formData.avatar)}
                       alt="Preview"
-                      className="w-16 h-16 rounded-full object-cover"
+                      className="rounded-full object-cover"
+                      style={{
+                        width: isMobile ? '48px' : '64px',
+                        height: isMobile ? '48px' : '64px'
+                      }}
                     />
                   ) : (
-                    <Upload className="h-6 w-6 text-white" />
+                    <Upload className="text-white" size={isMobile ? 18 : 24} />
                   )}
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  className="border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors text-white"
+                  style={{
+                    padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 1rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   Choose Photo
                 </button>
@@ -180,25 +205,29 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
 
       case 1:
         return (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1rem' }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 Where are you based?
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2" style={{ gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)' }}>
                 {locations.map((location) => (
                   <button
                     key={location}
                     onClick={() => setFormData(prev => ({ ...prev, location }))}
-                    className={`p-3 text-left border rounded-lg transition-colors ${
+                    className={`text-left border rounded-lg transition-colors ${
                       formData.location === location
-                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-900 dark:text-white'
+                        ? 'border-red-500 bg-red-900/20 text-red-300'
+                        : 'border-gray-600 hover:border-gray-500 text-white'
                     }`}
+                    style={{
+                      padding: isMobile ? '0.75rem' : '0.75rem',
+                      fontSize: isMobile ? '0.8rem' : '0.9rem'
+                    }}
                   >
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4" />
-                      <span className="text-sm">{location}</span>
+                    <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem' }}>
+                      <MapPin size={isMobile ? 14 : 16} />
+                      <span>{location}</span>
                     </div>
                   </button>
                 ))}
@@ -209,12 +238,12 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
 
       case 2:
         return (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1rem' }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 What genres do you love? (Select all that apply)
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid gap-2" style={{ gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)' }}>
                 {genres.map((genre) => (
                   <button
                     key={genre}
@@ -260,24 +289,31 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4" style={{ paddingTop: isMobile ? '1rem' : '8rem' }}>
       <div 
-        className="relative w-full max-w-4xl mx-auto max-h-[75vh] overflow-y-auto"
+        className="relative w-full mx-auto overflow-y-auto"
         style={{
+          maxWidth: isMobile ? '100%' : '56rem',
+          maxHeight: isMobile ? '90vh' : '75vh',
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '20px',
+          borderRadius: isMobile ? '16px' : '20px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center justify-between border-b border-white/10" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
           <div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="font-bold text-white" style={{
+              fontSize: isMobile ? '1.1rem' : '1.25rem',
+              marginBottom: isMobile ? '0.25rem' : '0'
+            }}>
               {steps[currentStep].title}
             </h2>
-            <p className="text-white/70 text-sm">
+            <p className="text-white/70" style={{
+              fontSize: isMobile ? '0.8rem' : '0.875rem'
+            }}>
               {steps[currentStep].description}
             </p>
           </div>
@@ -285,30 +321,33 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="h-5 w-5 text-white/70 hover:text-white" strokeWidth={2} />
+            <X className="text-white/70 hover:text-white" size={isMobile ? 18 : 20} strokeWidth={2} />
           </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white/70">
+        <div style={{ padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: isMobile ? '0.5rem' : '0.5rem' }}>
+            <span className="text-white/70" style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
               Step {currentStep + 1} of {steps.length}
             </span>
-            <span className="text-sm text-white/70">
+            <span className="text-white/70" style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
               {Math.round(((currentStep + 1) / steps.length) * 100)}%
             </span>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-2">
+          <div className="w-full bg-white/10 rounded-full" style={{ height: isMobile ? '4px' : '8px' }}>
             <div
-              className="bg-gradient-to-r from-red-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              className="bg-gradient-to-r from-red-500 to-pink-500 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${((currentStep + 1) / steps.length) * 100}%`,
+                height: isMobile ? '4px' : '8px'
+              }}
             />
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 pb-4">
+        <div style={{ padding: isMobile ? '1rem' : '1.5rem', paddingBottom: isMobile ? '0.5rem' : '1rem' }}>
           {renderStepContent()}
         </div>
 

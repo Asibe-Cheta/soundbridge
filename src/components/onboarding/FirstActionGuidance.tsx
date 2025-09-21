@@ -14,6 +14,16 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
   const { onboardingState, setFirstActionCompleted, completeOnboarding } = useOnboarding();
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -109,24 +119,33 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-32">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4" style={{ paddingTop: isMobile ? '1rem' : '8rem' }}>
       <div 
-        className="relative w-full max-w-4xl mx-auto max-h-[75vh] overflow-y-auto"
+        className="relative w-full mx-auto overflow-y-auto"
         style={{
+          maxWidth: isMobile ? '100%' : '56rem',
+          maxHeight: isMobile ? '90vh' : '75vh',
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '20px',
+          borderRadius: isMobile ? '16px' : '20px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center justify-between border-b border-white/10" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
           <div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="font-bold text-white" style={{
+              fontSize: isMobile ? '1.3rem' : '1.5rem',
+              marginBottom: isMobile ? '0.25rem' : '0.25rem',
+              lineHeight: isMobile ? '1.3' : '1.1'
+            }}>
               {content.title}
             </h2>
-            <p className="text-white/70 mt-1">
+            <p className="text-white/70" style={{
+              fontSize: isMobile ? '0.9rem' : '1rem',
+              lineHeight: '1.6'
+            }}>
               {content.description}
             </p>
           </div>
@@ -134,49 +153,73 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <X className="h-5 w-5 text-white/70 hover:text-white" strokeWidth={2} />
+            <X className="text-white/70 hover:text-white" size={isMobile ? 18 : 20} strokeWidth={2} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
           {showCelebration ? (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mb-4">
-                <Sparkles className="h-10 w-10 text-white" />
+            <div className="text-center" style={{ padding: isMobile ? '2rem 0' : '2rem 0' }}>
+              <div className="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mb-4" style={{
+                width: isMobile ? '60px' : '80px',
+                height: isMobile ? '60px' : '80px'
+              }}>
+                <Sparkles className="text-white" size={isMobile ? 24 : 40} />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h3 className="font-bold text-white mb-2" style={{
+                fontSize: isMobile ? '1.3rem' : '1.5rem',
+                lineHeight: isMobile ? '1.3' : '1.1'
+              }}>
                 Awesome
               </h3>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-gray-300" style={{
+                fontSize: isMobile ? '0.9rem' : '1rem',
+                lineHeight: '1.6'
+              }}>
                 You're all set! Welcome to the SoundBridge community.
               </p>
             </div>
           ) : (
             <>
               {/* Action Button */}
-              <div className="text-center mb-8">
+              <div className="text-center" style={{ marginBottom: isMobile ? '1.5rem' : '2rem' }}>
                 <button
                   onClick={handleActionClick}
-                  className={`inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r ${content.color} text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200`}
+                  className={`inline-flex items-center bg-gradient-to-r ${content.color} text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200`}
+                  style={{
+                    gap: isMobile ? '0.5rem' : '0.75rem',
+                    padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
+                    fontSize: isMobile ? '0.9rem' : '1.125rem'
+                  }}
                 >
-                  <Icon className="h-6 w-6" />
-                  <span className="text-lg font-semibold">{content.action}</span>
-                  <ArrowRight className="h-5 w-5" />
+                  <Icon size={isMobile ? 18 : 24} />
+                  <span className="font-semibold">{content.action}</span>
+                  <ArrowRight size={isMobile ? 16 : 20} />
                 </button>
               </div>
 
               {/* Tips */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <div className="bg-gray-700 rounded-xl" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
+                <h3 className="font-semibold text-white mb-4 flex items-center" style={{
+                  fontSize: isMobile ? '1rem' : '1.125rem',
+                  gap: isMobile ? '0.5rem' : '0.5rem'
+                }}>
+                  <Lightbulb className="text-yellow-500" size={isMobile ? 16 : 20} />
                   Pro Tips
                 </h3>
-                <ul className="space-y-3">
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.75rem' : '0.75rem' }}>
                   {content.tips.map((tip, index) => (
-                    <li key={index} className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full mt-2 flex-shrink-0" />
-                      <span className="text-gray-700 dark:text-gray-300 text-sm">
+                    <li key={index} className="flex items-start" style={{ gap: isMobile ? '0.75rem' : '0.75rem' }}>
+                      <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex-shrink-0" style={{
+                        width: isMobile ? '6px' : '8px',
+                        height: isMobile ? '6px' : '8px',
+                        marginTop: isMobile ? '6px' : '8px'
+                      }} />
+                      <span className="text-gray-300" style={{
+                        fontSize: isMobile ? '0.8rem' : '0.875rem',
+                        lineHeight: '1.5'
+                      }}>
                         {tip}
                       </span>
                     </li>
