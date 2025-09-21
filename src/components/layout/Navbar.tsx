@@ -785,14 +785,18 @@ export default function Navbar() {
             <div 
               onClick={() => {
                 setIsMobileMenuOpen(false);
-                // Focus on the search input
+                // Focus on the search input with a longer delay to ensure menu is closed
                 setTimeout(() => {
                   const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
                   if (searchInput) {
+                    // Make sure the search input is visible and focusable
+                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     searchInput.focus();
                     searchInput.click();
+                    // Trigger input event to show dropdown
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
                   }
-                }, 100);
+                }, 300);
               }}
               style={{ 
                 textDecoration: 'none', 

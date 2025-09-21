@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useAudioPlayer } from '../../src/contexts/AudioPlayerContext';
 import { Footer } from '../../src/components/layout/Footer';
 import {
   Search,
@@ -14,6 +15,7 @@ import {
   Calendar,
   Mic,
   Play,
+  Pause,
   Heart,
   Share2,
   ArrowLeft,
@@ -57,6 +59,9 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Audio player integration
+  const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
 
   // Mobile responsiveness detection
   useEffect(() => {
@@ -135,6 +140,26 @@ function SearchContent() {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
+  };
+
+  // Handle track playback
+  const handlePlayTrack = (track: any) => {
+    console.log('🎵 handlePlayTrack called with:', track);
+    
+    // Convert track data to AudioTrack format
+    const audioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.display_name || track.creator?.name || 'Unknown Artist',
+      album: '',
+      duration: track.duration || 0,
+      artwork: track.cover_art_url || '',
+      url: track.file_url || track.url || '',
+      liked: false
+    };
+    
+    console.log('🎵 Converted to AudioTrack:', audioTrack);
+    playTrack(audioTrack);
   };
 
   const renderContent = () => {
@@ -384,8 +409,9 @@ function SearchContent() {
                     onClick={() => {
                       // Navigate to track page or play track
                       console.log('Row clicked:', track.title);
-                      // Navigate to track detail page
-                      router.push(`/track/${track.id}`);
+                      // For now, just play the track instead of navigating to non-existent page
+                      // TODO: Create track detail pages and enable navigation
+                      handlePlayTrack(track);
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
@@ -479,10 +505,8 @@ function SearchContent() {
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent row click
                         console.log('Play button clicked:', track.title);
-                        // Play the track
-                        // You can integrate with your audio player context here
-                        // For now, we'll just show an alert
-                        alert(`Playing: ${track.title} by ${track.creator?.display_name || 'Unknown Artist'}`);
+                        // Play the track using proper audio player
+                        handlePlayTrack(track);
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -493,7 +517,11 @@ function SearchContent() {
                         e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
-                      <Play size={14} fill="currentColor" />
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <Pause size={14} fill="currentColor" />
+                      ) : (
+                        <Play size={14} fill="currentColor" />
+                      )}
                     </button>
                   </div>
                 ))}
@@ -520,8 +548,9 @@ function SearchContent() {
                 onClick={() => {
                   // Navigate to track page or play track
                   console.log('Card clicked:', track.title);
-                  // Navigate to track detail page
-                  router.push(`/track/${track.id}`);
+                  // For now, just play the track instead of navigating to non-existent page
+                  // TODO: Create track detail pages and enable navigation
+                  handlePlayTrack(track);
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
@@ -583,10 +612,8 @@ function SearchContent() {
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent card click
                         console.log('Play button clicked:', track.title);
-                        // Play the track
-                        // You can integrate with your audio player context here
-                        // For now, we'll just show an alert
-                        alert(`Playing: ${track.title} by ${track.creator?.display_name || 'Unknown Artist'}`);
+                        // Play the track using proper audio player
+                        handlePlayTrack(track);
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
@@ -597,7 +624,11 @@ function SearchContent() {
                         e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
                       }}
                     >
-                      <Play size={16} fill="currentColor" />
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <Pause size={16} fill="currentColor" />
+                      ) : (
+                        <Play size={16} fill="currentColor" />
+                      )}
                     </button>
                   </div>
 
