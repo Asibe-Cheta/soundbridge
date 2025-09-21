@@ -8,6 +8,8 @@ import type {
   TrackUploadData
 } from './types/upload';
 import { copyrightService } from './copyright-service';
+import type { AudioQualitySettings } from './types/audio-quality';
+import { audioProcessingService } from './audio-processing-service';
 
 // Audio upload service for SoundBridge
 export class AudioUploadService {
@@ -260,11 +262,26 @@ export class AudioUploadService {
     genre?: string;
     tags?: string[];
     is_public: boolean;
+    // Audio quality fields
+    audioQuality?: string;
+    bitrate?: number;
+    sampleRate?: number;
+    channels?: number;
+    codec?: string;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
+      const insertData = {
+        ...trackData,
+        audio_quality: trackData.audioQuality || 'standard',
+        bitrate: trackData.bitrate || 128,
+        sample_rate: trackData.sampleRate || 44100,
+        channels: trackData.channels || 2,
+        codec: trackData.codec || 'mp3'
+      };
+      
       const { data, error } = await this.supabase
         .from('audio_tracks')
-        .insert([trackData])
+        .insert([insertData])
         .select()
         .single();
 
@@ -304,16 +321,42 @@ export class AudioUploadService {
     }
   }
 
-  // Complete upload process with copyright checking
+  // Complete upload process with copyright checking and quality processing
   async uploadTrack(
     trackData: TrackUploadData,
     userId: string,
-    onProgress?: (type: 'audio' | 'cover', progress: UploadProgress) => void
+    qualitySettings?: AudioQualitySettings,
+    onProgress?: (type: 'audio' | 'cover' | 'processing', progress: UploadProgress) => void
   ): Promise<{ success: boolean; trackId?: string; error?: any }> {
     try {
-      // Upload audio file
+      let processedFile = trackData.audioFile.file;
+      
+      // Process audio for quality if settings provided
+      if (qualitySettings) {
+        console.log('🎵 Processing audio for quality:', qualitySettings.description);
+        
+        const processingResult = await audioProcessingService.processAudio({
+          inputFile: trackData.audioFile.file,
+          targetQuality: qualitySettings,
+          onProgress: (progress) => onProgress?.('processing', {
+            stage: 'processing',
+            progress,
+            message: `Processing audio to ${qualitySettings.description}...`,
+            canCancel: false
+          })
+        });
+        
+        if (processingResult.success && processingResult.processedFile) {
+          processedFile = processingResult.processedFile;
+          console.log('✅ Audio processing completed');
+        } else {
+          console.warn('⚠️ Audio processing failed, using original file:', processingResult.error);
+        }
+      }
+      
+      // Upload audio file (processed or original)
       const audioResult = await this.uploadAudioFile(
-        trackData.audioFile.file,
+        processedFile,
         userId,
         (progress) => onProgress?.('audio', progress)
       );
@@ -356,7 +399,13 @@ export class AudioUploadService {
         duration: (trackData.audioFile.metadata as AudioMetadata)?.duration || 0,
         genre: trackData.genre,
         tags: trackData.tags,
-        is_public: trackData.privacy === 'public'
+        is_public: trackData.privacy === 'public',
+        // Audio quality information
+        audioQuality: qualitySettings?.level || 'standard',
+        bitrate: qualitySettings?.bitrate || 128,
+        sampleRate: qualitySettings?.sampleRate || 44100,
+        channels: qualitySettings?.channels || 2,
+        codec: qualitySettings?.codec || 'mp3'
       });
 
       if (!dbResult.success) {

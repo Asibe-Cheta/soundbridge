@@ -200,6 +200,17 @@ export default function PricingPage() {
       ]
     },
     {
+      category: 'Distribution & Export',
+      icon: <Globe className="h-6 w-6 text-orange-500" />,
+      items: [
+        { name: 'Export Tools', free: '✓', pro: '✓', enterprise: '✓' },
+        { name: 'Distribution Guides', free: '✓', pro: '✓', enterprise: '✓' },
+        { name: 'Cross-Platform Distribution', free: 'Coming Soon', pro: 'Coming Soon', enterprise: 'Coming Soon' },
+        { name: 'Bulk Export', free: '✗', pro: '✓', enterprise: '✓' },
+        { name: 'API Integration', free: '✗', pro: '✗', enterprise: '✓' }
+      ]
+    },
+    {
       category: 'Support & Collaboration',
       icon: <Users className="h-6 w-6 text-indigo-500" />,
       items: [

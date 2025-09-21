@@ -8,6 +8,8 @@ import { ImageUpload } from '../../src/components/ui/ImageUpload';
 import Image from 'next/image';
 import { useAudioUpload } from '../../src/hooks/useAudioUpload';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { AudioQualitySelector } from '../../src/components/upload/AudioQualitySelector';
+import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types/audio-quality';
 import {
   Upload,
   Music,
@@ -64,6 +66,10 @@ export default function UnifiedUploadPage() {
   const [episodeNumber, setEpisodeNumber] = useState('');
   const [podcastCategory, setPodcastCategory] = useState('');
 
+  // Audio quality states
+  const [selectedQuality, setSelectedQuality] = useState<AudioQualitySettings | null>(null);
+  const [userTier, setUserTier] = useState<AudioQualityTier>('free');
+
   // Validation modal states
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -71,13 +77,33 @@ export default function UnifiedUploadPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if mobile on mount
+  // Check if mobile on mount and load user tier
   React.useEffect(() => {
     setIsMobile(window.innerWidth < 768);
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
+    
+    // Load user tier for quality selection
+    if (user) {
+      loadUserTier();
+    }
+    
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [user]);
+
+  // Load user tier for quality selection
+  const loadUserTier = async () => {
+    try {
+      const response = await fetch('/api/user/subscription');
+      if (response.ok) {
+        const data = await response.json();
+        setUserTier(data.tier || 'free');
+      }
+    } catch (error) {
+      console.error('Failed to load user tier:', error);
+      setUserTier('free');
+    }
+  };
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -284,7 +310,7 @@ export default function UnifiedUploadPage() {
         })
       };
 
-      const success = await uploadActions.uploadTrack(trackData);
+      const success = await uploadActions.uploadTrack(trackData, selectedQuality);
       
       if (success) {
         // Reset form
@@ -623,6 +649,19 @@ export default function UnifiedUploadPage() {
               </div>
             </div>
           </div>
+
+          {/* Audio Quality Selection */}
+          {uploadState.audioFile && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <AudioQualitySelector
+                userTier={userTier}
+                selectedQuality={selectedQuality}
+                onQualityChange={setSelectedQuality}
+                audioFile={uploadState.audioFile}
+                duration={uploadState.audioMetadata?.duration}
+              />
+            </div>
+          )}
 
           {/* Privacy Settings */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">

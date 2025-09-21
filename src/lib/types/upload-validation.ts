@@ -37,6 +37,8 @@ export interface UploadTierRules {
   quality: 'standard' | 'hd' | 'lossless';
   concurrentUploads: number;
   dailyUploadLimit?: number; // undefined = unlimited
+  uploadLimit?: number; // undefined = unlimited
+  storageLimit?: number; // in bytes
 }
 
 export interface UploadValidationResult {

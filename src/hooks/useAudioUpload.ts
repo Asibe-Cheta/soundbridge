@@ -2,14 +2,17 @@ import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { audioUploadService } from '../lib/upload-service';
 import type { UploadFile, TrackUploadData } from '../lib/types/upload';
+import type { AudioQualitySettings } from '../lib/types/audio-quality';
 
 export interface UploadState {
   audioFile: UploadFile | null;
   coverArtFile: UploadFile | null;
+  audioMetadata?: { duration: number };
   isUploading: boolean;
   uploadProgress: {
     audio: number;
     cover: number;
+    processing: number;
   };
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error';
   error: string | null;
@@ -19,7 +22,7 @@ export interface UploadState {
 export interface UploadActions {
   setAudioFile: (file: File | null) => void;
   setCoverArtFile: (file: File | null) => void;
-  uploadTrack: (trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>) => Promise<boolean>;
+  uploadTrack: (trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>, qualitySettings?: AudioQualitySettings) => Promise<boolean>;
   cancelUpload: () => void;
   resetUpload: () => void;
   validateFiles: () => { isValid: boolean; errors: string[] };
@@ -30,10 +33,12 @@ export function useAudioUpload(): [UploadState, UploadActions] {
   const [state, setState] = useState<UploadState>({
     audioFile: null,
     coverArtFile: null,
+    audioMetadata: undefined,
     isUploading: false,
     uploadProgress: {
       audio: 0,
-      cover: 0
+      cover: 0,
+      processing: 0
     },
     uploadStatus: 'idle',
     error: null,
@@ -44,9 +49,32 @@ export function useAudioUpload(): [UploadState, UploadActions] {
 
   const setAudioFile = useCallback((file: File | null) => {
     if (!file) {
-      setState(prev => ({ ...prev, audioFile: null }));
+      setState(prev => ({ ...prev, audioFile: null, audioMetadata: undefined }));
       return;
     }
+
+    // Extract audio metadata for quality selection
+    const extractMetadata = () => {
+      const audio = new Audio();
+      const url = URL.createObjectURL(file);
+      
+      audio.addEventListener('loadedmetadata', () => {
+        URL.revokeObjectURL(url);
+        setState(prev => ({
+          ...prev,
+          audioMetadata: { duration: Math.round(audio.duration) }
+        }));
+      });
+      
+      audio.addEventListener('error', () => {
+        URL.revokeObjectURL(url);
+        console.warn('Could not extract audio metadata');
+      });
+      
+      audio.src = url;
+    };
+
+    extractMetadata();
 
     // Validate audio file
     const validation = audioUploadService.validateAudioFile(file);
@@ -113,7 +141,8 @@ export function useAudioUpload(): [UploadState, UploadActions] {
   }, []);
 
   const uploadTrack = useCallback(async (
-    trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>
+    trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>,
+    qualitySettings?: AudioQualitySettings
   ): Promise<boolean> => {
     if (!user) {
       setState(prev => ({
@@ -142,7 +171,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       uploadStatus: 'uploading',
       error: null,
       successMessage: null,
-      uploadProgress: { audio: 0, cover: 0 }
+      uploadProgress: { audio: 0, cover: 0, processing: 0 }
     }));
 
     try {
@@ -155,12 +184,13 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       const result = await audioUploadService.uploadTrack(
         completeTrackData,
         user.id,
+        qualitySettings,
         (type, progress) => {
           setState(prev => ({
             ...prev,
             uploadProgress: {
               ...prev.uploadProgress,
-              [type]: progress.percentage
+              [type]: progress.progress || progress.percentage || 0
             }
           }));
         }
@@ -172,7 +202,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
           isUploading: false,
           uploadStatus: 'success',
           successMessage: 'Track uploaded successfully!',
-          uploadProgress: { audio: 100, cover: 100 }
+          uploadProgress: { audio: 100, cover: 100, processing: 100 }
         }));
         return true;
       } else {
@@ -204,7 +234,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       ...prev,
       isUploading: false,
       uploadStatus: 'idle',
-      uploadProgress: { audio: 0, cover: 0 }
+      uploadProgress: { audio: 0, cover: 0, processing: 0 }
     }));
   }, []);
 
