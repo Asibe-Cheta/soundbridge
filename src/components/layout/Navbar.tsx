@@ -791,7 +791,7 @@ export default function Navbar() {
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: '17px',
+                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -814,7 +814,7 @@ export default function Navbar() {
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: '17px',
+                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -842,7 +842,7 @@ export default function Navbar() {
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: '17px',
+                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -866,7 +866,7 @@ export default function Navbar() {
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: '17px',
+                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -889,7 +889,7 @@ export default function Navbar() {
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: '17px',
+                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -912,7 +912,7 @@ export default function Navbar() {
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: '17px',
+                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -972,6 +972,10 @@ export default function Navbar() {
               placeholder="Search creators, events, podcasts..." 
               onFocusSuccess={() => {
                 console.log('Mobile search overlay focused');
+              }}
+              onSuggestionClick={() => {
+                console.log('Mobile search suggestion clicked, closing overlay');
+                setShowMobileSearch(false);
               }}
             />
           </div>

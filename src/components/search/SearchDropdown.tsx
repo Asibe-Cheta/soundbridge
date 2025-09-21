@@ -17,9 +17,10 @@ interface SearchDropdownProps {
   placeholder?: string;
   className?: string;
   onFocusSuccess?: () => void;
+  onSuggestionClick?: () => void;
 }
 
-export default function SearchDropdown({ placeholder = "Search creators, events, podcasts...", className = "", onFocusSuccess }: SearchDropdownProps) {
+export default function SearchDropdown({ placeholder = "Search creators, events, podcasts...", className = "", onFocusSuccess, onSuggestionClick }: SearchDropdownProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -94,7 +95,10 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
     }
     setShowSuggestions(false);
     setSearchQuery('');
-  }, [router]);
+    
+    // Close mobile search overlay if callback provided
+    onSuggestionClick?.();
+  }, [router, onSuggestionClick]);
 
   // Debounced search function
   useEffect(() => {
