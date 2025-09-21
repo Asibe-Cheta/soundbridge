@@ -381,6 +381,11 @@ function SearchContent() {
                       transition: 'all 0.2s ease',
                       cursor: 'pointer'
                     }}
+                    onClick={() => {
+                      // Navigate to track page or play track
+                      console.log('Row clicked:', track.title);
+                      // Add your navigation logic here
+                    }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
                     }}
@@ -456,27 +461,33 @@ function SearchContent() {
                     </div>
 
                     {/* Play Button */}
-                    <button style={{
-                      width: '32px',
-                      height: '32px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.transform = 'scale(1.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
+                    <button 
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click
+                        console.log('Play button clicked:', track.title);
+                        // Add your play logic here
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
                     >
                       <Play size={14} fill="currentColor" />
                     </button>
@@ -502,6 +513,11 @@ function SearchContent() {
                   cursor: 'pointer',
                   width: '100%'
                 }}
+                onClick={() => {
+                  // Navigate to track page or play track
+                  console.log('Card clicked:', track.title);
+                  // Add your navigation logic here
+                }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
                   e.currentTarget.style.transform = 'translateY(-4px)';
@@ -521,15 +537,18 @@ function SearchContent() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontSize: '1.5rem'
+                      fontSize: '1.5rem',
+                      overflow: 'hidden'
                     }}>
                       {track.cover_art_url ? (
                         <Image
                           src={track.cover_art_url}
                           alt={track.title}
-                          width={160}
-                          height={160}
-                          style={{ borderRadius: '8px', objectFit: 'cover' }}
+                          fill
+                          style={{ 
+                            borderRadius: '8px', 
+                            objectFit: 'cover' 
+                          }}
                         />
                       ) : (
                         <Music size={32} />
@@ -537,32 +556,38 @@ function SearchContent() {
                     </div>
 
                     {/* Play Button */}
-                    <button style={{
-                      position: 'absolute',
-                      bottom: '0.5rem',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: '36px',
-                      height: '36px',
-                      background: 'rgba(0, 0, 0, 0.7)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      backdropFilter: 'blur(10px)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-                      e.currentTarget.style.transform = 'translateX(-50%) scale(1.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                      e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
-                    }}
+                    <button 
+                      style={{
+                        position: 'absolute',
+                        bottom: '0.5rem',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '36px',
+                        height: '36px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click
+                        console.log('Play button clicked:', track.title);
+                        // Add your play logic here
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                      }}
                     >
                       <Play size={16} fill="currentColor" />
                     </button>
