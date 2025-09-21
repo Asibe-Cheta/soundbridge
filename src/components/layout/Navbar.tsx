@@ -46,8 +46,8 @@ export default function Navbar() {
         setShouldFocusSearch(false);
       };
       
-      // Small delay to ensure menu is closed
-      setTimeout(focusSearch, 100);
+      // Much longer delay to ensure menu is fully closed and DOM is stable
+      setTimeout(focusSearch, 1000);
     }
   }, [shouldFocusSearch]);
 

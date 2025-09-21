@@ -16,9 +16,10 @@ interface SearchSuggestion {
 interface SearchDropdownProps {
   placeholder?: string;
   className?: string;
+  onFocusSuccess?: () => void;
 }
 
-export default function SearchDropdown({ placeholder = "Search creators, events, podcasts...", className = "" }: SearchDropdownProps) {
+export default function SearchDropdown({ placeholder = "Search creators, events, podcasts...", className = "", onFocusSuccess }: SearchDropdownProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -32,10 +33,31 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
   useEffect(() => {
     const handleGlobalFocusRequest = () => {
       console.log('SearchDropdown: Global focus request received');
+      
+      // Try ref first
       if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.click();
-        setShowSuggestions(true);
+        console.log('SearchDropdown: Using ref to focus input');
+        setTimeout(() => {
+          inputRef.current?.focus();
+          inputRef.current?.click();
+          setShowSuggestions(true);
+          onFocusSuccess?.();
+        }, 100);
+      } else {
+        // Fallback to DOM query
+        console.log('SearchDropdown: Ref not available, using DOM query');
+        setTimeout(() => {
+          const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+          if (searchInput) {
+            console.log('SearchDropdown: Found input via DOM query');
+            searchInput.focus();
+            searchInput.click();
+            setShowSuggestions(true);
+            onFocusSuccess?.();
+          } else {
+            console.log('SearchDropdown: Could not find search input');
+          }
+        }, 100);
       }
     };
 
