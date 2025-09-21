@@ -1096,7 +1096,6 @@ export default function ProfilePage() {
           {activeTab === 'settings' && renderSettingsTab()}
         </div>
       </main>
-    </div>
 
       {/* Branding Settings Modal */}
       {showBrandingSettings && user && (
