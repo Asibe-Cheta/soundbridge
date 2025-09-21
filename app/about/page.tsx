@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
 import RiveLogo from '../../src/components/ui/RiveLogo';
@@ -11,6 +11,18 @@ import {
 } from 'lucide-react';
 
 export default function AboutPage() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Handle mobile responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div style={{ backgroundColor: '#000000', minHeight: '100vh' }}>
       {/* Main Content */}
@@ -96,7 +108,7 @@ export default function AboutPage() {
                 }}
                 >
                   Join SoundBridge
-                  <ArrowRight size={16} />
+                  <ArrowRight size={isMobile ? 14 : 16} />
                 </button>
               </Link>
               <Link href="/discover" style={{ textDecoration: 'none' }}>
@@ -124,7 +136,7 @@ export default function AboutPage() {
                 }}
                 >
                   Explore Platform
-                  <Music size={16} />
+                  <Music size={isMobile ? 14 : 16} />
                 </button>
               </Link>
             </div>
@@ -149,46 +161,47 @@ export default function AboutPage() {
 
         {/* Mobile Responsive Hero */}
         <section style={{
-          padding: '2rem',
-          margin: '2rem',
+          padding: isMobile ? '1rem' : '2rem',
+          margin: isMobile ? '0.5rem' : '2rem',
           display: 'none',
           textAlign: 'center',
           flexDirection: 'column',
-          gap: '2rem',
+          gap: isMobile ? '1rem' : '2rem',
           alignItems: 'center'
         }} className="mobile-hero">
           <div style={{
-            height: '300px',
+            height: isMobile ? '200px' : '300px',
             width: '100%',
-            maxWidth: '400px',
+            maxWidth: isMobile ? '300px' : '400px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
             <RiveLogo
               className="mobile-hero-logo"
-              width={400}
-              height={300}
+              width={isMobile ? 300 : 400}
+              height={isMobile ? 200 : 300}
               autoplay={true}
             />
           </div>
           <div>
             <h1 style={{
-              fontSize: '2.5rem',
+              fontSize: isMobile ? '1.5rem' : '2.5rem',
               fontWeight: '800',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              marginBottom: '1rem',
+              marginBottom: isMobile ? '0.5rem' : '1rem',
               lineHeight: '1.1'
             }}>
               About SoundBridge
             </h1>
             <p style={{
-              fontSize: '1.1rem',
+              fontSize: isMobile ? '0.9rem' : '1.1rem',
               color: 'rgba(255, 255, 255, 0.9)',
               lineHeight: '1.6',
-              marginBottom: '2rem'
+              marginBottom: isMobile ? '1rem' : '2rem',
+              padding: isMobile ? '0 1rem' : '0'
             }}>
               The world&apos;s first truly level playing field for musicians and creators, 
               where discovery meets collaboration and every voice has the potential to be heard.
@@ -204,11 +217,11 @@ export default function AboutPage() {
                   background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                   color: 'white',
                   border: 'none',
-                  padding: '1rem 2rem',
+                  padding: isMobile ? '0.8rem 1.5rem' : '1rem 2rem',
                   borderRadius: '12px',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
+                  fontSize: isMobile ? '0.9rem' : '1rem',
                   transition: 'all 0.3s ease',
                   boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
                   display: 'flex',
@@ -216,7 +229,7 @@ export default function AboutPage() {
                   gap: '0.5rem'
                 }}>
                   Join SoundBridge
-                  <ArrowRight size={16} />
+                  <ArrowRight size={isMobile ? 14 : 16} />
                 </button>
               </Link>
               <Link href="/discover" style={{ textDecoration: 'none' }}>
@@ -224,18 +237,18 @@ export default function AboutPage() {
                   background: 'transparent',
                   color: 'white',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
-                  padding: '1rem 2rem',
+                  padding: isMobile ? '0.8rem 1.5rem' : '1rem 2rem',
                   borderRadius: '12px',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
+                  fontSize: isMobile ? '0.9rem' : '1rem',
                   transition: 'all 0.3s ease',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
                   Explore Platform
-                  <Music size={16} />
+                  <Music size={isMobile ? 14 : 16} />
                 </button>
               </Link>
             </div>
@@ -243,7 +256,7 @@ export default function AboutPage() {
         </section>
 
         {/* The Story Section */}
-        <section style={{ padding: '4rem 2rem' }}>
+        <section style={{ padding: isMobile ? '2rem 1rem' : '4rem 2rem' }}>
           <div style={{
             maxWidth: '1000px',
             margin: '0 auto'
@@ -251,25 +264,28 @@ export default function AboutPage() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '3rem'
+              gap: isMobile ? '0.5rem' : '1rem',
+              marginBottom: isMobile ? '1.5rem' : '3rem',
+              flexDirection: isMobile ? 'column' : 'row',
+              textAlign: isMobile ? 'center' : 'left'
             }}>
               <div style={{
-                width: '60px',
-                height: '60px',
+                width: isMobile ? '50px' : '60px',
+                height: isMobile ? '50px' : '60px',
                 background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Lightbulb size={24} color="white" />
+                <Lightbulb size={isMobile ? 20 : 24} color="white" />
               </div>
               <h2 style={{
-                fontSize: '2.5rem',
+                fontSize: isMobile ? '1.2rem' : '2.5rem',
                 fontWeight: '700',
                 color: 'white',
-                margin: 0
+                margin: 0,
+                lineHeight: isMobile ? '1.3' : '1.1'
               }}>
                 The Story Behind SoundBridge
               </h2>
@@ -279,14 +295,14 @@ export default function AboutPage() {
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '16px',
-              padding: '3rem',
-              marginBottom: '3rem'
+              padding: isMobile ? '1.5rem' : '3rem',
+              marginBottom: isMobile ? '1.5rem' : '3rem'
             }}>
               <p style={{
-                fontSize: '1.1rem',
+                fontSize: isMobile ? '0.9rem' : '1.1rem',
                 lineHeight: '1.8',
                 color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
+                marginBottom: isMobile ? '1rem' : '2rem'
               }}>
                 SoundBridge was born from a moment of simple frustration that sparked a revolutionary idea. 
                 Our founder found himself experiencing the all-too-familiar struggle of boredom - wanting to 
@@ -295,10 +311,10 @@ export default function AboutPage() {
               </p>
 
               <p style={{
-                fontSize: '1.1rem',
+                fontSize: isMobile ? '0.9rem' : '1.1rem',
                 lineHeight: '1.8',
                 color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
+                marginBottom: isMobile ? '1rem' : '2rem'
               }}>
                 The conventional approaches felt distant and impersonal. Eventbrite required endless scrolling 
                 through irrelevant listings. Social media ads felt intrusive and poorly targeted. Spotify&apos;s 
@@ -307,10 +323,10 @@ export default function AboutPage() {
               </p>
 
               <p style={{
-                fontSize: '1.1rem',
+                fontSize: isMobile ? '0.9rem' : '1.1rem',
                 lineHeight: '1.8',
                 color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: '2rem'
+                marginBottom: isMobile ? '1rem' : '2rem'
               }}>
                 What was needed wasn&apos;t another app to check or another platform to search through. The vision 
                 was for something that would meet people at their doorstep - events and creators that would find 
@@ -322,11 +338,11 @@ export default function AboutPage() {
                 background: 'linear-gradient(45deg, rgba(220, 38, 38, 0.1), rgba(236, 72, 153, 0.1))',
                 border: '1px solid rgba(220, 38, 38, 0.3)',
                 borderRadius: '12px',
-                padding: '2rem',
-                marginTop: '2rem'
+                padding: isMobile ? '1.5rem' : '2rem',
+                marginTop: isMobile ? '1rem' : '2rem'
               }}>
                 <p style={{
-                  fontSize: '1.1rem',
+                  fontSize: isMobile ? '0.9rem' : '1.1rem',
                   lineHeight: '1.8',
                   color: 'white',
                   fontStyle: 'italic',
@@ -344,27 +360,29 @@ export default function AboutPage() {
 
         {/* Call to Action */}
         <section style={{
-          padding: '4rem 2rem',
+          padding: isMobile ? '2rem 1rem' : '4rem 2rem',
           textAlign: 'center',
           background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
           borderRadius: '20px',
-          margin: '2rem',
+          margin: isMobile ? '1rem' : '2rem',
           border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <h2 style={{
-            fontSize: '2.5rem',
+            fontSize: isMobile ? '1.3rem' : '2.5rem',
             fontWeight: '700',
             color: 'white',
-            marginBottom: '1rem'
+            marginBottom: isMobile ? '0.5rem' : '1rem',
+            lineHeight: isMobile ? '1.3' : '1.1'
           }}>
             Join the SoundBridge Revolution
           </h2>
           <p style={{
-            fontSize: '1.2rem',
+            fontSize: isMobile ? '0.9rem' : '1.2rem',
             color: 'rgba(255, 255, 255, 0.8)',
             maxWidth: '600px',
             margin: '0 auto 2rem',
-            lineHeight: '1.6'
+            lineHeight: '1.6',
+            padding: isMobile ? '0 1rem' : '0'
           }}>
             Be part of the future of music discovery and creator collaboration. 
             Your next favorite artist or perfect collaboration partner is waiting.
@@ -380,11 +398,11 @@ export default function AboutPage() {
                 background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                 color: 'white',
                 border: 'none',
-                padding: '1rem 2rem',
+                padding: isMobile ? '0.8rem 1.5rem' : '1rem 2rem',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 fontWeight: '600',
-                fontSize: '1rem',
+                fontSize: isMobile ? '0.9rem' : '1rem',
                 transition: 'all 0.3s ease',
                 boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
                 display: 'flex',
@@ -401,7 +419,7 @@ export default function AboutPage() {
               }}
               >
                 Get Started
-                <ArrowRight size={16} />
+                <ArrowRight size={isMobile ? 14 : 16} />
               </button>
             </Link>
             <Link href="/discover" style={{ textDecoration: 'none' }}>
@@ -409,11 +427,11 @@ export default function AboutPage() {
                 background: 'transparent',
                 color: 'white',
                 border: '1px solid rgba(255, 255, 255, 0.3)',
-                padding: '1rem 2rem',
+                padding: isMobile ? '0.8rem 1.5rem' : '1rem 2rem',
                 borderRadius: '12px',
                 cursor: 'pointer',
                 fontWeight: '600',
-                fontSize: '1rem',
+                fontSize: isMobile ? '0.9rem' : '1rem',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
@@ -429,7 +447,7 @@ export default function AboutPage() {
               }}
               >
                 Explore Now
-                <Music size={16} />
+                <Music size={isMobile ? 14 : 16} />
               </button>
             </Link>
           </div>
