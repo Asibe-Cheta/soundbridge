@@ -54,6 +54,167 @@ interface VirtualEventItemProps {
   };
 }
 
+// Mobile list item component for Instagram-style layout
+interface MobileEventItemProps {
+  event: any;
+}
+
+const MobileEventItem = ({ event }: MobileEventItemProps) => {
+  return (
+    <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '1rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        gap: '1rem',
+        background: 'rgba(255, 255, 255, 0.02)',
+        transition: 'background 0.2s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+      }}
+      >
+        {/* Event Image */}
+        <div style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '12px',
+          background: 'linear-gradient(45deg, #EC4899, #8B5CF6)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '1.5rem',
+          flexShrink: 0,
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {event.image_url ? (
+            <img 
+              src={event.image_url} 
+              alt={event.title}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <Music />
+          )}
+          
+          {/* Category Badge */}
+          <div style={{
+            position: 'absolute',
+            top: '4px',
+            left: '4px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '2px 6px',
+            borderRadius: '8px',
+            fontSize: '0.6rem',
+            fontWeight: '600',
+            textTransform: 'uppercase'
+          }}>
+            {event.category}
+          </div>
+          
+          {/* Price Badge */}
+          <div style={{
+            position: 'absolute',
+            bottom: '4px',
+            right: '4px',
+            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+            color: 'white',
+            padding: '2px 6px',
+            borderRadius: '8px',
+            fontSize: '0.6rem',
+            fontWeight: '600'
+          }}>
+            {(event as any).price === 0 ? 'Free' : `$${(event as any).price}`}
+          </div>
+        </div>
+
+        {/* Event Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 style={{
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            color: 'white',
+            margin: 0,
+            marginBottom: '0.25rem',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {event.title}
+          </h3>
+
+          <p style={{
+            fontSize: '0.75rem',
+            color: '#ccc',
+            margin: 0,
+            marginBottom: '0.5rem',
+            lineHeight: '1.3',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical' as const
+          }}>
+            {event.description}
+          </p>
+
+          {/* Event Meta */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.25rem'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.7rem',
+              color: '#999'
+            }}>
+              <Calendar size={12} />
+              <span>{new Date(event.date).toLocaleDateString()}</span>
+              <User size={12} />
+              <span>{event.location}</span>
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.7rem',
+              color: '#999'
+            }}>
+              <Users size={12} />
+              <span>{event.attendeeCount || 0} attendees</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Arrow */}
+        <div style={{
+          color: '#999',
+          fontSize: '1.2rem',
+          flexShrink: 0
+        }}>
+          →
+        </div>
+      </div>
+    </Link>
+  );
+};
+
 const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventItemProps) => {
   const { events, columnsCount } = data;
   const index = rowIndex * columnsCount + columnIndex;
@@ -214,6 +375,19 @@ export default function EventsPage() {
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [showFilters, setShowFilters] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+
+  // Mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Get events data from the hook
   const [eventsState, eventsActions] = useEvents();
@@ -325,6 +499,35 @@ export default function EventsPage() {
     return Math.max(1, Math.floor(availableWidth / cardWidthWithGap));
   }, []);
 
+  // Fetch search suggestions for events
+  const fetchSearchSuggestions = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=5`);
+      if (response.ok) {
+        const data = await response.json();
+        const suggestions = data.data?.events?.map((event: { title: string }) => event.title) || [];
+        setSearchSuggestions(suggestions.slice(0, 5));
+        setShowSearchSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Error fetching search suggestions:', error);
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+    }
+  }, []);
+
+  // Debounced search suggestions
+  const debouncedSearchSuggestions = useCallback(() => {
+    const timeoutId = setTimeout(() => fetchSearchSuggestions(searchQuery), 200);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, fetchSearchSuggestions]);
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -338,6 +541,11 @@ export default function EventsPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Trigger search suggestions when query changes
+  useEffect(() => {
+    debouncedSearchSuggestions();
+  }, [searchQuery, debouncedSearchSuggestions]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -405,50 +613,172 @@ export default function EventsPage() {
 
         {/* Search and Filters */}
         <section className="section">
-          <div className="search-filters">
-            <div className="search-bar-container">
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#999', zIndex: 1 }} />
-              <input
+          <div className="search-filters" style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '1rem' : '1rem',
+            alignItems: isMobile ? 'stretch' : 'center'
+          }}>
+            <div className="search-bar-container" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              position: 'relative'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: isMobile ? '0.75rem' : '1rem',
+                gap: '0.75rem'
+              }}>
+                <Search size={isMobile ? 18 : 20} style={{ color: '#999', flexShrink: 0 }} />
+                <input
                   type="search" 
-                placeholder="Search events..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search events by title, description, or location..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    debouncedSearchSuggestions();
+                  }}
+                  onFocus={() => {
+                    if (searchSuggestions.length > 0) {
+                      setShowSearchSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow clicking on them
+                    setTimeout(() => setShowSearchSuggestions(false), 200);
+                  }}
                   style={{ 
-                    width: '100%', 
-                    padding: '16px 16px 16px 48px',
-                    fontSize: '16px',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-primary)',
-                    borderRadius: '12px',
-                    color: 'var(--text-primary)',
+                    flex: 1, 
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: 'white', 
                     outline: 'none',
-                    transition: 'all 0.2s ease'
-                  }} 
-                  onFocus={(e) => e.target.style.borderColor = 'var(--accent-primary)'}
-                  onBlur={(e) => e.target.style.borderColor = 'var(--border-primary)'}
+                    fontSize: isMobile ? '0.9rem' : '1rem'
+                  }}
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSearchSuggestions(false);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#999',
+                      cursor: 'pointer',
+                      padding: '0.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
+
+              {/* Search Suggestions Dropdown */}
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'rgba(0, 0, 0, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  marginTop: '0.25rem',
+                  zIndex: 1000,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setSearchQuery(suggestion);
+                        setShowSearchSuggestions(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: isMobile ? '0.9rem' : '1rem',
+                        borderBottom: index < searchSuggestions.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: isMobile ? '0.5rem' : '0.5rem',
+                padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem',
+                fontSize: isMobile ? '0.9rem' : '1rem',
+                whiteSpace: 'nowrap',
+                minWidth: isMobile ? 'auto' : '120px',
+                justifyContent: 'center'
+              }}
             >
-              <Filter size={16} />
-              Filters
+              <Filter size={isMobile ? 16 : 16} />
+              {isMobile ? 'Filters' : 'Filters'}
             </button>
           </div>
 
           {showFilters && (
-            <div className="filters-panel">
-              <div className="filter-group">
-                <label>Category</label>
+            <div className="filters-panel" style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: isMobile ? '1rem' : '1.5rem',
+              marginTop: '1rem',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+              gap: isMobile ? '1rem' : '1.5rem'
+            }}>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  🎭 Category
+                </label>
                 <select
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   {categories.map((category) => (
                     <option key={category.value} value={category.value}>
@@ -458,12 +788,25 @@ export default function EventsPage() {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Location</label>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  📍 Location
+                </label>
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   {locations.map((location) => (
                     <option key={location.value} value={location.value}>
@@ -473,12 +816,25 @@ export default function EventsPage() {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Date</label>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  📅 Date
+                </label>
                 <select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   {dateFilters.map((date) => (
                     <option key={date.value} value={date.value}>
@@ -488,12 +844,25 @@ export default function EventsPage() {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Price</label>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  💰 Price
+                </label>
                 <select
                   value={selectedPrice}
                   onChange={(e) => setSelectedPrice(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
                   {priceFilters.map((price) => (
                     <option key={price.value} value={price.value}>
@@ -503,29 +872,53 @@ export default function EventsPage() {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Sort By</label>
+              <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ 
+                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                  fontWeight: '600', 
+                  color: '#EC4899' 
+                }}>
+                  🔄 Sort By
+                </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  style={{ background: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', padding: '0.5rem' }}
+                  style={{ 
+                    background: '#333', 
+                    color: 'white', 
+                    border: '1px solid #555', 
+                    borderRadius: '8px', 
+                    padding: isMobile ? '0.75rem' : '0.75rem',
+                    fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  }}
                 >
-                  <option value="recent">Most Recent</option>
-                  <option value="upcoming">Upcoming</option>
-                  <option value="popular">Most Popular</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
+                  <option value="recent">🆕 Most Recent</option>
+                  <option value="upcoming">⏰ Upcoming Soon</option>
+                  <option value="popular">🔥 Most Popular</option>
+                  <option value="price-low">💰 Price: Low to High</option>
+                  <option value="price-high">💰 Price: High to Low</option>
                 </select>
               </div>
 
               {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="btn-secondary"
-                  style={{ width: '100%' }}
-                >
-                  Clear Filters
-                </button>
+                <div style={{ 
+                  gridColumn: isMobile ? '1' : '1 / -1',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginTop: isMobile ? '0.5rem' : '0'
+                }}>
+                  <button
+                    onClick={clearFilters}
+                    className="btn-secondary"
+                    style={{ 
+                      width: isMobile ? '100%' : '200px',
+                      padding: isMobile ? '0.75rem 1rem' : '0.75rem 1.5rem',
+                      fontSize: isMobile ? '0.8rem' : '0.9rem'
+                    }}
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -533,6 +926,33 @@ export default function EventsPage() {
 
         {/* Events Grid */}
         <section className="section">
+          <div className="section-header">
+            <h2 className="section-title" style={{ 
+              fontSize: isMobile ? '1rem' : '1.25rem',
+              marginBottom: isMobile ? '0.5rem' : '0.75rem'
+            }}>
+              {eventsState.loading ? (
+                'Loading events...'
+              ) : searchQuery.trim() ? (
+                `Found ${filteredEvents.length} events matching "${searchQuery}"`
+              ) : hasActiveFilters ? (
+                `Found ${filteredEvents.length} events with current filters`
+              ) : (
+                `Showing ${filteredEvents.length} events`
+              )}
+            </h2>
+            {filteredEvents.length > 0 && !eventsState.loading && (
+              <p style={{ 
+                fontSize: isMobile ? '0.8rem' : '0.9rem', 
+                color: '#999', 
+                marginTop: '0.25rem',
+                lineHeight: '1.4'
+              }}>
+                {hasActiveFilters ? 'Filtered results' : 'All available events'}
+              </p>
+            )}
+          </div>
+          
           <div className="events-grid-container" style={{ height: EVENT_CONTAINER_HEIGHT }}>
             {eventsState.loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -562,29 +982,47 @@ export default function EventsPage() {
                 </div>
               </div>
             ) : (
-              <AutoSizer>
-                {({ height, width }) => {
-                  const columnsCount = Math.max(1, Math.floor((width - GRID_GAP) / (EVENT_CARD_WIDTH + GRID_GAP)));
-                  const rowCount = Math.ceil(filteredEvents.length / columnsCount);
+              <>
+                {/* Mobile List View */}
+                {isMobile ? (
+                  <div style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    overflow: 'hidden'
+                  }}>
+                    {filteredEvents.map((event) => (
+                      <MobileEventItem key={event.id} event={event} />
+                    ))}
+                  </div>
+                ) : (
+                  /* Desktop Grid View */
+                  <AutoSizer>
+                    {({ height, width }) => {
+                      const columnsCount = Math.max(1, Math.floor((width - GRID_GAP) / (EVENT_CARD_WIDTH + GRID_GAP)));
+                      const rowCount = Math.ceil(filteredEvents.length / columnsCount);
 
-                  return (
-                    <Grid
-                      columnCount={columnsCount}
-                      columnWidth={EVENT_CARD_WIDTH}
-                      height={height}
-                      rowCount={rowCount}
-                      rowHeight={EVENT_ITEM_HEIGHT}
-                      width={width}
-                      itemData={{
-                        events: filteredEvents,
-                        columnsCount
-                      }}
-                    >
-                      {VirtualEventItem}
-                    </Grid>
-                  );
-                }}
-              </AutoSizer>
+                      return (
+                        <Grid
+                          columnCount={columnsCount}
+                          columnWidth={EVENT_CARD_WIDTH}
+                          height={height}
+                          rowCount={rowCount}
+                          rowHeight={EVENT_ITEM_HEIGHT}
+                          width={width}
+                          itemData={{
+                            events: filteredEvents,
+                            columnsCount
+                          }}
+                        >
+                          {VirtualEventItem}
+                        </Grid>
+                      );
+                    }}
+                  </AutoSizer>
+                )}
+              </>
             )}
           </div>
         </section>
