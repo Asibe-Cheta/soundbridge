@@ -780,6 +780,41 @@ export default function Navbar() {
               <Search size={20} style={{ color: '#EC4899' }} />
               Discover
             </Link>
+            
+            {/* Mobile Search Option */}
+            <div 
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                // Focus on the search input
+                setTimeout(() => {
+                  const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+                  if (searchInput) {
+                    searchInput.focus();
+                    searchInput.click();
+                  }
+                }, 100);
+              }}
+              style={{ 
+                textDecoration: 'none', 
+                color: 'white',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                fontSize: '17px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <Search size={20} style={{ color: '#DC2626' }} />
+              Search
+            </div>
             <Link 
               href="/events" 
               onClick={() => setIsMobileMenuOpen(false)}

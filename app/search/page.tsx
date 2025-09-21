@@ -384,7 +384,8 @@ function SearchContent() {
                     onClick={() => {
                       // Navigate to track page or play track
                       console.log('Row clicked:', track.title);
-                      // Add your navigation logic here
+                      // Navigate to track detail page
+                      router.push(`/track/${track.id}`);
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
@@ -478,7 +479,10 @@ function SearchContent() {
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent row click
                         console.log('Play button clicked:', track.title);
-                        // Add your play logic here
+                        // Play the track
+                        // You can integrate with your audio player context here
+                        // For now, we'll just show an alert
+                        alert(`Playing: ${track.title} by ${track.creator?.display_name || 'Unknown Artist'}`);
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -516,7 +520,8 @@ function SearchContent() {
                 onClick={() => {
                   // Navigate to track page or play track
                   console.log('Card clicked:', track.title);
-                  // Add your navigation logic here
+                  // Navigate to track detail page
+                  router.push(`/track/${track.id}`);
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
@@ -578,7 +583,10 @@ function SearchContent() {
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent card click
                         console.log('Play button clicked:', track.title);
-                        // Add your play logic here
+                        // Play the track
+                        // You can integrate with your audio player context here
+                        // For now, we'll just show an alert
+                        alert(`Playing: ${track.title} by ${track.creator?.display_name || 'Unknown Artist'}`);
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
