@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🔥 Friends Activities API called');
-    const supabase = await createApiClientWithCookies();
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -17,6 +18,21 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ User authenticated:', user.id);
+
+    // First check if follows table exists and has data
+    const { data: followsTest, error: followsTestError } = await supabase
+      .from('follows')
+      .select('count')
+      .limit(1);
+
+    if (followsTestError) {
+      console.error('❌ Follows table error:', followsTestError);
+      // Return empty activities instead of error - user might not have follows table set up
+      return NextResponse.json({
+        activities: [],
+        message: 'Follows feature not available'
+      });
+    }
 
     // Get friends (mutual follows - people who follow each other)
     const { data: friends, error: friendsError } = await supabase
@@ -34,10 +50,11 @@ export async function GET(request: NextRequest) {
 
     if (friendsError) {
       console.error('❌ Error fetching friends:', friendsError);
-      return NextResponse.json(
-        { error: 'Failed to fetch friends' },
-        { status: 500 }
-      );
+      // Return empty activities instead of error
+      return NextResponse.json({
+        activities: [],
+        message: 'Could not fetch friends data'
+      });
     }
 
     console.log('👥 Friends found:', friends?.length || 0);

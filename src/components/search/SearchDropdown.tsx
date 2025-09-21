@@ -33,6 +33,8 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
   useEffect(() => {
     const handleGlobalFocusRequest = () => {
       console.log('SearchDropdown: Global focus request received');
+      console.log('SearchDropdown: inputRef.current:', inputRef.current);
+      console.log('SearchDropdown: onFocusSuccess callback:', !!onFocusSuccess);
       
       // Try ref first
       if (inputRef.current) {
@@ -49,6 +51,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
         console.log('SearchDropdown: Ref not available, using DOM query');
         setTimeout(() => {
           const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+          console.log('SearchDropdown: DOM query result:', searchInput);
           if (searchInput) {
             console.log('SearchDropdown: Found input via DOM query');
             searchInput.focus();
@@ -65,7 +68,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
 
     window.addEventListener('focusSearchInput', handleGlobalFocusRequest);
     return () => window.removeEventListener('focusSearchInput', handleGlobalFocusRequest);
-  }, []);
+  }, [onFocusSuccess]);
 
   const handleSuggestionClick = useCallback((suggestion: SearchSuggestion) => {
     console.log('🎯 Clicking suggestion:', suggestion);

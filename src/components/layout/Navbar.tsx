@@ -24,6 +24,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -95,12 +96,25 @@ export default function Navbar() {
       <header className="header">
         {isMobile ? (
           /* Mobile Header - Apple Music Style */
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
+          <>
+            {/* Hidden Mobile Search Bar for Focus */}
+            <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+              <SearchDropdown 
+                placeholder="Search creators, events, podcasts..." 
+                onFocusSuccess={() => {
+                  console.log('Mobile search focus successful, closing menu');
+                  setIsMobileMenuOpen(false);
+                  setShowMobileSearch(true);
+                }}
+              />
+            </div>
+            
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              width: '100%'
+            }}>
             {/* LEFT - Hamburger Menu */}
             <button
               id="mobile-menu-button"
@@ -324,7 +338,8 @@ export default function Navbar() {
                </Link>
              )}
            </div>
-         </div>
+            </div>
+          </>
        ) : (
          /* Desktop Header - Original Style */
          <div className="navbar-main" style={{ 
@@ -911,6 +926,55 @@ export default function Navbar() {
               About
             </Link>
           </nav>
+        </div>
+      )}
+
+      {/* Mobile Search Overlay */}
+      {isMobile && showMobileSearch && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.9)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '20px'
+        }}>
+          {/* Close button */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px'
+          }}>
+            <h2 style={{ color: 'white', margin: 0, fontSize: '18px' }}>Search</h2>
+            <button
+              onClick={() => setShowMobileSearch(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '8px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Search input */}
+          <div style={{ flex: 1 }}>
+            <SearchDropdown 
+              placeholder="Search creators, events, podcasts..." 
+              onFocusSuccess={() => {
+                console.log('Mobile search overlay focused');
+              }}
+            />
+          </div>
         </div>
       )}
     </>

@@ -571,12 +571,21 @@ export default function HomePage() {
           const data = await response.json();
           console.log('🔥 Friends activities data:', data);
           setFriendsActivities(data.activities || []);
+          
+          // Log message if provided (e.g., "Follows feature not available")
+          if (data.message) {
+            console.log('ℹ️ Friends activities message:', data.message);
+          }
         } else {
           const errorData = await response.json();
           console.error('❌ Failed to fetch friends activities:', errorData);
+          // Set empty activities on error to prevent UI issues
+          setFriendsActivities([]);
         }
       } catch (error) {
         console.error('❌ Error fetching friends activities:', error);
+        // Set empty activities on error to prevent UI issues
+        setFriendsActivities([]);
       } finally {
         setIsLoadingFriends(false);
       }
