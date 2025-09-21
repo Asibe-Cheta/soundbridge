@@ -18,13 +18,6 @@ export function Footer() {
   }, []);
   return (
     <footer className="section">
-      <div className="section-header">
-        <h2 className="section-title" style={{
-          fontSize: isMobile ? '1rem' : '1.8rem',
-          lineHeight: isMobile ? '1.2' : 'inherit',
-          marginBottom: isMobile ? '0.3rem' : '1.5rem'
-        }}>SoundBridge</h2>
-      </div>
       
       <div className="grid grid-4">
         {/* Company Card */}
