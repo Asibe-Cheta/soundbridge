@@ -23,6 +23,7 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -34,6 +35,21 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Handle search focus from mobile menu
+  useEffect(() => {
+    if (shouldFocusSearch) {
+      const focusSearch = () => {
+        console.log('Dispatching global focus event');
+        // Dispatch global event to focus search input
+        window.dispatchEvent(new CustomEvent('focusSearchInput'));
+        setShouldFocusSearch(false);
+      };
+      
+      // Small delay to ensure menu is closed
+      setTimeout(focusSearch, 100);
+    }
+  }, [shouldFocusSearch]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -784,19 +800,9 @@ export default function Navbar() {
             {/* Mobile Search Option */}
             <div 
               onClick={() => {
+                console.log('Mobile search option clicked');
                 setIsMobileMenuOpen(false);
-                // Focus on the search input with a longer delay to ensure menu is closed
-                setTimeout(() => {
-                  const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-                  if (searchInput) {
-                    // Make sure the search input is visible and focusable
-                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    searchInput.focus();
-                    searchInput.click();
-                    // Trigger input event to show dropdown
-                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                  }
-                }, 300);
+                setShouldFocusSearch(true);
               }}
               style={{ 
                 textDecoration: 'none', 

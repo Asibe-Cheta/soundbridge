@@ -25,7 +25,23 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Listen for global focus events from mobile menu
+  useEffect(() => {
+    const handleGlobalFocusRequest = () => {
+      console.log('SearchDropdown: Global focus request received');
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.click();
+        setShowSuggestions(true);
+      }
+    };
+
+    window.addEventListener('focusSearchInput', handleGlobalFocusRequest);
+    return () => window.removeEventListener('focusSearchInput', handleGlobalFocusRequest);
+  }, []);
 
   const handleSuggestionClick = useCallback((suggestion: SearchSuggestion) => {
     console.log('🎯 Clicking suggestion:', suggestion);
@@ -218,6 +234,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
             zIndex: 1 
           }} />
           <input
+            ref={inputRef}
             type="text"
             className="search-bar placeholder-gray-400"
             placeholder={placeholder}
