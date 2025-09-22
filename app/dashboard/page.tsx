@@ -32,6 +32,7 @@ import {
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
 import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';
+import { PayoutRequest } from '../../src/components/revenue/PayoutRequest';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -631,6 +632,32 @@ export default function DashboardPage() {
             }}>
               <RevenueDashboard userId={user.id} />
               
+              {/* Payout Requests */}
+              <div style={{
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: '0.75rem',
+                padding: '1.5rem',
+                marginTop: '2rem'
+              }}>
+                <h3 style={{ 
+                  fontSize: '1.125rem', 
+                  fontWeight: '600', 
+                  color: 'var(--text-primary)', 
+                  margin: '0 0 0.5rem 0' 
+                }}>
+                  Payout Requests
+                </h3>
+                <p style={{ 
+                  color: 'var(--text-secondary)', 
+                  fontSize: '0.875rem', 
+                  margin: '0 0 1.5rem 0' 
+                }}>
+                  Request withdrawals from your earnings (Minimum: $25)
+                </p>
+                <PayoutRequest />
+              </div>
+              
               {/* Bank Account Management */}
               <div style={{
                 background: 'var(--bg-primary)',
@@ -645,7 +672,7 @@ export default function DashboardPage() {
                   color: 'var(--text-primary)', 
                   margin: '0 0 0.5rem 0' 
                 }}>
-                  Bank Account & Payouts
+                  Bank Account Management
                 </h3>
                 <p style={{ 
                   color: 'var(--text-secondary)', 
