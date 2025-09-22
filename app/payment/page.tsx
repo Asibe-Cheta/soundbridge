@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -11,24 +11,16 @@ import Link from 'next/link';
 // recreating the `Stripe` object on every render.
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm() {
+function CheckoutForm({ clientSecret }: { clientSecret: string }) {
   const stripe = useStripe();
   const elements = useElements();
-  const searchParams = useSearchParams();
   
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    if (!stripe) {
-      return;
-    }
-
-    const clientSecret = searchParams.get('client_secret');
-
-    if (!clientSecret) {
-      setMessage('Missing payment information');
+    if (!stripe || !clientSecret) {
       return;
     }
 
@@ -49,7 +41,7 @@ function CheckoutForm() {
           break;
       }
     });
-  }, [stripe, searchParams]);
+  }, [stripe, clientSecret]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +134,7 @@ function CheckoutForm() {
   );
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const searchParams = useSearchParams();
   const clientSecret = searchParams.get('client_secret');
 
@@ -183,7 +175,23 @@ export default function PaymentPage() {
 
   return (
     <Elements options={options} stripe={stripePromise}>
-      <CheckoutForm />
+      <CheckoutForm clientSecret={clientSecret} />
     </Elements>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full text-center">
+          <Loader2 className="h-16 w-16 text-pink-500 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-bold text-white mb-2">Loading Payment...</h2>
+          <p className="text-gray-400">Please wait while we prepare your payment form.</p>
+        </div>
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   );
 }
