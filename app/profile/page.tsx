@@ -242,6 +242,7 @@ export default function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showBrandingSettings, setShowBrandingSettings] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [profileData, setProfileData] = useState({
     displayName: 'Your Name',
     username: 'username',
@@ -288,6 +289,17 @@ export default function ProfilePage() {
       loadAnalyticsData();
     }
   }, [user, loading, router]);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const loadAnalyticsData = async () => {
     try {
@@ -927,22 +939,22 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* Main Content */}
-      <main className="main-container">
+      <main className={`main-container ${isMobile ? 'px-2 py-4' : 'px-6 py-8'}`}>
         {/* Profile Header */}
-        <div className="profile-header">
-          <div className="profile-avatar-section">
-            <div className="profile-avatar">
+        <div className={`profile-header ${isMobile ? 'flex-col space-y-4 p-4' : 'flex-row space-y-0 p-6'}`}>
+          <div className={`profile-avatar-section ${isMobile ? 'flex flex-col items-center' : ''}`}>
+            <div className={`profile-avatar ${isMobile ? 'w-20 h-20' : 'w-32 h-32'}`}>
               {profileData.avatarUrl ? (
                 <Image
                   src={profileData.avatarUrl}
                   alt="Profile Avatar"
-                  width={120}
-                  height={120}
+                  width={isMobile ? 80 : 120}
+                  height={isMobile ? 80 : 120}
                   className="rounded-full"
                 />
               ) : (
                 <div className="avatar-placeholder">
-                  <User size={48} />
+                  <User size={isMobile ? 32 : 48} />
                 </div>
               )}
               {isEditing && (
@@ -962,19 +974,19 @@ export default function ProfilePage() {
                 </label>
               )}
             </div>
-            <div className="profile-info">
+            <div className={`profile-info ${isMobile ? 'text-center' : ''}`}>
               <div className="profile-name-section">
                 {isEditing ? (
                   <input
                     type="text"
-                    className="profile-name-input"
+                    className={`profile-name-input ${isMobile ? 'text-lg' : ''}`}
                     value={profileData.displayName}
                     onChange={(e) => handleInputChange('displayName', e.target.value)}
                   />
                 ) : (
-                  <h1 className="profile-name">{profileData.displayName}</h1>
+                  <h1 className={`profile-name ${isMobile ? 'text-2xl' : 'text-3xl'}`}>{profileData.displayName}</h1>
                 )}
-                <div className="profile-actions">
+                <div className={`profile-actions ${isMobile ? 'flex flex-col space-y-2' : 'flex space-x-3'}`}>
                   {console.log('🔍 isEditing state:', isEditing)}
                   {isEditing ? (
                     <>
@@ -1041,48 +1053,48 @@ export default function ProfilePage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="tab-navigation">
+        <div className={`tab-navigation ${isMobile ? 'flex-wrap gap-1' : ''}`}>
           <button
             onClick={() => setActiveTab('overview')}
-            className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+            className={`tab-button ${activeTab === 'overview' ? 'active' : ''} ${isMobile ? 'text-xs px-2 py-1' : ''}`}
           >
-            <Activity size={16} />
-            Overview
+            <Activity size={isMobile ? 12 : 16} />
+            <span className={isMobile ? 'hidden' : ''}>Overview</span>
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
+            className={`tab-button ${activeTab === 'analytics' ? 'active' : ''} ${isMobile ? 'text-xs px-2 py-1' : ''}`}
           >
-            <BarChart3 size={16} />
-            Analytics
+            <BarChart3 size={isMobile ? 12 : 16} />
+            <span className={isMobile ? 'hidden' : ''}>Analytics</span>
           </button>
           <button
             onClick={() => setActiveTab('availability')}
-            className={`tab-button ${activeTab === 'availability' ? 'active' : ''}`}
+            className={`tab-button ${activeTab === 'availability' ? 'active' : ''} ${isMobile ? 'text-xs px-2 py-1' : ''}`}
           >
-            <Clock3 size={16} />
-            Availability
+            <Clock3 size={isMobile ? 12 : 16} />
+            <span className={isMobile ? 'hidden' : ''}>Availability</span>
           </button>
           <button
             onClick={() => setActiveTab('branding')}
-            className={`tab-button ${activeTab === 'branding' ? 'active' : ''}`}
+            className={`tab-button ${activeTab === 'branding' ? 'active' : ''} ${isMobile ? 'text-xs px-2 py-1' : ''}`}
           >
-            <Palette size={16} />
-            Branding
+            <Palette size={isMobile ? 12 : 16} />
+            <span className={isMobile ? 'hidden' : ''}>Branding</span>
           </button>
           <button
             onClick={() => setActiveTab('revenue')}
-            className={`tab-button ${activeTab === 'revenue' ? 'active' : ''}`}
+            className={`tab-button ${activeTab === 'revenue' ? 'active' : ''} ${isMobile ? 'text-xs px-2 py-1' : ''}`}
           >
-            <DollarSign size={16} />
-            Revenue
+            <DollarSign size={isMobile ? 12 : 16} />
+            <span className={isMobile ? 'hidden' : ''}>Revenue</span>
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
+            className={`tab-button ${activeTab === 'settings' ? 'active' : ''} ${isMobile ? 'text-xs px-2 py-1' : ''}`}
           >
-            <Settings size={16} />
-            Settings
+            <Settings size={isMobile ? 12 : 16} />
+            <span className={isMobile ? 'hidden' : ''}>Settings</span>
           </button>
         </div>
 

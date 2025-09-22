@@ -48,6 +48,7 @@ interface CreatorProfileClientProps {
 export function CreatorProfileClient({ username, initialCreator }: CreatorProfileClientProps) {
   const [activeTab, setActiveTab] = useState('music');
   const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
+  const [isMobile, setIsMobile] = useState(false);
   const [collaborationSubject, setCollaborationSubject] = useState('');
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [chatMessage, setChatMessage] = useState('');
@@ -170,6 +171,17 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
     loadUserTier();
   }, [user]);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch top content (songs and events)
   useEffect(() => {
@@ -384,16 +396,16 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     <CustomBranding userId={creator.id}>
       <div className="min-h-screen text-white">
         {/* Main Content */}
-        <div className="container mx-auto px-4 py-8">
+        <div className={`container mx-auto ${isMobile ? 'px-2 py-4' : 'px-4 py-8'}`}>
         {/* Creator Header */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700 shadow-xl">
-          <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+        <div className={`bg-gray-800 rounded-lg border border-gray-700 shadow-xl ${isMobile ? 'p-4 mb-4' : 'p-6 mb-8'}`}>
+          <div className={`flex ${isMobile ? 'flex-col items-center text-center space-y-4' : 'flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6'}`}>
             <div className="relative">
               <Image
                 src={creator.avatar_url || '/images/default-avatar.jpg'}
                 alt={creator.display_name || creator.username}
-                width={120}
-                height={120}
+                width={isMobile ? 80 : 120}
+                height={isMobile ? 80 : 120}
                 className="rounded-full object-cover ring-4 ring-gray-600"
               />
               {creator.is_verified && (
@@ -403,16 +415,16 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
               )}
             </div>
 
-            <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className={`flex-1 ${isMobile ? 'text-center' : ''}`}>
+              <div className={`flex ${isMobile ? 'flex-col items-center space-y-4' : 'flex-col md:flex-row md:items-center md:justify-between'}`}>
                 <div>
-                  <h1 className="text-3xl font-bold mb-2 text-white">
+                  <h1 className={`font-bold mb-2 text-white ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
                     {creator.display_name || creator.username}
                     {creator.is_verified && (
-                      <CheckCircle className="inline-block h-6 w-6 text-blue-500 ml-2" />
+                      <CheckCircle className={`inline-block text-blue-500 ml-2 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
                     )}
                   </h1>
-                  <p className="mb-2 text-gray-300">@{creator.username}</p>
+                  <p className={`mb-2 text-gray-300 ${isMobile ? 'text-sm' : ''}`}>@{creator.username}</p>
                   {creator.location && (
                     <div className="flex items-center mb-2 text-gray-300">
                       <MapPin className="h-4 w-4 mr-1" />
@@ -428,22 +440,24 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                   <button
                     onClick={handleFollowToggle}
                     disabled={isLoadingFollow}
-                    className={`flex items-center justify-center px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    className={`flex items-center justify-center rounded-lg font-medium transition-all duration-200 ${
+                      isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-2'
+                    } ${
                       isFollowing 
                         ? 'bg-gray-600 text-white border border-gray-500 hover:bg-gray-500' 
                         : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
                     }`}
                   >
                     {isLoadingFollow ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                     ) : isFollowing ? (
                       <>
-                        <UserMinus className="h-4 w-4 mr-2" />
+                        <UserMinus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
                         Unfollow
                       </>
                     ) : (
                       <>
-                        <UserPlus className="h-4 w-4 mr-2" />
+                        <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
                         Follow
                       </>
                     )}
@@ -486,27 +500,29 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         </div>
 
         {/* Tabs */}
-        <div className="bg-gray-800 rounded-lg p-4 mb-8 border border-gray-700 shadow-lg">
-          <div className="flex flex-wrap gap-2">
+        <div className={`bg-gray-800 rounded-lg border border-gray-700 shadow-lg ${isMobile ? 'p-2 mb-4' : 'p-4 mb-8'}`}>
+          <div className={`flex ${isMobile ? 'flex-wrap gap-1' : 'flex-wrap gap-2'}`}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex items-center rounded-lg font-medium transition-all duration-200 ${
+                  isMobile ? 'space-x-1 px-2 py-1 text-xs' : 'space-x-2 px-4 py-2'
+                } ${
                   activeTab === tab.id
                     ? 'bg-red-600 text-white shadow-lg'
                     : 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600 hover:text-white'
                 }`}
               >
-                <tab.icon className="h-4 w-4" />
-                <span>{tab.label}</span>
+                <tab.icon className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+                <span className={isMobile ? 'hidden' : ''}>{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 shadow-lg min-h-[400px]">
+        <div className={`bg-gray-800 rounded-lg border border-gray-700 shadow-lg min-h-[400px] ${isMobile ? 'p-4' : 'p-6'}`}>
           {activeTab === 'music' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Latest Release */}
