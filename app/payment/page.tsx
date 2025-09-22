@@ -34,14 +34,18 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
           setMessage('Your payment is processing.');
           break;
         case 'requires_payment_method':
-          setMessage('Your payment was not successful, please try again.');
+          // Don't show error message immediately - this is the initial state
+          // Only show error if user has attempted payment
+          if (isLoading) {
+            setMessage('Your payment was not successful, please try again.');
+          }
           break;
         default:
           setMessage('Something went wrong.');
           break;
       }
     });
-  }, [stripe, clientSecret]);
+  }, [stripe, clientSecret, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +55,7 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
     }
 
     setIsLoading(true);
+    setMessage(null); // Clear any previous messages
 
     const { error } = await stripe.confirmPayment({
       elements,
@@ -59,10 +64,12 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
       },
     });
 
-    if (error.type === 'card_error' || error.type === 'validation_error') {
-      setMessage(error.message || 'An unexpected error occurred.');
-    } else {
-      setMessage('An unexpected error occurred.');
+    if (error) {
+      if (error.type === 'card_error' || error.type === 'validation_error') {
+        setMessage(error.message || 'Your payment was not successful, please try again.');
+      } else {
+        setMessage('An unexpected error occurred. Please try again.');
+      }
     }
 
     setIsLoading(false);
