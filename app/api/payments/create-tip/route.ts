@@ -61,19 +61,12 @@ export async function POST(request: NextRequest) {
     // Configure payment methods based on selection
     if (paymentMethod === 'apple_pay') {
       paymentIntentConfig.payment_method_types = ['card', 'apple_pay'];
-      paymentIntentConfig.automatic_payment_methods = {
-        enabled: true,
-        allow_redirects: 'never'
-      };
+      // Don't set automatic_payment_methods when specifying payment_method_types
     } else if (paymentMethod === 'google_pay') {
       paymentIntentConfig.payment_method_types = ['card', 'google_pay'];
-      paymentIntentConfig.automatic_payment_methods = {
-        enabled: true,
-        allow_redirects: 'never'
-      };
+      // Don't set automatic_payment_methods when specifying payment_method_types
     } else {
-      // Regular card payment
-      paymentIntentConfig.payment_method_types = ['card'];
+      // Regular card payment - use automatic payment methods for better UX
       paymentIntentConfig.automatic_payment_methods = {
         enabled: true,
       };
