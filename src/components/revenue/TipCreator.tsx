@@ -62,7 +62,10 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
       setSuccess(null);
 
       // Step 1: Create payment intent
+      console.log('Creating payment intent for:', { creatorId, tipData, userTier });
       const result = await revenueService.sendTip(creatorId, tipData, userTier);
+      
+      console.log('Payment intent result:', result);
       
       if (!result.success || !result.paymentIntentId || !result.clientSecret) {
         setError(result.error || 'Failed to create payment');
@@ -70,15 +73,18 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
       }
 
       // Step 2: Process payment with Stripe
+      console.log('Loading Stripe...');
       const stripe = await import('@stripe/stripe-js').then(({ loadStripe }) => 
         loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
       );
 
       if (!stripe) {
+        console.error('Stripe not loaded');
         setError('Payment system not available');
         return;
       }
 
+      console.log('Confirming payment with Stripe...');
       const { error: stripeError } = await stripe.confirmPayment({
         clientSecret: result.clientSecret,
         confirmParams: {
@@ -87,13 +93,19 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         redirect: 'if_required'
       });
 
+      console.log('Stripe payment result:', stripeError);
+
       if (stripeError) {
+        console.error('Stripe payment error:', stripeError);
         setError(stripeError.message || 'Payment failed');
         return;
       }
 
       // Step 3: Confirm tip in our system
+      console.log('Confirming tip in system...');
       const confirmResult = await revenueService.confirmTip(result.paymentIntentId);
+      
+      console.log('Confirm result:', confirmResult);
       
       if (confirmResult.success) {
         setSuccess(`Tip of $${tipData.amount} sent successfully!`);
@@ -144,7 +156,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 pt-12 pb-3 px-2 sm:pt-16 sm:pb-4 sm:px-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
       <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-8rem)] overflow-y-auto p-4 sm:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
