@@ -26,9 +26,12 @@ import {
   MessageCircle,
   Home,
   Clock3,
-  Crown
+  Crown,
+  DollarSign
 } from 'lucide-react';
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
+import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard';
+import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -41,7 +44,7 @@ export default function DashboardPage() {
     setError
   } = useDashboard();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'settings' | 'availability'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'settings' | 'availability' | 'revenue'>('overview');
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -86,6 +89,7 @@ export default function DashboardPage() {
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'followers', label: 'Followers', icon: Users },
     { id: 'subscription', label: 'Subscription', icon: Crown },
+    { id: 'revenue', label: 'Revenue', icon: DollarSign },
     { id: 'availability', label: 'Availability', icon: Clock3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -616,7 +620,46 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab !== 'overview' && activeTab !== 'availability' && (
+          {activeTab === 'revenue' && user && (
+            <div style={{
+              background: 'var(--bg-secondary)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: '1rem',
+              padding: '2rem'
+            }}>
+              <RevenueDashboard userId={user.id} />
+              
+              {/* Bank Account Management */}
+              <div style={{
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: '0.75rem',
+                padding: '1.5rem',
+                marginTop: '2rem'
+              }}>
+                <h3 style={{ 
+                  fontSize: '1.125rem', 
+                  fontWeight: '600', 
+                  color: 'var(--text-primary)', 
+                  margin: '0 0 0.5rem 0' 
+                }}>
+                  Bank Account & Payouts
+                </h3>
+                <p style={{ 
+                  color: 'var(--text-secondary)', 
+                  fontSize: '0.875rem', 
+                  margin: '0 0 1.5rem 0' 
+                }}>
+                  Manage your bank account for receiving payouts
+                </p>
+                <BankAccountManager userId={user.id} />
+              </div>
+            </div>
+          )}
+
+          {activeTab !== 'overview' && activeTab !== 'availability' && activeTab !== 'revenue' && (
             <div style={{
               background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',
