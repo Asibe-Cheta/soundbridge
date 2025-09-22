@@ -263,3 +263,50 @@ CREATE POLICY "Users can view their own transactions" ON revenue_transactions
 
 CREATE POLICY "Users can insert their own transactions" ON revenue_transactions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Enable RLS on all tables
+ALTER TABLE creator_bank_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE creator_revenue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tip_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE creator_tips ENABLE ROW LEVEL SECURITY;
+ALTER TABLE revenue_transactions ENABLE ROW LEVEL SECURITY;
+
+-- Create RPC function to get user bank account (avoids PostgREST 406 errors)
+CREATE OR REPLACE FUNCTION get_user_bank_account(user_uuid uuid)
+RETURNS TABLE (
+  id uuid,
+  user_id uuid,
+  account_holder_name text,
+  bank_name text,
+  account_number_encrypted text,
+  routing_number_encrypted text,
+  account_type text,
+  currency text,
+  verification_status text,
+  is_verified boolean,
+  verification_attempts integer,
+  stripe_account_id text,
+  created_at timestamptz,
+  updated_at timestamptz
+) 
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT 
+    id,
+    user_id,
+    account_holder_name,
+    bank_name,
+    account_number_encrypted,
+    routing_number_encrypted,
+    account_type,
+    currency,
+    verification_status,
+    is_verified,
+    verification_attempts,
+    stripe_account_id,
+    created_at,
+    updated_at
+  FROM creator_bank_accounts
+  WHERE creator_bank_accounts.user_id = user_uuid;
+$$;

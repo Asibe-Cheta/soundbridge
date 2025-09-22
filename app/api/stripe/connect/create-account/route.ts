@@ -93,6 +93,16 @@ export async function POST(request: NextRequest) {
     
     // Provide more specific error messages
     if (error.type === 'StripeInvalidRequestError') {
+      if (error.message?.includes('Connect')) {
+        return NextResponse.json(
+          { 
+            error: 'Stripe Connect not enabled',
+            details: 'Your Stripe account needs to be set up for Connect. Please visit https://stripe.com/docs/connect to enable Connect for your account.',
+            action: 'enable_connect'
+          },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { error: `Stripe error: ${error.message}` },
         { status: 400 }
