@@ -150,7 +150,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     };
 
     loadCreatorData();
-  }, [creator.id, username, user, availabilityActions, tracks.length]);
+  }, [creator.id, username, user, availabilityActions]); // Removed tracks.length to prevent infinite loop
 
   // Load user tier for tipping features
   useEffect(() => {
