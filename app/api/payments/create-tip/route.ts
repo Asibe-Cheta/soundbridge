@@ -5,7 +5,8 @@ import { stripe } from '@/src/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
     // Get the current user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
