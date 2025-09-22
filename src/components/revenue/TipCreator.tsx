@@ -108,19 +108,25 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         const availableMethods: PaymentMethod[] = ['card']; // Card is always available
         
         try {
-          // Check for Apple Pay availability
-          if (typeof window !== 'undefined' && window.ApplePaySession && ApplePaySession.canMakePayments()) {
-            availableMethods.push('apple_pay');
+          // Check for Apple Pay availability (works on Safari and iOS)
+          if (typeof window !== 'undefined' && window.ApplePaySession && typeof window.ApplePaySession.canMakePayments === 'function') {
+            const canMakePayments = window.ApplePaySession.canMakePayments();
+            if (canMakePayments) {
+              availableMethods.push('apple_pay');
+              console.log('Apple Pay detected and available');
+            }
           }
           
-          // Check for Google Pay availability (simplified check)
-          if (typeof window !== 'undefined' && window.google && window.google.payments) {
+          // Check for Google Pay availability (works on Chrome and Android)
+          if (typeof window !== 'undefined' && window.google && window.google.payments && window.google.payments.api) {
             availableMethods.push('google_pay');
+            console.log('Google Pay detected and available');
           }
         } catch (error) {
           console.log('Payment method detection error:', error);
         }
         
+        console.log('Available payment methods:', availableMethods);
         setAvailablePaymentMethods(availableMethods);
         
         // Set default payment method to first available
@@ -179,15 +185,12 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         });
         stripeError = error;
       } else {
-        // Handle regular card payment
-        // Since we don't have Stripe Elements set up, we'll use a simple approach
-        // The payment intent is created and will be confirmed via webhook
-        setSuccess(`Payment intent created! Redirecting to payment...`);
+        // Handle regular card payment - redirect to Stripe Checkout
+        console.log('Redirecting to Stripe Checkout for card payment...');
         
-        // Redirect to a payment confirmation page or show success
-        setTimeout(() => {
-          window.location.href = `${window.location.origin}/tip-success?payment_intent=${result.paymentIntentId}`;
-        }, 2000);
+        // For now, we'll redirect to a payment page that can handle the payment intent
+        // In a full implementation, you'd want to use Stripe Elements or redirect to checkout
+        window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
         return;
       }
 
