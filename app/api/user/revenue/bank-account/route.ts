@@ -16,12 +16,11 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Get bank account information
+    // Get bank account information - use regular query to avoid PostgREST 406 errors
     const { data, error } = await supabase
       .from('creator_bank_accounts')
       .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle(); // Use maybeSingle() instead of single() to handle no rows gracefully
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error fetching bank account:', error);
@@ -31,22 +30,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Don't return sensitive information like account numbers
-    if (data) {
-      const { account_number_encrypted, routing_number_encrypted, ...safeData } = data;
+    // Handle empty result (no bank account found)
+    if (!data || data.length === 0) {
       return NextResponse.json({
-        ...safeData,
-        has_account: true,
-        // Only show last 4 digits of account number
-        account_number_masked: account_number_encrypted ? 
-          `****${account_number_encrypted.slice(-4)}` : null
+        has_account: false,
+        is_verified: false,
+        verification_status: 'pending'
       });
     }
 
+    // Don't return sensitive information like account numbers
+    const bankAccount = data[0]; // Get the first (and should be only) record
+    const { account_number_encrypted, routing_number_encrypted, ...safeData } = bankAccount;
     return NextResponse.json({
-      has_account: false,
-      is_verified: false,
-      verification_status: 'pending'
+      ...safeData,
+      has_account: true,
+      // Only show last 4 digits of account number
+      account_number_masked: account_number_encrypted ? 
+        `****${account_number_encrypted.slice(-4)}` : null
     });
     
   } catch (error) {

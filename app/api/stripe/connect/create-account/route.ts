@@ -88,10 +88,26 @@ export async function POST(request: NextRequest) {
       onboardingUrl: accountLink.url
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating Stripe Connect account:', error);
+    
+    // Provide more specific error messages
+    if (error.type === 'StripeInvalidRequestError') {
+      return NextResponse.json(
+        { error: `Stripe error: ${error.message}` },
+        { status: 400 }
+      );
+    }
+    
+    if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      return NextResponse.json(
+        { error: 'Database tables not set up. Please run the database setup script first.' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${error.message || 'Unknown error'}` },
       { status: 500 }
     );
   }
