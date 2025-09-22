@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse request body
-    const { creatorId, amount, currency, message, isAnonymous } = await request.json();
+    const { creatorId, amount, currency, message, isAnonymous, userTier = 'free' } = await request.json();
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -26,17 +26,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get creator's tier for fee calculation
-    const { data: creatorTier } = await supabase
-      .from('user_upload_stats')
-      .select('current_tier')
-      .eq('user_id', creatorId)
-      .single();
-
-    const tier = creatorTier?.current_tier || 'free';
-    
-    // Calculate platform fee and creator earnings
-    const platformFeeRate = tier === 'free' ? 0.10 : tier === 'pro' ? 0.05 : 0.02;
+    // Calculate platform fee based on tipper's tier (userTier)
+    const platformFeeRate = userTier === 'free' ? 0.10 : userTier === 'pro' ? 0.08 : 0.05;
     const platformFee = Math.round(amount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((amount - platformFee) * 100) / 100;
 
@@ -44,8 +35,27 @@ export async function POST(request: NextRequest) {
     // For now, we'll simulate the payment intent creation
     const mockPaymentIntentId = `pi_mock_${Date.now()}`;
 
-    // Record the tip in the database
+    // Record the tip in the enhanced tip analytics system
     const { data: tipData, error: tipError } = await supabase
+      .from('tip_analytics')
+      .insert({
+        creator_id: creatorId,
+        tipper_id: user.id,
+        tipper_tier: userTier,
+        tip_amount: amount,
+        platform_fee: platformFee,
+        creator_earnings: creatorEarnings,
+        fee_percentage: platformFeeRate * 100,
+        tip_message: message,
+        is_anonymous: isAnonymous || false,
+        stripe_payment_intent_id: mockPaymentIntentId,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    // Also record in the original creator_tips table for backward compatibility
+    const { error: legacyTipError } = await supabase
       .from('creator_tips')
       .insert({
         creator_id: creatorId,
@@ -56,9 +66,7 @@ export async function POST(request: NextRequest) {
         is_anonymous: isAnonymous || false,
         stripe_payment_intent_id: mockPaymentIntentId,
         status: 'pending'
-      })
-      .select()
-      .single();
+      });
 
     if (tipError) {
       console.error('Error creating tip record:', tipError);

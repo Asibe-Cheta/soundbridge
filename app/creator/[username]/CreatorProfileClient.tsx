@@ -47,6 +47,7 @@ interface CreatorProfileClientProps {
 
 export function CreatorProfileClient({ username, initialCreator }: CreatorProfileClientProps) {
   const [activeTab, setActiveTab] = useState('music');
+  const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
   const [collaborationSubject, setCollaborationSubject] = useState('');
   const [collaborationMessage, setCollaborationMessage] = useState('');
   const [chatMessage, setChatMessage] = useState('');
@@ -149,6 +150,26 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
     loadCreatorData();
   }, [creator.id, username, user, availabilityActions, tracks.length]);
+
+  // Load user tier for tipping features
+  useEffect(() => {
+    const loadUserTier = async () => {
+      if (!user) return;
+      
+      try {
+        const response = await fetch('/api/user/subscription');
+        if (response.ok) {
+          const data = await response.json();
+          setUserTier(data.tier || 'free');
+        }
+      } catch (error) {
+        console.error('Failed to load user tier:', error);
+        setUserTier('free');
+      }
+    };
+
+    loadUserTier();
+  }, [user]);
 
   // Fetch top content (songs and events)
   useEffect(() => {
@@ -433,6 +454,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                     <TipCreator
                       creatorId={creator.id}
                       creatorName={creator.display_name || creator.username}
+                      userTier={userTier}
                     />
                   )}
 

@@ -130,7 +130,7 @@ export class RevenueService {
   /**
    * Send a tip to a creator
    */
-  async sendTip(creatorId: string, tipData: TipFormData): Promise<{ success: boolean; error?: string; paymentIntentId?: string }> {
+  async sendTip(creatorId: string, tipData: TipFormData, userTier: 'free' | 'pro' | 'enterprise' = 'free'): Promise<{ success: boolean; error?: string; paymentIntentId?: string }> {
     try {
       // Create Stripe payment intent
       const response = await fetch('/api/payments/create-tip', {
@@ -143,7 +143,8 @@ export class RevenueService {
           amount: tipData.amount,
           currency: 'USD',
           message: tipData.message,
-          isAnonymous: tipData.is_anonymous
+          isAnonymous: tipData.is_anonymous,
+          userTier
         })
       });
 

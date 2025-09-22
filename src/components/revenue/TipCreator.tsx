@@ -20,11 +20,12 @@ interface TipCreatorProps {
   creatorId: string;
   creatorName: string;
   onTipSent?: (amount: number) => void;
+  userTier?: 'free' | 'pro' | 'enterprise';
 }
 
 const SUGGESTED_AMOUNTS = [5, 10, 25, 50, 100];
 
-export function TipCreator({ creatorId, creatorName, onTipSent }: TipCreatorProps) {
+export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free' }: TipCreatorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tipData, setTipData] = useState<TipFormData>({
     amount: 10,
@@ -34,6 +35,25 @@ export function TipCreator({ creatorId, creatorName, onTipSent }: TipCreatorProp
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Tier-based features
+  const [showTipGoal, setShowTipGoal] = useState(false);
+  const [tipGoalAmount, setTipGoalAmount] = useState(100);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [tipRewards, setTipRewards] = useState(false);
+
+  // Tier-based feature helpers
+  const getPlatformFee = (amount: number) => {
+    const feePercentage = userTier === 'free' ? 0.10 : userTier === 'pro' ? 0.08 : 0.05;
+    return Math.round(amount * feePercentage * 100) / 100;
+  };
+
+  const getCreatorReceives = (amount: number) => {
+    return Math.round((amount - getPlatformFee(amount)) * 100) / 100;
+  };
+
+  const hasProFeatures = userTier === 'pro' || userTier === 'enterprise';
+  const hasEnterpriseFeatures = userTier === 'enterprise';
 
   const handleSendTip = async () => {
     try {
@@ -41,7 +61,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent }: TipCreatorProp
       setError(null);
       setSuccess(null);
 
-      const result = await revenueService.sendTip(creatorId, tipData);
+      const result = await revenueService.sendTip(creatorId, tipData, userTier);
       
       if (result.success) {
         setSuccess(`Tip of $${tipData.amount} sent successfully!`);
@@ -162,7 +182,77 @@ export function TipCreator({ creatorId, creatorName, onTipSent }: TipCreatorProp
               placeholder="Enter custom amount"
             />
           </div>
+
+          {/* Fee Breakdown */}
+          <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Tip Amount:</span>
+              <span className="text-white">${tipData.amount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Platform Fee ({userTier === 'free' ? '10%' : userTier === 'pro' ? '8%' : '5%'}):</span>
+              <span className="text-gray-400">-${getPlatformFee(tipData.amount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-medium pt-1 border-t border-gray-600">
+              <span className="text-gray-300">Creator Receives:</span>
+              <span className="text-green-400">${getCreatorReceives(tipData.amount).toFixed(2)}</span>
+            </div>
+          </div>
         </div>
+
+        {/* Pro Features - Tip Goals */}
+        {hasProFeatures && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-gray-400 text-sm">Tip Goal Progress</label>
+              <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">PRO</span>
+            </div>
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-blue-300">Goal: ${tipGoalAmount}</span>
+                <span className="text-sm text-blue-300">${tipData.amount} / ${tipGoalAmount}</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((tipData.amount / tipGoalAmount) * 100, 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-blue-400 mt-1">
+                {tipData.amount >= tipGoalAmount ? 'Goal reached! 🎉' : `$${(tipGoalAmount - tipData.amount).toFixed(2)} to go`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Enterprise Features - Tip Rewards */}
+        {hasEnterpriseFeatures && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-gray-400 text-sm">Tip Rewards</label>
+              <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">ENTERPRISE</span>
+            </div>
+            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="tipRewards"
+                  checked={tipRewards}
+                  onChange={(e) => setTipRewards(e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="tipRewards" className="text-sm text-purple-300">
+                  Unlock exclusive content for this tip
+                </label>
+              </div>
+              {tipRewards && (
+                <p className="text-xs text-purple-400">
+                  Creator will receive a notification to share exclusive content with you
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Message */}
         <div className="mb-6">
@@ -200,10 +290,26 @@ export function TipCreator({ creatorId, creatorName, onTipSent }: TipCreatorProp
           </label>
         </div>
 
+        {/* Upgrade Prompt for Free Users */}
+        {userTier === 'free' && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">UPGRADE</span>
+              <span className="text-sm text-blue-300 font-medium">Unlock Advanced Tip Features</span>
+            </div>
+            <p className="text-xs text-blue-400 mb-2">
+              Upgrade to Pro for lower platform fees (8% vs 10%), tip analytics, goals, and rewards!
+            </p>
+            <button className="text-xs text-blue-300 hover:text-blue-200 underline">
+              Learn More →
+            </button>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-400">
-            Platform fee: {formatCurrency(tipData.amount * 0.05)} (5%)
+            Platform fee: {formatCurrency(getPlatformFee(tipData.amount))} ({userTier === 'free' ? '10%' : userTier === 'pro' ? '8%' : '5%'})
           </div>
           <button
             onClick={handleSendTip}
