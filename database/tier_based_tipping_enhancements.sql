@@ -437,28 +437,42 @@ ALTER TABLE tip_goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tip_rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tip_reward_redemptions ENABLE ROW LEVEL SECURITY;
 
--- Tip Analytics RLS Policies
+-- Tip Analytics RLS Policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own tip analytics" ON tip_analytics;
+DROP POLICY IF EXISTS "Users can insert their own tip analytics" ON tip_analytics;
+DROP POLICY IF EXISTS "Users can view tips they sent or received" ON tip_analytics;
+DROP POLICY IF EXISTS "Users can insert tips they send" ON tip_analytics;
+
 CREATE POLICY "Users can view their own tip analytics" ON tip_analytics
   FOR SELECT USING (auth.uid() = creator_id OR auth.uid() = tipper_id);
 
 CREATE POLICY "Users can insert their own tip analytics" ON tip_analytics
   FOR INSERT WITH CHECK (auth.uid() = tipper_id);
 
--- Tip Goals RLS Policies
+-- Tip Goals RLS Policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own tip goals" ON tip_goals;
+DROP POLICY IF EXISTS "Users can manage their own tip goals" ON tip_goals;
+
 CREATE POLICY "Users can view their own tip goals" ON tip_goals
   FOR SELECT USING (auth.uid() = creator_id);
 
 CREATE POLICY "Users can manage their own tip goals" ON tip_goals
   FOR ALL USING (auth.uid() = creator_id);
 
--- Tip Rewards RLS Policies
+-- Tip Rewards RLS Policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own tip rewards" ON tip_rewards;
+DROP POLICY IF EXISTS "Users can manage their own tip rewards" ON tip_rewards;
+
 CREATE POLICY "Users can view their own tip rewards" ON tip_rewards
   FOR SELECT USING (auth.uid() = creator_id);
 
 CREATE POLICY "Users can manage their own tip rewards" ON tip_rewards
   FOR ALL USING (auth.uid() = creator_id);
 
--- Tip Reward Redemptions RLS Policies
+-- Tip Reward Redemptions RLS Policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own tip reward redemptions" ON tip_reward_redemptions;
+DROP POLICY IF EXISTS "Users can insert their own tip reward redemptions" ON tip_reward_redemptions;
+
 CREATE POLICY "Users can view their own tip reward redemptions" ON tip_reward_redemptions
   FOR SELECT USING (auth.uid() = tipper_id);
 
