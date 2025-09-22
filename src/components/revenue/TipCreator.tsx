@@ -112,24 +112,24 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-pink-500/20 rounded-lg">
-              <Gift className="h-6 w-6 text-pink-400" />
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="p-1.5 sm:p-2 bg-pink-500/20 rounded-lg">
+              <Gift className="h-5 w-5 sm:h-6 sm:w-6 text-pink-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Send a Tip</h3>
-              <p className="text-gray-400 text-sm">Show your support for {creatorName}</p>
+              <h3 className="text-base sm:text-lg font-semibold text-white">Send a Tip</h3>
+              <p className="text-gray-400 text-xs sm:text-sm">Show your support for {creatorName}</p>
             </div>
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-1"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
 
@@ -152,12 +152,12 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           <label className="block text-gray-400 text-sm mb-3">Tip Amount</label>
           
           {/* Suggested Amounts */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3 sm:mb-4">
             {SUGGESTED_AMOUNTS.map((amount) => (
               <button
                 key={amount}
                 onClick={() => setTipData({ ...tipData, amount })}
-                className={`p-3 rounded-lg border transition-colors ${
+                className={`p-2 sm:p-3 rounded-lg border transition-colors text-sm sm:text-base ${
                   tipData.amount === amount
                     ? 'border-pink-500 bg-pink-500/20 text-pink-400'
                     : 'border-gray-600 bg-gray-700 text-white hover:border-gray-500'
@@ -170,7 +170,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
 
           {/* Custom Amount */}
           <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             <input
               type="number"
               min="1"
@@ -178,13 +178,13 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
               step="1"
               value={tipData.amount}
               onChange={(e) => setTipData({ ...tipData, amount: parseFloat(e.target.value) || 0 })}
-              className="w-full pl-10 pr-3 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-pink-500"
+              className="w-full pl-9 sm:pl-10 pr-3 py-2.5 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-pink-500 text-sm sm:text-base"
               placeholder="Enter custom amount"
             />
           </div>
 
           {/* Fee Breakdown */}
-          <div className="mt-3 p-3 bg-gray-700/50 rounded-lg">
+          <div className="mt-3 p-2.5 sm:p-3 bg-gray-700/50 rounded-lg">
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Tip Amount:</span>
               <span className="text-white">${tipData.amount.toFixed(2)}</span>
@@ -202,12 +202,12 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
 
         {/* Pro Features - Tip Goals */}
         {hasProFeatures && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-gray-400 text-sm">Tip Goal Progress</label>
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <label className="block text-gray-400 text-xs sm:text-sm">Tip Goal Progress</label>
               <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">PRO</span>
             </div>
-            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="p-2.5 sm:p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-blue-300">Goal: ${tipGoalAmount}</span>
                 <span className="text-sm text-blue-300">${tipData.amount} / ${tipGoalAmount}</span>
@@ -227,12 +227,12 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
 
         {/* Enterprise Features - Tip Rewards */}
         {hasEnterpriseFeatures && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-gray-400 text-sm">Tip Rewards</label>
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <label className="block text-gray-400 text-xs sm:text-sm">Tip Rewards</label>
               <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">ENTERPRISE</span>
             </div>
-            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+            <div className="p-2.5 sm:p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <input
                   type="checkbox"
@@ -255,14 +255,14 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         )}
 
         {/* Message */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <label className="block text-gray-400 text-sm mb-2">Message (Optional)</label>
           <textarea
             value={tipData.message}
             onChange={(e) => setTipData({ ...tipData, message: e.target.value })}
             placeholder="Leave a message for the creator..."
-            className="w-full px-3 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-pink-500 resize-none"
-            rows={3}
+            className="w-full px-3 py-2.5 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-pink-500 resize-none text-sm sm:text-base"
+            rows={2}
             maxLength={200}
           />
           <p className="text-gray-400 text-xs mt-1">
@@ -271,31 +271,31 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         </div>
 
         {/* Anonymous Option */}
-        <div className="mb-6">
-          <label className="flex items-center space-x-3 cursor-pointer">
+        <div className="mb-4 sm:mb-6">
+          <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer">
             <input
               type="checkbox"
               checked={tipData.is_anonymous}
               onChange={(e) => setTipData({ ...tipData, is_anonymous: e.target.checked })}
               className="w-4 h-4 text-pink-500 bg-gray-700 border-gray-600 rounded focus:ring-pink-500"
             />
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
               {tipData.is_anonymous ? (
-                <EyeOff className="h-4 w-4 text-gray-400" />
+                <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
               ) : (
-                <Eye className="h-4 w-4 text-gray-400" />
+                <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
               )}
-              <span className="text-gray-300">Send anonymously</span>
+              <span className="text-gray-300 text-sm sm:text-base">Send anonymously</span>
             </div>
           </label>
         </div>
 
         {/* Upgrade Prompt for Free Users */}
         {userTier === 'free' && (
-          <div className="mb-4 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+          <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
               <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">UPGRADE</span>
-              <span className="text-sm text-blue-300 font-medium">Unlock Advanced Tip Features</span>
+              <span className="text-xs sm:text-sm text-blue-300 font-medium">Unlock Advanced Tip Features</span>
             </div>
             <p className="text-xs text-blue-400 mb-2">
               Upgrade to Pro for lower platform fees (8% vs 10%), tip analytics, goals, and rewards!
@@ -307,14 +307,14 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-400">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="text-xs sm:text-sm text-gray-400 order-2 sm:order-1">
             Platform fee: {formatCurrency(getPlatformFee(tipData.amount))} ({userTier === 'free' ? '10%' : userTier === 'pro' ? '8%' : '5%'})
           </div>
           <button
             onClick={handleSendTip}
             disabled={sending || tipData.amount <= 0}
-            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 order-1 sm:order-2 text-sm sm:text-base"
           >
             {sending ? (
               <>
