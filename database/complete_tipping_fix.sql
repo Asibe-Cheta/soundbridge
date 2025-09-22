@@ -85,7 +85,6 @@ CREATE TABLE IF NOT EXISTS user_upload_stats (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
   current_tier TEXT DEFAULT 'free' CHECK (current_tier IN ('free', 'pro', 'enterprise')),
   total_uploads INTEGER DEFAULT 0 CHECK (total_uploads >= 0),
-  total_size_mb DECIMAL(10,2) DEFAULT 0 CHECK (total_size_mb >= 0),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -331,8 +330,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 10. INSERT DEFAULT USER STATS FOR EXISTING USERS
 -- ==============================================
 
-INSERT INTO user_upload_stats (user_id, current_tier, total_uploads, total_size_mb)
-SELECT id, 'free', 0, 0
+INSERT INTO user_upload_stats (user_id, current_tier, total_uploads)
+SELECT id, 'free', 0
 FROM auth.users
 WHERE id NOT IN (SELECT user_id FROM user_upload_stats)
 ON CONFLICT (user_id) DO NOTHING;
