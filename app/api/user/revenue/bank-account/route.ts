@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
       .from('creator_bank_accounts')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to handle no rows gracefully
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error) {
       console.error('Error fetching bank account:', error);
       return NextResponse.json(
         { error: 'Failed to fetch bank account information' },

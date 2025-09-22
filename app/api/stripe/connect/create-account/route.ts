@@ -66,8 +66,18 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Error storing Stripe account:', updateError);
+      console.error('Error details:', JSON.stringify(updateError, null, 2));
+      
+      // Check if it's a table not found error
+      if (updateError.message?.includes('relation "creator_bank_accounts" does not exist')) {
+        return NextResponse.json(
+          { error: 'Database tables not set up. Please run the database setup script first.' },
+          { status: 500 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to store account information' },
+        { error: 'Failed to store account information: ' + updateError.message },
         { status: 500 }
       );
     }
