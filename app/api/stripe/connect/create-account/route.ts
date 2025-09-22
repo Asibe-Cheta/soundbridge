@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Create account link for onboarding
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.soundbridge.live';
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile?tab=revenue&refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile?tab=revenue&success=true`,
+      refresh_url: `${baseUrl}/profile?tab=revenue&refresh=true`,
+      return_url: `${baseUrl}/profile?tab=revenue&success=true`,
       type: 'account_onboarding',
     });
 
