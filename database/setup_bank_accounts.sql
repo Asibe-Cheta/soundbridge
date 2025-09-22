@@ -213,6 +213,20 @@ ALTER TABLE tip_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE creator_tips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE revenue_transactions ENABLE ROW LEVEL SECURITY;
 
+-- Create RLS policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own bank account" ON creator_bank_accounts;
+DROP POLICY IF EXISTS "Users can insert their own bank account" ON creator_bank_accounts;
+DROP POLICY IF EXISTS "Users can update their own bank account" ON creator_bank_accounts;
+DROP POLICY IF EXISTS "Users can view their own revenue" ON creator_revenue;
+DROP POLICY IF EXISTS "Users can insert their own revenue" ON creator_revenue;
+DROP POLICY IF EXISTS "Users can update their own revenue" ON creator_revenue;
+DROP POLICY IF EXISTS "Users can view tips they sent or received" ON tip_analytics;
+DROP POLICY IF EXISTS "Users can insert tips they send" ON tip_analytics;
+DROP POLICY IF EXISTS "Users can view tips they sent or received" ON creator_tips;
+DROP POLICY IF EXISTS "Users can insert tips they send" ON creator_tips;
+DROP POLICY IF EXISTS "Users can view their own transactions" ON revenue_transactions;
+DROP POLICY IF EXISTS "Users can insert their own transactions" ON revenue_transactions;
+
 -- Create RLS policies
 CREATE POLICY "Users can view their own bank account" ON creator_bank_accounts
   FOR SELECT USING (auth.uid() = user_id);
