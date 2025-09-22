@@ -90,6 +90,35 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
     }
   };
 
+  const handleSetupStripeConnect = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await fetch('/api/stripe/connect/create-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Redirect to Stripe Connect onboarding
+        window.location.href = result.onboardingUrl;
+      } else {
+        setError(result.error || 'Failed to set up Stripe Connect account');
+      }
+    } catch (error) {
+      console.error('Error setting up Stripe Connect:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCancel = () => {
     setIsEditing(false);
     setError(null);
@@ -367,6 +396,68 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                 </>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stripe Connect Setup */}
+      {!bankAccount && (
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="text-center space-y-4">
+            <div className="p-4 bg-blue-500/20 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+              <Building2 className="h-8 w-8 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">Set Up Payout Account</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Connect your bank account to receive payouts from your earnings. 
+                We use Stripe Connect for secure and reliable payments.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={handleSetupStripeConnect}
+                disabled={saving}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Setting up...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4" />
+                    <span>Set Up with Stripe Connect</span>
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setIsEditing(true)}
+                disabled={saving}
+                className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                <Building2 className="h-4 w-4" />
+                <span>Manual Bank Account Setup</span>
+              </button>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-4">
+              <div className="flex items-start space-x-3">
+                <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
+                <div className="text-left">
+                  <h4 className="font-medium text-blue-300 text-sm">Why Stripe Connect?</h4>
+                  <ul className="text-blue-200 text-xs mt-1 space-y-1">
+                    <li>• Secure and trusted payment processing</li>
+                    <li>• Faster payouts (1-2 business days)</li>
+                    <li>• Lower fees compared to manual transfers</li>
+                    <li>• Automatic tax reporting and compliance</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

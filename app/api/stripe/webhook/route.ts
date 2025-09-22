@@ -1,156 +1,123 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { stripe } from '@/src/lib/stripe';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { stripe } from '../../../../src/lib/stripe';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
-  const body = await request.text();
-  const signature = request.headers.get('stripe-signature')!;
-
-  let event: Stripe.Event;
-
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err);
-    return NextResponse.json(
-      { error: 'Webhook signature verification failed' },
-      { status: 400 }
-    );
-  }
+    const body = await request.text();
+    const signature = request.headers.get('stripe-signature');
 
-  const supabase = createServerComponentClient({ cookies });
-
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, supabase);
-        break;
-      
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, supabase);
-        break;
-      
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, supabase);
-        break;
-      
-      case 'invoice.payment_succeeded':
-        await handlePaymentSucceeded(event.data.object as Stripe.Invoice, supabase);
-        break;
-      
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.Invoice, supabase);
-        break;
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+    if (!signature || !stripe) {
+      return NextResponse.json(
+        { error: 'Missing signature or Stripe not configured' },
+        { status: 400 }
+      );
     }
 
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Handle successful payment
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      
+      console.log('Payment succeeded:', paymentIntent.id);
+
+      // Update tip status to completed
+      const { error: tipError } = await supabase
+        .from('creator_tips')
+        .update({ status: 'completed' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+
+      if (tipError) {
+        console.error('Error updating tip status:', tipError);
+      }
+
+      // Update tip analytics
+      const { error: analyticsError } = await supabase
+        .from('tip_analytics')
+        .update({ status: 'completed' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+
+      if (analyticsError) {
+        console.error('Error updating tip analytics:', analyticsError);
+      }
+
+      // Record revenue transaction
+      if (paymentIntent.metadata.creatorId && paymentIntent.metadata.tipperId) {
+        const { error: transactionError } = await supabase
+          .rpc('record_revenue_transaction', {
+            user_uuid: paymentIntent.metadata.creatorId,
+            transaction_type_param: 'tip',
+            amount_param: parseFloat(paymentIntent.metadata.creatorEarnings || '0'),
+            customer_email_param: '', // Will be filled from user data if needed
+            customer_name_param: paymentIntent.metadata.isAnonymous === 'true' ? 'Anonymous' : 'Tipper',
+            stripe_payment_intent_id_param: paymentIntent.id
+          });
+
+        if (transactionError) {
+          console.error('Error recording revenue transaction:', transactionError);
+        }
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // Handle failed payment
+    if (event.type === 'payment_intent.payment_failed') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      
+      console.log('Payment failed:', paymentIntent.id);
+
+      // Update tip status to failed
+      const { error: tipError } = await supabase
+        .from('creator_tips')
+        .update({ status: 'failed' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+
+      if (tipError) {
+        console.error('Error updating tip status:', tipError);
+      }
+
+      // Update tip analytics
+      const { error: analyticsError } = await supabase
+        .from('tip_analytics')
+        .update({ status: 'failed' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+
+      if (analyticsError) {
+        console.error('Error updating tip analytics:', analyticsError);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // Handle other events
+    console.log(`Unhandled event type: ${event.type}`);
     return NextResponse.json({ received: true });
+
   } catch (error) {
-    console.error('Webhook handler error:', error);
+    console.error('Webhook error:', error);
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
     );
   }
-}
-
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabase: any) {
-  const userId = session.metadata?.userId;
-  const plan = session.metadata?.plan;
-  const billingCycle = session.metadata?.billingCycle;
-
-  if (!userId || !plan) {
-    console.error('Missing metadata in checkout session');
-    return;
-  }
-
-  // Update user subscription in database
-  const { error } = await supabase
-    .from('user_subscriptions')
-    .upsert({
-      user_id: userId,
-      tier: plan,
-      status: 'active',
-      billing_cycle: billingCycle,
-      stripe_subscription_id: session.subscription,
-      stripe_customer_id: session.customer,
-      subscription_ends_at: null, // Active subscription
-      updated_at: new Date().toISOString(),
-    });
-
-  if (error) {
-    console.error('Error updating subscription:', error);
-    throw error;
-  }
-
-  console.log(`Subscription created for user ${userId}: ${plan} (${billingCycle})`);
-}
-
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supabase: any) {
-  const userId = subscription.metadata?.userId;
-  const plan = subscription.metadata?.plan;
-  const billingCycle = subscription.metadata?.billingCycle;
-
-  if (!userId) {
-    console.error('Missing userId in subscription metadata');
-    return;
-  }
-
-  const status = subscription.status === 'active' ? 'active' : 'cancelled';
-  const subscriptionEndsAt = subscription.cancel_at 
-    ? new Date(subscription.cancel_at * 1000).toISOString()
-    : null;
-
-  const { error } = await supabase
-    .from('user_subscriptions')
-    .update({
-      status,
-      billing_cycle: billingCycle,
-      subscription_ends_at: subscriptionEndsAt,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('stripe_subscription_id', subscription.id);
-
-  if (error) {
-    console.error('Error updating subscription:', error);
-    throw error;
-  }
-
-  console.log(`Subscription updated for user ${userId}: ${status}`);
-}
-
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription, supabase: any) {
-  const { error } = await supabase
-    .from('user_subscriptions')
-    .update({
-      status: 'cancelled',
-      subscription_ends_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('stripe_subscription_id', subscription.id);
-
-  if (error) {
-    console.error('Error cancelling subscription:', error);
-    throw error;
-  }
-
-  console.log(`Subscription cancelled: ${subscription.id}`);
-}
-
-async function handlePaymentSucceeded(invoice: Stripe.Invoice, supabase: any) {
-  console.log(`Payment succeeded for invoice: ${invoice.id}`);
-  // You can add additional logic here, like sending confirmation emails
-}
-
-async function handlePaymentFailed(invoice: Stripe.Invoice, supabase: any) {
-  console.log(`Payment failed for invoice: ${invoice.id}`);
-  // You can add additional logic here, like sending payment failure notifications
 }

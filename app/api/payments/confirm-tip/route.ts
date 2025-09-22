@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { stripe } from '@/src/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,8 +26,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Verify payment with Stripe
-    // For now, we'll simulate successful payment
+    // Verify payment with Stripe
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe not configured' },
+        { status: 500 }
+      );
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      return NextResponse.json(
+        { error: 'Payment not completed' },
+        { status: 400 }
+      );
+    }
 
     // Update tip status to completed
     const { data: tipData, error: tipError } = await supabase

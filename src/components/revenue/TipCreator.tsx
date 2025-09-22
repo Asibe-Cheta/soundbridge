@@ -61,9 +61,41 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
       setError(null);
       setSuccess(null);
 
+      // Step 1: Create payment intent
       const result = await revenueService.sendTip(creatorId, tipData, userTier);
       
-      if (result.success) {
+      if (!result.success || !result.paymentIntentId || !result.clientSecret) {
+        setError(result.error || 'Failed to create payment');
+        return;
+      }
+
+      // Step 2: Process payment with Stripe
+      const stripe = await import('@stripe/stripe-js').then(({ loadStripe }) => 
+        loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+      );
+
+      if (!stripe) {
+        setError('Payment system not available');
+        return;
+      }
+
+      const { error: stripeError } = await stripe.confirmPayment({
+        clientSecret: result.clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/tip-success`,
+        },
+        redirect: 'if_required'
+      });
+
+      if (stripeError) {
+        setError(stripeError.message || 'Payment failed');
+        return;
+      }
+
+      // Step 3: Confirm tip in our system
+      const confirmResult = await revenueService.confirmTip(result.paymentIntentId);
+      
+      if (confirmResult.success) {
         setSuccess(`Tip of $${tipData.amount} sent successfully!`);
         if (onTipSent) {
           onTipSent(tipData.amount);
@@ -82,7 +114,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           setSuccess(null);
         }, 2000);
       } else {
-        setError(result.error || 'Failed to send tip');
+        setError(confirmResult.error || 'Failed to confirm tip');
       }
     } catch (error) {
       console.error('Error sending tip:', error);
@@ -112,8 +144,8 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 pt-12 pb-3 px-2 sm:pt-16 sm:pb-4 sm:px-4">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-8rem)] overflow-y-auto p-4 sm:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div className="flex items-center space-x-2 sm:space-x-3">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { stripe } from '@/src/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,9 +32,31 @@ export async function POST(request: NextRequest) {
     const platformFee = Math.round(amount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((amount - platformFee) * 100) / 100;
 
-    // TODO: Create Stripe payment intent
-    // For now, we'll simulate the payment intent creation
-    const mockPaymentIntentId = `pi_mock_${Date.now()}`;
+    // Create real Stripe payment intent
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe not configured' },
+        { status: 500 }
+      );
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: currency || 'USD',
+      metadata: {
+        creatorId,
+        tipperId: user.id,
+        userTier,
+        platformFee: platformFee.toString(),
+        creatorEarnings: creatorEarnings.toString(),
+        tipMessage: message || '',
+        isAnonymous: (isAnonymous || false).toString()
+      },
+      description: `Tip to creator ${creatorId}`,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
 
     // Record the tip in the enhanced tip analytics system
     const { data: tipData, error: tipError } = await supabase
@@ -48,7 +71,7 @@ export async function POST(request: NextRequest) {
         fee_percentage: platformFeeRate * 100,
         tip_message: message,
         is_anonymous: isAnonymous || false,
-        stripe_payment_intent_id: mockPaymentIntentId,
+        stripe_payment_intent_id: paymentIntent.id,
         status: 'pending'
       })
       .select()
@@ -64,7 +87,7 @@ export async function POST(request: NextRequest) {
         currency: currency || 'USD',
         message: message,
         is_anonymous: isAnonymous || false,
-        stripe_payment_intent_id: mockPaymentIntentId,
+        stripe_payment_intent_id: paymentIntent.id,
         status: 'pending'
       });
 
@@ -78,7 +101,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      paymentIntentId: mockPaymentIntentId,
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
       tipId: tipData.id,
       platformFee,
       creatorEarnings
