@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse request body
-    const { creatorId, amount, currency, message, isAnonymous, userTier = 'free' } = await request.json();
+    const { creatorId, amount, currency, message, isAnonymous, userTier = 'free', paymentMethod = 'card' } = await request.json();
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -40,23 +40,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Configure payment methods based on selection
+    const paymentIntentConfig: any = {
       amount: Math.round(amount * 100), // Convert to cents
       currency: currency || 'USD',
       metadata: {
         creatorId,
         tipperId: user.id,
         userTier,
+        paymentMethod,
         platformFee: platformFee.toString(),
         creatorEarnings: creatorEarnings.toString(),
         tipMessage: message || '',
         isAnonymous: (isAnonymous || false).toString()
       },
       description: `Tip to creator ${creatorId}`,
-      automatic_payment_methods: {
+    };
+
+    // Configure payment methods based on selection
+    if (paymentMethod === 'apple_pay') {
+      paymentIntentConfig.payment_method_types = ['card', 'apple_pay'];
+      paymentIntentConfig.automatic_payment_methods = {
         enabled: true,
-      },
-    });
+        allow_redirects: 'never'
+      };
+    } else if (paymentMethod === 'google_pay') {
+      paymentIntentConfig.payment_method_types = ['card', 'google_pay'];
+      paymentIntentConfig.automatic_payment_methods = {
+        enabled: true,
+        allow_redirects: 'never'
+      };
+    } else {
+      // Regular card payment
+      paymentIntentConfig.payment_method_types = ['card'];
+      paymentIntentConfig.automatic_payment_methods = {
+        enabled: true,
+      };
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
 
     // Record the tip in the enhanced tip analytics system
     const { data: tipData, error: tipError } = await supabase

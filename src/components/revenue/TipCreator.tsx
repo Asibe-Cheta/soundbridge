@@ -1,6 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
+
+// TypeScript declarations for payment APIs
+declare global {
+  interface Window {
+    ApplePaySession?: {
+      canMakePayments(): boolean;
+    };
+    google?: {
+      payments?: any;
+    };
+  }
+}
 import { revenueService } from '../../lib/revenue-service';
 import type { TipFormData } from '../../lib/types/revenue';
 import {
@@ -13,7 +25,10 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  X
+  X,
+  CreditCard,
+  Smartphone,
+  Shield
 } from 'lucide-react';
 
 interface TipCreatorProps {
@@ -25,6 +40,35 @@ interface TipCreatorProps {
 
 const SUGGESTED_AMOUNTS = [5, 10, 25, 50, 100];
 
+type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
+
+const PAYMENT_METHODS = [
+  {
+    id: 'card' as PaymentMethod,
+    name: 'Card',
+    icon: CreditCard,
+    description: 'Credit or debit card',
+    color: 'bg-blue-500/20 border-blue-500/50 text-blue-400',
+    hoverColor: 'hover:bg-blue-500/30 hover:border-blue-500/70'
+  },
+  {
+    id: 'apple_pay' as PaymentMethod,
+    name: 'Apple Pay',
+    icon: Smartphone,
+    description: 'Pay with Apple Pay',
+    color: 'bg-black/20 border-gray-600 text-white',
+    hoverColor: 'hover:bg-gray-700/30 hover:border-gray-500'
+  },
+  {
+    id: 'google_pay' as PaymentMethod,
+    name: 'Google Pay',
+    icon: Shield,
+    description: 'Pay with Google Pay',
+    color: 'bg-blue-600/20 border-blue-600/50 text-blue-300',
+    hoverColor: 'hover:bg-blue-600/30 hover:border-blue-600/70'
+  }
+];
+
 export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free' }: TipCreatorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tipData, setTipData] = useState<TipFormData>({
@@ -35,6 +79,8 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('card');
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethod[]>(['card']);
   
   // Tier-based features
   const [showTipGoal, setShowTipGoal] = useState(false);
@@ -55,6 +101,38 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   const hasProFeatures = userTier === 'pro' || userTier === 'enterprise';
   const hasEnterpriseFeatures = userTier === 'enterprise';
 
+  // Detect available payment methods when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      const detectPaymentMethods = async () => {
+        const availableMethods: PaymentMethod[] = ['card']; // Card is always available
+        
+        try {
+          // Check for Apple Pay availability
+          if (typeof window !== 'undefined' && window.ApplePaySession && ApplePaySession.canMakePayments()) {
+            availableMethods.push('apple_pay');
+          }
+          
+          // Check for Google Pay availability (simplified check)
+          if (typeof window !== 'undefined' && window.google && window.google.payments) {
+            availableMethods.push('google_pay');
+          }
+        } catch (error) {
+          console.log('Payment method detection error:', error);
+        }
+        
+        setAvailablePaymentMethods(availableMethods);
+        
+        // Set default payment method to first available
+        if (availableMethods.length > 0 && !availableMethods.includes(selectedPaymentMethod)) {
+          setSelectedPaymentMethod(availableMethods[0]);
+        }
+      };
+      
+      detectPaymentMethods();
+    }
+  }, [isOpen, selectedPaymentMethod]);
+
   const handleSendTip = async () => {
     try {
       setSending(true);
@@ -62,8 +140,8 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
       setSuccess(null);
 
       // Step 1: Create payment intent
-      console.log('Creating payment intent for:', { creatorId, tipData, userTier });
-      const result = await revenueService.sendTip(creatorId, tipData, userTier);
+      console.log('Creating payment intent for:', { creatorId, tipData, userTier, paymentMethod: selectedPaymentMethod });
+      const result = await revenueService.sendTip(creatorId, tipData, userTier, selectedPaymentMethod);
       
       console.log('Payment intent result:', result);
       
@@ -85,13 +163,32 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
       }
 
       console.log('Confirming payment with Stripe...');
-      const { error: stripeError } = await stripe.confirmPayment({
-        clientSecret: result.clientSecret,
-        confirmParams: {
+      
+      let stripeError;
+      
+      if (selectedPaymentMethod === 'apple_pay') {
+        // Handle Apple Pay
+        const { error } = await stripe.confirmApplePayPayment(result.clientSecret, {
           return_url: `${window.location.origin}/tip-success`,
-        },
-        redirect: 'if_required'
-      });
+        });
+        stripeError = error;
+      } else if (selectedPaymentMethod === 'google_pay') {
+        // Handle Google Pay
+        const { error } = await stripe.confirmGooglePayPayment(result.clientSecret, {
+          return_url: `${window.location.origin}/tip-success`,
+        });
+        stripeError = error;
+      } else {
+        // Handle regular card payment
+        const { error } = await stripe.confirmPayment({
+          clientSecret: result.clientSecret,
+          confirmParams: {
+            return_url: `${window.location.origin}/tip-success`,
+          },
+          redirect: 'if_required'
+        });
+        stripeError = error;
+      }
 
       console.log('Stripe payment result:', stripeError);
 
@@ -350,6 +447,38 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           </div>
         )}
 
+        {/* Payment Method Selection */}
+        <div className="mb-4 sm:mb-6">
+          <label className="block text-gray-400 text-sm mb-3">Payment Method</label>
+          <div className="grid grid-cols-1 gap-2 sm:gap-3">
+            {PAYMENT_METHODS.filter(method => availablePaymentMethods.includes(method.id)).map((method) => {
+              const IconComponent = method.icon;
+              return (
+                <button
+                  key={method.id}
+                  onClick={() => setSelectedPaymentMethod(method.id)}
+                  className={`p-3 rounded-lg border transition-all duration-200 flex items-center space-x-3 text-left ${
+                    selectedPaymentMethod === method.id
+                      ? `${method.color} border-opacity-100`
+                      : `border-gray-600 bg-gray-700/50 text-white ${method.hoverColor}`
+                  }`}
+                >
+                  <IconComponent className="h-5 w-5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{method.name}</div>
+                    <div className="text-xs text-gray-400">{method.description}</div>
+                  </div>
+                  {selectedPaymentMethod === method.id && (
+                    <div className="w-4 h-4 rounded-full bg-pink-500 flex items-center justify-center">
+                      <CheckCircle className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
           <div className="text-xs sm:text-sm text-gray-400 order-2 sm:order-1">
@@ -368,7 +497,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                <span>Send {formatCurrency(tipData.amount)}</span>
+                <span>Send {formatCurrency(tipData.amount)} with {PAYMENT_METHODS.find(m => m.id === selectedPaymentMethod)?.name}</span>
               </>
             )}
           </button>
