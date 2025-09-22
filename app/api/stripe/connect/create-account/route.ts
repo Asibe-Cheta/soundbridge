@@ -103,6 +103,20 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      
+      // Handle platform profile error
+      if (error.message?.includes('platform-profile') || error.message?.includes('managing losses')) {
+        return NextResponse.json(
+          { 
+            error: 'Platform profile setup required',
+            details: 'You need to complete your Stripe Connect platform profile setup. Please visit https://dashboard.stripe.com/settings/connect/platform-profile to complete the setup.',
+            action: 'setup_platform_profile',
+            url: 'https://dashboard.stripe.com/settings/connect/platform-profile'
+          },
+          { status: 400 }
+        );
+      }
+      
       return NextResponse.json(
         { error: `Stripe error: ${error.message}` },
         { status: 400 }

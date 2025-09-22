@@ -109,7 +109,25 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
         // Redirect to Stripe Connect onboarding
         window.location.href = result.onboardingUrl;
       } else {
-        setError(result.error || 'Failed to set up Stripe Connect account');
+        // Handle specific error cases
+        if (result.action === 'setup_platform_profile' && result.url) {
+          setError(
+            <div>
+              <p className="text-red-400 mb-2">{result.error}</p>
+              <p className="text-gray-300 text-sm mb-3">{result.details}</p>
+              <a 
+                href={result.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Complete Platform Profile Setup
+              </a>
+            </div>
+          );
+        } else {
+          setError(result.error || 'Failed to set up Stripe Connect account');
+        }
       }
     } catch (error) {
       console.error('Error setting up Stripe Connect:', error);
