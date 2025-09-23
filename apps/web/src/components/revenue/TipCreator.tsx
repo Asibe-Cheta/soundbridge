@@ -14,7 +14,7 @@ declare global {
   }
 }
 import { revenueService } from '../../lib/revenue-service';
-import type { TipFormData } from '../../lib/types/revenue';
+import type { TipFormData } from '@soundbridge/types';
 import {
   Gift,
   Heart,
