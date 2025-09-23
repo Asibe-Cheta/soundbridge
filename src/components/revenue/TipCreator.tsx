@@ -177,15 +177,14 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
       let stripeError;
       
       if (selectedPaymentMethod === 'apple_pay') {
-        // Handle Apple Pay - use different approach for mobile vs desktop
+        // Handle Apple Pay - redirect to Stripe Checkout which handles Apple Pay properly
         try {
           // Check if we're on iOS/Safari and Apple Pay is available
           if (typeof window !== 'undefined' && window.ApplePaySession && window.ApplePaySession.canMakePayments()) {
-            // Use Apple Pay session for native mobile experience
-            const { error } = await stripe.confirmApplePayPayment(result.clientSecret, {
-              return_url: `${window.location.origin}/tip-success`,
-            });
-            stripeError = error;
+            // For Apple Pay, redirect to Stripe Checkout which handles Apple Pay sessions properly
+            console.log('Apple Pay available, redirecting to Stripe Checkout...');
+            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            return;
           } else {
             // Fallback for non-Apple Pay devices - redirect to payment page
             console.log('Apple Pay not available, redirecting to payment page...');
@@ -198,12 +197,19 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           return;
         }
       } else if (selectedPaymentMethod === 'google_pay') {
-        // Handle Google Pay
+        // Handle Google Pay - redirect to Stripe Checkout which handles Google Pay properly
         try {
-          const { error } = await stripe.confirmGooglePayPayment(result.clientSecret, {
-            return_url: `${window.location.origin}/tip-success`,
-          });
-          stripeError = error;
+          // Check if Google Pay is available
+          if (typeof window !== 'undefined' && window.google && window.google.payments && window.google.payments.api) {
+            console.log('Google Pay available, redirecting to Stripe Checkout...');
+            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            return;
+          } else {
+            // Fallback for non-Google Pay devices - redirect to payment page
+            console.log('Google Pay not available, redirecting to payment page...');
+            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            return;
+          }
         } catch (googlePayError) {
           console.error('Google Pay error:', googlePayError);
           setError('Google Pay is not available on this device. Please use card payment instead.');
