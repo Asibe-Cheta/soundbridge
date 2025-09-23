@@ -1,5 +1,6 @@
 {
-  "buildCommand": "next build --no-lint",
+  "buildCommand": "cd apps/web && npm run build",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "rootDirectory": "apps/web"
 }
