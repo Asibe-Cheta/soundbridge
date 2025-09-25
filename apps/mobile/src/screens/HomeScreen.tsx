@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/supabase';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -126,30 +126,33 @@ export default function HomeScreen() {
     // Navigate to creator profile setup
     console.log('Navigate to creator setup');
     
-    // Debug navigation object
-    console.log('Navigation object keys:', Object.keys(navigation));
-    console.log('Navigation state:', navigation.getState());
+    // Based on React Navigation docs, we need to use the parent navigator
+    // The HomeScreen is in MainTabs, but CreatorSetup is in the parent Stack
+    const parentNavigation = navigation.getParent();
     
-    // Try direct navigation with CompositeNavigationProp
-    try {
-      console.log('Attempting direct navigation to CreatorSetup');
-      navigation.navigate('CreatorSetup');
-    } catch (error) {
-      console.error('Direct navigation failed:', error);
+    if (parentNavigation) {
+      console.log('Parent navigation found, navigating to CreatorSetup');
+      console.log('Parent navigation state:', parentNavigation.getState());
       
-      // Fallback: try parent navigation
       try {
-        console.log('Trying parent navigation as fallback');
-        const parentNavigation = navigation.getParent();
-        if (parentNavigation) {
-          console.log('Parent navigation found:', Object.keys(parentNavigation));
-          parentNavigation.navigate('CreatorSetup');
-        } else {
-          console.error('Parent navigation not found');
+        parentNavigation.navigate('CreatorSetup');
+      } catch (error) {
+        console.error('Parent navigation to CreatorSetup failed:', error);
+        
+        // Try using CommonActions
+        try {
+          console.log('Trying CommonActions approach');
+          parentNavigation.dispatch(
+            CommonActions.navigate({
+              name: 'CreatorSetup',
+            })
+          );
+        } catch (commonError) {
+          console.error('CommonActions navigation failed:', commonError);
         }
-      } catch (parentError) {
-        console.error('Parent navigation failed:', parentError);
       }
+    } else {
+      console.error('Parent navigation not found - this should not happen');
     }
   };
   
