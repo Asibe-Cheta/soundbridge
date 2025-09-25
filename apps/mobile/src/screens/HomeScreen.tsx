@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/supabase';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -63,6 +64,7 @@ interface Event {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   
   // Content states
@@ -74,6 +76,27 @@ export default function HomeScreen() {
   
   // UI states
   const [isTrendingExpanded, setIsTrendingExpanded] = useState(false);
+
+  // Navigation functions
+  const navigateToTrending = () => {
+    // Navigate to trending tracks page
+    console.log('Navigate to trending tracks');
+  };
+
+  const navigateToRecentMusic = () => {
+    // Navigate to recent music page
+    console.log('Navigate to recent music');
+  };
+
+  const navigateToHotCreators = () => {
+    // Navigate to hot creators page
+    console.log('Navigate to hot creators');
+  };
+
+  const navigateToEvents = () => {
+    // Navigate to events page
+    console.log('Navigate to events');
+  };
   
   // Loading states
   const [loadingFeatured, setLoadingFeatured] = useState(true);
@@ -267,22 +290,22 @@ export default function HomeScreen() {
 
       {/* Trending Tracks - Collapsible */}
       <View style={styles.section}>
-        <TouchableOpacity 
-          style={styles.sectionHeader}
-          onPress={() => setIsTrendingExpanded(!isTrendingExpanded)}
-        >
-          <View style={styles.sectionTitleContainer}>
+        <View style={styles.sectionHeader}>
+          <TouchableOpacity 
+            style={styles.sectionTitleContainer}
+            onPress={() => setIsTrendingExpanded(!isTrendingExpanded)}
+          >
             <Text style={styles.sectionTitle}>Trending Now</Text>
             <Ionicons 
               name={isTrendingExpanded ? "chevron-up" : "chevron-down"} 
               size={16} 
               color="#DC2626" 
             />
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={navigateToTrending}>
+            <Ionicons name="chevron-forward" size={16} color="#DC2626" />
+          </TouchableOpacity>
+        </View>
         
         {isTrendingExpanded && (
           <>
@@ -335,11 +358,14 @@ export default function HomeScreen() {
       {/* Recent Uploads */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleContainer}>
+          <TouchableOpacity 
+            style={styles.sectionTitleContainer}
+            onPress={navigateToRecentMusic}
+          >
             <Text style={styles.sectionTitle}>Recent Music</Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={navigateToRecentMusic}>
+            <Ionicons name="chevron-forward" size={16} color="#DC2626" />
           </TouchableOpacity>
         </View>
         
@@ -394,11 +420,14 @@ export default function HomeScreen() {
       {/* Hot Creators */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleContainer}>
+          <TouchableOpacity 
+            style={styles.sectionTitleContainer}
+            onPress={navigateToHotCreators}
+          >
             <Text style={styles.sectionTitle}>Hot Creators</Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={navigateToHotCreators}>
+            <Ionicons name="chevron-forward" size={16} color="#DC2626" />
           </TouchableOpacity>
         </View>
         
@@ -446,11 +475,14 @@ export default function HomeScreen() {
       {/* Events */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleContainer}>
+          <TouchableOpacity 
+            style={styles.sectionTitleContainer}
+            onPress={navigateToEvents}
+          >
             <Text style={styles.sectionTitle}>Upcoming Events</Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={navigateToEvents}>
+            <Ionicons name="chevron-forward" size={16} color="#DC2626" />
           </TouchableOpacity>
         </View>
         

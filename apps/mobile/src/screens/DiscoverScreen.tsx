@@ -608,11 +608,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleContainer}>
+        <TouchableOpacity style={styles.sectionTitleContainer}>
           <Text style={styles.sectionTitle}>{title}</Text>
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Ionicons name="chevron-forward" size={16} color="#DC2626" />
         </TouchableOpacity>
       </View>
       {children}
