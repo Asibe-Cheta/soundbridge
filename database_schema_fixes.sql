@@ -98,7 +98,7 @@ CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
 -- 9. Update existing records to have proper values
 UPDATE profiles 
 SET 
-    display_name = COALESCE(display_name, full_name, username, 'User'),
+    display_name = COALESCE(display_name, username, 'User'),
     role = COALESCE(role, 'listener'),
     country = COALESCE(country, 'UK'),
     is_public = COALESCE(is_public, true),
