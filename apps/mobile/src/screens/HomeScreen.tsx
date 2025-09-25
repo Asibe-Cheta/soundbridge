@@ -72,6 +72,9 @@ export default function HomeScreen() {
   const [hotCreators, setHotCreators] = useState<Creator[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   
+  // UI states
+  const [isTrendingExpanded, setIsTrendingExpanded] = useState(false);
+  
   // Loading states
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [loadingTrending, setLoadingTrending] = useState(true);
@@ -262,56 +265,70 @@ export default function HomeScreen() {
         </LinearGradient>
       </View>
 
-      {/* Trending Tracks */}
+      {/* Trending Tracks - Collapsible */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🔥 Trending Now</Text>
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => setIsTrendingExpanded(!isTrendingExpanded)}
+        >
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>🔥 Trending Now</Text>
+            <Ionicons 
+              name={isTrendingExpanded ? "chevron-up" : "chevron-down"} 
+              size={16} 
+              color="#DC2626" 
+            />
+          </View>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
         
-        {loadingTrending ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading trending tracks...</Text>
-          </View>
-        ) : trendingTracks.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            {trendingTracks.map((track, index) => (
-              <TouchableOpacity
-                key={track.id}
-                style={[styles.trackCard, { marginLeft: index === 0 ? 0 : 12 }]}
-                onPress={() => handleTrackPress(track)}
-              >
-                <View style={styles.trackCover}>
-                  {track.cover_image_url ? (
-                    <Image source={{ uri: track.cover_image_url }} style={styles.trackImage} />
-                  ) : (
-                    <View style={styles.defaultTrackImage}>
-                      <Ionicons name="musical-notes" size={32} color="#666" />
+        {isTrendingExpanded && (
+          <>
+            {loadingTrending ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading trending tracks...</Text>
+              </View>
+            ) : trendingTracks.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                {trendingTracks.map((track, index) => (
+                  <TouchableOpacity
+                    key={track.id}
+                    style={[styles.trackCard, { marginLeft: index === 0 ? 0 : 12 }]}
+                    onPress={() => handleTrackPress(track)}
+                  >
+                    <View style={styles.trackCover}>
+                      {track.cover_image_url ? (
+                        <Image source={{ uri: track.cover_image_url }} style={styles.trackImage} />
+                      ) : (
+                        <View style={styles.defaultTrackImage}>
+                          <Ionicons name="musical-notes" size={32} color="#666" />
+                        </View>
+                      )}
+                      <View style={styles.playOverlay}>
+                        <Ionicons name="play" size={16} color="#FFFFFF" />
+                      </View>
                     </View>
-                  )}
-                  <View style={styles.playOverlay}>
-                    <Ionicons name="play" size={16} color="#FFFFFF" />
-                  </View>
-                </View>
-                <Text style={styles.trackTitle} numberOfLines={1}>
-                  {track.title}
-                </Text>
-                <Text style={styles.trackArtist} numberOfLines={1}>
-                  {track.creator.display_name}
-                </Text>
-                <Text style={styles.trackDuration}>
-                  {formatDuration(track.duration)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="musical-notes" size={48} color="#666" />
-            <Text style={styles.emptyStateText}>No trending tracks yet</Text>
-          </View>
+                    <Text style={styles.trackTitle} numberOfLines={1}>
+                      {track.title}
+                    </Text>
+                    <Text style={styles.trackArtist} numberOfLines={1}>
+                      {track.creator.display_name}
+                    </Text>
+                    <Text style={styles.trackDuration}>
+                      {formatDuration(track.duration)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="musical-notes" size={48} color="#666" />
+                <Text style={styles.emptyStateText}>No trending tracks yet</Text>
+              </View>
+            )}
+          </>
         )}
       </View>
 
@@ -520,13 +537,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   heroTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 16,
   },
@@ -555,12 +572,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   viewAllText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#DC2626',
     fontWeight: '500',
   },
