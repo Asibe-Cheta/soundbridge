@@ -54,9 +54,9 @@ function MainTabs() {
           backgroundColor: '#000000',
           borderTopColor: 'rgba(255, 255, 255, 0.1)',
           borderTopWidth: 1,
-          paddingBottom: 60,
+          paddingBottom: 100,
           paddingTop: 12,
-          height: 120,
+          height: 160,
         },
         tabBarLabelStyle: {
           fontSize: 12,
