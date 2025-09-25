@@ -112,6 +112,7 @@ function AppNavigator() {
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="CreatorSetup" component={CreatorSetupScreen} />
+          <Stack.Screen name="TestScreen" component={() => <div>Test Screen</div>} />
           <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
           <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
         </>
