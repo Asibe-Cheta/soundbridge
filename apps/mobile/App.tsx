@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -112,7 +113,11 @@ function AppNavigator() {
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="CreatorSetup" component={CreatorSetupScreen} />
-          <Stack.Screen name="TestScreen" component={() => <div>Test Screen</div>} />
+          <Stack.Screen name="TestScreen" component={() => (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
+              <Text style={{ color: 'white', fontSize: 24 }}>Test Screen</Text>
+            </View>
+          )} />
           <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
           <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
         </>
