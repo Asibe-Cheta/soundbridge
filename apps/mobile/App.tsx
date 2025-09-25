@@ -27,8 +27,7 @@ const Stack = createStackNavigator();
 // Main Tab Navigator
 function MainTabs() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }} edges={['bottom']}>
-      <Tab.Navigator
+    <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
@@ -84,7 +83,6 @@ function MainTabs() {
       <Tab.Screen name="Messages" component={MessagesScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
-    </SafeAreaView>
     );
   }
 
@@ -114,14 +112,16 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <AudioPlayerProvider>
-          <NavigationContainer>
-            <StatusBar style="light" backgroundColor="#1A1A1A" />
-            <AppNavigator />
-          </NavigationContainer>
-        </AudioPlayerProvider>
-      </AuthProvider>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }} edges={['bottom']}>
+        <AuthProvider>
+          <AudioPlayerProvider>
+            <NavigationContainer>
+              <StatusBar style="light" backgroundColor="#1A1A1A" />
+              <AppNavigator />
+            </NavigationContainer>
+          </AudioPlayerProvider>
+        </AuthProvider>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }

@@ -316,7 +316,7 @@ export default function DiscoverScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Trending Now */}
-      <Section title="🔥 Trending Now">
+      <Section title="Trending Now" icon="trending-up">
         {loadingTracks ? (
           <LoadingState text="Loading trending tracks..." />
         ) : trendingTracks.length > 0 ? (
@@ -349,7 +349,7 @@ export default function DiscoverScreen() {
       </Section>
 
       {/* Featured Artists */}
-      <Section title="⭐ Featured Artists">
+      <Section title="Featured Artists" icon="star">
         {loadingArtists ? (
           <LoadingState text="Loading artists..." />
         ) : featuredArtists.length > 0 ? (
@@ -379,7 +379,7 @@ export default function DiscoverScreen() {
       </Section>
 
       {/* Recent Uploads */}
-      <Section title="🎵 Recent Uploads">
+      <Section title="Recent Uploads" icon="musical-notes">
         {loadingTracks ? (
           <LoadingState text="Loading recent tracks..." />
         ) : recentTracks.length > 0 ? (
@@ -420,7 +420,7 @@ export default function DiscoverScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Section title="🎤 All Artists">
+      <Section title="All Artists" icon="mic">
         {loadingArtists ? (
           <LoadingState text="Loading artists..." />
         ) : featuredArtists.length > 0 ? (
@@ -455,7 +455,7 @@ export default function DiscoverScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Section title="📅 Upcoming Events">
+      <Section title="Upcoming Events" icon="calendar">
         {loadingEvents ? (
           <LoadingState text="Loading events..." />
         ) : events.length > 0 ? (
@@ -497,7 +497,7 @@ export default function DiscoverScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Section title="🎼 Featured Playlists">
+      <Section title="Featured Playlists" icon="list">
         {loadingPlaylists ? (
           <LoadingState text="Loading playlists..." />
         ) : playlists.length > 0 ? (
@@ -604,10 +604,18 @@ export default function DiscoverScreen() {
 }
 
 // Section Component
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleContainer}>
+          {icon && <Ionicons name={icon as any} size={16} color="#DC2626" />}
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+        <TouchableOpacity>
+          <Text style={styles.viewAllText}>View All</Text>
+        </TouchableOpacity>
+      </View>
       {children}
     </View>
   );
@@ -704,14 +712,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    marginBottom: 12,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 16,
+  },
+  viewAllText: {
+    fontSize: 12,
+    color: '#DC2626',
+    fontWeight: '500',
   },
   horizontalScroll: {
     flexDirection: 'row',

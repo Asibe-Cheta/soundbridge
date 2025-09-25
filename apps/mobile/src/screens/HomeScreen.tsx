@@ -272,7 +272,8 @@ export default function HomeScreen() {
           onPress={() => setIsTrendingExpanded(!isTrendingExpanded)}
         >
           <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>🔥 Trending Now</Text>
+            <Ionicons name="trending-up" size={16} color="#DC2626" />
+            <Text style={styles.sectionTitle}>Trending Now</Text>
             <Ionicons 
               name={isTrendingExpanded ? "chevron-up" : "chevron-down"} 
               size={16} 
@@ -335,7 +336,10 @@ export default function HomeScreen() {
       {/* Recent Uploads */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🎵 Recent Uploads</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="musical-notes" size={16} color="#DC2626" />
+            <Text style={styles.sectionTitle}>Recent Uploads</Text>
+          </View>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
@@ -392,7 +396,10 @@ export default function HomeScreen() {
       {/* Hot Creators */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>⭐ Hot Creators</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="star" size={16} color="#DC2626" />
+            <Text style={styles.sectionTitle}>Hot Creators</Text>
+          </View>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
@@ -442,7 +449,10 @@ export default function HomeScreen() {
       {/* Events */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>📅 Upcoming Events</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="calendar" size={16} color="#DC2626" />
+            <Text style={styles.sectionTitle}>Upcoming Events</Text>
+          </View>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
@@ -702,23 +712,23 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   creatorCard: {
-    width: 120,
+    width: 100,
     alignItems: 'center',
     marginRight: 12,
   },
   creatorAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#1A1A1A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   creatorImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    borderRadius: 30,
   },
   defaultCreatorImage: {
     width: '100%',
@@ -726,23 +736,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#1A1A1A',
-    borderRadius: 40,
+    borderRadius: 30,
   },
   creatorName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 2,
   },
   creatorUsername: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#CCCCCC',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   creatorStats: {
-    fontSize: 11,
+    fontSize: 9,
     color: '#999999',
     textAlign: 'center',
   },
