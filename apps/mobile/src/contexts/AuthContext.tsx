@@ -137,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { success, error } = await authService.signIn(email, password);
       
       if (!success) {
-        setError(error?.message || 'Sign in failed');
+        setError(error instanceof Error ? error.message : 'Sign in failed');
         setLoading(false);
         return { success: false, error };
       }
@@ -159,7 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { success, error } = await authService.signUp(email, password, metadata);
       
       if (!success) {
-        setError(error?.message || 'Sign up failed');
+        setError(error instanceof Error ? error.message : 'Sign up failed');
         setLoading(false);
         return { success: false, error };
       }
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { success, error } = await authService.signOut();
       
       if (!success) {
-        setError(error?.message || 'Sign out failed');
+        setError(error instanceof Error ? error.message : 'Sign out failed');
         setLoading(false);
         return { success: false, error };
       }
@@ -208,7 +208,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { success, error } = await authService.signInWithProvider('google');
       
       if (!success) {
-        setError(error?.message || 'Google sign in failed');
+        setError(error instanceof Error ? error.message : 'Google sign in failed');
         setLoading(false);
         return { success: false, error };
       }

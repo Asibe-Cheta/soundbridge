@@ -181,7 +181,7 @@ export default function AudioPlayerScreen({ navigation, route }: AudioPlayerScre
 
   const handleTipCreator = () => {
     // TODO: Navigate to tip creator screen
-    navigation.navigate('CreatorProfile', { username: currentTrack?.creator?.username });
+    navigation.navigate('CreatorProfile', { username: 'unknown' });
   };
 
   const rotateInterpolate = rotateAnim.interpolate({
@@ -311,7 +311,7 @@ export default function AudioPlayerScreen({ navigation, route }: AudioPlayerScre
             onPress={() => play(track)}
           >
             <Image 
-              source={{ uri: track.cover_image_url || 'https://via.placeholder.com/60' }}
+              source={{ uri: track.artwork_url || 'https://via.placeholder.com/60' }}
               style={styles.queueItemImage}
             />
             <View style={styles.queueItemInfo}>
@@ -319,7 +319,7 @@ export default function AudioPlayerScreen({ navigation, route }: AudioPlayerScre
                 {track.title}
               </Text>
               <Text style={styles.queueItemArtist} numberOfLines={1}>
-                {track.creator?.display_name || 'Unknown Artist'}
+                Unknown Artist
               </Text>
             </View>
             {currentTrack?.id === track.id && (
@@ -386,7 +386,7 @@ export default function AudioPlayerScreen({ navigation, route }: AudioPlayerScre
           ]}
         >
           <Image 
-            source={{ uri: currentTrack.cover_image_url || 'https://via.placeholder.com/300' }}
+            source={{ uri: currentTrack.artwork_url || 'https://via.placeholder.com/300' }}
             style={styles.albumArt}
           />
           <View style={styles.albumArtOverlay} />
@@ -399,13 +399,11 @@ export default function AudioPlayerScreen({ navigation, route }: AudioPlayerScre
           {currentTrack.title}
         </Text>
         <Text style={styles.trackArtist} numberOfLines={1}>
-          {currentTrack.creator?.display_name || 'Unknown Artist'}
+          Unknown Artist
         </Text>
-        {currentTrack.creator && (
-          <Text style={styles.trackCreator} numberOfLines={1}>
-            @{currentTrack.creator.username}
-          </Text>
-        )}
+        <Text style={styles.trackCreator} numberOfLines={1}>
+          @unknown
+        </Text>
       </View>
 
       {/* Progress Bar */}

@@ -60,17 +60,24 @@ export default function CreatorProfileScreen({ navigation, route }: CreatorProfi
         id: '1',
         username: username || 'creator123',
         display_name: 'SoundBridge Creator',
-        bio: 'Music producer and composer. Creating beats that move your soul. 🎵✨',
         avatar_url: 'https://picsum.photos/200/200?random=creator',
-        banner_url: 'https://picsum.photos/800/400?random=banner',
-        followers_count: 15420,
-        following_count: 892,
-        is_creator: true,
-        is_verified: true,
-        created_at: '2022-03-15T10:30:00Z',
+        bio: 'Music producer and composer. Creating beats that move your soul. 🎵✨',
         location: 'Los Angeles, CA',
-        website: 'https://soundbridge.live',
-        genres: ['Hip Hop', 'R&B', 'Electronic'],
+        city: 'Los Angeles',
+        country: 'US',
+        genre: 'Hip Hop',
+        role: 'creator',
+        verified: false,
+        followers_count: 0,
+        following_count: 0,
+        total_plays: 0,
+        // total_tracks: 0, // TODO: Add total_tracks to database schema
+        total_likes: 0,
+        total_events: 0,
+        last_active: '2022-03-15T10:30:00Z',
+        // TODO: Add onboarding fields to database schema
+        created_at: '2022-03-15T10:30:00Z',
+        // updated_at: '2022-03-15T10:30:00Z', // TODO: Add updated_at to database schema
       };
 
       const mockTracks: AudioTrack[] = [
@@ -78,29 +85,55 @@ export default function CreatorProfileScreen({ navigation, route }: CreatorProfi
           id: '1',
           title: 'Summer Vibes',
           creator_id: '1',
-          audio_url: 'https://example.com/audio1.mp3',
-          cover_image_url: 'https://picsum.photos/300/300?random=1',
-          duration: 180,
+          description: 'A chill summer track',
           genre: 'Hip Hop',
-          tags: ['summer', 'vibes', 'chill'],
+          sub_genre: null,
+          duration: 180,
+          file_url: 'https://example.com/audio1.mp3',
+          artwork_url: 'https://picsum.photos/300/300?random=1',
+          waveform_url: null,
+          share_count: 0,
+          comment_count: 0,
+          is_public: true,
           play_count: 15420,
           like_count: 892,
-          is_public: true,
+          // comments_count: 0, // TODO: Add comments_count to database schema
+          // shares_count: 0, // TODO: Add shares_count to database schema
+          download_count: 0,
+          is_explicit: false,
+          is_featured: false,
+          tags: ['summer', 'vibes', 'chill'],
+          metadata: {},
           created_at: '2024-01-15T10:30:00Z',
+          updated_at: '2024-01-15T10:30:00Z',
+          deleted_at: null,
         },
         {
           id: '2',
           title: 'Midnight Dreams',
           creator_id: '1',
-          audio_url: 'https://example.com/audio2.mp3',
-          cover_image_url: 'https://picsum.photos/300/300?random=2',
-          duration: 240,
+          description: 'A soulful midnight track',
           genre: 'R&B',
-          tags: ['midnight', 'dreams', 'soulful'],
+          sub_genre: null,
+          duration: 240,
+          file_url: 'https://example.com/audio2.mp3',
+          artwork_url: 'https://picsum.photos/300/300?random=2',
+          waveform_url: null,
+          share_count: 0,
+          comment_count: 0,
+          is_public: true,
           play_count: 12350,
           like_count: 756,
-          is_public: true,
+          // comments_count: 0, // TODO: Add comments_count to database schema
+          // shares_count: 0, // TODO: Add shares_count to database schema
+          download_count: 0,
+          is_explicit: false,
+          is_featured: false,
+          tags: ['midnight', 'dreams', 'soulful'],
+          metadata: {},
           created_at: '2024-01-10T10:30:00Z',
+          updated_at: '2024-01-10T10:30:00Z',
+          deleted_at: null,
         },
       ];
 
@@ -216,7 +249,7 @@ export default function CreatorProfileScreen({ navigation, route }: CreatorProfi
         {/* Banner */}
         <View style={styles.bannerContainer}>
           <Image 
-            source={{ uri: creator.banner_url || 'https://via.placeholder.com/800x300' }}
+            source={{ uri: 'https://via.placeholder.com/800x300' }}
             style={styles.banner}
           />
           <LinearGradient
@@ -232,7 +265,7 @@ export default function CreatorProfileScreen({ navigation, route }: CreatorProfi
               source={{ uri: creator.avatar_url || 'https://via.placeholder.com/120' }}
               style={styles.avatar}
             />
-            {creator.is_verified && (
+            {creator.verified && (
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark" size={16} color="#FFFFFF" />
               </View>
@@ -296,7 +329,7 @@ export default function CreatorProfileScreen({ navigation, route }: CreatorProfi
           {tracks.map((track) => (
             <TouchableOpacity key={track.id} style={styles.trackItem}>
               <Image 
-                source={{ uri: track.cover_image_url || 'https://via.placeholder.com/80' }}
+                source={{ uri: track.artwork_url || 'https://via.placeholder.com/80' }}
                 style={styles.trackImage}
               />
               <View style={styles.trackInfo}>
@@ -356,26 +389,15 @@ export default function CreatorProfileScreen({ navigation, route }: CreatorProfi
             </View>
           )}
           
-          {creator.website && (
-            <View style={styles.aboutSection}>
-              <Text style={styles.aboutTitle}>Website</Text>
-              <TouchableOpacity>
-                <Text style={styles.websiteLink}>
-                  <Ionicons name="link-outline" size={16} color="#DC2626" /> {creator.website}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* TODO: Add website field to database schema */}
           
-          {creator.genres && creator.genres.length > 0 && (
+          {creator.genre && (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutTitle}>Genres</Text>
+              <Text style={styles.aboutTitle}>Genre</Text>
               <View style={styles.genresContainer}>
-                {creator.genres.map((genre, index) => (
-                  <View key={index} style={styles.genreTag}>
-                    <Text style={styles.genreText}>{genre}</Text>
-                  </View>
-                ))}
+                <View style={styles.genreTag}>
+                  <Text style={styles.genreText}>{creator.genre}</Text>
+                </View>
               </View>
             </View>
           )}
