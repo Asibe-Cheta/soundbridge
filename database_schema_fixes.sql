@@ -124,38 +124,49 @@ ALTER TABLE audio_tracks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles
     FOR SELECT USING (is_public = true AND deleted_at IS NULL);
 
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 CREATE POLICY "Users can view their own profile" ON profiles
     FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE POLICY "Users can update their own profile" ON profiles
     FOR UPDATE USING (auth.uid() = id);
 
 -- Audio tracks policies
+DROP POLICY IF EXISTS "Public audio tracks are viewable by everyone" ON audio_tracks;
 CREATE POLICY "Public audio tracks are viewable by everyone" ON audio_tracks
     FOR SELECT USING (is_public = true AND deleted_at IS NULL);
 
+DROP POLICY IF EXISTS "Users can view their own audio tracks" ON audio_tracks;
 CREATE POLICY "Users can view their own audio tracks" ON audio_tracks
     FOR SELECT USING (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Users can insert their own audio tracks" ON audio_tracks;
 CREATE POLICY "Users can insert their own audio tracks" ON audio_tracks
     FOR INSERT WITH CHECK (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Users can update their own audio tracks" ON audio_tracks;
 CREATE POLICY "Users can update their own audio tracks" ON audio_tracks
     FOR UPDATE USING (auth.uid() = creator_id);
 
 -- Events policies
+DROP POLICY IF EXISTS "Public events are viewable by everyone" ON events;
 CREATE POLICY "Public events are viewable by everyone" ON events
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Users can view their own events" ON events;
 CREATE POLICY "Users can view their own events" ON events
     FOR SELECT USING (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Users can insert their own events" ON events;
 CREATE POLICY "Users can insert their own events" ON events
     FOR INSERT WITH CHECK (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Users can update their own events" ON events;
 CREATE POLICY "Users can update their own events" ON events
     FOR UPDATE USING (auth.uid() = creator_id);
 
