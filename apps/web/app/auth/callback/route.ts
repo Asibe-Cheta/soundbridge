@@ -14,6 +14,90 @@ export async function GET(request: NextRequest) {
 
     console.log('Auth callback received:', { tokenHash, type, next, code, error, errorDescription });
 
+    // Check if this is from mobile app sign-up and redirect to mobile-callback
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+    
+    console.log('🔧 WEB CALLBACK: User agent:', userAgent);
+    console.log('🔧 WEB CALLBACK: Is mobile:', isMobile);
+    console.log('🔧 WEB CALLBACK: Type:', type, 'Token hash:', !!tokenHash, 'Code:', !!code);
+    
+    // If it's a mobile device, handle verification and redirect to mobile app
+    if (isMobile && type === 'signup' && tokenHash && !code) {
+      console.log('🔧 WEB CALLBACK: Mobile email verification detected, processing verification');
+      
+      const supabase = createRouteHandlerClient({ cookies });
+      
+      try {
+        // Verify the email
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'signup'
+        });
+
+        if (error) {
+          console.error('Mobile email confirmation error:', error);
+          return NextResponse.redirect(new URL(`/auth/mobile-callback?error=confirmation_failed&message=${encodeURIComponent(error.message)}`, request.url));
+        }
+
+        if (data.user) {
+          console.log('Mobile email confirmed successfully for user:', data.user.email);
+          
+          // Create profile if it doesn't exist
+          try {
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .single();
+
+            if (!existingProfile) {
+              console.log('Creating profile for mobile user:', data.user.id);
+              
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: data.user.id,
+                  username: `user${data.user.id.substring(0, 8)}`,
+                  display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'New User',
+                  role: 'listener',
+                  location: 'london',
+                  country: 'UK',
+                  bio: '',
+                  onboarding_completed: false,
+                  onboarding_step: 'role_selection',
+                  selected_role: 'listener',
+                  profile_completed: false,
+                  first_action_completed: false,
+                  onboarding_skipped: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+
+              if (profileError) {
+                console.error('Error creating mobile profile:', profileError);
+              } else {
+                console.log('Mobile profile created successfully');
+              }
+            }
+          } catch (profileError) {
+            console.error('Profile handling error for mobile user:', profileError);
+          }
+          
+          // Redirect to mobile-callback with success status
+          const mobileCallbackUrl = new URL('/auth/mobile-callback', request.url);
+          mobileCallbackUrl.searchParams.set('verified', 'true');
+          mobileCallbackUrl.searchParams.set('email', data.user.email || '');
+          if (next) mobileCallbackUrl.searchParams.set('next', next);
+          
+          return NextResponse.redirect(mobileCallbackUrl);
+        }
+      } catch (verifyError) {
+        console.error('Mobile verification error:', verifyError);
+        return NextResponse.redirect(new URL(`/auth/mobile-callback?error=verification_failed`, request.url));
+      }
+    }
+
     const supabase = createRouteHandlerClient({ cookies });
 
     // Handle OAuth errors

@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "cd apps/mobile && npm run start",
     "dev:web": "cd apps/web && npm run dev",
     "dev:mobile": "cd apps/mobile && npm run start",
     "build:web": "cd apps/web && npm run build",
