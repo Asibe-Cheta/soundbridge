@@ -272,7 +272,6 @@ export default function HomeScreen() {
           onPress={() => setIsTrendingExpanded(!isTrendingExpanded)}
         >
           <View style={styles.sectionTitleContainer}>
-            <Ionicons name="trending-up" size={16} color="#DC2626" />
             <Text style={styles.sectionTitle}>Trending Now</Text>
             <Ionicons 
               name={isTrendingExpanded ? "chevron-up" : "chevron-down"} 
@@ -337,8 +336,7 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
-            <Ionicons name="musical-notes" size={16} color="#DC2626" />
-            <Text style={styles.sectionTitle}>Recent Uploads</Text>
+            <Text style={styles.sectionTitle}>Recent Music</Text>
           </View>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>View All</Text>
@@ -397,7 +395,6 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
-            <Ionicons name="star" size={16} color="#DC2626" />
             <Text style={styles.sectionTitle}>Hot Creators</Text>
           </View>
           <TouchableOpacity>
@@ -450,7 +447,6 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
-            <Ionicons name="calendar" size={16} color="#DC2626" />
             <Text style={styles.sectionTitle}>Upcoming Events</Text>
           </View>
           <TouchableOpacity>

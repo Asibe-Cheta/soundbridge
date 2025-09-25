@@ -316,7 +316,7 @@ export default function DiscoverScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Trending Now */}
-      <Section title="Trending Now" icon="trending-up">
+      <Section title="Trending Now">
         {loadingTracks ? (
           <LoadingState text="Loading trending tracks..." />
         ) : trendingTracks.length > 0 ? (
@@ -349,7 +349,7 @@ export default function DiscoverScreen() {
       </Section>
 
       {/* Featured Artists */}
-      <Section title="Featured Artists" icon="star">
+      <Section title="Featured Artists">
         {loadingArtists ? (
           <LoadingState text="Loading artists..." />
         ) : featuredArtists.length > 0 ? (
@@ -379,7 +379,7 @@ export default function DiscoverScreen() {
       </Section>
 
       {/* Recent Uploads */}
-      <Section title="Recent Uploads" icon="musical-notes">
+      <Section title="Recent Music">
         {loadingTracks ? (
           <LoadingState text="Loading recent tracks..." />
         ) : recentTracks.length > 0 ? (
@@ -420,7 +420,7 @@ export default function DiscoverScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Section title="All Artists" icon="mic">
+      <Section title="All Artists">
         {loadingArtists ? (
           <LoadingState text="Loading artists..." />
         ) : featuredArtists.length > 0 ? (
@@ -455,7 +455,7 @@ export default function DiscoverScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Section title="Upcoming Events" icon="calendar">
+      <Section title="Upcoming Events">
         {loadingEvents ? (
           <LoadingState text="Loading events..." />
         ) : events.length > 0 ? (
@@ -497,7 +497,7 @@ export default function DiscoverScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Section title="Featured Playlists" icon="list">
+      <Section title="Featured Playlists">
         {loadingPlaylists ? (
           <LoadingState text="Loading playlists..." />
         ) : playlists.length > 0 ? (
@@ -604,12 +604,11 @@ export default function DiscoverScreen() {
 }
 
 // Section Component
-function Section({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleContainer}>
-          {icon && <Ionicons name={icon as any} size={16} color="#DC2626" />}
           <Text style={styles.sectionTitle}>{title}</Text>
         </View>
         <TouchableOpacity>

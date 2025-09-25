@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 // Import screens
@@ -26,6 +26,8 @@ const Stack = createStackNavigator();
 
 // Main Tab Navigator
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -54,9 +56,9 @@ function MainTabs() {
           backgroundColor: '#000000',
           borderTopColor: 'rgba(255, 255, 255, 0.1)',
           borderTopWidth: 1,
-          paddingBottom: 20,
+          paddingBottom: Math.max(insets.bottom, 20),
           paddingTop: 8,
-          height: 80,
+          height: 60 + Math.max(insets.bottom, 20),
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -112,16 +114,14 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }} edges={['bottom']}>
-        <AuthProvider>
-          <AudioPlayerProvider>
-            <NavigationContainer>
-              <StatusBar style="light" backgroundColor="#1A1A1A" />
-              <AppNavigator />
-            </NavigationContainer>
-          </AudioPlayerProvider>
-        </AuthProvider>
-      </SafeAreaView>
+      <AuthProvider>
+        <AudioPlayerProvider>
+          <NavigationContainer>
+            <StatusBar style="light" backgroundColor="#1A1A1A" />
+            <AppNavigator />
+          </NavigationContainer>
+        </AudioPlayerProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
