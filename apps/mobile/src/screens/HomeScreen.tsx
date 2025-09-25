@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/supabase';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
 const { width, height } = Dimensions.get('window');
@@ -132,6 +132,21 @@ export default function HomeScreen() {
         }
       } catch (parentError) {
         console.log('Parent navigation failed:', parentError);
+        
+        try {
+          // Method 3: Using CommonActions
+          console.log('Trying CommonActions navigation');
+          const resetAction = CommonActions.reset({
+            index: 1,
+            routes: [
+              { name: 'MainTabs' },
+              { name: 'CreatorSetup' },
+            ],
+          });
+          navigation.dispatch(resetAction);
+        } catch (commonError) {
+          console.log('CommonActions navigation failed:', commonError);
+        }
       }
     }
   };
