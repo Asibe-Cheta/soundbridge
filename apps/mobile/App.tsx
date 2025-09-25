@@ -16,6 +16,7 @@ import MessagesScreen from './src/screens/MessagesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AudioPlayerScreen from './src/screens/AudioPlayerScreen';
 import CreatorProfileScreen from './src/screens/CreatorProfileScreen';
+import CreatorSetupScreen from './src/screens/CreatorSetupScreen';
 
 // Import contexts
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -104,13 +105,14 @@ function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <Stack.Screen name="Auth" component={AuthScreen} />
-      ) : (
-        <>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
-          <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
-        </>
-      )}
+             ) : (
+               <>
+                 <Stack.Screen name="MainTabs" component={MainTabs} />
+                 <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
+                 <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
+                 <Stack.Screen name="CreatorSetup" component={CreatorSetupScreen} />
+               </>
+             )}
     </Stack.Navigator>
   );
 }

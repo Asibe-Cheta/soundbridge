@@ -97,6 +97,12 @@ export default function HomeScreen() {
     // Navigate to events page
     console.log('Navigate to events');
   };
+
+  const navigateToCreatorSetup = () => {
+    // Navigate to creator profile setup
+    console.log('Navigate to creator setup');
+    navigation.navigate('CreatorSetup' as never);
+  };
   
   // Loading states
   const [loadingFeatured, setLoadingFeatured] = useState(true);
@@ -260,12 +266,33 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.notificationButton}>
+          <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Creator Banner */}
+      <TouchableOpacity style={styles.creatorBanner} onPress={navigateToCreatorSetup}>
+        <LinearGradient
+          colors={['#1a1a1a', '#2a1a1a', '#1a1a1a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.creatorBannerGradient}
+        >
+          <View style={styles.creatorBannerContent}>
+            <View style={styles.creatorBannerLeft}>
+              <Ionicons name="star" size={20} color="#DC2626" />
+              <Text style={styles.creatorBannerTitle}>Share Your Sound</Text>
+            </View>
+            <View style={styles.creatorBannerRight}>
+              <Text style={styles.creatorBannerSubtitle}>Get support from fans</Text>
+              <Ionicons name="chevron-forward" size={16} color="#DC2626" />
+            </View>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
 
       {/* Featured Creator Hero */}
       <View style={styles.heroSection}>
@@ -556,6 +583,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
+  },
+  creatorBanner: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  creatorBannerGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  creatorBannerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  creatorBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  creatorBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  creatorBannerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  creatorBannerSubtitle: {
+    fontSize: 13,
+    color: '#CCCCCC',
+    fontWeight: '500',
   },
   notificationButton: {
     padding: 8,
