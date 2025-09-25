@@ -112,42 +112,14 @@ export default function HomeScreen() {
   const navigateToCreatorSetup = () => {
     // Navigate to creator profile setup
     console.log('Navigate to creator setup');
-    console.log('Available navigation methods:', Object.keys(navigation));
     
-    // Try different navigation approaches
-    try {
-      // Method 1: Direct navigation (should work if HomeScreen has access to stack)
-      navigation.navigate('CreatorSetup' as any);
-    } catch (error) {
-      console.log('Direct navigation failed:', error);
-      
-      try {
-        // Method 2: Parent navigation
-        const parentNavigation = navigation.getParent();
-        if (parentNavigation) {
-          console.log('Parent navigation found, attempting navigate');
-          parentNavigation.navigate('CreatorSetup' as any);
-        } else {
-          console.error('Parent navigation not found');
-        }
-      } catch (parentError) {
-        console.log('Parent navigation failed:', parentError);
-        
-        try {
-          // Method 3: Using CommonActions
-          console.log('Trying CommonActions navigation');
-          const resetAction = CommonActions.reset({
-            index: 1,
-            routes: [
-              { name: 'MainTabs' },
-              { name: 'CreatorSetup' },
-            ],
-          });
-          navigation.dispatch(resetAction);
-        } catch (commonError) {
-          console.log('CommonActions navigation failed:', commonError);
-        }
-      }
+    // Use parent navigation to access the stack navigator
+    const parentNavigation = navigation.getParent();
+    if (parentNavigation) {
+      console.log('Using parent navigation to navigate to CreatorSetup');
+      parentNavigation.navigate('CreatorSetup');
+    } else {
+      console.error('Parent navigation not found - this should not happen');
     }
   };
   

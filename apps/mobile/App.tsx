@@ -105,14 +105,14 @@ function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <Stack.Screen name="Auth" component={AuthScreen} />
-             ) : (
-               <>
-                 <Stack.Screen name="MainTabs" component={MainTabs} />
-                 <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
-                 <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
-                 <Stack.Screen name="CreatorSetup" component={CreatorSetupScreen} />
-               </>
-             )}
+      ) : (
+        <>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="CreatorSetup" component={CreatorSetupScreen} />
+          <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
+          <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }
