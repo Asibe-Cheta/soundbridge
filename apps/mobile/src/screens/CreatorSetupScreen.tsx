@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 interface CreatorPreferences {
   role: 'creator' | 'listener';
@@ -28,6 +29,7 @@ interface CreatorPreferences {
 
 export default function CreatorSetupScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState<CreatorPreferences>({
     role: 'listener',
@@ -50,7 +52,7 @@ export default function CreatorSetupScreen() {
       Alert.alert(
         'Setup Complete!',
         'Your creator preferences have been saved. You can now start sharing your music and connecting with fans.',
-        [{ text: 'Continue', onPress: () => console.log('Navigate back to home') }]
+        [{ text: 'Continue', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
       Alert.alert('Error', 'Failed to save preferences. Please try again.');
@@ -94,7 +96,7 @@ export default function CreatorSetupScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Creator Setup</Text>

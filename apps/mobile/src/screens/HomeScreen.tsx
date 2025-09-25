@@ -101,7 +101,8 @@ export default function HomeScreen() {
   const navigateToCreatorSetup = () => {
     // Navigate to creator profile setup
     console.log('Navigate to creator setup');
-    navigation.navigate('CreatorSetup' as never);
+    // Navigate to the parent stack navigator
+    navigation.getParent()?.navigate('CreatorSetup');
   };
   
   // Loading states
