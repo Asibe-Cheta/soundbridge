@@ -34,8 +34,22 @@ function MobileCallbackContent() {
         const mobileAppUrl = `soundbridge://auth/callback?verified=true&next=${nextParam}`;
         console.log('Attempting to open mobile app with verified status:', mobileAppUrl);
         
-        // Attempt to open the mobile app
-        window.location.href = mobileAppUrl;
+        // Attempt to open the mobile app with multiple methods
+        try {
+          // Method 1: Direct location change
+          window.location.href = mobileAppUrl;
+          
+          // Method 2: Create a hidden iframe (fallback)
+          setTimeout(() => {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = mobileAppUrl;
+            document.body.appendChild(iframe);
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+          }, 100);
+        } catch (error) {
+          console.error('Failed to open mobile app:', error);
+        }
         
         // Fallback: after a delay, show success message
         setTimeout(() => {
@@ -157,7 +171,24 @@ function MobileCallbackContent() {
           {isMobile ? (
             <div className="space-y-3">
               <button
-                onClick={() => window.location.href = 'soundbridge://auth/callback'}
+                onClick={() => {
+                  try {
+                    // Try multiple methods to open the app
+                    window.location.href = 'soundbridge://auth/callback';
+                    
+                    // Fallback method
+                    setTimeout(() => {
+                      const iframe = document.createElement('iframe');
+                      iframe.style.display = 'none';
+                      iframe.src = 'soundbridge://auth/callback';
+                      document.body.appendChild(iframe);
+                      setTimeout(() => document.body.removeChild(iframe), 1000);
+                    }, 100);
+                  } catch (error) {
+                    console.error('Failed to open mobile app:', error);
+                    alert('Unable to open SoundBridge app. Please open it manually.');
+                  }
+                }}
                 className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
               >
                 Open SoundBridge App
