@@ -34,19 +34,22 @@ function MobileCallbackContent() {
         const mobileAppUrl = `soundbridge://auth/callback?verified=true&next=${nextParam}`;
         console.log('Attempting to open mobile app with verified status:', mobileAppUrl);
         
-        // Attempt to open the mobile app with multiple methods
+        // For development with Expo Go, use the Expo development URL
+        const expoUrl = 'exp://192.168.1.122:8081/--/auth/callback?verified=true&next=' + encodeURIComponent(nextParam);
+        console.log('Attempting to open Expo app with URL:', expoUrl);
+        
         try {
-          // Method 1: Direct location change
-          window.location.href = mobileAppUrl;
+          // Try Expo development URL first (for development)
+          window.location.href = expoUrl;
           
-          // Method 2: Create a hidden iframe (fallback)
+          // Fallback to custom scheme after a delay
           setTimeout(() => {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = mobileAppUrl;
-            document.body.appendChild(iframe);
-            setTimeout(() => document.body.removeChild(iframe), 1000);
-          }, 100);
+            try {
+              window.location.href = mobileAppUrl;
+            } catch (error) {
+              console.error('Failed to open with custom scheme:', error);
+            }
+          }, 1000);
         } catch (error) {
           console.error('Failed to open mobile app:', error);
         }
@@ -173,17 +176,19 @@ function MobileCallbackContent() {
               <button
                 onClick={() => {
                   try {
-                    // Try multiple methods to open the app
-                    window.location.href = 'soundbridge://auth/callback';
+                    // For development, try Expo URL first
+                    const expoUrl = 'exp://192.168.1.122:8081/--/auth/callback?verified=true';
+                    console.log('Button click - trying Expo URL:', expoUrl);
+                    window.location.href = expoUrl;
                     
-                    // Fallback method
+                    // Fallback to custom scheme
                     setTimeout(() => {
-                      const iframe = document.createElement('iframe');
-                      iframe.style.display = 'none';
-                      iframe.src = 'soundbridge://auth/callback';
-                      document.body.appendChild(iframe);
-                      setTimeout(() => document.body.removeChild(iframe), 1000);
-                    }, 100);
+                      try {
+                        window.location.href = 'soundbridge://auth/callback?verified=true';
+                      } catch (error) {
+                        console.error('Failed to open with custom scheme:', error);
+                      }
+                    }, 1000);
                   } catch (error) {
                     console.error('Failed to open mobile app:', error);
                     alert('Unable to open SoundBridge app. Please open it manually.');

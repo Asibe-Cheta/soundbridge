@@ -76,11 +76,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Handle deep linking for auth callbacks
         const handleDeepLink = (url: string) => {
           console.log('Deep link received:', url);
-          if (url.includes('soundbridge://auth/callback')) {
+          
+          // Handle both custom scheme and Expo development URLs
+          if (url.includes('soundbridge://auth/callback') || url.includes('exp://') && url.includes('/auth/callback')) {
             console.log('Auth callback received via deep link');
             
-            // Check if this is a verified email callback
-            const urlParams = new URLSearchParams(url.split('?')[1]);
+            // Extract parameters from URL
+            let urlParams: URLSearchParams;
+            if (url.includes('?')) {
+              urlParams = new URLSearchParams(url.split('?')[1]);
+            } else {
+              urlParams = new URLSearchParams();
+            }
+            
             const verified = urlParams.get('verified');
             const next = urlParams.get('next');
             
