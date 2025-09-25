@@ -16,8 +16,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 
 const { width, height } = Dimensions.get('window');
+
+// Define navigation types
+type RootStackParamList = {
+  MainTabs: undefined;
+  AudioPlayer: undefined;
+  CreatorProfile: undefined;
+  CreatorSetup: undefined;
+};
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 interface AudioTrack {
   id: string;
@@ -64,7 +75,7 @@ interface Event {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const [refreshing, setRefreshing] = useState(false);
   
   // Content states
@@ -101,8 +112,28 @@ export default function HomeScreen() {
   const navigateToCreatorSetup = () => {
     // Navigate to creator profile setup
     console.log('Navigate to creator setup');
-    // Navigate to the parent stack navigator
-    navigation.getParent()?.navigate('CreatorSetup');
+    console.log('Available navigation methods:', Object.keys(navigation));
+    
+    // Try different navigation approaches
+    try {
+      // Method 1: Direct navigation (should work if HomeScreen has access to stack)
+      navigation.navigate('CreatorSetup' as any);
+    } catch (error) {
+      console.log('Direct navigation failed:', error);
+      
+      try {
+        // Method 2: Parent navigation
+        const parentNavigation = navigation.getParent();
+        if (parentNavigation) {
+          console.log('Parent navigation found, attempting navigate');
+          parentNavigation.navigate('CreatorSetup' as any);
+        } else {
+          console.error('Parent navigation not found');
+        }
+      } catch (parentError) {
+        console.log('Parent navigation failed:', parentError);
+      }
+    }
   };
   
   // Loading states
