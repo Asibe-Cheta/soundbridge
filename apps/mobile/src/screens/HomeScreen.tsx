@@ -126,23 +126,30 @@ export default function HomeScreen() {
     // Navigate to creator profile setup
     console.log('Navigate to creator setup');
     
-    // Use the proper nested navigation approach
-    // Since CreatorSetup is in the parent Stack navigator and HomeScreen is in MainTabs
-    // According to React Navigation docs, we can directly navigate to parent stack screens
+    // Debug navigation object
+    console.log('Navigation object keys:', Object.keys(navigation));
+    console.log('Navigation state:', navigation.getState());
+    
+    // Try direct navigation with CompositeNavigationProp
     try {
-      console.log('Attempting to navigate to CreatorSetup using parent navigation');
-      const parentNavigation = navigation.getParent();
-      if (parentNavigation) {
-        console.log('Parent navigation found, navigating to CreatorSetup');
-        parentNavigation.navigate('CreatorSetup');
-      } else {
-        console.error('Parent navigation not found');
-        // Fallback: try direct navigation (this should work with CompositeNavigationProp)
-        console.log('Trying direct navigation as fallback');
-        navigation.navigate('CreatorSetup' as any);
-      }
+      console.log('Attempting direct navigation to CreatorSetup');
+      navigation.navigate('CreatorSetup');
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error('Direct navigation failed:', error);
+      
+      // Fallback: try parent navigation
+      try {
+        console.log('Trying parent navigation as fallback');
+        const parentNavigation = navigation.getParent();
+        if (parentNavigation) {
+          console.log('Parent navigation found:', Object.keys(parentNavigation));
+          parentNavigation.navigate('CreatorSetup');
+        } else {
+          console.error('Parent navigation not found');
+        }
+      } catch (parentError) {
+        console.error('Parent navigation failed:', parentError);
+      }
     }
   };
   
