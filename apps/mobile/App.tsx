@@ -102,6 +102,7 @@ function AppNavigator() {
     return <SplashScreen />;
   }
 
+  console.log('🚨 CRITICAL DEBUG: AppNavigator is running with changes!');
   console.log('🔧 AppNavigator: User authenticated:', !!user);
   console.log('🔧 AppNavigator: Loading:', loading);
 
