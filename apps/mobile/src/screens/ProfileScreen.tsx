@@ -13,6 +13,7 @@ import {
   Switch,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -380,7 +381,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       
       {/* Header */}
@@ -481,7 +482,7 @@ export default function ProfileScreen() {
         {activeTab === 'earnings' && renderEarningsTab()}
         {activeTab === 'settings' && renderSettingsTab()}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

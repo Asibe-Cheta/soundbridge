@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -225,22 +226,20 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {user ? `Welcome back, ${user.email?.split('@')[0]}!` : 'Welcome to SoundBridge'}
-        </Text>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
 
       {/* Featured Creator Hero */}
       <View style={styles.heroSection}>
@@ -480,9 +479,10 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Bottom padding for tab bar */}
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+        {/* Bottom padding for tab bar */}
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -491,18 +491,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  scrollView: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-  },
-  greeting: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   notificationButton: {
     padding: 8,

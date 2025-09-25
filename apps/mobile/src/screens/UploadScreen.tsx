@@ -12,6 +12,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -244,16 +245,17 @@ export default function UploadScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={['#000000', '#0D0D0D', '#1A0A0A']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
-      
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <LinearGradient
+        colors={['#000000', '#0D0D0D', '#1A0A0A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        
+        {/* Header */}
+        <View style={styles.header}>
         <Text style={styles.headerTitle}>Upload Track</Text>
         <TouchableOpacity
           style={[styles.uploadButton, isUploading && styles.uploadButtonDisabled]}
@@ -367,12 +369,17 @@ export default function UploadScreen() {
           </View>
         )}
       </ScrollView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  gradient: {
     flex: 1,
   },
   header: {

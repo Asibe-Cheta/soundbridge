@@ -13,6 +13,7 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -300,7 +301,7 @@ export default function MessagesScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       
       {/* Header */}
@@ -399,7 +400,7 @@ export default function MessagesScreen() {
           </View>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
