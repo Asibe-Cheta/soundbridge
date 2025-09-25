@@ -15,7 +15,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/supabase';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
 const { width, height } = Dimensions.get('window');
@@ -28,7 +30,18 @@ type RootStackParamList = {
   CreatorSetup: undefined;
 };
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type MainTabsParamList = {
+  Home: undefined;
+  Discover: undefined;
+  Upload: undefined;
+  Messages: undefined;
+  Profile: undefined;
+};
+
+type HomeScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabsParamList, 'Home'>,
+  StackNavigationProp<RootStackParamList>
+>;
 
 interface AudioTrack {
   id: string;
@@ -113,13 +126,23 @@ export default function HomeScreen() {
     // Navigate to creator profile setup
     console.log('Navigate to creator setup');
     
-    // Use parent navigation to access the stack navigator
-    const parentNavigation = navigation.getParent();
-    if (parentNavigation) {
-      console.log('Using parent navigation to navigate to CreatorSetup');
-      parentNavigation.navigate('CreatorSetup');
-    } else {
-      console.error('Parent navigation not found - this should not happen');
+    // Use the proper nested navigation approach
+    // Since CreatorSetup is in the parent Stack navigator and HomeScreen is in MainTabs
+    // According to React Navigation docs, we can directly navigate to parent stack screens
+    try {
+      console.log('Attempting to navigate to CreatorSetup using parent navigation');
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        console.log('Parent navigation found, navigating to CreatorSetup');
+        parentNavigation.navigate('CreatorSetup');
+      } else {
+        console.error('Parent navigation not found');
+        // Fallback: try direct navigation (this should work with CompositeNavigationProp)
+        console.log('Trying direct navigation as fallback');
+        navigation.navigate('CreatorSetup' as any);
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
   };
   
