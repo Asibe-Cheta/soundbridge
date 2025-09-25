@@ -101,6 +101,9 @@ function AppNavigator() {
     return <SplashScreen />;
   }
 
+  console.log('🔧 AppNavigator: User authenticated:', !!user);
+  console.log('🔧 AppNavigator: Loading:', loading);
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
