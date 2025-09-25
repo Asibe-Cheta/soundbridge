@@ -112,7 +112,11 @@ function AppNavigator() {
       ) : (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="CreatorSetup" component={CreatorSetupScreen} />
+          <Stack.Screen name="CreatorSetup" component={() => (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
+              <Text style={{ color: 'white', fontSize: 24 }}>Creator Setup Screen</Text>
+            </View>
+          )} />
           <Stack.Screen name="TestScreen" component={() => (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
               <Text style={{ color: 'white', fontSize: 24 }}>Test Screen</Text>
