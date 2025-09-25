@@ -286,9 +286,9 @@ export const db = {
         .from('audio_tracks')
         .select(`
           *,
-          creator:profiles(*)
+          creator:profiles!audio_tracks_creator_id_fkey(*)
         `)
-        .is('deleted_at', null)
+        .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(limit);
       

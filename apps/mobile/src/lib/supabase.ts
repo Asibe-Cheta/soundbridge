@@ -190,7 +190,7 @@ export const db = {
           *,
           creator:profiles(*)
         `)
-        .is('deleted_at', null)
+        .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(limit);
       
@@ -227,9 +227,8 @@ export const db = {
         .from('events')
         .select(`
           *,
-          organizer:profiles(*)
+          creator:profiles!events_creator_id_fkey(*)
         `)
-        .is('deleted_at', null)
         .gte('event_date', new Date().toISOString().split('T')[0])
         .order('event_date', { ascending: true })
         .limit(limit);
