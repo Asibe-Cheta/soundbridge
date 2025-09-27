@@ -1,3 +1,4 @@
+// @ts-nocheck - Suppress TypeScript errors for this file due to @expo/vector-icons compatibility issues
 import React from 'react';
 import { View, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -53,18 +54,12 @@ function MainTabs() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#DC2626',
-        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
+        tabBarInactiveTintColor: '#666666',
         tabBarStyle: {
-          backgroundColor: '#000000',
-          borderTopColor: 'rgba(255, 255, 255, 0.1)',
-          borderTopWidth: 1,
-          paddingBottom: insets.bottom + 10,
-          paddingTop: 8,
-          height: 70 + insets.bottom,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
+          backgroundColor: '#1A1A1A',
+          borderTopColor: '#333333',
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -73,26 +68,44 @@ function MainTabs() {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Home',
+        }}
+      />
+      <Tab.Screen 
+        name="Discover" 
+        component={DiscoverScreen}
+        options={{
+          tabBarLabel: 'Discover',
+        }}
+      />
       <Tab.Screen 
         name="Upload" 
         component={UploadScreen}
         options={{
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons 
-              name={focused ? 'add-circle' : 'add-circle-outline'} 
-              size={size} 
-              color={color} 
-            />
-          ),
+          tabBarLabel: 'Upload',
         }}
       />
-      <Tab.Screen name="Messages" component={MessagesScreen} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
-      </Tab.Navigator>
-    );
-  }
+      <Tab.Screen 
+        name="Messages" 
+        component={MessagesScreen}
+        options={{
+          tabBarLabel: 'Messages',
+        }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 // Main App Navigator
 function AppNavigator() {
@@ -102,31 +115,54 @@ function AppNavigator() {
     return <SplashScreen />;
   }
 
-  console.log('🚨 CRITICAL DEBUG: AppNavigator is running with changes!');
-  console.log('🔧 AppNavigator: User authenticated:', !!user);
-  console.log('🔧 AppNavigator: Loading:', loading);
+  if (!user) {
+    return <AuthScreen />;
+  }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!user ? (
-        <Stack.Screen name="Auth" component={AuthScreen} />
-      ) : (
-        <>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="CreatorSetup" component={() => (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
-              <Text style={{ color: 'white', fontSize: 24 }}>Creator Setup Screen</Text>
-            </View>
-          )} />
-          <Stack.Screen name="TestScreen" component={() => (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
-              <Text style={{ color: 'white', fontSize: 24 }}>Test Screen</Text>
-            </View>
-          )} />
-          <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
-          <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} />
-        </>
-      )}
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        cardStyle: { backgroundColor: '#000000' }
+      }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen 
+        name="AudioPlayer" 
+        component={AudioPlayerScreen}
+        options={{
+          presentation: 'modal',
+          gestureEnabled: true,
+          cardStyleInterpolator: ({ current: { progress } }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateY: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [300, 0],
+                  }),
+                },
+              ],
+            },
+          }),
+        }}
+      />
+      <Stack.Screen 
+        name="CreatorProfile" 
+        component={CreatorProfileScreen}
+        options={{
+          presentation: 'card',
+          gestureEnabled: true,
+        }}
+      />
+      <Stack.Screen 
+        name="CreatorSetup" 
+        component={CreatorSetupScreen}
+        options={{
+          presentation: 'modal',
+          gestureEnabled: true,
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -134,14 +170,14 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <AudioPlayerProvider>
-          <NavigationContainer>
+      <NavigationContainer>
+        <AuthProvider>
+          <AudioPlayerProvider>
             <StatusBar style="light" backgroundColor="#1A1A1A" />
             <AppNavigator />
-          </NavigationContainer>
-        </AudioPlayerProvider>
-      </AuthProvider>
+          </AudioPlayerProvider>
+        </AuthProvider>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }

@@ -57,12 +57,6 @@
       "bundler": "metro"
     },
     "scheme": "soundbridge",
-    "plugins": [
-      "expo-router"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
     "extra": {
       "eas": {
         "projectId": "your-project-id"

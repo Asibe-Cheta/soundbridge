@@ -203,41 +203,221 @@ export const db = {
     }
   },
 
-  // Get trending tracks
+  // Get trending tracks - EXACT MATCH of web app API
   async getTrendingTracks(limit = 10) {
     try {
-      const { data, error } = await supabase
-        .from('trending_tracks')
-        .select('*')
+      console.log('🔧 TRENDING DEBUG: Starting getTrendingTracks query (WEB APP MATCH)...');
+      
+      // EXACT QUERY FROM WEB APP: apps/web/app/api/audio/trending/route.ts
+      const { data: tracks, error } = await supabase
+        .from('audio_tracks')
+        .select(`
+          *,
+          creator:profiles!audio_tracks_creator_id_fkey(
+            id,
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq('is_public', true)
+        .not('genre', 'eq', 'podcast')
+        .not('genre', 'eq', 'Podcast')
+        .not('genre', 'eq', 'PODCAST')
+        .order('play_count', { ascending: false })
         .limit(limit);
       
-      if (error) throw error;
+      console.log('🔧 TRENDING DEBUG: Query completed. Results:', {
+        error: error?.message || 'No error',
+        dataLength: tracks?.length || 0,
+        firstItem: tracks?.[0] || 'No items'
+      });
       
-      return { success: true, data, error: null };
+      if (error) {
+        console.error('🔧 TRENDING DEBUG: Query error details:', error);
+        throw error;
+      }
+      
+      // Transform data to match mobile app interface (same as web app formatting)
+      const transformedData = (tracks || []).map(track => ({
+        id: track.id,
+        title: track.title,
+        description: track.description,
+        file_url: track.file_url,
+        cover_art_url: track.cover_art_url,
+        duration: track.duration || 0,
+        play_count: track.play_count || 0,
+        like_count: track.like_count || 0,
+        genre: track.genre,
+        tags: track.tags || [],
+        is_public: track.is_public,
+        created_at: track.created_at,
+        creator: {
+          id: track.creator?.id || track.creator_id,
+          username: track.creator?.username || 'unknown',
+          display_name: track.creator?.display_name || 'Unknown Artist',
+          avatar_url: track.creator?.avatar_url
+        }
+      }));
+      
+      console.log('🔧 TRENDING DEBUG: Transformed data:', {
+        originalLength: tracks?.length || 0,
+        transformedLength: transformedData.length,
+        firstTransformed: transformedData[0] || 'No items'
+      });
+      
+      return { success: true, data: transformedData, error: null };
     } catch (error) {
-      console.error('Get trending tracks error:', error);
+      console.error('🔧 TRENDING DEBUG: getTrendingTracks error:', error);
       return { success: false, data: null, error };
     }
   },
 
-  // Get events
+  // Get hot creators - EXACT MATCH of web app API
+  async getHotCreators(limit = 10) {
+    try {
+      console.log('🔧 SUPABASE DEBUG: Starting getHotCreators query (WEB APP MATCH)...');
+      console.log('🔧 SUPABASE DEBUG: URL:', supabaseUrl);
+      console.log('🔧 SUPABASE DEBUG: Anon key exists:', !!supabaseAnonKey);
+      
+      // EXACT QUERY FROM WEB APP: apps/web/app/api/creators/hot/route.ts
+      const { data: creators, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          username,
+          display_name,
+          bio,
+          avatar_url,
+          location,
+          country,
+          genre,
+          created_at,
+          followers:follows!follows_following_id_fkey(count),
+          recent_tracks:audio_tracks!audio_tracks_creator_id_fkey(
+            id,
+            title,
+            play_count,
+            like_count,
+            created_at,
+            genre
+          ),
+          all_tracks:audio_tracks!audio_tracks_creator_id_fkey(count),
+          events:events!events_creator_id_fkey(count)
+        `)
+        .eq('role', 'creator')
+        .order('created_at', { ascending: false });
+      
+      console.log('🔧 SUPABASE DEBUG: Query completed. Results:', {
+        error: error?.message || 'No error',
+        dataLength: creators?.length || 0,
+        firstItem: creators?.[0] || 'No items'
+      });
+      
+      if (error) {
+        console.error('🔧 SUPABASE DEBUG: Query error details:', error);
+        throw error;
+      }
+      
+      // Transform data to match mobile app interface
+      const transformedData = (creators || []).map(creator => ({
+        id: creator.id,
+        username: creator.username,
+        display_name: creator.display_name,
+        bio: creator.bio,
+        avatar_url: creator.avatar_url,
+        location: creator.location,
+        country: creator.country,
+        genre: creator.genre,
+        followers_count: creator.followers?.[0]?.count || 0,
+        tracks_count: creator.all_tracks?.[0]?.count || 0,
+        events_count: creator.events?.[0]?.count || 0,
+        total_plays: creator.recent_tracks?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 0,
+        created_at: creator.created_at
+      }));
+      
+      console.log('🔧 SUPABASE DEBUG: Transformed data:', {
+        originalLength: creators?.length || 0,
+        transformedLength: transformedData.length,
+        firstTransformed: transformedData[0] || 'No items'
+      });
+      
+      return { success: true, data: transformedData, error: null };
+    } catch (error) {
+      console.error('🔧 SUPABASE DEBUG: getHotCreators error:', error);
+      return { success: false, data: null, error };
+    }
+  },
+
+  // Get events - EXACT MATCH of web app API
   async getEvents(limit = 10) {
     try {
+      console.log('🔧 EVENTS DEBUG: Starting getEvents query (WEB APP MATCH)...');
+      
+      // EXACT QUERY FROM WEB APP: apps/web/app/api/events/route.ts
       const { data, error } = await supabase
         .from('events')
         .select(`
           *,
-          creator:profiles!events_creator_id_fkey(*)
+          creator:profiles!events_creator_id_fkey(
+            id,
+            username,
+            display_name,
+            avatar_url,
+            banner_url
+          ),
+          attendees:event_attendees(
+            user_id,
+            status,
+            created_at
+          )
         `)
-        .gte('event_date', new Date().toISOString().split('T')[0])
         .order('event_date', { ascending: true })
         .limit(limit);
       
-      if (error) throw error;
+      console.log('🔧 EVENTS DEBUG: Query completed. Results:', {
+        error: error?.message || 'No error',
+        dataLength: data?.length || 0,
+        firstItem: data?.[0] || 'No items'
+      });
       
-      return { success: true, data, error: null };
+      if (error) {
+        console.error('🔧 EVENTS DEBUG: Query error details:', error);
+        throw error;
+      }
+      
+      // Transform data to match mobile app interface
+      const transformedData = (data || []).map(event => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        event_date: event.event_date,
+        location: event.location,
+        image_url: event.image_url,
+        category: event.category,
+        price_gbp: event.price_gbp,
+        price_ngn: event.price_ngn,
+        max_attendees: event.max_attendees,
+        current_attendees: event.current_attendees || 0,
+        created_at: event.created_at,
+        creator: {
+          id: event.creator?.id || event.creator_id,
+          username: event.creator?.username || 'unknown',
+          display_name: event.creator?.display_name || 'Unknown Organizer',
+          avatar_url: event.creator?.avatar_url
+        },
+        attendees_count: event.attendees?.length || 0
+      }));
+      
+      console.log('🔧 EVENTS DEBUG: Transformed data:', {
+        originalLength: data?.length || 0,
+        transformedLength: transformedData.length,
+        firstTransformed: transformedData[0] || 'No items'
+      });
+      
+      return { success: true, data: transformedData, error: null };
     } catch (error) {
-      console.error('Get events error:', error);
+      console.error('🔧 EVENTS DEBUG: getEvents error:', error);
       return { success: false, data: null, error };
     }
   },

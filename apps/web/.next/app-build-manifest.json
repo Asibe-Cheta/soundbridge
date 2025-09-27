@@ -1,3 +1,14 @@
 {
-  "pages": {}
+  "pages": {
+    "/api/stripe/connect/create-account/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/stripe/connect/create-account/route.js"
+    ],
+    "/api/stripe/create-checkout-session/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/stripe/create-checkout-session/route.js"
+    ]
+  }
 }

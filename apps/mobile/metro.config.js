@@ -1,16 +1,14 @@
 const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Add support for additional file extensions
-config.resolver.assetExts.push('svg');
+// Ensure Metro only looks in the local node_modules, not parent directories
+config.resolver.nodeModulesPaths = [
+  path.resolve(__dirname, 'node_modules')
+];
 
-// Configure source maps for better debugging
-config.transformer.minifierConfig = {
-  keep_fnames: true,
-  mangle: {
-    keep_fnames: true,
-  },
-};
+// Prevent Metro from looking up the directory tree
+config.watchFolders = [__dirname];
 
 module.exports = config;

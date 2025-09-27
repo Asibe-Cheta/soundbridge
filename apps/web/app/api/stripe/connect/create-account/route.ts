@@ -1,18 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 
 export async function POST(request: NextRequest) {
+  // Add CORS headers for mobile app
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    let supabase;
+    let user;
+    let authError;
+
+    // Check for Authorization header (mobile app)
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      
+      console.log('Mobile token received:', token.substring(0, 20) + '...');
+      
+      // Create a fresh Supabase client with the provided token
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        }
+      );
+      
+      // Get user with the token
+      const { data, error } = await supabase.auth.getUser(token);
+      console.log('Supabase auth result:', { user: data.user?.email, error: error?.message });
+      user = data.user;
+      authError = error;
+    } else {
+      console.log('Using cookie-based auth');
+      // Use cookie-based auth (web app)
+      supabase = createRouteHandlerClient({ cookies });
+      const { data, error } = await supabase.auth.getUser();
+      user = data.user;
+      authError = error;
+    }
     
-    // Get the current user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -86,7 +128,7 @@ export async function POST(request: NextRequest) {
       success: true,
       accountId: account.id,
       onboardingUrl: accountLink.url
-    });
+    }, { headers: corsHeaders });
     
   } catch (error: any) {
     console.error('Error creating Stripe Connect account:', error);
@@ -132,7 +174,19 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(
       { error: `Internal server error: ${error.message || 'Unknown error'}` },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+// Handle preflight CORS requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

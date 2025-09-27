@@ -74,61 +74,21 @@ export default function MessagesScreen() {
   const loadConversations = async () => {
     setLoading(true);
     try {
-      // Mock data for now - in real app, this would come from API
-      const mockConversations: Conversation[] = [
-        {
-          id: '1',
-          other_user: {
-            id: '2',
-            username: 'dj_alex',
-            display_name: 'DJ Alex',
-            avatar_url: undefined,
-          },
-          last_message: {
-            content: 'Hey! Check out my new track',
-            created_at: '2024-01-15T10:30:00Z',
-            sender_id: '2',
-          },
-          unread_count: 2,
-          updated_at: '2024-01-15T10:30:00Z',
-        },
-        {
-          id: '2',
-          other_user: {
-            id: '3',
-            username: 'sarah_beats',
-            display_name: 'Sarah Beats',
-            avatar_url: undefined,
-          },
-          last_message: {
-            content: 'Thanks for the collaboration!',
-            created_at: '2024-01-14T16:45:00Z',
-            sender_id: user?.id || '1',
-          },
-          unread_count: 0,
-          updated_at: '2024-01-14T16:45:00Z',
-        },
-        {
-          id: '3',
-          other_user: {
-            id: '4',
-            username: 'mike_music',
-            display_name: 'Mike Music',
-            avatar_url: undefined,
-          },
-          last_message: {
-            content: 'Let\'s work on something together',
-            created_at: '2024-01-13T14:20:00Z',
-            sender_id: '4',
-          },
-          unread_count: 1,
-          updated_at: '2024-01-13T14:20:00Z',
-        },
-      ];
-      setConversations(mockConversations);
+      // TODO: Implement real conversations API from web app
+      // For now, show empty state (no mock data)
+      console.log('📨 MESSAGES DEBUG: Loading conversations from API...');
+      
+      // This would be a real API call to match web app structure
+      // const { success, data } = await db.getConversations(user?.id);
+      
+      // Show empty state until real API is implemented
+      setConversations([]);
+      
+      console.log('📨 MESSAGES DEBUG: No conversations API implemented yet, showing empty state');
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('❌ MESSAGES DEBUG: Error loading conversations:', error);
       Alert.alert('Error', 'Failed to load conversations');
+      setConversations([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
