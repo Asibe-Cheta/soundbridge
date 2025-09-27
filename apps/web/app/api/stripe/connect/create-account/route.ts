@@ -55,19 +55,12 @@ export async function POST(request: NextRequest) {
       // Create a fresh Supabase client with the provided token
       supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        }
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
       
       console.log('🚨 Supabase client created, calling getUser...');
       
-      // Get user with the token
+      // Get user with the token - pass token directly to getUser
       const { data, error } = await supabase.auth.getUser(token);
       console.log('🚨 SUPABASE AUTH RESULT:');
       console.log('- User exists:', !!data.user);
