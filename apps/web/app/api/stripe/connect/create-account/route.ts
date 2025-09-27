@@ -13,16 +13,35 @@ export async function POST(request: NextRequest) {
   };
 
   try {
+    // URGENT PRODUCTION DEBUG: Log all request details
+    console.log('🚨 PRODUCTION DEBUG - Request received');
+    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('Request method:', request.method);
+    console.log('Request URL:', request.url);
+    
     let supabase;
     let user;
     let authError;
 
     // Check for Authorization header (mobile app)
     const authHeader = request.headers.get('authorization');
+    console.log('🚨 Auth header raw:', authHeader);
+    console.log('🚨 Auth header exists:', !!authHeader);
+    console.log('🚨 Auth header starts with Bearer:', authHeader?.startsWith('Bearer '));
+    
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       
-      console.log('Mobile token received:', token.substring(0, 20) + '...');
+      console.log('🚨 MOBILE TOKEN DEBUG:');
+      console.log('- Token length:', token.length);
+      console.log('- Token preview:', token.substring(0, 50) + '...');
+      console.log('- Token ends with:', '...' + token.substring(token.length - 20));
+      
+      // Check environment variables
+      console.log('🚨 ENVIRONMENT CHECK:');
+      console.log('- SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log('- SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      console.log('- SUPABASE_URL value:', process.env.NEXT_PUBLIC_SUPABASE_URL);
       
       // Create a fresh Supabase client with the provided token
       supabase = createClient(
@@ -37,19 +56,33 @@ export async function POST(request: NextRequest) {
         }
       );
       
+      console.log('🚨 Supabase client created, calling getUser...');
+      
       // Get user with the token
       const { data, error } = await supabase.auth.getUser(token);
-      console.log('Supabase auth result:', { user: data.user?.email, error: error?.message });
+      console.log('🚨 SUPABASE AUTH RESULT:');
+      console.log('- User exists:', !!data.user);
+      console.log('- User ID:', data.user?.id);
+      console.log('- User email:', data.user?.email);
+      console.log('- Error exists:', !!error);
+      console.log('- Error message:', error?.message);
+      console.log('- Error details:', JSON.stringify(error, null, 2));
+      
       user = data.user;
       authError = error;
     } else {
-      console.log('Using cookie-based auth');
+      console.log('🚨 Using cookie-based auth (no Bearer token found)');
       // Use cookie-based auth (web app)
       supabase = createRouteHandlerClient({ cookies });
       const { data, error } = await supabase.auth.getUser();
       user = data.user;
       authError = error;
     }
+    
+    console.log('🚨 FINAL AUTH CHECK:');
+    console.log('- Auth error:', authError?.message || 'None');
+    console.log('- User authenticated:', !!user);
+    console.log('- Will return 401:', !!(authError || !user));
     
     if (authError || !user) {
       return NextResponse.json(
