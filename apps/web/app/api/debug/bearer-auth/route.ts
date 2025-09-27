@@ -35,9 +35,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get Authorization header
-    const authHeader = request.headers.get('authorization');
-    console.log('🔧 Authorization header:', authHeader ? 'Present' : 'Missing');
+    // Get Authorization header - try multiple variations
+    const authHeader = request.headers.get('authorization') || 
+                      request.headers.get('Authorization') ||
+                      request.headers.get('x-authorization') ||
+                      request.headers.get('x-auth-token');
+    
+    console.log('🔧 HEADER VARIATIONS:');
+    console.log('- authorization:', request.headers.get('authorization') ? 'Present' : 'Missing');
+    console.log('- Authorization:', request.headers.get('Authorization') ? 'Present' : 'Missing');
+    console.log('- x-authorization:', request.headers.get('x-authorization') ? 'Present' : 'Missing');
+    console.log('- x-auth-token:', request.headers.get('x-auth-token') ? 'Present' : 'Missing');
+    console.log('🔧 Final Authorization header:', authHeader ? 'Present' : 'Missing');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(

@@ -2,5 +2,24 @@
   "buildCommand": "cd apps/web && npm run build",
   "installCommand": "cd apps/web && npm install",
   "framework": "nextjs",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers", 
+          "value": "Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token"
+        }
+      ]
+    }
+  ]
 }

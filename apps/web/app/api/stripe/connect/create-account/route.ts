@@ -23,9 +23,18 @@ export async function POST(request: NextRequest) {
     let user;
     let authError;
 
-    // Check for Authorization header (mobile app)
-    const authHeader = request.headers.get('authorization');
-    console.log('🚨 Auth header raw:', authHeader);
+    // Check for Authorization header (mobile app) - try multiple header names
+    const authHeader = request.headers.get('authorization') || 
+                      request.headers.get('Authorization') ||
+                      request.headers.get('x-authorization') ||
+                      request.headers.get('x-auth-token');
+    
+    console.log('🚨 HEADER DEBUG:');
+    console.log('- authorization:', request.headers.get('authorization'));
+    console.log('- Authorization:', request.headers.get('Authorization'));  
+    console.log('- x-authorization:', request.headers.get('x-authorization'));
+    console.log('- x-auth-token:', request.headers.get('x-auth-token'));
+    console.log('- Final authHeader:', authHeader);
     console.log('🚨 Auth header exists:', !!authHeader);
     console.log('🚨 Auth header starts with Bearer:', authHeader?.startsWith('Bearer '));
     
