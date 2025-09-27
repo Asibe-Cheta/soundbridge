@@ -49,10 +49,26 @@ export async function POST(request: NextRequest) {
     let user;
     let authError;
 
-    // Check for Authorization header (mobile app)
-    const authHeader = request.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    // Check for Authorization header (mobile app) - try ALL mobile app headers
+    const authHeader = request.headers.get('authorization') || 
+                      request.headers.get('Authorization') ||
+                      request.headers.get('x-authorization') ||
+                      request.headers.get('x-auth-token') ||
+                      request.headers.get('x-supabase-token');
+    
+    console.log('🚨 MOBILE APP HEADER DEBUG (Checkout):');
+    console.log('- authorization:', request.headers.get('authorization'));
+    console.log('- Authorization:', request.headers.get('Authorization'));  
+    console.log('- x-authorization:', request.headers.get('x-authorization'));
+    console.log('- x-auth-token:', request.headers.get('x-auth-token'));
+    console.log('- x-supabase-token:', request.headers.get('x-supabase-token'));
+    console.log('- Final authHeader:', authHeader);
+    
+    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
+      // Handle both "Bearer token" format and raw token format
+      const token = authHeader.startsWith('Bearer ') ? 
+                   authHeader.substring(7) : 
+                   authHeader;
       
       // Create a fresh Supabase client with the provided token
       const supabase = createClient(

@@ -23,23 +23,28 @@ export async function POST(request: NextRequest) {
     let user;
     let authError;
 
-    // Check for Authorization header (mobile app) - try multiple header names
+    // Check for Authorization header (mobile app) - try ALL mobile app headers
     const authHeader = request.headers.get('authorization') || 
                       request.headers.get('Authorization') ||
                       request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token');
+                      request.headers.get('x-auth-token') ||
+                      request.headers.get('x-supabase-token');
     
-    console.log('🚨 HEADER DEBUG:');
+    console.log('🚨 MOBILE APP HEADER DEBUG:');
     console.log('- authorization:', request.headers.get('authorization'));
     console.log('- Authorization:', request.headers.get('Authorization'));  
     console.log('- x-authorization:', request.headers.get('x-authorization'));
     console.log('- x-auth-token:', request.headers.get('x-auth-token'));
+    console.log('- x-supabase-token:', request.headers.get('x-supabase-token'));
     console.log('- Final authHeader:', authHeader);
     console.log('🚨 Auth header exists:', !!authHeader);
     console.log('🚨 Auth header starts with Bearer:', authHeader?.startsWith('Bearer '));
     
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
+      // Handle both "Bearer token" format and raw token format
+      const token = authHeader.startsWith('Bearer ') ? 
+                   authHeader.substring(7) : 
+                   authHeader;
       
       console.log('🚨 MOBILE TOKEN DEBUG:');
       console.log('- Token length:', token.length);

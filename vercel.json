@@ -17,7 +17,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers", 
-          "value": "Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token"
+          "value": "Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token"
         }
       ]
     }

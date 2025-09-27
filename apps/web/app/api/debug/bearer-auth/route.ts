@@ -35,30 +35,35 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get Authorization header - try multiple variations
+    // Get Authorization header - try ALL mobile app headers
     const authHeader = request.headers.get('authorization') || 
                       request.headers.get('Authorization') ||
                       request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token');
+                      request.headers.get('x-auth-token') ||
+                      request.headers.get('x-supabase-token');
     
-    console.log('🔧 HEADER VARIATIONS:');
+    console.log('🔧 MOBILE APP HEADER VARIATIONS:');
     console.log('- authorization:', request.headers.get('authorization') ? 'Present' : 'Missing');
     console.log('- Authorization:', request.headers.get('Authorization') ? 'Present' : 'Missing');
     console.log('- x-authorization:', request.headers.get('x-authorization') ? 'Present' : 'Missing');
     console.log('- x-auth-token:', request.headers.get('x-auth-token') ? 'Present' : 'Missing');
+    console.log('- x-supabase-token:', request.headers.get('x-supabase-token') ? 'Present' : 'Missing');
     console.log('🔧 Final Authorization header:', authHeader ? 'Present' : 'Missing');
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader) {
       return NextResponse.json(
         { 
           error: 'No Bearer token provided',
-          received: authHeader ? 'Non-Bearer auth header' : 'No auth header'
+          received: 'No auth header found in any variation'
         },
         { status: 400, headers: corsHeaders }
       );
     }
     
-    const token = authHeader.substring(7);
+    // Handle both "Bearer token" format and raw token format
+    const token = authHeader.startsWith('Bearer ') ? 
+                 authHeader.substring(7) : 
+                 authHeader;
     console.log('🔧 Token details:');
     console.log('- Length:', token.length);
     console.log('- Preview:', token.substring(0, 30) + '...');
