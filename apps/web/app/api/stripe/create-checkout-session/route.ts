@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 import { stripe, getPriceId } from '../../../../src/lib/stripe';
 
 export async function POST(request: NextRequest) {
+  console.log('🚨 STRIPE CHECKOUT API: Request received at', new Date().toISOString());
+  
   // Add CORS headers for mobile app
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -13,6 +15,7 @@ export async function POST(request: NextRequest) {
   };
 
   try {
+    console.log('🚨 STRIPE CHECKOUT API: Starting processing...');
     // Check if Stripe is configured
     if (!stripe) {
       return NextResponse.json(
@@ -83,10 +86,23 @@ export async function POST(request: NextRequest) {
         }
       );
       
-      // Get user with the token
-      const { data, error } = await supabase.auth.getUser(token);
-      user = data.user;
-      authError = error;
+      // Get user with the token - add timeout to prevent hanging
+      console.log('🚨 CHECKOUT AUTH: Getting user with Bearer token...');
+      try {
+        const authPromise = supabase.auth.getUser(token);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth timeout after 10 seconds')), 10000)
+        );
+        
+        const { data, error } = await Promise.race([authPromise, timeoutPromise]);
+        user = data.user;
+        authError = error;
+        console.log('🚨 CHECKOUT AUTH: User authenticated successfully:', !!user);
+      } catch (timeoutError) {
+        console.error('🚨 CHECKOUT AUTH TIMEOUT:', timeoutError);
+        authError = timeoutError;
+        user = null;
+      }
     } else {
       // Use cookie-based auth (web app)
       const supabase = createServerComponentClient({ cookies });
@@ -126,9 +142,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Stripe Checkout session
+    // Create Stripe Checkout session with timeout
     console.log('🚨 Creating Stripe checkout session...');
-    const session = await stripe.checkout.sessions.create({
+    
+    const sessionConfig = {
       payment_method_types: ['card'],
       line_items: [
         {
@@ -157,7 +174,30 @@ export async function POST(request: NextRequest) {
       tax_id_collection: {
         enabled: true,
       },
-    });
+    };
+    
+    console.log('🚨 STRIPE CONFIG:', JSON.stringify(sessionConfig, null, 2));
+    
+    let session;
+    try {
+      // Add timeout to Stripe API call to prevent hanging
+      const stripePromise = stripe.checkout.sessions.create(sessionConfig);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Stripe API timeout after 30 seconds')), 30000)
+      );
+      
+      session = await Promise.race([stripePromise, timeoutPromise]);
+    } catch (stripeError) {
+      console.error('🚨 STRIPE API ERROR:', stripeError);
+      return NextResponse.json(
+        { 
+          error: 'Stripe checkout session creation failed',
+          details: stripeError.message,
+          timestamp: new Date().toISOString()
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     console.log('🚨 STRIPE CHECKOUT SUCCESS:');
     console.log('- Session ID:', session.id);
