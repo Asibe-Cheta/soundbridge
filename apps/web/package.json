@@ -10,9 +10,7 @@
     "setup-env": "node scripts/setup-env.js"
   },
   "dependencies": {
-    "@soundbridge/types": "file:../../packages/types",
-    "@soundbridge/supabase": "file:../../packages/supabase",
-    "@soundbridge/shared": "file:../../packages/shared",
+    "@googleapis/androidpublisher": "^31.0.0",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -21,6 +19,9 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@rive-app/react-canvas": "^4.23.3",
     "@sendgrid/mail": "^8.1.5",
+    "@soundbridge/shared": "file:../../packages/shared",
+    "@soundbridge/supabase": "file:../../packages/supabase",
+    "@soundbridge/types": "file:../../packages/types",
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
@@ -34,6 +35,7 @@
     "dotenv": "^17.2.1",
     "dotted-map": "^2.2.3",
     "framer-motion": "^12.23.12",
+    "google-auth-library": "^10.3.0",
     "howler": "^2.2.4",
     "isomorphic-dompurify": "^2.26.0",
     "jszip": "^3.10.1",
