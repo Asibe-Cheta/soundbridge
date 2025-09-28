@@ -4,8 +4,14 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe, getPriceId } from '../../../../src/lib/stripe';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
-  console.log('🚨 STRIPE CHECKOUT API: Request received at', new Date().toISOString());
+  console.log('🚨🚨🚨 STRIPE CHECKOUT API: REQUEST RECEIVED!!! 🚨🚨🚨');
+  console.log('🚨 TIMESTAMP:', new Date().toISOString());
+  console.log('🚨 URL:', request.url);
+  console.log('🚨 METHOD:', request.method);
+  console.log('🚨 HEADERS:', Object.fromEntries(request.headers.entries()));
   
   // Add CORS headers for mobile app
   const corsHeaders = {
@@ -16,6 +22,19 @@ export async function POST(request: NextRequest) {
 
   try {
     console.log('🚨 STRIPE CHECKOUT API: Starting processing...');
+    
+    // IMMEDIATE TEST - Return early with debug info
+    console.log('🚨 EARLY RETURN TEST - API IS WORKING!');
+    return NextResponse.json({
+      success: true,
+      message: 'STRIPE CHECKOUT API REACHED SUCCESSFULLY!',
+      timestamp: new Date().toISOString(),
+      debug: 'This proves the API route is working',
+      received_headers: Object.fromEntries(request.headers.entries()),
+      url: request.url,
+      method: request.method
+    }, { headers: corsHeaders });
+    
     // Check if Stripe is configured
     if (!stripe) {
       return NextResponse.json(
@@ -110,7 +129,7 @@ export async function POST(request: NextRequest) {
       user = data.user;
       authError = error;
     }
-
+    
     if (authError || !user) {
       return NextResponse.json(
         { error: 'User not authenticated' },
