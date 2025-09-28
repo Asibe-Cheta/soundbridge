@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
   };
 
   try {
@@ -104,8 +104,30 @@ export async function POST(request: NextRequest) {
 
     // Get price ID
     const priceId = getPriceId(plan as 'pro' | 'enterprise', billingCycle as 'monthly' | 'yearly');
+    
+    console.log('🚨 STRIPE CHECKOUT DEBUG:');
+    console.log('- Plan:', plan);
+    console.log('- Billing Cycle:', billingCycle);
+    console.log('- Price ID:', priceId);
+    console.log('- User ID:', user.id);
+    console.log('- User Email:', user.email);
+    console.log('- Is placeholder:', priceId.includes('placeholder'));
+    
+    // Check if we're using placeholder price IDs
+    if (priceId.includes('placeholder')) {
+      console.error('🚨 STRIPE CHECKOUT ERROR: Using placeholder price ID!');
+      return NextResponse.json(
+        { 
+          error: 'Stripe pricing not configured. Please set up Stripe price IDs in environment variables.',
+          details: `Price ID: ${priceId}`,
+          priceId: priceId
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     // Create Stripe Checkout session
+    console.log('🚨 Creating Stripe checkout session...');
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -137,6 +159,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('🚨 STRIPE CHECKOUT SUCCESS:');
+    console.log('- Session ID:', session.id);
+    console.log('- Session URL:', session.url);
+    console.log('- Session created successfully!');
+    
     return NextResponse.json({ 
       sessionId: session.id,
       url: session.url 
@@ -158,7 +185,7 @@ export async function OPTIONS(request: NextRequest) {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
     },
   });
 }
