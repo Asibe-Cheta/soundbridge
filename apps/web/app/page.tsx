@@ -1586,7 +1586,7 @@ export default function HomePage() {
                     <div className="stats">
                       <span>{creator.stats?.followers_count?.toLocaleString() || 0} followers</span>
                       <span>{creator.stats?.tracks_count || 0} tracks</span>
-                      {creator.recent_tracks.length > 0 && (
+                      {creator.recent_tracks?.length > 0 && (
                         <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>
                           +{creator.recent_tracks.length} recent
                         </span>
