@@ -239,7 +239,31 @@ export default function HomePage() {
         const data = await response.json();
         
         if (data.data) {
-          setHotCreators(data.data);
+          // Transform the hot creators API response to match CreatorSearchResult structure
+          const transformedCreators = data.data.map((creator: any) => ({
+            profile: {
+              id: creator.id,
+              username: creator.username,
+              display_name: creator.display_name,
+              bio: creator.bio,
+              avatar_url: creator.avatar_url,
+              location: creator.location,
+              country: creator.country,
+              genre: creator.genre,
+              created_at: creator.created_at,
+              updated_at: creator.created_at
+            },
+            stats: {
+              followers_count: creator.followers_count || 0,
+              tracks_count: creator.tracks_count || 0,
+              events_count: creator.events_count || 0,
+              total_plays: creator.hot_score || 0, // Use hot score as total plays for display
+              total_likes: 0 // Not available in hot creators API
+            },
+            recent_tracks: [],
+            upcoming_events: []
+          }));
+          setHotCreators(transformedCreators);
         }
       } catch (error) {
         console.error('Error fetching hot creators:', error);
@@ -1525,16 +1549,19 @@ export default function HomePage() {
               ))
             ) : hotCreators.length > 0 ? (
               hotCreators.slice(0, 5).map((creator) => (
-                <Link 
+                <div 
                   key={creator.profile?.id || 'unknown'} 
-                  href={`/creator/${creator.profile?.username || 'unknown'}`} 
-                  style={{ textDecoration: 'none' }}
+                  className="card" 
+                  style={{
+                    width: isMobile ? '200px' : 'auto',
+                    minWidth: isMobile ? '200px' : 'auto',
+                    flexShrink: isMobile ? '0' : '1',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => {
+                    window.location.href = `/creator/${creator.profile?.username || 'unknown'}`;
+                  }}
                 >
-            <div className="card" style={{
-              width: isMobile ? '200px' : 'auto',
-              minWidth: isMobile ? '200px' : 'auto',
-              flexShrink: isMobile ? '0' : '1'
-            }}>
               <div className="card-image">
                       {creator.profile?.avatar_url ? (
                         <Image
@@ -1593,7 +1620,6 @@ export default function HomePage() {
                       )}
                 </div>
               </div>
-                </Link>
               ))
             ) : (
               // Empty state
