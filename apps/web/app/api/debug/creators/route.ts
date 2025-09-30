@@ -1,14 +1,11 @@
-import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/src/lib/supabase';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createServiceClient();
     
-    console.log('🔍 Debug: Checking creators in database...');
-    
-    // Get all profiles with role 'creator'
+    // Get all creators from the database
     const { data: creators, error } = await supabase
       .from('profiles')
       .select(`
@@ -17,41 +14,32 @@ export async function GET() {
         display_name,
         bio,
         avatar_url,
-        banner_url,
         location,
         country,
+        genre,
         role,
         created_at
       `)
-      .eq('role', 'creator');
-    
+      .eq('role', 'creator')
+      .order('created_at', { ascending: false });
+
     if (error) {
-      console.error('❌ Error fetching creators:', error);
-      return NextResponse.json({
-        success: false,
-        error: error.message,
-        details: error
-      });
+      console.error('Error fetching creators:', error);
+      return NextResponse.json({ error: 'Failed to fetch creators' }, { status: 500 });
     }
-    
-    console.log('✅ Found creators:', creators?.length || 0);
-    console.log('📋 Creators data:', creators);
+
+    console.log('🔍 Debug: Found', creators?.length || 0, 'creators in database');
     
     return NextResponse.json({
       success: true,
       count: creators?.length || 0,
-      creators: creators || [],
-      message: `Found ${creators?.length || 0} creators in database`
+      creators: creators || []
     });
-    
+
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('Error in debug creators endpoint:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch creators',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to fetch creators' },
       { status: 500 }
     );
   }
