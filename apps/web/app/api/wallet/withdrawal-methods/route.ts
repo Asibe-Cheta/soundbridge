@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
           account_number: bank_details.account_number, // TODO: Encrypt this
           routing_number: bank_details.routing_number, // TODO: Encrypt this
           account_type: bank_details.account_type,
-          currency: bank_details.currency || 'USD'
+          currency: currency || bank_details.currency || 'USD' // Use currency from request body
         };
         break;
         

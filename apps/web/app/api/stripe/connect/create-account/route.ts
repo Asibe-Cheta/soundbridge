@@ -169,6 +169,19 @@ export async function POST(request: NextRequest) {
     console.log('- Using mobile client:', !!(authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))));
     console.log('- Token provided:', !!authHeader);
     
+    // Get currency based on country
+    const getCurrencyForCountry = (countryCode: string): string => {
+      const currencyMap: Record<string, string> = {
+        'US': 'USD', 'GB': 'GBP', 'CA': 'CAD', 'AU': 'AUD',
+        'DE': 'EUR', 'FR': 'EUR', 'ES': 'EUR', 'IT': 'EUR', 'NL': 'EUR',
+        'JP': 'JPY', 'SG': 'SGD', 'HK': 'HKD', 'MY': 'MYR', 'TH': 'THB',
+        'NZ': 'NZD', 'CH': 'CHF', 'SE': 'SEK', 'NO': 'NOK', 'DK': 'DKK'
+      };
+      return currencyMap[countryCode] || 'USD';
+    };
+
+    const currency = getCurrencyForCountry(country);
+
     const { error: updateError } = await dbClient
       .from('creator_bank_accounts')
       .upsert({
@@ -181,7 +194,7 @@ export async function POST(request: NextRequest) {
         account_number_encrypted: '', // Not needed for Stripe Connect
         routing_number_encrypted: '', // Not needed for Stripe Connect
         account_type: 'checking',
-        currency: 'USD'
+        currency: currency // Dynamic currency based on country
       });
 
     if (updateError) {
