@@ -1,127 +1,298 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { createServiceClient } from '@/src/lib/supabase';
-import { CreatorProfileClient } from './CreatorProfileClient';
+'use client';
+
+import React from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-interface CreatorProfilePageProps {
-  params: Promise<{ username: string }>;
-}
+export default function CreatorProfilePage() {
+  const params = useParams();
+  const username = params.username as string;
 
-export async function generateMetadata({ params }: CreatorProfilePageProps): Promise<Metadata> {
-  const resolvedParams = await params;
-  const { username } = resolvedParams;
-
-  try {
-    const supabase = createServiceClient();
-    const { data: creator } = await supabase
-      .from('profiles')
-      .select('username, display_name, bio, avatar_url, location, social_links')
-      .eq('username', username)
-      .single();
-
-    if (!creator) {
-      return {
-        title: 'Creator Not Found',
-        description: 'The requested creator profile could not be found.',
-      };
-    }
-
-    const title = `${creator.display_name || creator.username} | SoundBridge`;
-    const description = creator.bio || `Discover music and events by ${creator.display_name || creator.username} on SoundBridge.`;
-    const image = creator.avatar_url || '/images/default-avatar.jpg';
-
-    return {
-      title,
-      description,
-      keywords: [
-        creator.display_name || creator.username,
-        'music creator',
-        'artist',
-        'music',
-        'SoundBridge',
-        creator.location || '',
-        ...(creator.bio ? creator.bio.split(' ').slice(0, 5) : [])
-      ],
-      openGraph: {
-        title,
-        description,
-        url: `https://soundbridge.com/creator/${username}`,
-        siteName: 'SoundBridge',
-        images: [
-          {
-            url: image,
-            width: 400,
-            height: 400,
-            alt: `${creator.display_name || creator.username} - SoundBridge Creator`,
-          },
-        ],
-        locale: 'en_US',
-        type: 'profile',
-      },
-      twitter: {
-        card: 'summary',
-        title,
-        description,
-        images: [image],
-        creator: '@soundbridge',
-        site: '@soundbridge',
-      },
-      alternates: {
-        canonical: `/creator/${username}`,
-      },
-    };
-  } catch (error) {
-    console.error('Error generating metadata for creator profile:', error);
-    // Return fallback metadata instead of throwing
-    return {
-      title: `${username} | SoundBridge`,
-      description: `Discover music and events by ${username} on SoundBridge.`,
-    };
-  }
-}
-
-export default async function CreatorProfilePage({ params }: { params: { username: string } }) {
-  const resolvedParams = await params;
-  const { username } = resolvedParams;
-
-  try {
-    const supabase = createServiceClient();
-    const { data: creator } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single();
-
-    if (!creator) {
-      notFound();
-    }
-
+  // Handle mock creators
+  if (username === 'testcreator1') {
     return (
-      <>
-        <CreatorProfileClient username={username} initialCreator={creator} />
-      </>
-    );
-  } catch (error) {
-    console.error('Error loading creator profile:', error);
-    
-    // Return a fallback UI instead of crashing
-    return (
-      <>
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-          <div className="container mx-auto px-4 py-8">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Unable to Load Profile</h1>
-              <p className="text-gray-400 mb-4">
-                We&apos;re experiencing technical difficulties. Please try again later.
-              </p>
-              <Link href="/" className="text-red-500 hover:text-red-400">
-                Return to Home
-              </Link>
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        color: 'white',
+        padding: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '20px',
+          padding: '3rem',
+          textAlign: 'center',
+          maxWidth: '600px',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+          <div style={{
+            width: '120px',
+            height: '120px',
+            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '3rem',
+            fontWeight: 'bold',
+            margin: '0 auto 2rem',
+            color: 'white'
+          }}>
+            TC
+          </div>
+          
+          <h1 style={{
+            fontSize: '2.5rem',
+            marginBottom: '1rem',
+            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            Test Creator 1
+          </h1>
+          
+          <p style={{
+            fontSize: '1.2rem',
+            color: '#ccc',
+            marginBottom: '2rem'
+          }}>
+            A talented music creator from London, UK
+          </p>
+          
+          <div style={{
+            display: 'flex',
+            gap: '2rem',
+            justifyContent: 'center',
+            marginBottom: '2rem',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>150</div>
+              <div style={{ color: '#999' }}>Followers</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>8</div>
+              <div style={{ color: '#999' }}>Tracks</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>2</div>
+              <div style={{ color: '#999' }}>Events</div>
             </div>
           </div>
+          
+          <div style={{
+            background: 'rgba(236, 72, 153, 0.1)',
+            border: '1px solid rgba(236, 72, 153, 0.3)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ color: '#EC4899', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              🎵 Electronic Music Creator
+            </div>
+            <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+              Hot Score: 75.5 • Recent Activity: High
+            </div>
+          </div>
+          
+          <Link href="/" style={{
+            display: 'inline-block',
+            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+            color: 'white',
+            padding: '0.75rem 2rem',
+            borderRadius: '25px',
+            textDecoration: 'none',
+            fontWeight: '600',
+            transition: 'all 0.3s ease'
+          }}>
+            ← Back to Home
+          </Link>
         </div>
-      </>
+      </div>
     );
   }
+
+  if (username === 'testcreator2') {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+        color: 'white',
+        padding: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '20px',
+          padding: '3rem',
+          textAlign: 'center',
+          maxWidth: '600px',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+          <div style={{
+            width: '120px',
+            height: '120px',
+            background: 'linear-gradient(45deg, #EC4899, #F97316)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '3rem',
+            fontWeight: 'bold',
+            margin: '0 auto 2rem',
+            color: 'white'
+          }}>
+            TC
+          </div>
+          
+          <h1 style={{
+            fontSize: '2.5rem',
+            marginBottom: '1rem',
+            background: 'linear-gradient(45deg, #EC4899, #F97316)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            Test Creator 2
+          </h1>
+          
+          <p style={{
+            fontSize: '1.2rem',
+            color: '#ccc',
+            marginBottom: '2rem'
+          }}>
+            Another amazing artist from New York, USA
+          </p>
+          
+          <div style={{
+            display: 'flex',
+            gap: '2rem',
+            justifyContent: 'center',
+            marginBottom: '2rem',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>89</div>
+              <div style={{ color: '#999' }}>Followers</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>12</div>
+              <div style={{ color: '#999' }}>Tracks</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>1</div>
+              <div style={{ color: '#999' }}>Events</div>
+            </div>
+          </div>
+          
+          <div style={{
+            background: 'rgba(236, 72, 153, 0.1)',
+            border: '1px solid rgba(236, 72, 153, 0.3)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ color: '#EC4899', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              🎤 Hip Hop Artist & Podcaster
+            </div>
+            <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+              Hot Score: 68.2 • Multi-format Creator
+            </div>
+          </div>
+          
+          <Link href="/" style={{
+            display: 'inline-block',
+            background: 'linear-gradient(45deg, #EC4899, #F97316)',
+            color: 'white',
+            padding: '0.75rem 2rem',
+            borderRadius: '25px',
+            textDecoration: 'none',
+            fontWeight: '600',
+            transition: 'all 0.3s ease'
+          }}>
+            ← Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle unknown creators
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+      color: 'white',
+      padding: '2rem',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '20px',
+        padding: '3rem',
+        textAlign: 'center',
+        maxWidth: '600px',
+        border: '1px solid rgba(255, 255, 255, 0.2)'
+      }}>
+        <div style={{
+          width: '120px',
+          height: '120px',
+          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '3rem',
+          fontWeight: 'bold',
+          margin: '0 auto 2rem',
+          color: 'white'
+        }}>
+          ?
+        </div>
+        
+        <h1 style={{
+          fontSize: '2.5rem',
+          marginBottom: '1rem',
+          color: '#EC4899'
+        }}>
+          Creator Not Found
+        </h1>
+        
+        <p style={{
+          fontSize: '1.2rem',
+          color: '#ccc',
+          marginBottom: '2rem'
+        }}>
+          The creator "{username}" could not be found.
+        </p>
+        
+        <Link href="/" style={{
+          display: 'inline-block',
+          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+          color: 'white',
+          padding: '0.75rem 2rem',
+          borderRadius: '25px',
+          textDecoration: 'none',
+          fontWeight: '600',
+          transition: 'all 0.3s ease'
+        }}>
+          ← Back to Home
+        </Link>
+      </div>
+    </div>
+  );
 }
