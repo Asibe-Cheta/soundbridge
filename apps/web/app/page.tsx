@@ -243,35 +243,9 @@ export default function HomePage() {
           console.log('🔥 Hot creators API response:', data.data);
           console.log('🔥 Hot creators count:', data.data.length);
           
-          // Transform the hot creators API response to match CreatorSearchResult structure
-          const transformedCreators = data.data.map((creator: any) => {
-            console.log('🔥 Transforming creator:', creator.username, 'followers:', creator.followers_count, 'tracks:', creator.tracks_count);
-            return {
-            profile: {
-              id: creator.id,
-              username: creator.username,
-              display_name: creator.display_name,
-              bio: creator.bio,
-              avatar_url: creator.avatar_url,
-              location: creator.location,
-              country: creator.country,
-              genre: creator.genre,
-              created_at: creator.created_at,
-              updated_at: creator.created_at
-            },
-            stats: {
-              followers_count: creator.followers_count || 0,
-              tracks_count: creator.tracks_count || 0,
-              events_count: creator.events_count || 0,
-              total_plays: creator.hot_score || 0, // Use hot score as total plays for display
-              total_likes: 0 // Not available in hot creators API
-            },
-            recent_tracks: [],
-            upcoming_events: []
-          };
-          });
-          console.log('🔥 Transformed creators:', transformedCreators);
-          setHotCreators(transformedCreators);
+          // Use the hot creators API response directly (it's already in the right format)
+          console.log('🔥 Using hot creators data directly:', data.data);
+          setHotCreators(data.data);
         }
       } catch (error) {
         console.error('Error fetching hot creators:', error);
@@ -1558,30 +1532,30 @@ export default function HomePage() {
             ) : hotCreators.length > 0 ? (
               hotCreators.slice(0, 5).map((creator) => (
                 <CreatorCard
-                  key={creator.profile?.id || 'unknown'}
+                  key={creator.id || 'unknown'}
                   creator={{
-                    id: creator.profile?.id || 'unknown',
-                    username: creator.profile?.username || 'unknown',
-                    display_name: creator.profile?.display_name || 'Creator',
-                    bio: creator.profile?.bio,
-                    avatar_url: creator.profile?.avatar_url,
-                    location: creator.profile?.location,
-                    country: creator.profile?.country,
-                    followers_count: creator.stats?.followers_count || 0,
-                    tracks_count: creator.stats?.tracks_count || 0,
-                    events_count: creator.stats?.events_count || 0,
-                    total_plays: creator.stats?.total_plays || 0,
-                    hot_score: creator.stats?.total_plays || 0
+                    id: creator.id || 'unknown',
+                    username: creator.username || 'unknown',
+                    display_name: creator.display_name || 'Creator',
+                    bio: creator.bio,
+                    avatar_url: creator.avatar_url,
+                    location: creator.location,
+                    country: creator.country,
+                    followers_count: creator.followers_count || 0,
+                    tracks_count: creator.tracks_count || 0,
+                    events_count: creator.events_count || 0,
+                    total_plays: creator.hot_score || 0,
+                    hot_score: creator.hot_score || 0
                   }}
                   variant="home"
                   isMobile={isMobile}
                   onClick={() => {
-                    const username = creator.profile?.username;
-                    console.log('🔥 Homepage Creator card clicked:', username, creator.profile);
+                    const username = creator.username;
+                    console.log('🔥 Homepage Creator card clicked:', username, creator);
                     if (username && username !== 'unknown') {
                       window.location.href = `/creator/${username}`;
                     } else {
-                      console.error('🔥 Invalid username for homepage creator:', creator.profile);
+                      console.error('🔥 Invalid username for homepage creator:', creator);
                     }
                   }}
                 />

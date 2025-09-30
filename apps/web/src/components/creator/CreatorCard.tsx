@@ -145,25 +145,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
             </div>
           )}
           
-          {/* Play Button Overlay */}
-          <div style={{
-            position: 'absolute',
-            bottom: '8px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '32px',
-            height: '32px',
-            background: 'rgba(0, 0, 0, 0.7)',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <Play size={16} color="white" />
-          </div>
+          {/* No play button for home variant - this is a creator card, not a music card */}
         </div>
 
         {/* Creator Info */}
