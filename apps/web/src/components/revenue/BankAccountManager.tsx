@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { revenueService } from '../../lib/revenue-service';
 import { walletService } from '../../lib/wallet-service';
+import { CountryAwareBankForm } from '../wallet/CountryAwareBankForm';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
 import {
   Building2,
@@ -80,7 +81,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (formData: any) => {
     try {
       setSaving(true);
       setError(null);
@@ -428,108 +429,11 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             {bankAccount ? 'Edit Bank Account' : 'Add Bank Account'}
           </h4>
           
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Account Holder Name</label>
-                <input
-                  type="text"
-                  value={formData.account_holder_name}
-                  onChange={(e) => setFormData({ ...formData, account_holder_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Bank Name</label>
-                <input
-                  type="text"
-                  value={formData.bank_name}
-                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="Bank of America"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Account Number</label>
-                <input
-                  type="text"
-                  value={formData.account_number}
-                  onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="123456789"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Routing Number</label>
-                <input
-                  type="text"
-                  value={formData.routing_number}
-                  onChange={(e) => setFormData({ ...formData, routing_number: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="123456789"
-                  maxLength={9}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Account Type</label>
-                <select
-                  value={formData.account_type}
-                  onChange={(e) => setFormData({ ...formData, account_type: e.target.value as 'checking' | 'savings' })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="checking">Checking</option>
-                  <option value="savings">Savings</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Currency</label>
-                <select
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex items-center justify-end space-x-4 mt-6 pt-6 border-t border-gray-700">
-            <button
-              onClick={handleCancel}
-              disabled={saving}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  <span>Save</span>
-                </>
-              )}
-            </button>
-          </div>
+          <CountryAwareBankForm
+            onSave={handleSave}
+            onCancel={handleCancel}
+            initialData={formData}
+          />
         </div>
       )}
 
