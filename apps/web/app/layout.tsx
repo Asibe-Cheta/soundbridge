@@ -141,37 +141,41 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://aunxdbqukbxyyiusaeqi.supabase.co" />
         
-        {/* Facebook SDK */}
-        <Script
-          id="facebook-sdk"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.fbAsyncInit = function() {
-                FB.init({
-                  appId: '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || 'your-facebook-app-id'}',
-                  cookie: true,
-                  xfbml: true,
-                  version: 'v18.0'
-                });
-              };
-              (function(d, s, id) {
-                var js, fjs = d.getElementsByTagName(s)[0];
-                if (d.getElementById(id)) return;
-                js = d.createElement(s); js.id = id;
-                js.src = "https://connect.facebook.net/en_US/sdk.js";
-                fjs.parentNode.insertBefore(js, fjs);
-              }(document, 'script', 'facebook-jssdk'));
-            `,
-          }}
-        />
+        {/* Facebook SDK - Only load if App ID is configured */}
+        {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && process.env.NEXT_PUBLIC_FACEBOOK_APP_ID !== 'your-facebook-app-id' && (
+          <Script
+            id="facebook-sdk"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.fbAsyncInit = function() {
+                  FB.init({
+                    appId: '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}',
+                    cookie: true,
+                    xfbml: true,
+                    version: 'v18.0'
+                  });
+                };
+                (function(d, s, id) {
+                  var js, fjs = d.getElementsByTagName(s)[0];
+                  if (d.getElementById(id)) return;
+                  js = d.createElement(s); js.id = id;
+                  js.src = "https://connect.facebook.net/en_US/sdk.js";
+                  fjs.parentNode.insertBefore(js, fjs);
+                }(document, 'script', 'facebook-jssdk'));
+              `,
+            }}
+          />
+        )}
         
-        {/* YouTube API */}
-        <Script
-          id="youtube-api"
-          src="https://apis.google.com/js/api.js"
-          strategy="afterInteractive"
-        />
+        {/* YouTube API - Only load if Google Client ID is configured */}
+        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== 'disabled' && (
+          <Script
+            id="youtube-api"
+            src="https://apis.google.com/js/api.js"
+            strategy="afterInteractive"
+          />
+        )}
         
         <SocialScripts />
         
