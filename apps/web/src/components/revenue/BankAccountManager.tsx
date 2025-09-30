@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { revenueService } from '../../lib/revenue-service';
+import { walletService } from '../../lib/wallet-service';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
 import {
   Building2,
@@ -14,7 +15,10 @@ import {
   X,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  Wallet,
+  RefreshCw,
+  Info
 } from 'lucide-react';
 
 interface BankAccountManagerProps {
@@ -29,6 +33,8 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAccountDetails, setShowAccountDetails] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showWalletInfo, setShowWalletInfo] = useState(false);
 
   const [formData, setFormData] = useState<BankAccountFormData>({
     account_holder_name: '',
@@ -46,8 +52,15 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
   const loadBankAccount = async () => {
     try {
       setLoading(true);
-      const account = await revenueService.getBankAccount(userId);
+      
+      // Load bank account and wallet balance in parallel
+      const [account, balance] = await Promise.all([
+        revenueService.getBankAccount(userId),
+        walletService.getBalance(userId)
+      ]);
+      
       setBankAccount(account);
+      setWalletBalance(balance);
       
       if (account) {
         setFormData({
@@ -155,6 +168,39 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
     }
   };
 
+  const handleResetBankAccount = async () => {
+    if (!confirm('Are you sure you want to reset your bank account? This will clear your current Stripe Connect setup and allow you to start fresh.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await fetch('/api/bank-account/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSuccess('Bank account reset successfully! You can now set up a new account.');
+        await loadBankAccount(); // Reload to get updated data
+      } else {
+        setError(result.error || 'Failed to reset bank account');
+      }
+    } catch (error) {
+      console.error('Error resetting bank account:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getVerificationStatusColor = (status: string) => {
     switch (status) {
       case 'verified':
@@ -202,13 +248,32 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
           </p>
         </div>
         {bankAccount && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-          >
-            <Edit className="h-4 w-4" />
-            <span>Edit</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleResetBankAccount}
+              disabled={saving}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Resetting...</span>
+                </>
+              ) : (
+                <>
+                  <X className="h-4 w-4" />
+                  <span>Reset</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <Edit className="h-4 w-4" />
+              <span>Edit</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -225,6 +290,56 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
           <p className="text-green-400">{success}</p>
         </div>
       )}
+
+      {/* Wallet Information */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <Wallet className="h-8 w-8" />
+            <div>
+              <h3 className="text-lg font-semibold">Digital Wallet</h3>
+              <p className="text-purple-200 text-sm">Your SoundBridge earnings</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowWalletInfo(!showWalletInfo)}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <Info className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-purple-200">Available Balance</span>
+            <span className="text-2xl font-bold">
+              {walletService.formatCurrency(walletBalance, 'USD')}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-purple-200">Status</span>
+            <span className="font-medium">
+              {walletBalance > 0 ? 'Active' : 'Empty'}
+            </span>
+          </div>
+        </div>
+
+        {showWalletInfo && (
+          <div className="mt-4 p-4 bg-white/10 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-purple-300 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-purple-200 font-medium mb-1">How it works:</p>
+                <ul className="text-purple-100 space-y-1">
+                  <li>• Tips and earnings go to your wallet when bank details are pending</li>
+                  <li>• Withdraw to your bank account once verified</li>
+                  <li>• Secure and instant transfers</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Bank Account Information */}
       {bankAccount ? (
@@ -460,6 +575,24 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                 <Building2 className="h-4 w-4" />
                 <span>Manual Bank Account Setup</span>
               </button>
+            </div>
+
+            {/* Wallet Information */}
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 mt-4">
+              <div className="flex items-start space-x-3">
+                <Wallet className="h-5 w-5 text-purple-400 mt-0.5" />
+                <div className="text-left">
+                  <h4 className="font-medium text-purple-300 text-sm">Digital Wallet Available</h4>
+                  <p className="text-purple-200 text-xs mt-1">
+                    While your bank account is being verified, tips and earnings will be stored in your secure digital wallet. 
+                    You can withdraw funds once your bank account is verified.
+                  </p>
+                  <div className="mt-2 text-xs text-purple-200">
+                    <span className="font-medium">Current Balance: </span>
+                    {walletService.formatCurrency(walletBalance, 'USD')}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-4">
