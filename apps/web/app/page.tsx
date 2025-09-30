@@ -1561,7 +1561,7 @@ export default function HomePage() {
                   key={creator.profile?.id || 'unknown'}
                   creator={{
                     id: creator.profile?.id || 'unknown',
-                    username: creator.profile?.username || 'unknown',
+                    username: creator.profile?.username || creator.profile?.id || 'unknown',
                     display_name: creator.profile?.display_name || 'Creator',
                     bio: creator.profile?.bio,
                     avatar_url: creator.profile?.avatar_url,

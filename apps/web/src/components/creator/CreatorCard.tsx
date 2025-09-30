@@ -35,7 +35,10 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
     if (onClick) {
       onClick();
     } else {
-      window.location.href = `/creator/${creator.username}`;
+      // Use username if available, otherwise fall back to ID
+      const creatorIdentifier = creator.username || creator.id;
+      console.log('🔥 Navigating to creator:', creatorIdentifier, 'username:', creator.username, 'id:', creator.id);
+      window.location.href = `/creator/${creatorIdentifier}`;
     }
   };
 
