@@ -83,8 +83,8 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
         variant="creators"
         isMobile={false}
         onClick={() => {
-          // Handle follow action if needed
-          handleFollow(creator.id);
+          // Navigate to creator profile
+          window.location.href = `/creator/${creator.username}`;
         }}
       />
     </div>
