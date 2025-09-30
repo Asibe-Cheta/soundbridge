@@ -1526,7 +1526,7 @@ export default function HomePage() {
             ) : hotCreators.length > 0 ? (
               hotCreators.slice(0, 5).map((creator) => (
                 <Link 
-                  key={creator.profile.id} 
+                  key={creator.profile?.id || 'unknown'} 
                   href={`/creator/${creator.profile?.username || 'unknown'}`} 
                   style={{ textDecoration: 'none' }}
                 >
@@ -1536,10 +1536,10 @@ export default function HomePage() {
               flexShrink: isMobile ? '0' : '1'
             }}>
               <div className="card-image">
-                      {creator.profile.avatar_url ? (
+                      {creator.profile?.avatar_url ? (
                         <Image
                           src={creator.profile.avatar_url}
-                          alt={creator.profile.display_name}
+                          alt={creator.profile?.display_name || 'Creator'}
                           width={200}
                           height={200}
                           style={{ width: '100%', height: isMobile ? '150px' : '100%', objectFit: 'cover', borderRadius: '8px' }}
@@ -1557,7 +1557,7 @@ export default function HomePage() {
                           fontSize: isMobile ? '1.5rem' : '2rem',
                           fontWeight: '600'
                         }}>
-                          {creator.profile.display_name?.substring(0, 2).toUpperCase() || 'C'}
+                          {creator.profile?.display_name?.substring(0, 2).toUpperCase() || 'C'}
                         </div>
                       )}
                 <div className="play-button">
@@ -1579,9 +1579,9 @@ export default function HomePage() {
                         🔥 {creator.stats.total_plays}
               </div>
               </div>
-                    <div style={{ fontWeight: '600' }}>{creator.profile.display_name}</div>
+                    <div style={{ fontWeight: '600' }}>{creator.profile?.display_name || 'Creator'}</div>
                     <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                      {creator.profile.location || 'Location not set'}
+                      {creator.profile?.location || 'Location not set'}
             </div>
                     <div className="stats">
                       <span>{creator.stats.followers_count?.toLocaleString() || 0} followers</span>
