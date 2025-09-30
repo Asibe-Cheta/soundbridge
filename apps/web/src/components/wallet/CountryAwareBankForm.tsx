@@ -37,36 +37,66 @@ interface CountryBankingInfo {
   };
 }
 
-// Country-specific banking information
+// Country-specific banking information (alphabetically ordered)
 const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
-  US: {
-    country: 'United States',
-    currency: 'USD',
+  AE: {
+    country: 'United Arab Emirates',
+    currency: 'AED',
     fields: {
       account_holder_name: { required: true, label: 'Account Holder Name' },
       bank_name: { required: true, label: 'Bank Name' },
-      account_number: { required: true, label: 'Account Number', placeholder: '123456789' },
-      routing_number: { required: true, label: 'Routing Number', placeholder: '123456789' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890123456' },
+      iban: { required: true, label: 'IBAN', placeholder: 'AE070331234567890123456' },
       account_type: { required: true, label: 'Account Type' }
     },
     validation: {
-      account_number: /^\d{8,17}$/,
-      routing_number: /^\d{9}$/
+      account_number: /^\d{10,16}$/,
+      iban: /^AE\d{21}$/
     }
   },
-  GB: {
-    country: 'United Kingdom',
-    currency: 'GBP',
+  AR: {
+    country: 'Argentina',
+    currency: 'ARS',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890123456' },
+      cbu: { required: true, label: 'CBU', placeholder: '1234567890123456789012' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{10,16}$/,
+      cbu: /^\d{22}$/
+    }
+  },
+  AU: {
+    country: 'Australia',
+    currency: 'AUD',
     fields: {
       account_holder_name: { required: true, label: 'Account Holder Name' },
       bank_name: { required: true, label: 'Bank Name' },
       account_number: { required: true, label: 'Account Number', placeholder: '12345678' },
-      sort_code: { required: true, label: 'Sort Code', placeholder: '12-34-56' },
+      bsb_code: { required: true, label: 'BSB Code', placeholder: '123-456' },
       account_type: { required: true, label: 'Account Type' }
     },
     validation: {
-      account_number: /^\d{8}$/,
-      sort_code: /^\d{2}-\d{2}-\d{2}$/
+      account_number: /^\d{6,9}$/,
+      bsb_code: /^\d{3}-\d{3}$/
+    }
+  },
+  BR: {
+    country: 'Brazil',
+    currency: 'BRL',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '12345678' },
+      agency: { required: true, label: 'Agency', placeholder: '1234' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{6,8}$/,
+      agency: /^\d{4}$/
     }
   },
   CA: {
@@ -86,19 +116,32 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       institution_number: /^\d{3}$/
     }
   },
-  AU: {
-    country: 'Australia',
-    currency: 'AUD',
+  CH: {
+    country: 'Switzerland',
+    currency: 'CHF',
     fields: {
       account_holder_name: { required: true, label: 'Account Holder Name' },
       bank_name: { required: true, label: 'Bank Name' },
-      account_number: { required: true, label: 'Account Number', placeholder: '12345678' },
-      bsb_code: { required: true, label: 'BSB Code', placeholder: '123-456' },
+      iban: { required: true, label: 'IBAN', placeholder: 'CH9300762011623852957' },
       account_type: { required: true, label: 'Account Type' }
     },
     validation: {
-      account_number: /^\d{6,9}$/,
-      bsb_code: /^\d{3}-\d{3}$/
+      iban: /^CH\d{19}$/
+    }
+  },
+  CN: {
+    country: 'China',
+    currency: 'CNY',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890123456789' },
+      bank_code: { required: true, label: 'Bank Code', placeholder: '123456' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{16,19}$/,
+      bank_code: /^\d{6}$/
     }
   },
   DE: {
@@ -114,6 +157,19 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       iban: /^DE\d{20}$/
     }
   },
+  ES: {
+    country: 'Spain',
+    currency: 'EUR',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      iban: { required: true, label: 'IBAN', placeholder: 'ES9121000418450200051332' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      iban: /^ES\d{22}$/
+    }
+  },
   FR: {
     country: 'France',
     currency: 'EUR',
@@ -125,6 +181,21 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
     },
     validation: {
       iban: /^FR\d{25}$/
+    }
+  },
+  GB: {
+    country: 'United Kingdom',
+    currency: 'GBP',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '12345678' },
+      sort_code: { required: true, label: 'Sort Code', placeholder: '12-34-56' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{8}$/,
+      sort_code: /^\d{2}-\d{2}-\d{2}$/
     }
   },
   IN: {
@@ -155,17 +226,34 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       iban: /^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/
     }
   },
-  ES: {
-    country: 'Spain',
-    currency: 'EUR',
+  JP: {
+    country: 'Japan',
+    currency: 'JPY',
     fields: {
       account_holder_name: { required: true, label: 'Account Holder Name' },
       bank_name: { required: true, label: 'Bank Name' },
-      iban: { required: true, label: 'IBAN', placeholder: 'ES9121000418450200051332' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567' },
+      branch_code: { required: true, label: 'Branch Code', placeholder: '123' },
       account_type: { required: true, label: 'Account Type' }
     },
     validation: {
-      iban: /^ES\d{22}$/
+      account_number: /^\d{7}$/,
+      branch_code: /^\d{3}$/
+    }
+  },
+  MX: {
+    country: 'Mexico',
+    currency: 'MXN',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890123456' },
+      clabe: { required: true, label: 'CLABE', placeholder: '123456789012345678' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{10,16}$/,
+      clabe: /^\d{18}$/
     }
   },
   NL: {
@@ -181,19 +269,64 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       iban: /^NL\d{2}[A-Z]{4}\d{10}$/
     }
   },
-  JP: {
-    country: 'Japan',
-    currency: 'JPY',
+  NG: {
+    country: 'Nigeria',
+    currency: 'NGN',
     fields: {
       account_holder_name: { required: true, label: 'Account Holder Name' },
       bank_name: { required: true, label: 'Bank Name' },
-      account_number: { required: true, label: 'Account Number', placeholder: '1234567' },
-      branch_code: { required: true, label: 'Branch Code', placeholder: '123' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890' },
+      bank_code: { required: true, label: 'Bank Code', placeholder: '123' },
       account_type: { required: true, label: 'Account Type' }
     },
     validation: {
-      account_number: /^\d{7}$/,
-      branch_code: /^\d{3}$/
+      account_number: /^\d{10}$/,
+      bank_code: /^\d{3}$/
+    }
+  },
+  SG: {
+    country: 'Singapore',
+    currency: 'SGD',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890' },
+      bank_code: { required: true, label: 'Bank Code', placeholder: '1234' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{8,12}$/,
+      bank_code: /^\d{4}$/
+    }
+  },
+  US: {
+    country: 'United States',
+    currency: 'USD',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '123456789' },
+      routing_number: { required: true, label: 'Routing Number', placeholder: '123456789' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{8,17}$/,
+      routing_number: /^\d{9}$/
+    }
+  },
+  ZA: {
+    country: 'South Africa',
+    currency: 'ZAR',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '123456789' },
+      branch_code: { required: true, label: 'Branch Code', placeholder: '123456' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{9,12}$/,
+      branch_code: /^\d{6}$/
     }
   }
 };
@@ -276,23 +409,21 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
         'Europe/Rome': 'IT',
         'Europe/Madrid': 'ES',
         'Europe/Amsterdam': 'NL',
+        'Europe/Zurich': 'CH',
         'Asia/Tokyo': 'JP',
         'Asia/Shanghai': 'CN',
         'Asia/Kolkata': 'IN',
+        'Asia/Singapore': 'SG',
+        'Asia/Dubai': 'AE',
         'Australia/Sydney': 'AU',
         'Australia/Melbourne': 'AU',
         'America/Toronto': 'CA',
         'America/Vancouver': 'CA',
-        'Africa/Lagos': 'NG',
-        'Africa/Cairo': 'EG',
-        'Asia/Dubai': 'AE',
-        'Asia/Singapore': 'SG',
-        'Asia/Seoul': 'KR',
-        'Asia/Bangkok': 'TH',
-        'Europe/Moscow': 'RU',
         'America/Sao_Paulo': 'BR',
         'America/Mexico_City': 'MX',
-        'America/Argentina/Buenos_Aires': 'AR'
+        'America/Argentina/Buenos_Aires': 'AR',
+        'Africa/Lagos': 'NG',
+        'Africa/Johannesburg': 'ZA'
       };
       
       const detectedCountry = timezoneToCountry[timezone];
@@ -498,13 +629,26 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
               Banking Information for {countryInfo.country}
             </p>
             <p className="text-blue-200 text-xs mt-1">
-              {selectedCountry === 'GB' && 'UK banks use Sort Code instead of Routing Number'}
-              {selectedCountry === 'US' && 'US banks use Routing Number for transfers'}
-              {selectedCountry === 'CA' && 'Canadian banks use Transit Number and Institution Number'}
+              {selectedCountry === 'AE' && 'UAE banks use IBAN for international transfers'}
+              {selectedCountry === 'AR' && 'Argentine banks use CBU for transfers'}
               {selectedCountry === 'AU' && 'Australian banks use BSB Code for transfers'}
+              {selectedCountry === 'BR' && 'Brazilian banks use Agency and Account Number'}
+              {selectedCountry === 'CA' && 'Canadian banks use Transit Number and Institution Number'}
+              {selectedCountry === 'CH' && 'Swiss banks use IBAN for international transfers'}
+              {selectedCountry === 'CN' && 'Chinese banks use Bank Code for transfers'}
               {selectedCountry === 'DE' && 'German banks use IBAN for international transfers'}
+              {selectedCountry === 'ES' && 'Spanish banks use IBAN for international transfers'}
               {selectedCountry === 'FR' && 'French banks use IBAN for international transfers'}
+              {selectedCountry === 'GB' && 'UK banks use Sort Code instead of Routing Number'}
               {selectedCountry === 'IN' && 'Indian banks use IFSC Code for transfers'}
+              {selectedCountry === 'IT' && 'Italian banks use IBAN for international transfers'}
+              {selectedCountry === 'JP' && 'Japanese banks use Branch Code for transfers'}
+              {selectedCountry === 'MX' && 'Mexican banks use CLABE for transfers'}
+              {selectedCountry === 'NL' && 'Dutch banks use IBAN for international transfers'}
+              {selectedCountry === 'NG' && 'Nigerian banks use Bank Code for transfers'}
+              {selectedCountry === 'SG' && 'Singapore banks use Bank Code for transfers'}
+              {selectedCountry === 'US' && 'US banks use Routing Number for transfers'}
+              {selectedCountry === 'ZA' && 'South African banks use Branch Code for transfers'}
             </p>
           </div>
         </div>
