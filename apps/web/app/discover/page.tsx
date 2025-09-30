@@ -239,7 +239,7 @@ export default function DiscoverPage() {
         const transformedCreators = (creatorsData || []).map(creator => ({
           profile: {
             id: creator.profile.id,
-            username: creator.profile.username || '',
+            username: creator.profile?.username || '',
             display_name: creator.profile.display_name || creator.profile.full_name || 'Unknown Creator',
             bio: creator.profile.bio || null,
             avatar_url: creator.profile.avatar_url || null,
@@ -779,7 +779,7 @@ export default function DiscoverPage() {
               </div>
             ) : creators.length > 0 ? (
               creators.map((creator) => (
-                <Link key={creator.profile.id} href={`/creator/${creator.profile.username}`} style={{ textDecoration: 'none' }}>
+                <Link key={creator.profile.id} href={`/creator/${creator.profile?.username || 'unknown'}`} style={{ textDecoration: 'none' }}>
                   <div className="card">
                     <div className="card-image">
                       {creator.profile.avatar_url ? (

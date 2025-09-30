@@ -353,7 +353,7 @@ export default function ProfilePage() {
           setProfileData(prev => ({
             ...prev,
             displayName: result.profile.display_name || 'Your Name',
-            username: result.profile.username || 'username',
+            username: result.profile?.username || 'username',
             bio: result.profile.bio || 'Tell your story...',
             location: result.profile.location || 'Location not set',
             avatarUrl: result.profile.avatar_url || ''

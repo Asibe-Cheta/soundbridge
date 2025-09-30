@@ -67,7 +67,7 @@ export function HomePageSEO() {
       <Script
         id="google-analytics"
         strategy="afterInteractive"
-        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'disabled'}`}
       />
       <Script
         id="google-analytics-config"
@@ -77,7 +77,7 @@ export function HomePageSEO() {
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'disabled'}', {
               page_title: 'SoundBridge - Connect Through Music',
               page_location: 'https://soundbridge.com',
             });
@@ -99,7 +99,7 @@ export function HomePageSEO() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID}');
+            fbq('init', '${process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || 'disabled'}');
             fbq('track', 'PageView');
           `,
         }}
@@ -114,7 +114,7 @@ export function HomePageSEO() {
             !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
             },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
             a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-            twq('config','${process.env.NEXT_PUBLIC_TWITTER_PIXEL_ID}');
+            twq('config','${process.env.NEXT_PUBLIC_TWITTER_PIXEL_ID || 'disabled'}');
           `,
         }}
       />

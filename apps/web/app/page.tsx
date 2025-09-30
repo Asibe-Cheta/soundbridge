@@ -1527,7 +1527,7 @@ export default function HomePage() {
               hotCreators.slice(0, 5).map((creator) => (
                 <Link 
                   key={creator.profile.id} 
-                  href={`/creator/${creator.profile.username}`} 
+                  href={`/creator/${creator.profile?.username || 'unknown'}`} 
                   style={{ textDecoration: 'none' }}
                 >
             <div className="card" style={{

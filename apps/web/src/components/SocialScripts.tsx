@@ -9,7 +9,7 @@ export function SocialScripts() {
       if (typeof window !== 'undefined' && window.gapi) {
         window.gapi.load('auth2', function() {
           window.gapi.auth2.init({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'your-google-client-id'
+            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'disabled'
           });
         });
       }
