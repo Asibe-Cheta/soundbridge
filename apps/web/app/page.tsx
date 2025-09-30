@@ -1533,17 +1533,7 @@ export default function HomePage() {
             <div className="card" style={{
               width: isMobile ? '200px' : 'auto',
               minWidth: isMobile ? '200px' : 'auto',
-              flexShrink: isMobile ? '0' : '1',
-              cursor: 'pointer',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+              flexShrink: isMobile ? '0' : '1'
             }}>
               <div className="card-image">
                       {creator.profile?.avatar_url ? (
