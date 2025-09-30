@@ -105,10 +105,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get country from request body or default to US
+    const { country = 'US' } = await request.json().catch(() => ({}));
+    
+    // Validate country code (Stripe supports specific countries)
+    const supportedCountries = ['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'SE', 'NO', 'DK', 'FI', 'BE', 'AT', 'CH', 'IE', 'PT', 'LU', 'SI', 'SK', 'CZ', 'PL', 'HU', 'GR', 'CY', 'MT', 'EE', 'LV', 'LT', 'JP', 'SG', 'HK', 'MY', 'TH', 'NZ'];
+    
+    if (!supportedCountries.includes(country)) {
+      return NextResponse.json(
+        { error: `Country ${country} not supported by Stripe Connect` },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Create Stripe Connect account
     const account = await stripe.accounts.create({
       type: 'express',
-      country: 'US', // You might want to make this configurable
+      country: country, // Dynamic country based on user selection
       email: user.email,
       capabilities: {
         card_payments: { requested: true },

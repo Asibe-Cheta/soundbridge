@@ -110,11 +110,25 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       setError(null);
       setSuccess(null);
 
+      // Get user's country from browser or default to US
+      let userCountry = 'US';
+      try {
+        // Try to detect country from IP
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        if (ipData.country_code) {
+          userCountry = ipData.country_code;
+        }
+      } catch (error) {
+        console.log('Could not detect country, using US default');
+      }
+
       const response = await fetch('/api/stripe/connect/create-account', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ country: userCountry }),
       });
 
       const result = await response.json();
