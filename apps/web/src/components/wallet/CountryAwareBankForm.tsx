@@ -141,6 +141,60 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       account_number: /^\d{9,18}$/,
       ifsc_code: /^[A-Z]{4}0[A-Z0-9]{6}$/
     }
+  },
+  IT: {
+    country: 'Italy',
+    currency: 'EUR',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      iban: { required: true, label: 'IBAN', placeholder: 'IT60X0542811101000000123456' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      iban: /^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/
+    }
+  },
+  ES: {
+    country: 'Spain',
+    currency: 'EUR',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      iban: { required: true, label: 'IBAN', placeholder: 'ES9121000418450200051332' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      iban: /^ES\d{22}$/
+    }
+  },
+  NL: {
+    country: 'Netherlands',
+    currency: 'EUR',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      iban: { required: true, label: 'IBAN', placeholder: 'NL91ABNA0417164300' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      iban: /^NL\d{2}[A-Z]{4}\d{10}$/
+    }
+  },
+  JP: {
+    country: 'Japan',
+    currency: 'JPY',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567' },
+      branch_code: { required: true, label: 'Branch Code', placeholder: '123' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{7}$/,
+      branch_code: /^\d{3}$/
+    }
   }
 };
 
@@ -155,6 +209,8 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(true);
+  const [detectionStatus, setDetectionStatus] = useState<string>('');
 
   const countryInfo = COUNTRY_BANKING_INFO[selectedCountry];
 
@@ -169,23 +225,95 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
   }, []);
 
   const detectUserCountry = async () => {
+    setDetectingLocation(true);
+    setDetectionStatus('Detecting your location...');
+    
     try {
-      // Try to get country from browser locale
+      // First try IP-based geolocation (most accurate)
+      try {
+        setDetectionStatus('Checking your IP location...');
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        console.log('🌍 Detected country from IP:', data.country_code);
+        
+        if (data.country_code && COUNTRY_BANKING_INFO[data.country_code]) {
+          setSelectedCountry(data.country_code);
+          setDetectionStatus(`✅ Detected: ${data.country_name} (${data.country_code})`);
+          setDetectingLocation(false);
+          return;
+        }
+      } catch (ipError) {
+        console.log('IP geolocation failed, trying browser locale');
+        setDetectionStatus('IP detection failed, trying browser settings...');
+      }
+      
+      // Fallback to browser locale
       const locale = navigator.language || navigator.languages[0];
       const countryCode = locale.split('-')[1]?.toUpperCase();
+      console.log('🌍 Browser locale detected:', countryCode);
       
       if (countryCode && COUNTRY_BANKING_INFO[countryCode]) {
         setSelectedCountry(countryCode);
+        setDetectionStatus(`✅ Detected from browser: ${countryCode}`);
+        setDetectingLocation(false);
+        return;
       }
       
-      // You could also use a geolocation API here
-      // const response = await fetch('https://ipapi.co/json/');
-      // const data = await response.json();
-      // if (data.country_code && COUNTRY_BANKING_INFO[data.country_code]) {
-      //   setSelectedCountry(data.country_code);
-      // }
+      // Final fallback - try to detect from timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log('🌍 Timezone detected:', timezone);
+      setDetectionStatus('Checking timezone...');
+      
+      // Map common timezones to countries
+      const timezoneToCountry: Record<string, string> = {
+        'America/New_York': 'US',
+        'America/Los_Angeles': 'US',
+        'America/Chicago': 'US',
+        'America/Denver': 'US',
+        'Europe/London': 'GB',
+        'Europe/Paris': 'FR',
+        'Europe/Berlin': 'DE',
+        'Europe/Rome': 'IT',
+        'Europe/Madrid': 'ES',
+        'Europe/Amsterdam': 'NL',
+        'Asia/Tokyo': 'JP',
+        'Asia/Shanghai': 'CN',
+        'Asia/Kolkata': 'IN',
+        'Australia/Sydney': 'AU',
+        'Australia/Melbourne': 'AU',
+        'America/Toronto': 'CA',
+        'America/Vancouver': 'CA',
+        'Africa/Lagos': 'NG',
+        'Africa/Cairo': 'EG',
+        'Asia/Dubai': 'AE',
+        'Asia/Singapore': 'SG',
+        'Asia/Seoul': 'KR',
+        'Asia/Bangkok': 'TH',
+        'Europe/Moscow': 'RU',
+        'America/Sao_Paulo': 'BR',
+        'America/Mexico_City': 'MX',
+        'America/Argentina/Buenos_Aires': 'AR'
+      };
+      
+      const detectedCountry = timezoneToCountry[timezone];
+      if (detectedCountry && COUNTRY_BANKING_INFO[detectedCountry]) {
+        setSelectedCountry(detectedCountry);
+        setDetectionStatus(`✅ Detected from timezone: ${detectedCountry}`);
+        setDetectingLocation(false);
+        return;
+      }
+      
+      // If all else fails, default to a more common country (not US)
+      console.log('🌍 Using fallback country: GB');
+      setSelectedCountry('GB');
+      setDetectionStatus('⚠️ Could not detect location, using default: United Kingdom');
+      
     } catch (error) {
-      console.log('Could not detect country, using default');
+      console.log('Could not detect country, using default:', error);
+      setSelectedCountry('GB'); // Default to UK instead of US
+      setDetectionStatus('⚠️ Location detection failed, using default: United Kingdom');
+    } finally {
+      setDetectingLocation(false);
     }
   };
 
@@ -314,6 +442,32 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
 
   return (
     <div className="space-y-6">
+      {/* Location Detection Status */}
+      {detectingLocation && (
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+          <div className="flex items-center space-x-3">
+            <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+            <div className="text-sm">
+              <p className="text-blue-300 font-medium">Auto-detecting your location</p>
+              <p className="text-blue-200 text-xs">{detectionStatus}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detection Result */}
+      {!detectingLocation && detectionStatus && (
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+          <div className="flex items-center space-x-3">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <div className="text-sm">
+              <p className="text-green-300 font-medium">Location Detected</p>
+              <p className="text-green-200 text-xs">{detectionStatus}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Country Selection */}
       <div>
         <label className="block text-gray-400 text-sm mb-2">
@@ -330,6 +484,9 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
             </option>
           ))}
         </select>
+        <p className="text-gray-500 text-xs mt-1">
+          If the auto-detected country is incorrect, please select your correct country above.
+        </p>
       </div>
 
       {/* Country-specific banking info */}
