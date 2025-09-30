@@ -18,6 +18,18 @@ import type { CreatorSearchResult, Event } from '@/src/lib/types/creator';
 
 export default function HomePage() {
   const { user, loading, error: authError } = useAuth();
+  
+  // Add CSS for hiding scrollbars
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      #creators-carousel::-webkit-scrollbar {
+        display: none;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const { toggleLike, isLiked } = useSocial();
   const { data: personalizedFeed, hasPersonalizedData } = usePersonalizedFeed();
@@ -1530,36 +1542,166 @@ export default function HomePage() {
                 </div>
               ))
             ) : hotCreators.length > 0 ? (
-              hotCreators.slice(0, 5).map((creator) => (
-                <CreatorCard
-                  key={creator.id || 'unknown'}
-                  creator={{
-                    id: creator.id || 'unknown',
-                    username: creator.username || 'unknown',
-                    display_name: creator.display_name || 'Creator',
-                    bio: creator.bio,
-                    avatar_url: creator.avatar_url,
-                    location: creator.location,
-                    country: creator.country,
-                    followers_count: creator.followers_count || 0,
-                    tracks_count: creator.tracks_count || 0,
-                    events_count: creator.events_count || 0,
-                    total_plays: creator.hot_score || 0,
-                    hot_score: creator.hot_score || 0
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                overflow: 'hidden'
+              }}>
+                {/* Horizontal Scrolling Container */}
+                <div 
+                  id="creators-carousel"
+                  style={{
+                    display: 'flex',
+                    gap: '16px',
+                    overflowX: 'auto',
+                    scrollBehavior: 'smooth',
+                    padding: '0 0 16px 0',
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none', // IE/Edge
+                    WebkitScrollbar: { display: 'none' }, // Chrome/Safari
+                    position: 'relative'
                   }}
-                  variant="home"
-                  isMobile={isMobile}
-                  onClick={() => {
-                    const username = creator.username;
-                    console.log('🔥 Homepage Creator card clicked:', username, creator);
-                    if (username && username !== 'unknown') {
-                      window.location.href = `/creator/${username}`;
-                    } else {
-                      console.error('🔥 Invalid username for homepage creator:', creator);
-                    }
+                  onMouseEnter={(e) => {
+                    const container = e.currentTarget;
+                    const leftArrow = document.getElementById('scroll-left');
+                    const rightArrow = document.getElementById('scroll-right');
+                    if (leftArrow) leftArrow.style.opacity = '1';
+                    if (rightArrow) rightArrow.style.opacity = '1';
                   }}
-                />
-              ))
+                  onMouseLeave={(e) => {
+                    const leftArrow = document.getElementById('scroll-left');
+                    const rightArrow = document.getElementById('scroll-right');
+                    if (leftArrow) leftArrow.style.opacity = '0';
+                    if (rightArrow) rightArrow.style.opacity = '0';
+                  }}
+                >
+                  {hotCreators.slice(0, 10).map((creator) => (
+                    <div
+                      key={creator.id || 'unknown'}
+                      style={{
+                        flex: '0 0 auto',
+                        width: isMobile ? '200px' : '240px',
+                        minWidth: isMobile ? '200px' : '240px'
+                      }}
+                    >
+                      <CreatorCard
+                        creator={{
+                          id: creator.id || 'unknown',
+                          username: creator.username || 'unknown',
+                          display_name: creator.display_name || 'Creator',
+                          bio: creator.bio,
+                          avatar_url: creator.avatar_url,
+                          location: creator.location,
+                          country: creator.country,
+                          followers_count: creator.followers_count || 0,
+                          tracks_count: creator.tracks_count || 0,
+                          events_count: creator.events_count || 0,
+                          total_plays: creator.hot_score || 0,
+                          hot_score: creator.hot_score || 0
+                        }}
+                        variant="home"
+                        isMobile={isMobile}
+                        onClick={() => {
+                          const username = creator.username;
+                          console.log('🔥 Homepage Creator card clicked:', username, creator);
+                          if (username && username !== 'unknown') {
+                            window.location.href = `/creator/${username}`;
+                          } else {
+                            console.error('🔥 Invalid username for homepage creator:', creator);
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scroll Arrows */}
+                {hotCreators.length > 5 && (
+                  <>
+                    {/* Left Arrow */}
+                    <button
+                      id="scroll-left"
+                      onClick={() => {
+                        const container = document.getElementById('creators-carousel');
+                        if (container) {
+                          container.scrollBy({ left: -280, behavior: 'smooth' });
+                        }
+                      }}
+                      style={{
+                        position: 'absolute',
+                        left: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '40px',
+                        height: '40px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        color: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        opacity: '0',
+                        transition: 'opacity 0.3s ease',
+                        zIndex: 10,
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                      }}
+                    >
+                      ‹
+                    </button>
+
+                    {/* Right Arrow */}
+                    <button
+                      id="scroll-right"
+                      onClick={() => {
+                        const container = document.getElementById('creators-carousel');
+                        if (container) {
+                          container.scrollBy({ left: 280, behavior: 'smooth' });
+                        }
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '40px',
+                        height: '40px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        color: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        opacity: '0',
+                        transition: 'opacity 0.3s ease',
+                        zIndex: 10,
+                        backdropFilter: 'blur(10px)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                      }}
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
+              </div>
             ) : (
               // Empty state
               <div className="card" style={{ 
