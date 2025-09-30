@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
+import { CreatorCard } from '../../src/components/creator/CreatorCard';
 
 
 // Virtual grid constants
@@ -62,156 +63,30 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
   }
 
 
-  // Desktop grid item (adjusted for grid layout)
   return (
     <div style={{...style, padding: `${GRID_GAP / 2}px`}}>
-      <div className="creator-card" style={{ 
-        width: '100%',
-        height: `${DESKTOP_CARD_HEIGHT - GRID_GAP}px`,
-        transform: 'none',
-        padding: '1rem 0.75rem'
-      }}>
-        <div style={{ position: 'relative' }}>
-          {/* Avatar */}
-          <div style={{
-            width: '70px',
-            height: '70px',
-            borderRadius: '50%',
-            background: creator.avatar_url ? `url(${creator.avatar_url})` : 'linear-gradient(45deg, #EC4899, #8B5CF6)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: '600',
-            fontSize: '1.5rem',
-            margin: '0 auto 0.75rem',
-            border: '2px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            {!creator.avatar_url && creator.display_name.charAt(0)}
-          </div>
-
-          {/* Verified Badge */}
-          {creator.is_verified && (
-            <div style={{
-              position: 'absolute',
-              top: '0.5rem',
-              right: '0.5rem',
-              background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-              color: 'white',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.8rem'
-            }}>
-              ✓
-            </div>
-          )}
-
-          {/* Creator Info */}
-          <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-              {creator.display_name}
-            </h3>
-            <p style={{ 
-              color: '#ccc', 
-              fontSize: '0.75rem', 
-              marginBottom: '0.5rem', 
-              lineHeight: '1.2',
-              height: '2.25rem', // Fixed height for 2 lines
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical' as const
-            }}>
-              {creator.bio && creator.bio.length > 30 ? creator.bio.substring(0, 30) + '...' : creator.bio || 'Music creator'}
-            </p>
-            
-            {/* Stats */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '0.375rem', fontSize: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#EC4899' }}>
-                <Users size={10} />
-                {creator.followers_count}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#999' }}>
-                <Music size={10} />
-                {creator.tracks_count}
-              </div>
-            </div>
-
-            {/* Location */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: '0.25rem', 
-              fontSize: '0.7rem', 
-              marginBottom: '0.375rem', 
-              color: '#999',
-              height: '1rem' // Fixed height
-            }}>
-              <MapPin size={10} />
-              <span style={{ 
-                overflow: 'hidden', 
-                textOverflow: 'ellipsis', 
-                whiteSpace: 'nowrap',
-                maxWidth: '120px' // Limit location width
-              }}>
-                {creator.location && creator.location.length > 15 ? creator.location.substring(0, 15) + '...' : creator.location || 'Unknown'}
-              </span>
-            </div>
-
-            {/* Country Badge - Removed to give buttons more space */}
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '0.375rem' }}>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleFollow(creator.id);
-                }}
-                style={{
-                  flex: 1,
-                  fontSize: '0.75rem',
-                  padding: '0.375rem 0.75rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
-                  color: 'white',
-                  ...(creator.isFollowing && { border: '1px solid rgba(255, 255, 255, 0.2)' })
-                }}
-              >
-                {creator.isFollowing ? 'Following' : 'Follow'}
-              </button>
-              <Link href={`/creator/${creator.username}`} style={{ textDecoration: 'none', flex: 1 }}>
-                <button 
-                  className="view-button"
-                  style={{
-                    width: '100%',
-                    fontSize: '0.75rem',
-                    padding: '0.375rem 0.75rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: '400',
-                    transition: 'all 0.2s ease',
-                    background: 'transparent'
-                  }}
-                >
-                  View
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CreatorCard
+        creator={{
+          id: creator.id,
+          username: creator.username,
+          display_name: creator.display_name,
+          bio: creator.bio,
+          avatar_url: creator.avatar_url,
+          location: creator.location,
+          country: creator.country,
+          followers_count: creator.followers_count,
+          tracks_count: creator.tracks_count,
+          events_count: 0,
+          total_plays: 0,
+          hot_score: 0
+        }}
+        variant="creators"
+        isMobile={false}
+        onClick={() => {
+          // Handle follow action if needed
+          handleFollow(creator.id);
+        }}
+      />
     </div>
   );
 };
@@ -964,9 +839,25 @@ export default function CreatorsPage() {
                   overflow: 'hidden'
                 }}>
                   {creators.map((creator) => (
-                    <Link key={creator.id} href={`/creator/${creator.username}`} style={{ textDecoration: 'none' }}>
-                      <MobileCreatorItem creator={creator} handleFollow={handleFollow} />
-                    </Link>
+                    <CreatorCard
+                      key={creator.id}
+                      creator={{
+                        id: creator.id,
+                        username: creator.username,
+                        display_name: creator.display_name,
+                        bio: creator.bio,
+                        avatar_url: creator.avatar_url,
+                        location: creator.location,
+                        country: creator.country,
+                        followers_count: creator.followers_count,
+                        tracks_count: creator.tracks_count,
+                        events_count: 0,
+                        total_plays: 0,
+                        hot_score: 0
+                      }}
+                      variant="discover"
+                      isMobile={true}
+                    />
                   ))}
                 </div>
               ) : (

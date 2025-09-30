@@ -10,6 +10,7 @@ import { usePersonalizedFeed } from '@/src/hooks/usePersonalizedFeed';
 import { Footer } from '../src/components/layout/Footer';
 import { FloatingCard } from '../src/components/ui/FloatingCard';
 import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
+import { CreatorCard } from '@/src/components/creator/CreatorCard';
 import { User, Upload, Play, Pause, Heart, MessageCircle, Calendar, Mic, Users, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon, Music } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import type { AudioTrack } from '@/src/lib/types/search';
@@ -1556,83 +1557,25 @@ export default function HomePage() {
               ))
             ) : hotCreators.length > 0 ? (
               hotCreators.slice(0, 5).map((creator) => (
-                <div 
-                  key={creator.profile?.id || 'unknown'} 
-                  className="card" 
-                  style={{
-                    width: isMobile ? '200px' : 'auto',
-                    minWidth: isMobile ? '200px' : 'auto',
-                    flexShrink: isMobile ? '0' : '1',
-                    cursor: 'pointer'
+                <CreatorCard
+                  key={creator.profile?.id || 'unknown'}
+                  creator={{
+                    id: creator.profile?.id || 'unknown',
+                    username: creator.profile?.username || 'unknown',
+                    display_name: creator.profile?.display_name || 'Creator',
+                    bio: creator.profile?.bio,
+                    avatar_url: creator.profile?.avatar_url,
+                    location: creator.profile?.location,
+                    country: creator.profile?.country,
+                    followers_count: creator.stats?.followers_count || 0,
+                    tracks_count: creator.stats?.tracks_count || 0,
+                    events_count: creator.stats?.events_count || 0,
+                    total_plays: creator.stats?.total_plays || 0,
+                    hot_score: creator.stats?.total_plays || 0
                   }}
-                  onClick={() => {
-                    const username = creator.profile?.username;
-                    console.log('🔥 Creator card clicked:', username, creator.profile);
-                    if (username && username !== 'unknown') {
-                      window.location.href = `/creator/${username}`;
-                    } else {
-                      console.error('🔥 Invalid username for creator:', creator.profile);
-                    }
-                  }}
-                >
-              <div className="card-image">
-                      {creator.profile?.avatar_url ? (
-                        <Image
-                          src={creator.profile.avatar_url}
-                          alt={creator.profile?.display_name || 'Creator'}
-                          width={200}
-                          height={200}
-                          style={{ width: '100%', height: isMobile ? '150px' : '100%', objectFit: 'cover', borderRadius: '8px' }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: '100%',
-                          height: isMobile ? '150px' : '100%',
-                          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontSize: isMobile ? '1.5rem' : '2rem',
-                          fontWeight: '600'
-                        }}>
-                          {creator.profile?.display_name?.substring(0, 2).toUpperCase() || 'C'}
-                        </div>
-                      )}
-                <div className="play-button">
-                  <Play size={20} />
-                </div>
-                      {/* Hot Score Badge */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                        color: 'white',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '12px',
-                        fontSize: '0.7rem',
-                        fontWeight: '600',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                      }}>
-                        {creator.stats?.total_plays || 0} plays
-              </div>
-              </div>
-                    <div style={{ fontWeight: '600' }}>{creator.profile?.display_name || 'Creator'}</div>
-                    <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                      {creator.profile?.location || 'Location not set'}
-            </div>
-                    <div className="stats">
-                      <span>{creator.stats?.followers_count?.toLocaleString() || 0} followers</span>
-                      <span>{creator.stats?.tracks_count || 0} tracks</span>
-                      {creator.recent_tracks?.length > 0 && (
-                        <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>
-                          +{creator.recent_tracks.length} recent
-                        </span>
-                      )}
-                </div>
-              </div>
+                  variant="home"
+                  isMobile={isMobile}
+                />
               ))
             ) : (
               // Empty state
