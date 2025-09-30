@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch hot creators' }, { status: 500 });
     }
 
+    console.log('🔥 Hot creators query result:', creators?.length || 0, 'creators found');
+    
     if (!creators || creators.length === 0) {
+      console.log('🔥 No creators found in database');
       return NextResponse.json({ data: [] });
     }
 
@@ -183,6 +186,9 @@ export async function GET(request: NextRequest) {
       .filter(creator => creator.hot_score > 0) // Only include creators with some activity
       .sort((a, b) => b.hot_score - a.hot_score)
       .slice(0, limit);
+
+    console.log('🔥 Final hot creators:', hotCreators.length, 'creators with scores > 0');
+    console.log('🔥 Hot creators data:', hotCreators);
 
     return NextResponse.json({
       data: hotCreators,

@@ -239,8 +239,13 @@ export default function HomePage() {
         const data = await response.json();
         
         if (data.data) {
+          console.log('🔥 Hot creators API response:', data.data);
+          console.log('🔥 Hot creators count:', data.data.length);
+          
           // Transform the hot creators API response to match CreatorSearchResult structure
-          const transformedCreators = data.data.map((creator: any) => ({
+          const transformedCreators = data.data.map((creator: any) => {
+            console.log('🔥 Transforming creator:', creator.username, 'followers:', creator.followers_count, 'tracks:', creator.tracks_count);
+            return {
             profile: {
               id: creator.id,
               username: creator.username,
@@ -262,7 +267,9 @@ export default function HomePage() {
             },
             recent_tracks: [],
             upcoming_events: []
-          }));
+          };
+          });
+          console.log('🔥 Transformed creators:', transformedCreators);
           setHotCreators(transformedCreators);
         }
       } catch (error) {
@@ -1559,7 +1566,13 @@ export default function HomePage() {
                     cursor: 'pointer'
                   }}
                   onClick={() => {
-                    window.location.href = `/creator/${creator.profile?.username || 'unknown'}`;
+                    const username = creator.profile?.username;
+                    console.log('🔥 Creator card clicked:', username, creator.profile);
+                    if (username && username !== 'unknown') {
+                      window.location.href = `/creator/${username}`;
+                    } else {
+                      console.error('🔥 Invalid username for creator:', creator.profile);
+                    }
                   }}
                 >
               <div className="card-image">
