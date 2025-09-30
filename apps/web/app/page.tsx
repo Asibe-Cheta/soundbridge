@@ -1576,7 +1576,7 @@ export default function HomePage() {
                         fontWeight: '600',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                       }}>
-                        🔥 {creator.stats.total_plays}
+                        🔥 {creator.stats?.total_plays || 0}
               </div>
               </div>
                     <div style={{ fontWeight: '600' }}>{creator.profile?.display_name || 'Creator'}</div>
@@ -1584,8 +1584,8 @@ export default function HomePage() {
                       {creator.profile?.location || 'Location not set'}
             </div>
                     <div className="stats">
-                      <span>{creator.stats.followers_count?.toLocaleString() || 0} followers</span>
-                      <span>{creator.stats.tracks_count || 0} tracks</span>
+                      <span>{creator.stats?.followers_count?.toLocaleString() || 0} followers</span>
+                      <span>{creator.stats?.tracks_count || 0} tracks</span>
                       {creator.recent_tracks.length > 0 && (
                         <span style={{ color: '#EC4899', fontSize: '0.8rem' }}>
                           +{creator.recent_tracks.length} recent
@@ -2022,10 +2022,10 @@ export default function HomePage() {
             friendsActivities.slice(0, 2).map((activity) => (
               <div key={activity.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: '32px', height: '32px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {activity.creator.profile_image_url ? (
+                  {activity.creator?.profile_image_url ? (
                     <Image
                       src={activity.creator.profile_image_url}
-                      alt={activity.creator.display_name}
+                      alt={activity.creator?.display_name || 'User'}
                       width={32}
                       height={32}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -2036,10 +2036,10 @@ export default function HomePage() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: '500' }}>
-                    {activity.creator.display_name}
+                    {activity.creator?.display_name || 'User'}
                   </div>
                   <div style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {activity.action} &ldquo;{activity.content.title}&rdquo;
+                    {activity.action} &ldquo;{activity.content?.title || 'content'}&rdquo;
                   </div>
                 </div>
               </div>
