@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Get creators with comprehensive metrics
+    // Get creators with comprehensive metrics - be more lenient with role filtering
     const { data: creators, error } = await supabase
       .from('profiles')
       .select(`
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         location,
         country,
         genre,
+        role,
         created_at,
         followers:follows!follows_following_id_fkey(count),
         recent_tracks:audio_tracks!audio_tracks_creator_id_fkey(
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
         all_tracks:audio_tracks!audio_tracks_creator_id_fkey(count),
         events:events!events_creator_id_fkey(count)
       `)
-      .eq('role', 'creator')
+      .in('role', ['creator', 'artist', 'musician']) // Include multiple creator roles
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -56,8 +57,90 @@ export async function GET(request: NextRequest) {
     console.log('🔥 Hot creators query result:', creators?.length || 0, 'creators found');
     
     if (!creators || creators.length === 0) {
-      console.log('🔥 No creators found in database');
-      return NextResponse.json({ data: [] });
+      console.log('🔥 No creators found in database, returning mock data for testing');
+      
+      // Return mock data for testing purposes
+      const mockCreators = [
+        {
+          id: 'mock-1',
+          username: 'testcreator1',
+          display_name: 'Test Creator 1',
+          bio: 'A talented music creator',
+          avatar_url: null,
+          location: 'London, UK',
+          country: 'United Kingdom',
+          genre: 'Electronic',
+          role: 'creator',
+          created_at: new Date().toISOString(),
+          followers_count: 150,
+          tracks_count: 8,
+          events_count: 2,
+          recent_tracks_count: 3,
+          hot_score: 75.5,
+          content_types: {
+            has_music: true,
+            has_podcasts: false,
+            has_events: true
+          },
+          metrics: {
+            recentActivity: 60,
+            engagementRatio: 15,
+            growthRate: 25,
+            contentDiversity: 80,
+            followerCount: 5
+          }
+        },
+        {
+          id: 'mock-2',
+          username: 'testcreator2',
+          display_name: 'Test Creator 2',
+          bio: 'Another amazing artist',
+          avatar_url: null,
+          location: 'New York, USA',
+          country: 'United States',
+          genre: 'Hip Hop',
+          role: 'creator',
+          created_at: new Date().toISOString(),
+          followers_count: 89,
+          tracks_count: 12,
+          events_count: 1,
+          recent_tracks_count: 5,
+          hot_score: 68.2,
+          content_types: {
+            has_music: true,
+            has_podcasts: true,
+            has_events: false
+          },
+          metrics: {
+            recentActivity: 45,
+            engagementRatio: 20,
+            growthRate: 15,
+            contentDiversity: 90,
+            followerCount: 3
+          }
+        }
+      ];
+      
+      return NextResponse.json({
+        data: mockCreators,
+        algorithm_info: {
+          weights: {
+            recent_activity: "40%",
+            engagement_ratio: "25%",
+            growth_rate: "20%",
+            content_diversity: "10%",
+            follower_count: "5%"
+          },
+          bonuses: {
+            multi_format: "15% (music + podcasts)"
+          },
+          time_windows: {
+            recent_activity: "30 days",
+            growth_estimation: "7 days"
+          }
+        },
+        mock_data: true
+      });
     }
 
     // Calculate hot scores for each creator
