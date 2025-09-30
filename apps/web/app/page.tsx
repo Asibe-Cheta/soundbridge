@@ -1575,6 +1575,15 @@ export default function HomePage() {
                   }}
                   variant="home"
                   isMobile={isMobile}
+                  onClick={() => {
+                    const username = creator.profile?.username;
+                    console.log('🔥 Homepage Creator card clicked:', username, creator.profile);
+                    if (username && username !== 'unknown') {
+                      window.location.href = `/creator/${username}`;
+                    } else {
+                      console.error('🔥 Invalid username for homepage creator:', creator.profile);
+                    }
+                  }}
                 />
               ))
             ) : (

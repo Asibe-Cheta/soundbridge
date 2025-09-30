@@ -240,9 +240,15 @@ export async function GET(request: NextRequest) {
           hotScore *= 1.15; // 15% bonus for multi-format creators
         }
 
-        return {
+        console.log('🔥 Creator data:', {
           id: creator.id,
           username: creator.username,
+          display_name: creator.display_name
+        });
+
+        return {
+          id: creator.id,
+          username: creator.username || `user${creator.id}`,
           display_name: creator.display_name,
           bio: creator.bio,
           avatar_url: creator.avatar_url,
