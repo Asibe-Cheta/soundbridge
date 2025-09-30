@@ -35,10 +35,12 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
     if (onClick) {
       onClick();
     } else {
-      // Use username if available, otherwise fall back to ID
-      const creatorIdentifier = creator.username || creator.id;
-      console.log('🔥 Navigating to creator:', creatorIdentifier, 'username:', creator.username, 'id:', creator.id);
-      window.location.href = `/creator/${creatorIdentifier}`;
+      // Use username for navigation
+      if (creator.username && creator.username !== 'unknown') {
+        window.location.href = `/creator/${creator.username}`;
+      } else {
+        console.error('🔥 No valid username for creator:', creator);
+      }
     }
   };
 
