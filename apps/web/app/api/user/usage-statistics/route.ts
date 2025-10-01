@@ -80,18 +80,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Calculate usage limits based on plan
+    // Calculate usage limits based on plan (matching existing pricing structure)
     const getPlanLimits = (plan: string) => {
       switch (plan?.toLowerCase()) {
-        case 'pro plan':
+        case 'pro':
           return {
             uploads: { used: usage?.uploads_used || 0, limit: 10 },
             storage: { used: usage?.storage_used || 0, limit: 2, unit: 'GB' },
             bandwidth: { used: usage?.bandwidth_used || 0, limit: 10000, unit: 'MB' }
           };
-        case 'premium plan':
+        case 'enterprise':
           return {
-            uploads: { used: usage?.uploads_used || 0, limit: 50 },
+            uploads: { used: usage?.uploads_used || 0, limit: -1 }, // -1 means unlimited
             storage: { used: usage?.storage_used || 0, limit: 10, unit: 'GB' },
             bandwidth: { used: usage?.bandwidth_used || 0, limit: 50000, unit: 'MB' }
           };
