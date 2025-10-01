@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward } from 'lucide-react';
+import { CountrySelector } from './CountrySelector';
 
 interface ProfileCompletionWizardProps {
   isOpen: boolean;
@@ -15,10 +16,7 @@ const genres = [
   'R&B', 'Pop', 'Electronic', 'Rock', 'Country', 'Classical'
 ];
 
-const locations = [
-  'London, UK', 'Lagos, Nigeria', 'Abuja, Nigeria', 'Manchester, UK',
-  'Birmingham, UK', 'Liverpool, UK', 'Port Harcourt, Nigeria', 'Other'
-];
+// Remove hardcoded locations - now using CountrySelector
 
 export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWizardProps) {
   const { onboardingState, setProfileCompleted, setCurrentStep, getProgressPercentage } = useOnboarding();
@@ -27,7 +25,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
   const [formData, setFormData] = useState({
     displayName: user?.user_metadata?.full_name || '',
     avatar: null as File | null,
-    location: '',
+    country: '',
     genres: [] as string[],
     bio: ''
   });
@@ -100,10 +98,9 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
           role: onboardingState.selectedRole,
           display_name: formData.displayName,
           avatar_url: avatarUrl,
-          location: formData.location,
+          country: formData.country,
           bio: formData.bio,
-          genres: formData.genres,
-          country: formData.location ? formData.location.split(', ')[1] : null
+          genres: formData.genres
         }),
       });
 
@@ -210,28 +207,13 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
               <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 Where are you based?
               </label>
-              <div className="grid gap-2" style={{ gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)' }}>
-                {locations.map((location) => (
-                  <button
-                    key={location}
-                    onClick={() => setFormData(prev => ({ ...prev, location }))}
-                    className={`text-left border rounded-lg transition-colors ${
-                      formData.location === location
-                        ? 'border-red-500 bg-red-900/20 text-red-300'
-                        : 'border-gray-600 hover:border-gray-500 text-white'
-                    }`}
-                    style={{
-                      padding: isMobile ? '0.75rem' : '0.75rem',
-                      fontSize: isMobile ? '0.8rem' : '0.9rem'
-                    }}
-                  >
-                    <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem' }}>
-                      <MapPin size={isMobile ? 14 : 16} />
-                      <span>{location}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <CountrySelector
+                value={formData.country}
+                onChange={(country) => setFormData(prev => ({ ...prev, country }))}
+                placeholder="Select your country"
+                isMobile={isMobile}
+                className="w-full"
+              />
             </div>
           </div>
         );

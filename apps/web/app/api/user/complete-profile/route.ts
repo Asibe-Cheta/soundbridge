@@ -95,7 +95,6 @@ export async function POST(request: NextRequest) {
       role: role,
       display_name: display_name,
       bio: body.bio || null,
-      location: body.location || null,
       country: body.country || null,
       genres: body.genres || null,
       avatar_url: body.avatar_url || null,
