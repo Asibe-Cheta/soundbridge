@@ -90,20 +90,20 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         }
       }
 
-      // Update profile
-      const response = await fetch('/api/profile/update', {
+      // Update profile using the complete-profile endpoint
+      const response = await fetch('/api/user/complete-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id,
+          role: onboardingState.selectedRole,
           display_name: formData.displayName,
           avatar_url: avatarUrl,
           location: formData.location,
           bio: formData.bio,
           genres: formData.genres,
-          profile_completed: true
+          country: formData.location ? formData.location.split(', ')[1] : null
         }),
       });
 

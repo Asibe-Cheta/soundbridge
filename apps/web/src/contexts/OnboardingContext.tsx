@@ -96,10 +96,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             ...prev,
             isOnboardingActive: true,
             showOnboarding: true,
-            currentStep: data.currentStep || 'role_selection',
-            selectedRole: data.selectedRole || null,
-            profileCompleted: data.profileCompleted || false,
-            firstActionCompleted: data.firstActionCompleted || false,
+            currentStep: data.onboarding?.step || 'role_selection',
+            selectedRole: data.profile?.role || null,
+            profileCompleted: data.onboarding?.profileCompleted || false,
+            firstActionCompleted: false,
           }));
         } else {
           console.log('✅ User onboarding already completed');
