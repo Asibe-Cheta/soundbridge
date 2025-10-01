@@ -1,19 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 
 export async function POST(request: NextRequest) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
+  };
+
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    let supabase;
+    let user;
+    let authError;
+
+    // Check for Authorization header (mobile app) - try ALL mobile app headers
+    const authHeader = request.headers.get('authorization') || 
+                      request.headers.get('Authorization') ||
+                      request.headers.get('x-authorization') ||
+                      request.headers.get('x-auth-token') ||
+                      request.headers.get('x-supabase-token');
     
-    // Get the current user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
+      // Mobile app authentication
+      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        }
+      );
+      
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      user = userData.user;
+      authError = userError;
+    } else {
+      // Web app authentication
+      const cookieStore = await cookies();
+      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+      
+      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
+      user = userData;
+      authError = userError;
+    }
+    
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
     
@@ -122,7 +163,7 @@ export async function POST(request: NextRequest) {
       tipId: tipData.id,
       platformFee,
       creatorEarnings
-    });
+    }, { headers: corsHeaders });
     
   } catch (error) {
     console.error('Error in create-tip:', error);
@@ -136,7 +177,19 @@ export async function POST(request: NextRequest) {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+// Handle preflight CORS requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
+    },
+  });
 }
