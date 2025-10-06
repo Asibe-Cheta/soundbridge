@@ -7,26 +7,34 @@ import { ProfileCompletionWizard } from './ProfileCompletionWizard';
 import { FirstActionGuidance } from './FirstActionGuidance';
 
 export function OnboardingManager() {
-  const { onboardingState, setCurrentStep } = useOnboarding();
+  const { onboardingState, setCurrentStep, completeOnboarding } = useOnboarding();
   const { showOnboarding, currentStep } = onboardingState;
 
   if (!showOnboarding) return null;
 
-  const handleClose = () => {
-    // Don't allow closing during onboarding - user must complete or skip
-    return;
+  const handleClose = async () => {
+    // Allow closing - will complete onboarding when user clicks skip or complete
+    if (completeOnboarding) {
+      await completeOnboarding();
+    }
   };
 
   const handleRoleSelectionComplete = () => {
     setCurrentStep('profile_setup');
   };
 
-  const handleProfileCompletionComplete = () => {
-    setCurrentStep('first_action');
+  const handleProfileCompletionComplete = async () => {
+    // Complete onboarding when profile is done
+    if (completeOnboarding) {
+      await completeOnboarding();
+    }
   };
 
-  const handleFirstActionComplete = () => {
+  const handleFirstActionComplete = async () => {
     // Onboarding will be completed by the FirstActionGuidance component
+    if (completeOnboarding) {
+      await completeOnboarding();
+    }
   };
 
   return (
@@ -41,14 +49,14 @@ export function OnboardingManager() {
       {currentStep === 'profile_setup' && (
         <ProfileCompletionWizard
           isOpen={showOnboarding}
-          onClose={handleClose}
+          onClose={handleProfileCompletionComplete}
         />
       )}
       
       {currentStep === 'first_action' && (
         <FirstActionGuidance
           isOpen={showOnboarding}
-          onClose={handleClose}
+          onClose={handleFirstActionComplete}
         />
       )}
     </>

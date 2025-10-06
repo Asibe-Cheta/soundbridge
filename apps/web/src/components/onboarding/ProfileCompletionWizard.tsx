@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward } from 'lucide-react';
+import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward, AlertCircle } from 'lucide-react';
 import { CountrySelector } from './CountrySelector';
 
 interface ProfileCompletionWizardProps {
@@ -11,15 +11,17 @@ interface ProfileCompletionWizardProps {
   onClose: () => void;
 }
 
-const genres = [
-  'Afrobeats', 'Gospel', 'UK Drill', 'Highlife', 'Jazz', 'Hip Hop', 
-  'R&B', 'Pop', 'Electronic', 'Rock', 'Country', 'Classical'
-];
+interface Genre {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+}
 
-// Remove hardcoded locations - now using CountrySelector
+// Genres are now fetched from API dynamically
 
 export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWizardProps) {
-  const { onboardingState, setProfileCompleted, setCurrentStep, getProgressPercentage } = useOnboarding();
+  const { onboardingState, setProfileCompleted, setCurrentStep, getProgressPercentage, completeOnboarding } = useOnboarding();
   const { user } = useAuth();
   const [currentStep, setCurrentStepLocal] = useState(0);
   const [formData, setFormData] = useState({
@@ -29,6 +31,8 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
     genres: [] as string[],
     bio: ''
   });
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [loadingGenres, setLoadingGenres] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +45,29 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Fetch genres from API
+  useEffect(() => {
+    if (isOpen) {
+      fetchGenres();
+    }
+  }, [isOpen]);
+
+  const fetchGenres = async () => {
+    try {
+      setLoadingGenres(true);
+      const response = await fetch('/api/genres?category=music&active=true');
+      const data = await response.json();
+      
+      if (data.success) {
+        setGenres(data.genres || []);
+      }
+    } catch (error) {
+      console.error('Error fetching genres:', error);
+    } finally {
+      setLoadingGenres(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -105,8 +132,33 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
       });
 
       if (response.ok) {
+        // Save genre preferences to the genres API
+        if (formData.genres.length > 0 && user?.id) {
+          try {
+            await fetch(`/api/users/${user.id}/genres`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                genre_ids: formData.genres
+              }),
+            });
+          } catch (genreError) {
+            console.error('Error saving genre preferences:', genreError);
+            // Don't block onboarding completion if genre save fails
+          }
+        }
+
+        // Mark profile as completed and move to completion
         setProfileCompleted(true);
-        setCurrentStep('first_action');
+        
+        // Complete the entire onboarding process
+        if (completeOnboarding) {
+          await completeOnboarding();
+        }
+        
+        // Close the modal
         onClose();
       }
     } catch (error) {
@@ -123,13 +175,27 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
     }
   };
 
-  const toggleGenre = (genre: string) => {
-    setFormData(prev => ({
-      ...prev,
-      genres: prev.genres.includes(genre)
-        ? prev.genres.filter(g => g !== genre)
-        : [...prev.genres, genre]
-    }));
+  const toggleGenre = (genreId: string) => {
+    setFormData(prev => {
+      const isSelected = prev.genres.includes(genreId);
+      
+      if (isSelected) {
+        // Remove genre
+        return {
+          ...prev,
+          genres: prev.genres.filter(g => g !== genreId)
+        };
+      } else {
+        // Add genre if less than 5 selected
+        if (prev.genres.length < 5) {
+          return {
+            ...prev,
+            genres: [...prev.genres, genreId]
+          };
+        }
+        return prev;
+      }
+    });
   };
 
   const renderStepContent = () => {
@@ -219,30 +285,85 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         );
 
       case 2:
+        const selectedCount = formData.genres.length;
+        const isValidSelection = selectedCount >= 3 && selectedCount <= 5;
+        
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1rem' }}>
             <div>
-              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
-                What genres do you love? (Select all that apply)
-              </label>
-              <div className="grid gap-2" style={{ gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)' }}>
-                {genres.map((genre) => (
-                  <button
-                    key={genre}
-                    onClick={() => toggleGenre(genre)}
-                    className={`p-3 text-center border rounded-lg transition-colors ${
-                      formData.genres.includes(genre)
-                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <Music className="h-4 w-4" />
-                      <span className="text-sm">{genre}</span>
-                    </div>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-3">
+                <label className="block font-medium text-gray-300" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+                  What genres do you love?
+                </label>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                  isValidSelection 
+                    ? 'bg-green-500/20 text-green-400' 
+                    : selectedCount > 5 
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {isValidSelection ? (
+                    <Check className="h-4 w-4" />
+                  ) : selectedCount > 5 ? (
+                    <AlertCircle className="h-4 w-4" />
+                  ) : (
+                    <Music className="h-4 w-4" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {selectedCount}/5 selected
+                  </span>
+                </div>
               </div>
+              
+              <p className="text-white/60 text-xs mb-3">
+                Select 3-5 genres to personalize your experience
+              </p>
+
+              {loadingGenres ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/20 border-t-red-500" />
+                </div>
+              ) : (
+                <div 
+                  className="grid gap-2 max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800" 
+                  style={{ gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)' }}
+                >
+                  {genres.map((genre) => {
+                    const isSelected = formData.genres.includes(genre.id);
+                    const isDisabled = !isSelected && selectedCount >= 5;
+                    
+                    return (
+                      <button
+                        key={genre.id}
+                        onClick={() => toggleGenre(genre.id)}
+                        disabled={isDisabled}
+                        className={`p-3 text-center border rounded-lg transition-all duration-200 ${
+                          isSelected
+                            ? 'border-red-500 bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 shadow-lg shadow-red-500/20'
+                            : isDisabled
+                              ? 'border-gray-700 bg-gray-800/30 text-gray-600 cursor-not-allowed'
+                              : 'border-gray-600 hover:border-red-400 hover:bg-red-500/10 text-gray-300 hover:text-white'
+                        }`}
+                        title={genre.description}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          {isSelected && <Check className="h-3 w-3" />}
+                          <span className="text-sm font-medium">{genre.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedCount < 3 && selectedCount > 0 && (
+                <div className="flex items-center gap-2 mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                  <p className="text-yellow-400 text-xs">
+                    Please select at least {3 - selectedCount} more genre{3 - selectedCount > 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -271,17 +392,18 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4" style={{ paddingTop: isMobile ? '1rem' : '8rem' }}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-[9999] p-4 overflow-y-auto" style={{ paddingTop: isMobile ? '5rem' : '7rem', paddingBottom: '2rem' }}>
       <div 
-        className="relative w-full mx-auto overflow-y-auto"
+        className="relative w-full mx-auto"
         style={{
           maxWidth: isMobile ? '100%' : '56rem',
-          maxHeight: isMobile ? '90vh' : '75vh',
+          minHeight: isMobile ? 'auto' : '500px',
           background: 'rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           borderRadius: isMobile ? '16px' : '20px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          marginBottom: isMobile ? '2rem' : '0'
         }}
       >
         {/* Header */}
@@ -334,7 +456,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         </div>
 
         {/* Footer - Sticky at bottom */}
-        <div className="flex items-center justify-between p-6 border-t border-white/10 bg-black/20 backdrop-blur-sm sticky bottom-0 rounded-b-2xl">
+        <div className="flex items-center justify-between p-6 border-t border-white/10 bg-black/20 backdrop-blur-sm rounded-b-2xl">
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
@@ -345,9 +467,16 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
               <span>Back</span>
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                // Skip profile setup and complete onboarding
                 setProfileCompleted(true);
-                setCurrentStep('first_action');
+                
+                // Complete the entire onboarding process
+                if (completeOnboarding) {
+                  await completeOnboarding();
+                }
+                
+                // Close the modal
                 onClose();
               }}
               className="flex items-center space-x-2 px-3 py-2 text-white/50 hover:text-white/70 transition-colors text-sm"
@@ -359,7 +488,11 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
 
           <button
             onClick={handleNext}
-            disabled={!formData.displayName || isUploading}
+            disabled={
+              !formData.displayName || 
+              isUploading || 
+              (currentStep === 2 && formData.genres.length < 3)
+            }
             className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isUploading ? (
