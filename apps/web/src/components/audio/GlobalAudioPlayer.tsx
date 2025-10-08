@@ -156,20 +156,18 @@ export function GlobalAudioPlayer() {
   };
 
   return (
-    <>
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ 
-          y: 0, 
-          opacity: 1,
-          height: isExpanded ? '100vh' : '90px'
-        }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ 
-          duration: 0.3,
-          ease: 'easeInOut'
-        }}
-        style={{ 
+    <motion.div
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ 
+        y: 0, 
+        opacity: 1,
+        height: isExpanded ? '100vh' : '90px'
+      }}
+      transition={{ 
+        duration: 0.3,
+        ease: 'easeInOut'
+      }}
+      style={{ 
           position: 'fixed',
           bottom: 0,
           left: 0,
@@ -907,6 +905,6 @@ export function GlobalAudioPlayer() {
           }}
         />
       )}
-    </>
+    </motion.div>
   );
 }
