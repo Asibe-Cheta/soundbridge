@@ -151,12 +151,10 @@ export function GlobalAudioPlayer() {
   };
 
   // Don't render if no track is playing
-  if (!currentTrack) {
-    return null;
-  }
+  if (!currentTrack) return null;
 
   return (
-    <div>
+    <>
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ 
@@ -906,6 +904,6 @@ export function GlobalAudioPlayer() {
         />
       )}
       </motion.div>
-    </div>
+    </>
   );
 }
