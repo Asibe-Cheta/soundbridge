@@ -399,6 +399,8 @@ export class AudioUploadService {
         duration: (trackData.audioFile.metadata as AudioMetadata)?.duration || 0,
         genre: trackData.genre,
         tags: trackData.tags,
+        lyrics: trackData.lyrics || null,
+        lyrics_language: trackData.lyricsLanguage || 'en',
         is_public: trackData.privacy === 'public',
         // Audio quality information
         audio_quality: qualitySettings?.level || 'standard',

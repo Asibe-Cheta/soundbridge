@@ -97,6 +97,8 @@ export interface TrackUploadData {
   description?: string;
   genre?: string;
   tags?: string[];
+  lyrics?: string;
+  lyricsLanguage?: string;
   privacy: 'public' | 'followers' | 'private';
   publishOption: 'now' | 'schedule' | 'draft';
   scheduleDate?: string;
