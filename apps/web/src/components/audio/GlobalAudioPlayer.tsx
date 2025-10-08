@@ -188,7 +188,6 @@ export function GlobalAudioPlayer() {
         }}
       >
         {isExpanded ? (
-          // Expanded Player Layout
           <div style={{
             width: '100%',
             height: '100%',
@@ -491,7 +490,6 @@ export function GlobalAudioPlayer() {
             </div>
           </div>
         ) : (
-          // Collapsed Player Layout
           <div style={{ 
             width: '100%', 
             maxWidth: '1400px', 
