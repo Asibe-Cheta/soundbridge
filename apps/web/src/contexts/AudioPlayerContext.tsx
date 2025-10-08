@@ -179,7 +179,23 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     // Validate track URL
     if (!track.url || track.url.trim() === '') {
       console.error('🎵 Invalid track URL:', track.url);
-      setError('Invalid audio URL');
+      setError('No audio file available for this track. Please upload an audio file first.');
+      return;
+    }
+
+    // Check for common invalid URL patterns
+    if (track.url.includes('undefined') || track.url.includes('null') || track.url === '') {
+      console.error('🎵 Invalid track URL pattern:', track.url);
+      setError('Audio file URL is not properly configured. Please re-upload the track.');
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(track.url);
+    } catch (urlError) {
+      console.error('🎵 Invalid URL format:', track.url);
+      setError('Invalid audio URL format');
       return;
     }
     
@@ -202,6 +218,21 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       console.log('🎵 Loading new track:', track.title);
       console.log('🎵 Audio URL:', track.url);
       setCurrentTrack(track);
+      
+      // Test if the URL is accessible before setting it as src
+      try {
+        const response = await fetch(track.url, { method: 'HEAD' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        console.log('✅ Audio file is accessible');
+      } catch (fetchError) {
+        console.error('❌ Audio file not accessible:', fetchError);
+        setError(`Audio file not accessible: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+        setIsLoading(false);
+        return;
+      }
+      
       audioRef.current.src = track.url;
       audioRef.current.currentTime = 0;
       
