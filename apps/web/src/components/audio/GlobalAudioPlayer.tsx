@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
   Heart, Share2, List, Settings, Maximize2, Minimize2
