@@ -58,11 +58,6 @@ export function GlobalAudioPlayer() {
     checkIfLiked();
   }, [user, currentTrack, isLiked]);
 
-  // Don't render if no track is playing
-  if (!currentTrack) {
-    return null;
-  }
-
   const handlePlayPause = () => {
     if (isPlaying) {
       pause();
@@ -154,6 +149,11 @@ export function GlobalAudioPlayer() {
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Don't render if no track is playing
+  if (!currentTrack) {
+    return null;
+  }
 
   return (
     <div>
