@@ -876,15 +876,15 @@ export function GlobalAudioPlayer() {
             </div>
           </div>
         )}
-
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            @keyframes spin {
-              to { transform: rotate(360deg); }
-            }
-          `
-        }} />
       </motion.div>
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `
+      }} />
 
       {/* Share Modal */}
       {shareModalOpen && currentTrack && (
