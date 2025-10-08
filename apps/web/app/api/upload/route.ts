@@ -50,13 +50,7 @@ export async function POST(request: NextRequest) {
       // New validation fields
       fileData,
       validationPassed,
-      validationId,
-      // Audio quality fields
-      audioQuality,
-      bitrate,
-      sampleRate,
-      channels,
-      codec
+      validationId
     } = body;
 
     // Validate required fields
@@ -196,14 +190,6 @@ export async function POST(request: NextRequest) {
       lyrics: lyrics?.trim() || null,
       lyrics_language: lyricsLanguage || 'en',
       is_public: privacy === 'public',
-      // Audio quality fields
-      audio_quality: audioQuality || 'standard',
-      bitrate: bitrate || 128,
-      sample_rate: sampleRate || 44100,
-      channels: channels || 2,
-      codec: codec || 'mp3',
-      processing_status: 'completed',
-      processing_completed_at: new Date().toISOString(),
       created_at: new Date().toISOString()
     };
 
