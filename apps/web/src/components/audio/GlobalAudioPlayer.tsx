@@ -878,7 +878,6 @@ export function GlobalAudioPlayer() {
               </button>
             </div>
           </div>
-        </div>
         )}
 
         <style dangerouslySetInnerHTML={{
