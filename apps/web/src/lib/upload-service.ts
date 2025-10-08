@@ -401,9 +401,9 @@ export class AudioUploadService {
         tags: trackData.tags,
         is_public: trackData.privacy === 'public',
         // Audio quality information
-        audioQuality: qualitySettings?.level || 'standard',
+        audio_quality: qualitySettings?.level || 'standard',
         bitrate: qualitySettings?.bitrate || 128,
-        sampleRate: qualitySettings?.sampleRate || 44100,
+        sample_rate: qualitySettings?.sampleRate || 44100,
         channels: qualitySettings?.channels || 2,
         codec: qualitySettings?.codec || 'mp3'
       });
