@@ -61,6 +61,8 @@ export default function UnifiedUploadPage() {
   // Music-specific states
   const [artistName, setArtistName] = useState('');
   const [genre, setGenre] = useState('');
+  const [lyrics, setLyrics] = useState('');
+  const [lyricsLanguage, setLyricsLanguage] = useState('en');
 
   // Podcast-specific states
   const [episodeNumber, setEpisodeNumber] = useState('');
@@ -162,6 +164,8 @@ export default function UnifiedUploadPage() {
     setTags('');
     setArtistName('');
     setGenre('');
+    setLyrics('');
+    setLyricsLanguage('en');
     setEpisodeNumber('');
     setPodcastCategory('');
   };
@@ -303,7 +307,9 @@ export default function UnifiedUploadPage() {
         // Content-specific data
         ...(contentType === 'music' ? {
           artistName: artistName.trim(),
-          genre: genre.trim()
+          genre: genre.trim(),
+          lyrics: lyrics.trim() || null,
+          lyrics_language: lyricsLanguage
         } : {
           episodeNumber: episodeNumber.trim(),
           category: podcastCategory.trim()
@@ -319,6 +325,8 @@ export default function UnifiedUploadPage() {
         setTags('');
         setArtistName('');
         setGenre('');
+        setLyrics('');
+        setLyricsLanguage('en');
         setEpisodeNumber('');
         setPodcastCategory('');
         uploadActions.resetUpload();
@@ -597,6 +605,41 @@ export default function UnifiedUploadPage() {
                       {genres.map((g) => (
                         <option key={g} value={g}>{g}</option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Lyrics (Optional)
+                    </label>
+                    <textarea
+                      value={lyrics}
+                      onChange={(e) => setLyrics(e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                      placeholder="Enter song lyrics (one line per verse)&#10;&#10;Example:&#10;Amazing grace, how sweet the sound&#10;That saved a wretch like me"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Add lyrics to help listeners sing along
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Lyrics Language
+                    </label>
+                    <select
+                      value={lyricsLanguage}
+                      onChange={(e) => setLyricsLanguage(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="en">English</option>
+                      <option value="yo">Yoruba</option>
+                      <option value="ig">Igbo</option>
+                      <option value="pcm">Pidgin</option>
+                      <option value="ha">Hausa</option>
+                      <option value="fr">French</option>
+                      <option value="es">Spanish</option>
                     </select>
                   </div>
                 </>
