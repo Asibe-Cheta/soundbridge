@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
       audioFileUrl,
       coverArtUrl,
       duration,
+      lyrics,
+      lyricsLanguage,
       // New validation fields
       fileData,
       validationPassed,
@@ -191,6 +193,8 @@ export async function POST(request: NextRequest) {
       duration: duration || 0,
       genre: genre || null,
       tags: tags || null,
+      lyrics: lyrics?.trim() || null,
+      lyrics_language: lyricsLanguage || 'en',
       is_public: privacy === 'public',
       // Audio quality fields
       audio_quality: audioQuality || 'standard',

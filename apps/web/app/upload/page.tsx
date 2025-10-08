@@ -308,8 +308,8 @@ export default function UnifiedUploadPage() {
         ...(contentType === 'music' ? {
           artistName: artistName.trim(),
           genre: genre.trim(),
-          lyrics: lyrics.trim() || null,
-          lyrics_language: lyricsLanguage
+          lyrics: lyrics.trim(),
+          lyricsLanguage: lyricsLanguage
         } : {
           episodeNumber: episodeNumber.trim(),
           category: podcastCategory.trim()
