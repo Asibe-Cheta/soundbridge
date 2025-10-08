@@ -11,7 +11,7 @@ import { useSocial } from '../../hooks/useSocial';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn, formatTime } from '../../lib/utils';
 import ShareModal from '../social/ShareModal';
-import { LyricsPanel } from './LyricsPanel';
+import { SimpleLyricsPanel } from './SimpleLyricsPanel';
 
 export function GlobalAudioPlayer() {
   const {
@@ -952,9 +952,9 @@ export function GlobalAudioPlayer() {
       )}
 
       {/* Lyrics Panel */}
-      {showLyricsPanel && currentTrack && (
-        <LyricsPanel
-          lyrics={currentTrack.lyrics || ''}
+      {showLyricsPanel && currentTrack && currentTrack.lyrics && (
+        <SimpleLyricsPanel
+          lyrics={currentTrack.lyrics}
           currentTime={currentTime}
           onClose={() => setShowLyricsPanel(false)}
         />

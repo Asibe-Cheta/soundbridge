@@ -16,7 +16,7 @@ import { AudioVisualizer } from './AudioVisualizer';
 import { EqualizerPanel } from './EqualizerPanel';
 import { EffectsPanel } from './EffectsPanel';
 import { QueuePanel } from './QueuePanel';
-import { LyricsPanel } from './LyricsPanel';
+import { SimpleLyricsPanel } from './SimpleLyricsPanel';
 import { AnalyticsPanel } from './AnalyticsPanel';
 
 interface AdvancedAudioPlayerProps {
@@ -561,9 +561,9 @@ export function AdvancedAudioPlayer({
           />
         )}
 
-        {showLyricsPanel && lyrics && (
-          <LyricsPanel
-            lyrics={lyrics}
+        {showLyricsPanel && currentTrack?.lyrics && (
+          <SimpleLyricsPanel
+            lyrics={currentTrack.lyrics}
             currentTime={state.currentTime}
             onClose={() => setShowLyricsPanel(false)}
           />
