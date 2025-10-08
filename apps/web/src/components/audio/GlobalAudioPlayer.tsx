@@ -156,7 +156,7 @@ export function GlobalAudioPlayer() {
   };
 
   return (
-    <>
+    <div>
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ 
@@ -905,6 +905,6 @@ export function GlobalAudioPlayer() {
         />
       )}
       </motion.div>
-    </>
+    </div>
   );
 }
