@@ -489,7 +489,15 @@ export function GlobalAudioPlayer() {
 
                   {/* Lyrics Toggle Button */}
                   <button
-                    onClick={() => setShowLyricsPanel(!showLyricsPanel)}
+                    onClick={() => {
+                      console.log('🎵 Lyrics button clicked!', {
+                        showLyricsPanel,
+                        currentTrack: currentTrack?.title,
+                        hasLyrics: !!currentTrack?.lyrics,
+                        lyrics: currentTrack?.lyrics
+                      });
+                      setShowLyricsPanel(!showLyricsPanel);
+                    }}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -872,7 +880,15 @@ export function GlobalAudioPlayer() {
 
               {/* Lyrics Toggle Button */}
               <button
-                onClick={() => setShowLyricsPanel(!showLyricsPanel)}
+                onClick={() => {
+                  console.log('🎵 Expanded lyrics button clicked!', {
+                    showLyricsPanel,
+                    currentTrack: currentTrack?.title,
+                    hasLyrics: !!currentTrack?.lyrics,
+                    lyrics: currentTrack?.lyrics
+                  });
+                  setShowLyricsPanel(!showLyricsPanel);
+                }}
                 style={{ 
                   background: 'none', 
                   border: 'none', 
@@ -952,12 +968,27 @@ export function GlobalAudioPlayer() {
       )}
 
       {/* Lyrics Panel */}
-      {showLyricsPanel && currentTrack && currentTrack.lyrics && (
-        <SimpleLyricsPanel
-          lyrics={currentTrack.lyrics}
-          currentTime={currentTime}
-          onClose={() => setShowLyricsPanel(false)}
-        />
+      {showLyricsPanel && currentTrack && (
+        currentTrack.lyrics ? (
+          <SimpleLyricsPanel
+            lyrics={currentTrack.lyrics}
+            currentTime={currentTime}
+            onClose={() => setShowLyricsPanel(false)}
+          />
+        ) : (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-gray-900 rounded-lg p-8 max-w-md mx-4">
+              <h3 className="text-white text-lg font-semibold mb-4">No Lyrics Available</h3>
+              <p className="text-gray-300 mb-6">This track doesn't have lyrics available.</p>
+              <button
+                onClick={() => setShowLyricsPanel(false)}
+                className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )
       )}
     </div>
   );
