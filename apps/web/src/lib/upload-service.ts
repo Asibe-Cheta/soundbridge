@@ -161,14 +161,14 @@ export class AudioUploadService {
         };
       }
 
-      // Get signed URL for private access
+      // Get public URL for the uploaded file
       const { data: urlData } = await this.supabase.storage
         .from('audio-tracks')
-        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
+        .getPublicUrl(fileName);
 
       return {
         success: true,
-        url: urlData?.signedUrl || `https://your-project.supabase.co/storage/v1/object/public/audio-tracks/${fileName}`
+        url: urlData?.publicUrl || `https://aunxdbqukbxyyiusaeqi.supabase.co/storage/v1/object/public/audio-tracks/${fileName}`
       };
     } catch (error) {
       return {
