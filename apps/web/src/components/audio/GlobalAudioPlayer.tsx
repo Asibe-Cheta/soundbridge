@@ -156,7 +156,7 @@ export function GlobalAudioPlayer() {
   };
 
   return (
-    <AnimatePresence>
+    <>
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ 
@@ -907,6 +907,6 @@ export function GlobalAudioPlayer() {
           }}
         />
       )}
-    </AnimatePresence>
+    </>
   );
 }
