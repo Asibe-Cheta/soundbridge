@@ -309,7 +309,13 @@ export default function UnifiedUploadPage() {
           artistName: artistName.trim(),
           genre: genre.trim(),
           lyrics: lyrics.trim(),
-          lyricsLanguage: lyricsLanguage
+          lyricsLanguage: lyricsLanguage,
+          // Audio quality fields with defaults
+          audioQuality: 'standard',
+          bitrate: 128,
+          sampleRate: 44100,
+          channels: 2,
+          codec: 'mp3'
         } : {
           episodeNumber: episodeNumber.trim(),
           category: podcastCategory.trim()
