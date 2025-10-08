@@ -93,6 +93,8 @@ export async function GET() {
         duration: track.duration || 0,
         plays: track.play_count || 0,
         likes: track.like_count || 0,
+        lyrics: track.lyrics || null,
+        lyricsLanguage: track.lyrics_language || 'en',
         creator: {
           id: track.creator_id,
           name: track.creator?.display_name || 'Unknown Artist',
@@ -135,6 +137,8 @@ export async function GET() {
           duration: track.duration || 0,
           plays: track.play_count || 0,
           likes: track.like_count || 0,
+          lyrics: track.lyrics || null,
+          lyricsLanguage: track.lyrics_language || 'en',
           creator: {
             id: track.creator_id,
             name: creator?.display_name || 'Unknown Artist',

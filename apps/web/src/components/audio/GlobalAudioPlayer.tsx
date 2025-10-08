@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
-  Heart, Share2, List, Settings, Maximize2, Minimize2
+  Heart, Share2, List, Settings, Maximize2, Minimize2, Type
 } from 'lucide-react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
 import { useSocial } from '../../hooks/useSocial';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn, formatTime } from '../../lib/utils';
 import ShareModal from '../social/ShareModal';
+import { LyricsPanel } from './LyricsPanel';
 
 export function GlobalAudioPlayer() {
   const {
@@ -37,6 +38,8 @@ export function GlobalAudioPlayer() {
   const [isTrackLiked, setIsTrackLiked] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [showLyricsPanel, setShowLyricsPanel] = useState(false);
 
   // Check if current track is liked
   useEffect(() => {
@@ -483,6 +486,26 @@ export function GlobalAudioPlayer() {
                   >
                     <Share2 size={20} />
                   </button>
+
+                  {/* Lyrics Toggle Button */}
+                  <button
+                    onClick={() => setShowLyricsPanel(!showLyricsPanel)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: showLyrics ? '#EC4899' : 'white',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Type size={20} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -847,6 +870,30 @@ export function GlobalAudioPlayer() {
                 <Share2 size={18} />
               </button>
 
+              {/* Lyrics Toggle Button */}
+              <button
+                onClick={() => setShowLyricsPanel(!showLyricsPanel)}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: showLyrics ? '#EC4899' : '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = showLyrics ? '#EC4899' : 'white';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = showLyrics ? '#EC4899' : '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <Type size={18} />
+              </button>
+
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 style={{ 
@@ -901,6 +948,15 @@ export function GlobalAudioPlayer() {
             coverArt: currentTrack.artwork,
             url: currentTrack.url
           }}
+        />
+      )}
+
+      {/* Lyrics Panel */}
+      {showLyricsPanel && currentTrack && (
+        <LyricsPanel
+          lyrics={currentTrack.lyrics || ''}
+          currentTime={currentTime}
+          onClose={() => setShowLyricsPanel(false)}
         />
       )}
     </div>

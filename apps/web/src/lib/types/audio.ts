@@ -29,6 +29,9 @@ export interface AudioTrack {
   // Copyright info
   copyrightStatus?: 'clear' | 'pending' | 'flagged' | 'blocked';
   copyrightScore?: number;
+  // Lyrics
+  lyrics?: string;
+  lyricsLanguage?: string;
 }
 
 export interface AudioAnalysis {
