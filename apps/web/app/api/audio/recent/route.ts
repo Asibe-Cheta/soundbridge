@@ -74,6 +74,12 @@ export async function GET() {
           creator: track.creator,
           display_name: track.creator?.display_name
         });
+        console.log(`🚨 Track ${index + 1} LYRICS DEBUG:`, {
+          lyrics: track.lyrics,
+          lyrics_language: track.lyrics_language,
+          has_lyrics: !!track.lyrics,
+          lyrics_length: track.lyrics ? track.lyrics.length : 0
+        });
         console.log(`🎵 Track ${index + 1} FULL DATA:`, JSON.stringify(track, null, 2));
       });
     }
@@ -156,7 +162,10 @@ export async function GET() {
           id: track.id,
           title: track.title,
           artist: track.artist,
-          creator_name: track.creator.name
+          creator_name: track.creator.name,
+          lyrics: track.lyrics,
+          lyricsLanguage: track.lyricsLanguage,
+          has_lyrics: !!track.lyrics
         });
       });
     }
