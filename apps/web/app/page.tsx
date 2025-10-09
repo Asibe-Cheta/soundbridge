@@ -518,7 +518,7 @@ export default function HomePage() {
         }
         
         // Fallback to global recent tracks
-        const response = await fetch('/api/audio/recent?t=' + Date.now());
+        const response = await fetch('/api/audio/recent?t=' + Date.now() + '&cache=' + Math.random());
         
         if (response.ok) {
           const result = await response.json();
@@ -558,7 +558,7 @@ export default function HomePage() {
         console.log('🔥 Loading trending tracks...');
         setIsLoadingTrending(true);
         
-        const response = await fetch('/api/audio/trending?t=' + Date.now());
+        const response = await fetch('/api/audio/trending?t=' + Date.now() + '&cache=' + Math.random());
         
         if (response.ok) {
           const result = await response.json();
