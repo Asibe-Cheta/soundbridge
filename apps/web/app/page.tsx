@@ -1108,6 +1108,7 @@ export default function HomePage() {
                         console.log('🚨 CLICK DEBUG - Track clicked:', track);
                         console.log('🚨 CLICK DEBUG - Track lyrics:', track.lyrics);
                         console.log('🚨 CLICK DEBUG - Track lyricsLanguage:', track.lyricsLanguage);
+                        console.log('🚨🚨🚨 FORCE TRACK DATA:', JSON.stringify(track, null, 2));
                         handlePlayTrack(track);
                       }}
                 >
