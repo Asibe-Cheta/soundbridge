@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import '../src/styles/themes.css';
 import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
-import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
+// import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
 import { SocialScripts } from "@/src/components/SocialScripts";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
@@ -192,7 +192,7 @@ export default function RootLayout({
                 <AudioPlayerProvider>
                   <Navbar />
                   {children}
-                  <GlobalAudioPlayer />
+                  {/* <GlobalAudioPlayer /> */}
                   <OnboardingManager />
                 </AudioPlayerProvider>
               </OnboardingProvider>
