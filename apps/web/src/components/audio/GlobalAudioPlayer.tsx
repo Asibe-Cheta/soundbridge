@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion'; // Temporarily disabled for build fix
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
   Heart, Share2, List, Settings, Maximize2, Minimize2, Type
@@ -158,37 +158,30 @@ export function GlobalAudioPlayer() {
   if (!currentTrack) return null;
 
   return (
-    <div>
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ 
-          y: 0, 
-          opacity: 1,
-          height: isExpanded ? '100vh' : '90px'
-        }}
-        transition={{ 
-          duration: 0.3,
-          ease: 'easeInOut'
-        }}
-        style={{ 
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          backgroundColor: isExpanded 
-            ? 'rgba(15, 15, 35, 0.98)'
-            : 'rgba(26, 26, 26, 0.98)',
-          backdropFilter: 'blur(20px)',
-          borderTop: isExpanded ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-          maxHeight: isExpanded ? '100vh' : '90px',
-          overflow: isExpanded ? 'auto' : 'hidden',
-          display: 'flex',
-          alignItems: isExpanded ? 'center' : 'center',
-          justifyContent: isExpanded ? 'center' : 'flex-start',
-          padding: isExpanded ? '2rem' : '0 24px'
-        }}
-      >
+    <div
+      style={{ 
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        backgroundColor: isExpanded 
+          ? 'rgba(15, 15, 35, 0.98)'
+          : 'rgba(26, 26, 26, 0.98)',
+        backdropFilter: 'blur(20px)',
+        borderTop: isExpanded ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
+        maxHeight: isExpanded ? '100vh' : '90px',
+        overflow: isExpanded ? 'auto' : 'hidden',
+        display: 'flex',
+        alignItems: isExpanded ? 'center' : 'center',
+        justifyContent: isExpanded ? 'center' : 'flex-start',
+        padding: isExpanded ? '2rem' : '0 24px',
+        transform: 'translateY(0)',
+        opacity: 1,
+        height: isExpanded ? '100vh' : '90px',
+        transition: 'all 0.3s ease-in-out'
+      }}
+    >
         {isExpanded ? (
           <div style={{
             width: '100%',
@@ -266,18 +259,13 @@ export function GlobalAudioPlayer() {
                 flex: showInlineLyrics ? '0 0 auto' : '1'
               }}>
                 {/* Album Art */}
-                <motion.div
-                  animate={{
-                    width: showInlineLyrics ? 200 : 400,
-                    height: showInlineLyrics ? 200 : 400,
-                  }}
-                  transition={{
-                    duration: 0.5,
-                    ease: 'easeInOut'
-                  }}
+                <div
                   style={{
                     flexShrink: 0,
-                    position: 'relative'
+                    position: 'relative',
+                    width: showInlineLyrics ? 200 : 400,
+                    height: showInlineLyrics ? 200 : 400,
+                    transition: 'all 0.5s ease-in-out'
                   }}
                 >
                   <div style={{
@@ -313,33 +301,24 @@ export function GlobalAudioPlayer() {
                       </div>
                     )}
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Track Info and Controls */}
-                <motion.div
-                  animate={{
-                    opacity: 1,
-                    x: 0
-                  }}
-                  initial={{
-                    opacity: 0,
-                    x: showInlineLyrics ? -50 : 0
-                  }}
-                  transition={{
-                    duration: 0.5,
-                    ease: 'easeInOut'
-                  }}
+                <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     textAlign: 'left',
                     minWidth: showInlineLyrics ? '300px' : '500px',
-                    maxWidth: showInlineLyrics ? '300px' : '500px'
+                    maxWidth: showInlineLyrics ? '300px' : '500px',
+                    opacity: 1,
+                    transform: 'translateX(0)',
+                    transition: 'all 0.5s ease-in-out'
                   }}
                 >
                 {/* Track Info */}
-                <motion.div 
+                <div 
                   animate={{
                     marginBottom: showInlineLyrics ? '1rem' : '2rem'
                   }}
@@ -348,7 +327,7 @@ export function GlobalAudioPlayer() {
                     ease: 'easeInOut'
                   }}
                 >
-                  <motion.h1 
+                  <h1 
                     animate={{
                       fontSize: showInlineLyrics ? '2rem' : '3rem'
                     }}
@@ -363,8 +342,8 @@ export function GlobalAudioPlayer() {
                     }}
                   >
                     {currentTrack.title}
-                  </motion.h1>
-                  <motion.p 
+                  </h1>
+                  <p 
                     animate={{
                       fontSize: showInlineLyrics ? '1.2rem' : '1.5rem'
                     }}
@@ -378,7 +357,7 @@ export function GlobalAudioPlayer() {
                     }}
                   >
                     {currentTrack.artist}
-                  </motion.p>
+                  </p>
                   {currentTrack.album && (
                     <p style={{
                       fontSize: '1rem',
@@ -387,10 +366,10 @@ export function GlobalAudioPlayer() {
                       {currentTrack.album}
                     </p>
                   )}
-                </motion.div>
+                </div>
 
                 {/* Progress Bar */}
-                <motion.div 
+                <div 
                   animate={{
                     marginBottom: showInlineLyrics ? '1rem' : '2rem'
                   }}
@@ -586,12 +565,12 @@ export function GlobalAudioPlayer() {
                     <Type size={20} />
                   </button>
                 </div>
-              </motion.div>
+              </div>
               </div>
 
               {/* Lyrics Panel - Right Side */}
               {showInlineLyrics && currentTrack?.lyrics && (
-                <motion.div
+                <div
                   initial={{ opacity: 0, x: 50, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 50, scale: 0.9 }}
@@ -662,7 +641,7 @@ export function GlobalAudioPlayer() {
                     overflow: 'hidden',
                     position: 'relative'
                   }}>
-                    <motion.div
+                    <div
                       style={{
                         height: '100%',
                         overflow: 'auto',
@@ -673,7 +652,7 @@ export function GlobalAudioPlayer() {
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
                       {currentTrack.lyrics.split('\n').map((line, index) => (
-                        <motion.p
+                        <p
                           key={index}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -691,9 +670,9 @@ export function GlobalAudioPlayer() {
                           }}
                         >
                           {line}
-                        </motion.p>
+                        </p>
                       ))}
-                    </motion.div>
+                    </div>
                   </div>
 
                   {/* Lyrics Footer */}
@@ -709,7 +688,7 @@ export function GlobalAudioPlayer() {
                     <span>Language: {currentTrack.lyricsLanguage || 'English'}</span>
                     <span>{currentTrack.lyrics.split('\n').length} lines</span>
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
           </div>
@@ -1145,10 +1124,9 @@ export function GlobalAudioPlayer() {
             }
           `
         }} />
-      </motion.div>
 
-      {/* Share Modal */}
-      {shareModalOpen && currentTrack && (
+        {/* Share Modal */}
+        {shareModalOpen && currentTrack && (
         <ShareModal
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
@@ -1164,10 +1142,10 @@ export function GlobalAudioPlayer() {
             url: currentTrack.url
           }}
         />
-      )}
+        )}
 
-      {/* Lyrics Panel */}
-      {showLyricsPanel && currentTrack && (
+        {/* Lyrics Panel */}
+        {showLyricsPanel && currentTrack && (
         currentTrack.lyrics ? (
           <SimpleLyricsPanel
             lyrics={currentTrack.lyrics}
@@ -1189,7 +1167,6 @@ export function GlobalAudioPlayer() {
           </div>
         )
       )}
-      </motion.div>
     </div>
   );
 }
