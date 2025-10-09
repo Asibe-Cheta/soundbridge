@@ -40,6 +40,7 @@ export function GlobalAudioPlayer() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showLyricsPanel, setShowLyricsPanel] = useState(false);
+  const [showInlineLyrics, setShowInlineLyrics] = useState(false);
 
   // Check if current track is liked
   useEffect(() => {
@@ -249,77 +250,135 @@ export function GlobalAudioPlayer() {
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '3rem',
+              gap: showInlineLyrics ? '2rem' : '3rem',
               zIndex: 1,
-              maxWidth: '1200px',
-              width: '100%'
+              maxWidth: '1400px',
+              width: '100%',
+              transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
             }}>
-              {/* Album Art */}
+              {/* Left Section - Album Art and Track Info */}
               <div style={{
-                flexShrink: 0,
-                position: 'relative'
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: '2rem',
+                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                flex: showInlineLyrics ? '0 0 auto' : '1'
               }}>
-                <div style={{
-                  width: '400px',
-                  height: '400px',
-                  borderRadius: '20px',
-                  overflow: 'hidden',
-                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
-                  position: 'relative'
-                }}>
-                  {currentTrack.artwork ? (
-                    <img
-                      src={currentTrack.artwork}
-                      alt={currentTrack.title}
-                      style={{
+                {/* Album Art */}
+                <motion.div
+                  animate={{
+                    width: showInlineLyrics ? 200 : 400,
+                    height: showInlineLyrics ? 200 : 400,
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    ease: 'easeInOut'
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    position: 'relative'
+                  }}
+                >
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
+                    position: 'relative'
+                  }}>
+                    {currentTrack.artwork ? (
+                      <img
+                        src={currentTrack.artwork}
+                        alt={currentTrack.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '4rem'
-                    }}>
-                      🎵
-                    </div>
-                  )}
-                </div>
-              </div>
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: showInlineLyrics ? '2rem' : '4rem'
+                      }}>
+                        🎵
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
 
-              {/* Track Info and Controls */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                textAlign: 'left',
-                maxWidth: '500px'
-              }}>
+                {/* Track Info and Controls */}
+                <motion.div
+                  animate={{
+                    opacity: 1,
+                    x: 0
+                  }}
+                  initial={{
+                    opacity: 0,
+                    x: showInlineLyrics ? -50 : 0
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    ease: 'easeInOut'
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    textAlign: 'left',
+                    minWidth: showInlineLyrics ? '300px' : '500px',
+                    maxWidth: showInlineLyrics ? '300px' : '500px'
+                  }}
+                >
                 {/* Track Info */}
-                <div style={{ marginBottom: '2rem' }}>
-                  <h1 style={{
-                    fontSize: '3rem',
-                    fontWeight: '700',
-                    marginBottom: '0.5rem',
-                    color: 'white'
-                  }}>
+                <motion.div 
+                  animate={{
+                    marginBottom: showInlineLyrics ? '1rem' : '2rem'
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    ease: 'easeInOut'
+                  }}
+                >
+                  <motion.h1 
+                    animate={{
+                      fontSize: showInlineLyrics ? '2rem' : '3rem'
+                    }}
+                    transition={{
+                      duration: 0.5,
+                      ease: 'easeInOut'
+                    }}
+                    style={{
+                      fontWeight: '700',
+                      marginBottom: '0.5rem',
+                      color: 'white'
+                    }}
+                  >
                     {currentTrack.title}
-                  </h1>
-                  <p style={{
-                    fontSize: '1.5rem',
-                    color: '#ccc',
-                    marginBottom: '0.5rem'
-                  }}>
+                  </motion.h1>
+                  <motion.p 
+                    animate={{
+                      fontSize: showInlineLyrics ? '1.2rem' : '1.5rem'
+                    }}
+                    transition={{
+                      duration: 0.5,
+                      ease: 'easeInOut'
+                    }}
+                    style={{
+                      color: '#ccc',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
                     {currentTrack.artist}
-                  </p>
+                  </motion.p>
                   {currentTrack.album && (
                     <p style={{
                       fontSize: '1rem',
@@ -328,13 +387,21 @@ export function GlobalAudioPlayer() {
                       {currentTrack.album}
                     </p>
                   )}
-                </div>
+                </motion.div>
 
                 {/* Progress Bar */}
-                <div style={{
-                  width: '100%',
-                  marginBottom: '2rem'
-                }}>
+                <motion.div 
+                  animate={{
+                    marginBottom: showInlineLyrics ? '1rem' : '2rem'
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    ease: 'easeInOut'
+                  }}
+                  style={{
+                    width: '100%'
+                  }}
+                >
                   <div style={{
                     background: 'rgba(255, 255, 255, 0.2)',
                     height: '6px',
@@ -490,13 +557,17 @@ export function GlobalAudioPlayer() {
                   {/* Lyrics Toggle Button */}
                   <button
                     onClick={() => {
-                      console.log('🎵 Lyrics button clicked!', {
+                      console.log('🎵 Expanded lyrics button clicked!', {
                         showLyricsPanel,
                         currentTrack: currentTrack?.title,
                         hasLyrics: !!currentTrack?.lyrics,
                         lyrics: currentTrack?.lyrics
                       });
-                      setShowLyricsPanel(!showLyricsPanel);
+                      if (isExpanded) {
+                        setShowInlineLyrics(!showInlineLyrics);
+                      } else {
+                        setShowLyricsPanel(!showLyricsPanel);
+                      }
                     }}
                     style={{
                       background: 'transparent',
@@ -508,14 +579,138 @@ export function GlobalAudioPlayer() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      color: showLyrics ? '#EC4899' : 'white',
+                      color: (isExpanded ? showInlineLyrics : showLyrics) ? '#EC4899' : 'white',
                       transition: 'all 0.3s ease'
                     }}
                   >
                     <Type size={20} />
                   </button>
                 </div>
+              </motion.div>
               </div>
+
+              {/* Lyrics Panel - Right Side */}
+              {showInlineLyrics && currentTrack?.lyrics && (
+                <motion.div
+                  initial={{ opacity: 0, x: 50, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 50, scale: 0.9 }}
+                  transition={{
+                    duration: 0.5,
+                    ease: 'easeInOut'
+                  }}
+                  style={{
+                    flex: '1',
+                    maxWidth: '500px',
+                    height: '600px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(20px)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '2rem',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                  }}
+                >
+                  {/* Lyrics Header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '1.5rem',
+                    paddingBottom: '1rem',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Type size={20} color="#EC4899" />
+                      <h3 style={{
+                        color: 'white',
+                        fontSize: '1.2rem',
+                        fontWeight: '600',
+                        margin: 0
+                      }}>
+                        Lyrics
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setShowInlineLyrics(false)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '30px',
+                        height: '30px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        color: 'white',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {/* Lyrics Content */}
+                  <div style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    <motion.div
+                      style={{
+                        height: '100%',
+                        overflow: 'auto',
+                        paddingRight: '0.5rem'
+                      }}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                    >
+                      {currentTrack.lyrics.split('\n').map((line, index) => (
+                        <motion.p
+                          key={index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ 
+                            delay: 0.3 + (index * 0.05),
+                            duration: 0.4
+                          }}
+                          style={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: '1.1rem',
+                            lineHeight: '1.6',
+                            marginBottom: '0.8rem',
+                            textAlign: 'left',
+                            fontWeight: '400'
+                          }}
+                        >
+                          {line}
+                        </motion.p>
+                      ))}
+                    </motion.div>
+                  </div>
+
+                  {/* Lyrics Footer */}
+                  <div style={{
+                    paddingTop: '1rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.9rem',
+                    color: 'rgba(255, 255, 255, 0.6)'
+                  }}>
+                    <span>Language: {currentTrack.lyricsLanguage || 'English'}</span>
+                    <span>{currentTrack.lyrics.split('\n').length} lines</span>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         ) : (
@@ -887,7 +1082,11 @@ export function GlobalAudioPlayer() {
                     hasLyrics: !!currentTrack?.lyrics,
                     lyrics: currentTrack?.lyrics
                   });
-                  setShowLyricsPanel(!showLyricsPanel);
+                  if (isExpanded) {
+                    setShowInlineLyrics(!showInlineLyrics);
+                  } else {
+                    setShowLyricsPanel(!showLyricsPanel);
+                  }
                 }}
                 style={{ 
                   background: 'none', 
