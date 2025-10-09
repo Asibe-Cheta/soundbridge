@@ -67,6 +67,17 @@ export function GlobalAudioPlayer() {
         .then(response => response.json())
         .then(data => {
           console.log('🚨 DATABASE CHECK RESULT:', data);
+          if (data.success && data.track) {
+            console.log('🚨 TRACK LYRICS FROM DATABASE:', {
+              id: data.track.id,
+              title: data.track.title,
+              lyrics: data.track.lyrics,
+              lyrics_language: data.track.lyrics_language,
+              has_lyrics: data.track.has_lyrics,
+              lyrics_length: data.track.lyrics ? data.track.lyrics.length : 0
+            });
+            console.log('🚨 FULL DATABASE TRACK OBJECT:', JSON.stringify(data.track, null, 2));
+          }
         })
         .catch(error => {
           console.error('🚨 Database check failed:', error);
