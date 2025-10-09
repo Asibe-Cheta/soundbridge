@@ -40,7 +40,13 @@ export function GlobalAudioPlayer() {
       lyricsLanguage: currentTrack?.lyricsLanguage,
       hasLyrics: !!currentTrack?.lyrics
     });
-  }, [currentTrack]);
+    console.log('🎵 GlobalAudioPlayer state:', {
+      isExpanded,
+      showInlineLyrics,
+      showLyricsPanel,
+      currentTrackExists: !!currentTrack
+    });
+  }, [currentTrack, isExpanded, showInlineLyrics, showLyricsPanel]);
 
   const { toggleLike, isLiked, createShare } = useSocial();
   const { user } = useAuth();
@@ -1070,21 +1076,14 @@ export function GlobalAudioPlayer() {
               {/* Lyrics Toggle Button */}
               <button
                   onClick={() => {
-                    console.log('🎵 Expanded lyrics button clicked!', {
-                      showLyricsPanel,
+                    console.log('🎵 Mini player lyrics button clicked!', {
                       currentTrack: currentTrack?.title,
                       hasLyrics: !!currentTrack?.lyrics,
                       lyrics: currentTrack?.lyrics
                     });
-                    console.log('🚨 FORCE DEBUG - Current Track Object:', currentTrack);
-                    console.log('🚨 FORCE DEBUG - Lyrics Raw:', currentTrack?.lyrics);
-                    console.log('🚨 FORCE DEBUG - Lyrics Type:', typeof currentTrack?.lyrics);
-                    console.log('🚨 FORCE DEBUG - Lyrics Length:', currentTrack?.lyrics?.length);
-                    if (isExpanded) {
-                      setShowInlineLyrics(!showInlineLyrics);
-                    } else {
-                      setShowLyricsPanel(!showLyricsPanel);
-                    }
+                    // Auto-expand to show lyrics instead of showing on mini player
+                    setIsExpanded(true);
+                    setShowInlineLyrics(true);
                 }}
                 style={{ 
                   background: 'none', 
