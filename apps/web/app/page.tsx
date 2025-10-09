@@ -1104,7 +1104,12 @@ export default function HomePage() {
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                      onClick={() => handlePlayTrack(track)}
+                      onClick={() => {
+                        console.log('🚨 CLICK DEBUG - Track clicked:', track);
+                        console.log('🚨 CLICK DEBUG - Track lyrics:', track.lyrics);
+                        console.log('🚨 CLICK DEBUG - Track lyricsLanguage:', track.lyricsLanguage);
+                        handlePlayTrack(track);
+                      }}
                 >
                   <Play size={20} />
                 </button>
