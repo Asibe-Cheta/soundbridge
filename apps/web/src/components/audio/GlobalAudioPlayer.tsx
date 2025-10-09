@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 // import { motion } from 'framer-motion'; // Temporarily disabled for build fix
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
-  Heart, Share2, List, Settings, Maximize2, Minimize2, Type
+  Heart, Share2, List, Settings, Maximize2, Minimize2, Type, X
 } from 'lucide-react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
 import { useSocial } from '../../hooks/useSocial';
