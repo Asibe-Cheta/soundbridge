@@ -23,6 +23,7 @@ export function GlobalAudioPlayer() {
   const [showLyricsPanel, setShowLyricsPanel] = useState(false);
   const [showInlineLyrics, setShowInlineLyrics] = useState(false);
   const lyricsRef = useRef<string | undefined>(undefined);
+  const isRecoveringLyrics = useRef(false);
   
   // Initialize hooks after state
   const { toggleLike, isLiked, createShare } = useSocial();
@@ -62,8 +63,10 @@ export function GlobalAudioPlayer() {
     });
     
     // Debug: Check track data from database if lyrics are missing
-    if (currentTrack && !currentTrack.lyrics) {
+    if (currentTrack && !currentTrack.lyrics && !isRecoveringLyrics.current) {
       console.log('🚨 DEBUG: Track has no lyrics, checking database...');
+      isRecoveringLyrics.current = true;
+      
       fetch(`/api/debug/track-data?trackId=${currentTrack.id}`)
         .then(response => response.json())
         .then(data => {
@@ -79,6 +82,10 @@ export function GlobalAudioPlayer() {
             });
             console.log('🚨 FULL DATABASE TRACK OBJECT:', JSON.stringify(data.track, null, 2));
             
+            // Store the lyrics in a ref for immediate access
+            console.log('🚨 STORING LYRICS IN REF FOR IMMEDIATE ACCESS...');
+            lyricsRef.current = data.track.lyrics;
+            
             // Update the current track with lyrics data
             console.log('🚨 UPDATING CURRENT TRACK WITH LYRICS...');
             const updatedTrack = {
@@ -87,17 +94,22 @@ export function GlobalAudioPlayer() {
               lyricsLanguage: data.track.lyrics_language
             };
             
-  // Update the track in the AudioPlayerContext
-  console.log('🚨 CALLING playTrack WITH UPDATED TRACK:', updatedTrack);
-  playTrack(updatedTrack);
-  
-  // Store the lyrics in a ref for immediate access
-  console.log('🚨 STORING LYRICS IN REF FOR IMMEDIATE ACCESS...');
-  lyricsRef.current = data.track.lyrics;
+            // Update the track in the AudioPlayerContext
+            console.log('🚨 CALLING playTrack WITH UPDATED TRACK:', updatedTrack);
+            playTrack(updatedTrack);
+            
+            // Reset the recovery flag after a delay
+            setTimeout(() => {
+              isRecoveringLyrics.current = false;
+              console.log('🚨 LYRICS RECOVERY COMPLETE - Reset flag');
+            }, 1000);
+          } else {
+            isRecoveringLyrics.current = false;
           }
         })
         .catch(error => {
           console.error('🚨 Database check failed:', error);
+          isRecoveringLyrics.current = false;
         });
     }
   }, [currentTrack, isExpanded, showInlineLyrics, showLyricsPanel]);
@@ -633,7 +645,13 @@ export function GlobalAudioPlayer() {
               </div>
 
               {/* Lyrics Panel - Right Side */}
-              {showInlineLyrics && (currentTrack?.lyrics || lyricsRef.current) && (
+              {showInlineLyrics && (() => {
+                const hasLyrics = currentTrack?.lyrics || lyricsRef.current;
+                if (hasLyrics) {
+                  console.log('🚨 DISPLAYING LYRICS - Using:', currentTrack?.lyrics ? 'currentTrack.lyrics' : 'lyricsRef.current');
+                }
+                return hasLyrics;
+              })() && (
                 <div
                   initial={{ opacity: 0, x: 50, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
