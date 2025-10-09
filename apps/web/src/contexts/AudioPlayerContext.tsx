@@ -170,6 +170,11 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
 
   const playTrack = useCallback(async (track: AudioTrack) => {
     console.log('🎵 playTrack called with:', track);
+    console.log('🎵 Track lyrics data:', {
+      lyrics: track.lyrics,
+      lyricsLanguage: track.lyricsLanguage,
+      hasLyrics: !!track.lyrics
+    });
     
     if (!audioRef.current) {
       console.log('🎵 No audio ref, returning');
@@ -217,6 +222,12 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       // Load new track
       console.log('🎵 Loading new track:', track.title);
       console.log('🎵 Audio URL:', track.url);
+      console.log('🎵 Setting current track with lyrics:', {
+        title: track.title,
+        lyrics: track.lyrics,
+        lyricsLanguage: track.lyricsLanguage,
+        hasLyrics: !!track.lyrics
+      });
       setCurrentTrack(track);
       
       // Test if the URL is accessible before setting it as src

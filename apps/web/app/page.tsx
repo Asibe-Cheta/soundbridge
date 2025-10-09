@@ -187,11 +187,17 @@ export default function HomePage() {
   }, [personalizedFeed]);
 
 
-  const handlePlayTrack = (track: AudioTrack) => {
+  const handlePlayTrack = (track: any) => {
     console.log('🎵 handlePlayTrack called with:', track);
+    console.log('🎵 Original track data:', {
+      id: track.id,
+      title: track.title,
+      lyrics: track.lyrics,
+      lyricsLanguage: track.lyricsLanguage
+    });
     
     // Convert track data to AudioTrack format
-    const audioTrack = {
+    const audioTrack: AudioTrack = {
       id: track.id,
       title: track.title,
       artist: track.artist || track.creator?.display_name || track.creator?.name || 'Unknown Artist',
