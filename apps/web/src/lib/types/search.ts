@@ -63,6 +63,8 @@ export interface AudioTrack {
   plays?: number;
   likes?: number;
   url?: string; // Alternative to file_url
+  lyrics?: string;
+  lyricsLanguage?: string;
 }
 
 export interface Event {

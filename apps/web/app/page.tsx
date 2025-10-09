@@ -199,7 +199,9 @@ export default function HomePage() {
       duration: track.duration || 0,
       artwork: track.cover_art_url || track.coverArt || '',
       url: track.file_url || track.url || '',
-      liked: false
+      liked: false,
+      lyrics: track.lyrics || undefined,
+      lyricsLanguage: track.lyricsLanguage || undefined
     };
     
     console.log('🎵 Converted to AudioTrack:', audioTrack);
