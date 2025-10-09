@@ -195,6 +195,7 @@ export default function HomePage() {
       lyrics: track.lyrics,
       lyricsLanguage: track.lyricsLanguage
     });
+    console.log('🚨 FULL TRACK OBJECT FROM API:', JSON.stringify(track, null, 2));
     
     // Convert track data to AudioTrack format
     const audioTrack: AudioTrack = {
@@ -211,6 +212,11 @@ export default function HomePage() {
     };
     
     console.log('🎵 Converted to AudioTrack:', audioTrack);
+    console.log('🚨 CONVERTED AUDIOTRACK LYRICS:', {
+      lyrics: audioTrack.lyrics,
+      lyricsLanguage: audioTrack.lyricsLanguage,
+      hasLyrics: !!audioTrack.lyrics
+    });
     playTrack(audioTrack);
   };
 
