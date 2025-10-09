@@ -553,6 +553,10 @@ export function GlobalAudioPlayer() {
                         hasLyrics: !!currentTrack?.lyrics,
                         lyrics: currentTrack?.lyrics
                       });
+                      console.log('🚨 FORCE DEBUG - Current Track Object:', currentTrack);
+                      console.log('🚨 FORCE DEBUG - Lyrics Raw:', currentTrack?.lyrics);
+                      console.log('🚨 FORCE DEBUG - Lyrics Type:', typeof currentTrack?.lyrics);
+                      console.log('🚨 FORCE DEBUG - Lyrics Length:', currentTrack?.lyrics?.length);
                       if (isExpanded) {
                         setShowInlineLyrics(!showInlineLyrics);
                       } else {
@@ -1065,18 +1069,22 @@ export function GlobalAudioPlayer() {
 
               {/* Lyrics Toggle Button */}
               <button
-                onClick={() => {
-                  console.log('🎵 Expanded lyrics button clicked!', {
-                    showLyricsPanel,
-                    currentTrack: currentTrack?.title,
-                    hasLyrics: !!currentTrack?.lyrics,
-                    lyrics: currentTrack?.lyrics
-                  });
-                  if (isExpanded) {
-                    setShowInlineLyrics(!showInlineLyrics);
-                  } else {
-                    setShowLyricsPanel(!showLyricsPanel);
-                  }
+                  onClick={() => {
+                    console.log('🎵 Expanded lyrics button clicked!', {
+                      showLyricsPanel,
+                      currentTrack: currentTrack?.title,
+                      hasLyrics: !!currentTrack?.lyrics,
+                      lyrics: currentTrack?.lyrics
+                    });
+                    console.log('🚨 FORCE DEBUG - Current Track Object:', currentTrack);
+                    console.log('🚨 FORCE DEBUG - Lyrics Raw:', currentTrack?.lyrics);
+                    console.log('🚨 FORCE DEBUG - Lyrics Type:', typeof currentTrack?.lyrics);
+                    console.log('🚨 FORCE DEBUG - Lyrics Length:', currentTrack?.lyrics?.length);
+                    if (isExpanded) {
+                      setShowInlineLyrics(!showInlineLyrics);
+                    } else {
+                      setShowLyricsPanel(!showLyricsPanel);
+                    }
                 }}
                 style={{ 
                   background: 'none', 
