@@ -62,10 +62,10 @@ export function GlobalAudioPlayer() {
   const { toggleLike, isLiked, createShare } = useSocial();
   const { user } = useAuth();
 
-  // Check if current track is liked
+  // Check if current track is liked - moved after all hooks are initialized
   useEffect(() => {
     const checkIfLiked = async () => {
-      if (!user || !currentTrack) {
+      if (!user || !currentTrack || !isLiked) {
         setIsTrackLiked(false);
         return;
       }
