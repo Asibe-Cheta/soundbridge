@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
   Heart, Share2, List, Settings, Maximize2, Minimize2, Type, X
@@ -22,6 +22,7 @@ export function GlobalAudioPlayer() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showLyricsPanel, setShowLyricsPanel] = useState(false);
   const [showInlineLyrics, setShowInlineLyrics] = useState(false);
+  const lyricsRef = useRef<string | undefined>(undefined);
   
   // Initialize hooks after state
   const { toggleLike, isLiked, createShare } = useSocial();
@@ -86,8 +87,13 @@ export function GlobalAudioPlayer() {
               lyricsLanguage: data.track.lyrics_language
             };
             
-            // Update the track in the AudioPlayerContext
-            playTrack(updatedTrack);
+  // Update the track in the AudioPlayerContext
+  console.log('🚨 CALLING playTrack WITH UPDATED TRACK:', updatedTrack);
+  playTrack(updatedTrack);
+  
+  // Store the lyrics in a ref for immediate access
+  console.log('🚨 STORING LYRICS IN REF FOR IMMEDIATE ACCESS...');
+  lyricsRef.current = data.track.lyrics;
           }
         })
         .catch(error => {
@@ -627,7 +633,7 @@ export function GlobalAudioPlayer() {
               </div>
 
               {/* Lyrics Panel - Right Side */}
-              {showInlineLyrics && currentTrack?.lyrics && (
+              {showInlineLyrics && (currentTrack?.lyrics || lyricsRef.current) && (
                 <div
                   initial={{ opacity: 0, x: 50, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -709,7 +715,7 @@ export function GlobalAudioPlayer() {
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
-                      {currentTrack.lyrics.split('\n').map((line, index) => (
+                      {(currentTrack.lyrics || lyricsRef.current || '').split('\n').map((line, index) => (
                         <p
                           key={index}
                           initial={{ opacity: 0, y: 10 }}
@@ -744,7 +750,7 @@ export function GlobalAudioPlayer() {
                     color: 'rgba(255, 255, 255, 0.6)'
                   }}>
                     <span>Language: {currentTrack.lyricsLanguage || 'English'}</span>
-                    <span>{currentTrack.lyrics.split('\n').length} lines</span>
+                    <span>{(currentTrack.lyrics || lyricsRef.current || '').split('\n').length} lines</span>
                   </div>
                 </div>
               )}
@@ -1201,9 +1207,9 @@ export function GlobalAudioPlayer() {
 
         {/* Lyrics Panel */}
         {showLyricsPanel && currentTrack && (
-        currentTrack.lyrics ? (
+        (currentTrack.lyrics || lyricsRef.current) ? (
           <SimpleLyricsPanel
-            lyrics={currentTrack.lyrics}
+            lyrics={currentTrack.lyrics || lyricsRef.current || ''}
             currentTime={currentTime}
             onClose={() => setShowLyricsPanel(false)}
           />
