@@ -30,6 +30,17 @@ export function GlobalAudioPlayer() {
     setVolume,
     clearError
   } = useAudioPlayer();
+  
+  // DEBUG: Log current track data whenever it changes
+  React.useEffect(() => {
+    console.log('🎵 GlobalAudioPlayer currentTrack changed:', {
+      id: currentTrack?.id,
+      title: currentTrack?.title,
+      lyrics: currentTrack?.lyrics,
+      lyricsLanguage: currentTrack?.lyricsLanguage,
+      hasLyrics: !!currentTrack?.lyrics
+    });
+  }, [currentTrack]);
 
   const { toggleLike, isLiked, createShare } = useSocial();
   const { user } = useAuth();
