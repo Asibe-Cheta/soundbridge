@@ -368,11 +368,26 @@ export function useAdvancedAudioPlayer() {
   const getCurrentLyricLine = useCallback((): string => {
     if (!lyrics || !state.currentTrack) return '';
     
-    const currentTime = state.currentTime;
-    const currentLine = lyrics.lines.find(line => line.time <= currentTime);
+    // Handle simple text lyrics (stored as string)
+    if (typeof lyrics === 'string') {
+      // For simple text lyrics, we can't sync with time, so return the full text
+      // or split by lines and return based on some logic
+      const lines = lyrics.split('\n').filter(line => line.trim() !== '');
+      if (lines.length === 0) return '';
+      
+      // Simple logic: show different lines based on current time
+      const lineIndex = Math.floor(state.currentTime / 10) % lines.length;
+      return lines[lineIndex] || '';
+    }
     
-    if (currentLine) {
-      return currentLine.text;
+    // Handle timestamped lyrics (legacy format)
+    if (lyrics && typeof lyrics === 'object' && lyrics.lines) {
+      const currentTime = state.currentTime;
+      const currentLine = lyrics.lines.find(line => line.time <= currentTime);
+      
+      if (currentLine) {
+        return currentLine.text;
+      }
     }
     
     return '';
