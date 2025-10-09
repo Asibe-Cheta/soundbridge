@@ -175,6 +175,7 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       lyricsLanguage: track.lyricsLanguage,
       hasLyrics: !!track.lyrics
     });
+    console.log('🚨 CONTEXT DEBUG - Full track object:', JSON.stringify(track, null, 2));
     
     if (!audioRef.current) {
       console.log('🎵 No audio ref, returning');
