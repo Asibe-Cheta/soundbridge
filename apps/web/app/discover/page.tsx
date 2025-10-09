@@ -308,7 +308,9 @@ export default function DiscoverPage() {
       duration: track.duration || 0,
       artwork: track.cover_art_url || '',
       url: track.file_url || '',
-      liked: false
+      liked: false,
+      lyrics: track.lyrics || undefined,
+      lyricsLanguage: track.lyricsLanguage || undefined
     };
     
     console.log('🎵 Converted to AudioTrack:', audioTrack);
