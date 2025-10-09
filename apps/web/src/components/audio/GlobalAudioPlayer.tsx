@@ -48,8 +48,7 @@ export function GlobalAudioPlayer() {
     });
   }, [currentTrack, isExpanded, showInlineLyrics, showLyricsPanel]);
 
-  const { toggleLike, isLiked, createShare } = useSocial();
-  const { user } = useAuth();
+  // Initialize state variables first
   const [showVolume, setShowVolume] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isTrackLiked, setIsTrackLiked] = useState(false);
@@ -58,6 +57,10 @@ export function GlobalAudioPlayer() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showLyricsPanel, setShowLyricsPanel] = useState(false);
   const [showInlineLyrics, setShowInlineLyrics] = useState(false);
+  
+  // Initialize hooks after state
+  const { toggleLike, isLiked, createShare } = useSocial();
+  const { user } = useAuth();
 
   // Check if current track is liked
   useEffect(() => {
