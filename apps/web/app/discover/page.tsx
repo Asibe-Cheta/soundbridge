@@ -296,18 +296,24 @@ export default function DiscoverPage() {
     }
   };
 
-  const handlePlayTrack = (track: AudioTrack) => {
+  const handlePlayTrack = (track: any) => {
     console.log('🎵 handlePlayTrack called with:', track);
-    
-    // Convert track data to AudioTrack format
-    const audioTrack = {
+    console.log('🎵 Original track data:', {
       id: track.id,
       title: track.title,
-      artist: track.creator?.display_name || 'Unknown Artist',
+      lyrics: track.lyrics,
+      lyricsLanguage: track.lyricsLanguage
+    });
+    
+    // Convert track data to AudioTrack format
+    const audioTrack: AudioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.display_name || track.artist || 'Unknown Artist',
       album: '',
       duration: track.duration || 0,
-      artwork: track.cover_art_url || '',
-      url: track.file_url || '',
+      artwork: track.cover_art_url || track.coverArt || '',
+      url: track.file_url || track.url || '',
       liked: false,
       lyrics: track.lyrics || undefined,
       lyricsLanguage: track.lyricsLanguage || undefined

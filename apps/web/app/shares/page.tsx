@@ -93,18 +93,29 @@ export default function SharesPage() {
   };
 
   const handlePlayTrack = (track: any) => {
-    playTrack({
+    console.log('🎵 handlePlayTrack called with:', track);
+    console.log('🎵 Original track data:', {
       id: track.id,
       title: track.title,
-      artist: track.creator?.display_name || 'Unknown Artist',
+      lyrics: track.lyrics,
+      lyricsLanguage: track.lyricsLanguage
+    });
+    
+    const audioTrack: AudioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.display_name || track.artist || 'Unknown Artist',
       album: track.creator?.display_name || 'Unknown Album',
       duration: track.duration || 0,
-      artwork: track.cover_art_url || '',
-      url: track.file_url,
+      artwork: track.cover_art_url || track.coverArt || '',
+      url: track.file_url || track.url || '',
       liked: false,
       lyrics: track.lyrics || undefined,
       lyricsLanguage: track.lyricsLanguage || undefined
-    });
+    };
+    
+    console.log('🎵 Converted to AudioTrack:', audioTrack);
+    playTrack(audioTrack);
   };
 
   const formatDuration = (seconds: number) => {
