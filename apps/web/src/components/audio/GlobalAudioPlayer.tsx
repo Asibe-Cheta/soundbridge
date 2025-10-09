@@ -59,6 +59,19 @@ export function GlobalAudioPlayer() {
       showLyricsPanel,
       currentTrackExists: !!currentTrack
     });
+    
+    // Debug: Check track data from database if lyrics are missing
+    if (currentTrack && !currentTrack.lyrics) {
+      console.log('🚨 DEBUG: Track has no lyrics, checking database...');
+      fetch(`/api/debug/track-data?trackId=${currentTrack.id}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('🚨 DATABASE CHECK RESULT:', data);
+        })
+        .catch(error => {
+          console.error('🚨 Database check failed:', error);
+        });
+    }
   }, [currentTrack, isExpanded, showInlineLyrics, showLyricsPanel]);
 
   // Check if current track is liked - moved after all hooks are initialized
