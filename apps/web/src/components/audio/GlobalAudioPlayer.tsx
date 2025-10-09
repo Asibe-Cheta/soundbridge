@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// import { motion } from 'framer-motion'; // Temporarily disabled for build fix
 import { 
   Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
   Heart, Share2, List, Settings, Maximize2, Minimize2, Type, X
@@ -14,6 +13,20 @@ import ShareModal from '../social/ShareModal';
 import { SimpleLyricsPanel } from './SimpleLyricsPanel';
 
 export function GlobalAudioPlayer() {
+  // Initialize state variables first
+  const [showVolume, setShowVolume] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isTrackLiked, setIsTrackLiked] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [showLyricsPanel, setShowLyricsPanel] = useState(false);
+  const [showInlineLyrics, setShowInlineLyrics] = useState(false);
+  
+  // Initialize hooks after state
+  const { toggleLike, isLiked, createShare } = useSocial();
+  const { user } = useAuth();
+  
   const {
     currentTrack,
     isPlaying,
@@ -47,20 +60,6 @@ export function GlobalAudioPlayer() {
       currentTrackExists: !!currentTrack
     });
   }, [currentTrack, isExpanded, showInlineLyrics, showLyricsPanel]);
-
-  // Initialize state variables first
-  const [showVolume, setShowVolume] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isTrackLiked, setIsTrackLiked] = useState(false);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [showLyricsPanel, setShowLyricsPanel] = useState(false);
-  const [showInlineLyrics, setShowInlineLyrics] = useState(false);
-  
-  // Initialize hooks after state
-  const { toggleLike, isLiked, createShare } = useSocial();
-  const { user } = useAuth();
 
   // Check if current track is liked - moved after all hooks are initialized
   useEffect(() => {
