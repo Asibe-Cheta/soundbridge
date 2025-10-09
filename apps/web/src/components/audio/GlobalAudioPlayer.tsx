@@ -158,7 +158,7 @@ export function GlobalAudioPlayer() {
   if (!currentTrack) return null;
 
   return (
-    <>
+    <div>
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ 
@@ -1190,6 +1190,6 @@ export function GlobalAudioPlayer() {
         )
       )}
       </motion.div>
-    </>
+    </div>
   );
 }
