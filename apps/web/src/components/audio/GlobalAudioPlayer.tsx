@@ -158,8 +158,7 @@ export function GlobalAudioPlayer() {
   if (!currentTrack) return null;
 
   return (
-    <div>
-      <motion.div
+    <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ 
           y: 0, 
@@ -1189,6 +1188,6 @@ export function GlobalAudioPlayer() {
           </div>
         )
       )}
-    </div>
+    </motion.div>
   );
 }
