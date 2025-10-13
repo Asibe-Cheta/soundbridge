@@ -56,7 +56,7 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
         const adSlots = {
           feed: '6669035140', // Feed Banner - SoundBridge
           sidebar: '6823473038', // Sidebar Banner - SoundBridge
-          footer: '6669035140' // Using feed slot for now
+          footer: '1016736294' // Footer Banner - SoundBridge
         };
         
         adElement.setAttribute('data-ad-slot', adSlots[placement] || adSlots.feed);
