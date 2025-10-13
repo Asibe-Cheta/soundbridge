@@ -166,17 +166,21 @@ CREATE OR REPLACE FUNCTION track_ad_click(
 )
 RETURNS BOOLEAN AS $$
 BEGIN
-  -- Update the most recent impression for this ad
+  -- Update the most recent impression for this ad using a subquery
   UPDATE ad_impressions
   SET clicked = true,
       click_time = NOW()
-  WHERE ad_id = p_ad_id
-  AND (user_id = p_user_id OR p_user_id IS NULL)
-  AND (session_id = p_session_id OR p_session_id IS NULL)
-  AND clicked = false
-  AND impression_time >= NOW() - INTERVAL '1 hour'
-  ORDER BY impression_time DESC
-  LIMIT 1;
+  WHERE id = (
+    SELECT id 
+    FROM ad_impressions
+    WHERE ad_id = p_ad_id
+    AND (user_id = p_user_id OR p_user_id IS NULL)
+    AND (session_id = p_session_id OR p_session_id IS NULL)
+    AND clicked = false
+    AND impression_time >= NOW() - INTERVAL '1 hour'
+    ORDER BY impression_time DESC
+    LIMIT 1
+  );
   
   RETURN FOUND;
 END;
@@ -198,17 +202,8 @@ ON ad_impressions FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
--- Admin can view all ad impressions
-CREATE POLICY "Admins can view all ad impressions"
-ON ad_impressions FOR SELECT
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-  )
-);
+-- Service role can view all ad impressions (for analytics)
+-- Note: Individual users can only see their own impressions via the first policy
 
 -- Step 10: Create RLS policies for ad_config
 -- ============================================
@@ -220,17 +215,8 @@ ON ad_config FOR SELECT
 TO authenticated, anon
 USING (true);
 
--- Only admins can modify ad config
-CREATE POLICY "Only admins can modify ad config"
-ON ad_config FOR ALL
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-  )
-);
+-- Only service role can modify ad config (admins use Supabase dashboard)
+-- Regular users cannot modify ad configuration
 
 -- Step 11: Create analytics view for ad performance
 -- ============================================
