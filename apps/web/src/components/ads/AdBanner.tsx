@@ -55,7 +55,7 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
         // Set ad slot based on placement
         const adSlots = {
           feed: '6669035140', // Feed Banner - SoundBridge
-          sidebar: '6669035140', // Using feed slot for now
+          sidebar: '6823473038', // Sidebar Banner - SoundBridge
           footer: '6669035140' // Using feed slot for now
         };
         
