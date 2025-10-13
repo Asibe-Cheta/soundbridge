@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { cn, formatTime } from '../../lib/utils';
 import ShareModal from '../social/ShareModal';
 import { SimpleLyricsPanel } from './SimpleLyricsPanel';
+import { AdInterstitial } from '../ads/AdInterstitial';
 
 export function GlobalAudioPlayer() {
   // Initialize state variables first
@@ -37,13 +38,15 @@ export function GlobalAudioPlayer() {
     volume,
     isLoading,
     error,
+    showInterstitialAd,
     playTrack,
     pause,
     resume,
     stop,
     seek,
     setVolume,
-    clearError
+    clearError,
+    closeInterstitialAd
   } = useAudioPlayer();
   
   // DEBUG: Log current track data whenever it changes
@@ -1245,6 +1248,14 @@ export function GlobalAudioPlayer() {
             </div>
           </div>
         )
+      )}
+
+      {/* Interstitial Ad */}
+      {showInterstitialAd && (
+        <AdInterstitial
+          onClose={closeInterstitialAd}
+          className="fixed inset-0 z-50"
+        />
       )}
     </div>
   );

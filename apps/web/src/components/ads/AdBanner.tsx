@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { adService } from '../../services/AdService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +15,8 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
   const [showAd, setShowAd] = useState(false);
   const [adId, setAdId] = useState('');
   const [isDismissed, setIsDismissed] = useState(false);
+  const [showPlaceholder, setShowPlaceholder] = useState(true);
+  const adRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initAd = async () => {
@@ -30,15 +32,52 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
         setAdId(newAdId);
         setShowAd(true);
         
-        // Track ad impression
+        // Load AdSense ad
         setTimeout(() => {
+          loadAdSenseAd();
           adService.trackImpression(newAdId, 'banner', placement);
-        }, 500);
+        }, 1000);
       }
     };
 
     initAd();
   }, [placement, isDismissed, user]);
+
+  const loadAdSenseAd = () => {
+    if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
+      try {
+        // Create AdSense ad unit
+        const adElement = document.createElement('ins');
+        adElement.className = 'adsbygoogle';
+        adElement.style.display = 'block';
+        adElement.setAttribute('data-ad-client', 'ca-pub-9193690947663942');
+        
+        // Set ad slot based on placement
+        const adSlots = {
+          feed: '1234567890', // You'll get this from AdSense
+          sidebar: '0987654321',
+          footer: '1122334455'
+        };
+        
+        adElement.setAttribute('data-ad-slot', adSlots[placement] || adSlots.feed);
+        adElement.setAttribute('data-ad-format', 'auto');
+        adElement.setAttribute('data-full-width-responsive', 'true');
+
+        if (adRef.current) {
+          adRef.current.innerHTML = '';
+          adRef.current.appendChild(adElement);
+          
+          // Push ad to AdSense
+          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+          
+          setShowPlaceholder(false);
+        }
+      } catch (error) {
+        console.error('Error loading AdSense ad:', error);
+        // Keep showing placeholder if AdSense fails
+      }
+    }
+  };
 
   const handleDismiss = () => {
     setIsDismissed(true);
@@ -84,24 +123,31 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
           className="ad-content" 
           onClick={handleAdClick}
         >
-          {/* Placeholder for Google Ad Manager ad unit */}
-          <div className={`ad-placeholder ad-placeholder-${placement}`}>
-            {/* This will be replaced with actual Google Ad Manager code */}
-            <div className="flex items-center justify-center h-full bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-lg border border-pink-500/30">
-              <div className="text-center p-4">
-                <p className="text-white font-semibold mb-2">🎵 SoundBridge Pro</p>
-                <p className="text-sm text-gray-300 mb-3">Unlimited uploads, HD audio, no ads</p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUpgradeClick();
-                  }}
-                  className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Upgrade Now - $9.99/mo
-                </button>
+          {/* AdSense Ad Container */}
+          <div 
+            ref={adRef}
+            className={`ad-container ad-container-${placement}`}
+          >
+            {/* Fallback placeholder if AdSense doesn't load */}
+            {showPlaceholder && (
+              <div className={`ad-placeholder ad-placeholder-${placement}`}>
+                <div className="flex items-center justify-center h-full bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-lg border border-pink-500/30">
+                  <div className="text-center p-4">
+                    <p className="text-white font-semibold mb-2">🎵 SoundBridge Pro</p>
+                    <p className="text-sm text-gray-300 mb-3">Unlimited uploads, HD audio, no ads</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUpgradeClick();
+                      }}
+                      className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Upgrade Now - $9.99/mo
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -128,6 +174,18 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
 
         .ad-content {
           cursor: pointer;
+        }
+
+        .ad-container {
+          min-height: 90px;
+        }
+
+        .ad-container-sidebar {
+          min-height: 250px;
+        }
+
+        .ad-container-footer {
+          min-height: 50px;
         }
 
         .ad-placeholder {

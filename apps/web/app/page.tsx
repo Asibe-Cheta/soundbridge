@@ -13,6 +13,7 @@ import { HomePageSEO } from '@/src/components/seo/HomePageSEO';
 import { CreatorCard } from '@/src/components/creator/CreatorCard';
 import { User, Upload, Play, Pause, Heart, MessageCircle, Calendar, Mic, Users, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon, Music } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
+import { AdBanner } from '@/src/components/ads/AdBanner';
 import type { AudioTrack } from '@/src/lib/types/search';
 import type { CreatorSearchResult, Event } from '@/src/lib/types/creator';
 
@@ -1131,6 +1132,9 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Banner Ad - Feed Placement */}
+        <AdBanner placement="feed" className="my-6" />
 
         {/* Recently Added Music - PERSONALIZED */}
         <section className="section">

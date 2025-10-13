@@ -178,6 +178,15 @@ export default function RootLayout({
           />
         )}
         
+        {/* Google AdSense */}
+        <Script
+          id="adsense"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9193690947663942"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+        
         <SocialScripts />
         
         {/* Structured Data */}
