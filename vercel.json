@@ -3,6 +3,12 @@
   "installCommand": "cd apps/web && npm install",
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next",
+  "crons": [
+    {
+      "path": "/api/notifications/send-queued",
+      "schedule": "*/15 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

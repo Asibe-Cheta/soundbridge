@@ -34,6 +34,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
     "dotted-map": "^2.2.3",
+    "expo-server-sdk": "^4.0.0",
     "framer-motion": "^12.23.12",
     "google-auth-library": "^10.3.0",
     "howler": "^2.2.4",
