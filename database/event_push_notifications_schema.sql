@@ -4,7 +4,6 @@
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "postgis"; -- For geolocation calculations
 
 -- ==========================================
 -- 1. USER PUSH TOKENS TABLE
@@ -74,9 +73,9 @@ CREATE TABLE IF NOT EXISTS user_event_preferences (
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_user_event_prefs_user_id ON user_event_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_event_prefs_push_enabled ON user_event_preferences(push_notifications_enabled) WHERE push_notifications_enabled = true;
-CREATE INDEX IF NOT EXISTS idx_user_event_prefs_location ON user_event_preferences USING gist (
-    ll_to_earth(custom_latitude, custom_longitude)
-) WHERE custom_latitude IS NOT NULL AND custom_longitude IS NOT NULL;
+-- Note: PostGIS spatial index would require geometry column, using standard indexes instead
+CREATE INDEX IF NOT EXISTS idx_user_event_prefs_latitude ON user_event_preferences(custom_latitude) WHERE custom_latitude IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_event_prefs_longitude ON user_event_preferences(custom_longitude) WHERE custom_longitude IS NOT NULL;
 
 -- ==========================================
 -- 3. EVENT NOTIFICATIONS TABLE
@@ -189,7 +188,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- Function to calculate distance between two points in kilometers
+-- Function to calculate distance between two points in kilometers using Haversine formula
 CREATE OR REPLACE FUNCTION calculate_distance_km(
     lat1 DECIMAL,
     lon1 DECIMAL,
@@ -197,18 +196,31 @@ CREATE OR REPLACE FUNCTION calculate_distance_km(
     lon2 DECIMAL
 )
 RETURNS DECIMAL AS $$
+DECLARE
+    R DECIMAL := 6371; -- Earth's radius in kilometers
+    dLat DECIMAL;
+    dLon DECIMAL;
+    a DECIMAL;
+    c DECIMAL;
 BEGIN
-    -- Using Haversine formula for great-circle distance
-    -- Returns distance in kilometers
-    RETURN (
-        6371 * acos(
-            cos(radians(lat1)) 
-            * cos(radians(lat2)) 
-            * cos(radians(lon2) - radians(lon1)) 
-            + sin(radians(lat1)) 
-            * sin(radians(lat2))
-        )
-    );
+    -- Handle NULL values
+    IF lat1 IS NULL OR lon1 IS NULL OR lat2 IS NULL OR lon2 IS NULL THEN
+        RETURN NULL;
+    END IF;
+    
+    -- Convert degrees to radians
+    dLat := radians(lat2 - lat1);
+    dLon := radians(lon2 - lon1);
+    
+    -- Haversine formula
+    a := sin(dLat/2) * sin(dLat/2) +
+         cos(radians(lat1)) * cos(radians(lat2)) *
+         sin(dLon/2) * sin(dLon/2);
+    
+    c := 2 * atan2(sqrt(a), sqrt(1-a));
+    
+    -- Distance in kilometers
+    RETURN R * c;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
