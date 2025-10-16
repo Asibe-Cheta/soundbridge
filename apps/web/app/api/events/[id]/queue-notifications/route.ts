@@ -4,13 +4,13 @@ import { cookies } from 'next/headers';
 import { eventNotificationService } from '@/src/services/EventNotificationService';
 
 /**
- * POST /api/events/[eventId]/queue-notifications
+ * POST /api/events/[id]/queue-notifications
  * Queue push notifications for users matching event criteria
  * Called when a featured event is created/published
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
@@ -25,7 +25,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const eventId = params.eventId;
+    const eventId = params.id;
 
     if (!eventId) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
@@ -90,7 +90,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Error in POST /api/events/[eventId]/queue-notifications:', error);
+    console.error('Error in POST /api/events/[id]/queue-notifications:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
