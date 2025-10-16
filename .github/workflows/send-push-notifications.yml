@@ -1,0 +1,24 @@
+name: Send Queued Push Notifications
+
+on:
+  schedule:
+    # Runs every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  send-notifications:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send queued notifications
+        run: |
+          curl -X POST https://soundbridge.live/api/notifications/send-queued \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            --fail-with-body
+        
+      - name: Log result
+        if: always()
+        run: echo "Notification job completed at $(date)"
+
