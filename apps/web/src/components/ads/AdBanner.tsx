@@ -46,15 +46,8 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
     return () => {
       if (adRef.current) {
         try {
-          // Clear the ad container safely
-          while (adRef.current.firstChild) {
-            const child = adRef.current.firstChild;
-            if (child.parentNode) {
-              adRef.current.removeChild(child);
-            } else {
-              break;
-            }
-          }
+          // Clear the ad container safely - use innerHTML instead of removeChild
+          adRef.current.innerHTML = '';
         } catch (error) {
           console.warn('Error during ad cleanup:', error);
         }
@@ -75,17 +68,9 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
         return;
       }
 
-      // Clear existing content safely
-      if (adRef.current && adRef.current.parentNode) {
-        // Remove all child nodes safely
-        while (adRef.current.firstChild) {
-          const child = adRef.current.firstChild;
-          if (child.parentNode) {
-            adRef.current.removeChild(child);
-          } else {
-            break; // Prevent infinite loop
-          }
-        }
+      // Clear existing content safely - use innerHTML instead of removeChild
+      if (adRef.current) {
+        adRef.current.innerHTML = '';
       }
 
       // Create AdSense ad unit
