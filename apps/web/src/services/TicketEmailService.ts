@@ -369,12 +369,48 @@ END:VCALENDAR`;
   }
 
   private async sendViaSendGrid(params: any): Promise<void> {
-    // Implement SendGrid integration
-    console.log('SendGrid email would be sent:', params);
+    const sendGridData = {
+      from: { 
+        email: process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live', 
+        name: process.env.SENDGRID_FROM_NAME || 'SoundBridge Events' 
+      },
+      personalizations: [{
+        to: [{ email: params.to }],
+        subject: params.subject
+      }],
+      content: [
+        {
+          type: 'text/html',
+          value: params.html
+        },
+        {
+          type: 'text/plain', 
+          value: params.text
+        }
+      ],
+      attachments: params.attachments || []
+    };
+
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(sendGridData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('SendGrid API failed:', response.status, errorText);
+      throw new Error(`SendGrid API failed: ${response.status}`);
+    }
+
+    console.log('Ticket email sent successfully via SendGrid');
   }
 
   private async sendViaResend(params: any): Promise<void> {
-    // Implement Resend integration
+    // Implement Resend integration if needed
     console.log('Resend email would be sent:', params);
   }
 }

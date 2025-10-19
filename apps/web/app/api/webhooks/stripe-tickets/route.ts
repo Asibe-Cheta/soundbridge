@@ -268,17 +268,22 @@ async function sendTicketConfirmationEmail(purchase: any, supabase: any) {
       `)
       .eq('stripe_payment_intent_id', purchase.stripe_payment_intent_id);
 
-    // Send email via your email service (e.g., SendGrid, Resend)
-    // This is a placeholder - implement with your email service
-    console.log('Would send confirmation email to:', purchase.buyer_email);
-    console.log('Tickets:', allTickets?.length);
+    if (!allTickets || allTickets.length === 0) {
+      console.error('No tickets found for purchase:', purchase.stripe_payment_intent_id);
+      return;
+    }
 
-    // Example email content:
-    // - Event details
-    // - Ticket type and quantity
-    // - QR codes (attached or embedded)
-    // - Calendar .ics file
-    // - Important event information
+    // Import and use the ticket email service
+    const { ticketEmailService } = await import('@/src/services/TicketEmailService');
+    
+    // Send confirmation email with QR codes
+    const emailSent = await ticketEmailService.sendTicketConfirmation(allTickets);
+    
+    if (emailSent) {
+      console.log('✅ Ticket confirmation email sent successfully to:', purchase.buyer_email);
+    } else {
+      console.warn('⚠️ Failed to send ticket confirmation email to:', purchase.buyer_email);
+    }
 
   } catch (error) {
     console.error('Error sending confirmation email:', error);
@@ -288,8 +293,17 @@ async function sendTicketConfirmationEmail(purchase: any, supabase: any) {
 
 async function sendRefundConfirmationEmail(purchase: any, supabase: any) {
   try {
-    console.log('Would send refund confirmation to:', purchase.buyer_email);
-    // Implement refund email logic
+    // Import and use the ticket email service
+    const { ticketEmailService } = await import('@/src/services/TicketEmailService');
+    
+    // Send refund confirmation email
+    const emailSent = await ticketEmailService.sendRefundConfirmation(purchase);
+    
+    if (emailSent) {
+      console.log('✅ Refund confirmation email sent successfully to:', purchase.buyer_email);
+    } else {
+      console.warn('⚠️ Failed to send refund confirmation email to:', purchase.buyer_email);
+    }
   } catch (error) {
     console.error('Error sending refund email:', error);
   }
