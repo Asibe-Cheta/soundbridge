@@ -54,9 +54,13 @@ export const createBrowserClient = () => {
       throw new Error('Supabase environment variables not configured for browser client. Check your .env.local file.');
     }
     
-    return createClientComponentClient<Database>({
-      supabaseUrl,
-      supabaseKey: supabaseAnonKey,
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
     });
   } catch (error) {
     console.error('Error creating browser client:', error);
@@ -199,6 +203,7 @@ const getDefaultClient = () => {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
+        flowType: 'pkce',
       },
     });
   }

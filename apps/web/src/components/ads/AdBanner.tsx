@@ -41,41 +41,95 @@ export function AdBanner({ placement, className = '' }: AdBannerProps) {
     };
 
     initAd();
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      if (adRef.current) {
+        try {
+          // Clear the ad container safely
+          while (adRef.current.firstChild) {
+            const child = adRef.current.firstChild;
+            if (child.parentNode) {
+              adRef.current.removeChild(child);
+            } else {
+              break;
+            }
+          }
+        } catch (error) {
+          console.warn('Error during ad cleanup:', error);
+        }
+      }
+    };
   }, [placement, isDismissed, user]);
 
   const loadAdSenseAd = () => {
-    if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
-      try {
-        // Create AdSense ad unit
-        const adElement = document.createElement('ins');
-        adElement.className = 'adsbygoogle';
-        adElement.style.display = 'block';
-        adElement.setAttribute('data-ad-client', 'ca-pub-9193690947663942');
-        
-        // Set ad slot based on placement
-        const adSlots = {
-          feed: '6669035140', // Feed Banner - SoundBridge
-          sidebar: '6823473038', // Sidebar Banner - SoundBridge
-          footer: '1016736294' // Footer Banner - SoundBridge
-        };
-        
-        adElement.setAttribute('data-ad-slot', adSlots[placement] || adSlots.feed);
-        adElement.setAttribute('data-ad-format', 'auto');
-        adElement.setAttribute('data-full-width-responsive', 'true');
+    if (typeof window === 'undefined' || !adRef.current) {
+      return;
+    }
 
-        if (adRef.current) {
-          adRef.current.innerHTML = '';
-          adRef.current.appendChild(adElement);
-          
-          // Push ad to AdSense
-          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-          
-          setShowPlaceholder(false);
-        }
-      } catch (error) {
-        console.error('Error loading AdSense ad:', error);
-        // Keep showing placeholder if AdSense fails
+    try {
+      // Wait for AdSense to be ready
+      if (!(window as any).adsbygoogle) {
+        console.warn('AdSense not ready, retrying in 1 second...');
+        setTimeout(loadAdSenseAd, 1000);
+        return;
       }
+
+      // Clear existing content safely
+      if (adRef.current && adRef.current.parentNode) {
+        // Remove all child nodes safely
+        while (adRef.current.firstChild) {
+          const child = adRef.current.firstChild;
+          if (child.parentNode) {
+            adRef.current.removeChild(child);
+          } else {
+            break; // Prevent infinite loop
+          }
+        }
+      }
+
+      // Create AdSense ad unit
+      const adElement = document.createElement('ins');
+      adElement.className = 'adsbygoogle';
+      adElement.style.display = 'block';
+      adElement.setAttribute('data-ad-client', 'ca-pub-9193690947663942');
+      
+      // Set ad slot based on placement
+      const adSlots = {
+        feed: '6669035140', // Feed Banner - SoundBridge
+        sidebar: '6823473038', // Sidebar Banner - SoundBridge
+        footer: '1016736294' // Footer Banner - SoundBridge
+      };
+      
+      adElement.setAttribute('data-ad-slot', adSlots[placement] || adSlots.feed);
+      adElement.setAttribute('data-ad-format', 'auto');
+      adElement.setAttribute('data-full-width-responsive', 'true');
+
+      // Safely append the ad element
+      if (adRef.current && adRef.current.parentNode) {
+        adRef.current.appendChild(adElement);
+        
+        // Wait a bit for the element to be in the DOM before pushing
+        setTimeout(() => {
+          try {
+            // Check if element is still in the DOM
+            if (adElement.parentNode && (window as any).adsbygoogle) {
+              ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+              setShowPlaceholder(false);
+            } else {
+              console.warn('AdSense element not in DOM or AdSense not ready');
+              setShowPlaceholder(true);
+            }
+          } catch (adsError) {
+            console.warn('AdSense push failed:', adsError);
+            setShowPlaceholder(true);
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error loading AdSense ad:', error);
+      // Keep showing placeholder if AdSense fails
+      setShowPlaceholder(true);
     }
   };
 
