@@ -186,35 +186,38 @@ export const createServerComponentClient = () => {
   }
 };
 
-// Lazy default client creation to avoid environment variable issues
-let _supabase: ReturnType<typeof createClient<Database>> | null = null;
+// Single global client instance to prevent multiple GoTrueClient warnings
+let _globalSupabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 
-const getDefaultClient = () => {
-  if (!_supabase) {
+const getGlobalClient = () => {
+  if (!_globalSupabaseClient) {
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('❌ Supabase environment variables not configured for default client');
+      console.error('❌ Supabase environment variables not configured for global client');
       console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
       console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
-      throw new Error('Supabase environment variables not configured for default client. Check your .env.local file.');
+      throw new Error('Supabase environment variables not configured for global client. Check your .env.local file.');
     }
     
-    _supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    _globalSupabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
+        storage: {
+          key: 'soundbridge-auth'
+        }
       },
     });
   }
   
-  return _supabase;
+  return _globalSupabaseClient;
 };
 
-// Default client for backward compatibility
+// Default client for backward compatibility - uses single global instance
 export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get(target, prop) {
-    const client = getDefaultClient();
+    const client = getGlobalClient();
     return client[prop as keyof typeof client];
   }
 });
