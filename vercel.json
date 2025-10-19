@@ -3,6 +3,7 @@
   "installCommand": "cd apps/web && npm install",
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next",
+  "rootDirectory": "apps/web",
   "crons": [
     {
       "path": "/api/notifications/send-queued",
