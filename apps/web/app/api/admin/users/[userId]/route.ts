@@ -10,14 +10,13 @@ export async function GET(
     
     const supabase = createServiceClient();
 
-    // Get detailed user information
+    // Get detailed user information from profiles
     const { data: user, error: userError } = await supabase
       .from('profiles')
       .select(`
         id,
         username,
         display_name,
-        email,
         avatar_url,
         bio,
         role,
@@ -33,6 +32,9 @@ export async function GET(
       .eq('id', params.userId)
       .single();
 
+    // Get email from auth.users table
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(params.userId);
+    
     if (userError) {
       console.error('❌ Error fetching user details:', userError);
       return NextResponse.json(
@@ -48,6 +50,12 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // Add email from auth.users to the user object
+    const userWithEmail = {
+      ...user,
+      email: authUser?.user?.email || 'No email found'
+    };
 
     // Get user's content statistics
     const { count: tracksCount } = await supabase
@@ -88,7 +96,7 @@ export async function GET(
       .order('created_at', { ascending: false });
 
     const userDetails = {
-      ...user,
+      ...userWithEmail,
       statistics: {
         tracks_count: tracksCount || 0,
         events_count: eventsCount || 0,
