@@ -321,6 +321,68 @@ export class AudioUploadService {
     }
   }
 
+  // Copyright checking methods
+  async checkCopyright(data: {
+    title: string;
+    artist: string;
+    album?: string;
+    recordLabel?: string;
+    userId: string;
+  }): Promise<{
+    allowed: boolean;
+    risk: 'low' | 'medium' | 'high';
+    reason?: string;
+    requiresReview: boolean;
+  }> {
+    try {
+      const response = await fetch('/api/copyright/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        console.error('Copyright check API error:', response.status);
+        // If API fails, allow upload but flag for review
+        return {
+          allowed: true,
+          risk: 'medium',
+          reason: 'Copyright check service unavailable',
+          requiresReview: true
+        };
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Copyright check error:', error);
+      // If check fails, allow upload but flag for review
+      return {
+        allowed: true,
+        risk: 'medium',
+        reason: 'Copyright check failed',
+        requiresReview: true
+      };
+    }
+  }
+
+  async flagContentForReview(title: string, reason: string, risk: 'low' | 'medium' | 'high') {
+    try {
+      await fetch('/api/copyright/flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackId: 'pending', // Will be updated after upload
+          reason: reason,
+          risk: risk,
+          flaggedBy: 'system'
+        })
+      });
+    } catch (error) {
+      console.error('Failed to flag content for review:', error);
+    }
+  }
+
   // Complete upload process with copyright checking and quality processing
   async uploadTrack(
     trackData: TrackUploadData,
@@ -329,6 +391,50 @@ export class AudioUploadService {
     onProgress?: (type: 'audio' | 'cover' | 'processing', progress: UploadProgress) => void
   ): Promise<{ success: boolean; trackId?: string; error?: any }> {
     try {
+      // Copyright check before processing
+      console.log('🔍 Performing copyright check...');
+      onProgress?.('processing', {
+        stage: 'copyright_check',
+        progress: 0,
+        message: 'Checking for copyright violations...',
+        canCancel: false
+      });
+
+      const copyrightCheck = await this.checkCopyright({
+        title: trackData.title,
+        artist: trackData.artistName,
+        album: trackData.album,
+        recordLabel: trackData.recordLabel,
+        userId: userId
+      });
+
+      if (!copyrightCheck.allowed) {
+        console.warn('⚠️ Copyright check failed:', copyrightCheck.reason);
+        return {
+          success: false,
+          error: {
+            type: 'copyright_violation',
+            message: copyrightCheck.reason,
+            risk: copyrightCheck.risk,
+            requiresReview: copyrightCheck.requiresReview
+          }
+        };
+      }
+
+      if (copyrightCheck.requiresReview) {
+        console.log('📋 Content flagged for review:', copyrightCheck.reason);
+        // Flag content for review but allow upload to proceed
+        await this.flagContentForReview(trackData.title, copyrightCheck.reason, copyrightCheck.risk);
+      }
+
+      console.log('✅ Copyright check passed');
+      onProgress?.('processing', {
+        stage: 'copyright_check',
+        progress: 100,
+        message: 'Copyright check completed',
+        canCancel: false
+      });
+
       let processedFile = trackData.audioFile.file;
       
       // Process audio for quality if settings provided

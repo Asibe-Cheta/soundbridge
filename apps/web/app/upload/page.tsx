@@ -76,6 +76,9 @@ export default function UnifiedUploadPage() {
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<'success' | 'error' | null>(null);
+  
+  // Copyright agreement state
+  const [agreedToCopyright, setAgreedToCopyright] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -176,6 +179,7 @@ export default function UnifiedUploadPage() {
     if (contentType === 'music' && !artistName.trim()) return 'Artist name is required';
     if (contentType === 'podcast' && !episodeNumber.trim()) return 'Episode number is required';
     if (!uploadState.audioFile) return 'Audio file is required';
+    if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
     return null;
   };
 
@@ -815,6 +819,42 @@ export default function UnifiedUploadPage() {
             />
           </div>
 
+          {/* Copyright Agreement */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+              <Shield className="h-5 w-5 mr-2 text-blue-600" />
+              Copyright Agreement
+            </h3>
+            
+            <div className="flex items-start space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
+              <input
+                type="checkbox"
+                id="copyright-agreement"
+                checked={agreedToCopyright}
+                onChange={(e) => setAgreedToCopyright(e.target.checked)}
+                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                required
+              />
+              <label htmlFor="copyright-agreement" className="text-sm text-gray-700 dark:text-gray-300">
+                I confirm that I own all rights to this music and it does not infringe any 
+                third-party copyrights. I understand that uploading copyrighted content may 
+                result in account suspension or termination.{' '}
+                <Link href="/copyright-policy" className="text-blue-600 hover:text-blue-800 underline">
+                  Read our Copyright Policy
+                </Link>
+              </label>
+            </div>
+            
+            {!agreedToCopyright && (
+              <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border-l-4 border-red-500">
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  <AlertTriangle className="w-4 h-4 inline mr-1" />
+                  You must agree to the copyright terms to upload content.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="flex justify-between items-center pt-6">
             <button
@@ -826,7 +866,7 @@ export default function UnifiedUploadPage() {
 
             <button
               onClick={handlePublish}
-              disabled={uploadState.isUploading || isValidating}
+              disabled={uploadState.isUploading || isValidating || !agreedToCopyright}
               className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {uploadState.isUploading ? (
