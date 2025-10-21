@@ -47,7 +47,6 @@ export async function GET(request: NextRequest) {
       .from('audio_tracks')
       .select('created_at')
       .gte('created_at', startDate.toISOString())
-      .is('deleted_at', null)
       .order('created_at', { ascending: true });
 
     if (trackUploadsError) {
@@ -59,7 +58,6 @@ export async function GET(request: NextRequest) {
       .from('events')
       .select('created_at')
       .gte('created_at', startDate.toISOString())
-      .is('deleted_at', null)
       .order('created_at', { ascending: true });
 
     if (eventCreationsError) {

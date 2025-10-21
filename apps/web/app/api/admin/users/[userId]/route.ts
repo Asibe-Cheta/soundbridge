@@ -53,14 +53,12 @@ export async function GET(
     const { count: tracksCount } = await supabase
       .from('audio_tracks')
       .select('*', { count: 'exact', head: true })
-      .eq('creator_id', params.userId)
-      .is('deleted_at', null);
+      .eq('creator_id', params.userId);
 
     const { count: eventsCount } = await supabase
       .from('events')
       .select('*', { count: 'exact', head: true })
-      .eq('organizer_id', params.userId)
-      .is('deleted_at', null);
+      .eq('organizer_id', params.userId);
 
     const { count: messagesCount } = await supabase
       .from('messages')
@@ -72,7 +70,6 @@ export async function GET(
       .from('audio_tracks')
       .select('id, title, created_at, play_count, likes_count')
       .eq('creator_id', params.userId)
-      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -80,7 +77,6 @@ export async function GET(
       .from('events')
       .select('id, title, event_date, current_attendees, max_attendees')
       .eq('organizer_id', params.userId)
-      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(5);
 

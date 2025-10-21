@@ -88,8 +88,7 @@ export async function GET(request: NextRequest) {
     // Get total tracks
     const { count: totalTracks, error: tracksError } = await supabase
       .from('audio_tracks')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null);
+      .select('*', { count: 'exact', head: true });
 
     if (tracksError) {
       console.error('❌ Error fetching total tracks:', tracksError);
@@ -98,8 +97,7 @@ export async function GET(request: NextRequest) {
     // Get total events
     const { count: totalEvents, error: eventsError } = await supabase
       .from('events')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null);
+      .select('*', { count: 'exact', head: true });
 
     if (eventsError) {
       console.error('❌ Error fetching total events:', eventsError);
