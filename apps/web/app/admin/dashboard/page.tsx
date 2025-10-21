@@ -253,12 +253,20 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         const data = await response.json();
-        setUserDetails(data.data);
+        if (data.success) {
+          setUserDetails(data.data);
+        } else {
+          console.error('API returned error:', data.error);
+          alert('Failed to load user details: ' + data.error);
+        }
       } else {
-        console.error('Failed to load user details');
+        const errorData = await response.json();
+        console.error('Failed to load user details:', errorData);
+        alert('Failed to load user details: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error loading user details:', error);
+      alert('Network error loading user details');
     } finally {
       setUserDetailsLoading(false);
     }
@@ -301,7 +309,13 @@ export default function AdminDashboard() {
 
   const handleBanUser = (user: any) => {
     setSelectedUser(user);
-    setBanModalOpen(true);
+    if (user.banned_at) {
+      // User is already banned, so this is an unban action
+      handleUserAction('unban_user', user.id);
+    } else {
+      // User is not banned, so this is a ban action
+      setBanModalOpen(true);
+    }
   };
 
   const confirmBanUser = async () => {
@@ -1174,13 +1188,17 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
                       >
                         Ban
                       </button>
-                    ) : (
+                    ) : user.banned_at ? (
                       <button 
                         onClick={() => onBanUser(user)}
                         className={`${theme === 'dark' ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-900'}`}
                       >
                         Unban
                       </button>
+                    ) : (
+                      <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Inactive
+                      </span>
                     )}
                   </td>
                 </tr>

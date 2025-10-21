@@ -28,15 +28,21 @@ export async function GET(
         followers_count,
         following_count,
         banned_at,
-        ban_reason,
-        email_verified,
-        phone_verified
+        ban_reason
       `)
       .eq('id', params.userId)
       .single();
 
     if (userError) {
       console.error('❌ Error fetching user details:', userError);
+      return NextResponse.json(
+        { success: false, error: 'User not found', details: userError.message },
+        { status: 404 }
+      );
+    }
+
+    if (!user) {
+      console.error('❌ No user found with ID:', params.userId);
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
