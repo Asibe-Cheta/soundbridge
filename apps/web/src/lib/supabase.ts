@@ -60,6 +60,7 @@ export const createBrowserClient = () => {
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
+        captcha: false, // Disable captcha to match mobile app experience
       },
     });
   } catch (error) {
@@ -204,6 +205,7 @@ const getGlobalClient = () => {
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
+        captcha: false, // Disable captcha to match mobile app experience
         storage: {
           key: 'soundbridge-auth'
         }
