@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       .select(`
         id,
         event_id,
-        buyer_id,
+        user_id,
         buyer_email,
         buyer_name,
         stripe_payment_intent_id,

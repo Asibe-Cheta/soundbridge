@@ -96,7 +96,7 @@ CREATE POLICY "Organizers can cancel their own events"
 CREATE POLICY "Users can view their own refund status"
   ON ticket_purchases
   FOR SELECT
-  USING (auth.uid() = buyer_id);
+  USING (auth.uid() = user_id);
 
 -- Organizers can view refund statistics for their events
 CREATE POLICY "Organizers can view refund statistics"
