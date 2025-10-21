@@ -101,6 +101,9 @@ export default function UnifiedUploadPage() {
       loadUserTier();
     }
     
+    // Load genres from API
+    loadGenres();
+    
     return () => window.removeEventListener('resize', handleResize);
   }, [user]);
 
@@ -115,6 +118,38 @@ export default function UnifiedUploadPage() {
     } catch (error) {
       console.error('Failed to load user tier:', error);
       setUserTier('free');
+    }
+  };
+
+  // Load genres from API to match onboarding
+  const loadGenres = async () => {
+    try {
+      setLoadingGenres(true);
+      
+      // Load music genres
+      const musicResponse = await fetch('/api/genres?category=music&active=true');
+      if (musicResponse.ok) {
+        const musicData = await musicResponse.json();
+        if (musicData.success) {
+          setGenres(musicData.genres.map((g: any) => g.name));
+        }
+      }
+      
+      // Load podcast categories
+      const podcastResponse = await fetch('/api/genres?category=podcast&active=true');
+      if (podcastResponse.ok) {
+        const podcastData = await podcastResponse.json();
+        if (podcastData.success) {
+          setPodcastCategories(podcastData.genres.map((g: any) => g.name));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load genres:', error);
+      // Fallback to basic genres if API fails
+      setGenres(['Afrobeats', 'Gospel', 'Hip Hop', 'Pop', 'R&B', 'Rock', 'Jazz', 'Classical', 'Country', 'Electronic', 'Reggae', 'Blues', 'Folk', 'Alternative', 'Other']);
+      setPodcastCategories(['Arts & Culture', 'Business', 'Comedy', 'Education', 'Entertainment', 'Health & Fitness', 'Music', 'News & Politics', 'Religion & Spirituality', 'Science', 'Sports', 'Technology', 'True Crime', 'Other']);
+    } finally {
+      setLoadingGenres(false);
     }
   };
 
@@ -393,13 +428,10 @@ export default function UnifiedUploadPage() {
     }
   ];
 
-  const genres = [
-    'Afrobeats', 'Alternative', 'Ambient', 'Blues', 'Classical', 'Country', 'Dance', 'Electronic', 'Folk', 'Funk', 'Gospel', 'Hip Hop', 'House', 'Indie', 'Jazz', 'Latin', 'Metal', 'Pop', 'R&B', 'Rap', 'Reggae', 'Rock', 'Soul', 'Techno', 'Trap', 'World Music', 'Other'
-  ];
-
-  const podcastCategories = [
-    'Arts & Culture', 'Business', 'Comedy', 'Education', 'Entertainment', 'Fashion & Beauty', 'Food & Drink', 'Health & Fitness', 'History', 'Kids & Family', 'Music', 'News & Politics', 'Religion & Spirituality', 'Science', 'Society & Culture', 'Sports', 'Technology', 'True Crime', 'TV & Film', 'Other'
-  ];
+  // Dynamic genre loading from API
+  const [genres, setGenres] = useState<string[]>([]);
+  const [podcastCategories, setPodcastCategories] = useState<string[]>([]);
+  const [loadingGenres, setLoadingGenres] = useState(false);
 
   if (loading) {
     return (
@@ -632,8 +664,11 @@ export default function UnifiedUploadPage() {
                       onChange={(e) => setGenre(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
+                      disabled={loadingGenres}
                     >
-                      <option value="">Select a genre</option>
+                      <option value="">
+                        {loadingGenres ? 'Loading genres...' : 'Select a genre'}
+                      </option>
                       {genres.map((g) => (
                         <option key={g} value={g}>{g}</option>
                       ))}
@@ -704,8 +739,11 @@ export default function UnifiedUploadPage() {
                       onChange={(e) => setPodcastCategory(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
+                      disabled={loadingGenres}
                     >
-                      <option value="">Select a category</option>
+                      <option value="">
+                        {loadingGenres ? 'Loading categories...' : 'Select a category'}
+                      </option>
                       {podcastCategories.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
