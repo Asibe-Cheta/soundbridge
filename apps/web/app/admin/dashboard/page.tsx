@@ -85,6 +85,13 @@ export default function AdminDashboard() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [settingsData, setSettingsData] = useState<any>(null);
   const [tabLoading, setTabLoading] = useState<{[key: string]: boolean}>({});
+  
+  // User management state
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [banModalOpen, setBanModalOpen] = useState(false);
+  const [banReason, setBanReason] = useState('');
 
   // Check if user is admin
   useEffect(() => {
@@ -231,6 +238,75 @@ export default function AdminDashboard() {
       console.error('Error loading settings data:', error);
     } finally {
       setTabLoading(prev => ({ ...prev, settings: false }));
+    }
+  };
+
+  const loadUserDetails = async (userId: string) => {
+    try {
+      setUserDetailsLoading(true);
+      
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserDetails(data.data);
+      } else {
+        console.error('Failed to load user details');
+      }
+    } catch (error) {
+      console.error('Error loading user details:', error);
+    } finally {
+      setUserDetailsLoading(false);
+    }
+  };
+
+  const handleUserAction = async (action: string, userId: string, data?: any) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action, ...data })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('User action completed:', result.message);
+        
+        // Refresh users data
+        await loadUsersData();
+        
+        // Close modals
+        setSelectedUser(null);
+        setBanModalOpen(false);
+        setBanReason('');
+        
+        return result;
+      } else {
+        console.error('Failed to perform user action');
+      }
+    } catch (error) {
+      console.error('Error performing user action:', error);
+    }
+  };
+
+  const handleViewUser = async (user: any) => {
+    setSelectedUser(user);
+    await loadUserDetails(user.id);
+  };
+
+  const handleBanUser = (user: any) => {
+    setSelectedUser(user);
+    setBanModalOpen(true);
+  };
+
+  const confirmBanUser = async () => {
+    if (selectedUser && banReason.trim()) {
+      await handleUserAction('ban_user', selectedUser.id, { reason: banReason });
     }
   };
 
@@ -389,7 +465,7 @@ export default function AdminDashboard() {
         {/* Tab Content */}
         {activeTab === 'overview' && <OverviewTab theme={theme} data={overviewData} loading={tabLoading.overview} />}
         {activeTab === 'content' && <ContentReviewTab theme={theme} queueItems={queueItems} loading={loading} onItemSelect={setSelectedItem} />}
-        {activeTab === 'users' && <UserManagementTab theme={theme} data={usersData} loading={tabLoading.users} onRefresh={loadUsersData} />}
+        {activeTab === 'users' && <UserManagementTab theme={theme} data={usersData} loading={tabLoading.users} onRefresh={loadUsersData} onViewUser={handleViewUser} onBanUser={handleBanUser} />}
         {activeTab === 'analytics' && <AnalyticsTab theme={theme} data={analyticsData} loading={tabLoading.analytics} onRefresh={loadAnalyticsData} />}
         {activeTab === 'settings' && <SettingsTab theme={theme} data={settingsData} loading={tabLoading.settings} onRefresh={loadSettingsData} />}
 
@@ -403,6 +479,309 @@ export default function AdminDashboard() {
           onAction={handleAdminAction}
         />
       )}
+
+      {/* User Detail Modal */}
+      {selectedUser && userDetails && (
+        <UserDetailModal
+          user={userDetails}
+          loading={userDetailsLoading}
+          onClose={() => {
+            setSelectedUser(null);
+            setUserDetails(null);
+          }}
+          onAction={handleUserAction}
+        />
+      )}
+
+      {/* Ban User Modal */}
+      {banModalOpen && selectedUser && (
+        <BanUserModal
+          user={selectedUser}
+          onClose={() => {
+            setBanModalOpen(false);
+            setSelectedUser(null);
+            setBanReason('');
+          }}
+          onConfirm={confirmBanUser}
+          reason={banReason}
+          onReasonChange={setBanReason}
+        />
+      )}
+    </div>
+  );
+}
+
+// User Detail Modal Component
+function UserDetailModal({ 
+  user, 
+  loading, 
+  onClose, 
+  onAction 
+}: { 
+  user: any; 
+  loading: boolean; 
+  onClose: () => void; 
+  onAction: (action: string, userId: string, data?: any) => void;
+}) {
+  const { theme } = useTheme();
+
+  const handleAction = async (action: string, data?: any) => {
+    await onAction(action, user.id, data);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            User Details
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Loading user details...</p>
+          </div>
+        ) : (
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* User Information */}
+              <div>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>User Information</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    {user.avatar_url ? (
+                      <img className="h-16 w-16 rounded-full" src={user.avatar_url} alt="" />
+                    ) : (
+                      <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
+                        <User className="h-8 w-8 text-gray-600" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className={`text-lg font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {user.display_name || user.username}
+                      </h4>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>@{user.username}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Email</p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.email}</p>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Role</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        user.role === 'creator' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.role || 'listener'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Status</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {user.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Joined</p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {user.bio && (
+                    <div>
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Bio</p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.bio}</p>
+                    </div>
+                  )}
+
+                  {user.banned_at && (
+                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>Banned</p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-red-300' : 'text-red-800'}`}>
+                        Reason: {user.ban_reason}
+                      </p>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
+                        Banned on: {new Date(user.banned_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Statistics and Activity */}
+              <div>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Statistics</h3>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Followers</p>
+                    <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {user.followers_count || 0}
+                    </p>
+                  </div>
+                  <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Following</p>
+                    <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {user.following_count || 0}
+                    </p>
+                  </div>
+                  <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Tracks</p>
+                    <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {user.statistics?.tracks_count || 0}
+                    </p>
+                  </div>
+                  <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Events</p>
+                    <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {user.statistics?.events_count || 0}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Recent Activity */}
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Recent Tracks</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {user.recent_activity?.tracks?.map((track: any) => (
+                    <div key={track.id} className={`p-3 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {track.title}
+                      </p>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {track.play_count || 0} plays • {new Date(track.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                Close
+              </button>
+              {user.is_active ? (
+                <button
+                  onClick={() => handleAction('ban_user', { reason: 'Administrative action' })}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Ban User
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleAction('unban_user')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Unban User
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Ban User Modal Component
+function BanUserModal({ 
+  user, 
+  onClose, 
+  onConfirm, 
+  reason, 
+  onReasonChange 
+}: { 
+  user: any; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  reason: string; 
+  onReasonChange: (reason: string) => void;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {user.is_active ? 'Ban User' : 'Unban User'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          <div className="mb-4">
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+              User: <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {user.display_name || user.username}
+              </span>
+            </p>
+          </div>
+
+          {user.is_active && (
+            <div className="mb-4">
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                Reason for ban
+              </label>
+              <textarea
+                value={reason}
+                onChange={(e) => onReasonChange(e.target.value)}
+                placeholder="Enter reason for banning this user..."
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                }`}
+                rows={3}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={user.is_active && !reason.trim()}
+              className={`px-4 py-2 rounded-lg ${
+                user.is_active 
+                  ? 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              {user.is_active ? 'Ban User' : 'Unban User'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -644,11 +1023,13 @@ function ContentReviewTab({ theme, queueItems, loading, onItemSelect }: {
   );
 }
 
-function UserManagementTab({ theme, data, loading, onRefresh }: { 
+function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanUser }: { 
   theme: string; 
   data: any; 
   loading: boolean; 
   onRefresh: () => void;
+  onViewUser: (user: any) => void;
+  onBanUser: (user: any) => void;
 }) {
   if (loading) {
     return (
@@ -780,12 +1161,27 @@ function UserManagementTab({ theme, data, loading, onRefresh }: {
                     {new Date(user.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className={`${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'} mr-3`}>
+                    <button 
+                      onClick={() => onViewUser(user)}
+                      className={`${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'} mr-3`}
+                    >
                       View
                     </button>
-                    <button className={`${theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}`}>
-                      Ban
-                    </button>
+                    {user.is_active ? (
+                      <button 
+                        onClick={() => onBanUser(user)}
+                        className={`${theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}`}
+                      >
+                        Ban
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => onBanUser(user)}
+                        className={`${theme === 'dark' ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-900'}`}
+                      >
+                        Unban
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
