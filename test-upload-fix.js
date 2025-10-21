@@ -1,72 +1,90 @@
-// Test script to verify upload functionality after storage fix
-// Run this in the browser console after applying the SQL fix
+// Test script to verify upload functionality
+const { createClient } = require('@supabase/supabase-js');
 
-async function testUploadFunctionality() {
-    console.log('🔍 Testing upload functionality...');
-    
-    try {
-        // Test 1: Check if user is authenticated
-        const authResponse = await fetch('/api/auth/user');
-        const authData = await authResponse.json();
-        
-        if (!authData.user) {
-            console.error('❌ User not authenticated. Please log in first.');
-            return;
-        }
-        
-        console.log('✅ User authenticated:', authData.user.email);
-        
-        // Test 2: Test upload API endpoint (without actual file)
-        const testUploadData = {
-            title: 'Test Track',
-            artistName: 'Test Artist',
-            description: 'Test description',
-            genre: 'Test',
-            tags: 'test, upload',
-            privacy: 'public',
-            publishOption: 'draft',
-            audioFileUrl: 'https://example.com/test.mp3', // Mock URL
-            coverArtUrl: 'https://example.com/test.jpg', // Mock URL
-            duration: 180,
-            lyrics: 'Test lyrics for upload',
-            lyricsLanguage: 'en'
-        };
-        
-        console.log('🔍 Testing upload API with mock data...');
-        
-        const uploadResponse = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(testUploadData)
-        });
-        
-        const uploadResult = await uploadResponse.json();
-        
-        if (uploadResponse.ok) {
-            console.log('✅ Upload API is working correctly');
-            console.log('📝 Response:', uploadResult);
-        } else {
-            console.error('❌ Upload API failed:', uploadResult);
-        }
-        
-        // Test 3: Check storage bucket accessibility
-        console.log('🔍 Testing storage bucket accessibility...');
-        
-        const storageTestUrl = 'https://aunxdbqukbxyyiusaeqi.supabase.co/storage/v1/object/public/audio-tracks/test';
-        
-        try {
-            const storageResponse = await fetch(storageTestUrl, { method: 'HEAD' });
-            console.log('✅ Storage bucket is accessible (status:', storageResponse.status, ')');
-        } catch (error) {
-            console.log('⚠️ Storage bucket test failed (expected for non-existent file):', error.message);
-        }
-        
-    } catch (error) {
-        console.error('❌ Test failed:', error);
+async function testUploadSetup() {
+  console.log('🧪 Testing upload setup...');
+  
+  // Create Supabase client
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  
+  try {
+    // 1. Test authentication
+    console.log('1️⃣ Testing authentication...');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('❌ Auth error:', authError.message);
+      return;
     }
+    if (!user) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    console.log('✅ User authenticated:', user.id);
+    
+    // 2. Test storage buckets
+    console.log('2️⃣ Testing storage buckets...');
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    if (bucketsError) {
+      console.error('❌ Buckets error:', bucketsError.message);
+      return;
+    }
+    
+    const audioBucket = buckets.find(b => b.id === 'audio-tracks');
+    const coverBucket = buckets.find(b => b.id === 'cover-art');
+    
+    console.log('📦 Audio bucket:', audioBucket ? '✅ Found' : '❌ Missing');
+    console.log('📦 Cover bucket:', coverBucket ? '✅ Found' : '❌ Missing');
+    
+    if (!audioBucket || !coverBucket) {
+      console.error('❌ Required storage buckets missing');
+      return;
+    }
+    
+    // 3. Test file upload (small test file)
+    console.log('3️⃣ Testing file upload...');
+    const testFile = new File(['test audio content'], 'test.mp3', { type: 'audio/mpeg' });
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('audio-tracks')
+      .upload(`${user.id}/test_${Date.now()}.mp3`, testFile);
+    
+    if (uploadError) {
+      console.error('❌ Upload error:', uploadError.message);
+      return;
+    }
+    
+    console.log('✅ Test upload successful:', uploadData.path);
+    
+    // 4. Test database table
+    console.log('4️⃣ Testing database table...');
+    const { data: tracks, error: tracksError } = await supabase
+      .from('audio_tracks')
+      .select('id')
+      .limit(1);
+    
+    if (tracksError) {
+      console.error('❌ Database error:', tracksError.message);
+      return;
+    }
+    
+    console.log('✅ Database table accessible');
+    
+    // 5. Clean up test file
+    console.log('5️⃣ Cleaning up test file...');
+    await supabase.storage
+      .from('audio-tracks')
+      .remove([uploadData.path]);
+    
+    console.log('✅ Test file cleaned up');
+    console.log('🎉 All tests passed! Upload should work.');
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+  }
 }
 
 // Run the test
-testUploadFunctionality();
+testUploadSetup();

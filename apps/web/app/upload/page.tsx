@@ -182,15 +182,29 @@ export default function UnifiedUploadPage() {
   };
 
   const handleFileUpload = (file: File) => {
+    console.log('🎵 Processing file upload:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      user: user?.id
+    });
+    
     uploadActions.setAudioFile(file);
     
     // Auto-fill title from filename
     const fileName = file.name.replace(/\.[^/.]+$/, '');
     setTitle(fileName);
+    
+    console.log('✅ File set in upload state, title auto-filled:', fileName);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      console.log('🎵 File selected:', {
+        name: e.target.files[0].name,
+        size: e.target.files[0].size,
+        type: e.target.files[0].type
+      });
       handleFileUpload(e.target.files[0]);
     }
   };
@@ -319,12 +333,23 @@ export default function UnifiedUploadPage() {
 
   // Handle publish with validation
   const handlePublish = async () => {
+    console.log('🚀 Publish button clicked');
+    console.log('📊 Current state:', {
+      user: user?.id,
+      audioFile: uploadState.audioFile?.name,
+      title: title,
+      contentType: contentType,
+      agreedToCopyright: agreedToCopyright
+    });
+    
     const validationError = validateForm();
     if (validationError) {
+      console.error('❌ Validation failed:', validationError);
       alert(validationError);
       return;
     }
 
+    console.log('✅ Validation passed');
     // Show education modal first
     setShowEducationModal(true);
   };
