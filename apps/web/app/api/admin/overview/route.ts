@@ -113,16 +113,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Get revenue data (from ticket purchases)
-    const { data: revenueData, error: revenueError } = await supabase
-      .from('ticket_purchases')
-      .select('amount_paid')
-      .eq('status', 'completed');
+    let totalRevenue = 0;
+    try {
+      const { data: revenueData, error: revenueError } = await supabase
+        .from('ticket_purchases')
+        .select('amount_paid')
+        .eq('status', 'completed');
 
-    if (revenueError) {
-      console.error('❌ Error fetching revenue data:', revenueError);
+      if (revenueError) {
+        console.error('❌ Error fetching revenue data:', revenueError);
+      } else {
+        totalRevenue = revenueData?.reduce((sum, purchase) => sum + (purchase.amount_paid || 0), 0) || 0;
+      }
+    } catch (error) {
+      console.error('❌ Error fetching revenue data:', error);
     }
-
-    const totalRevenue = revenueData?.reduce((sum, purchase) => sum + (purchase.amount_paid || 0), 0) || 0;
 
     const overviewData = {
       statistics: {
