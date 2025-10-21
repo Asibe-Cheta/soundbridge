@@ -185,7 +185,9 @@ export default function UnifiedUploadPage() {
   const validateForm = () => {
     if (!title.trim()) return 'Title is required';
     if (contentType === 'music' && !artistName.trim()) return 'Artist name is required';
+    if (contentType === 'music' && !genre.trim()) return 'Genre selection is required for music tracks';
     if (contentType === 'podcast' && !episodeNumber.trim()) return 'Episode number is required';
+    if (contentType === 'podcast' && !podcastCategory.trim()) return 'Category selection is required for podcast episodes';
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
     return null;
@@ -392,11 +394,11 @@ export default function UnifiedUploadPage() {
   ];
 
   const genres = [
-    'Electronic', 'Hip Hop', 'Rock', 'Pop', 'Jazz', 'Classical', 'Country', 'R&B', 'Reggae', 'Blues', 'Folk', 'Alternative'
+    'Afrobeats', 'Alternative', 'Ambient', 'Blues', 'Classical', 'Country', 'Dance', 'Electronic', 'Folk', 'Funk', 'Gospel', 'Hip Hop', 'House', 'Indie', 'Jazz', 'Latin', 'Metal', 'Pop', 'R&B', 'Rap', 'Reggae', 'Rock', 'Soul', 'Techno', 'Trap', 'World Music', 'Other'
   ];
 
   const podcastCategories = [
-    'Technology', 'Business', 'Education', 'Entertainment', 'News', 'Sports', 'Health', 'Science', 'Arts', 'Comedy', 'True Crime', 'History'
+    'Arts & Culture', 'Business', 'Comedy', 'Education', 'Entertainment', 'Fashion & Beauty', 'Food & Drink', 'Health & Fitness', 'History', 'Kids & Family', 'Music', 'News & Politics', 'Religion & Spirituality', 'Science', 'Society & Culture', 'Sports', 'Technology', 'True Crime', 'TV & Film', 'Other'
   ];
 
   if (loading) {
@@ -623,18 +625,22 @@ export default function UnifiedUploadPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Genre
+                      Genre *
                     </label>
                     <select
                       value={genre}
                       onChange={(e) => setGenre(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
                     >
-                      <option value="">Select genre</option>
+                      <option value="">Select a genre</option>
                       {genres.map((g) => (
                         <option key={g} value={g}>{g}</option>
                       ))}
                     </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Choose the primary genre that best describes your music
+                    </p>
                   </div>
 
                   <div>
@@ -691,18 +697,22 @@ export default function UnifiedUploadPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Category
+                      Category *
                     </label>
                     <select
                       value={podcastCategory}
                       onChange={(e) => setPodcastCategory(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
                     >
-                      <option value="">Select category</option>
+                      <option value="">Select a category</option>
                       {podcastCategories.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Choose the category that best fits your podcast content
+                    </p>
                   </div>
                 </>
               )}
