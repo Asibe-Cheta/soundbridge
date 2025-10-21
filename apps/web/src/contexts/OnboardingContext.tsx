@@ -103,6 +103,13 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
           }));
         } else {
           console.log('✅ User onboarding already completed');
+          // Ensure onboarding is hidden if already completed
+          setOnboardingState(prev => ({
+            ...prev,
+            isOnboardingActive: false,
+            showOnboarding: false,
+            currentStep: 'completed',
+          }));
         }
         return true; // Success
       } else {
@@ -137,13 +144,8 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     }
     
     console.error('❌ Failed to check onboarding status after all retries');
-    // If all retries failed, assume user needs onboarding as fallback
-    setOnboardingState(prev => ({
-      ...prev,
-      isOnboardingActive: true,
-      showOnboarding: true,
-      currentStep: 'role_selection',
-    }));
+    // Don't show onboarding modal if authentication fails - let user try to log in again
+    console.log('🔒 Authentication failed - not showing onboarding modal');
   };
 
   const setCurrentStep = (step: OnboardingStep) => {

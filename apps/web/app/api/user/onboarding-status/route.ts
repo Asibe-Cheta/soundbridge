@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
 // CORS headers for mobile app
@@ -51,7 +50,22 @@ export async function GET(request: NextRequest) {
       authError = error;
     } else {
       // Use cookie-based auth (web app)
-      supabase = createRouteHandlerClient({ cookies });
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false,
+          },
+          global: {
+            headers: {
+              'Cookie': cookies().toString(),
+            },
+          },
+        }
+      );
       const { data, error } = await supabase.auth.getUser();
       user = data.user;
       authError = error;
