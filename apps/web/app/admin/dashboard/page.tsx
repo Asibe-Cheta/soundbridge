@@ -78,14 +78,42 @@ export default function AdminDashboard() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'users' | 'analytics' | 'settings'>('overview');
+  
+  // New state for tab-specific data
+  const [overviewData, setOverviewData] = useState<any>(null);
+  const [usersData, setUsersData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [settingsData, setSettingsData] = useState<any>(null);
+  const [tabLoading, setTabLoading] = useState<{[key: string]: boolean}>({});
 
   // Check if user is admin
   useEffect(() => {
     if (user) {
       // You would check user role here
       loadReviewQueue();
+      loadOverviewData();
     }
   }, [user]);
+
+  // Load data when tab changes
+  useEffect(() => {
+    if (user) {
+      switch (activeTab) {
+        case 'overview':
+          if (!overviewData) loadOverviewData();
+          break;
+        case 'users':
+          if (!usersData) loadUsersData();
+          break;
+        case 'analytics':
+          if (!analyticsData) loadAnalyticsData();
+          break;
+        case 'settings':
+          if (!settingsData) loadSettingsData();
+          break;
+      }
+    }
+  }, [activeTab, user]);
 
   const loadReviewQueue = async () => {
     try {
@@ -111,6 +139,98 @@ export default function AdminDashboard() {
       console.error('Error loading review queue:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOverviewData = async () => {
+    try {
+      setTabLoading(prev => ({ ...prev, overview: true }));
+      
+      const response = await fetch('/api/admin/overview', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setOverviewData(data.data);
+      } else {
+        console.error('Failed to load overview data');
+      }
+    } catch (error) {
+      console.error('Error loading overview data:', error);
+    } finally {
+      setTabLoading(prev => ({ ...prev, overview: false }));
+    }
+  };
+
+  const loadUsersData = async () => {
+    try {
+      setTabLoading(prev => ({ ...prev, users: true }));
+      
+      const response = await fetch('/api/admin/users', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUsersData(data.data);
+      } else {
+        console.error('Failed to load users data');
+      }
+    } catch (error) {
+      console.error('Error loading users data:', error);
+    } finally {
+      setTabLoading(prev => ({ ...prev, users: false }));
+    }
+  };
+
+  const loadAnalyticsData = async () => {
+    try {
+      setTabLoading(prev => ({ ...prev, analytics: true }));
+      
+      const response = await fetch('/api/admin/analytics?period=30d', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAnalyticsData(data.data);
+      } else {
+        console.error('Failed to load analytics data');
+      }
+    } catch (error) {
+      console.error('Error loading analytics data:', error);
+    } finally {
+      setTabLoading(prev => ({ ...prev, analytics: false }));
+    }
+  };
+
+  const loadSettingsData = async () => {
+    try {
+      setTabLoading(prev => ({ ...prev, settings: true }));
+      
+      const response = await fetch('/api/admin/settings', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSettingsData(data.data);
+      } else {
+        console.error('Failed to load settings data');
+      }
+    } catch (error) {
+      console.error('Error loading settings data:', error);
+    } finally {
+      setTabLoading(prev => ({ ...prev, settings: false }));
     }
   };
 
@@ -267,11 +387,11 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Content */}
-        {activeTab === 'overview' && <OverviewTab theme={theme} statistics={statistics} />}
+        {activeTab === 'overview' && <OverviewTab theme={theme} data={overviewData} loading={tabLoading.overview} />}
         {activeTab === 'content' && <ContentReviewTab theme={theme} queueItems={queueItems} loading={loading} onItemSelect={setSelectedItem} />}
-        {activeTab === 'users' && <UserManagementTab theme={theme} />}
-        {activeTab === 'analytics' && <AnalyticsTab theme={theme} />}
-        {activeTab === 'settings' && <SettingsTab theme={theme} />}
+        {activeTab === 'users' && <UserManagementTab theme={theme} data={usersData} loading={tabLoading.users} onRefresh={loadUsersData} />}
+        {activeTab === 'analytics' && <AnalyticsTab theme={theme} data={analyticsData} loading={tabLoading.analytics} onRefresh={loadAnalyticsData} />}
+        {activeTab === 'settings' && <SettingsTab theme={theme} data={settingsData} loading={tabLoading.settings} onRefresh={loadSettingsData} />}
 
       </div>
 
@@ -288,61 +408,129 @@ export default function AdminDashboard() {
 }
 
 // Tab Components
-function OverviewTab({ theme, statistics }: { theme: string; statistics: QueueStatistics | null }) {
+function OverviewTab({ theme, data, loading }: { theme: string; data: any; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-600">Loading overview data...</span>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No overview data available</p>
+      </div>
+    );
+  }
+
+  const { statistics } = data;
+
   return (
     <div className="space-y-6">
       {/* Statistics Cards */}
-      {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
-            <div className="flex items-center">
-              <div className={`p-2 ${theme === 'dark' ? 'bg-yellow-900' : 'bg-yellow-100'} rounded-lg`}>
-                <Clock className={`h-6 w-6 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`} />
-              </div>
-              <div className="ml-4">
-                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Pending Items</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics.total_pending}</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-yellow-900' : 'bg-yellow-100'} rounded-lg`}>
+              <Clock className={`h-6 w-6 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`} />
             </div>
-          </div>
-
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
-            <div className="flex items-center">
-              <div className={`p-2 ${theme === 'dark' ? 'bg-red-900' : 'bg-red-100'} rounded-lg`}>
-                <AlertTriangle className={`h-6 w-6 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`} />
-              </div>
-              <div className="ml-4">
-                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Urgent Items</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics.urgent_items}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
-            <div className="flex items-center">
-              <div className={`p-2 ${theme === 'dark' ? 'bg-blue-900' : 'bg-blue-100'} rounded-lg`}>
-                <Copyright className={`h-6 w-6 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
-              </div>
-              <div className="ml-4">
-                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>DMCA Requests</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics.dmca_requests}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
-            <div className="flex items-center">
-              <div className={`p-2 ${theme === 'dark' ? 'bg-green-900' : 'bg-green-100'} rounded-lg`}>
-                <Flag className={`h-6 w-6 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
-              </div>
-              <div className="ml-4">
-                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Content Reports</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics.content_reports}</p>
-              </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Pending Items</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.total_pending || 0}</p>
             </div>
           </div>
         </div>
-      )}
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-red-900' : 'bg-red-100'} rounded-lg`}>
+              <AlertTriangle className={`h-6 w-6 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Urgent Items</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.urgent_items || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-blue-900' : 'bg-blue-100'} rounded-lg`}>
+              <Copyright className={`h-6 w-6 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>DMCA Requests</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.dmca_requests || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-green-900' : 'bg-green-100'} rounded-lg`}>
+              <Flag className={`h-6 w-6 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Content Reports</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.content_reports || 0}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-blue-900' : 'bg-blue-100'} rounded-lg`}>
+              <Users className={`h-6 w-6 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Users</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.total_users || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-green-900' : 'bg-green-100'} rounded-lg`}>
+              <UserCheck className={`h-6 w-6 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Active Users</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.active_users || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-purple-900' : 'bg-purple-100'} rounded-lg`}>
+              <Music className={`h-6 w-6 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Tracks</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.total_tracks || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-yellow-900' : 'bg-yellow-100'} rounded-lg`}>
+              <DollarSign className={`h-6 w-6 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Revenue</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>${statistics?.total_revenue || 0}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Quick Actions */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
@@ -456,18 +644,57 @@ function ContentReviewTab({ theme, queueItems, loading, onItemSelect }: {
   );
 }
 
-function UserManagementTab({ theme }: { theme: string }) {
+function UserManagementTab({ theme, data, loading, onRefresh }: { 
+  theme: string; 
+  data: any; 
+  loading: boolean; 
+  onRefresh: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-600">Loading users data...</span>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No users data available</p>
+        <button 
+          onClick={onRefresh}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
+
+  const { statistics, users, pagination } = data;
+
   return (
     <div className="space-y-6">
+      {/* Statistics */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>User Management</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>User Statistics</h3>
+          <button 
+            onClick={onRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Refresh
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
             <div className="flex items-center gap-3">
               <Users className={`h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
               <div>
                 <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Users</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>1,234</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.total_users || 0}</p>
               </div>
             </div>
           </div>
@@ -476,7 +703,7 @@ function UserManagementTab({ theme }: { theme: string }) {
               <UserCheck className={`h-5 w-5 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
               <div>
                 <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Active Users</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>987</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.active_users || 0}</p>
               </div>
             </div>
           </div>
@@ -485,28 +712,142 @@ function UserManagementTab({ theme }: { theme: string }) {
               <User className={`h-5 w-5 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
               <div>
                 <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>New This Week</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>45</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.new_users_this_week || 0}</p>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Users List */}
+      <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow overflow-hidden`}>
+        <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Recent Users</h3>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
+              <tr>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>User</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Role</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Status</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Joined</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Actions</th>
+              </tr>
+            </thead>
+            <tbody className={`${theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'} divide-y`}>
+              {users?.slice(0, 10).map((user: any) => (
+                <tr key={user.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        {user.avatar_url ? (
+                          <img className="h-10 w-10 rounded-full" src={user.avatar_url} alt="" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <User className="h-5 w-5 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <div className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          {user.display_name || user.username}
+                        </div>
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                      user.role === 'creator' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.role || 'listener'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {new Date(user.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className={`${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'} mr-3`}>
+                      View
+                    </button>
+                    <button className={`${theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}`}>
+                      Ban
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 }
 
-function AnalyticsTab({ theme }: { theme: string }) {
+function AnalyticsTab({ theme, data, loading, onRefresh }: { 
+  theme: string; 
+  data: any; 
+  loading: boolean; 
+  onRefresh: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-600">Loading analytics data...</span>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No analytics data available</p>
+        <button 
+          onClick={onRefresh}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
+
+  const { summary, topContent } = data;
+
   return (
     <div className="space-y-6">
+      {/* Summary Statistics */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Analytics Dashboard</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Analytics Summary</h3>
+          <button 
+            onClick={onRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Refresh
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
             <div className="flex items-center gap-3">
               <Music className={`h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
               <div>
                 <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Tracks</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>5,678</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{summary?.totalTracks || 0}</p>
               </div>
             </div>
           </div>
@@ -514,8 +855,8 @@ function AnalyticsTab({ theme }: { theme: string }) {
             <div className="flex items-center gap-3">
               <CalendarIcon className={`h-5 w-5 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
               <div>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Events</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>234</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Events</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{summary?.totalEvents || 0}</p>
               </div>
             </div>
           </div>
@@ -523,8 +864,8 @@ function AnalyticsTab({ theme }: { theme: string }) {
             <div className="flex items-center gap-3">
               <MessageSquare className={`h-5 w-5 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
               <div>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Messages</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>12,345</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Messages</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{summary?.totalMessages || 0}</p>
               </div>
             </div>
           </div>
@@ -532,10 +873,70 @@ function AnalyticsTab({ theme }: { theme: string }) {
             <div className="flex items-center gap-3">
               <DollarSign className={`h-5 w-5 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`} />
               <div>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Revenue</p>
-                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>$45,678</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Revenue</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>${summary?.totalRevenue || 0}</p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Creators */}
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Top Creators</h4>
+          <div className="space-y-3">
+            {topContent?.creators?.slice(0, 5).map((creator: any, index: number) => (
+              <div key={creator.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>#{index + 1}</span>
+                  <div className="flex-shrink-0 h-8 w-8">
+                    {creator.avatar_url ? (
+                      <img className="h-8 w-8 rounded-full" src={creator.avatar_url} alt="" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {creator.display_name || creator.username}
+                    </p>
+                    <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {creator.followers_count} followers
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Tracks */}
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Popular Tracks</h4>
+          <div className="space-y-3">
+            {topContent?.tracks?.slice(0, 5).map((track: any, index: number) => (
+              <div key={track.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>#{index + 1}</span>
+                  <div>
+                    <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {track.title}
+                    </p>
+                    <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      by {track.creator?.display_name || track.creator?.username}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{track.play_count || 0}</p>
+                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>plays</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -543,20 +944,63 @@ function AnalyticsTab({ theme }: { theme: string }) {
   );
 }
 
-function SettingsTab({ theme }: { theme: string }) {
+function SettingsTab({ theme, data, loading, onRefresh }: { 
+  theme: string; 
+  data: any; 
+  loading: boolean; 
+  onRefresh: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-600">Loading settings data...</span>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No settings data available</p>
+        <button 
+          onClick={onRefresh}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
+
+  const { system, statistics, features } = data;
+
   return (
     <div className="space-y-6">
+      {/* System Settings */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>System Settings</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>System Settings</h3>
+          <button 
+            onClick={onRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Refresh
+          </button>
+        </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Maintenance Mode</p>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Enable maintenance mode for system updates</p>
             </div>
-            <button className={`relative inline-flex h-6 w-11 items-center rounded-full ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'}`}>
+            <button className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+              system?.maintenance_mode ? 'bg-blue-600' : (theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200')
+            }`}>
               <span className="sr-only">Enable maintenance mode</span>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${theme === 'dark' ? 'translate-x-1' : 'translate-x-6'}`} />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                system?.maintenance_mode ? 'translate-x-6' : (theme === 'dark' ? 'translate-x-1' : 'translate-x-1')
+              }`} />
             </button>
           </div>
           <div className="flex items-center justify-between">
@@ -564,11 +1008,99 @@ function SettingsTab({ theme }: { theme: string }) {
               <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Auto Moderation</p>
               <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Automatically moderate content using AI</p>
             </div>
-            <button className={`relative inline-flex h-6 w-11 items-center rounded-full ${theme === 'dark' ? 'bg-blue-600' : 'bg-blue-600'}`}>
+            <button className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+              system?.auto_moderation ? 'bg-blue-600' : (theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200')
+            }`}>
               <span className="sr-only">Enable auto moderation</span>
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                system?.auto_moderation ? 'translate-x-6' : (theme === 'dark' ? 'translate-x-1' : 'translate-x-1')
+              }`} />
             </button>
           </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Email Notifications</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Send email notifications to users</p>
+            </div>
+            <button className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+              system?.email_notifications ? 'bg-blue-600' : (theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200')
+            }`}>
+              <span className="sr-only">Enable email notifications</span>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                system?.email_notifications ? 'translate-x-6' : (theme === 'dark' ? 'translate-x-1' : 'translate-x-1')
+              }`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* System Statistics */}
+      <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>System Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+            <div className="flex items-center gap-3">
+              <Users className={`h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
+              <div>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Users</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.total_users || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+            <div className="flex items-center gap-3">
+              <Music className={`h-5 w-5 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+              <div>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Tracks</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.total_tracks || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+            <div className="flex items-center gap-3">
+              <Database className={`h-5 w-5 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
+              <div>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Database Size</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.database_size_mb || 0} MB</p>
+              </div>
+            </div>
+          </div>
+          <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+            <div className="flex items-center gap-3">
+              <Activity className={`h-5 w-5 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`} />
+              <div>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>System Uptime</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.system_uptime || '99.9%'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature Flags */}
+      <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+        <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Feature Flags</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(features || {}).map(([key, value]: [string, any]) => (
+            <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {value ? 'Enabled' : 'Disabled'}
+                </p>
+              </div>
+              <button className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                value ? 'bg-blue-600' : (theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200')
+              }`}>
+                <span className="sr-only">Toggle feature</span>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                  value ? 'translate-x-6' : (theme === 'dark' ? 'translate-x-1' : 'translate-x-1')
+                }`} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
