@@ -9,6 +9,8 @@ import Image from 'next/image';
 import { useAudioUpload } from '../../src/hooks/useAudioUpload';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { AudioQualitySelector } from '../../src/components/upload/AudioQualitySelector';
+import UploadEducationModal from '../../src/components/upload/UploadEducationModal';
+import RightsVerificationForm from '../../src/components/upload/RightsVerificationForm';
 import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types/audio-quality';
 import {
   Upload,
@@ -35,7 +37,8 @@ import {
   Bell,
   Settings,
   LogOut,
-  Search
+  Search,
+  Shield
 } from 'lucide-react';
 
 type ContentType = 'music' | 'podcast';
@@ -79,6 +82,12 @@ export default function UnifiedUploadPage() {
   
   // Copyright agreement state
   const [agreedToCopyright, setAgreedToCopyright] = useState(false);
+  
+  // Rights verification states
+  const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showRightsVerification, setShowRightsVerification] = useState(false);
+  const [rightsVerified, setRightsVerified] = useState(false);
+  const [verificationData, setVerificationData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -280,6 +289,17 @@ export default function UnifiedUploadPage() {
       return;
     }
 
+    // Show education modal first
+    setShowEducationModal(true);
+  };
+
+  // Handle rights verification
+  const handleRightsVerification = (data: any) => {
+    setVerificationData(data);
+    setRightsVerified(true);
+    setShowRightsVerification(false);
+    
+    // Proceed with validation
     console.log('🎯 Starting validation...');
     setShowValidationModal(true);
     setIsValidating(true);
@@ -889,6 +909,35 @@ export default function UnifiedUploadPage() {
 
       {/* Validation Modal */}
       <ValidationModal />
+
+      {/* Education Modal */}
+      <UploadEducationModal
+        isOpen={showEducationModal}
+        onClose={() => setShowEducationModal(false)}
+        onContinue={() => {
+          setShowEducationModal(false);
+          setShowRightsVerification(true);
+        }}
+      />
+
+      {/* Rights Verification Modal */}
+      {showRightsVerification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Rights Verification
+              </h2>
+              <RightsVerificationForm
+                trackTitle={title}
+                artistName={artistName}
+                onVerify={handleRightsVerification}
+                onCancel={() => setShowRightsVerification(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
