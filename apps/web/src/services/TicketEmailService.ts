@@ -97,6 +97,77 @@ export class TicketEmailService {
   }
 
   /**
+   * Send event cancellation email with refund information
+   */
+  async sendEventCancellationEmail({
+    to,
+    name,
+    eventTitle,
+    refundAmount,
+    ticketQuantity,
+    reason,
+    refundStatus
+  }: {
+    to: string;
+    name: string;
+    eventTitle: string;
+    refundAmount: number;
+    ticketQuantity: number;
+    reason: string;
+    refundStatus: string;
+  }): Promise<boolean> {
+    if (!this.apiKey) {
+      console.warn('Email API key not configured - skipping cancellation email');
+      return false;
+    }
+
+    try {
+      const emailHtml = this.generateCancellationEmailHTML({
+        name,
+        eventTitle,
+        refundAmount,
+        ticketQuantity,
+        reason,
+        refundStatus
+      });
+      
+      const emailText = this.generateCancellationEmailText({
+        name,
+        eventTitle,
+        refundAmount,
+        ticketQuantity,
+        reason,
+        refundStatus
+      });
+
+      if (process.env.SENDGRID_API_KEY) {
+        await this.sendViaSendGrid({
+          to,
+          subject: `Event Cancelled: ${eventTitle}`,
+          html: emailHtml,
+          text: emailText,
+        });
+      } else if (process.env.RESEND_API_KEY) {
+        await this.sendViaResend({
+          to,
+          subject: `Event Cancelled: ${eventTitle}`,
+          html: emailHtml,
+        });
+      } else {
+        console.log('📧 CANCELLATION EMAIL (Development Mode)');
+        console.log('To:', to);
+        console.log('Subject:', `Event Cancelled: ${eventTitle}`);
+        console.log('Refund Amount:', refundAmount);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error sending cancellation email:', error);
+      return false;
+    }
+  }
+
+  /**
    * Send refund confirmation email
    */
   async sendRefundConfirmation(purchase: TicketPurchase): Promise<boolean> {
@@ -366,6 +437,231 @@ STATUS:CONFIRMED
 SEQUENCE:0
 END:VEVENT
 END:VCALENDAR`;
+  }
+
+  /**
+   * Generate cancellation email HTML
+   */
+  private generateCancellationEmailHTML({
+    name,
+    eventTitle,
+    refundAmount,
+    ticketQuantity,
+    reason,
+    refundStatus
+  }: {
+    name: string;
+    eventTitle: string;
+    refundAmount: number;
+    ticketQuantity: number;
+    reason: string;
+    refundStatus: string;
+  }): string {
+    const reasonText = reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const isRefunded = refundStatus === 'refunded';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Event Cancelled - SoundBridge</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            background: linear-gradient(135deg, #dc2626 0%, #ec4899 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+          }
+          .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+          }
+          .alert {
+            background: ${isRefunded ? '#d4edda' : '#fff3cd'};
+            border: 1px solid ${isRefunded ? '#c3e6cb' : '#ffeaa7'};
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+          }
+          .alert h3 {
+            color: ${isRefunded ? '#155724' : '#856404'};
+            margin-top: 0;
+          }
+          .event-info {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #dc2626;
+          }
+          .refund-details {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .refund-details table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .refund-details td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+          }
+          .refund-details td:first-child {
+            font-weight: bold;
+            width: 40%;
+          }
+          .button {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 style="margin: 0;">🎫 Event Cancelled</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px;">Automatic refund processed</p>
+        </div>
+        
+        <div class="content">
+          <p>Dear ${name},</p>
+          
+          <p>We're sorry to inform you that the following event has been cancelled:</p>
+          
+          <div class="event-info">
+            <h2 style="margin-top: 0; color: #dc2626;">${eventTitle}</h2>
+            <p><strong>Reason for cancellation:</strong> ${reasonText}</p>
+            <p><strong>Tickets purchased:</strong> ${ticketQuantity}</p>
+          </div>
+          
+          <div class="alert">
+            <h3>💰 ${isRefunded ? 'Refund Processed' : 'Refund Processing'}</h3>
+            <div class="refund-details">
+              <table>
+                <tr>
+                  <td>Refund Amount:</td>
+                  <td><strong>£${refundAmount.toFixed(2)}</strong></td>
+                </tr>
+                <tr>
+                  <td>Processing Time:</td>
+                  <td>3-5 business days</td>
+                </tr>
+                <tr>
+                  <td>Refund Method:</td>
+                  <td>Original payment method</td>
+                </tr>
+                <tr>
+                  <td>Status:</td>
+                  <td><strong style="color: ${isRefunded ? '#155724' : '#856404'};">${isRefunded ? 'Completed' : 'Processing'}</strong></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          
+          <p>
+            ${isRefunded 
+              ? 'Your refund has been processed successfully and will appear in your original payment method within 3-5 business days.'
+              : 'Your refund is being processed and will be returned to your original payment method within 3-5 business days.'
+            }
+          </p>
+          
+          <p><strong>No action is required on your part.</strong></p>
+          
+          <p>We understand this is disappointing, and we apologize for any inconvenience. We hope to welcome you at future SoundBridge events!</p>
+          
+          <div style="text-align: center;">
+            <a href="https://soundbridge.com/events" class="button">Browse Other Events</a>
+          </div>
+          
+          <div class="footer">
+            <p><strong>Need Help?</strong></p>
+            <p>If you have any questions about your refund, please contact our support team at support@soundbridge.com</p>
+            <p style="margin-top: 20px;">© ${new Date().getFullYear()} SoundBridge. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate cancellation email plain text
+   */
+  private generateCancellationEmailText({
+    name,
+    eventTitle,
+    refundAmount,
+    ticketQuantity,
+    reason,
+    refundStatus
+  }: {
+    name: string;
+    eventTitle: string;
+    refundAmount: number;
+    ticketQuantity: number;
+    reason: string;
+    refundStatus: string;
+  }): string {
+    const reasonText = reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const isRefunded = refundStatus === 'refunded';
+
+    return `
+EVENT CANCELLED - AUTOMATIC REFUND ${isRefunded ? 'PROCESSED' : 'PROCESSING'}
+
+Dear ${name},
+
+We're sorry to inform you that the following event has been cancelled:
+
+EVENT: ${eventTitle}
+REASON: ${reasonText}
+TICKETS PURCHASED: ${ticketQuantity}
+
+REFUND DETAILS:
+- Amount: £${refundAmount.toFixed(2)}
+- Processing Time: 3-5 business days
+- Refund Method: Original payment method
+- Status: ${isRefunded ? 'Completed' : 'Processing'}
+
+${isRefunded 
+  ? 'Your refund has been processed successfully and will appear in your original payment method within 3-5 business days.'
+  : 'Your refund is being processed and will be returned to your original payment method within 3-5 business days.'
+}
+
+No action is required on your part.
+
+We understand this is disappointing, and we apologize for any inconvenience. We hope to welcome you at future SoundBridge events!
+
+Browse other events: https://soundbridge.com/events
+
+Need help? Contact us at support@soundbridge.com
+
+© ${new Date().getFullYear()} SoundBridge. All rights reserved.
+    `.trim();
   }
 
   private async sendViaSendGrid(params: any): Promise<void> {
