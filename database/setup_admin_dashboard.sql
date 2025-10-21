@@ -166,7 +166,7 @@ SELECT
   (SELECT COUNT(*) FROM profiles WHERE is_active = true) as active_users,
   (SELECT COUNT(*) FROM profiles WHERE created_at >= NOW() - INTERVAL '7 days') as new_users_this_week,
   (SELECT COUNT(*) FROM profiles WHERE last_login_at >= NOW() - INTERVAL '30 days') as active_users_30d,
-  (SELECT COUNT(*) FROM audio_tracks WHERE (deleted_at IS NULL OR deleted_at IS NOT NULL)) as total_tracks,
+  (SELECT COUNT(*) FROM audio_tracks) as total_tracks,
   (SELECT COUNT(*) FROM events) as total_events,
   (SELECT COUNT(*) FROM messages) as total_messages,
   (SELECT COUNT(*) FROM admin_review_queue WHERE status = 'pending') as pending_reviews,
@@ -174,7 +174,7 @@ SELECT
   (SELECT COUNT(*) FROM admin_review_queue WHERE queue_type = 'dmca' AND status IN ('pending', 'assigned', 'in_review')) as dmca_requests,
   (SELECT COUNT(*) FROM admin_review_queue WHERE queue_type = 'content_report' AND status IN ('pending', 'assigned', 'in_review')) as content_reports,
   (SELECT COALESCE(SUM(amount_paid), 0) FROM ticket_purchases WHERE status = 'completed') as total_revenue,
-  (SELECT COALESCE(SUM(amount_paid), 0) FROM user_subscriptions WHERE status = 'active') as subscription_revenue;
+  0 as subscription_revenue;
 
 GRANT SELECT ON admin_dashboard_stats TO authenticated;
 
