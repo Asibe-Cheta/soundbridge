@@ -11,18 +11,17 @@ interface AdInterstitialProps {
 
 export function AdInterstitial({ onClose, skipDelay = 5 }: AdInterstitialProps) {
   const [countdown, setCountdown] = useState(skipDelay);
-  const [canSkip, setCanSkip] = useState(false);
+  const [canSkip, setCanSkip] = useState(true); // Allow immediate skipping
   const [adId] = useState(adService.generateAdId('interstitial'));
 
   useEffect(() => {
     // Track ad impression
     adService.trackImpression(adId, 'interstitial', 'full_screen');
 
-    // Countdown timer
+    // Optional countdown timer for display purposes only
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          setCanSkip(true);
           clearInterval(timer);
           return 0;
         }
@@ -58,20 +57,13 @@ export function AdInterstitial({ onClose, skipDelay = 5 }: AdInterstitialProps) 
           </div>
           
           <div className="flex items-center space-x-4">
-            {!canSkip && (
-              <span className="text-sm text-gray-400">
-                Skip in <span className="text-pink-500 font-bold">{countdown}s</span>
-              </span>
-            )}
-            {canSkip && (
-              <button
-                onClick={handleSkip}
-                className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
-              >
-                <span className="text-white text-sm font-medium">Skip Ad</span>
-                <X size={16} className="text-white" />
-              </button>
-            )}
+            <button
+              onClick={handleSkip}
+              className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
+            >
+              <span className="text-white text-sm font-medium">Close</span>
+              <X size={16} className="text-white" />
+            </button>
           </div>
         </div>
 
@@ -91,7 +83,7 @@ export function AdInterstitial({ onClose, skipDelay = 5 }: AdInterstitialProps) 
                   Upgrade to SoundBridge Pro
                 </h2>
                 <p className="text-lg text-gray-300 mb-6">
-                  Enjoy unlimited uploads, HD audio quality, and an ad-free experience
+                  Enjoy SoundBridge's economical model for unlimited audio uploads, HD audio quality and ad-free experience
                 </p>
               </div>
 

@@ -63,7 +63,7 @@ export function SafeAdBanner({ placement, className = '' }: SafeAdBannerProps) {
               <div className="flex items-center justify-center h-full bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-lg border border-pink-500/30">
                 <div className="text-center p-4">
                   <p className="text-white font-semibold mb-2">🎵 SoundBridge Pro</p>
-                  <p className="text-sm text-gray-300 mb-3">Unlimited uploads, HD audio, no ads</p>
+                  <p className="text-sm text-gray-300 mb-3">SoundBridge's economical model for unlimited audio uploads, HD audio, no ads</p>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
