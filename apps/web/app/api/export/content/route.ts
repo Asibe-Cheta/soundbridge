@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
       const { data: tracks, error: tracksError } = await supabase
         .from('audio_tracks')
         .select('*')
-        .eq('creator_id', user.id)
-        .in('id', contentIds);
+        .eq('creator_id', user.id as any)
+        .in('id', contentIds as any) as { data: any; error: any };
 
       if (tracksError) {
         console.error('Error fetching tracks:', tracksError);
@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
       const { data: podcasts, error: podcastsError } = await supabase
         .from('podcast_episodes')
         .select('*')
-        .eq('creator_id', user.id)
-        .in('id', contentIds);
+        .eq('creator_id', user.id as any)
+        .in('id', contentIds as any) as { data: any; error: any };
 
       if (podcastsError) {
         console.error('Error fetching podcasts:', podcastsError);
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
       const { data: events, error: eventsError } = await supabase
         .from('events')
         .select('*')
-        .eq('creator_id', user.id)
-        .in('id', contentIds);
+        .eq('creator_id', user.id as any)
+        .in('id', contentIds as any) as { data: any; error: any };
 
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
@@ -236,7 +236,7 @@ Exported ${exportedCount} items
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
     // Return the ZIP file
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
@@ -273,11 +273,11 @@ export async function GET(request: NextRequest) {
       const { data: tracks } = await supabase
         .from('audio_tracks')
         .select('id, title, artist_name, created_at, file_url, cover_art_url')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('creator_id', user.id as any)
+        .order('created_at', { ascending: false }) as { data: any; error: any };
 
       if (tracks) {
-        content.push(...tracks.map(track => ({
+        content.push(...tracks.map((track: any) => ({
           id: track.id,
           title: track.title,
           type: 'audio',
@@ -293,11 +293,11 @@ export async function GET(request: NextRequest) {
       const { data: podcasts } = await supabase
         .from('podcast_episodes')
         .select('id, title, description, created_at, file_url, cover_art_url')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('creator_id', user.id as any)
+        .order('created_at', { ascending: false }) as { data: any; error: any };
 
       if (podcasts) {
-        content.push(...podcasts.map(podcast => ({
+        content.push(...podcasts.map((podcast: any) => ({
           id: podcast.id,
           title: podcast.title,
           type: 'podcast',
@@ -313,11 +313,11 @@ export async function GET(request: NextRequest) {
       const { data: events } = await supabase
         .from('events')
         .select('id, title, description, event_date, created_at, cover_image_url')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('creator_id', user.id as any)
+        .order('created_at', { ascending: false }) as { data: any; error: any };
 
       if (events) {
-        content.push(...events.map(event => ({
+        content.push(...events.map((event: any) => ({
           id: event.id,
           title: event.title,
           type: 'event',
