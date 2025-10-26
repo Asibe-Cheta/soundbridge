@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       .eq('is_available', true as any)
       .lte('start_date', body.proposed_start_date as any)  // Your start should be >= slot start
       .gte('end_date', body.proposed_end_date as any)      // Your end should be <= slot end
-      .single();
+      .single() as { data: any; error: any };
 
     if (availabilityError || !availability) {
       return NextResponse.json({ error: 'Creator is not available for the requested time' }, { status: 400 });
