@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validationResult.error.errors
+        details: (validationResult.error as any).issues || (validationResult.error as any).errors
       }, { status: 400 });
     }
     
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
         const { data: track, error: trackError } = await supabase
           .from('audio_tracks')
           .select('id, title, user_id')
-          .eq('id', contentId)
-          .single();
+          .eq('id', contentId as any)
+          .single() as { data: any; error: any };
         content = track;
         contentError = trackError;
         break;
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
         const { data: event, error: eventError } = await supabase
           .from('events')
           .select('id, title, creator_id')
-          .eq('id', contentId)
-          .single();
+          .eq('id', contentId as any)
+          .single() as { data: any; error: any };
         content = event;
         contentError = eventError;
         break;
@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
         const { data: user, error: userError } = await supabase
           .from('profiles')
           .select('id, display_name, username')
-          .eq('id', contentId)
-          .single();
+          .eq('id', contentId as any)
+          .single() as { data: any; error: any };
         content = user;
         contentError = userError;
         break;
@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
     const priority = getReportPriority(reportReason);
     
     // Create content report
-    const { data: report, error: reportError } = await supabase
-      .from('content_reports')
+    const { data: report, error: reportError } = await (supabase
+      .from('content_reports') as any)
       .insert({
         report_type: reportReason,
         priority: priority,
@@ -160,8 +160,8 @@ export async function POST(request: NextRequest) {
     
     // Auto-flag content if it's a copyright report
     if (reportReason === 'copyright') {
-      await supabase
-        .from('content_flags')
+      await (supabase
+        .from('content_flags') as any)
         .insert({
           flag_type: 'copyright_suspected',
           content_id: contentId,
@@ -181,8 +181,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Add to admin review queue
-    const { error: queueError } = await supabase
-      .from('admin_review_queue')
+    const { error: queueError } = await (supabase
+      .from('admin_review_queue') as any)
       .insert({
         queue_type: 'content_report',
         reference_type: 'content_reports',
