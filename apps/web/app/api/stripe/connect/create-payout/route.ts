@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
     const { data: bankAccount, error: bankError } = await supabase
       .from('creator_bank_accounts')
       .select('stripe_account_id, is_verified')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (bankError || !bankAccount || !bankAccount.stripe_account_id) {
       return NextResponse.json(
@@ -66,10 +66,19 @@ export async function POST(request: NextRequest) {
     });
 
     // Record the payout in the database
-    const { error: payoutError } = await supabase
+    // First, fetch the current total_payouts
+    const { data: currentRevenue } = await supabase
       .from('creator_revenue')
+      .select('total_payouts')
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
+    
+    const newTotalPayouts = (currentRevenue?.total_payouts || 0) + amount;
+    
+    const { error: payoutError } = await (supabase
+      .from('creator_revenue') as any)
       .update({
-        total_payouts: supabase.raw(`total_payouts + ${amount}`),
+        total_payouts: newTotalPayouts,
         last_payout_date: new Date().toISOString()
       })
       .eq('user_id', user.id);
