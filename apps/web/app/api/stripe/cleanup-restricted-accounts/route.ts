@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         const stripeAccount = await stripe.accounts.retrieve(account.stripe_account_id);
         
         // If account is restricted or charges are disabled, mark for cleanup
-        if (!stripeAccount.charges_enabled || stripeAccount.requirements?.currently_due?.length > 0) {
+        if (!stripeAccount.charges_enabled || (stripeAccount.requirements?.currently_due?.length || 0) > 0) {
           accountsToCleanup.push({
             id: account.stripe_account_id,
             status: stripeAccount.charges_enabled ? 'enabled' : 'restricted',
