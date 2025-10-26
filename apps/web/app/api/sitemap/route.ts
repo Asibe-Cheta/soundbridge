@@ -24,22 +24,22 @@ export async function GET(request: NextRequest) {
     const { data: creators } = await supabase
       .from('profiles')
       .select('username, updated_at')
-      .eq('is_public', true)
-      .not('username', 'is', null);
+      .eq('is_public', true as any)
+      .not('username', 'is', null) as { data: any; error: any };
 
     // Fetch events from database
     const { data: events } = await supabase
       .from('events')
       .select('id, title, created_at, updated_at')
-      .eq('is_public', true)
-      .gte('event_date', new Date().toISOString());
+      .eq('is_public', true as any)
+      .gte('event_date', new Date().toISOString() as any) as { data: any; error: any };
 
     // Fetch podcasts from database
     const { data: podcasts } = await supabase
       .from('audio_tracks')
       .select('id, title, created_at, updated_at')
-      .eq('genre', 'podcast')
-      .eq('is_public', true);
+      .eq('genre', 'podcast' as any)
+      .eq('is_public', true as any) as { data: any; error: any };
 
     // Generate XML sitemap
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Add creator profiles
-    creators?.forEach(creator => {
+    creators?.forEach((creator: any) => {
       xml += `  <url>\n`;
       xml += `    <loc>${baseUrl}/creator/${creator.username}</loc>\n`;
       xml += `    <lastmod>${creator.updated_at || currentDate}</lastmod>\n`;
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Add events
-    events?.forEach(event => {
+    events?.forEach((event: any) => {
       xml += `  <url>\n`;
       xml += `    <loc>${baseUrl}/events/${event.id}</loc>\n`;
       xml += `    <lastmod>${event.updated_at || event.created_at || currentDate}</lastmod>\n`;
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Add podcasts
-    podcasts?.forEach(podcast => {
+    podcasts?.forEach((podcast: any) => {
       xml += `  <url>\n`;
       xml += `    <loc>${baseUrl}/podcast/${podcast.id}</loc>\n`;
       xml += `    <lastmod>${podcast.updated_at || podcast.created_at || currentDate}</lastmod>\n`;
