@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
           setTimeout(() => reject(new Error('Auth timeout after 8 seconds')), 8000)
         );
         
-        const { data, error } = await Promise.race([authPromise, timeoutPromise]);
-        user = data.user;
-        authError = error;
+        const result = await Promise.race([authPromise, timeoutPromise]) as { data: any; error: any };
+        user = result.data.user;
+        authError = result.error;
         console.log('🚨 STEP 9: User authenticated:', !!user);
-      } catch (timeoutError) {
+      } catch (timeoutError: any) {
         console.error('🚨 AUTH TIMEOUT:', timeoutError);
         return NextResponse.json(
           { error: 'Authentication timeout', details: timeoutError.message },
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         setTimeout(() => reject(new Error('Stripe API timeout after 20 seconds')), 20000)
       );
       
-      session = await Promise.race([stripePromise, timeoutPromise]);
+      session = await Promise.race([stripePromise, timeoutPromise]) as any;
       console.log('🚨 STEP 16: Stripe session created successfully!');
     } catch (stripeError: any) {
       console.error('🚨 STRIPE API ERROR:', stripeError);
