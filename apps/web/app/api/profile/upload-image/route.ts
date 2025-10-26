@@ -119,8 +119,8 @@ export async function POST(request: Request) {
     console.log('📝 Updating user profile...');
     
     // First, try to update existing profile
-    let { data: profileData, error: profileError } = await supabase
-      .from('profiles')
+    let { data: profileData, error: profileError } = await (supabase
+      .from('profiles') as any)
       .update({ 
         avatar_url: publicUrl
       })
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
         const emailUsername = user.email?.split('@')[0] || 'user';
         const username = `${emailUsername}_${Date.now().toString().slice(-6)}`;
         
-        const { data: newProfileData, error: createError } = await supabase
-          .from('profiles')
+        const { data: newProfileData, error: createError } = await (supabase
+          .from('profiles') as any)
           .insert({
             id: user.id,
             username: username,
@@ -207,8 +207,8 @@ export async function GET() {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
-      .single();
+      .eq('id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (profileError && profileError.code === 'PGRST116') {
       // Profile doesn't exist, return empty profile
@@ -271,8 +271,8 @@ export async function PUT(request: Request) {
     console.log('📝 Profile update data:', body);
 
     // Update the profile
-    const { data: profileData, error: updateError } = await supabase
-      .from('profiles')
+    const { data: profileData, error: updateError } = await (supabase
+      .from('profiles') as any)
       .update({
         display_name: body.display_name,
         username: body.username,
