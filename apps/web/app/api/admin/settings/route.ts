@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { data: settings, error: settingsError } = await supabase
       .from('admin_settings')
       .select('*')
-      .single();
+      .single() as { data: any; error: any };
 
     if (settingsError && settingsError.code !== 'PGRST116') { // PGRST116 = no rows returned
       console.error('❌ Error fetching settings:', settingsError);
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Get database size (approximate)
     const { data: dbStats } = await supabase
-      .rpc('get_database_stats');
+      .rpc('get_database_stats') as { data: any };
 
     const settingsData = {
       system: {

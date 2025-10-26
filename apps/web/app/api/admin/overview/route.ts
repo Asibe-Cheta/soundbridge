@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
       const { data: revenueData, error: revenueError } = await supabase
         .from('ticket_purchases')
         .select('amount_paid')
-        .eq('status', 'completed');
+        .eq('status', 'completed') as { data: Array<{ amount_paid: number }> | null; error: any };
 
       if (revenueError) {
         console.error('❌ Error fetching revenue data:', revenueError);
@@ -150,10 +150,10 @@ export async function GET(request: NextRequest) {
       },
       
       // Recent activity
-      recent_activity: [
+      recent_activity: ([
         ...(pendingItems?.slice(0, 5) || []),
         ...(urgentItems?.slice(0, 3) || [])
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8)
+      ] as Array<{ created_at: string; [key: string]: any }>).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8)
     };
 
     console.log('✅ Overview data fetched successfully');

@@ -31,7 +31,7 @@ export async function GET(
         ban_reason
       `)
       .eq('id', userId)
-      .single();
+      .single() as { data: any; error: any };
 
     // Get email from auth.users table
     const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
@@ -144,8 +144,8 @@ export async function POST(
 
     switch (action) {
       case 'ban_user':
-        const { error: banError } = await supabase
-          .from('profiles')
+        const { error: banError } = await (supabase
+          .from('profiles') as any)
           .update({ 
             is_active: false,
             banned_at: new Date().toISOString(),
@@ -161,8 +161,8 @@ export async function POST(
         break;
 
       case 'unban_user':
-        const { error: unbanError } = await supabase
-          .from('profiles')
+        const { error: unbanError } = await (supabase
+          .from('profiles') as any)
           .update({ 
             is_active: true,
             banned_at: null,
@@ -178,8 +178,8 @@ export async function POST(
         break;
 
       case 'update_role':
-        const { error: roleError } = await supabase
-          .from('profiles')
+        const { error: roleError } = await (supabase
+          .from('profiles') as any)
           .update({ role: data.role })
           .eq('id', userId);
 
@@ -191,8 +191,8 @@ export async function POST(
         break;
 
       case 'update_status':
-        const { error: statusError } = await supabase
-          .from('profiles')
+        const { error: statusError } = await (supabase
+          .from('profiles') as any)
           .update({ is_active: data.is_active })
           .eq('id', userId);
 

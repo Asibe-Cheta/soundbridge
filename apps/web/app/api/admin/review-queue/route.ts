@@ -26,8 +26,8 @@ async function checkAdminPermissions(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
-      .single();
+      .eq('id', user.id as any)
+      .single() as { data: { role: string } | null };
 
     if (!profile || !['admin', 'legal_admin', 'moderator'].includes(profile.role)) {
       return { error: 'Admin permissions required', status: 403 };
@@ -72,16 +72,16 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (queueType) {
-      query = query.eq('queue_type', queueType);
+      query = query.eq('queue_type', queueType as any);
     }
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq('status', status as any);
     }
     if (priority) {
-      query = query.eq('priority', priority);
+      query = query.eq('priority', priority as any);
     }
     if (assignedTo) {
-      query = query.eq('assigned_to', assignedTo);
+      query = query.eq('assigned_to', assignedTo as any);
     }
 
     const { data: queueItems, error } = await query;
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Get detailed information for each queue item
     const enrichedQueueItems = await Promise.all(
-      queueItems.map(async (item) => {
+      (queueItems || [] as any[]).map(async (item: any) => {
         let referenceData = null;
         
         try {
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     const { data: stats } = await supabase
       .from('admin_review_queue')
       .select('queue_type, status, priority')
-      .in('status', ['pending', 'assigned', 'in_review']);
+      .in('status', ['pending', 'assigned', 'in_review'] as any) as { data: Array<{ queue_type: string; status: string; priority: string }> | null };
 
     const statistics = {
       total_pending: stats?.filter(s => s.status === 'pending').length || 0,
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validationResult.error.errors
+        details: (validationResult.error as any).errors
       }, { status: 400 });
     }
 
@@ -211,8 +211,8 @@ export async function POST(request: NextRequest) {
     const { data: queueItem, error: queueError } = await supabase
       .from('admin_review_queue')
       .select('*')
-      .eq('id', data.queueId)
-      .single();
+      .eq('id', data.queueId as any)
+      .single() as { data: any; error: any };
 
     if (queueError || !queueItem) {
       return NextResponse.json({
@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
     const { data: updatedItem, error: updateError } = await supabase
       .from('admin_review_queue')
       .update(updateData)
-      .eq('id', data.queueId)
+      .eq('id', data.queueId as any)
       .select()
       .single();
 
@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
 
     // Update the referenced item if needed
     if (data.action === 'resolve' && data.actionTaken) {
-      await updateReferencedItem(queueItem, data.actionTaken, data.resolution);
+      await updateReferencedItem(supabase, queueItem, data.actionTaken, data.resolution);
     }
 
     // Log the admin action
@@ -330,7 +330,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to update referenced items
-async function updateReferencedItem(queueItem: any, actionTaken: string, resolution?: string) {
+async function updateReferencedItem(supabase: any, queueItem: any, actionTaken: string, resolution?: string) {
   try {
     const updateData = {
       status: actionTaken === 'takedown' ? 'completed' : 'resolved',

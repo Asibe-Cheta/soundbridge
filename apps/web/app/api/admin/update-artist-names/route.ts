@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const { data: tracks, error: tracksError } = await supabase
       .from('audio_tracks')
       .select('id, creator_id, title, artist_name')
-      .or('artist_name.is.null,artist_name.eq.,artist_name.eq.Unknown Artist');
+      .or('artist_name.is.null,artist_name.eq.,artist_name.eq.Unknown Artist') as { data: any; error: any };
 
     if (tracksError) {
       console.error('❌ Error fetching tracks:', tracksError);
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         .from('profiles')
         .select('display_name, full_name, username')
         .eq('id', track.creator_id)
-        .single();
+        .single() as { data: any; error: any };
 
       if (profileError) {
         console.log(`   ⚠️  Could not find profile for creator ${track.creator_id}`);
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
         if (authError || !authUser.user) {
           console.log(`   ⚠️  Could not find auth user for creator ${track.creator_id}`);
           // Set a default artist name
-          const { error: updateError } = await supabase
-            .from('audio_tracks')
+          const { error: updateError } = await (supabase
+            .from('audio_tracks') as any)
             .update({ artist_name: 'Unknown Artist' })
             .eq('id', track.id);
           
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
         console.log(`   👤 Using auth user data: ${artistName}`);
         
         // Update the track with the artist name from auth user
-        const { error: updateError } = await supabase
-          .from('audio_tracks')
+        const { error: updateError } = await (supabase
+          .from('audio_tracks') as any)
           .update({ artist_name: artistName })
           .eq('id', track.id);
 
@@ -98,8 +98,8 @@ export async function POST(request: NextRequest) {
       console.log(`   👤 Creator: ${artistName}`);
       
       // Update the track with the artist name
-      const { error: updateError } = await supabase
-        .from('audio_tracks')
+      const { error: updateError } = await (supabase
+        .from('audio_tracks') as any)
         .update({ artist_name: artistName })
         .eq('id', track.id);
 

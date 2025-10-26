@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       .select('created_at, amount_paid')
       .gte('created_at', startDate.toISOString())
       .eq('status', 'completed')
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true }) as { data: Array<{ created_at: string; amount_paid: number }> | null; error: any };
 
     if (revenueError) {
       console.error('❌ Error fetching revenue data:', revenueError);
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       .select('created_at, amount_paid')
       .gte('created_at', startDate.toISOString())
       .eq('status', 'active')
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true }) as { data: Array<{ created_at: string; amount_paid: number }> | null; error: any };
 
     if (subscriptionError) {
       console.error('❌ Error fetching subscription revenue:', subscriptionError);
