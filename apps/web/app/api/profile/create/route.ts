@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
       console.log('Creating profile with fallback data:', profileData);
 
       // Create the profile with fallback data
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+      const { data: profile, error: profileError } = await (supabase
+        .from('profiles') as any)
         .insert(profileData)
         .select()
         .single();
@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('id')
-      .eq('id', userId)
-      .single();
+      .eq('id', userId as any)
+      .single() as { data: any; error: any };
 
     if (existingProfile) {
       return NextResponse.json({
@@ -137,8 +137,8 @@ export async function POST(request: NextRequest) {
     console.log('Creating profile with data:', profileData);
 
     // Create the profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+    const { data: profile, error: profileError } = await (supabase
+      .from('profiles') as any)
       .insert(profileData)
       .select()
       .single();
@@ -183,8 +183,8 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
-      .single();
+      .eq('id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (profileError && profileError.code === 'PGRST116') {
       // Profile doesn't exist
