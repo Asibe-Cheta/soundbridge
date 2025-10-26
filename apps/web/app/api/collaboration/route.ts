@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       .from('collaboration_requests')
       .select('*', { count: 'exact', head: true })
       .eq('availability_id', body.availability_id as any)
-      .eq('status', 'pending');
+      .eq('status', 'pending' as any);
 
     if (countError) {
       console.error('Error checking request count:', countError);
