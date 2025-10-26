@@ -62,13 +62,21 @@ export async function POST(request: NextRequest) {
     const { data: bankAccount, error: bankAccountError } = await supabase
       .from('creator_bank_accounts')
       .select('stripe_account_id')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (bankAccountError || !bankAccount?.stripe_account_id) {
       return NextResponse.json(
         { error: 'No Stripe account found for user' },
         { status: 404, headers: corsHeaders }
+      );
+    }
+
+    // Check Stripe is configured
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured' },
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -87,8 +95,8 @@ export async function POST(request: NextRequest) {
     const verificationStatus = account.charges_enabled ? 'verified' : 'pending';
     const isVerified = account.charges_enabled;
 
-    const { error: updateError } = await supabase
-      .from('creator_bank_accounts')
+    const { error: updateError } = await (supabase
+      .from('creator_bank_accounts') as any)
       .update({
         verification_status: verificationStatus,
         is_verified: isVerified,
