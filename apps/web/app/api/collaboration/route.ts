@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This time slot has reached maximum request limit' }, { status: 400 });
     }
 
-         const { data: collaborationRequest, error } = await supabase
-       .from('collaboration_requests')
+         const { data: collaborationRequest, error } = await (supabase
+       .from('collaboration_requests') as any)
        .insert({
          requester_id: user.id,
          creator_id: body.creator_id,
