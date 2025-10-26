@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { EyeOpenOpen, EyeOpenClosed, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 
 // Force dynamic rendering to prevent static generation issues
@@ -297,7 +297,7 @@ function LoginContent() {
                   padding: '0.25rem'
                 }}
               >
-                {showPassword ? <EyeIconOff size={20} /> : <EyeIcon size={20} />}
+                {showPassword ? <EyeOpenIconOff size={20} /> : <EyeOpenIcon size={20} />}
               </button>
             </div>
           </div>
