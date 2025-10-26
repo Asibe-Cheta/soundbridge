@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { EyeIconIcon, EyeIconOffIcon, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
 import Image from 'next/image';
 

@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { EyeIconIcon, EyeIconOffIcon, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 
 // Force dynamic rendering to prevent static generation issues
