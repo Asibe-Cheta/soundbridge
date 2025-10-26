@@ -5,7 +5,8 @@ import { headers } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
-  const signature = headers().get('stripe-signature');
+  const headersList = await headers();
+  const signature = headersList.get('stripe-signature');
 
   if (!signature) {
     return NextResponse.json({ error: 'No signature provided' }, { status: 400 });
@@ -36,8 +37,8 @@ export async function POST(request: NextRequest) {
         console.log('🔄 Stripe account updated:', account.id, 'charges_enabled:', account.charges_enabled);
         
         // Update database with new account status
-        const { error: updateError } = await supabase
-          .from('creator_bank_accounts')
+        const { error: updateError } = await (supabase
+          .from('creator_bank_accounts') as any)
           .update({
             verification_status: account.charges_enabled ? 'verified' : 'pending',
             is_verified: account.charges_enabled,
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
         console.log('🚫 Account deauthorized:', deauthAccount.id);
         
         // Mark account as deauthorized
-        await supabase
-          .from('creator_bank_accounts')
+        await (supabase
+          .from('creator_bank_accounts') as any)
           .update({
             verification_status: 'deauthorized',
             is_verified: false,
