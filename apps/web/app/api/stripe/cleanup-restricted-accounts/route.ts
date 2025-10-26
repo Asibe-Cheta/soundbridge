@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
     const { data: restrictedAccounts, error: accountsError } = await supabase
       .from('creator_bank_accounts')
       .select('stripe_account_id, verification_status')
-      .eq('user_id', user.id)
-      .eq('verification_status', 'pending');
+      .eq('user_id', user.id as any)
+      .eq('verification_status', 'pending' as any) as { data: any; error: any };
 
     if (accountsError) {
       console.error('Error fetching restricted accounts:', accountsError);
@@ -79,6 +79,14 @@ export async function POST(request: NextRequest) {
         message: 'No restricted accounts found',
         cleaned: 0
       }, { status: 200, headers: corsHeaders });
+    }
+
+    // Check Stripe is configured
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured' },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
     // Check each account with Stripe to see if it's actually restricted
@@ -108,8 +116,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete restricted accounts from database
-    const { error: deleteError } = await supabase
-      .from('creator_bank_accounts')
+    const { error: deleteError } = await (supabase
+      .from('creator_bank_accounts') as any)
       .delete()
       .eq('user_id', user.id)
       .eq('verification_status', 'pending');
