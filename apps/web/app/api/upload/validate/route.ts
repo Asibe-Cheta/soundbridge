@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { uploadValidationService } from '../../../../src/lib/upload-validation';
+import { uploadValidationService, UploadValidationService } from '../../../../src/lib/upload-validation';
 import type { UploadValidationRequest } from '../../../../src/lib/types/upload-validation';
 
 export async function POST(request: NextRequest) {
@@ -229,14 +229,14 @@ export async function GET(request: NextRequest) {
     const userTier = subscription?.tier || 'free';
     
     // Get tier-specific limits
-    const tierLimits = uploadValidationService.getTierLimits(userTier as 'free' | 'pro' | 'enterprise');
+    const tierLimits = UploadValidationService.getTierLimits(userTier as 'free' | 'pro' | 'enterprise');
     
     return NextResponse.json({
       success: true,
       data: {
         tier: userTier,
         limits: tierLimits,
-        rules: uploadValidationService.getValidationRules()
+        rules: UploadValidationService.getValidationRules()
       }
     });
     
