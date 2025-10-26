@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validationResult.error.errors
+        details: (validationResult.error as any).issues || (validationResult.error as any).errors
       }, { status: 400 });
     }
     
@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
     const { data: content, error: contentError } = await supabase
       .from('audio_tracks')
       .select('id, title, user_id')
-      .eq('id', data.contentId)
-      .single();
+      .eq('id', data.contentId as any)
+      .single() as { data: any; error: any };
     
     if (contentError || !content) {
       return NextResponse.json({
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Create DMCA takedown request
-    const { data: dmcaRequest, error: dmcaError } = await supabase
-      .from('dmca_takedown_requests')
+    const { data: dmcaRequest, error: dmcaError } = await (supabase
+      .from('dmca_takedown_requests') as any)
       .insert({
         request_type: data.requestType,
         priority: data.priority,
@@ -157,8 +157,8 @@ export async function POST(request: NextRequest) {
     
     // If urgent priority, immediately flag content for review
     if (data.priority === 'urgent') {
-      await supabase
-        .from('content_flags')
+      await (supabase
+        .from('content_flags') as any)
         .insert({
           flag_type: 'copyright_suspected',
           content_id: data.contentId,
@@ -207,8 +207,8 @@ export async function GET(request: NextRequest) {
           content:audio_tracks(id, title, user_id, file_url),
           assigned_to:profiles(id, display_name, email)
         `)
-        .eq('id', requestId)
-        .single();
+        .eq('id', requestId as any)
+        .single() as { data: any; error: any };
       
       if (error || !dmcaRequest) {
         return NextResponse.json({
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
           assigned_to:profiles(id, display_name)
         `)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(50) as { data: any; error: any };
       
       if (error) {
         return NextResponse.json({
@@ -270,7 +270,7 @@ async function sendAdminNotification(notification: {
     const { data: admins } = await supabase
       .from('profiles')
       .select('email, display_name')
-      .in('role', ['admin', 'legal_admin', 'moderator']);
+      .in('role', ['admin', 'legal_admin', 'moderator'] as any) as { data: any; error: any };
     
     if (admins && admins.length > 0) {
       // Send email notification to admins
