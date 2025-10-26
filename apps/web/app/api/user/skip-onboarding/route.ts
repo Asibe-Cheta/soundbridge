@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
 
     // Mark onboarding as skipped
-    const { error: updateError } = await supabase
-      .from('profiles')
+    const { error: updateError } = await (supabase
+      .from('profiles') as any)
       .update({
         onboarding_completed: true,
         onboarding_step: 'completed',
