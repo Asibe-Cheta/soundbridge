@@ -78,11 +78,11 @@ export async function POST(request: NextRequest) {
     const { data: availability, error: availabilityError } = await supabase
       .from('creator_availability')
       .select('*')
-      .eq('id', body.availability_id)
-      .eq('creator_id', body.creator_id)
+      .eq('id', body.availability_id as any)
+      .eq('creator_id', body.creator_id as any)
       .eq('is_available', true)
-      .lte('start_date', body.proposed_start_date)  // Your start should be >= slot start
-      .gte('end_date', body.proposed_end_date)      // Your end should be <= slot end
+      .lte('start_date', body.proposed_start_date as any)  // Your start should be >= slot start
+      .gte('end_date', body.proposed_end_date as any)      // Your end should be <= slot end
       .single();
 
     if (availabilityError || !availability) {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     const { count: requestCount, error: countError } = await supabase
       .from('collaboration_requests')
       .select('*', { count: 'exact', head: true })
-      .eq('availability_id', body.availability_id)
+      .eq('availability_id', body.availability_id as any)
       .eq('status', 'pending');
 
     if (countError) {
