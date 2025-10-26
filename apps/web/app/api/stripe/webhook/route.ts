@@ -12,6 +12,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No signature provided' }, { status: 400 });
   }
 
+  // Check Stripe is configured
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
+  }
+
   let event;
 
   try {
