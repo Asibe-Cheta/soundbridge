@@ -18,15 +18,15 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user.id as any)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (unreadOnly) {
-      query = query.eq('is_read', false);
+      query = query.eq('is_read', false as any);
     }
 
-    const { data: notifications, error } = await query;
+    const { data: notifications, error } = await query as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching notifications:', error);
