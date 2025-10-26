@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
             title,
             description,
             genre,
-            tags: tags ? tags.split(',').map(t => t.trim()) : [],
+            tags: tags ? tags.split(',').map((t: any) => t.trim()) : [],
             privacy,
             publishOption,
             scheduleDate
@@ -207,8 +207,8 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString()
     };
 
-    const { data: track, error: insertError } = await supabase
-      .from('audio_tracks')
+    const { data: track, error: insertError } = await (supabase
+      .from('audio_tracks') as any)
       .insert([trackData])
       .select()
       .single();
