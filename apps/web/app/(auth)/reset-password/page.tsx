@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-// import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
 import Image from 'next/image';
 
@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
-          ←
+          <ArrowLeft size={16} />
           Back to Home
         </Link>
 
@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
             margin: '0 auto 2rem',
             border: '2px solid rgba(34, 197, 94, 0.3)'
           }}>
-            <span style={{ fontSize: '40px', color: '#22C55E' }}>✅</span>
+            <CheckCircle size={40} color="#22C55E" />
           </div>
 
           {/* Success Message */}
@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
             justifyContent: 'center',
             gap: '0.5rem'
           }}>
-            <span style={{ fontSize: '20px', color: '#EC4899' }}>✉️</span>
+            <Mail size={20} color="#EC4899" />
             <span style={{ color: 'white', fontWeight: '500' }}>{email}</span>
           </div>
 
@@ -229,7 +229,7 @@ export default function ResetPasswordPage() {
         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
       >
-        ←
+        <ArrowLeft size={16} />
         Back to Home
       </Link>
 
@@ -301,18 +301,16 @@ export default function ResetPasswordPage() {
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
-              <span
+              <Mail
+                size={20}
                 style={{
                   position: 'absolute',
                   left: '1rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#999',
-                  fontSize: '20px'
+                  color: '#999'
                 }}
-              >
-                ✉️
-              </span>
+              />
               <input
                 type="email"
                 value={email}

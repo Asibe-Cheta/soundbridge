@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-// import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 
 // Force dynamic rendering to prevent static generation issues
@@ -151,7 +151,8 @@ function LoginContent() {
         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
       >
-        ← Back to Home
+        <ArrowLeft size={16} />
+        Back to Home
       </Link>
 
       {/* Auth Card */}
@@ -210,18 +211,16 @@ function LoginContent() {
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
-              <span
+              <Mail
+                size={20}
                 style={{
                   position: 'absolute',
                   left: '1rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#999',
-                  fontSize: '20px'
+                  color: '#999'
                 }}
-              >
-                ✉️
-              </span>
+              />
               <input
                 type="email"
                 name="email"
@@ -252,18 +251,16 @@ function LoginContent() {
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <span
+              <Lock
+                size={20}
                 style={{
                   position: 'absolute',
                   left: '1rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#999',
-                  fontSize: '20px'
+                  color: '#999'
                 }}
-              >
-                🔒
-              </span>
+              />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -300,7 +297,7 @@ function LoginContent() {
                   padding: '0.25rem'
                 }}
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </div>
