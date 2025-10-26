@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     const { data: event, error: eventError } = await supabase
       .from('events')
       .select('creator_id, title, status')
-      .eq('id', eventId)
-      .single();
+      .eq('id', eventId as any)
+      .single() as { data: any; error: any };
 
     if (eventError || !event) {
       console.error('❌ Event not found:', eventError);
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Update event status to cancelled
-    const { error: updateError } = await supabase
-      .from('events')
+    const { error: updateError } = await (supabase
+      .from('events') as any)
       .update({
         status: 'cancelled',
         cancellation_reason: cancellationReason,
@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
         quantity,
         status
       `)
-      .eq('event_id', eventId)
-      .eq('status', 'completed');
+      .eq('event_id', eventId as any)
+      .eq('status', 'completed' as any) as { data: any; error: any };
 
     if (purchasesError) {
       console.error('❌ Error fetching purchases:', purchasesError);
@@ -262,8 +262,8 @@ async function sendCancellationNotifications(
       refund_id,
       status
     `)
-    .eq('event_id', eventId)
-    .in('status', ['refunded', 'refund_processing']);
+    .eq('event_id', eventId as any)
+    .in('status', ['refunded', 'refund_processing'] as any) as { data: any; error: any };
 
   if (error || !attendees) {
     console.error('Error fetching attendees for notifications:', error);
@@ -312,8 +312,8 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('event_refund_statistics')
       .select('*')
-      .eq('event_id', eventId)
-      .single();
+      .eq('event_id', eventId as any)
+      .single() as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching refund statistics:', error);
