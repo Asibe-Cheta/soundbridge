@@ -63,6 +63,46 @@ interface QueueStatistics {
   content_flags: number;
 }
 
+// Helper functions - defined at module level to be accessible by all components
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case 'urgent': return 'text-red-600 bg-red-100';
+    case 'high': return 'text-orange-600 bg-orange-100';
+    case 'normal': return 'text-blue-600 bg-blue-100';
+    case 'low': return 'text-gray-600 bg-gray-100';
+    default: return 'text-gray-600 bg-gray-100';
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'pending': return 'text-yellow-600 bg-yellow-100';
+    case 'assigned': return 'text-blue-600 bg-blue-100';
+    case 'in_review': return 'text-purple-600 bg-purple-100';
+    case 'completed': return 'text-green-600 bg-green-100';
+    default: return 'text-gray-600 bg-gray-100';
+  }
+};
+
+const getTypeIcon = (type: string) => {
+  switch (type) {
+    case 'dmca': return <Copyright className="h-4 w-4" />;
+    case 'content_report': return <Flag className="h-4 w-4" />;
+    case 'content_flag': return <AlertTriangle className="h-4 w-4" />;
+    default: return <FileText className="h-4 w-4" />;
+  }
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -354,45 +394,6 @@ export default function AdminDashboard() {
       console.error('Error performing admin action:', error);
       alert('Action failed');
     }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'text-red-600 bg-red-100';
-      case 'high': return 'text-orange-600 bg-orange-100';
-      case 'normal': return 'text-blue-600 bg-blue-100';
-      case 'low': return 'text-gray-600 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'text-yellow-600 bg-yellow-100';
-      case 'assigned': return 'text-blue-600 bg-blue-100';
-      case 'in_review': return 'text-purple-600 bg-purple-100';
-      case 'completed': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'dmca': return <Copyright className="h-4 w-4" />;
-      case 'content_report': return <Flag className="h-4 w-4" />;
-      case 'content_flag': return <AlertTriangle className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const filteredItems = queueItems.filter(item => {

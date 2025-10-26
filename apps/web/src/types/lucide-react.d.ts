@@ -173,6 +173,7 @@ declare module 'lucide-react' {
   export const ZapOff: LucideIcon;
   export const ZoomIn: LucideIcon;
   export const ZoomOut: LucideIcon;
+  export const Album: LucideIcon;
   
   // Catch-all for any other icons not explicitly listed
   const icons: Record<string, LucideIcon>;
