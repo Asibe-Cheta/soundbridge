@@ -16,9 +16,9 @@ export async function GET(
     const { data: creator, error: creatorError } = await supabase
       .from('profiles')
       .select('id, username, display_name')
-      .eq('username', username)
-      .eq('role', 'creator')
-      .single();
+      .eq('username', username as any)
+      .eq('role', 'creator' as any)
+      .single() as { data: any; error: any };
 
     if (creatorError || !creator) {
       return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
@@ -45,10 +45,10 @@ export async function GET(
           avatar_url
         )
       `)
-      .eq('creator_id', creator.id)
-      .eq('is_public', true)
+      .eq('creator_id', creator.id as any)
+      .eq('is_public', true as any)
       .order('play_count', { ascending: false })
-      .limit(limit);
+      .limit(limit) as { data: any; error: any };
 
     if (songsError) {
       console.error('Error fetching top songs:', songsError);
@@ -74,10 +74,10 @@ export async function GET(
           avatar_url
         )
       `)
-      .eq('creator_id', creator.id)
-      .eq('is_public', true)
+      .eq('creator_id', creator.id as any)
+      .eq('is_public', true as any)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(limit) as { data: any; error: any };
 
     if (eventsError) {
       console.error('Error fetching top events:', eventsError);
