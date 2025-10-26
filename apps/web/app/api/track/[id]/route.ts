@@ -34,8 +34,8 @@ export async function GET(
           social_links
         )
       `)
-      .eq('id', id)
-      .single();
+      .eq('id', id as any)
+      .single() as { data: any; error: any };
 
     if (trackError || !track) {
       return NextResponse.json(
@@ -59,9 +59,9 @@ export async function GET(
           avatar_url
         )
       `)
-      .eq('genre', track.genre)
-      .neq('creator_id', track.creator_id)
-      .limit(6);
+      .eq('genre', track.genre as any)
+      .neq('creator_id', track.creator_id as any)
+      .limit(6) as { data: any; error: any };
 
     // Get more tracks by the same artist
     const { data: moreByArtist, error: moreError } = await supabase
@@ -73,10 +73,10 @@ export async function GET(
         genre,
         created_at
       `)
-      .eq('creator_id', track.creator_id)
-      .neq('id', track.id)
+      .eq('creator_id', track.creator_id as any)
+      .neq('id', track.id as any)
       .order('created_at', { ascending: false })
-      .limit(6);
+      .limit(6) as { data: any; error: any };
 
     return NextResponse.json({
       success: true,
