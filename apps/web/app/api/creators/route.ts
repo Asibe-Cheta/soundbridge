@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         tracks:audio_tracks!audio_tracks_creator_id_fkey(count),
         events:events!events_creator_id_fkey(count)
       `)
-      .eq('role', 'creator');
+      .eq('role', 'creator' as any);
 
     // Apply search filter
     if (search) {
@@ -33,12 +33,12 @@ export async function GET(request: NextRequest) {
 
     // Apply genre filter (if profiles table has genre field)
     if (genre && genre !== 'all') {
-      query = query.eq('genre', genre);
+      query = query.eq('genre', genre as any);
     }
 
     // Apply location filter
     if (location && location !== 'all') {
-      query = query.ilike('location', `%${location}%`);
+      query = query.ilike('location', `%${location}%` as any);
     }
 
     // Apply sorting
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     query = query.range(offset, offset + limit - 1);
 
-    const { data: creators, error } = await query;
+    const { data: creators, error } = await query as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching creators:', error);
@@ -75,17 +75,17 @@ export async function GET(request: NextRequest) {
     // If we have a current user, check follow status
     let creatorsWithFollowStatus = creators || [];
     if (currentUserId && creators && creators.length > 0) {
-      const creatorIds = creators.map(c => c.id);
+      const creatorIds = creators.map((c: any) => c.id);
       
       const { data: follows } = await supabase
         .from('follows')
         .select('following_id')
-        .eq('follower_id', currentUserId)
-        .in('following_id', creatorIds);
+        .eq('follower_id', currentUserId as any)
+        .in('following_id', creatorIds as any) as { data: any; error: any };
 
-      const followedIds = new Set(follows?.map(f => f.following_id) || []);
+      const followedIds = new Set(follows?.map((f: any) => f.following_id) || []);
       
-      creatorsWithFollowStatus = creators.map(creator => ({
+      creatorsWithFollowStatus = creators.map((creator: any) => ({
         ...creator,
         isFollowing: followedIds.has(creator.id),
         followers_count: creator.followers?.[0]?.count || 0,
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       }));
     } else {
       // Format creators without follow status
-      creatorsWithFollowStatus = creators?.map(creator => ({
+      creatorsWithFollowStatus = creators?.map((creator: any) => ({
         ...creator,
         isFollowing: false,
         followers_count: creator.followers?.[0]?.count || 0,
@@ -107,21 +107,21 @@ export async function GET(request: NextRequest) {
     let countQuery = supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .eq('role', 'creator');
+      .eq('role', 'creator' as any);
 
     if (search) {
       countQuery = countQuery.or(`display_name.ilike.%${search}%,username.ilike.%${search}%,bio.ilike.%${search}%`);
     }
 
     if (genre && genre !== 'all') {
-      countQuery = countQuery.eq('genre', genre);
+      countQuery = countQuery.eq('genre', genre as any);
     }
 
     if (location && location !== 'all') {
-      countQuery = countQuery.ilike('location', `%${location}%`);
+      countQuery = countQuery.ilike('location', `%${location}%` as any);
     }
 
-    const { count } = await countQuery;
+    const { count } = await countQuery as { count: any; error: any };
 
     return NextResponse.json({
       data: creatorsWithFollowStatus,
