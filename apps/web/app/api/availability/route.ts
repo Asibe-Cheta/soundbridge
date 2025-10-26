@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
     const { data: availability, error } = await supabase
       .from('creator_availability')
       .select('*')
-      .eq('creator_id', creatorId)
+      .eq('creator_id', creatorId as any)
       .gte('end_date', new Date().toISOString())
-      .order('start_date', { ascending: true });
+      .order('start_date', { ascending: true }) as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching availability:', error);
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match AvailabilitySlot interface
-    const transformedAvailability = availability?.map(slot => ({
+    const transformedAvailability = availability?.map((slot: any) => ({
       id: slot.id,
       start_date: slot.start_date,
       end_date: slot.end_date,
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Start date and end date are required' }, { status: 400 });
     }
 
-    const { data: availability, error } = await supabase
-      .from('creator_availability')
+    const { data: availability, error } = await (supabase
+      .from('creator_availability') as any)
       .insert({
         creator_id: user.id,
         start_date: body.start_date,

@@ -56,8 +56,8 @@ export async function DELETE(
     const resolvedParams = await params;
     const availabilityId = resolvedParams.id;
 
-    const { error } = await supabase
-      .from('creator_availability')
+    const { error } = await (supabase
+      .from('creator_availability') as any)
       .delete()
       .eq('id', availabilityId)
       .eq('creator_id', user.id);
