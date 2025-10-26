@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         arrayBuffer: async () => new ArrayBuffer(0),
         text: async () => '',
         slice: () => file
-      } as File;
+      } as unknown as File;
     } else {
       return NextResponse.json(
         { error: 'Either file data or file info must be provided' },
