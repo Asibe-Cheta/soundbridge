@@ -4,13 +4,13 @@ import { getCreatorByUsername } from '@/src/lib/creator';
 import { CreatorProfileClient } from './CreatorProfileClient';
 
 interface CreatorPageProps {
-  params: {
+  params: Promise<{
     username: string;
-  };
+  }>;
 }
 
 export default async function CreatorPage({ params }: CreatorPageProps) {
-  const { username } = params;
+  const { username } = await params;
   
   try {
     console.log('🔥 Creator page loading for username:', username);
