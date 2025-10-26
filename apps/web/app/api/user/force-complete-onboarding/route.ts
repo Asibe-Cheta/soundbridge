@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     console.log('🔄 Force completing onboarding for user:', userId);
 
     // Update the profile
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('profiles')
+    const { data: updatedProfile, error: updateError } = await (supabase
+      .from('profiles') as any)
       .update(updateData)
       .eq('id', userId)
       .select()
