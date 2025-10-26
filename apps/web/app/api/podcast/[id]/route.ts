@@ -34,9 +34,9 @@ export async function GET(
           social_links
         )
       `)
-      .eq('id', id)
-      .eq('genre', 'podcast')
-      .single();
+      .eq('id', id as any)
+      .eq('genre', 'podcast' as any)
+      .single() as { data: any; error: any };
 
     if (podcastError || !podcast) {
       return NextResponse.json(
@@ -60,9 +60,9 @@ export async function GET(
           avatar_url
         )
       `)
-      .eq('genre', 'podcast')
-      .neq('creator_id', podcast.creator_id)
-      .limit(6);
+      .eq('genre', 'podcast' as any)
+      .neq('creator_id', podcast.creator_id as any)
+      .limit(6) as { data: any; error: any };
 
     // Get more podcasts by the same artist
     const { data: moreByArtist, error: moreError } = await supabase
@@ -74,11 +74,11 @@ export async function GET(
         genre,
         created_at
       `)
-      .eq('creator_id', podcast.creator_id)
-      .eq('genre', 'podcast')
-      .neq('id', podcast.id)
+      .eq('creator_id', podcast.creator_id as any)
+      .eq('genre', 'podcast' as any)
+      .neq('id', podcast.id as any)
       .order('created_at', { ascending: false })
-      .limit(6);
+      .limit(6) as { data: any; error: any };
 
     return NextResponse.json({
       success: true,
