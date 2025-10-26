@@ -27,8 +27,8 @@ export async function DELETE(
     }
 
     // Delete the follow relationship
-    const { error } = await supabase
-      .from('follows')
+    const { error } = await (supabase
+      .from('follows') as any)
       .delete()
       .eq('follower_id', user.id)
       .eq('following_id', following_id);
