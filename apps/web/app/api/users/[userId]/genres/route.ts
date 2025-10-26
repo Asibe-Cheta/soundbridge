@@ -15,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = userId;
+    const { userId } = await params;
 
     // Create Supabase client
     const supabase = createClient(
@@ -37,8 +37,8 @@ export async function GET(
           description
         )
       `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', userId as any)
+      .order('created_at', { ascending: false }) as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching user genres:', error);
@@ -105,8 +105,8 @@ export async function POST(
     );
 
     // Start transaction by deleting existing preferences
-    const { error: deleteError } = await supabase
-      .from('user_genres')
+    const { error: deleteError } = await (supabase
+      .from('user_genres') as any)
       .delete()
       .eq('user_id', userId);
 
@@ -119,14 +119,14 @@ export async function POST(
     }
 
     // Insert new preferences
-    const genrePreferences = genre_ids.map((genre_id, index) => ({
+    const genrePreferences = genre_ids.map((genre_id: any, index: number) => ({
       user_id: userId,
       genre_id: genre_id,
       preference_strength: index < 3 ? 5 : 3 // Top 3 get higher strength
     }));
 
-    const { data: insertedGenres, error: insertError } = await supabase
-      .from('user_genres')
+    const { data: insertedGenres, error: insertError } = await (supabase
+      .from('user_genres') as any)
       .insert(genrePreferences)
       .select();
 
