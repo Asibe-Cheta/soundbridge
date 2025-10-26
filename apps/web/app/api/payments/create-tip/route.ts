@@ -43,8 +43,7 @@ export async function POST(request: NextRequest) {
       authError = userError;
     } else {
       // Web app authentication
-      const cookieStore = await cookies();
-      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+      supabase = createRouteHandlerClient({ cookies });
       
       const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
       user = userData;
