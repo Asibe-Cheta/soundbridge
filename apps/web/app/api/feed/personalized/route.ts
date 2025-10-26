@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
         onboarding_completed,
         created_at
       `)
-      .eq('id', userId)
-      .single();
+      .eq('id', userId as any)
+      .single() as { data: any; error: any };
 
     if (profileError || !profile) {
       console.error('❌ Error fetching user profile:', profileError);
@@ -156,10 +156,10 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
         selected_role
       )
     `)
-    .eq('is_public', true)
-    .not('genre', 'eq', 'podcast')
-    .not('genre', 'eq', 'Podcast')
-    .not('genre', 'eq', 'PODCAST');
+    .eq('is_public', true as any)
+    .not('genre', 'eq', 'podcast' as any)
+    .not('genre', 'eq', 'Podcast' as any)
+    .not('genre', 'eq', 'PODCAST' as any);
 
   // Role-based filtering
   if (role === 'musician') {
@@ -171,7 +171,7 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
   } else {
     // Listeners see content based on their genre preferences
     if (genres && genres.length > 0) {
-      query = query.or(genres.map(genre => `genre.eq.${genre}`).join(','));
+      query = query.or(genres.map((genre: any) => `genre.eq.${genre}`).join(','));
     }
   }
 
@@ -187,7 +187,7 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
   // Get recent tracks with personalization
   const { data: tracks, error } = await query
     .order('created_at', { ascending: false })
-    .limit(12);
+    .limit(12) as { data: any; error: any };
 
   if (error) {
     console.error('❌ Error fetching personalized music:', error);
@@ -200,7 +200,7 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
   if (tracks && tracks.length > 0 && tracks[0].creator) {
     // Creator relationship is working
     console.log('✅ Personalized feed: Creator relationship is working');
-    formattedTracks = (tracks || []).map(track => ({
+    formattedTracks = (tracks || []).map((track: any) => ({
       id: track.id,
       title: track.title,
       artist: track.creator?.display_name || 'Unknown Artist',
@@ -221,26 +221,26 @@ async function getPersonalizedMusic(supabase: any, genres: string[], location: s
     console.log('⚠️ Personalized feed: Creator relationship not working, fetching manually...');
     
     // Get unique creator IDs
-    const creatorIds = [...new Set(tracks.map(track => track.creator_id))];
+    const creatorIds = [...new Set(tracks.map((track: any) => track.creator_id))];
     console.log('🔍 Personalized feed: Unique creator IDs:', creatorIds);
     
     // Fetch creator data manually
     const { data: creators, error: creatorsError } = await supabase
       .from('profiles')
       .select('id, username, display_name, avatar_url')
-      .in('id', creatorIds);
+      .in('id', creatorIds as any) as { data: any; error: any };
     
     console.log('🔍 Personalized feed: Manual creator fetch result:', { creators, creatorsError });
     
     // Create a map of creator data
     const creatorMap = new Map();
     if (creators) {
-      creators.forEach(creator => {
+      creators.forEach((creator: any) => {
         creatorMap.set(creator.id, creator);
       });
     }
     
-    formattedTracks = (tracks || []).map(track => {
+    formattedTracks = (tracks || []).map((track: any) => {
       const creator = creatorMap.get(track.creator_id);
       return {
         id: track.id,
@@ -282,7 +282,7 @@ async function getPersonalizedCreators(supabase: any, genres: string[], location
       tracks:audio_tracks!audio_tracks_creator_id_fkey(count),
       events:events!events_creator_id_fkey(count)
     `)
-    .eq('role', 'creator');
+    .eq('role', 'creator' as any);
 
   // Role-based creator recommendations
   if (role === 'musician') {
@@ -294,7 +294,7 @@ async function getPersonalizedCreators(supabase: any, genres: string[], location
   } else {
     // Listeners see creators in their preferred genres
     if (genres && genres.length > 0) {
-      query = query.or(genres.map(genre => `genre.eq.${genre}`).join(','));
+      query = query.or(genres.map((genre: any) => `genre.eq.${genre}`).join(','));
     }
   }
 
@@ -310,7 +310,7 @@ async function getPersonalizedCreators(supabase: any, genres: string[], location
   // Get creators with activity
   const { data: creators, error } = await query
     .order('created_at', { ascending: false })
-    .limit(8);
+    .limit(8) as { data: any; error: any };
 
   if (error) {
     console.error('❌ Error fetching personalized creators:', error);
@@ -334,8 +334,8 @@ async function getPersonalizedEvents(supabase: any, location: string, country: s
         country
       )
     `)
-    .gte('event_date', new Date().toISOString())
-    .eq('is_public', true);
+    .gte('event_date', new Date().toISOString() as any)
+    .eq('is_public', true as any);
 
   // Location-based filtering (most important for events)
   if (location && location !== 'all') {
@@ -361,7 +361,7 @@ async function getPersonalizedEvents(supabase: any, location: string, country: s
   // Get upcoming events
   const { data: events, error } = await query
     .order('event_date', { ascending: true })
-    .limit(6);
+    .limit(6) as { data: any; error: any };
 
   if (error) {
     console.error('❌ Error fetching personalized events:', error);
@@ -386,7 +386,7 @@ async function getPersonalizedPodcasts(supabase: any, genres: string[], location
         selected_role
       )
     `)
-    .eq('is_public', true)
+    .eq('is_public', true as any)
     .or('genre.eq.podcast,genre.eq.Podcast,genre.eq.PODCAST');
 
   // Role-based podcast recommendations
@@ -399,7 +399,7 @@ async function getPersonalizedPodcasts(supabase: any, genres: string[], location
   } else {
     // Listeners see podcasts in their preferred genres
     if (genres && genres.length > 0) {
-      query = query.or(genres.map(genre => `title.ilike.%${genre}%`).join(','));
+      query = query.or(genres.map((genre: any) => `title.ilike.%${genre}%`).join(','));
     }
   }
 
@@ -411,7 +411,7 @@ async function getPersonalizedPodcasts(supabase: any, genres: string[], location
   // Get recent podcasts
   const { data: podcasts, error } = await query
     .order('created_at', { ascending: false })
-    .limit(6);
+    .limit(6) as { data: any; error: any };
 
   if (error) {
     console.error('❌ Error fetching personalized podcasts:', error);
