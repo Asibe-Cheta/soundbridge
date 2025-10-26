@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Music, Headphones } from 'lucide-react';
+// import { ArrowLeft, Music, Headphones } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
 import Image from 'next/image';
@@ -219,7 +219,7 @@ export default function SignupPage() {
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
-          <ArrowLeft size={16} />
+          ←
           Back to Home
         </Link>
 
@@ -293,7 +293,7 @@ export default function SignupPage() {
                   onMouseLeave={(e) => selectedRole !== 'creator' && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
                 >
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                    <Music size={32} color={selectedRole === 'creator' ? '#DC2626' : '#EC4899'} />
+                    <span style={{ fontSize: '32px', color: selectedRole === 'creator' ? '#DC2626' : '#EC4899' }}>🎵</span>
                   </div>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Creator</div>
                   <div style={{ fontSize: '0.9rem', color: '#999' }}>Share music, podcasts & host events</div>
@@ -313,7 +313,7 @@ export default function SignupPage() {
                   onMouseLeave={(e) => selectedRole !== 'listener' && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
                 >
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                    <Headphones size={32} color={selectedRole === 'listener' ? '#DC2626' : '#EC4899'} />
+                    <span style={{ fontSize: '32px', color: selectedRole === 'listener' ? '#DC2626' : '#EC4899' }}>🎧</span>
                   </div>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Listener</div>
                   <div style={{ fontSize: '0.9rem', color: '#999' }}>Discover content & attend events</div>

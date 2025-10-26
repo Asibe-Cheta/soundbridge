@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+// import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
 export default function VerifyEmailPage() {
@@ -51,7 +51,7 @@ export default function VerifyEmailPage() {
         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
       >
-        <ArrowLeft size={16} />
+        ←
         Back to Home
       </Link>
 
@@ -93,7 +93,7 @@ export default function VerifyEmailPage() {
           margin: '0 auto 2rem',
           border: '2px solid rgba(34, 197, 94, 0.3)'
         }}>
-          <CheckCircle size={40} color="#22C55E" />
+          <span style={{ fontSize: '40px', color: '#22C55E' }}>✅</span>
         </div>
 
         {/* Header */}
@@ -129,7 +129,7 @@ export default function VerifyEmailPage() {
             justifyContent: 'center',
             gap: '0.5rem'
           }}>
-            <Mail size={20} color="#EC4899" />
+            <span style={{ fontSize: '20px', color: '#EC4899' }}>✉️</span>
             <span style={{ color: 'white', fontWeight: '500' }}>{email}</span>
           </div>
         )}
