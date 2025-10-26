@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -12,7 +12,7 @@ export async function GET(
   };
 
   try {
-    const playlistId = params.id;
+    const { id: playlistId } = await params;
 
     // Create Supabase client
     const supabase = createClient(
