@@ -121,8 +121,8 @@ export async function GET() {
     }
 
     // Calculate analytics
-    const totalPlays = tracksData.data?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 0;
-    const totalLikes = tracksData.data?.reduce((sum, track) => sum + (track.like_count || 0), 0) || 0;
+    const totalPlays = tracksData.data?.reduce((sum: number, track: any) => sum + (track.play_count || 0), 0) || 0;
+    const totalLikes = tracksData.data?.reduce((sum: number, track: any) => sum + (track.like_count || 0), 0) || 0;
     const totalShares = 0; // shares_count column doesn't exist yet
     const totalDownloads = 0; // Not implemented yet
     const followers = followersData.count || 0;
@@ -131,16 +131,16 @@ export async function GET() {
     const events = eventsData.data?.length || 0;
 
     // Calculate monthly plays
-    const monthlyPlays = monthlyPlaysData.data?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 0;
+    const monthlyPlays = monthlyPlaysData.data?.reduce((sum: number, track: any) => sum + (track.play_count || 0), 0) || 0;
 
     // Calculate engagement rate
-    const totalEngagement = engagementData.data?.reduce((sum, track) => 
+    const totalEngagement = engagementData.data?.reduce((sum: number, track: any) => 
       sum + (track.like_count || 0), 0) || 0;
-    const totalPlaysForEngagement = engagementData.data?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 1;
+    const totalPlaysForEngagement = engagementData.data?.reduce((sum: number, track: any) => sum + (track.play_count || 0), 0) || 1;
     const engagementRate = totalPlaysForEngagement > 0 ? (totalEngagement / totalPlaysForEngagement) * 100 : 0;
 
     // Format recent tracks
-    const recentTracks = recentTracksData.data?.map(track => ({
+    const recentTracks = recentTracksData.data?.map((track: any) => ({
       id: track.id,
       title: track.title,
       duration: track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '0:00',
@@ -151,7 +151,7 @@ export async function GET() {
     })) || [];
 
     // Format recent events
-    const recentEvents = recentEventsData.data?.map(event => ({
+    const recentEvents = recentEventsData.data?.map((event: any) => ({
       id: event.id,
       title: event.title,
       date: new Date(event.event_date).toLocaleDateString('en-US', { 
@@ -166,13 +166,13 @@ export async function GET() {
 
     // Calculate top genre
     const genreCounts: { [key: string]: number } = {};
-    tracksData.data?.forEach(track => {
+    tracksData.data?.forEach((track: any) => {
       if (track.genre) {
         genreCounts[track.genre] = (genreCounts[track.genre] || 0) + 1;
       }
     });
     const topGenre = Object.keys(genreCounts).length > 0 
-      ? Object.entries(genreCounts).sort(([,a], [,b]) => b - a)[0][0]
+      ? Object.entries(genreCounts).sort(([,a]: [any, any], [,b]: [any, any]) => b - a)[0][0]
       : 'No tracks yet';
 
     const analytics = {
