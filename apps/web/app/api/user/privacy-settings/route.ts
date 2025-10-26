@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     const { data: privacySettings, error: privacyError } = await supabase
       .from('user_privacy_settings')
       .select('*')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (privacyError && privacyError.code !== 'PGRST116') {
       console.error('❌ Error fetching privacy settings:', privacyError);
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update privacy settings in database
-    const { data: updatedSettings, error: updateError } = await supabase
-      .from('user_privacy_settings')
+    const { data: updatedSettings, error: updateError } = await (supabase
+      .from('user_privacy_settings') as any)
       .upsert({
         user_id: user.id,
         profile_visibility: profileVisibility,
