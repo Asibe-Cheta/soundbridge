@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('id', body.availability_id as any)
       .eq('creator_id', body.creator_id as any)
-      .eq('is_available', true)
+      .eq('is_available', true as any)
       .lte('start_date', body.proposed_start_date as any)  // Your start should be >= slot start
       .gte('end_date', body.proposed_end_date as any)      // Your end should be <= slot end
       .single();
