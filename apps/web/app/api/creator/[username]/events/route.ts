@@ -15,8 +15,8 @@ export async function GET(
     const { data: creator, error: creatorError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('username', username)
-      .single();
+      .eq('username', username as any)
+      .single() as { data: any; error: any };
 
     if (creatorError || !creator) {
       return NextResponse.json(
@@ -40,8 +40,8 @@ export async function GET(
         ),
         attendees:event_attendees!event_attendees_event_id_fkey(count)
       `)
-      .eq('creator_id', creator.id)
-      .order('event_date', { ascending: false });
+      .eq('creator_id', creator.id as any)
+      .order('event_date', { ascending: false }) as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching events:', error);
@@ -52,7 +52,7 @@ export async function GET(
     }
 
     // Transform the data to match Event interface (same as getCreatorEvents)
-    const transformedData = (data || []).map(event => ({
+    const transformedData = (data || []).map((event: any) => ({
       id: event.id,
       title: event.title,
       description: event.description,
