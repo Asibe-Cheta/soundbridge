@@ -37,68 +37,68 @@ export async function GET() {
       supabase
         .from('audio_tracks')
         .select('id, title, play_count, like_count, created_at, cover_art_url, duration, genre')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false }),
+        .eq('creator_id', user.id as any)
+        .order('created_at', { ascending: false }) as any,
 
       // Get user's events
       supabase
         .from('events')
         .select('id, title, event_date, location, current_attendees, likes_count, shares_count, comments_count, created_at')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false }),
+        .eq('creator_id', user.id as any)
+        .order('created_at', { ascending: false }) as any,
 
       // Get follower count
       supabase
         .from('follows')
         .select('follower_id', { count: 'exact' })
-        .eq('following_id', user.id),
+        .eq('following_id', user.id as any) as any,
 
       // Get following count
       supabase
         .from('follows')
         .select('following_id', { count: 'exact' })
-        .eq('follower_id', user.id),
+        .eq('follower_id', user.id as any) as any,
 
       // Get total likes received
       supabase
         .from('likes')
         .select('id', { count: 'exact' })
-        .or(`content_id.eq.${user.id},content_id.in.(${user.id})`),
+        .or(`content_id.eq.${user.id},content_id.in.(${user.id})`) as any,
 
       // Get total shares received
       supabase
         .from('shares')
         .select('id', { count: 'exact' })
-        .or(`content_id.eq.${user.id},content_id.in.(${user.id})`),
+        .or(`content_id.eq.${user.id},content_id.in.(${user.id})`) as any,
 
       // Get recent tracks (last 5)
       supabase
         .from('audio_tracks')
         .select('id, title, play_count, like_count, created_at, cover_art_url, duration')
-        .eq('creator_id', user.id)
+        .eq('creator_id', user.id as any)
         .order('created_at', { ascending: false })
-        .limit(5),
+        .limit(5) as any,
 
       // Get recent events (last 5)
       supabase
         .from('events')
         .select('id, title, event_date, location, current_attendees, created_at')
-        .eq('creator_id', user.id)
+        .eq('creator_id', user.id as any)
         .order('created_at', { ascending: false })
-        .limit(5),
+        .limit(5) as any,
 
       // Get monthly plays (last 30 days)
       supabase
         .from('audio_tracks')
         .select('play_count')
-        .eq('creator_id', user.id)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+        .eq('creator_id', user.id as any)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() as any) as any,
 
       // Get engagement rate (likes / plays)
       supabase
         .from('audio_tracks')
         .select('play_count, like_count')
-        .eq('creator_id', user.id)
+        .eq('creator_id', user.id as any) as any
     ]);
 
     // Handle Promise.allSettled results
