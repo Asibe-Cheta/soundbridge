@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     const { data: preferences, error: preferencesError } = await supabase
       .from('user_login_alerts_preferences')
       .select('*')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (preferencesError && preferencesError.code !== 'PGRST116') {
       console.error('❌ Error fetching login alerts preferences:', preferencesError);
@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
     const { enabled, emailNotifications, pushNotifications } = body;
 
     // Update login alerts preferences in database
-    const { data: updatedPreferences, error: updateError } = await supabase
-      .from('user_login_alerts_preferences')
+    const { data: updatedPreferences, error: updateError } = await (supabase
+      .from('user_login_alerts_preferences') as any)
       .upsert({
         user_id: user.id,
         login_alerts_enabled: enabled,

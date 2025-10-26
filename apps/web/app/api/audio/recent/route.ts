@@ -74,7 +74,7 @@ export async function GET() {
       .not('genre', 'eq', 'Podcast')
       .not('genre', 'eq', 'PODCAST')
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(5) as { data: any; error: any };
 
     console.log('🔍 Raw query result:', { tracks: tracks?.length, error });
 
@@ -87,9 +87,9 @@ export async function GET() {
     }
 
     console.log('✅ Fetched tracks (excluding podcasts):', tracks?.length);
-    console.log('✅ Track genres:', tracks?.map(t => t.genre));
+    console.log('✅ Track genres:', tracks?.map((t: any) => t.genre));
     if (tracks && tracks.length > 0) {
-      tracks.forEach((track, index) => {
+      tracks.forEach((track: any, index: number) => {
         console.log(`🎵 Track ${index + 1}: "${track.title}" - File URL: ${track.file_url}`);
         console.log(`🎵 Track ${index + 1} creator data:`, {
           creator_id: track.creator_id,
@@ -112,7 +112,7 @@ export async function GET() {
     if (tracks && tracks.length > 0 && tracks[0].creator) {
       // Creator relationship is working
       console.log('✅ Creator relationship is working');
-      formattedTracks = tracks.map(track => ({
+      formattedTracks = tracks.map((track: any) => ({
         id: track.id,
         title: track.title,
         artist: track.creator?.display_name || 'Unknown Artist',
@@ -135,7 +135,7 @@ export async function GET() {
       console.log('⚠️ Creator relationship not working, fetching manually...');
       
       // Get unique creator IDs
-      const creatorIds = [...new Set(tracks.map(track => track.creator_id))];
+      const creatorIds = [...new Set(tracks.map((track: any) => track.creator_id))];
       console.log('🔍 Unique creator IDs:', creatorIds);
       
       // Fetch creator data manually
@@ -149,12 +149,12 @@ export async function GET() {
       // Create a map of creator data
       const creatorMap = new Map();
       if (creators) {
-        creators.forEach(creator => {
+        creators.forEach((creator: any) => {
           creatorMap.set(creator.id, creator);
         });
       }
       
-      formattedTracks = tracks.map(track => {
+      formattedTracks = tracks.map((track: any) => {
         const creator = creatorMap.get(track.creator_id);
         return {
           id: track.id,
@@ -179,7 +179,7 @@ export async function GET() {
 
     console.log('✅ Returning formatted tracks:', formattedTracks.length);
     if (formattedTracks && formattedTracks.length > 0) {
-      formattedTracks.forEach((track, index) => {
+      formattedTracks.forEach((track: any, index: number) => {
         console.log(`🎵 Formatted Track ${index + 1}:`, {
           id: track.id,
           title: track.title,

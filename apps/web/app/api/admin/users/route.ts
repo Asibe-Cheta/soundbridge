@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const { count: totalUsers, error: countError } = await query.select('*', { count: 'exact', head: true });
+    const { count: totalUsers, error: countError } = await (query as any).select('*', { count: 'exact', head: true });
 
     if (countError) {
       console.error('❌ Error fetching user count:', countError);
@@ -143,8 +143,8 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'ban_user':
-        const { error: banError } = await supabase
-          .from('profiles')
+        const { error: banError } = await (supabase
+          .from('profiles') as any)
           .update({ 
             is_active: false,
             banned_at: new Date().toISOString(),
@@ -158,8 +158,8 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'unban_user':
-        const { error: unbanError } = await supabase
-          .from('profiles')
+        const { error: unbanError } = await (supabase
+          .from('profiles') as any)
           .update({ 
             is_active: true,
             banned_at: null,
@@ -173,8 +173,8 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'update_role':
-        const { error: roleError } = await supabase
-          .from('profiles')
+        const { error: roleError } = await (supabase
+          .from('profiles') as any)
           .update({ role: data.role })
           .eq('id', userId);
 

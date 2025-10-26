@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
     const { data: recentLogins, error: sessionsError } = await supabase
       .from('user_login_sessions_view')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user.id as any)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(10) as { data: any; error: any };
 
     if (sessionsError) {
       console.error('❌ Error fetching login sessions:', sessionsError);
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform database results to match frontend expectations
-    const formattedSessions: LoginSession[] = recentLogins?.map(session => ({
+    const formattedSessions: LoginSession[] = recentLogins?.map((session: any) => ({
       id: session.id,
       timestamp: session.created_at,
       ipAddress: session.ip_address || 'Unknown',

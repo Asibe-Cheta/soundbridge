@@ -77,9 +77,9 @@ export async function GET(request: NextRequest) {
       const { data: sessions, error: sessionsError } = await supabase
         .from('user_login_sessions_view')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id as any)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(10) as { data: any; error: any };
 
       if (!sessionsError && sessions) {
         sessionDetails = sessions.map(session => {
