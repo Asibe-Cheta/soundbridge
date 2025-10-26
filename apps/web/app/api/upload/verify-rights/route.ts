@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // If content needs review, add to moderation queue
     if (needsReview) {
-      await supabase.from('admin_review_queue').insert({
+      await (supabase.from('admin_review_queue') as any).insert({
         queue_type: 'content_verification',
         priority: violations.length > 0 ? 'urgent' : 'normal',
         status: 'pending',
