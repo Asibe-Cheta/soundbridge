@@ -3,10 +3,11 @@ import { createServiceClient } from '@/src/lib/supabase';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    console.log('👤 Admin User Detail API called for user:', params.userId);
+    const { userId } = await params;
+    console.log('👤 Admin User Detail API called for user:', userId);
     
     const supabase = createServiceClient();
 
@@ -29,11 +30,11 @@ export async function GET(
         banned_at,
         ban_reason
       `)
-      .eq('id', params.userId)
+      .eq('id', userId)
       .single();
 
     // Get email from auth.users table
-    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(params.userId);
+    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
     
     if (userError) {
       console.error('❌ Error fetching user details:', userError);
@@ -44,7 +45,7 @@ export async function GET(
     }
 
     if (!user) {
-      console.error('❌ No user found with ID:', params.userId);
+      console.error('❌ No user found with ID:', userId);
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
@@ -61,30 +62,30 @@ export async function GET(
     const { count: tracksCount } = await supabase
       .from('audio_tracks')
       .select('*', { count: 'exact', head: true })
-      .eq('creator_id', params.userId);
+      .eq('creator_id', userId);
 
     const { count: eventsCount } = await supabase
       .from('events')
       .select('*', { count: 'exact', head: true })
-      .eq('organizer_id', params.userId);
+      .eq('organizer_id', userId);
 
     const { count: messagesCount } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
-      .eq('sender_id', params.userId);
+      .eq('sender_id', userId);
 
     // Get recent activity
     const { data: recentTracks } = await supabase
       .from('audio_tracks')
       .select('id, title, created_at, play_count, likes_count')
-      .eq('creator_id', params.userId)
+      .eq('creator_id', userId)
       .order('created_at', { ascending: false })
       .limit(5);
 
     const { data: recentEvents } = await supabase
       .from('events')
       .select('id, title, event_date, current_attendees, max_attendees')
-      .eq('organizer_id', params.userId)
+      .eq('organizer_id', userId)
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -92,7 +93,7 @@ export async function GET(
     const { data: reports } = await supabase
       .from('admin_review_queue')
       .select('*')
-      .or(`reference_data->>reported_user_id.eq.${params.userId},reference_data->>complainant_id.eq.${params.userId}`)
+      .or(`reference_data->>reported_user_id.eq.${userId},reference_data->>complainant_id.eq.${userId}`)
       .order('created_at', { ascending: false });
 
     const userDetails = {
@@ -127,10 +128,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    console.log('👤 Admin User Action API called for user:', params.userId);
+    const { userId } = await params;
+    console.log('👤 Admin User Action API called for user:', userId);
     
     const body = await request.json();
     const { action, reason, data } = body;
@@ -149,7 +151,7 @@ export async function POST(
             banned_at: new Date().toISOString(),
             ban_reason: reason || 'Administrative action'
           })
-          .eq('id', params.userId);
+          .eq('id', userId);
 
         if (banError) {
           throw new Error(`Failed to ban user: ${banError.message}`);
@@ -166,7 +168,7 @@ export async function POST(
             banned_at: null,
             ban_reason: null
           })
-          .eq('id', params.userId);
+          .eq('id', userId);
 
         if (unbanError) {
           throw new Error(`Failed to unban user: ${unbanError.message}`);
@@ -179,7 +181,7 @@ export async function POST(
         const { error: roleError } = await supabase
           .from('profiles')
           .update({ role: data.role })
-          .eq('id', params.userId);
+          .eq('id', userId);
 
         if (roleError) {
           throw new Error(`Failed to update user role: ${roleError.message}`);
@@ -192,7 +194,7 @@ export async function POST(
         const { error: statusError } = await supabase
           .from('profiles')
           .update({ is_active: data.is_active })
-          .eq('id', params.userId);
+          .eq('id', userId);
 
         if (statusError) {
           throw new Error(`Failed to update user status: ${statusError.message}`);
