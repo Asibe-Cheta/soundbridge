@@ -110,14 +110,14 @@ export async function POST(request: NextRequest) {
     // 5. Process refunds via Stripe
     console.log('💳 Processing refunds via Stripe...');
     const refundResults = await Promise.allSettled(
-      purchases.map(purchase => processSingleRefund(purchase, cancellationReason, supabase))
+      purchases.map((purchase: any) => processSingleRefund(purchase, cancellationReason, supabase))
     );
 
     // 6. Analyze results
     const successful: RefundResult[] = [];
     const failed: RefundResult[] = [];
 
-    refundResults.forEach((result, index) => {
+    refundResults.forEach((result: any, index: number) => {
       if (result.status === 'fulfilled' && result.value.success) {
         successful.push(result.value);
       } else {
@@ -175,8 +175,8 @@ async function processSingleRefund(
     console.log(`💳 Processing refund for purchase ${purchase.id}...`);
 
     // Mark as processing
-    await supabase
-      .from('ticket_purchases')
+    await (supabase
+      .from('ticket_purchases') as any)
       .update({ status: 'refund_processing' })
       .eq('id', purchase.id);
 
@@ -197,8 +197,8 @@ async function processSingleRefund(
     console.log(`✅ Stripe refund created: ${refund.id}`);
 
     // Update database with refund details
-    const { error: updateError } = await supabase
-      .from('ticket_purchases')
+    const { error: updateError } = await (supabase
+      .from('ticket_purchases') as any)
       .update({
         status: 'refunded',
         refund_id: refund.id,
@@ -227,8 +227,8 @@ async function processSingleRefund(
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     // Mark as failed in database
-    await supabase
-      .from('ticket_purchases')
+    await (supabase
+      .from('ticket_purchases') as any)
       .update({
         status: 'refund_failed',
         refund_error: errorMessage
