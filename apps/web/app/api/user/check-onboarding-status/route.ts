@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at
       `)
-      .eq('id', userId)
-      .single();
+      .eq('id', userId as any)
+      .single() as { data: any; error: any };
 
     if (profileError) {
       console.error('❌ Error fetching profile:', profileError);
