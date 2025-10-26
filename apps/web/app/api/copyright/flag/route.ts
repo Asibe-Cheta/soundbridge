@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validationResult.error.errors
+        details: (validationResult.error as any).issues || (validationResult.error as any).errors
       }, { status: 400 });
     }
     
@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
     const { data: track, error: trackError } = await supabase
       .from('audio_tracks')
       .select('id, title, user_id, creator_id')
-      .eq('id', trackId)
-      .single();
+      .eq('id', trackId as any)
+      .single() as { data: any; error: any };
     
     if (trackError || !track) {
       return NextResponse.json({
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Create content flag
-    const { data: flag, error: flagError } = await supabase
-      .from('content_flags')
+    const { data: flag, error: flagError } = await (supabase
+      .from('content_flags') as any)
       .insert({
         flag_type: 'copyright_suspected',
         content_id: trackId,
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Add to admin review queue
-    const { error: queueError } = await supabase
-      .from('admin_review_queue')
+    const { error: queueError } = await (supabase
+      .from('admin_review_queue') as any)
       .insert({
         queue_type: 'content_flag',
         reference_type: 'content_flags',
