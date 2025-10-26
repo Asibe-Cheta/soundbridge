@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { countryCode: string } }
+  { params }: { params: Promise<{ countryCode: string }> }
 ) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ export async function GET(
   };
 
   try {
-    const { countryCode } = params;
+    const { countryCode } = await params;
 
     if (!countryCode) {
       return NextResponse.json(

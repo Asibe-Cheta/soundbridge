@@ -10,9 +10,10 @@ import { eventNotificationService } from '@/src/services/EventNotificationServic
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createRouteHandlerClient({ cookies });
 
     // Get authenticated user
@@ -25,7 +26,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const eventId = params.id;
+    const eventId = id;
 
     if (!eventId) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });

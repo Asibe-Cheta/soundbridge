@@ -12,10 +12,10 @@ const corsHeaders = {
 // GET user's genre preferences
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const userId = userId;
 
     // Create Supabase client
     const supabase = createClient(
@@ -69,10 +69,10 @@ export async function GET(
 // POST/UPDATE user's genre preferences
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
     const body = await request.json();
     const { genre_ids } = body;
 
