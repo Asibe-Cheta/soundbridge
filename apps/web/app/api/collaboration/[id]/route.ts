@@ -50,8 +50,8 @@ export async function PUT(
              username
            )
          `)
-         .eq('id', requestId)
-         .single();
+         .eq('id', requestId as any)
+         .single() as { data: any; error: any };
 
        if (requestDetails && requestDetails.creator) {
          // Handle both array and object cases
@@ -66,26 +66,26 @@ export async function PUT(
          const statusText = response === 'accepted' ? 'accepted' : 'declined';
          const serviceClient = createServiceClient();
          
-         const { data: notification, error: notificationError } = await serviceClient
-           .from('notifications')
-           .insert({
-             user_id: requestDetails.requester_id,
-             type: 'collaboration',
-             title: 'Collaboration Request Update',
-             message: `${creatorName} has ${statusText} your collaboration request`,
-             related_id: requestId,
-             related_type: 'collaboration_request',
-             action_url: `/availability?request=${requestId}`,
-             metadata: {
-               creator_id: user.id,
-               creator_name: creatorName,
-               status: response
-             },
-             is_read: false,
-             created_at: new Date().toISOString()
-           })
-           .select()
-           .single();
+        const { data: notification, error: notificationError } = await (serviceClient
+          .from('notifications') as any)
+          .insert({
+            user_id: requestDetails.requester_id,
+            type: 'collaboration',
+            title: 'Collaboration Request Update',
+            message: `${creatorName} has ${statusText} your collaboration request`,
+            related_id: requestId,
+            related_type: 'collaboration_request',
+            action_url: `/availability?request=${requestId}`,
+            metadata: {
+              creator_id: user.id,
+              creator_name: creatorName,
+              status: response
+            },
+            is_read: false,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
            
          if (notificationError) {
            console.error('❌ Error creating response notification:', notificationError);
