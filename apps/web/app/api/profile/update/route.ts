@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
     const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('id', userId)
-      .maybeSingle();
+      .eq('id', userId as any)
+      .maybeSingle() as { data: any; error: any };
 
     if (checkError) {
       console.error('❌ Error checking profile:', checkError);
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
     let updatedProfile;
     if (existingProfile) {
       // Profile exists, update it
-      const { data, error: updateError } = await supabase
-        .from('profiles')
+      const { data, error: updateError } = await (supabase
+        .from('profiles') as any)
         .update(updateData)
         .eq('id', userId)
         .select()
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
       updatedProfile = data;
     } else {
       // Profile doesn't exist, create it
-      const { data, error: createError } = await supabase
-        .from('profiles')
+      const { data, error: createError } = await (supabase
+        .from('profiles') as any)
         .insert({
           id: userId,
           ...updateData
