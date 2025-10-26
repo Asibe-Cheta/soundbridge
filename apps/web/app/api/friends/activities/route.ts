@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: followsTest, error: followsTestError } = await supabase
       .from('follows')
       .select('count')
-      .limit(1);
+      .limit(1) as { data: any; error: any };
 
     if (followsTestError) {
       console.error('❌ Follows table error:', followsTestError);
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           created_at
         )
       `)
-      .eq('follower_id', user.id);
+      .eq('follower_id', user.id as any) as { data: any; error: any };
 
     if (friendsError) {
       console.error('❌ Error fetching friends:', friendsError);
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     console.log('👥 Friends found:', friends?.length || 0);
 
     // Filter to get mutual follows only
-    const friendIds = friends?.map(f => f.following_id) || [];
+    const friendIds = friends?.map((f: any) => f.following_id) || [];
     
     if (friendIds.length === 0) {
       console.log('❌ No friends found, returning empty activities');
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
           created_at
         )
       `)
-      .in('follower_id', friendIds)
-      .eq('following_id', user.id);
+      .in('follower_id', friendIds as any)
+      .eq('following_id', user.id as any) as { data: any; error: any };
 
     if (mutualError) {
       console.error('Error fetching mutual follows:', mutualError);
@@ -109,10 +109,10 @@ export async function GET(request: NextRequest) {
           profile_image_url
         )
       `)
-      .in('creator_id', friendIds)
-      .eq('is_public', true)
+      .in('creator_id', friendIds as any)
+      .eq('is_public', true as any)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(10) as { data: any; error: any };
 
     if (audioError) {
       console.error('Error fetching recent audio:', audioError);
@@ -137,10 +137,10 @@ export async function GET(request: NextRequest) {
           profile_image_url
         )
       `)
-      .in('creator_id', friendIds)
-      .eq('is_public', true)
+      .in('creator_id', friendIds as any)
+      .eq('is_public', true as any)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(10) as { data: any; error: any };
 
     if (podcastError) {
       console.error('Error fetching recent podcasts:', podcastError);
@@ -151,10 +151,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Combine and format activities
-    const activities = [];
+    const activities: any[] = [];
     
     // Add audio activities
-    recentAudio?.forEach(audio => {
+    recentAudio?.forEach((audio: any) => {
       if (audio.creator) {
         activities.push({
           id: `audio-${audio.id}`,
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Add podcast activities
-    recentPodcasts?.forEach(podcast => {
+    recentPodcasts?.forEach((podcast: any) => {
       if (podcast.creator) {
         activities.push({
           id: `podcast-${podcast.id}`,
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
 
     // Sort by creation date and limit to 5 most recent
     const sortedActivities = activities
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
 
     console.log('🎉 Final activities count:', sortedActivities.length);
