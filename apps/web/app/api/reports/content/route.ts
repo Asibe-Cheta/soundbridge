@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validationResult.error.errors
+        details: (validationResult.error as any).issues || (validationResult.error as any).errors
       }, { status: 400 });
     }
     
@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     const { data: content, error: contentError } = await supabase
       .from('audio_tracks')
       .select('id, title, user_id')
-      .eq('id', data.contentId)
-      .single();
+      .eq('id', data.contentId as any)
+      .single() as { data: any; error: any };
     
     if (contentError || !content) {
       return NextResponse.json({
@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
     const priority = getReportPriority(data.reportType);
     
     // Create content report
-    const { data: report, error: reportError } = await supabase
-      .from('content_reports')
+    const { data: report, error: reportError } = await (supabase
+      .from('content_reports') as any)
       .insert({
         report_type: data.reportType,
         priority: priority,
@@ -146,8 +146,8 @@ export async function POST(request: NextRequest) {
     
     // Auto-flag content if it's a copyright report
     if (data.reportType === 'copyright_infringement') {
-      await supabase
-        .from('content_flags')
+      await (supabase
+        .from('content_flags') as any)
         .insert({
           flag_type: 'copyright_suspected',
           content_id: data.contentId,
@@ -226,8 +226,8 @@ export async function GET(request: NextRequest) {
           content:audio_tracks(id, title, user_id, file_url),
           assigned_to:profiles(id, display_name, email)
         `)
-        .eq('id', reportId)
-        .single();
+        .eq('id', reportId as any)
+        .single() as { data: any; error: any };
       
       if (error || !report) {
         return NextResponse.json({
@@ -242,8 +242,8 @@ export async function GET(request: NextRequest) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', userId)
-          .single();
+          .eq('id', userId as any)
+          .single() as { data: any; error: any };
         
         if (!profile || !['admin', 'legal_admin', 'moderator'].includes(profile.role)) {
           return NextResponse.json({
@@ -271,10 +271,10 @@ export async function GET(request: NextRequest) {
       
       // Apply filters
       if (status) {
-        query = query.eq('status', status);
+        query = query.eq('status', status as any);
       }
       if (reportType) {
-        query = query.eq('report_type', reportType);
+        query = query.eq('report_type', reportType as any);
       }
       
       // If user is authenticated, show their reports or all if admin
@@ -282,14 +282,14 @@ export async function GET(request: NextRequest) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', userId)
-          .single();
+          .eq('id', userId as any)
+          .single() as { data: any; error: any };
         
         if (profile && ['admin', 'legal_admin', 'moderator'].includes(profile.role)) {
           // Admin can see all reports
         } else {
           // Regular user can only see their own reports
-          query = query.eq('reporter_id', userId);
+          query = query.eq('reporter_id', userId as any);
         }
       } else {
         // Anonymous users can't see any reports
@@ -299,7 +299,7 @@ export async function GET(request: NextRequest) {
         }, { status: 401 });
       }
       
-      const { data: reports, error } = await query;
+      const { data: reports, error } = await query as { data: any; error: any };
       
       if (error) {
         return NextResponse.json({
@@ -357,7 +357,7 @@ async function sendAdminNotification(notification: {
     const { data: admins } = await supabase
       .from('profiles')
       .select('email, display_name')
-      .in('role', ['admin', 'legal_admin', 'moderator']);
+      .in('role', ['admin', 'legal_admin', 'moderator'] as any) as { data: any; error: any };
     
     if (admins && admins.length > 0) {
       // Send email notification to admins
