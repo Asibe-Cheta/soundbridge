@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { EyeOpenOpen, EyeOpenClosed, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
 import Image from 'next/image';
 
@@ -473,7 +473,7 @@ function UpdatePasswordContent() {
                   padding: '0.25rem'
                 }}
               >
-                {showPassword ? <EyeOpenIconOff size={20} /> : <EyeOpenIcon size={20} />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </div>
@@ -530,7 +530,7 @@ function UpdatePasswordContent() {
                   padding: '0.25rem'
                 }}
               >
-                {showConfirmPassword ? <EyeOpenIconOff size={20} /> : <EyeOpenIcon size={20} />}
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </div>
