@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')
       .select('tier')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
+      .eq('user_id', user.id as any)
+      .eq('status', 'active' as any)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .single() as { data: any; error: any };
     
     const userTier = subscription?.tier || 'free';
     console.log('👤 User tier:', userTier);
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       .rpc('check_storage_limit', { 
         user_uuid: user.id, 
         file_size: file.size 
-      });
+      }) as { data: any; error: any };
     
     if (!storageCheck) {
       return NextResponse.json(
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     const { data: uploadCheck } = await supabase
       .rpc('check_upload_count_limit', { 
         user_uuid: user.id 
-      });
+      }) as { data: any; error: any };
     
     if (!uploadCheck) {
       return NextResponse.json(
@@ -193,7 +193,7 @@ async function createFileFromBase64(base64Data: string): Promise<File> {
           })
         };
       }
-    } as File;
+    } as unknown as File;
     
     return fileLike;
   } catch (error) {
@@ -220,11 +220,11 @@ export async function GET(request: NextRequest) {
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')
       .select('tier')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
+      .eq('user_id', user.id as any)
+      .eq('status', 'active' as any)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .single() as { data: any; error: any };
     
     const userTier = subscription?.tier || 'free';
     
