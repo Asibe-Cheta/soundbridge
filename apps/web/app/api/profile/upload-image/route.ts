@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     console.log('📤 Starting profile image upload...');
     
     // Create a route handler client that can access cookies
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -252,7 +252,7 @@ export async function PUT(request: Request) {
     console.log('📝 Updating profile data...');
     
     // Create a route handler client that can access cookies
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();

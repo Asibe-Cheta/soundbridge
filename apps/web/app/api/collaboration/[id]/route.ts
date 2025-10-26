@@ -8,7 +8,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -24,8 +24,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Response must be "accepted" or "declined"' }, { status: 400 });
     }
 
-         const { error } = await supabase
-       .from('collaboration_requests')
+         const { error } = await (supabase
+       .from('collaboration_requests') as any)
        .update({
          status: response,
          updated_at: new Date().toISOString()
