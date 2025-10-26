@@ -39,9 +39,9 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (type === 'sent') {
-      query = query.eq('requester_id', user.id);
+      query = query.eq('requester_id', user.id as any);
     } else {
-      query = query.eq('creator_id', user.id);
+      query = query.eq('creator_id', user.id as any);
     }
 
     const { data: requests, error } = await query;
