@@ -13,3 +13,6 @@ packages
 docs
 *.md
 !README.md
+apps/web/node_modules
+apps/web/.next
+apps/web/.vercel
