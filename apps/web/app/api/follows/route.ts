@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
     const { data: existingFollow } = await supabase
       .from('follows')
       .select('*')
-      .eq('follower_id', user.id)
-      .eq('following_id', following_id)
-      .single();
+      .eq('follower_id', user.id as any)
+      .eq('following_id', following_id as any)
+      .single() as { data: any; error: any };
 
     if (existingFollow) {
       return NextResponse.json(
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the follow relationship
-    const { data: follow, error } = await supabase
-      .from('follows')
+    const { data: follow, error } = await (supabase
+      .from('follows') as any)
       .insert({
         follower_id: user.id,
         following_id: following_id
@@ -92,8 +92,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the follow relationship
-    const { error } = await supabase
-      .from('follows')
+    const { error } = await (supabase
+      .from('follows') as any)
       .delete()
       .eq('follower_id', user.id)
       .eq('following_id', following_id);
@@ -145,9 +145,9 @@ export async function GET(request: NextRequest) {
     const { data: existingFollow, error } = await supabase
       .from('follows')
       .select('*')
-      .eq('follower_id', user.id)
-      .eq('following_id', following_id)
-      .single();
+      .eq('follower_id', user.id as any)
+      .eq('following_id', following_id as any)
+      .single() as { data: any; error: any };
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error checking follow status:', error);
