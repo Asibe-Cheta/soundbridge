@@ -7,7 +7,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -18,8 +18,8 @@ export async function PUT(
     const resolvedParams = await params;
     const availabilityId = resolvedParams.id;
 
-    const { data: availability, error } = await supabase
-      .from('creator_availability')
+    const { data: availability, error } = await (supabase
+      .from('creator_availability') as any)
       .update({
         ...body,
         updated_at: new Date().toISOString()
@@ -46,7 +46,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createApiClientWithCookies();
+    const supabase = await createApiClientWithCookies();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {

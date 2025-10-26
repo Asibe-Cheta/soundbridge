@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         .limit(10) as { data: any; error: any };
 
       if (!sessionsError && sessions) {
-        sessionDetails = sessions.map(session => {
+        sessionDetails = sessions.map((session: any) => {
           const loginTime = new Date(session.created_at);
           const lastActivity = new Date(session.last_activity);
           const duration = lastActivity.getTime() - loginTime.getTime();
