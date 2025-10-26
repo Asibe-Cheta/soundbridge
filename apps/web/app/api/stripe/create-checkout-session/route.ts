@@ -167,15 +167,15 @@ export async function POST(request: NextRequest) {
     // Create Stripe Checkout session with aggressive timeout
     console.log('🚨 STEP 13: Creating Stripe checkout session...');
     
-    const sessionConfig = {
-      payment_method_types: ['card'] as const,
+    const sessionConfig: any = {
+      payment_method_types: ['card'],
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      mode: 'subscription' as const,
+      mode: 'subscription',
       success_url: `${request.nextUrl.origin}/dashboard?tab=subscription&success=true`,
       cancel_url: `${request.nextUrl.origin}/pricing?cancelled=true`,
       customer_email: user.email,
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         },
       },
       allow_promotion_codes: true,
-      billing_address_collection: 'auto' as const,
+      billing_address_collection: 'auto',
       tax_id_collection: {
         enabled: true,
       },
