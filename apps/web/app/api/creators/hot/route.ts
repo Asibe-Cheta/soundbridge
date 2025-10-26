@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
         role,
         created_at
       `)
-      .in('role', ['creator', 'artist', 'musician', 'event_promoter']) // Include more roles
+      .in('role', ['creator', 'artist', 'musician', 'event_promoter'] as any) // Include more roles
       .order('created_at', { ascending: false })
-      .limit(50); // Limit to avoid large queries
+      .limit(50) as { data: any; error: any }; // Limit to avoid large queries
 
     if (error) {
       console.error('Error fetching creators for hot list:', error);
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate simplified hot scores for each creator
-    const creatorsWithScores = creators.map((creator) => {
+    const creatorsWithScores = creators.map((creator: any) => {
       // Simplified scoring based on account age and basic metrics
       const accountAge = Math.max(
         (Date.now() - new Date(creator.created_at).getTime()) / (1000 * 60 * 60 * 24),
@@ -171,8 +171,8 @@ export async function GET(request: NextRequest) {
 
     // Sort by hot score and return top creators
     const hotCreators = creatorsWithScores
-      .filter(creator => creator.hot_score > 0) // Only include creators with some activity
-      .sort((a, b) => b.hot_score - a.hot_score)
+      .filter((creator: any) => creator.hot_score > 0) // Only include creators with some activity
+      .sort((a: any, b: any) => b.hot_score - a.hot_score)
       .slice(0, limit);
 
     console.log('🔥 Final hot creators:', hotCreators.length, 'creators with scores > 0');
