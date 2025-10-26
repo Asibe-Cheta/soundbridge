@@ -15,8 +15,8 @@ export async function GET(
     const { data: creator, error: creatorError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('username', username)
-      .single();
+      .eq('username', username as any)
+      .single() as { data: any; error: any };
 
     if (creatorError || !creator) {
       return NextResponse.json(
@@ -29,9 +29,9 @@ export async function GET(
     const { data, error } = await supabase
       .from('audio_tracks')
       .select('*')
-      .eq('creator_id', creator.id)
-      .eq('is_public', true)
-      .order('created_at', { ascending: false });
+      .eq('creator_id', creator.id as any)
+      .eq('is_public', true as any)
+      .order('created_at', { ascending: false }) as { data: any; error: any };
 
     console.log('Raw tracks data:', data);
     console.log('Query error:', error);
@@ -45,7 +45,7 @@ export async function GET(
     }
 
     // Transform the data to match AudioTrack interface - simplified
-    const transformedData = (data || []).map(track => ({
+    const transformedData = (data || []).map((track: any) => ({
       id: track.id,
       title: track.title || 'Untitled',
       description: track.description || '',
