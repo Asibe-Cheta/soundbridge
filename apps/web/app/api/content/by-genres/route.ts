@@ -42,10 +42,10 @@ export async function GET(request: NextRequest) {
           category
         )
       `)
-      .eq('content_type', contentType)
-      .in('genre_id', genreIds);
+      .eq('content_type', contentType as any)
+      .in('genre_id', genreIds as any);
 
-    const { data: contentGenres, error: contentError } = await query;
+    const { data: contentGenres, error: contentError } = await query as { data: any; error: any };
 
     if (contentError) {
       console.error('Error fetching content by genres:', contentError);
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get unique content IDs
-    const contentIds = [...new Set(contentGenres?.map(cg => cg.content_id) || [])];
+    const contentIds = [...new Set(contentGenres?.map((cg: any) => cg.content_id) || [])];
 
     if (contentIds.length === 0) {
       return NextResponse.json({
@@ -88,10 +88,10 @@ export async function GET(request: NextRequest) {
           country
         )
       `)
-      .in('id', contentIds)
-      .eq('is_public', true);
+      .in('id', contentIds as any)
+      .eq('is_public', true as any);
 
-    const { data: content, error: fetchError } = await contentQuery;
+    const { data: content, error: fetchError } = await contentQuery as { data: any; error: any };
 
     if (fetchError) {
       console.error('Error fetching content details:', fetchError);
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     let sortedContent = content || [];
     
     if (location || country) {
-      sortedContent = sortedContent.sort((a, b) => {
+      sortedContent = sortedContent.sort((a: any, b: any) => {
         const aScore = 
           (location && a.creator.location === location ? 100 : 0) +
           (country && a.creator.country === country ? 50 : 0) +
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Sort by play count if no location
-      sortedContent = sortedContent.sort((a, b) => (b.play_count || 0) - (a.play_count || 0));
+      sortedContent = sortedContent.sort((a: any, b: any) => (b.play_count || 0) - (a.play_count || 0));
     }
 
     // Apply limit
