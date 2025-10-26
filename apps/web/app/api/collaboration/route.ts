@@ -141,8 +141,8 @@ export async function POST(request: NextRequest) {
        const requesterName = collaborationRequest.requester?.display_name || collaborationRequest.requester?.username || 'Someone';
        const serviceClient = createServiceClient();
        
-       const { data: notification, error: notificationError } = await serviceClient
-         .from('notifications')
+       const { data: notification, error: notificationError } = await (serviceClient
+         .from('notifications') as any)
          .insert({
            user_id: body.creator_id,
            type: 'collaboration_request',
