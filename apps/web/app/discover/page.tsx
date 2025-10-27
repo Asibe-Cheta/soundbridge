@@ -15,7 +15,8 @@ import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { useSearch } from '../../src/hooks/useSearch';
 import { searchCreators } from '../../src/lib/creator';
 import type { CreatorSearchResult, Event } from '../../src/lib/types/creator';
-import type { AudioTrack } from '../../src/lib/types/search';
+import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search';
+import type { AudioTrack } from '../../src/lib/types/audio';
 import ShareModal from '@/src/components/social/ShareModal';
 import {
   Search,
@@ -323,7 +324,7 @@ export default function DiscoverPage() {
     playTrack(audioTrack);
   };
 
-  const handleLikeTrack = async (track: AudioTrack, e: React.MouseEvent) => {
+  const handleLikeTrack = async (track: SearchAudioTrack, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -355,11 +356,25 @@ export default function DiscoverPage() {
     }
   };
 
-  const handleShareTrack = async (track: AudioTrack, e: React.MouseEvent) => {
+  const handleShareTrack = async (track: SearchAudioTrack, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    setSelectedTrackForShare(track);
+    // Convert to audio player AudioTrack format for sharing
+    const audioTrack: AudioTrack = {
+      id: track.id,
+      title: track.title,
+      artist: track.creator?.display_name || track.artist || 'Unknown Artist',
+      album: '',
+      duration: track.duration || 0,
+      artwork: track.cover_art_url || track.coverArt || '',
+      url: track.file_url || track.url || '',
+      liked: false,
+      lyrics: track.lyrics || undefined,
+      lyricsLanguage: track.lyricsLanguage || undefined
+    };
+    
+    setSelectedTrackForShare(audioTrack as any);
     setShareModalOpen(true);
   };
 
