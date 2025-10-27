@@ -74,7 +74,7 @@ export default function DiscoverPage() {
   const [error, setError] = useState<string | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [selectedTrackForShare, setSelectedTrackForShare] = useState<AudioTrack | null>(null);
+  const [selectedTrackForShare, setSelectedTrackForShare] = useState<SearchAudioTrack | null>(null);
   const [showFallback, setShowFallback] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -360,21 +360,7 @@ export default function DiscoverPage() {
     e.preventDefault();
     e.stopPropagation();
     
-    // Convert to audio player AudioTrack format for sharing
-    const audioTrack: AudioTrack = {
-      id: track.id,
-      title: track.title,
-      artist: track.creator?.display_name || track.artist || 'Unknown Artist',
-      album: '',
-      duration: track.duration || 0,
-      artwork: track.cover_art_url || track.coverArt || '',
-      url: track.file_url || track.url || '',
-      liked: false,
-      lyrics: track.lyrics || undefined,
-      lyricsLanguage: track.lyricsLanguage || undefined
-    };
-    
-    setSelectedTrackForShare(audioTrack as any);
+    setSelectedTrackForShare(track);
     setShareModalOpen(true);
   };
 
