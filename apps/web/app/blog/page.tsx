@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Footer } from '../../src/components/layout/Footer';
-import { Book, Calendar, User, ArrowRight, Tag, Clock, TrendingUp, Music, Users, Star } from 'lucide-react';
+import { BookOpen, Calendar, User, ArrowRight, Tag, Clock, TrendingUp, Music, Users, Star } from 'lucide-react';
 
 export default function BlogPage() {
   return (
@@ -26,7 +26,7 @@ export default function BlogPage() {
             gap: '1rem',
             marginBottom: '1rem'
           }}>
-            <Book size={48} style={{ color: '#DC2626' }} />
+            <BookOpen size={48} style={{ color: '#DC2626' }} />
             <h1 style={{
               fontSize: '3rem',
               fontWeight: '700',
