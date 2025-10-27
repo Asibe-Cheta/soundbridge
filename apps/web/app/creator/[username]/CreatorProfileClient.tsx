@@ -25,8 +25,6 @@ import {
   User,
   MessageCircle,
   Share2,
-  Twitter,
-  Youtube,
   MapPin,
   Send,
   UserPlus,
