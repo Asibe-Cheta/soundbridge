@@ -46,7 +46,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
     return (
       <CreatorProfileClient 
         username={username}
-        initialCreator={creator}
+        initialCreator={creator as any}
       />
     );
   } catch (error) {
