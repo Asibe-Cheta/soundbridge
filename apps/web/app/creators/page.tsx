@@ -36,6 +36,7 @@ interface Creator {
   followers_count: number;
   tracks_count: number;
   location?: string;
+  country?: string;
   is_verified: boolean;
   isFollowing: boolean;
   avatar_url?: string;
