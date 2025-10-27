@@ -7,7 +7,8 @@
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint",
-    "setup-env": "node scripts/setup-env.js"
+    "setup-env": "node scripts/setup-env.js",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@googleapis/androidpublisher": "^31.0.0",
