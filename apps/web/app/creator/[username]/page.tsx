@@ -29,7 +29,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
         .select('*')
         .eq('id', userId)
         .eq('role', 'creator')
-        .single();
+        .single() as { data: any; error: any };
       
       if (!idError && creatorById) {
         creator = creatorById;
