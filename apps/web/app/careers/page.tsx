@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Footer } from '../../src/components/layout/Footer';
-import { Briefcase, Users, MapPin, Clock, ArrowRight, Heart, Zap, Globe, Code, Music, Sparkles, BarChart } from 'lucide-react';
+import { Briefcase, Users, MapPin, Clock, ArrowRight, Heart, Zap, Globe, Code, Music, Sparkles, BarChart3 } from 'lucide-react';
 
 export default function CareersPage() {
   return (
@@ -249,7 +249,7 @@ export default function CareersPage() {
                 gap: '1rem',
                 marginBottom: '1rem'
               }}>
-                <BarChart size={32} style={{ color: '#10B981' }} />
+                <BarChart3 size={32} style={{ color: '#10B981' }} />
                 <h3 style={{ color: 'white', margin: 0 }}>Data Scientist</h3>
               </div>
               <div style={{
