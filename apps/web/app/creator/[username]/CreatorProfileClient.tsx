@@ -340,13 +340,13 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const getSocialLinks = () => {
     const links = [];
     if (creator.social_links?.instagram) {
-      links.push({ platform: 'Instagram', url: creator.social_links.instagram, icon: Instagram });
+      links.push({ platform: 'Instagram', url: creator.social_links.instagram, icon: Share2 });
     }
     if (creator.social_links?.twitter) {
-      links.push({ platform: 'Twitter', url: creator.social_links.twitter, icon: Twitter });
+      links.push({ platform: 'Twitter', url: creator.social_links.twitter, icon: Share2 });
     }
     if (creator.social_links?.youtube) {
-      links.push({ platform: 'YouTube', url: creator.social_links.youtube, icon: Youtube });
+      links.push({ platform: 'YouTube', url: creator.social_links.youtube, icon: Share2 });
     }
     return links;
   };
