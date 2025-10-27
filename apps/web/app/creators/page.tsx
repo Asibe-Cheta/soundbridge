@@ -883,6 +883,7 @@ export default function CreatorsPage() {
                           columnCount={columnsCount}
                           columnWidth={(width - GRID_GAP) / columnsCount}
                           height={height}
+                          itemCount={creators.length}
                           rowCount={rowCount}
                           rowHeight={DESKTOP_CARD_HEIGHT}
                           width={width}
