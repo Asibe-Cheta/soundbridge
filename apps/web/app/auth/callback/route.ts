@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       try {
         // Verify the email
         const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
+          token_hash: tokenHash || undefined,
           type: 'signup'
         });
 
@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
     if (type === 'signup') {
       // Handle email confirmation
       const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
+        token_hash: tokenHash || undefined,
         type: 'signup'
       });
 
@@ -324,7 +324,7 @@ export async function GET(request: NextRequest) {
     } else if (type === 'recovery') {
       // Handle password reset
       const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
+        token_hash: tokenHash || undefined,
         type: 'recovery'
       });
 
