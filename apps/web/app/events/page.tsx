@@ -31,7 +31,8 @@ import {
   Home,
   MapPin,
   DollarSign,
-  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Clock
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -901,7 +902,10 @@ export default function EventsPage() {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
-                  <ArrowUpDown size={14} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <ArrowUp size={10} />
+                    <ArrowDown size={10} />
+                  </div>
                   Sort By
                 </label>
                 <select
