@@ -32,7 +32,11 @@ export default function DebugPage() {
         }
 
         // Test API endpoints
-        const apiTests = {
+        const apiTests: {
+          personalizedFeed: any;
+          recentTracks: any;
+          trendingTracks: any;
+        } = {
           personalizedFeed: null,
           recentTracks: null,
           trendingTracks: null,
