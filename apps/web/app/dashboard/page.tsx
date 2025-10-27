@@ -25,7 +25,6 @@ import {
   Plus,
   MessageCircle,
   Home,
-  Clock3,
   Crown,
   DollarSign
 } from 'lucide-react';
@@ -91,7 +90,7 @@ export default function DashboardPage() {
     { id: 'followers', label: 'Followers', icon: Users },
     { id: 'subscription', label: 'Subscription', icon: Crown },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
-    { id: 'availability', label: 'Availability', icon: Clock3 },
+    { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -596,7 +595,7 @@ export default function DashboardPage() {
                 justifyContent: 'center',
                 margin: '0 auto 1rem auto'
               }}>
-                <Clock3 size={32} style={{ color: 'white' }} />
+                <Clock size={32} style={{ color: 'white' }} />
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Manage Your Availability</h3>
               <p style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0' }}>Set your available time slots for collaboration requests</p>
