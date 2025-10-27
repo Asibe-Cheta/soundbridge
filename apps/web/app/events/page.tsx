@@ -189,7 +189,7 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
               color: '#999'
             }}>
               <Calendar size={12} />
-              <span>{new Date(event.date).toLocaleDateString()}</span>
+              <span>{new Date(event.event_date).toLocaleDateString()}</span>
               <User size={12} />
               <span>{event.location}</span>
             </div>
@@ -350,7 +350,7 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 <Calendar size={14} />
-                <span>{new Date(event.date).toLocaleDateString()}</span>
+                <span>{new Date(event.event_date).toLocaleDateString()}</span>
               </div>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -436,7 +436,7 @@ export default function EventsPage() {
     if (selectedDate !== 'all') {
       const now = new Date();
       filtered = filtered.filter(event => {
-        const eventDate = new Date(event.date);
+        const eventDate = new Date(event.event_date);
         switch (selectedDate) {
           case 'today':
             return eventDate.toDateString() === now.toDateString();
@@ -481,7 +481,7 @@ export default function EventsPage() {
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case 'upcoming':
-        filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        filtered.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
         break;
       case 'popular':
         filtered.sort((a, b) => (b.attendeeCount || 0) - (a.attendeeCount || 0));
