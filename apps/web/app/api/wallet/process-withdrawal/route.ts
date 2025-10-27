@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
     const { data: transaction, error: transactionError } = await supabase
       .from('wallet_transactions')
       .select('*')
-      .eq('id', transaction_id)
-      .eq('user_id', user.id)
-      .single();
+      .eq('id', transaction_id as any)
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (transactionError || !transaction) {
       return NextResponse.json(
@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
     const { data: withdrawalMethod, error: methodError } = await supabase
       .from('wallet_withdrawal_methods')
       .select('*')
-      .eq('id', withdrawal_method_id)
-      .eq('user_id', user.id)
-      .single();
+      .eq('id', withdrawal_method_id as any)
+      .eq('user_id', user.id as any)
+      .single() as { data: any; error: any };
 
     if (methodError || !withdrawalMethod) {
       return NextResponse.json(
@@ -139,12 +139,12 @@ export async function POST(request: NextRequest) {
             { status: 400, headers: corsHeaders }
           );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing withdrawal:', error);
       
       // Update transaction status to failed
-      await supabase
-        .from('wallet_transactions')
+      await (supabase
+        .from('wallet_transactions') as any)
         .update({ 
           status: 'failed',
           metadata: { 
@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
 
     if (transferResult.success) {
       // Update transaction status to completed
-      await supabase
-        .from('wallet_transactions')
+      await (supabase
+        .from('wallet_transactions') as any)
         .update({ 
           status: 'completed',
           metadata: { 
@@ -185,8 +185,8 @@ export async function POST(request: NextRequest) {
       );
     } else {
       // Update transaction status to failed
-      await supabase
-        .from('wallet_transactions')
+      await (supabase
+        .from('wallet_transactions') as any)
         .update({ 
           status: 'failed',
           metadata: { 
