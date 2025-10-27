@@ -31,8 +31,8 @@ import {
   Home,
   MapPin,
   DollarSign,
-  ArrowUp,
-  ArrowDown,
+  ChevronUp,
+  ChevronDown,
   Clock
 } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -903,8 +903,8 @@ export default function EventsPage() {
                   gap: '0.5rem'
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <ArrowUp size={10} />
-                    <ArrowDown size={10} />
+                    <ChevronUp size={10} />
+                    <ChevronDown size={10} />
                   </div>
                   Sort By
                 </label>
