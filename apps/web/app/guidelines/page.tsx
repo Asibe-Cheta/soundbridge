@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Footer } from '../../src/components/layout/Footer';
-import { BookOpen, Shield, Heart, Users, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Shield, Heart, Users, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 export default function GuidelinesPage() {
   return (
@@ -26,7 +26,7 @@ export default function GuidelinesPage() {
             gap: '1rem',
             marginBottom: '1rem'
           }}>
-            <BookOpen size={48} style={{ color: '#DC2626' }} />
+            <FileText size={48} style={{ color: '#DC2626' }} />
             <h1 style={{
               fontSize: '3rem',
               fontWeight: '700',

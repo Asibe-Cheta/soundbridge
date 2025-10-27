@@ -7,7 +7,7 @@ import { useNotifications } from '../../src/hooks/useNotifications';
 import { NotificationBell } from '../../src/components/ui/NotificationBell';
 import { 
   Bell, 
-  Check, 
+  CheckCircle as Check, 
   Trash2, 
   Clock, 
   Users, 

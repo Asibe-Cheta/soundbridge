@@ -2,9 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: {
+    // Temporarily ignore all TypeScript errors to allow deployment
+    // TODO: Fix lucide-react import issues and other TypeScript errors
     ignoreBuildErrors: true,
   },
   eslint: {
+    // Disable ESLint entirely to allow build
     ignoreDuringBuilds: true,
   },
   images: {

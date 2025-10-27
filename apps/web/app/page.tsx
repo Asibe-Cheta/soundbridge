@@ -14,7 +14,7 @@ import { CreatorCard } from '@/src/components/creator/CreatorCard';
 import { User, Upload, Play, Pause, Heart, MessageCircle, Calendar, Mic, Users, Share2, Loader2, Star, Sparkles, MoreHorizontal, Link as LinkIcon, Music } from 'lucide-react';
 import ShareModal from '@/src/components/social/ShareModal';
 import { SafeAdBanner } from '@/src/components/ads/SafeAdBanner';
-import type { AudioTrack } from '@/src/lib/types/search';
+import type { AudioTrack } from '@/src/lib/types/audio';
 import type { CreatorSearchResult, Event } from '@/src/lib/types/creator';
 
 export default function HomePage() {
@@ -29,7 +29,9 @@ export default function HomePage() {
       }
     `;
     document.head.appendChild(style);
-    return () => document.head.removeChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const { toggleLike, isLiked } = useSocial();
@@ -208,8 +210,10 @@ export default function HomePage() {
       artwork: track.cover_art_url || track.coverArt || '',
       url: track.file_url || track.url || '',
       liked: false,
-      lyrics: track.lyrics || undefined,
-      lyricsLanguage: track.lyricsLanguage || undefined
+      genre: track.genre,
+      tags: track.tags,
+      lyrics: track.lyrics,
+      lyricsLanguage: track.lyricsLanguage
     };
     
     console.log('🎵 Converted to AudioTrack:', audioTrack);
