@@ -25,7 +25,7 @@ import {
   Plus,
   MessageCircle,
   Home,
-  Crown,
+  Star,
   DollarSign
 } from 'lucide-react';
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
@@ -88,7 +88,7 @@ export default function DashboardPage() {
     { id: 'content', label: 'Content', icon: Music },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'followers', label: 'Followers', icon: Users },
-    { id: 'subscription', label: 'Subscription', icon: Crown },
+    { id: 'subscription', label: 'Subscription', icon: Star },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'settings', label: 'Settings', icon: Settings },
