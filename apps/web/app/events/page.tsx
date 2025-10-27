@@ -417,7 +417,7 @@ export default function EventsPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(event => 
         event.title.toLowerCase().includes(query) ||
-        event.description.toLowerCase().includes(query) ||
+        (event.description && event.description.toLowerCase().includes(query)) ||
         event.location.toLowerCase().includes(query)
       );
     }
