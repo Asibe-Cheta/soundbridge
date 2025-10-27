@@ -12,7 +12,7 @@ import {
   Users,
   Calendar,
   MapPin,
-  Bookmark,
+  BookmarkPlus,
   Sparkles,
   Activity,
   Headphones,
@@ -450,7 +450,7 @@ export default function FeedPage() {
               transition: 'all 0.3s ease'
             }}
           >
-            <Bookmark size={16} fill={track.isBookmarked ? '#EC4899' : 'none'} />
+            <BookmarkPlus size={16} fill={track.isBookmarked ? '#EC4899' : 'none'} />
           </button>
           <button style={{
             padding: '0.5rem',
