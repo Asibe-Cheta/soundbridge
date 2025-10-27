@@ -904,7 +904,7 @@ export default function EventsPage({ params }: EventsPageProps) {
                     <div className="flex items-center justify-between pt-2 border-t border-gray-600/50">
                       <div className="flex items-center space-x-2 text-sm text-gray-400">
                         <Users className="h-4 w-4" />
-                        <span>{event.attendee_count || 0} attending</span>
+                        <span>{event.current_attendees || 0} attending</span>
                       </div>
                       <span className="text-sm font-medium text-red-400">
                         {event.formatted_price || 'Free'}
