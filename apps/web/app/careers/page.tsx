@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Footer } from '../../src/components/layout/Footer';
-import { Briefcase, Users, MapPin, Clock, ArrowRight, Heart, Zap, Globe, Code, Music, Brush, BarChart } from 'lucide-react';
+import { Briefcase, Users, MapPin, Clock, ArrowRight, Heart, Zap, Globe, Code, Music, Sparkles, BarChart } from 'lucide-react';
 
 export default function CareersPage() {
   return (
@@ -194,7 +194,7 @@ export default function CareersPage() {
                 gap: '1rem',
                 marginBottom: '1rem'
               }}>
-                <Brush size={32} style={{ color: '#EC4899' }} />
+                <Sparkles size={32} style={{ color: '#EC4899' }} />
                 <h3 style={{ color: 'white', margin: 0 }}>Product Designer</h3>
               </div>
               <div style={{
