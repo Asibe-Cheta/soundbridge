@@ -1036,6 +1036,7 @@ export default function EventsPage() {
                           columnCount={columnsCount}
                           columnWidth={EVENT_CARD_WIDTH}
                           height={height}
+                          itemCount={filteredEvents.length}
                           rowCount={rowCount}
                           rowHeight={EVENT_ITEM_HEIGHT}
                           width={width}
