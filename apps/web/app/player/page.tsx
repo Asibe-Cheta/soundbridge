@@ -5,8 +5,8 @@ import dynamic from 'next/dynamic';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useRouter } from 'next/navigation';
 import { 
-  Maximize2, 
-  Minimize2, 
+  Maximize, 
+  Minimize, 
   ArrowLeft,
   Music,
   User,
@@ -245,7 +245,7 @@ export default function MusicPlayerPage() {
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
               title={isExpanded ? 'Minimize' : 'Expand'}
             >
-              {isExpanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+              {isExpanded ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
           </div>
         </div>
