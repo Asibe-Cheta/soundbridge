@@ -166,7 +166,7 @@ function PaymentPageContent() {
 
   const options = {
     appearance: {
-      theme: 'dark' as const,
+      theme: 'night' as const,
       variables: {
         colorPrimary: '#ec4899',
         colorBackground: '#1f2937',
