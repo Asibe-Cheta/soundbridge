@@ -76,17 +76,20 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, any[]>) || {};
 
     // Calculate category-specific progress
-    const categoryProgress = Object.entries(groupedChecklist).map(([categoryName, categoryItems]) => ({
-      category: categoryName,
-      total: categoryItems.length,
-      completed: categoryItems.filter(item => item.status === 'completed').length,
-      inProgress: categoryItems.filter(item => item.status === 'in_progress').length,
-      pending: categoryItems.filter(item => item.status === 'pending').length,
-      failed: categoryItems.filter(item => item.status === 'failed').length,
-      percentage: categoryItems.length > 0 
-        ? Math.round((categoryItems.filter(item => item.status === 'completed').length / categoryItems.length) * 100) 
-        : 0
-    }));
+    const categoryProgress = Object.entries(groupedChecklist).map(([categoryName, categoryItems]) => {
+      const items = categoryItems as any[];
+      return {
+        category: categoryName,
+        total: items.length,
+        completed: items.filter(item => item.status === 'completed').length,
+        inProgress: items.filter(item => item.status === 'in_progress').length,
+        pending: items.filter(item => item.status === 'pending').length,
+        failed: items.filter(item => item.status === 'failed').length,
+        percentage: items.length > 0 
+          ? Math.round((items.filter(item => item.status === 'completed').length / items.length) * 100) 
+          : 0
+      };
+    });
 
     // Calculate priority-based progress
     const priorityProgress = {
