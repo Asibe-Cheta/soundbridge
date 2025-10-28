@@ -14,8 +14,8 @@ import {
   Users, 
   Music, 
   Mic, 
-  Calendar,
-  HardDrive,
+  Calendar, 
+  Database, 
   MessageCircle,
   Palette,
   Shield,
@@ -430,7 +430,7 @@ export default function PricingPage() {
               {/* File Size & Processing */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <HardDrive className="h-8 w-8 text-white" />
+                  <Database className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-4">File Size & Processing</h3>
                 <div className="space-y-3 text-white/70">
