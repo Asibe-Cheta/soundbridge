@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     const topRecommendations = Object.entries(recommendationCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 10)
       .map(([recommendation, count]) => ({ recommendation, count }));
 
