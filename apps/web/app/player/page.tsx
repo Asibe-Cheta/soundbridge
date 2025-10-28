@@ -37,7 +37,7 @@ const AdvancedAudioPlayer = dynamic(
 );
 
 export default function MusicPlayerPage() {
-  const { currentTrack, isPlaying, playTrack, pauseTrack, nextTrack, previousTrack } = useAudioPlayer();
+  const { currentTrack, isPlaying, playTrack, pause, resume, stop } = useAudioPlayer();
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -395,7 +395,7 @@ export default function MusicPlayerPage() {
               </button>
 
               <button
-                onClick={previousTrack}
+                onClick={() => {/* Previous track functionality not implemented */}}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -414,7 +414,7 @@ export default function MusicPlayerPage() {
               </button>
 
               <button
-                onClick={isPlaying ? pauseTrack : () => playTrack(currentTrack)}
+                onClick={isPlaying ? pause : () => currentTrack && playTrack(currentTrack)}
                 style={{
                   background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                   border: 'none',
@@ -442,7 +442,7 @@ export default function MusicPlayerPage() {
               </button>
 
               <button
-                onClick={nextTrack}
+                onClick={() => {/* Next track functionality not implemented */}}
                 style={{
                   background: 'transparent',
                   border: 'none',
