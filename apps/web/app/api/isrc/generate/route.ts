@@ -169,8 +169,12 @@ export async function GET(request: NextRequest) {
       trackId: item.track_id,
       isrc: item.isrc,
       status: item.status,
-      trackTitle: item.audio_tracks?.title || 'Unknown Track',
-      artistName: item.audio_tracks?.artist_name || 'Unknown Artist',
+      trackTitle: Array.isArray(item.audio_tracks) 
+        ? item.audio_tracks[0]?.title || 'Unknown Track'
+        : item.audio_tracks?.title || 'Unknown Track',
+      artistName: Array.isArray(item.audio_tracks)
+        ? item.audio_tracks[0]?.artist_name || 'Unknown Artist'
+        : item.audio_tracks?.artist_name || 'Unknown Artist',
       createdAt: item.created_at,
       generatedAt: item.generated_at
     })) || [];

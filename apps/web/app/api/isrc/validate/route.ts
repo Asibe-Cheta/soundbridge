@@ -75,8 +75,12 @@ export async function POST(request: NextRequest) {
         success: true,
         isValid: true,
         trackInfo: {
-          title: isrcData.audio_tracks?.title || 'Unknown Track',
-          artist: isrcData.audio_tracks?.artist_name || 'Unknown Artist',
+          title: Array.isArray(isrcData.audio_tracks) 
+            ? isrcData.audio_tracks[0]?.title || 'Unknown Track'
+            : isrcData.audio_tracks?.title || 'Unknown Track',
+          artist: Array.isArray(isrcData.audio_tracks)
+            ? isrcData.audio_tracks[0]?.artist_name || 'Unknown Artist'
+            : isrcData.audio_tracks?.artist_name || 'Unknown Artist',
           platform: 'SoundBridge',
           status: isrcData.status,
           generatedAt: isrcData.generated_at
