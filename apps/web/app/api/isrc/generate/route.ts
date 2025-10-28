@@ -165,19 +165,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response
-    const formattedIsrcs = isrcs?.map(item => ({
-      trackId: item.track_id,
-      isrc: item.isrc,
-      status: item.status,
-      trackTitle: Array.isArray(item.audio_tracks) 
-        ? item.audio_tracks[0]?.title || 'Unknown Track'
-        : item.audio_tracks?.title || 'Unknown Track',
-      artistName: Array.isArray(item.audio_tracks)
-        ? item.audio_tracks[0]?.artist_name || 'Unknown Artist'
-        : item.audio_tracks?.artist_name || 'Unknown Artist',
-      createdAt: item.created_at,
-      generatedAt: item.generated_at
-    })) || [];
+    const formattedIsrcs = isrcs?.map(item => {
+      const audioTrack = Array.isArray(item.audio_tracks) 
+        ? item.audio_tracks[0] 
+        : item.audio_tracks;
+      
+      return {
+        trackId: item.track_id,
+        isrc: item.isrc,
+        status: item.status,
+        trackTitle: (audioTrack as any)?.title || 'Unknown Track',
+        artistName: (audioTrack as any)?.artist_name || 'Unknown Artist',
+        createdAt: item.created_at,
+        generatedAt: item.generated_at
+      };
+    }) || [];
 
     return NextResponse.json({
       success: true,

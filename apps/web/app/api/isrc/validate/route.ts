@@ -71,16 +71,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (isrcData) {
+      const audioTrack = Array.isArray(isrcData.audio_tracks) 
+        ? isrcData.audio_tracks[0] 
+        : isrcData.audio_tracks;
+      
       return NextResponse.json({
         success: true,
         isValid: true,
         trackInfo: {
-          title: Array.isArray(isrcData.audio_tracks) 
-            ? isrcData.audio_tracks[0]?.title || 'Unknown Track'
-            : isrcData.audio_tracks?.title || 'Unknown Track',
-          artist: Array.isArray(isrcData.audio_tracks)
-            ? isrcData.audio_tracks[0]?.artist_name || 'Unknown Artist'
-            : isrcData.audio_tracks?.artist_name || 'Unknown Artist',
+          title: (audioTrack as any)?.title || 'Unknown Track',
+          artist: (audioTrack as any)?.artist_name || 'Unknown Artist',
           platform: 'SoundBridge',
           status: isrcData.status,
           generatedAt: isrcData.generated_at
