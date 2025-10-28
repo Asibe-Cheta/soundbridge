@@ -6,7 +6,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useStripe } from '../../src/hooks/useStripe';
 import { 
   Star, 
-  Check, 
+  CheckCircle, 
   Zap, 
   TrendingUp, 
   BarChart3, 
@@ -373,7 +373,7 @@ export default function PricingPage() {
                       <div className="space-y-3 mb-8">
                         {plan.features.map((feature, index) => (
                           <div key={index} className="flex items-center gap-3">
-                            <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
+                            <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
                             <span className="text-white/90">{feature}</span>
                           </div>
                         ))}
