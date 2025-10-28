@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Footer } from '../../src/components/layout/Footer';
-import { BookOpen, Download, Mail, Phone, Calendar, FileText, Image as ImageIcon, Video } from 'lucide-react';
+import { FileText, Download, Mail, Phone, Calendar, Image as ImageIcon, Video } from 'lucide-react';
 
 export default function PressPage() {
   return (
@@ -26,7 +26,7 @@ export default function PressPage() {
             gap: '1rem',
             marginBottom: '1rem'
           }}>
-            <BookOpen size={48} style={{ color: '#DC2626' }} />
+            <FileText size={48} style={{ color: '#DC2626' }} />
             <h1 style={{
               fontSize: '3rem',
               fontWeight: '700',
