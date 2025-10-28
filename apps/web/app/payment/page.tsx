@@ -165,7 +165,6 @@ function PaymentPageContent() {
   }
 
   const options = {
-    clientSecret,
     appearance: {
       theme: 'dark' as const,
       variables: {
