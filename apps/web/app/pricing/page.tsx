@@ -16,8 +16,8 @@ import {
   Mic, 
   Calendar, 
   Database, 
-  MessageCircle,
-  Palette,
+  MessageCircle, 
+  Paintbrush, 
   Shield,
   Globe,
   Code,
@@ -179,7 +179,7 @@ export default function PricingPage() {
     },
     {
       category: 'Branding & Customization',
-      icon: <Palette className="h-6 w-6 text-purple-500" />,
+      icon: <Paintbrush className="h-6 w-6 text-purple-500" />,
       items: [
         { name: 'Custom Branding', free: '✗', pro: '✓', enterprise: '✓' },
         { name: 'Custom Domain', free: '✗', pro: '✗', enterprise: '✓' },
