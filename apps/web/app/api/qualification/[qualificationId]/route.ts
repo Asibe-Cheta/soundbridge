@@ -4,10 +4,11 @@ import { cookies } from 'next/headers';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { qualificationId: string } }
+  { params }: { params: Promise<{ qualificationId: string }> }
 ) {
   try {
-    console.log('📝 Update Qualification API called for ID:', params.qualificationId);
+    const { qualificationId } = await params;
+    console.log('📝 Update Qualification API called for ID:', qualificationId);
     
     const supabase = createRouteHandlerClient({ cookies });
     
@@ -67,7 +68,7 @@ export async function PUT(
     const { data: qualification, error: updateError } = await supabase
       .from('platform_qualifications')
       .update(updateData)
-      .eq('id', params.qualificationId)
+      .eq('id', qualificationId)
       .select()
       .single();
 
@@ -120,10 +121,11 @@ export async function PUT(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { qualificationId: string } }
+  { params }: { params: Promise<{ qualificationId: string }> }
 ) {
   try {
-    console.log('📋 Get Qualification API called for ID:', params.qualificationId);
+    const { qualificationId } = await params;
+    console.log('📋 Get Qualification API called for ID:', qualificationId);
     
     const supabase = createRouteHandlerClient({ cookies });
     
@@ -143,7 +145,7 @@ export async function GET(
         *,
         verified_by_profile:profiles!verified_by(display_name, email)
       `)
-      .eq('id', params.qualificationId)
+      .eq('id', qualificationId)
       .single();
 
     if (fetchError) {
