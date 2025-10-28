@@ -95,7 +95,35 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check upload count limits
+    // Check persistent memory for free tier eligibility
+    const { data: persistentMemoryCheck, error: memoryError } = await supabase
+      .rpc('can_user_use_free_tier_with_memory', {
+        user_uuid: user.id
+      });
+
+    if (memoryError) {
+      console.error('❌ Error checking persistent memory:', memoryError);
+      // Fall back to regular upload check
+    } else if (persistentMemoryCheck?.[0]) {
+      const memoryResult = persistentMemoryCheck[0];
+      
+      if (!memoryResult.can_use_free_tier) {
+        return NextResponse.json(
+          { 
+            error: 'Upload not allowed',
+            details: memoryResult.reason,
+            persistentId: memoryResult.persistent_id,
+            previousTier: memoryResult.previous_tier,
+            freeTierUsed: memoryResult.free_tier_used,
+            abuseScore: memoryResult.abuse_score,
+            requiresVerification: memoryResult.abuse_score >= 0.6
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Check upload count limits (fallback)
     const { data: uploadCheck } = await supabase
       .rpc('check_upload_count_limit', { 
         user_uuid: user.id 
