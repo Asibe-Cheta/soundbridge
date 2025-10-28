@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useStripe } from '../../src/hooks/useStripe';
 import { 
-  Crown, 
   Star, 
   Check, 
   Zap, 
@@ -85,7 +84,7 @@ export default function PricingPage() {
       id: 'pro',
       name: 'Pro',
       description: 'For growing creators',
-      icon: <Crown className="h-8 w-8 text-purple-500" />,
+      icon: <Star className="h-8 w-8 text-purple-500" />,
       price: { monthly: 9.99, yearly: 99.99 },
       color: 'from-purple-500/20 to-pink-500/20',
       borderColor: 'border-purple-200/50',
