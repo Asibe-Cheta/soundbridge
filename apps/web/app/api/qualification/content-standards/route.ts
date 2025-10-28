@@ -58,14 +58,17 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, any[]>) || {};
 
     // Calculate category-specific implementation
-    const categoryStats = Object.entries(groupedStandards).map(([categoryName, categoryStandards]) => ({
-      category: categoryName,
-      total: categoryStandards.length,
-      implemented: categoryStandards.filter(s => s.is_implemented).length,
-      percentage: categoryStandards.length > 0 
-        ? Math.round((categoryStandards.filter(s => s.is_implemented).length / categoryStandards.length) * 100) 
-        : 0
-    }));
+    const categoryStats = Object.entries(groupedStandards).map(([categoryName, categoryStandards]) => {
+      const standards = categoryStandards as any[];
+      return {
+        category: categoryName,
+        total: standards.length,
+        implemented: standards.filter(s => s.is_implemented).length,
+        percentage: standards.length > 0 
+          ? Math.round((standards.filter(s => s.is_implemented).length / standards.length) * 100) 
+          : 0
+      };
+    });
 
     return NextResponse.json({
       success: true,
