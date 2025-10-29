@@ -17,7 +17,7 @@ import {
   Calendar, 
   Database, 
   MessageCircle, 
-  Paintbrush, 
+  PenTool, 
   Shield,
   Globe,
   Code,
@@ -179,7 +179,7 @@ export default function PricingPage() {
     },
     {
       category: 'Branding & Customization',
-      icon: <Paintbrush className="h-6 w-6 text-purple-500" />,
+      icon: <PenTool className="h-6 w-6 text-purple-500" />,
       items: [
         { name: 'Custom Branding', free: '✗', pro: '✓', enterprise: '✓' },
         { name: 'Custom Domain', free: '✗', pro: '✗', enterprise: '✓' },
