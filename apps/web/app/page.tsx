@@ -131,16 +131,16 @@ export default function HomePage() {
 
   // For signed-out users, show landing page with hero and CTA
   return (
-    <div className={`min-h-screen ${
-      theme === 'dark' 
-        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900' 
-        : 'bg-gray-50'
-    }`}>
-      <div className="container mx-auto px-4 py-6 lg:py-8">
-        <HeroSection />
-        
-        {/* Main CTAs Section */}
-        <section className="mb-12 lg:mb-16">
+      <div className={`min-h-screen ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900' 
+          : 'bg-gray-50'
+      }`}>
+        <div className="container mx-auto px-4 py-6 lg:py-8">
+          <HeroSection />
+          
+          {/* Main CTAs Section */}
+          <section className="mb-12 lg:mb-16 mt-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-12 lg:mb-16">
             {/* Upload Music CTA */}
             <div className={`relative rounded-2xl p-8 lg:p-10 overflow-hidden border ${
@@ -262,28 +262,15 @@ export default function HomePage() {
               <div className="relative w-full max-w-[280px] lg:max-w-[320px]">
                 <div className="relative w-full aspect-[9/19] bg-gradient-to-br from-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
                   <div className="w-full h-full bg-black rounded-[2.5rem] overflow-hidden flex items-center justify-center relative">
-                    {/* Try to load the mockup image, fallback to placeholder */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Image
-                        src="/images/sb-mockup.png"
-                        alt="SoundBridge Mobile App"
-                        width={320}
-                        height={640}
-                        className="w-full h-auto object-contain"
-                        priority
-                        onError={(e) => {
-                          // Hide image on error and show placeholder
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                      {/* Placeholder that shows if image fails */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40 p-8 text-center">
-                        <Smartphone className="w-16 h-16 mb-4 opacity-50" />
-                        <p className="text-sm">Mobile App</p>
-                        <p className="text-xs mt-1">Coming Soon</p>
-                      </div>
-                    </div>
+                    <Image
+                      src="/images/sb-mockup.png"
+                      alt="SoundBridge Mobile App"
+                      width={320}
+                      height={640}
+                      className="w-full h-auto object-contain"
+                      priority
+                      unoptimized
+                    />
                   </div>
                 </div>
               </div>

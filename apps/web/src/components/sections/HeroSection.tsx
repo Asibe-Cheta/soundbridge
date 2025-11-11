@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Play, Users, MessageCircle, Music } from 'lucide-react';
+import { Play, Users, Music } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
@@ -82,15 +82,17 @@ export function HeroSection() {
       <div className="relative rounded-2xl overflow-hidden mb-6 h-[400px] lg:h-[500px]">
         {featuredCreator ? (
           <>
-            {/* Background Image */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: featuredCreator.banner_url 
-                  ? `url('${featuredCreator.banner_url}')`
-                  : `url('/images/backgrounds/bg-1.JPG')`,
-              }}
-            />
+            {/* Background Image - Only use creator's banner, no bg-1.JPG */}
+            {featuredCreator.banner_url ? (
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: `url('${featuredCreator.banner_url}')`,
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-red-600/80 via-pink-500/60 to-purple-600/80" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40" />
             
             <div className="relative z-10 h-full flex flex-col justify-end p-6 lg:p-12">
@@ -121,13 +123,8 @@ export function HeroSection() {
           </>
         ) : (
           <>
-            {/* Fallback with bg-1.JPG */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: `url('/images/backgrounds/bg-1.JPG')`,
-              }}
-            />
+            {/* Fallback - Use gradient, not bg-1.JPG */}
+            <div className="absolute inset-0 bg-gradient-to-br from-red-600/80 via-pink-500/60 to-purple-600/80" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40" />
             <div className="relative z-10 h-full flex flex-col justify-center items-center p-8 text-center">
               <Music className="w-20 h-20 text-white/40 mb-4" />
@@ -138,59 +135,61 @@ export function HeroSection() {
         )}
       </div>
 
-      {/* Trending Panel - Full Width Below */}
-      <div className="bg-white/5 dark:bg-white/10 backdrop-blur-lg rounded-2xl p-4 lg:p-6 border border-white/10">
-        <h3 className="text-xl lg:text-2xl font-bold text-pink-500 dark:text-pink-400 mb-4 lg:mb-6">Trending Now</h3>
+      {/* Trending Panel - Improved Design */}
+      <div className="bg-white/5 dark:bg-white/10 backdrop-blur-lg rounded-2xl p-6 lg:p-8 border border-white/10">
+        <h3 className="text-xl lg:text-2xl font-bold text-pink-500 dark:text-pink-400 mb-6">Trending Now</h3>
         
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg animate-pulse">
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex-shrink-0" />
-                <div className="flex-1">
+              <div key={i} className="flex flex-col items-center gap-3 p-4 rounded-xl bg-white/5 animate-pulse">
+                <div className="w-20 h-20 bg-gray-700 rounded-xl" />
+                <div className="w-full">
                   <div className="h-4 bg-gray-700 rounded mb-2" />
-                  <div className="h-3 bg-gray-700 rounded w-2/3" />
+                  <div className="h-3 bg-gray-700 rounded w-3/4 mx-auto" />
                 </div>
               </div>
             ))}
           </div>
         ) : trendingTracks.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {trendingTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => handlePlayTrack(track)}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 dark:hover:bg-white/10 transition-colors text-left"
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl bg-white/5 dark:bg-white/10 hover:bg-white/10 dark:hover:bg-white/20 transition-all text-center border border-transparent hover:border-white/20"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="relative w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {track.coverArt ? (
                     <Image
                       src={track.coverArt}
                       alt={track.title}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover rounded-lg"
+                      width={80}
+                      height={80}
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Music className="w-6 h-6 text-white/60" />
+                    <Music className="w-10 h-10 text-white/60" />
                   )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <Play className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm line-clamp-1 text-white dark:text-white">
+                <div className="flex-1 w-full">
+                  <div className="font-semibold text-sm line-clamp-2 text-white dark:text-white mb-1">
                     {track.title}
                   </div>
                   <div className="text-white/60 dark:text-white/60 text-xs line-clamp-1">
                     {track.artist}
                   </div>
                 </div>
-                <Play className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0" />
               </button>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <Music className="w-12 h-12 text-white/30 mx-auto mb-3" />
-            <p className="text-white/60 text-sm">No trending tracks yet</p>
+          <div className="text-center py-12">
+            <Music className="w-16 h-16 text-white/30 mx-auto mb-4" />
+            <p className="text-white/60">No trending tracks yet</p>
           </div>
         )}
       </div>
