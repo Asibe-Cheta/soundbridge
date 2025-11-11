@@ -298,7 +298,7 @@ export default function AboutPage() {
                 ? 'bg-white/5 backdrop-blur-lg border border-white/10'
                 : 'bg-white border border-gray-200 shadow-sm'
             }`}>
-              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed mb-${isMobile ? '4' : '8'} ${
+              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed ${isMobile ? 'mb-4' : 'mb-8'} ${
                 theme === 'dark' ? 'text-white/90' : 'text-gray-700'
               }`}>
                 SoundBridge was born from a moment of simple frustration that sparked a revolutionary idea. 
@@ -307,7 +307,7 @@ export default function AboutPage() {
                 methods that dominated the landscape.
               </p>
 
-              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed mb-${isMobile ? '4' : '8'} ${
+              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed ${isMobile ? 'mb-4' : 'mb-8'} ${
                 theme === 'dark' ? 'text-white/90' : 'text-gray-700'
               }`}>
                 The conventional approaches felt distant and impersonal. Eventbrite required endless scrolling 
@@ -316,7 +316,7 @@ export default function AboutPage() {
                 feeds. Traditional music blogs and websites demanded active searching rather than intuitive discovery.
               </p>
 
-              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed mb-${isMobile ? '4' : '8'} ${
+              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed ${isMobile ? 'mb-4' : 'mb-8'} ${
                 theme === 'dark' ? 'text-white/90' : 'text-gray-700'
               }`}>
                 What was needed wasn&apos;t another app to check or another platform to search through. The vision 
@@ -325,7 +325,7 @@ export default function AboutPage() {
                 know they were looking for.
               </p>
 
-              <div className={`rounded-xl ${isMobile ? 'p-6' : 'p-8'} mt-${isMobile ? '4' : '8'} ${
+              <div className={`rounded-xl ${isMobile ? 'p-6' : 'p-8'} ${isMobile ? 'mt-4' : 'mt-8'} ${
                 theme === 'dark'
                   ? 'bg-gradient-to-r from-red-600/10 to-pink-500/10 border border-red-500/30'
                   : 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200'
