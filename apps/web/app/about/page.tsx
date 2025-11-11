@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Footer } from '../../src/components/layout/Footer';
 import RiveLogo from '../../src/components/ui/RiveLogo';
 import { Music, Lightbulb, ArrowRight } from 'lucide-react';
 
 export default function AboutPage() {
   const [isMobile, setIsMobile] = useState(false);
+  const { theme } = useTheme();
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -20,9 +22,13 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <div style={{ backgroundColor: '#000000', minHeight: '100vh' }}>
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
       {/* Main Content */}
-      <main className="main-container" style={{ backgroundColor: '#000000' }}>
+      <main className="main-container">
         <style>{`
           @media (max-width: 768px) {
             .desktop-hero {
@@ -355,31 +361,19 @@ export default function AboutPage() {
         </section>
 
         {/* Call to Action */}
-        <section style={{
-          padding: isMobile ? '2rem 1rem' : '4rem 2rem',
-          textAlign: 'center',
-          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
-          borderRadius: '20px',
-          margin: isMobile ? '1rem' : '2rem',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <h2 style={{
-            fontSize: isMobile ? '1.3rem' : '2.5rem',
-            fontWeight: '700',
-            color: 'white',
-            marginBottom: isMobile ? '0.5rem' : '1rem',
-            lineHeight: isMobile ? '1.3' : '1.1'
-          }}>
+        <section className={`${isMobile ? 'py-8 px-4' : 'py-16 px-8'} text-center rounded-2xl mx-${isMobile ? '4' : '8'} mb-${isMobile ? '4' : '8'} ${
+          theme === 'dark'
+            ? 'bg-gradient-to-r from-red-600/10 to-pink-500/10 border border-white/10'
+            : 'bg-gradient-to-r from-red-50 to-pink-50 border border-gray-200'
+        }`}>
+          <h2 className={`text-${isMobile ? '2xl' : '4xl'} font-bold mb-${isMobile ? '2' : '4'} ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
             Join the SoundBridge Revolution
           </h2>
-          <p style={{
-            fontSize: isMobile ? '0.9rem' : '1.2rem',
-            color: 'rgba(255, 255, 255, 0.8)',
-            maxWidth: '600px',
-            margin: '0 auto 2rem',
-            lineHeight: '1.6',
-            padding: isMobile ? '0 1rem' : '0'
-          }}>
+          <p className={`text-${isMobile ? 'sm' : 'lg'} max-w-2xl mx-auto mb-8 ${
+            theme === 'dark' ? 'text-white/80' : 'text-gray-700'
+          }`}>
             Be part of the future of music discovery and creator collaboration. 
             Your next favorite artist or perfect collaboration partner is waiting.
           </p>
