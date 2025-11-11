@@ -77,7 +77,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="hero-section mb-8">
+    <section className="hero-section mb-12 lg:mb-16">
       {/* Featured Creator - Full Width */}
       <div className="relative rounded-2xl overflow-hidden mb-6 h-[400px] lg:h-[500px]">
         {featuredCreator ? (
@@ -140,49 +140,50 @@ export function HeroSection() {
         <h3 className="text-xl lg:text-2xl font-bold text-pink-500 dark:text-pink-400 mb-6">Trending Now</h3>
         
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex flex-col items-center gap-3 p-4 rounded-xl bg-white/5 animate-pulse">
-                <div className="w-20 h-20 bg-gray-700 rounded-xl" />
-                <div className="w-full">
-                  <div className="h-4 bg-gray-700 rounded mb-2" />
-                  <div className="h-3 bg-gray-700 rounded w-3/4 mx-auto" />
+              <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-white/5 animate-pulse">
+                <div className="w-14 h-14 bg-gray-700 rounded-lg flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-700 rounded mb-2 w-3/4" />
+                  <div className="h-3 bg-gray-700 rounded w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : trendingTracks.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-3">
             {trendingTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => handlePlayTrack(track)}
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl bg-white/5 dark:bg-white/10 hover:bg-white/10 dark:hover:bg-white/20 transition-all text-center border border-transparent hover:border-white/20"
+                className="group w-full flex items-center gap-4 p-3 rounded-lg bg-white/5 dark:bg-white/10 hover:bg-white/10 dark:hover:bg-white/20 transition-all text-left border border-transparent hover:border-white/20"
               >
-                <div className="relative w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="relative w-14 h-14 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {track.coverArt ? (
                     <Image
                       src={track.coverArt}
                       alt={track.title}
-                      width={80}
-                      height={80}
+                      width={56}
+                      height={56}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Music className="w-10 h-10 text-white/60" />
+                    <Music className="w-7 h-7 text-white/60" />
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <Play className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Play className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
-                <div className="flex-1 w-full">
-                  <div className="font-semibold text-sm line-clamp-2 text-white dark:text-white mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm lg:text-base line-clamp-1 text-white dark:text-white mb-1">
                     {track.title}
                   </div>
-                  <div className="text-white/60 dark:text-white/60 text-xs line-clamp-1">
+                  <div className="text-white/60 dark:text-white/60 text-xs lg:text-sm line-clamp-1">
                     {track.artist}
                   </div>
                 </div>
+                <Play className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             ))}
           </div>

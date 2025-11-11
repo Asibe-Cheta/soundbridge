@@ -140,7 +140,7 @@ export default function HomePage() {
           <HeroSection />
           
           {/* Main CTAs Section */}
-          <section className="mb-12 lg:mb-16 mt-8">
+          <section className="mb-12 lg:mb-16 mt-12 lg:mt-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-12 lg:mb-16">
             {/* Upload Music CTA */}
             <div className={`relative rounded-2xl p-8 lg:p-10 overflow-hidden border ${
@@ -258,21 +258,21 @@ export default function HomePage() {
             </div>
 
             {/* Right Side - Phone Mockup */}
-            <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[280px] lg:max-w-[320px]">
-                <div className="relative w-full aspect-[9/19] bg-gradient-to-br from-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
-                  <div className="w-full h-full bg-black rounded-[2.5rem] overflow-hidden flex items-center justify-center relative">
-                    <Image
-                      src="/images/sb-mockup.png"
-                      alt="SoundBridge Mobile App"
-                      width={320}
-                      height={640}
-                      className="w-full h-auto object-contain"
-                      priority
-                      unoptimized
-                    />
-                  </div>
-                </div>
+            <div className="order-1 lg:order-2 flex items-end justify-center lg:justify-end relative">
+              <div className="relative w-full max-w-[300px] lg:max-w-[400px]">
+                <Image
+                  src="/images/sb-mockup.png"
+                  alt="SoundBridge Mobile App"
+                  width={400}
+                  height={800}
+                  className="w-full h-auto object-contain"
+                  priority
+                  unoptimized
+                  style={{
+                    maxHeight: '100%',
+                    objectPosition: 'bottom',
+                  }}
+                />
               </div>
             </div>
           </div>
