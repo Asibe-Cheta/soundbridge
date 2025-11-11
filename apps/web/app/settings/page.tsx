@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { dashboardService } from '@/src/lib/dashboard-service';
 import { User, Settings, Bell, Lock, Shield, Eye, EyeOff, Mail, Phone, Globe, Palette, Volume2, VolumeX, Moon, Sun, Monitor, Download, Upload, Trash2, AlertTriangle, CheckCircle, X, Save, Edit3, Camera, Key, Smartphone, Shield as ShieldIcon, Activity, Zap, Database, HardDrive, Wifi, WifiOff, Users, MessageSquare, Heart, Share2, Calendar, MapPin, Clock, Star, Award, TrendingUp, BarChart3, PieChart, LineChart, Target, Flag, HelpCircle, Info, ExternalLink, ChevronRight, ChevronDown, Plus, Minus } from 'lucide-react';
