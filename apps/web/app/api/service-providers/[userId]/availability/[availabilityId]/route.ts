@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +46,12 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields provided for update' }, { status: 400, headers: corsHeaders });
   }
 
-  const updatePayload: Record<string, unknown> = {
+  type AvailabilityRow = Database['public']['Tables']['service_provider_availability']['Row'];
+  type AvailabilityUpdate = Database['public']['Tables']['service_provider_availability']['Update'];
+
+  const supabaseClient = supabase as any;
+
+  const updatePayload: AvailabilityUpdate = {
     updated_at: new Date().toISOString(),
   };
 
@@ -85,7 +91,7 @@ export async function PATCH(
     updatePayload.is_bookable = body.isBookable;
   }
 
-  const { data, error: updateError } = await supabase
+  const { data: updateData, error: updateError } = await supabaseClient
     .from('service_provider_availability')
     .update(updatePayload)
     .eq('provider_id', userId)
@@ -93,9 +99,11 @@ export async function PATCH(
     .select('*')
     .single();
 
-  if (updateError) {
+  const data = (updateData ?? null) as AvailabilityRow | null;
+
+  if (updateError || !data) {
     return NextResponse.json(
-      { error: 'Failed to update availability slot', details: updateError.message },
+      { error: 'Failed to update availability slot', details: updateError?.message },
       { status: 500, headers: corsHeaders },
     );
   }
@@ -118,7 +126,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'You can only delete your own availability slots' }, { status: 403, headers: corsHeaders });
   }
 
-  const { error: deleteError } = await supabase
+  const supabaseClient = supabase as any;
+
+  const { error: deleteError } = await supabaseClient
     .from('service_provider_availability')
     .delete()
     .eq('provider_id', userId)
