@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { calculateFees } from '@/src/lib/stripe-esg';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,10 +24,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
   const statusFilter = request.nextUrl.searchParams.get('status');
   const statuses = statusFilter ? statusFilter.split(',') : null;
 
-  const query = supabase
+  const query = supabaseClient
     .from('service_bookings')
     .select(
       `
@@ -93,6 +95,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  type ServiceProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
+  type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
+  type AvailabilityRow = Database['public']['Tables']['service_provider_availability']['Row'];
+  type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
+
+  const supabaseClient = supabase as any;
   let payload: CreateBookingRequest;
   try {
     payload = await request.json();
@@ -124,11 +132,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'scheduledEnd must be after scheduledStart' }, { status: 400, headers: corsHeaders });
   }
 
-  const { data: providerProfile, error: providerError } = await supabase
+  const { data: providerData, error: providerError } = await supabaseClient
     .from('service_provider_profiles')
     .select('*')
     .eq('user_id', payload.providerId)
     .single();
+
+  const providerProfile = (providerData ?? null) as ServiceProviderProfileRow | null;
 
   if (providerError || !providerProfile) {
     return NextResponse.json({ error: 'Provider not found', details: providerError?.message }, { status: 404, headers: corsHeaders });
@@ -142,12 +152,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (payload.serviceOfferingId) {
-    const { data: offering, error: offeringError } = await supabase
+    const { data: offeringData, error: offeringError } = await supabaseClient
       .from('service_offerings')
       .select('*')
       .eq('id', payload.serviceOfferingId)
       .eq('provider_id', payload.providerId)
       .single();
+
+    const offering = (offeringData ?? null) as ServiceOfferingRow | null;
 
     if (offeringError || !offering) {
       return NextResponse.json(
@@ -164,7 +176,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: availabilitySlots, error: availabilityError } = await supabase
+  const { data: availabilitySlots, error: availabilityError } = await supabaseClient
     .from('service_provider_availability')
     .select('*')
     .eq('provider_id', payload.providerId)
@@ -179,7 +191,7 @@ export async function POST(request: NextRequest) {
 
   const timezone = payload.timezone ?? providerProfile.timezone ?? 'UTC';
   const hasMatchingSlot =
-    availabilitySlots?.some((slot) => {
+    (availabilitySlots as AvailabilityRow[] | null)?.some((slot) => {
       if (!slot) return false;
       const slotStart = new Date(slot.start_time);
       const slotEnd = new Date(slot.end_time);
@@ -195,7 +207,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: existingBookings, error: bookingsError } = await supabase
+  const { data: existingBookings, error: bookingsError } = await supabaseClient
     .from('service_bookings')
     .select('id, scheduled_start, scheduled_end, status')
     .eq('provider_id', payload.providerId)
@@ -209,7 +221,7 @@ export async function POST(request: NextRequest) {
   }
 
   const hasConflict =
-    existingBookings?.some((booking) => {
+    (existingBookings as ServiceBookingRow[] | null)?.some((booking) => {
       const existingStart = new Date(booking.scheduled_start);
       const existingEnd = new Date(booking.scheduled_end);
       return existingStart < endTime && existingEnd > startTime;
@@ -226,7 +238,7 @@ export async function POST(request: NextRequest) {
 
   const { platformFee, providerPayout } = calculateFees(payload.totalAmount, payload.bookingType);
 
-  const { data: booking, error: insertError } = await supabase
+  const { data: bookingData, error: insertError } = await supabaseClient
     .from('service_bookings')
     .insert({
       provider_id: payload.providerId,
@@ -246,6 +258,8 @@ export async function POST(request: NextRequest) {
     .select('*')
     .single();
 
+  const booking = (bookingData ?? null) as ServiceBookingRow | null;
+
   if (insertError || !booking) {
     return NextResponse.json(
       { error: 'Failed to create booking request', details: insertError?.message },
@@ -253,7 +267,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await supabase.from('booking_activity').insert({
+  await supabaseClient.from('booking_activity').insert({
     booking_id: booking.id,
     actor_id: user.id,
     action: 'booking_requested',
@@ -264,7 +278,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  const { data: hydratedBooking, error: hydrateError } = await supabase
+  const { data: hydratedBooking, error: hydrateError } = await supabaseClient
     .from('service_bookings')
     .select(
       `
