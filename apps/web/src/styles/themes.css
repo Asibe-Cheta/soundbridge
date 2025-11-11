@@ -1,41 +1,54 @@
 /* Theme CSS Variables */
 
-/* Dark Theme (Default) */
+/* Dark Theme (Default) - Updated to match homepage design */
 :root {
-  /* Colors */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2a2a2a;
-  --bg-card: rgba(255, 255, 255, 0.05);
+  /* Colors - Main background uses gradient, but we keep solid colors for navbar */
+  --bg-primary: #111827; /* gray-900 - base for gradient */
+  --bg-primary-gradient: linear-gradient(to bottom right, #111827, #581c87, #111827);
+  --bg-secondary: #1a1a1a; /* KEEP UNCHANGED for navbar */
+  --bg-tertiary: #1F2937; /* gray-800 */
+  --bg-card: rgba(255, 255, 255, 0.1); /* Updated to match homepage */
+  --bg-card-hover: rgba(255, 255, 255, 0.2); /* Updated for hover states */
   --bg-hover: rgba(255, 255, 255, 0.1);
   
-  /* Text Colors */
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-muted: #999999;
+  /* Text Colors - Updated to match homepage */
+  --text-primary: #ffffff; /* white */
+  --text-secondary: #D1D5DB; /* gray-300 */
+  --text-muted: #9CA3AF; /* gray-400 */
   --text-color: #ffffff;
   
-  /* Accent Colors */
-  --accent-primary: #EC4899;
-  --accent-secondary: #DC2626;
+  /* Accent Colors - Matching homepage */
+  --accent-primary: #EC4899; /* pink-500 */
+  --accent-secondary: #DC2626; /* red-600 */
+  --accent-red: #DC2626; /* red-600 */
+  --accent-pink: #EC4899; /* pink-500 */
+  --accent-purple: #7C3AED; /* purple-600 */
+  --accent-blue: #3B82F6; /* blue-500 */
   --accent-color: #EC4899;
   
-  /* Borders */
+  /* Borders - Updated to match homepage */
   --border-primary: rgba(255, 255, 255, 0.2);
-  --border-secondary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.1); /* Updated to match homepage cards */
+  --border-card: rgba(255, 255, 255, 0.1); /* For card borders */
   
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
   
-  /* Gradients */
-  --gradient-primary: linear-gradient(45deg, #DC2626, #EC4899);
+  /* Gradients - Matching homepage */
+  --gradient-primary: linear-gradient(to right, #DC2626, #EC4899); /* red-600 to pink-500 */
+  --gradient-primary-hover: linear-gradient(to right, #B91C1C, #DB2777); /* red-700 to pink-600 */
   --gradient-secondary: linear-gradient(45deg, #EC4899, #8B5CF6);
+  --gradient-red-pink: linear-gradient(to right, rgba(220, 38, 38, 0.2), rgba(236, 72, 153, 0.2));
+  --gradient-purple-blue: linear-gradient(to bottom right, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2));
   
   /* Status Colors */
   --success: #10B981;
   --warning: #F59E0B;
+  --warning-bg: rgba(234, 179, 8, 0.2); /* yellow-500/20 */
+  --warning-border: rgba(234, 179, 8, 0.3); /* yellow-500/30 */
+  --warning-text: #FCD34D; /* yellow-400 */
   --error: #EF4444;
   --info: #3B82F6;
   
@@ -100,22 +113,24 @@
 
 /* Body Theme Styles */
 body {
-  background-color: var(--bg-primary);
+  background: var(--bg-primary-gradient);
+  background-color: var(--bg-primary); /* Fallback */
   color: var(--text-primary);
   transition: background-color var(--transition-normal), 
               color var(--transition-normal);
 }
 
-/* Header Theme Styles */
+/* Header Theme Styles - Preserved original navbar styling */
 .header {
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-secondary); /* #1a1a1a - KEPT UNCHANGED */
   border-bottom: 1px solid var(--border-primary);
 }
 
-/* Card Theme Styles */
+/* Card Theme Styles - Updated to match homepage */
 .card {
   background-color: var(--bg-card);
-  border: 1px solid var(--border-primary);
+  backdrop-filter: blur(16px); /* Glassmorphism effect */
+  border: 1px solid var(--border-card);
   box-shadow: var(--shadow-sm);
 }
 

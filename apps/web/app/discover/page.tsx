@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useSocial } from '@/src/hooks/useSocial';
 import { Footer } from '../../src/components/layout/Footer';
@@ -23,6 +24,7 @@ import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, U
 export default function DiscoverPage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const { toggleLike } = useSocial();
   const [pageLoaded, setPageLoaded] = useState(false);
@@ -1350,20 +1352,23 @@ export default function DiscoverPage() {
       `}</style>
       
       {/* Main Content */}
-      <main className="main-container">
+      <main className={`main-container min-h-screen ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+          : 'bg-gray-50'
+      }`}>
         {!pageLoaded && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            padding: '2rem',
-            background: 'rgba(255, 255, 255, 0.05)',
-            margin: '1rem 2rem',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <Loader2 size={24} className="animate-spin" style={{ color: '#EC4899', marginRight: '0.5rem' }} />
-            <span style={{ color: 'white' }}>Loading discover page...</span>
+          <div className={`flex justify-center items-center p-8 m-4 rounded-xl border ${
+            theme === 'dark'
+              ? 'bg-white/10 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <Loader2 size={24} className={`animate-spin mr-2 ${
+              theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
+            }`} />
+            <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+              Loading discover page...
+            </span>
           </div>
         )}
         {/* Filters Button - Top Right */}
@@ -1375,22 +1380,11 @@ export default function DiscoverPage() {
         }}>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            style={{
-              background: 'transparent',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${
+              theme === 'dark'
+                ? 'bg-white/10 backdrop-blur-lg text-white border-white/20 hover:bg-white/20'
+                : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50'
+            }`}
           >
             <Filter size={16} />
             Filters
@@ -1446,35 +1440,13 @@ export default function DiscoverPage() {
                 <button
                   key={category.id}
                   onClick={() => setActiveTab(category.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: isActive ? 'linear-gradient(45deg, #DC2626, #EC4899)' : 'rgba(255, 255, 255, 0.1)',
-                    color: isActive ? 'white' : '#ccc',
-                    fontSize: '0.9rem',
-                    fontWeight: isActive ? '600' : '400',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    whiteSpace: 'nowrap',
-                    flexShrink: '0',
-                    minWidth: 'fit-content'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                      e.currentTarget.style.color = 'white';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                      e.currentTarget.style.color = '#ccc';
-                    }
-                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full border-none text-sm cursor-pointer transition-all whitespace-nowrap flex-shrink-0 min-w-fit ${
+                    isActive
+                      ? 'bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold'
+                      : theme === 'dark'
+                      ? 'bg-white/10 backdrop-blur-lg text-gray-300 hover:bg-white/20 hover:text-white font-normal'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-normal'
+                  }`}
                 >
                   <Icon size={16} />
                   {category.label}
