@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { providerVerificationService } from '@/src/services/ProviderVerificationService';
+import type { Database } from '@/src/lib/types';
+
+type VerificationRequestInsert = Database['public']['Tables']['service_provider_verification_requests']['Insert'];
+type VerificationDocumentInsert = Database['public']['Tables']['service_provider_verification_documents']['Insert'];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,30 +94,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const supabaseAdmin = createServiceClient();
     const nowIso = new Date().toISOString();
 
+    const requestPayload: VerificationRequestInsert = {
+      provider_id: userId,
+      status: 'pending',
+      submitted_at: nowIso,
+      provider_notes: payload.notes ?? null,
+      automated_checks: {
+        completedBookings: status.prerequisites.completedBookings,
+        averageRating: status.prerequisites.averageRating,
+        portfolio: status.prerequisites.portfolioItems,
+        offerings: status.prerequisites.offeringsPublished,
+        profileComplete: status.prerequisites.profileComplete,
+        connectAccount: status.prerequisites.connectAccount,
+      },
+      bookings_completed: status.prerequisites.completedBookings.value ?? 0,
+      average_rating: status.prerequisites.averageRating.value ?? 0,
+      portfolio_items: status.prerequisites.portfolioItems.value ?? 0,
+      profile_completeness: {
+        profile: status.prerequisites.profileComplete.met,
+        offerings: status.prerequisites.offeringsPublished.met,
+        portfolio: status.prerequisites.portfolioItems.met,
+      },
+    };
+
     const { data: requestRecord, error: insertError } = await supabaseAdmin
       .from('service_provider_verification_requests')
-      .insert({
-        provider_id: userId,
-        status: 'pending',
-        submitted_at: nowIso,
-        provider_notes: payload.notes ?? null,
-        automated_checks: {
-          completedBookings: status.prerequisites.completedBookings,
-          averageRating: status.prerequisites.averageRating,
-          portfolio: status.prerequisites.portfolioItems,
-          offerings: status.prerequisites.offeringsPublished,
-          profileComplete: status.prerequisites.profileComplete,
-          connectAccount: status.prerequisites.connectAccount,
-        },
-        bookings_completed: status.prerequisites.completedBookings.value ?? 0,
-        average_rating: status.prerequisites.averageRating.value ?? 0,
-        portfolio_items: status.prerequisites.portfolioItems.value ?? 0,
-        profile_completeness: {
-          profile: status.prerequisites.profileComplete.met,
-          offerings: status.prerequisites.offeringsPublished.met,
-          portfolio: status.prerequisites.portfolioItems.met,
-        },
-      })
+      .insert(requestPayload)
       .select('*')
       .single();
 
@@ -125,7 +131,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    const documentPayload = documents.map((doc) => ({
+    const documentPayload: VerificationDocumentInsert[] = documents.map((doc) => ({
       request_id: requestRecord.id,
       doc_type: doc.docType,
       storage_path: doc.storagePath,
