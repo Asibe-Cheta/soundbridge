@@ -193,6 +193,11 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
+    // Prevent following yourself
+    if (user && creator.id === user.id) {
+      return;
+    }
+
     if (!user) {
       router.push('/auth/login');
       return;
@@ -431,31 +436,34 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                 </div>
 
                 <div className="flex flex-col space-y-2">
-                  <button
-                    onClick={handleFollowToggle}
-                    disabled={isLoadingFollow}
-                    className={`flex items-center justify-center rounded-lg font-medium transition-all duration-200 ${
-                      isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-2'
-                    } ${
-                      isFollowing 
-                        ? 'bg-gray-600 text-white border border-gray-500 hover:bg-gray-500' 
-                        : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
-                    }`}
-                  >
-                    {isLoadingFollow ? (
-                      <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                    ) : isFollowing ? (
-                      <>
-                        <UserMinus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
-                        Follow
-                      </>
-                    )}
-                  </button>
+                  {/* Only show Follow button if viewing someone else's profile */}
+                  {user && creator.id !== user.id && (
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={isLoadingFollow}
+                      className={`flex items-center justify-center rounded-lg font-medium transition-all duration-200 ${
+                        isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-2'
+                      } ${
+                        isFollowing 
+                          ? 'bg-gray-600 text-white border border-gray-500 hover:bg-gray-500' 
+                          : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
+                      }`}
+                    >
+                      {isLoadingFollow ? (
+                        <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                      ) : isFollowing ? (
+                        <>
+                          <UserMinus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+                          Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+                          Follow
+                        </>
+                      )}
+                    </button>
+                  )}
                   
                   {/* Tip Creator Button */}
                   {user && user.id !== creator.id && (
