@@ -4,6 +4,7 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe-esg';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
 import type { Database } from '@/src/lib/types';
+type SupabaseClient = ReturnType<typeof getSupabaseRouteClient>['supabase'];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,8 +49,9 @@ export async function POST(
   }
 
   type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
+  const supabaseClient = supabase as SupabaseClient;
 
-  const { data: booking, error: bookingError } = await supabase
+  const { data: booking, error: bookingError } = await supabaseClient
     .from('service_bookings')
     .select('*')
     .eq('id', bookingId)
@@ -92,7 +94,7 @@ export async function POST(
   const now = new Date().toISOString();
   let holdDays = 14;
 
-  const { count: completedCount, error: completedError } = await supabase
+  const { count: completedCount, error: completedError } = await supabaseClient
     .from('service_bookings')
     .select('id', { head: true, count: 'exact' })
     .eq('provider_id', booking.provider_id)
@@ -111,7 +113,7 @@ export async function POST(
     releaseDate.setDate(releaseDate.getDate() + holdDays);
   }
 
-  const { data: updatedBooking, error: updateError } = await supabase
+  const { data: updatedBooking, error: updateError } = await supabaseClient
     .from('service_bookings')
     .update({
       status: 'paid',
@@ -130,7 +132,7 @@ export async function POST(
     );
   }
 
-  await supabase.from('booking_activity').insert({
+  await supabaseClient.from('booking_activity').insert({
     booking_id: booking.id,
     actor_id: user.id,
     action: 'status_changed_paid',
@@ -143,7 +145,7 @@ export async function POST(
     },
   });
 
-  await supabase.from('booking_ledger').insert([
+  await supabaseClient.from('booking_ledger').insert([
     {
       booking_id: booking.id,
       entry_type: 'charge_captured',
@@ -175,7 +177,7 @@ export async function POST(
     },
   ]);
 
-  const { data: hydratedBooking, error: hydrateError } = await supabase
+  const { data: hydratedBooking, error: hydrateError } = await supabaseClient
     .from('service_bookings')
     .select(
       `
