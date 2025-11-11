@@ -7,6 +7,7 @@ import type { Database } from '@/src/lib/types';
 
 type VerificationRequestInsert = Database['public']['Tables']['service_provider_verification_requests']['Insert'];
 type VerificationDocumentInsert = Database['public']['Tables']['service_provider_verification_documents']['Insert'];
+type Json = Database['public']['Tables']['service_provider_verification_requests']['Insert']['automated_checks'];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -100,13 +101,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       submitted_at: nowIso,
       provider_notes: payload.notes ?? null,
       automated_checks: {
-        completedBookings: status.prerequisites.completedBookings,
-        averageRating: status.prerequisites.averageRating,
-        portfolio: status.prerequisites.portfolioItems,
-        offerings: status.prerequisites.offeringsPublished,
-        profileComplete: status.prerequisites.profileComplete,
-        connectAccount: status.prerequisites.connectAccount,
-      },
+        completedBookings: status.prerequisites.completedBookings as Json,
+        averageRating: status.prerequisites.averageRating as Json,
+        portfolio: status.prerequisites.portfolioItems as Json,
+        offerings: status.prerequisites.offeringsPublished as Json,
+        profileComplete: status.prerequisites.profileComplete as Json,
+        connectAccount: status.prerequisites.connectAccount as Json,
+      } as Json,
       bookings_completed: status.prerequisites.completedBookings.value ?? 0,
       average_rating: status.prerequisites.averageRating.value ?? 0,
       portfolio_items: status.prerequisites.portfolioItems.value ?? 0,
