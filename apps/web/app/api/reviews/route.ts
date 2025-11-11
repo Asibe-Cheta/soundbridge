@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
 
 interface ReviewPayload {
   providerId: string;
@@ -27,6 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+  type ServiceProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
+  type ServiceReviewRow = Database['public']['Tables']['service_reviews']['Row'];
+  type ServiceReviewInsert = Database['public']['Tables']['service_reviews']['Insert'];
+
   let body: ReviewPayload;
   try {
     body = await request.json();
@@ -48,11 +54,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'rating must be between 1 and 5' }, { status: 400, headers: corsHeaders });
   }
 
-  const { data: providerProfile, error: providerError } = await supabase
+  const { data: providerData, error: providerError } = await supabaseClient
     .from('service_provider_profiles')
     .select('status')
     .eq('user_id', providerId)
     .maybeSingle();
+
+  const providerProfile = (providerData ?? null) as (Pick<ServiceProviderProfileRow, 'status'> & {
+    status?: ServiceProviderProfileRow['status'];
+  }) | null;
 
   if (providerError) {
     return NextResponse.json(
@@ -68,7 +78,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const payload = {
+  const payload: ServiceReviewInsert = {
     provider_id: providerId,
     reviewer_id: user.id,
     rating: Math.round(rating),
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error: insertError } = await supabase
+  const { data: insertData, error: insertError } = await supabaseClient
     .from('service_reviews')
     .insert(payload)
     .select(
@@ -94,6 +104,8 @@ export async function POST(request: NextRequest) {
     `,
     )
     .single();
+
+  const data = (insertData ?? null) as ServiceReviewRow | null;
 
   if (insertError) {
     return NextResponse.json(
