@@ -20,11 +20,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  type AdminRole = { role: string | null };
+
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .maybeSingle();
+    .maybeSingle<AdminRole>();
 
   if (profileError) {
     return NextResponse.json(
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (profile?.role !== 'admin') {
+  if (!profile || profile.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: corsHeaders });
   }
 
