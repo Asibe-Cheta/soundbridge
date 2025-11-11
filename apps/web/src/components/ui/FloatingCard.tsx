@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
 
 interface FloatingCardProps {
@@ -18,6 +19,7 @@ export function FloatingCard({
 }: FloatingCardProps) {
   const [isVisible, setIsVisible] = useState(defaultVisible);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { theme } = useTheme();
 
   const getPositionStyles = () => {
     const baseStyles = {
@@ -44,29 +46,12 @@ export function FloatingCard({
     return (
       <button
         onClick={() => setIsVisible(true)}
-        style={{
-          ...getPositionStyles(),
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '12px',
-          padding: '0.5rem 1rem',
-          color: 'white',
-          cursor: 'pointer',
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          transition: 'all 0.3s ease',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-        }}
+        className={`fixed z-[1000] rounded-xl px-4 py-2 flex items-center gap-2 text-sm font-semibold transition-all shadow-lg ${
+          theme === 'dark'
+            ? 'bg-white/10 backdrop-blur-lg border border-white/20 text-white hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-500'
+            : 'bg-gray-800/90 backdrop-blur-lg border border-gray-300 text-white hover:bg-gray-900'
+        }`}
+        style={getPositionStyles()}
       >
         <ChevronUp size={14} color="white" />
         {title}
@@ -77,68 +62,38 @@ export function FloatingCard({
   // Full card when visible
   return (
     <div
-                    style={{
-        ...getPositionStyles(),
-        background: 'rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '12px',
-        padding: '1rem',
-        width: '280px',
-        maxHeight: '500px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-        transformOrigin: 'top',
-        animation: isVisible ? 'slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : undefined,
-      }}
+      className={`fixed z-[1000] rounded-xl p-4 w-[280px] max-h-[500px] shadow-lg transition-all ${
+        theme === 'dark'
+          ? 'bg-white/10 backdrop-blur-lg border border-white/20'
+          : 'bg-white/95 backdrop-blur-lg border border-gray-200 shadow-xl'
+      }`}
+      style={getPositionStyles()}
     >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className={`text-base font-semibold m-0 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>
           {title}
         </h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="flex gap-2">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              padding: '0.25rem',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
+            className={`p-1 rounded border-none cursor-pointer flex items-center justify-center transition-colors ${
+              theme === 'dark'
+                ? 'text-white hover:bg-white/10'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
           >
             {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </button>
           <button
             onClick={() => setIsVisible(false)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              padding: '0.25rem',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
+            className={`p-1 rounded border-none cursor-pointer flex items-center justify-center transition-colors ${
+              theme === 'dark'
+                ? 'text-white hover:bg-white/10'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
           >
             <X size={16} />
           </button>
