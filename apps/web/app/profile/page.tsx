@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { BrandingSettings } from '@/src/components/branding/BrandingSettings';
 import { RevenueDashboard } from '@/src/components/revenue/RevenueDashboard';
@@ -199,6 +200,7 @@ function TrackDropdownMenu({ track }: { track: RecentTrack }) {
 
 export default function ProfilePage() {
   const { user, signOut, loading } = useAuth();
+  const { theme } = useTheme();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -900,7 +902,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
       {/* Main Content */}
       <main className={`main-container ${isMobile ? 'px-2 py-4' : 'px-6 py-8'}`}>
         {/* Profile Header */}
