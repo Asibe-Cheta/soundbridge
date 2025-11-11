@@ -141,7 +141,7 @@ export async function PATCH(
 
     const { error: updateRequestError } = await supabaseAdmin
       .from('service_provider_verification_requests')
-      .update(requestUpdate)
+      .update(requestUpdate as Record<string, unknown>)
       .eq('id', requestId);
 
     if (updateRequestError) {
@@ -162,7 +162,7 @@ export async function PATCH(
 
     const { error: updateProfileError } = await supabaseAdmin
       .from('service_provider_profiles')
-      .update(profileUpdate)
+      .update(profileUpdate as Record<string, unknown>)
       .eq('user_id', existingRequest.provider_id);
 
     if (updateProfileError) {
