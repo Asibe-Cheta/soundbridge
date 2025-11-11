@@ -309,7 +309,9 @@ export async function PATCH(
     'completed_booking_count' | 'first_booking_discount_enabled' | 'first_booking_discount_percent' | 'show_payment_protection'
   >;
 
-  const { data: providerData, error: providerError } = await auth.supabase
+  const supabaseClient = auth.supabase as any;
+
+  const { data: providerData, error: providerError } = await supabaseClient
     .from('service_provider_profiles')
     .select('completed_booking_count, first_booking_discount_enabled, first_booking_discount_percent, show_payment_protection')
     .eq('user_id', userId)
@@ -326,7 +328,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Service provider profile not found' }, { status: 404, headers: corsHeaders });
   }
 
-  const updatePayload: Record<string, unknown> = {};
+  type ProviderProfileUpdate = Database['public']['Tables']['service_provider_profiles']['Update'];
+  const updatePayload: ProviderProfileUpdate = {};
 
   if (body.showPaymentProtection !== undefined) {
     if (typeof body.showPaymentProtection !== 'boolean') {
@@ -375,7 +378,7 @@ export async function PATCH(
 
   updatePayload.updated_at = new Date().toISOString();
 
-  const { error: updateError } = await auth.supabase
+  const { error: updateError } = await supabaseClient
     .from('service_provider_profiles')
     .update(updatePayload)
     .eq('user_id', userId);
