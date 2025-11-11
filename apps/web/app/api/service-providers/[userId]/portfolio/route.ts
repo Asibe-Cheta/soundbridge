@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
+
+type PortfolioItemRow = Database['public']['Tables']['service_portfolio_items']['Row'];
+type PortfolioItemInsert = Database['public']['Tables']['service_portfolio_items']['Insert'];
 
 interface PortfolioItemPayload {
   mediaUrl: string;
@@ -31,7 +35,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'You can only view your own portfolio items' }, { status: 403, headers: corsHeaders });
   }
 
-  const { data, error: queryError } = await supabase
+  const supabaseClient = supabase as any;
+
+  const { data, error: queryError } = await supabaseClient
     .from('service_portfolio_items')
     .select('*')
     .eq('provider_id', userId)
@@ -60,6 +66,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'You can only add portfolio items to your own profile' }, { status: 403, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+
   let body: PortfolioItemPayload;
   try {
     body = await request.json();
@@ -71,7 +79,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'mediaUrl is required' }, { status: 400, headers: corsHeaders });
   }
 
-  const payload = {
+  const payload: PortfolioItemInsert = {
     provider_id: userId,
     media_url: body.mediaUrl,
     thumbnail_url: body.thumbnailUrl ?? null,
@@ -79,11 +87,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     display_order: body.displayOrder ?? 0,
   };
 
-  const { data, error: insertError } = await supabase
+  const { data: insertData, error: insertError } = await supabaseClient
     .from('service_portfolio_items')
     .insert(payload)
     .select('*')
     .single();
+
+  const data = (insertData ?? null) as PortfolioItemRow | null;
 
   if (insertError) {
     return NextResponse.json(
