@@ -3,11 +3,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { providerVerificationService } from '@/src/services/ProviderVerificationService';
+import type { ProviderVerificationStatus } from '@/src/services/ProviderVerificationService';
 import type { Database } from '@/src/lib/types';
 
 type VerificationRequestInsert = Database['public']['Tables']['service_provider_verification_requests']['Insert'];
 type VerificationDocumentInsert = Database['public']['Tables']['service_provider_verification_documents']['Insert'];
 type Json = Database['public']['Tables']['service_provider_verification_requests']['Insert']['automated_checks'];
+
+const serializePrerequisite = (
+  prerequisite: ProviderVerificationStatus['prerequisites'][keyof ProviderVerificationStatus['prerequisites']],
+): Json => ({
+  met: prerequisite.met,
+  value: prerequisite.value ?? null,
+  required: prerequisite.required ?? null,
+  description: prerequisite.description ?? null,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -101,12 +111,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       submitted_at: nowIso,
       provider_notes: payload.notes ?? null,
       automated_checks: {
-        completedBookings: status.prerequisites.completedBookings as Json,
-        averageRating: status.prerequisites.averageRating as Json,
-        portfolio: status.prerequisites.portfolioItems as Json,
-        offerings: status.prerequisites.offeringsPublished as Json,
-        profileComplete: status.prerequisites.profileComplete as Json,
-        connectAccount: status.prerequisites.connectAccount as Json,
+        completedBookings: serializePrerequisite(status.prerequisites.completedBookings),
+        averageRating: serializePrerequisite(status.prerequisites.averageRating),
+        portfolio: serializePrerequisite(status.prerequisites.portfolioItems),
+        offerings: serializePrerequisite(status.prerequisites.offeringsPublished),
+        profileComplete: serializePrerequisite(status.prerequisites.profileComplete),
+        connectAccount: serializePrerequisite(status.prerequisites.connectAccount),
       } as Json,
       bookings_completed: status.prerequisites.completedBookings.value ?? 0,
       average_rating: status.prerequisites.averageRating.value ?? 0,
