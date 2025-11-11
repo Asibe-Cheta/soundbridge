@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -92,6 +93,10 @@ export async function PATCH(
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+  type ServiceReviewRow = Database['public']['Tables']['service_reviews']['Row'];
+  type ServiceReviewUpdate = Database['public']['Tables']['service_reviews']['Update'];
+
   let body: Partial<{
     rating: number;
     title: string | null;
@@ -108,7 +113,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields provided for update' }, { status: 400, headers: corsHeaders });
   }
 
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: ServiceReviewUpdate = {
     updated_at: new Date().toISOString(),
   };
 
@@ -127,7 +132,7 @@ export async function PATCH(
     updatePayload.comment = body.comment;
   }
 
-  const { data, error: updateError } = await supabase
+  const { data: updateData, error: updateError } = await supabaseClient
     .from('service_reviews')
     .update(updatePayload)
     .eq('id', reviewId)
@@ -135,9 +140,11 @@ export async function PATCH(
     .select('*')
     .single();
 
-  if (updateError) {
+  const data = (updateData ?? null) as ServiceReviewRow | null;
+
+  if (updateError || !data) {
     return NextResponse.json(
-      { error: 'Failed to update review', details: updateError.message },
+      { error: 'Failed to update review', details: updateError?.message },
       { status: 500, headers: corsHeaders },
     );
   }
