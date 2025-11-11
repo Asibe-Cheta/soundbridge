@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Calendar, MapPin, Users, Clock, Ticket, Star } from 'lucide-react';
 import { Card, CardContent, CardFooter } from './Card';
 import { Button } from './Button';
@@ -45,6 +46,7 @@ export function EventCard({
   className
 }: EventCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
 
   const handleRSVP = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -157,27 +159,37 @@ export function EventCard({
           <div className="p-4">
             <div className="space-y-3">
               {/* Title */}
-              <h3 className="font-semibold text-white text-lg line-clamp-2 group-hover:text-primary-red transition-colors">
+              <h3 className={`font-semibold text-lg line-clamp-2 group-hover:text-primary-red transition-colors ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
                 {title}
               </h3>
 
               {/* Date and Time */}
-              <div className="flex items-center gap-2 text-white/60 text-sm">
+              <div className={`flex items-center gap-2 text-sm ${
+                theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+              }`}>
                 <Calendar className="w-4 h-4" />
                 <span>{formatEventDate(date)}</span>
               </div>
 
               {/* Location */}
-              <div className="flex items-center gap-2 text-white/60 text-sm">
+              <div className={`flex items-center gap-2 text-sm ${
+                theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+              }`}>
                 <MapPin className="w-4 h-4" />
                 <span className="line-clamp-1">{location}</span>
               </div>
 
               {/* Price */}
               {price !== undefined && (
-                <div className="flex items-center gap-2 text-white/60 text-sm">
+                <div className={`flex items-center gap-2 text-sm ${
+                  theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+                }`}>
                   <Ticket className="w-4 h-4" />
-                  <span className="font-semibold text-white">
+                  <span className={`font-semibold ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
                     {price === 0 ? 'Free' : formatPrice(price, currency)}
                   </span>
                 </div>
@@ -185,7 +197,9 @@ export function EventCard({
 
               {/* Attendance */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white/60 text-sm">
+                <div className={`flex items-center gap-2 text-sm ${
+                  theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+                }`}>
                   <Users className="w-4 h-4" />
                   <span>
                     {attendeeCount} {maxAttendees ? `/ ${maxAttendees}` : ''} attending
@@ -193,7 +207,9 @@ export function EventCard({
                 </div>
                 
                 {maxAttendees && (
-                  <div className="text-xs text-white/40">
+                  <div className={`text-xs ${
+                    theme === 'dark' ? 'text-white/40' : 'text-gray-500'
+                  }`}>
                     {getAttendancePercentage()}% full
                   </div>
                 )}
@@ -217,7 +233,9 @@ export function EventCard({
         {/* Footer with RSVP Button */}
         <CardFooter className="p-4 pt-0">
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 text-xs text-white/40">
+            <div className={`flex items-center gap-2 text-xs ${
+              theme === 'dark' ? 'text-white/40' : 'text-gray-500'
+            }`}>
               <Clock className="w-3 h-3" />
               <span>{formatEventDate(date)}</span>
             </div>
@@ -233,7 +251,7 @@ export function EventCard({
                 onClick={handleRSVP}
                 className={cn(
                   "min-w-[100px]",
-                  isAttending && "text-white/80 hover:text-white"
+                  isAttending && theme === 'dark' ? "text-white/80 hover:text-white" : "text-gray-700 hover:text-gray-900"
                 )}
               >
                 {isAttending ? 'Attending' : 'RSVP'}

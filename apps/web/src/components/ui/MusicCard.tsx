@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Play, Heart, Share2, MoreHorizontal, Pause } from 'lucide-react';
 import { Card, CardContent, CardFooter } from './Card';
 import { Button } from './Button';
@@ -39,6 +40,7 @@ export function MusicCard({
   className
 }: MusicCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
 
   const handlePlay = () => {
     onPlay?.(id);
@@ -108,9 +110,9 @@ export function MusicCard({
                 className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30"
               >
                 {isPlaying ? (
-                  <Pause className="w-6 h-6 text-white" />
+                  <Pause className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} />
                 ) : (
-                  <Play className="w-6 h-6 text-white ml-1" />
+                  <Play className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'} ml-1`} />
                 )}
               </Button>
             </motion.div>
@@ -155,10 +157,14 @@ export function MusicCard({
           {/* Track Info */}
           <div className="p-4">
             <div className="space-y-2">
-              <h3 className="font-semibold text-white text-lg line-clamp-1 group-hover:text-primary-red transition-colors">
+              <h3 className={`font-semibold text-lg line-clamp-1 group-hover:text-primary-red transition-colors ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
                 {title}
               </h3>
-              <p className="text-white/60 text-sm line-clamp-1">
+              <p className={`text-sm line-clamp-1 ${
+                theme === 'dark' ? 'text-white/60' : 'text-gray-600'
+              }`}>
                 {artist}
               </p>
             </div>
@@ -188,7 +194,9 @@ export function MusicCard({
             </div>
 
             {/* Stats */}
-            <div className="flex items-center justify-between mt-3 text-xs text-white/40">
+            <div className={`flex items-center justify-between mt-3 text-xs ${
+              theme === 'dark' ? 'text-white/40' : 'text-gray-500'
+            }`}>
               <span>{formatDuration(duration)}</span>
               <span>{formatPlayCount(playCount)} plays</span>
             </div>
