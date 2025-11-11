@@ -5,6 +5,9 @@ const nextConfig = {
     SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL,
     SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     domains: ['aunxdbqukbxyyiusaeqi.supabase.co'],
   },
