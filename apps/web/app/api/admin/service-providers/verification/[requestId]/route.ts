@@ -72,6 +72,25 @@ export async function PATCH(
   try {
     const supabaseAdmin = createServiceClient();
 
+    type VerificationRequestRecord = {
+      id: string;
+      status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+      submitted_at: string;
+      provider_id: string;
+      provider_profile: {
+        user_id: string;
+        display_name: string | null;
+        verification_status: string | null;
+        verification_notes: string | null;
+      } | null;
+      provider_account: {
+        id: string;
+        email: string | null;
+        display_name: string | null;
+        username: string | null;
+      } | null;
+    };
+
     const { data: existingRequest, error: requestError } = await supabaseAdmin
       .from('service_provider_verification_requests')
       .select(
@@ -92,7 +111,7 @@ export async function PATCH(
       `,
       )
       .eq('id', requestId)
-      .maybeSingle();
+      .maybeSingle<VerificationRequestRecord>();
 
     if (requestError) {
       return NextResponse.json(
