@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe-esg';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,11 +47,13 @@ export async function POST(
     return NextResponse.json({ error: 'paymentIntentId is required' }, { status: 400, headers: corsHeaders });
   }
 
+  type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
+
   const { data: booking, error: bookingError } = await supabase
     .from('service_bookings')
     .select('*')
     .eq('id', bookingId)
-    .single();
+    .maybeSingle<ServiceBookingRow>();
 
   if (bookingError || !booking) {
     return NextResponse.json(
