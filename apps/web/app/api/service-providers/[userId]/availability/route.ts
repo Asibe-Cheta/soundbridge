@@ -11,6 +11,9 @@ interface AvailabilityPayload {
   isBookable?: boolean;
 }
 
+type AvailabilityRow = Database['public']['Tables']['service_provider_availability']['Row'];
+type AvailabilityInsert = Database['public']['Tables']['service_provider_availability']['Insert'];
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -34,8 +37,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const supabaseClient = supabase as any;
-  type AvailabilityRow = Database['public']['Tables']['service_provider_availability']['Row'];
-  type AvailabilityInsert = Database['public']['Tables']['service_provider_availability']['Insert'];
 
   const { data, error: queryError } = await supabaseClient
     .from('service_provider_availability')
