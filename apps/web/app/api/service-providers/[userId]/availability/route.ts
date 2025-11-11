@@ -66,6 +66,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'You can only add availability to your own profile' }, { status: 403, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+
   let body: AvailabilityPayload;
   try {
     body = await request.json();
