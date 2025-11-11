@@ -5,6 +5,9 @@ import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/curre
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import type { Database } from '@/src/lib/types';
 
+type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
+type ServiceOfferingInsert = Database['public']['Tables']['service_offerings']['Insert'];
+
 interface CreateOfferingPayload {
   title: string;
   category: string;
