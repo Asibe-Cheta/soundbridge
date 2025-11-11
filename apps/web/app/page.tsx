@@ -257,14 +257,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Container - Phone Mockup as Background (no padding/margin) */}
-            <div className="order-1 lg:order-2 relative min-h-[400px] lg:min-h-[600px] m-0 p-0">
+            {/* Right Container - Phone Mockup as Background (no padding/margin, touches edges) */}
+            <div className="order-1 lg:order-2 relative min-h-[400px] lg:min-h-[600px] m-0 p-0 overflow-hidden">
               <div 
-                className="absolute inset-0 bg-contain bg-bottom bg-no-repeat"
+                className="absolute inset-0"
                 style={{
                   backgroundImage: `url('/images/sb-mockup.png')`,
-                  backgroundSize: 'contain',
-                  backgroundPosition: 'bottom center',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'bottom right',
+                  backgroundRepeat: 'no-repeat',
                 }}
               />
             </div>
