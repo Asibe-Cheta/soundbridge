@@ -293,63 +293,46 @@ export default function AboutPage() {
               </h2>
             </div>
 
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '16px',
-              padding: isMobile ? '1.5rem' : '3rem',
-              marginBottom: isMobile ? '1.5rem' : '3rem'
-            }}>
-              <p style={{
-                fontSize: isMobile ? '0.9rem' : '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: isMobile ? '1rem' : '2rem'
-              }}>
+            <div className={`${isMobile ? 'py-6 px-6' : 'py-12 px-12'} rounded-2xl ${
+              theme === 'dark'
+                ? 'bg-white/5 backdrop-blur-lg border border-white/10'
+                : 'bg-white border border-gray-200 shadow-sm'
+            }`}>
+              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed mb-${isMobile ? '4' : '8'} ${
+                theme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 SoundBridge was born from a moment of simple frustration that sparked a revolutionary idea. 
                 Our founder found himself experiencing the all-too-familiar struggle of boredom - wanting to 
                 discover and attend live music events but feeling disconnected from the traditional discovery 
                 methods that dominated the landscape.
               </p>
 
-              <p style={{
-                fontSize: isMobile ? '0.9rem' : '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: isMobile ? '1rem' : '2rem'
-              }}>
+              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed mb-${isMobile ? '4' : '8'} ${
+                theme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 The conventional approaches felt distant and impersonal. Eventbrite required endless scrolling 
                 through irrelevant listings. Social media ads felt intrusive and poorly targeted. Spotify&apos;s 
                 event recommendations seemed disconnected from local scenes. Facebook events got lost in crowded 
                 feeds. Traditional music blogs and websites demanded active searching rather than intuitive discovery.
               </p>
 
-              <p style={{
-                fontSize: isMobile ? '0.9rem' : '1.1rem',
-                lineHeight: '1.8',
-                color: 'rgba(255, 255, 255, 0.9)',
-                marginBottom: isMobile ? '1rem' : '2rem'
-              }}>
+              <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed mb-${isMobile ? '4' : '8'} ${
+                theme === 'dark' ? 'text-white/90' : 'text-gray-700'
+              }`}>
                 What was needed wasn&apos;t another app to check or another platform to search through. The vision 
                 was for something that would meet people at their doorstep - events and creators that would find 
                 their ideal audience organically, and audiences who would discover exactly what they didn&apos;t 
                 know they were looking for.
               </p>
 
-              <div style={{
-                background: 'linear-gradient(45deg, rgba(220, 38, 38, 0.1), rgba(236, 72, 153, 0.1))',
-                border: '1px solid rgba(220, 38, 38, 0.3)',
-                borderRadius: '12px',
-                padding: isMobile ? '1.5rem' : '2rem',
-                marginTop: isMobile ? '1rem' : '2rem'
-              }}>
-                <p style={{
-                  fontSize: isMobile ? '0.9rem' : '1.1rem',
-                  lineHeight: '1.8',
-                  color: 'white',
-                  fontStyle: 'italic',
-                  margin: 0
-                }}>
+              <div className={`rounded-xl ${isMobile ? 'p-6' : 'p-8'} mt-${isMobile ? '4' : '8'} ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-red-600/10 to-pink-500/10 border border-red-500/30'
+                  : 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200'
+              }`}>
+                <p className={`${isMobile ? 'text-sm' : 'text-lg'} leading-relaxed italic m-0 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   &quot;The breakthrough insight came through recognizing that event discovery shouldn&apos;t rely on 
                   advertising budgets or algorithmic luck. Instead, it should work through intentional invitation - 
                   where your events naturally reach people who have optimized their accounts to see exactly what 
@@ -361,17 +344,17 @@ export default function AboutPage() {
         </section>
 
         {/* Call to Action */}
-        <section className={`${isMobile ? 'py-8 px-4' : 'py-16 px-8'} text-center rounded-2xl mx-${isMobile ? '4' : '8'} mb-${isMobile ? '4' : '8'} ${
+        <section className={`${isMobile ? 'py-8 px-4' : 'py-16 px-8'} text-center rounded-2xl ${isMobile ? 'mx-4' : 'mx-8'} ${isMobile ? 'mb-4' : 'mb-8'} ${
           theme === 'dark'
             ? 'bg-gradient-to-r from-red-600/10 to-pink-500/10 border border-white/10'
             : 'bg-gradient-to-r from-red-50 to-pink-50 border border-gray-200'
         }`}>
-          <h2 className={`text-${isMobile ? '2xl' : '4xl'} font-bold mb-${isMobile ? '2' : '4'} ${
+          <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
             Join the SoundBridge Revolution
           </h2>
-          <p className={`text-${isMobile ? 'sm' : 'lg'} max-w-2xl mx-auto mb-8 ${
+          <p className={`${isMobile ? 'text-sm' : 'text-lg'} max-w-2xl mx-auto mb-8 ${
             theme === 'dark' ? 'text-white/80' : 'text-gray-700'
           }`}>
             Be part of the future of music discovery and creator collaboration. 
