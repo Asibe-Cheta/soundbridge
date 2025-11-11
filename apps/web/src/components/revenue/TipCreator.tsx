@@ -14,22 +14,8 @@ declare global {
   }
 }
 import { revenueService } from '../../lib/revenue-service';
-import type { TipFormData } from '@soundbridge/types';
-import {
-  Gift,
-  Heart,
-  Send,
-  DollarSign,
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  X,
-  CreditCard,
-  Smartphone,
-  Shield
-} from 'lucide-react';
+import type { TipFormData } from '../../lib/types/revenue';
+import { Gift, Heart, Send, DollarSign, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, X, CreditCard, Smartphone, Shield } from 'lucide-react';
 
 interface TipCreatorProps {
   creatorId: string;

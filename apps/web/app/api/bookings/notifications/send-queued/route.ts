@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { createClient } = await import('@supabase/supabase-js');
-    const supabaseAdmin = createClient<Database>(supabaseUrl, serviceKey);
+    const supabaseAdmin = createClient<any>(supabaseUrl, serviceKey);
 
     const nowISO = new Date().toISOString();
     const { data, error } = await supabaseAdmin

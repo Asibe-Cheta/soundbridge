@@ -1,14 +1,5 @@
 import React from 'react';
-import { 
-  Crown, 
-  Zap, 
-  Shield, 
-  Clock, 
-  Upload as UploadIcon,
-  Check,
-  X,
-  ArrowRight
-} from 'lucide-react';
+import { Crown, Zap, Shield, Clock, Upload as UploadIcon, Check, X, ArrowRight } from 'lucide-react';
 import type { UploadTierRules } from '../../lib/types/upload-validation';
 
 interface TierBasedLimitsProps {

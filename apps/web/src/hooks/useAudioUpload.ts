@@ -245,7 +245,8 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       isUploading: false,
       uploadProgress: {
         audio: 0,
-        cover: 0
+        cover: 0,
+        processing: 0
       },
       uploadStatus: 'idle',
       error: null,

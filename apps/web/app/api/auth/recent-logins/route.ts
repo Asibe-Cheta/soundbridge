@@ -125,7 +125,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Terminate the session in the database
-    const { error: terminateError } = await supabase.rpc('terminate_user_session', {
+    const { error: terminateError } = await (supabase as any).rpc('terminate_user_session', {
       session_uuid: sessionId,
       user_uuid: user.id
     });

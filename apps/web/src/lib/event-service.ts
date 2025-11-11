@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient } from './supabase';
 import type { Event, EventAttendee, EventFilters, EventCreateData } from './types/event';
 

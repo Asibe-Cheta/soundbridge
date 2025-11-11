@@ -9,44 +9,7 @@ import { BrandingSettings } from '@/src/components/branding/BrandingSettings';
 import { RevenueDashboard } from '@/src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '@/src/components/revenue/BankAccountManager';
 import { useRouter } from 'next/navigation';
-import {
-  User,
-  Edit3,
-  Camera,
-  Save,
-  X,
-  MapPin,
-  Globe,
-  Mail,
-  Phone,
-  Calendar,
-  Music,
-  Users,
-  Heart,
-  Share2,
-  Download,
-  Play,
-  Pause,
-  MoreVertical,
-  Plus,
-  Trash2,
-  Settings,
-  Bell,
-  Lock,
-  Shield,
-  Activity,
-  BarChart3,
-  TrendingUp,
-  Award,
-  Star,
-  Clock,
-  Eye,
-  Clock3,
-  Copy,
-  ExternalLink,
-  Palette,
-  DollarSign
-} from 'lucide-react';
+import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign } from 'lucide-react';
 
 interface ProfileStats {
   totalPlays: number;
@@ -987,7 +950,6 @@ export default function ProfilePage() {
                   <h1 className={`profile-name ${isMobile ? 'text-2xl' : 'text-3xl'}`}>{profileData.displayName}</h1>
                 )}
                 <div className={`profile-actions ${isMobile ? 'flex flex-col space-y-2' : 'flex space-x-3'}`}>
-                  {console.log('🔍 isEditing state:', isEditing)}
                   {isEditing ? (
                     <>
                       <button 

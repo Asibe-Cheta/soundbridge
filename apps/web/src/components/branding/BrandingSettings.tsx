@@ -5,19 +5,7 @@ import Image from 'next/image';
 import { brandingService } from '../../lib/branding-service';
 import { BRANDING_RESTRICTIONS, COLOR_SCHEMES, LAYOUT_STYLES } from '../../lib/types/branding';
 import type { CustomBranding, BrandingUpdateRequest } from '../../lib/types/branding';
-import {
-  Upload,
-  Palette,
-  Layout,
-  Eye,
-  EyeOff,
-  Save,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  X,
-  Settings
-} from 'lucide-react';
+import { Upload, Palette, Layout, Eye, EyeOff, Save, Loader2, AlertCircle, CheckCircle, X, Settings } from 'lucide-react';
 
 interface BrandingSettingsProps {
   userId: string;

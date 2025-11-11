@@ -9,30 +9,7 @@ import { useAudioUpload } from '../../../src/hooks/useAudioUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { UploadValidator } from '../../../src/components/upload/UploadValidator';
 import type { UploadValidationResult } from '../../../src/lib/types/upload-validation';
-import {
-  Upload,
-  Mic,
-  FileAudio,
-  Globe,
-  Users,
-  Lock,
-  Calendar,
-  Save,
-  Play,
-  Pause,
-  CheckCircle,
-  AlertTriangle,
-  Loader2,
-  User,
-  Headphones,
-  ArrowLeft,
-  Menu,
-  Home,
-  Bell,
-  Settings,
-  LogOut,
-  Search
-} from 'lucide-react';
+import { Upload, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, CheckCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
 
 export default function PodcastUploadPage() {
   const { user, loading, signOut } = useAuth();

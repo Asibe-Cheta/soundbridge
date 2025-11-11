@@ -151,7 +151,7 @@ export interface ServiceProviderSummary {
   rate_currency?: string | null;
   average_rating: number;
   review_count: number;
-  status: 'draft' | 'pending_review' | 'active' | 'suspended';
+  status: string;
   is_verified: boolean;
   created_at: string;
   updated_at: string;
@@ -162,17 +162,10 @@ export interface VenueSummary {
   owner_id: string;
   name: string;
   description?: string | null;
-  address?: {
-    city?: string;
-    country?: string;
-    line1?: string;
-    line2?: string;
-    state?: string;
-    postal_code?: string;
-  } | null;
+  address?: Record<string, unknown> | null;
   capacity?: number | null;
   amenities?: string[] | null;
-  status: 'draft' | 'pending_review' | 'active' | 'archived';
+  status: string;
   created_at: string;
   updated_at: string;
 }

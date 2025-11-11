@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useUploadValidation } from '../../hooks/useUploadValidation';
 import { TierBasedLimits } from './TierBasedLimits';
 import { ValidationModal } from './ValidationModal';
-import { 
-  Upload,
-  CheckCircle
-} from 'lucide-react';
+import { Upload, CheckCircle } from 'lucide-react';
 import type { 
   UploadValidationRequest,
   UploadValidationResult,

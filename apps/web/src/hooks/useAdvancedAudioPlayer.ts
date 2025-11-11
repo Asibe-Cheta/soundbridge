@@ -12,7 +12,7 @@ import {
 export function useAdvancedAudioPlayer() {
   const [state, setState] = useState<AudioPlayerState>(audioPlayerService.getState());
   const [visualizationData, setVisualizationData] = useState<number[]>([]);
-  const [lyrics, setLyrics] = useState<Lyrics | null>(null);
+  const [lyrics, setLyrics] = useState<Lyrics | string | null>(null);
   const [analytics, setAnalytics] = useState<AudioPlayerAnalytics>(audioPlayerService.getAnalytics());
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

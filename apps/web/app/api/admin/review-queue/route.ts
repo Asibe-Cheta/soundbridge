@@ -284,9 +284,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the queue item
-    const { data: updatedItem, error: updateError } = await supabase
+    const supabaseClient = supabase as any;
+    const { data: updatedItem, error: updateError } = await supabaseClient
       .from('admin_review_queue')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', data.queueId as any)
       .select()
       .single();
@@ -305,7 +306,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the admin action
-    await supabase.rpc('log_legal_action', {
+    await supabaseClient.rpc('log_legal_action', {
       action_type_param: 'admin_action',
       entity_type_param: 'review_queue',
       entity_id_param: data.queueId,

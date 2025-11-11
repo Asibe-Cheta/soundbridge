@@ -6,35 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FixedSizeGrid as Grid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import {
-  Search,
-  Filter,
-  TrendingUp,
-  Music,
-  Users,
-  Calendar,
-  Mic,
-  AlertCircle,
-  User,
-  Plus,
-  LogOut,
-  Bell,
-  Settings,
-  Play,
-  Pause,
-  Heart,
-  Share2,
-  Loader2,
-  Upload,
-  Menu,
-  X,
-  Home,
-  MapPin,
-  DollarSign,
-  ChevronUp,
-  ChevronDown,
-  Clock
-} from 'lucide-react';
+import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, MapPin, DollarSign, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useEvents } from '../../src/hooks/useEvents';
 import { Footer } from '../../src/components/layout/Footer';

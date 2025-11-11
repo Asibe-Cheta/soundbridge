@@ -1,21 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, 
-  Target, 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
-  Calendar,
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
-  Crown,
-  Star
-} from 'lucide-react';
+import { BarChart3, Target, TrendingUp, Users, DollarSign, Calendar, Plus, Edit, Trash2, Eye, EyeOff, Crown, Star } from 'lucide-react';
 
 interface TipAnalyticsData {
   total_tips: number;

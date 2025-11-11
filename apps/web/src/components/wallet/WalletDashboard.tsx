@@ -2,21 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { walletService, type Wallet, type WalletTransaction } from '../../lib/wallet-service';
-import {
-  Wallet as WalletIcon,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Plus,
-  Minus,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { Wallet as WalletIcon, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, AlertCircle, Plus, Minus, Eye, EyeOff } from 'lucide-react';
 
 interface WalletDashboardProps {
   userId: string;

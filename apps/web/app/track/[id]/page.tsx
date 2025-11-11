@@ -7,18 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { Footer } from '@/src/components/layout/Footer';
-import { 
-  Play, 
-  Pause, 
-  Heart, 
-  Share2, 
-  Loader2,
-  AlertCircle,
-  Clock,
-  Copy,
-  User,
-  Mic
-} from 'lucide-react';
+import { Play, Pause, Heart, Share2, Loader2, AlertCircle, Clock, Copy, User, Mic } from 'lucide-react';
 
 interface Track {
   id: string;

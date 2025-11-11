@@ -1,8 +1,6 @@
-// @ts-nocheck
 import { createClient } from '@supabase/supabase-js';
 
 import type {
-  Database,
   ServiceProviderVerificationDocumentTable,
   ServiceProviderVerificationRequestTable,
 } from '@/src/lib/types';
@@ -37,7 +35,7 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 class ProviderVerificationService {
   private supabase =
     supabaseUrl && supabaseServiceRoleKey
-      ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      ? createClient<any>(supabaseUrl, supabaseServiceRoleKey, {
           auth: {
             autoRefreshToken: false,
             persistSession: false,
@@ -126,7 +124,7 @@ class ProviderVerificationService {
     const [
       { data: offerings, error: offeringsError },
       { data: portfolioItems, error: portfolioError },
-      { data: completedBookingsCount, error: completedBookingsError },
+      { count: completedBookingsTotal, error: completedBookingsError },
       { data: connectAccount, error: connectAccountError },
       { data: providerProfile, error: profileError },
     ] = await Promise.all([
@@ -164,7 +162,7 @@ class ProviderVerificationService {
 
     const activeOfferings = offerings?.length ?? 0;
     const portfolioCount = portfolioItems?.length ?? 0;
-    const completedBookings = completedBookingsCount?.count ?? 0;
+    const completedBookings = completedBookingsTotal ?? 0;
     const connectAccountReady =
       !!connectAccount?.charges_enabled && !!connectAccount?.payouts_enabled && !!connectAccount?.details_submitted;
 

@@ -6,18 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import {
-  User,
-  Bell,
-  Settings,
-  LogOut,
-  Search,
-  Home,
-  Menu,
-  X,
-  Upload,
-  Calendar
-} from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();

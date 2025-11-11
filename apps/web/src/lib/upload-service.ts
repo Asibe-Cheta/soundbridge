@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient } from './supabase';
 import type {
   UploadFile,
@@ -135,20 +134,20 @@ export class AudioUploadService {
   ): Promise<UploadResult> {
     try {
       const fileName = `${userId}/${Date.now()}_${file.name}`;
+      onProgress?.({
+        loaded: 0,
+        total: file.size,
+        percentage: 0,
+        stage: 'upload',
+        message: 'Starting audio upload...',
+        canCancel: false
+      });
+
       const { data, error } = await this.supabase.storage
         .from('audio-tracks')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {
@@ -161,6 +160,15 @@ export class AudioUploadService {
           }
         };
       }
+
+      onProgress?.({
+        loaded: file.size,
+        total: file.size,
+        percentage: 100,
+        stage: 'upload',
+        message: 'Audio upload complete',
+        canCancel: false
+      });
 
       // Get public URL for the uploaded file
       const { data: urlData } = await this.supabase.storage
@@ -198,27 +206,28 @@ export class AudioUploadService {
         allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif']
       });
       
+      onProgress?.({
+        loaded: 0,
+        total: file.size,
+        percentage: 0,
+        stage: 'upload',
+        message: 'Starting cover art upload...',
+        canCancel: false
+      });
+
       const { data, error } = await this.supabase.storage
         .from('cover-art')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: (progress.loaded / progress.total) * 100
-              });
-            }
-          }
+          upsert: false
         });
 
       if (error) {
+        const storageError = error as { message: string; statusCode?: number; error?: string };
         console.error('❌ Cover art upload error:', {
-          message: error.message,
-          statusCode: error.statusCode,
-          error: error.error,
+          message: storageError.message,
+          statusCode: storageError.statusCode,
+          error: storageError.error,
           details: error
         });
         return {
@@ -235,6 +244,15 @@ export class AudioUploadService {
       const { data: urlData } = await this.supabase.storage
         .from('cover-art')
         .getPublicUrl(fileName);
+
+      onProgress?.({
+        loaded: file.size,
+        total: file.size,
+        percentage: 100,
+        stage: 'upload',
+        message: 'Cover art upload complete',
+        canCancel: false
+      });
 
       return {
         success: true,
@@ -263,21 +281,22 @@ export class AudioUploadService {
     genre?: string;
     tags?: string[];
     is_public: boolean;
-    // Audio quality fields
-    audioQuality?: string;
+    audio_quality?: string;
     bitrate?: number;
-    sampleRate?: number;
+    sample_rate?: number;
     channels?: number;
     codec?: string;
+    lyrics?: string | null;
+    lyrics_language?: string | null;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const insertData = {
         ...trackData,
-        audio_quality: trackData.audioQuality || 'standard',
-        bitrate: trackData.bitrate || 128,
-        sample_rate: trackData.sampleRate || 44100,
-        channels: trackData.channels || 2,
-        codec: trackData.codec || 'mp3'
+        audio_quality: trackData.audio_quality ?? 'standard',
+        bitrate: trackData.bitrate ?? 128,
+        sample_rate: trackData.sample_rate ?? 44100,
+        channels: trackData.channels ?? 2,
+        codec: trackData.codec ?? 'mp3'
       };
       
       const { data, error } = await this.supabase
@@ -395,6 +414,9 @@ export class AudioUploadService {
       // Copyright check before processing
       console.log('🔍 Performing copyright check...');
       onProgress?.('processing', {
+        loaded: 0,
+        total: 100,
+        percentage: 0,
         stage: 'copyright_check',
         progress: 0,
         message: 'Checking for copyright violations...',
@@ -430,6 +452,9 @@ export class AudioUploadService {
 
       console.log('✅ Copyright check passed');
       onProgress?.('processing', {
+        loaded: 100,
+        total: 100,
+        percentage: 100,
         stage: 'copyright_check',
         progress: 100,
         message: 'Copyright check completed',
@@ -442,15 +467,19 @@ export class AudioUploadService {
       if (qualitySettings) {
         console.log('🎵 Processing audio for quality:', qualitySettings.description);
         
-        const processingResult = await audioProcessingService.processAudio({
+          const processingResult = await audioProcessingService.processAudio({
           inputFile: trackData.audioFile.file,
           targetQuality: qualitySettings,
-          onProgress: (progress) => onProgress?.('processing', {
-            stage: 'processing',
-            progress,
-            message: `Processing audio to ${qualitySettings.description}...`,
-            canCancel: false
-          })
+            onProgress: (progress) =>
+              onProgress?.('processing', {
+                loaded: progress,
+                total: 100,
+                percentage: progress,
+                stage: 'processing',
+                progress,
+                message: `Processing audio to ${qualitySettings.description}...`,
+                canCancel: false
+              })
         });
         
         if (processingResult.success && processingResult.processedFile) {

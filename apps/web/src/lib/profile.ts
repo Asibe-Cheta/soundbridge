@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient } from './supabase';
 
 export interface ProfileData {

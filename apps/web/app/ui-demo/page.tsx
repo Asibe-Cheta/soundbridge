@@ -42,20 +42,7 @@ import {
   Toaster,
   toast
 } from '@/src/components/ui';
-import { 
-  Play, 
-  Heart, 
-  Share2, 
-  MoreHorizontal, 
-  User, 
-  Settings, 
-  LogOut,
-  ChevronDown,
-  Menu,
-  Music,
-  Calendar,
-  MapPin
-} from 'lucide-react';
+import { Play, Heart, Share2, MoreHorizontal, User, Settings, LogOut, ChevronDown, Menu, Music, Calendar, MapPin } from 'lucide-react';
 
 export default function UIDemoPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);

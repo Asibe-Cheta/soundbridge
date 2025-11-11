@@ -2,19 +2,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import type { FileUploadProps } from '../../lib/types/messaging';
-import {
-  Upload,
-  FileAudio,
-  Image as ImageIcon,
-  FileText,
-  X,
-  AlertCircle,
-  CheckCircle,
-  Music,
-  Play,
-  Pause,
-  Volume2
-} from 'lucide-react';
+import { Upload, FileAudio, Image as ImageIcon, FileText, X, AlertCircle, CheckCircle, Music, Play, Pause, Volume2 } from 'lucide-react';
 
 export function FileUpload({
   onFileSelect,

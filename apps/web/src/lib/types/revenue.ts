@@ -5,12 +5,12 @@ export interface CreatorBankAccount {
   bank_name: string;
   account_number_encrypted: string;
   routing_number_encrypted: string;
-  account_type: 'checking' | 'savings';
+  account_type: string;
   currency: string;
   stripe_account_id?: string;
   stripe_bank_token?: string;
   is_verified: boolean;
-  verification_status: 'pending' | 'verified' | 'failed' | 'rejected';
+  verification_status: string;
   verification_attempts: number;
   created_at?: string;
   updated_at?: string;
@@ -24,7 +24,7 @@ export interface CreatorRevenue {
   pending_balance: number;
   available_balance: number;
   payout_threshold: number;
-  payout_frequency: 'weekly' | 'monthly' | 'quarterly';
+  payout_frequency: string;
   next_payout_date?: string;
   auto_payout_enabled: boolean;
   stripe_account_id?: string;
@@ -37,7 +37,7 @@ export interface CreatorRevenue {
 export interface RevenueTransaction {
   id?: string;
   user_id: string;
-  transaction_type: 'track_sale' | 'tip' | 'subscription' | 'event_ticket' | 'merchandise' | 'payout' | 'refund';
+  transaction_type: string;
   amount: number;
   platform_fee: number;
   creator_earnings: number;
@@ -49,7 +49,7 @@ export interface RevenueTransaction {
   customer_name?: string;
   stripe_payment_intent_id?: string;
   stripe_transfer_id?: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'disputed';
+  status: string;
   transaction_date?: string;
   payout_date?: string;
   created_at?: string;
@@ -59,7 +59,7 @@ export interface RevenueTransaction {
 export interface PaidContent {
   id?: string;
   user_id: string;
-  content_type: 'track' | 'event' | 'album' | 'subscription';
+  content_type: string;
   content_id: string;
   price: number;
   currency: string;
@@ -80,7 +80,7 @@ export interface CreatorTip {
   message?: string;
   is_anonymous: boolean;
   stripe_payment_intent_id?: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -92,9 +92,9 @@ export interface CreatorSubscription {
   tier_name: string;
   price: number;
   currency: string;
-  billing_cycle: 'monthly' | 'yearly';
+  billing_cycle: string;
   stripe_subscription_id?: string;
-  status: 'active' | 'cancelled' | 'past_due' | 'unpaid';
+  status: string;
   started_at?: string;
   current_period_start?: string;
   current_period_end?: string;
@@ -109,7 +109,7 @@ export interface CreatorSubscriptionTier {
   tier_name: string;
   price: number;
   currency: string;
-  billing_cycle: 'monthly' | 'yearly';
+  billing_cycle: string;
   description?: string;
   benefits: string[];
   stripe_price_id?: string;
@@ -135,7 +135,7 @@ export interface BankAccountFormData {
   bank_name: string;
   account_number: string;
   routing_number: string;
-  account_type: 'checking' | 'savings';
+  account_type: string;
   currency: string;
 }
 

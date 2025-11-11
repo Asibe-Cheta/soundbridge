@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Filter, 
-  X, 
-  MapPin, 
-  Music, 
-  Calendar, 
-  DollarSign, 
-  Clock,
-  Sliders,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { Filter, X, MapPin, Music, Calendar, DollarSign, Clock, Sliders, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface FilterOption {
   value: string;

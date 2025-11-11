@@ -10,26 +10,7 @@ import type { Event } from '@/src/lib/types/creator';
 import { Footer } from '@/src/components/layout/Footer';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Users,
-  Loader2,
-  AlertCircle,
-  User,
-  Upload,
-  Bell,
-  Settings,
-  Home,
-  Mic,
-  Menu,
-  X,
-  LogOut,
-  MoreHorizontal,
-  Copy
-} from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Clock, Users, Loader2, AlertCircle, User, Upload, Bell, Settings, Home, Mic, Menu, X, LogOut, MoreHorizontal, Copy } from 'lucide-react';
 
 interface EventsPageProps {
   params: Promise<{ username: string }>;

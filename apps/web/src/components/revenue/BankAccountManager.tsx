@@ -5,22 +5,7 @@ import { revenueService } from '../../lib/revenue-service';
 import { walletService } from '../../lib/wallet-service';
 import { CountryAwareBankForm } from '../wallet/CountryAwareBankForm';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
-import {
-  Building2,
-  CreditCard,
-  Shield,
-  CheckCircle,
-  AlertCircle,
-  Edit,
-  Save,
-  X,
-  Loader2,
-  Eye,
-  EyeOff,
-  Wallet,
-  RefreshCw,
-  Info
-} from 'lucide-react';
+import { Building2, CreditCard, Shield, CheckCircle, AlertCircle, Edit, Save, X, Loader2, Eye, EyeOff, Wallet, RefreshCw, Info } from 'lucide-react';
 
 interface BankAccountManagerProps {
   userId: string;
@@ -134,25 +119,10 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Redirect to Stripe Connect onboarding
         window.location.href = result.onboardingUrl;
       } else {
-        // Handle specific error cases
         if (result.action === 'setup_platform_profile' && result.url) {
-          setError(
-            <div>
-              <p className="text-red-400 mb-2">{result.error}</p>
-              <p className="text-gray-300 text-sm mb-3">{result.details}</p>
-              <a 
-                href={result.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Complete Platform Profile Setup
-              </a>
-            </div>
-          );
+          setError(result.error || 'Additional setup required before completing Stripe onboarding.');
         } else {
           setError(result.error || 'Failed to set up Stripe Connect account');
         }

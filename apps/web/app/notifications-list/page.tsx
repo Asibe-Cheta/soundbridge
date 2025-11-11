@@ -5,20 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useNotifications } from '../../src/hooks/useNotifications';
 import { NotificationBell } from '../../src/components/ui/NotificationBell';
-import { 
-  Bell, 
-  CheckCircle as Check, 
-  Trash2, 
-  Clock, 
-  Users, 
-  Share2, 
-  MessageSquare, 
-  Heart, 
-  Calendar,
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { Bell, CheckCircle as Check, Trash2, Clock, Users, Share2, MessageSquare, Heart, Calendar, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import type { Notification } from '../../src/lib/types/social';
 

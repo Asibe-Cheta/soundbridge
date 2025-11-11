@@ -9,29 +9,7 @@ import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { Footer } from '@/src/components/layout/Footer';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { 
-  ArrowLeft, 
-  Mic, 
-  Play, 
-  Pause, 
-  Heart, 
-  Share2, 
-  MoreHorizontal,
-  Loader2,
-  AlertCircle,
-  Clock,
-  Copy,
-  User,
-  Upload,
-  Bell,
-  Settings,
-  Home,
-  Calendar,
-  Users,
-  Menu,
-  X,
-  LogOut
-} from 'lucide-react';
+import { ArrowLeft, Mic, Play, Pause, Heart, Share2, MoreHorizontal, Loader2, AlertCircle, Clock, Copy, User, Upload, Bell, Settings, Home, Calendar, Users, Menu, X, LogOut } from 'lucide-react';
 
 interface Podcast {
   id: string;

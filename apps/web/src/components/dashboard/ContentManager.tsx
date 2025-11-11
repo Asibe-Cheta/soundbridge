@@ -3,21 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import type { UserTrack, UserEvent } from '../../lib/dashboard-service';
-import {
-  Music,
-  Calendar,
-  Play,
-  Heart,
-  Edit,
-  Trash2,
-  Clock,
-  MapPin,
-  Users,
-  DollarSign,
-  AlertTriangle,
-  CheckCircle,
-  X
-} from 'lucide-react';
+import { Music, Calendar, Play, Heart, Edit, Trash2, Clock, MapPin, Users, DollarSign, AlertTriangle, CheckCircle, X } from 'lucide-react';
 
 interface ContentManagerProps {
   tracks: UserTrack[];

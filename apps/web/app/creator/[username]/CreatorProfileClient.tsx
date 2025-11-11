@@ -19,23 +19,7 @@ import {
 } from '../../../src/lib/creator';
 import type { CreatorProfile, AudioTrack, Event, Message } from '../../../src/lib/types/creator';
 import type { AvailabilitySlot, CreateCollaborationRequestData } from '../../../src/lib/types/availability';
-import {
-  Music,
-  Calendar,
-  User,
-  MessageCircle,
-  Share2,
-  MapPin,
-  Send,
-  UserPlus,
-  UserMinus,
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-  Mic,
-  Play,
-  Pause
-} from 'lucide-react';
+import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, CheckCircle, Loader2, Mic, Play, Pause } from 'lucide-react';
 
 interface CreatorProfileClientProps {
   username: string;

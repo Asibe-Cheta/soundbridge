@@ -1,21 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  X,
-  Share2,
-  Copy,
-  MessageCircle,
-  Mail,
-  Twitter,
-  Facebook,
-  Instagram,
-  Link as LinkIcon,
-  Check,
-  User,
-  Users,
-  Globe
-} from 'lucide-react';
+import { X, Share2, Copy, MessageCircle, Mail, Twitter, Facebook, Instagram, Link as LinkIcon, Check, User, Users, Globe } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useSocial } from '@/src/hooks/useSocial';
 

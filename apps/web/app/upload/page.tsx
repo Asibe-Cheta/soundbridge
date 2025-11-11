@@ -12,33 +12,7 @@ import { AudioQualitySelector } from '../../src/components/upload/AudioQualitySe
 import UploadEducationModal from '../../src/components/upload/UploadEducationModal';
 import RightsVerificationForm from '../../src/components/upload/RightsVerificationForm';
 import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types/audio-quality';
-import {
-  Upload,
-  Music,
-  Mic,
-  FileAudio,
-  Globe,
-  Users,
-  Lock,
-  Calendar,
-  Save,
-  Play,
-  Pause,
-  X,
-  CheckCircle,
-  AlertCircle,
-  AlertTriangle,
-  Loader2,
-  User,
-  Headphones,
-  ArrowLeft,
-  Menu,
-  Home,
-  Bell,
-  Settings,
-  LogOut,
-  Search
-} from 'lucide-react';
+import { Upload, Music, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
 
 type ContentType = 'music' | 'podcast';
 
@@ -802,7 +776,7 @@ export default function UnifiedUploadPage() {
                 userTier={userTier}
                 selectedQuality={selectedQuality}
                 onQualityChange={setSelectedQuality}
-                audioFile={uploadState.audioFile}
+                audioFile={uploadState.audioFile.file}
                 duration={uploadState.audioMetadata?.duration}
               />
             </div>

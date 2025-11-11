@@ -30,7 +30,7 @@ class AudioPlayerService {
   
   // Audio analysis
   private analyserNode: AnalyserNode | null = null;
-  private dataArray: Uint8Array | null = null;
+  private dataArray: Uint8Array<ArrayBuffer> | null = null;
   private animationFrame: number | null = null;
   
   // Equalizer bands (Hz)
@@ -134,7 +134,9 @@ class AudioPlayerService {
     this.analyserNode = this.audioContext.createAnalyser();
     this.analyserNode.fftSize = 256;
     this.analyserNode.connect(this.gainNode);
-    this.dataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+    this.dataArray = new Uint8Array(
+      new ArrayBuffer(this.analyserNode.frequencyBinCount),
+    ) as Uint8Array<ArrayBuffer>;
     
     // Create equalizer nodes
     this.equalizerNodes = this.equalizerBands.map(frequency => {
@@ -549,7 +551,7 @@ class AudioPlayerService {
       
       // Analyze spectral data
       if (this.analyserNode && this.dataArray) {
-        this.analyserNode.getByteFrequencyData(this.dataArray);
+        this.analyserNode.getByteFrequencyData(this.dataArray as Uint8Array<ArrayBuffer>);
         analysis.spectralData = Array.from(this.dataArray);
       }
       
@@ -600,7 +602,7 @@ class AudioPlayerService {
         analyser.fftSize = 2048;
         
         const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
+        const dataArray = new Uint8Array(new ArrayBuffer(bufferLength)) as Uint8Array<ArrayBuffer>;
         
         const waveform: number[] = [];
         const samples = 100; // Number of waveform points
@@ -670,7 +672,7 @@ class AudioPlayerService {
     
     const visualize = () => {
       if (this.analyserNode && this.dataArray) {
-        this.analyserNode.getByteFrequencyData(this.dataArray);
+        this.analyserNode.getByteFrequencyData(this.dataArray as Uint8Array<ArrayBuffer>);
         this.emit('visualizationData', Array.from(this.dataArray));
       }
       this.animationFrame = requestAnimationFrame(visualize);

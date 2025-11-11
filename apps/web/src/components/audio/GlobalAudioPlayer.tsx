@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, 
-  Heart, Share2, List, Settings, Maximize2, Minimize2, Type, X
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Heart, Share2, List, Settings, Maximize2, Minimize2, Type, X } from 'lucide-react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
 import { useSocial } from '../../hooks/useSocial';
 import { useAuth } from '../../contexts/AuthContext';
@@ -393,46 +391,46 @@ export function GlobalAudioPlayer() {
                   }}
                 >
                 {/* Track Info */}
-                <div 
+                <motion.div
                   animate={{
-                    marginBottom: showInlineLyrics ? '1rem' : '2rem'
+                    marginBottom: showInlineLyrics ? '1rem' : '2rem',
                   }}
                   transition={{
                     duration: 0.5,
-                    ease: 'easeInOut'
+                    ease: 'easeInOut',
                   }}
                 >
-                  <h1 
+                  <motion.h1
                     animate={{
-                      fontSize: showInlineLyrics ? '2rem' : '3rem'
+                      fontSize: showInlineLyrics ? '2rem' : '3rem',
                     }}
                     transition={{
                       duration: 0.5,
-                      ease: 'easeInOut'
+                      ease: 'easeInOut',
                     }}
                     style={{
                       fontWeight: '700',
                       marginBottom: '0.5rem',
-                      color: 'white'
+                      color: 'white',
                     }}
                   >
                     {currentTrack.title}
-                  </h1>
-                  <p 
+                  </motion.h1>
+                  <motion.p
                     animate={{
-                      fontSize: showInlineLyrics ? '1.2rem' : '1.5rem'
+                      fontSize: showInlineLyrics ? '1.2rem' : '1.5rem',
                     }}
                     transition={{
                       duration: 0.5,
-                      ease: 'easeInOut'
+                      ease: 'easeInOut',
                     }}
                     style={{
                       color: '#ccc',
-                      marginBottom: '0.5rem'
+                      marginBottom: '0.5rem',
                     }}
                   >
                     {currentTrack.artist}
-                  </p>
+                  </motion.p>
                   {currentTrack.album && (
                     <p style={{
                       fontSize: '1rem',
@@ -441,19 +439,19 @@ export function GlobalAudioPlayer() {
                       {currentTrack.album}
                     </p>
                   )}
-                </div>
+                </motion.div>
 
                 {/* Progress Bar */}
-                <div 
+                <motion.div
                   animate={{
-                    marginBottom: showInlineLyrics ? '1rem' : '2rem'
+                    marginBottom: showInlineLyrics ? '1rem' : '2rem',
                   }}
                   transition={{
                     duration: 0.5,
-                    ease: 'easeInOut'
+                    ease: 'easeInOut',
                   }}
                   style={{
-                    width: '100%'
+                    width: '100%',
                   }}
                 >
                   <div style={{
@@ -479,7 +477,7 @@ export function GlobalAudioPlayer() {
                     <span>{formatTimeDisplay(currentTime)}</span>
                     <span>{formatTimeDisplay(duration)}</span>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Main Controls */}
                 <div style={{
@@ -655,7 +653,7 @@ export function GlobalAudioPlayer() {
                 }
                 return hasLyrics;
               })() && (
-                <div
+                <motion.div
                   initial={{ opacity: 0, x: 50, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 50, scale: 0.9 }}
@@ -721,12 +719,14 @@ export function GlobalAudioPlayer() {
                   </div>
 
                   {/* Lyrics Content */}
-                  <div style={{
-                    flex: 1,
-                    overflow: 'hidden',
-                    position: 'relative'
-                  }}>
-                    <div
+                  <div
+                    style={{
+                      flex: 1,
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}
+                  >
+                    <motion.div
                       style={{
                         height: '100%',
                         overflow: 'auto',
@@ -737,7 +737,7 @@ export function GlobalAudioPlayer() {
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
                       {(currentTrack.lyrics || lyricsRef.current || '').split('\n').map((line, index) => (
-                        <p
+                        <motion.p
                           key={index}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -755,9 +755,9 @@ export function GlobalAudioPlayer() {
                           }}
                         >
                           {line}
-                        </p>
+                        </motion.p>
                       ))}
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Lyrics Footer */}
@@ -773,7 +773,7 @@ export function GlobalAudioPlayer() {
                     <span>Language: {currentTrack.lyricsLanguage || 'English'}</span>
                     <span>{(currentTrack.lyrics || lyricsRef.current || '').split('\n').length} lines</span>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
@@ -1251,12 +1251,7 @@ export function GlobalAudioPlayer() {
       )}
 
       {/* Interstitial Ad */}
-      {showInterstitialAd && (
-        <AdInterstitial
-          onClose={closeInterstitialAd}
-          className="fixed inset-0 z-50"
-        />
-      )}
+      {showInterstitialAd && <AdInterstitial onClose={closeInterstitialAd} />}
     </div>
   );
 }

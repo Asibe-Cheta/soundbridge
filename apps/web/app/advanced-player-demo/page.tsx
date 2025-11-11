@@ -12,19 +12,7 @@ const AdvancedAudioPlayer = dynamic(
     loading: () => <div>Loading audio player...</div>
   }
 );
-import { 
-  Music, 
-  Sliders, 
-  Zap, 
-  BarChart3, 
-  TrendingUp, 
-  Type, 
-  Settings,
-  Play,
-  Clock,
-  User,
-  Album
-} from 'lucide-react';
+import { Music, Sliders, Zap, BarChart3, TrendingUp, Type, Settings, Play, Clock, User, Album } from 'lucide-react';
 
 export default function AdvancedPlayerDemoPage() {
   const [isClient, setIsClient] = useState(false);

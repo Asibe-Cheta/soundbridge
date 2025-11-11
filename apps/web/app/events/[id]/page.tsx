@@ -9,24 +9,7 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { Event } from '../../../src/lib/types/event';
-import {
-  MapPin,
-  Calendar,
-  Users,
-  Clock,
-  Star,
-  Heart,
-  Share2,
-  MessageCircle,
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle,
-  User,
-  Music,
-  DollarSign,
-  Info,
-  Loader2
-} from 'lucide-react';
+import { MapPin, Calendar, Users, Clock, Star, Heart, Share2, MessageCircle, ArrowLeft, CheckCircle, AlertCircle, User, Music, DollarSign, Info, Loader2 } from 'lucide-react';
 
 export default function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth();

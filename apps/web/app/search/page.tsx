@@ -4,28 +4,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAudioPlayer } from '../../src/contexts/AudioPlayerContext';
+import type { AudioTrack } from '../../src/lib/types/audio';
 import { Footer } from '../../src/components/layout/Footer';
-import {
-  Search,
-  Filter,
-  X,
-  MapPin,
-  Music,
-  Users,
-  Calendar,
-  Mic,
-  Play,
-  Pause,
-  Heart,
-  Share2,
-  ArrowLeft,
-  Sliders,
-  Loader2,
-  AlertCircle,
-  User,
-  Clock,
-  Eye
-} from 'lucide-react';
+import { Search, Filter, X, MapPin, Music, Users, Calendar, Mic, Play, Pause, Heart, Share2, ArrowLeft, Sliders, Loader2, AlertCircle, User, Clock, Eye } from 'lucide-react';
 import Image from 'next/image';
 
 // Force dynamic rendering to prevent static generation issues
@@ -401,7 +382,7 @@ function SearchContent() {
               </div>
 
               {/* Track List */}
-              <div style={{ divide: 'rgba(255, 255, 255, 0.1)' }}>
+              <div>
                 {results.music.map((track: any, index: number) => (
                   <div
                     key={track.id}

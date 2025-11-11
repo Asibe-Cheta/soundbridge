@@ -2,21 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { walletService, type WithdrawalMethod } from '../../lib/wallet-service';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Shield,
-  CheckCircle,
-  AlertCircle,
-  Banknote,
-  CreditCard,
-  Wallet,
-  Bitcoin,
-  Eye,
-  EyeOff,
-  Loader2
-} from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, CheckCircle, AlertCircle, Banknote, CreditCard, Wallet, Bitcoin, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface WithdrawalManagerProps {
   userId: string;

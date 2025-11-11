@@ -1,4 +1,7 @@
 declare module 'lucide-react' {
+  export * from 'lucide-react/dist/lucide-react';
+}
+declare module 'lucide-react' {
   import { FC, SVGProps } from 'react';
   
   export interface LucideProps extends Partial<Omit<SVGProps<SVGSVGElement>, 'ref'>> {

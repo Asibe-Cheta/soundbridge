@@ -9,31 +9,7 @@ import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useAvailability } from '../../src/hooks/useAvailability';
 import type { CreateAvailabilityData, AvailabilitySettings } from '../../src/lib/types/availability';
-import {
-  Calendar,
-  Clock,
-  Users,
-  Settings,
-  Plus,
-  Edit,
-  Trash2,
-  CheckCircle,
-  X,
-  AlertCircle,
-  Loader2,
-  ArrowLeft,
-  MessageCircle,
-  User,
-  LogOut,
-  Upload,
-  Bell,
-  Home,
-  Menu,
-  Search,
-  Save,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { Calendar, Clock, Users, Settings, Plus, Edit, Trash2, CheckCircle, X, AlertCircle, Loader2, ArrowLeft, MessageCircle, User, LogOut, Upload, Bell, Home, Menu, Search, Save, Eye, EyeOff } from 'lucide-react';
 
 export default function AvailabilityPage() {
   const { user, signOut } = useAuth();

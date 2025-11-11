@@ -3,20 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { revenueService } from '../../lib/revenue-service';
 import type { RevenueSummary, RevenueTransaction } from '../../lib/types/revenue';
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Download,
-  Gift,
-  Music,
-  Users,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  Loader2,
-  AlertCircle
-} from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Download, Gift, Music, Users, Calendar, ArrowUpRight, ArrowDownRight, Loader2, AlertCircle } from 'lucide-react';
 
 interface RevenueDashboardProps {
   userId: string;

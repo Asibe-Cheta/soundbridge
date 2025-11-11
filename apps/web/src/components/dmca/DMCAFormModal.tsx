@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Copyright, AlertTriangle, CheckCircle, FileText, User, Mail, Phone, MapPin } from 'lucide-react';
 
@@ -173,7 +173,7 @@ export const DMCAFormModal: React.FC<DMCAFormModalProps> = ({
       case 'info':
         return formData.complainantName.trim() !== '' && 
                formData.complainantEmail.trim() !== '' && 
-               formData.complainantType !== '';
+               !!formData.complainantType;
       case 'content':
         return formData.contentId.trim() !== '' && 
                formData.contentTitle.trim() !== '';

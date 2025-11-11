@@ -4,27 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useStripe } from '../../src/hooks/useStripe';
-import { 
-  Star, 
-  CheckCircle, 
-  Zap, 
-  TrendingUp, 
-  BarChart3, 
-  DollarSign, 
-  Users, 
-  Music, 
-  Mic, 
-  Calendar, 
-  Database, 
-  MessageCircle, 
-  PenTool, 
-  Shield,
-  Globe,
-  Code,
-  Headphones,
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
+import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function PricingPage() {
   const { user } = useAuth();

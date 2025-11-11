@@ -1,17 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  FileText,
-  ListChecks,
-  Loader2,
-  RefreshCcw,
-  ShieldAlert,
-  ShieldCheck,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, FileText, ListChecks, Loader2, RefreshCcw, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 interface VerificationRequestRecord {
   id: string;

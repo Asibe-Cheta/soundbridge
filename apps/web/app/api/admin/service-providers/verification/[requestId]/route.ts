@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
-import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,13 +132,6 @@ export async function PATCH(
     const nowIso = new Date().toISOString();
     const decisionStatus = payload.action === 'approve' ? 'approved' : 'rejected';
 
-    const requestUpdate: Database['public']['Tables']['service_provider_verification_requests']['Update'] = {
-      status: decisionStatus,
-      reviewed_at: nowIso,
-      reviewer_id: user.id,
-      reviewer_notes: payload.notes ?? null,
-    };
-
     const { error: updateRequestError } = await adminClient
       .from('service_provider_verification_requests')
       .update({
@@ -157,15 +149,6 @@ export async function PATCH(
       );
     }
 
-    const profileUpdate: Database['public']['Tables']['service_provider_profiles']['Update'] = {
-      is_verified: payload.action === 'approve',
-      verification_status: decisionStatus,
-      verification_reviewed_at: nowIso,
-      verification_reviewer_id: user.id,
-      verification_notes: payload.notes ?? null,
-      verification_requested_at: existingRequest.submitted_at,
-    };
-
     const { error: updateProfileError } = await adminClient
       .from('service_provider_profiles')
       .update({
@@ -175,7 +158,7 @@ export async function PATCH(
         verification_reviewer_id: user.id,
         verification_notes: payload.notes ?? null,
         verification_requested_at: existingRequest.submitted_at,
-      })
+      } as any)
       .eq('user_id', existingRequest.provider_id);
 
     if (updateProfileError) {

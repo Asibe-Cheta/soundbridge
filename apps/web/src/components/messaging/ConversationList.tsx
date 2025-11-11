@@ -2,16 +2,7 @@
 
 import React, { useState } from 'react';
 import type { ConversationListProps } from '../../lib/types/messaging';
-import {
-  Search,
-  MessageCircle,
-  Clock,
-  User,
-  MoreVertical,
-  Trash2,
-  Archive,
-  Pin
-} from 'lucide-react';
+import { Search, MessageCircle, Clock, User, MoreVertical, Trash2, Archive, Pin } from 'lucide-react';
 
 export function ConversationList({
   conversations,

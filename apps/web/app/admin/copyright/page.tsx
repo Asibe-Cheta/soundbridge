@@ -1,28 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  AlertTriangle, 
-  Flag, 
-  Users, 
-  Clock, 
-  CheckCircle, 
-  X, 
-  Eye,
-  User,
-  Mail,
-  Calendar,
-  Filter,
-  Search,
-  RefreshCw,
-  TrendingUp,
-  FileText,
-  Copyright,
-  Ban,
-  CheckSquare,
-  AlertCircle
-} from 'lucide-react';
+import { Shield, AlertTriangle, Flag, Users, Clock, CheckCircle, X, Eye, User, Mail, Calendar, Filter, Search, RefreshCw, TrendingUp, FileText, Copyright, Ban, CheckSquare, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 
 interface CopyrightReport {

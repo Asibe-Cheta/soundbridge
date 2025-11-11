@@ -20,14 +20,15 @@ export interface FileMetadata {
   width?: number;
   height?: number;
   size?: number;
+  mimeType?: string;
 }
 
 export interface AudioMetadata extends FileMetadata {
   duration: number;
   bitrate: number;
   format: string;
-  sampleRate: number;
-  channels: number;
+  sampleRate?: number;
+  channels?: number;
 }
 
 export interface ImageMetadata extends FileMetadata {
@@ -40,8 +41,12 @@ export interface UploadProgress {
   loaded: number;
   total: number;
   percentage: number;
+  progress?: number;
   speed?: number;
   timeRemaining?: number;
+  stage?: 'validation' | 'copyright-check' | 'moderation' | 'upload' | 'processing' | 'complete' | string;
+  message?: string;
+  canCancel?: boolean;
 }
 
 export interface UploadResult {
@@ -60,6 +65,8 @@ export interface BatchUploadResult {
   successfulUploads: number;
   failedUploads: number;
   errors: any[];
+  success: boolean;
+  totalFiles: number;
 }
 
 export interface FileValidationResult {
@@ -70,11 +77,13 @@ export interface FileValidationResult {
 export interface AudioValidationResult extends FileValidationResult {
   duration?: number;
   bitrate?: number;
+  warnings?: string[];
 }
 
 export interface ImageValidationResult extends FileValidationResult {
   width?: number;
   height?: number;
+  warnings?: string[];
 }
 
 export interface UploadConfig {
@@ -95,6 +104,9 @@ export interface StorageBucket {
 export interface TrackUploadData {
   title: string;
   description?: string;
+  artistName?: string;
+  album?: string;
+  recordLabel?: string;
   genre?: string;
   tags?: string[];
   lyrics?: string;

@@ -10,15 +10,7 @@ import {
   estimateFileSize
 } from '@/src/lib/types/audio-quality';
 import { audioProcessingService } from '@/src/lib/audio-processing-service';
-import { 
-  Music, 
-  Volume2, 
-  Zap, 
-  Crown, 
-  Info,
-  Check,
-  AlertTriangle
-} from 'lucide-react';
+import { Music, Volume2, Zap, Crown, Info, Check, AlertTriangle } from 'lucide-react';
 
 interface AudioQualitySelectorProps {
   userTier: AudioQualityTier;

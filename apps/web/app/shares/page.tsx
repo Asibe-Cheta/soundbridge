@@ -2,22 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Share2,
-  Heart,
-  Play,
-  Pause,
-  MessageCircle,
-  Calendar,
-  MapPin,
-  User,
-  Filter,
-  Search,
-  ArrowLeft
-} from 'lucide-react';
+import { Share2, Heart, Play, Pause, MessageCircle, Calendar, MapPin, User, Filter, Search, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useSocial } from '@/src/hooks/useSocial';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
+import type { AudioTrack } from '@/src/lib/types/audio';
 
 interface SharedContent {
   id: string;

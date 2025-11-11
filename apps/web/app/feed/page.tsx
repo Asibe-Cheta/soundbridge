@@ -2,23 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  Heart,
-  MessageCircle,
-  Share2,
-  Play,
-  Pause,
-  MoreHorizontal,
-  Users,
-  Calendar,
-  MapPin,
-  Star,
-  Sparkles,
-  Activity,
-  Headphones,
-  Repeat,
-  User
-} from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Pause, MoreHorizontal, Users, Calendar, MapPin, Star, Sparkles, Activity, Headphones, Repeat, User } from 'lucide-react';
 
 interface Creator {
   id: string;

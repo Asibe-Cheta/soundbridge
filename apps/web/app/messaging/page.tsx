@@ -6,19 +6,7 @@ import { Footer } from '../../src/components/layout/Footer';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMessaging } from '../../src/hooks/useMessaging';
 import type { Conversation, ConversationParticipant } from '../../src/lib/types/messaging';
-import {
-  MessageCircle,
-  Search,
-  ArrowLeft,
-  Bell,
-  Settings,
-  AlertCircle,
-  Send,
-  MoreVertical,
-  User,
-  LogOut,
-  Menu
-} from 'lucide-react';
+import { MessageCircle, Search, ArrowLeft, Bell, Settings, AlertCircle, Send, MoreVertical, User, LogOut, Menu } from 'lucide-react';
 
 export default function MessagingPage() {
   const { user, signOut } = useAuth();

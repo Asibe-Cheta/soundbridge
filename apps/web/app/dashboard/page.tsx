@@ -6,29 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
-import {
-  Settings,
-  Upload,
-  Calendar,
-  Music,
-  BarChart3,
-  Users,
-  Activity,
-  AlertCircle,
-  X,
-  AlertTriangle,
-  TrendingUp,
-  Heart,
-  Play,
-  FileAudio,
-  Clock,
-  Plus,
-  MessageCircle,
-  Home,
-  Star,
-  DollarSign,
-  Briefcase
-} from 'lucide-react';
+import { Settings, Upload, Calendar, Music, BarChart3, Users, Activity, AlertCircle, X, AlertTriangle, TrendingUp, Heart, Play, FileAudio, Clock, Plus, MessageCircle, Home, Star, DollarSign, Briefcase } from 'lucide-react';
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
 import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';

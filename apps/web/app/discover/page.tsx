@@ -14,35 +14,11 @@ import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { useSearch } from '../../src/hooks/useSearch';
 import { searchCreators } from '../../src/lib/creator';
-import type { CreatorSearchResult, Event } from '../../src/lib/types/creator';
+import type { Event } from '../../src/lib/types/creator';
 import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search';
 import type { AudioTrack } from '../../src/lib/types/audio';
 import ShareModal from '@/src/components/social/ShareModal';
-import {
-  Search,
-  Filter,
-  TrendingUp,
-  Music,
-  Users,
-  Calendar,
-  Mic,
-  AlertCircle,
-  User,
-  Plus,
-  LogOut,
-  Bell,
-  Settings,
-  Play,
-  Pause,
-  Heart,
-  Share2,
-  Loader2,
-  Upload,
-  Menu,
-  X,
-  Home,
-  Briefcase
-} from 'lucide-react';
+import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, Briefcase } from 'lucide-react';
 
 export default function DiscoverPage() {
   const router = useRouter();
@@ -71,7 +47,7 @@ export default function DiscoverPage() {
   }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [creators, setCreators] = useState<CreatorSearchResult[]>([]);
+  const [creators, setCreators] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -244,11 +220,17 @@ export default function DiscoverPage() {
           profile: {
             id: creator.profile.id,
             username: creator.profile?.username || '',
-            display_name: creator.profile.display_name || creator.profile.full_name || 'Unknown Creator',
+            display_name:
+              creator.profile.display_name ||
+              (creator.profile as Record<string, unknown>).full_name ||
+              'Unknown Creator',
             bio: creator.profile.bio || null,
             avatar_url: creator.profile.avatar_url || null,
             banner_url: (creator.profile as Record<string, unknown>).banner_url as string | null || null,
-            role: (creator.profile.role === 'organizer' ? 'creator' : creator.profile.role) as 'creator' | 'listener',
+            role:
+              ((creator.profile as Record<string, unknown>).role === 'organizer'
+                ? 'creator'
+                : creator.profile.role) as 'creator' | 'listener',
             location: creator.profile.location || null,
             country: creator.profile.country as 'UK' | 'Nigeria' | null,
             social_links: (creator.profile as Record<string, unknown>).social_links as Record<string, string> || {},

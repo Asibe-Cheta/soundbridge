@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient, createApiClient } from './supabase';
 import type { Notification } from './types/social';
 

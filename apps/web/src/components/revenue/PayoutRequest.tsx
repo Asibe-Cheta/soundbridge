@@ -1,17 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  DollarSign,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  CreditCard,
-  Calendar,
-  TrendingUp,
-  Info
-} from 'lucide-react';
+import { DollarSign, Clock, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, TrendingUp, Info } from 'lucide-react';
 
 interface PayoutEligibility {
   available_balance: number;

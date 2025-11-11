@@ -1,17 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  TrendingUp,
-  TrendingDown,
-  Users,
-  Music,
-  Calendar,
-  Heart,
-  Play,
-  Eye,
-  Activity
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Music, Calendar, Heart, Play, Eye, Activity } from 'lucide-react';
 
 interface StatsCardProps {
   title: string;

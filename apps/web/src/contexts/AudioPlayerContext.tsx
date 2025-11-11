@@ -14,11 +14,14 @@ interface AudioPlayerContextType {
   isLoading: boolean;
   error: string | null;
   showInterstitialAd: boolean;
+  audioRef: React.MutableRefObject<HTMLAudioElement | null>;
   
   // Actions
   playTrack: (track: AudioTrack) => void;
   pause: () => void;
   resume: () => void;
+  pauseTrack: () => void;
+  resumeTrack: () => void;
   stop: () => void;
   seek: (time: number) => void;
   setVolume: (volume: number) => void;
@@ -335,9 +338,12 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     isLoading,
     error,
     showInterstitialAd,
+    audioRef,
     playTrack,
     pause,
     resume,
+    pauseTrack: pause,
+    resumeTrack: resume,
     stop,
     seek,
     setVolume,

@@ -3,17 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import {
-  CalendarClock,
-  CalendarCheck,
-  CalendarX,
-  CheckCircle,
-  CreditCard,
-  Loader2,
-  ShieldAlert,
-  X,
-  RefreshCcw,
-} from 'lucide-react';
+import { CalendarClock, CalendarCheck, CalendarX, CheckCircle, CreditCard, Loader2, ShieldAlert, X, RefreshCcw } from 'lucide-react';
 
 import { BOOKING_STATUS_META, type BookingStatus } from '@/src/constants/bookings';
 

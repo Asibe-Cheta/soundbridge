@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  AlertTriangle,
-  X,
-  FileText,
-  Upload,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { AlertTriangle, X, FileText, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { copyrightService } from '../../lib/copyright-service';
 import type { CopyrightViolationReport } from '../../lib/types/upload';
 

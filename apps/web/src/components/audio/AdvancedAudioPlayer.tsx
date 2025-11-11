@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Repeat, Shuffle, 
-  Heart, Share2, List, Settings, Maximize2, Minimize2, Music, BarChart3,
-  Type, Sliders, Zap, Activity, Radio, Clock, User, Album
-} from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Repeat, Shuffle, Heart, Share2, List, Settings, Maximize2, Minimize2, Music, BarChart3, Type, Sliders, Zap, Activity, Radio, Clock, User, Album } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { cn, formatDuration } from '../../lib/utils';

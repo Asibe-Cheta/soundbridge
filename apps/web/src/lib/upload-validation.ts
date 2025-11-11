@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Upload Validation Service for SoundBridge
 // Comprehensive validation system with tier-based limits and metadata checks
 

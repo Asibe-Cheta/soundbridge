@@ -20,6 +20,7 @@ export async function OPTIONS() {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
   const { supabase, user, error } = await getSupabaseRouteClient(request, true);
+  const supabaseClient = supabase as any;
 
   if (error || !user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'You can only view your own creator types' }, { status: 403, headers: corsHeaders });
   }
 
-  const { data, error: queryError } = await supabase
+  const { data, error: queryError } = await supabaseClient
     .from('user_creator_types')
     .select('creator_type')
     .eq('user_id', userId)
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
   const { supabase, user, error } = await getSupabaseRouteClient(request, true);
+  const supabaseClient = supabase as any;
 
   if (error || !user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const newTypesSet = new Set(normalizedTypes);
 
-  const { data: existingData, error: existingError } = await supabase
+  const { data: existingData, error: existingError } = await supabaseClient
     .from('user_creator_types')
     .select('creator_type')
     .eq('user_id', userId);
@@ -100,14 +102,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  const currentTypes = new Set((existingData || []).map((entry) => entry.creator_type));
+  const currentTypes = new Set<string>((existingData || []).map((entry) => String(entry.creator_type)));
 
   const toInsert = [...newTypesSet].filter((type) => !currentTypes.has(type));
   const toDelete = [...currentTypes].filter((type) => !newTypesSet.has(type));
 
   // Guard rails for removing service provider while active
   if (toDelete.includes('service_provider')) {
-    const { data: providerProfile } = await supabase
+    const { data: providerProfile } = await supabaseClient
       .from('service_provider_profiles')
       .select('status')
       .eq('user_id', userId)
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    const { count: offeringCount, error: offeringError } = await supabase
+    const { count: offeringCount, error: offeringError } = await supabaseClient
       .from('service_offerings')
       .select('id', { count: 'exact', head: true })
       .eq('provider_id', userId);
@@ -139,11 +141,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    await supabase.from('service_provider_profiles').delete().eq('user_id', userId);
+    await supabaseClient.from('service_provider_profiles').delete().eq('user_id', userId);
   }
 
   if (toInsert.includes('service_provider')) {
-    const { data: providerProfile, error: providerError } = await supabase
+    const { data: providerProfile, error: providerError } = await supabaseClient
       .from('service_provider_profiles')
       .select('user_id')
       .eq('user_id', userId)
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     if (!providerProfile) {
-      const { data: baseProfile, error: profileError } = await supabase
+      const { data: baseProfile, error: profileError } = await supabaseClient
         .from('profiles')
         .select('display_name, full_name, username')
         .eq('id', userId)
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         baseProfile?.username ||
         'Service Provider';
 
-      const { error: insertProviderError } = await supabase.from('service_provider_profiles').insert({
+      const { error: insertProviderError } = await supabaseClient.from('service_provider_profiles').insert({
         user_id: userId,
         display_name: displayName,
         categories: [],
@@ -199,7 +201,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   if (toDelete.length > 0) {
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseClient
       .from('user_creator_types')
       .delete()
       .eq('user_id', userId)
@@ -220,7 +222,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       created_at: new Date().toISOString(),
     }));
 
-    const { error: insertError } = await supabase.from('user_creator_types').insert(rows);
+    const { error: insertError } = await supabaseClient.from('user_creator_types').insert(rows);
 
     if (insertError) {
       return NextResponse.json(
@@ -230,7 +232,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  const { data: refreshedData, error: refreshError } = await supabase
+  const { data: refreshedData, error: refreshError } = await supabaseClient
     .from('user_creator_types')
     .select('creator_type')
     .eq('user_id', userId)

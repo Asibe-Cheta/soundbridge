@@ -7,16 +7,7 @@ import Image from 'next/image';
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import {
-  Image as ImageIcon,
-  Camera,
-  Palette,
-  Save,
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle,
-  Loader2
-} from 'lucide-react';
+import { Image as ImageIcon, Camera, Palette, Save, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function ProfileImageUploadPage() {
   const { user } = useAuth();

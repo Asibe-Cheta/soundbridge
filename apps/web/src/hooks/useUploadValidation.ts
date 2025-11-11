@@ -6,7 +6,9 @@ import type {
   UploadValidationResponse,
   UploadValidationResult,
   UploadProgress,
-  UploadValidationConfig
+  UploadValidationConfig,
+  UploadValidationError,
+  UploadValidationWarning
 } from '../lib/types/upload-validation';
 
 export interface UseUploadValidationReturn {
@@ -57,7 +59,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
     console.log('🔍 Starting real audio analysis for:', file.name);
     
     // Step 1: Basic file validation - get user tier and limits
-    const userTier = user?.subscription_tier || 'free';
+    const userTier = (user as any)?.subscription_tier || 'free';
     const maxSize = userTier === 'free' ? 10 * 1024 * 1024 : 
                    userTier === 'pro' ? 50 * 1024 * 1024 : 
                    100 * 1024 * 1024; // enterprise

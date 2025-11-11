@@ -3,20 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  AlertCircle,
-  ArrowLeft,
-  CheckCircle,
-  Loader2,
-  Globe,
-  Lock,
-  Users,
-  Send,
-  Clock,
-  Save,
-  MapPin,
-  RefreshCw
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Globe, Lock, Users, Send, Clock, Save, MapPin, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { EventCreateData, EventCategory } from '../../../src/lib/types/event';

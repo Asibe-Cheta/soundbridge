@@ -2,20 +2,7 @@
 
 import React, { useState } from 'react';
 import type { MessageBubbleProps } from '../../lib/types/messaging';
-import {
-  MoreVertical,
-  Trash2,
-  Reply,
-  Copy,
-  Download,
-  Play,
-  Pause,
-  Volume2,
-  Calendar,
-  FileText,
-  Music,
-  Image as ImageIcon
-} from 'lucide-react';
+import { MoreVertical, Trash2, Reply, Copy, Download, Play, Pause, Volume2, Calendar, FileText, Music, Image as ImageIcon } from 'lucide-react';
 
 export function MessageBubble({
   message,

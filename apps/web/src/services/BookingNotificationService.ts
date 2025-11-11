@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createClient } from '@supabase/supabase-js';
 
 import { SendGridService } from '@/src/lib/sendgrid-service';
@@ -6,8 +5,14 @@ import type { Database } from '@/src/lib/types';
 
 type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
 type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type BookingNotificationRow = Database['public']['Tables']['booking_notifications']['Row'];
+
+type BookingProfile = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  username: string | null;
+};
 
 export type BookingNotificationType =
   | 'booking_request_booker'
@@ -30,8 +35,8 @@ export type BookingNotificationType =
 interface BookingContext {
   booking: ServiceBookingRow;
   offering: ServiceOfferingRow | null;
-  provider: ProfileRow | null;
-  booker: ProfileRow | null;
+  provider: BookingProfile | null;
+  booker: BookingProfile | null;
 }
 
 interface NotificationPayload {
@@ -82,7 +87,7 @@ const REMINDER_NOTIFICATION_TYPES: BookingNotificationType[] = [
 class BookingNotificationService {
   private supabaseAdmin =
     supabaseUrl && supabaseServiceRoleKey
-      ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      ? createClient<any>(supabaseUrl, supabaseServiceRoleKey, {
           auth: {
             autoRefreshToken: false,
             persistSession: false,
@@ -335,7 +340,6 @@ class BookingNotificationService {
 
     const targetProfile =
       recipient === 'booker' ? context.booker : recipient === 'provider' ? context.provider : null;
-
     let recipientEmail = targetProfile?.email ?? null;
     let recipientId = targetProfile?.id ?? null;
 
@@ -476,7 +480,7 @@ class BookingNotificationService {
     };
   }
 
-  private async fetchProfile(profileId: string | null): Promise<ProfileRow | null> {
+  private async fetchProfile(profileId: string | null): Promise<BookingProfile | null> {
     if (!profileId) return null;
     const { data, error } = await this.supabaseAdmin!
       .from('profiles')
@@ -487,7 +491,7 @@ class BookingNotificationService {
       console.error('Failed to fetch profile', profileId, error);
       return null;
     }
-    return data ?? null;
+    return (data as BookingProfile | null) ?? null;
   }
 
   private async fetchOffering(offeringId: string): Promise<ServiceOfferingRow | null> {

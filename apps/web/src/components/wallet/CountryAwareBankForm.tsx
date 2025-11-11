@@ -1,40 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  MapPin,
-  Building2,
-  CreditCard,
-  Shield,
-  CheckCircle,
-  AlertCircle,
-  Loader2
-} from 'lucide-react';
+import { MapPin, Building2, CreditCard, Shield, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+
+type FieldConfig = {
+  required: boolean;
+  label: string;
+  placeholder?: string;
+};
 
 interface CountryBankingInfo {
   country: string;
   currency: string;
-  fields: {
-    account_holder_name: { required: boolean; label: string };
-    bank_name: { required: boolean; label: string };
-    account_number: { required: boolean; label: string; placeholder: string };
-    routing_number?: { required: boolean; label: string; placeholder: string };
-    sort_code?: { required: boolean; label: string; placeholder: string };
-    iban?: { required: boolean; label: string; placeholder: string };
-    bsb_code?: { required: boolean; label: string; placeholder: string };
-    transit_number?: { required: boolean; label: string; placeholder: string };
-    branch_code?: { required: boolean; label: string; placeholder: string };
-    account_type: { required: boolean; label: string };
-  };
-  validation: {
-    account_number: RegExp;
-    routing_number?: RegExp;
-    sort_code?: RegExp;
-    iban?: RegExp;
-    bsb_code?: RegExp;
-    transit_number?: RegExp;
-    branch_code?: RegExp;
-  };
+  fields: Record<string, FieldConfig>;
+  validation: Record<string, RegExp>;
 }
 
 // Country-specific banking information (alphabetically ordered)

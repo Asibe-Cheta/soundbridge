@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient } from './supabase';
 import {
   Comment,
@@ -461,6 +460,25 @@ export class SocialService {
     }
   }
 
+  async getUserShares(userId: string): Promise<{ data: Share[] | null; error: any }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('shares')
+        .select(`
+          *,
+          user:profiles!shares_user_id_fkey(id, username, display_name, avatar_url)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error getting user shares:', error);
+      return { data: null, error };
+    }
+  }
+
   // ===== BOOKMARKS =====
   async toggleBookmark(userId: string, request: CreateBookmarkRequest): Promise<{ data: Bookmark | null; error: any }> {
     try {
@@ -907,117 +925,14 @@ export class SocialService {
           type: 'share',
           title: 'Your content was shared',
           message: 'Someone shared your content',
-          related_content_id: contentId,
-          related_content_type: contentType,
+          related_id: contentId,
+          related_type: contentType,
         });
       }
 
       return { data, error: null };
     } catch (error) {
       console.error('Error sharing content:', error);
-      return { data: null, error };
-    }
-  }
-
-  async getShares(contentId: string, contentType: 'track' | 'event'): Promise<{ data: any[] | null; error: any }> {
-    try {
-      const { data, error } = await this.supabase
-        .from('shares')
-        .select(`
-          *,
-          user:profiles!shares_user_id_fkey(id, username, display_name, avatar_url)
-        `)
-        .eq('content_id', contentId)
-        .eq('content_type', contentType)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error getting shares:', error);
-      return { data: null, error };
-    }
-  }
-
-  async hasShared(userId: string, contentId: string, contentType: 'track' | 'event'): Promise<{ data: boolean; error: any }> {
-    try {
-      const { data, error } = await this.supabase
-        .from('shares')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('content_id', contentId)
-        .eq('content_type', contentType)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
-      return { data: !!data, error: null };
-    } catch (error) {
-      console.error('Error checking if shared:', error);
-      return { data: false, error };
-    }
-  }
-
-  async getUserShares(userId: string): Promise<{ data: Share[] | null; error: any }> {
-    try {
-      const { data, error } = await this.supabase
-        .from('shares')
-        .select(`
-          *,
-          user:profiles!shares_user_id_fkey(id, username, display_name, avatar_url)
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Get content details for each share
-      const sharesWithContent = await Promise.all(
-        data.map(async (share) => {
-          let content = null;
-          
-          if (share.content_type === 'track') {
-            const { data: track } = await this.supabase
-              .from('audio_tracks')
-              .select(`
-                id,
-                title,
-                creator_id,
-                cover_art_url,
-                duration,
-                play_count,
-                like_count,
-                creator:profiles!audio_tracks_creator_id_fkey(username, display_name)
-              `)
-              .eq('id', share.content_id)
-              .single();
-            content = track;
-          } else if (share.content_type === 'event') {
-            const { data: event } = await this.supabase
-              .from('events')
-              .select(`
-                id,
-                title,
-                creator_id,
-                venue,
-                event_date,
-                start_time,
-                creator:profiles!events_creator_id_fkey(username, display_name)
-              `)
-              .eq('id', share.content_id)
-              .single();
-            content = event;
-          }
-
-          return {
-            ...share,
-            content
-          };
-        })
-      );
-
-      return { data: sharesWithContent.filter(share => share.content !== null), error: null };
-    } catch (error) {
-      console.error('Error getting user shares:', error);
       return { data: null, error };
     }
   }

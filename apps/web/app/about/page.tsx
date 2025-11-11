@@ -4,11 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
 import RiveLogo from '../../src/components/ui/RiveLogo';
-import {
-  Music,
-  Lightbulb,
-  ArrowRight
-} from 'lucide-react';
+import { Music, Lightbulb, ArrowRight } from 'lucide-react';
 
 export default function AboutPage() {
   const [isMobile, setIsMobile] = useState(false);

@@ -4,27 +4,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { useRouter } from 'next/navigation';
-import { 
-  Maximize, 
-  Minimize, 
-  ArrowLeft,
-  Music,
-  User,
-  Heart,
-  Share2,
-  Download,
-  Volume2,
-  VolumeX,
-  Repeat,
-  Shuffle,
-  SkipBack,
-  SkipForward,
-  Play,
-  Pause,
-  MoreHorizontal,
-  Clock,
-  List
-} from 'lucide-react';
+import { Maximize, Minimize, ArrowLeft, Music, User, Heart, Share2, Download, Volume2, VolumeX, Repeat, Shuffle, SkipBack, SkipForward, Play, Pause, MoreHorizontal, Clock, List } from 'lucide-react';
 import Image from 'next/image';
 
 // Dynamically import the AdvancedAudioPlayer to avoid SSR issues

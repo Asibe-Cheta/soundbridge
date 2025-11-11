@@ -1,16 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
-import {
-  Upload,
-  Image as ImageIcon,
-  X,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  Camera,
-  Crop
-} from 'lucide-react';
+import { Upload, Image as ImageIcon, X, CheckCircle, AlertCircle, Loader2, Camera, Crop } from 'lucide-react';
 
 import type { UploadFile } from '../../lib/types/upload';
 

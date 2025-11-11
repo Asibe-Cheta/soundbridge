@@ -19,6 +19,23 @@ const serializePrerequisite = (
   description: prerequisite.description ?? null,
 });
 
+const toNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+
+  return fallback;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -118,9 +135,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         profileComplete: serializePrerequisite(status.prerequisites.profileComplete),
         connectAccount: serializePrerequisite(status.prerequisites.connectAccount),
       } as Json,
-      bookings_completed: status.prerequisites.completedBookings.value ?? 0,
-      average_rating: status.prerequisites.averageRating.value ?? 0,
-      portfolio_items: status.prerequisites.portfolioItems.value ?? 0,
+  bookings_completed: toNumber(status.prerequisites.completedBookings.value),
+  average_rating: toNumber(status.prerequisites.averageRating.value),
+  portfolio_items: toNumber(status.prerequisites.portfolioItems.value),
       profile_completeness: {
         profile: status.prerequisites.profileComplete.met,
         offerings: status.prerequisites.offeringsPublished.met,
@@ -146,7 +163,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       request_id: requestRecord.id,
       doc_type: doc.docType,
       storage_path: doc.storagePath,
-      metadata: doc.metadata ?? null,
+      metadata: (doc.metadata ?? null) as Json,
     }));
 
     if (documentPayload.length > 0) {

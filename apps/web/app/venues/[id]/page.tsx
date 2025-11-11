@@ -1,15 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle2,
-  DoorClosed,
-  Home,
-  MapPin,
-  Users,
-  Wrench,
-} from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, DoorClosed, Home, MapPin, Users, Wrench } from 'lucide-react';
 
 import { createServiceClient } from '@/src/lib/supabase';
 

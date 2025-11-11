@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import type { Database, ProviderBadgeTier } from '@/src/lib/types';
+import type {
+  ProviderBadgeTier,
+  ServiceProviderProfileTable,
+  ServiceProviderProfileUpdate,
+} from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -169,7 +173,7 @@ async function fetchBadgeInsights(
   supabase: Awaited<ReturnType<typeof getSupabaseRouteClient>>['supabase'],
   providerId: string,
 ) {
-  type ProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
+  type ProviderProfileRow = ServiceProviderProfileTable;
   const supabaseClient = supabase as any;
 
   const { data: providerData, error: providerError } = await supabaseClient
@@ -305,7 +309,7 @@ export async function PATCH(
   }
 
   type ProviderTrustProfile = Pick<
-    Database['public']['Tables']['service_provider_profiles']['Row'],
+    ServiceProviderProfileTable,
     'completed_booking_count' | 'first_booking_discount_enabled' | 'first_booking_discount_percent' | 'show_payment_protection'
   >;
 
@@ -328,7 +332,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Service provider profile not found' }, { status: 404, headers: corsHeaders });
   }
 
-  type ProviderProfileUpdate = Database['public']['Tables']['service_provider_profiles']['Update'];
+  type ProviderProfileUpdate = ServiceProviderProfileUpdate;
   const updatePayload: ProviderProfileUpdate = {};
 
   if (body.showPaymentProtection !== undefined) {

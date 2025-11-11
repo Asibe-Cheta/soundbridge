@@ -9,31 +9,7 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { Event } from '../../../src/lib/types/event';
-import {
-  Calendar,
-  MapPin,
-  Clock,
-  Users,
-  Star,
-  Edit,
-  Trash2,
-  Eye,
-  CheckCircle,
-  AlertCircle,
-  ArrowLeft,
-  Plus,
-  Search,
-  Loader2,
-  Music,
-  DollarSign,
-  LogOut,
-  User,
-  Upload,
-  Bell,
-  Settings,
-  Home,
-  Menu
-} from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Star, Edit, Trash2, Eye, CheckCircle, AlertCircle, ArrowLeft, Plus, Search, Loader2, Music, DollarSign, LogOut, User, Upload, Bell, Settings, Home, Menu } from 'lucide-react';
 
 export default function EventDashboardPage() {
   const { user, signOut } = useAuth();

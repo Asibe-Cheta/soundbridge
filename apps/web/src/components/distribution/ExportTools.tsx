@@ -2,22 +2,7 @@
 // Provides tools for exporting content for manual distribution
 
 import React, { useState } from 'react';
-import { 
-  Download, 
-  FileAudio, 
-  FileImage, 
-  FileText, 
-  Globe, 
-  Music, 
-  Mic, 
-  Calendar,
-  Package,
-  ExternalLink,
-  Copy,
-  Check,
-  AlertCircle,
-  Info
-} from 'lucide-react';
+import { Download, FileAudio, FileImage, FileText, Globe, Music, Mic, Calendar, Package, ExternalLink, Copy, Check, AlertCircle, Info } from 'lucide-react';
 
 interface ExportToolsProps {
   userId: string;

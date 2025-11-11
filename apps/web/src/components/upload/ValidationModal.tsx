@@ -1,14 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  CheckCircle, 
-  AlertCircle, 
-  AlertTriangle, 
-  X,
-  Loader2,
-  FileAudio,
-  Zap
-} from 'lucide-react';
+import { CheckCircle, AlertCircle, AlertTriangle, X, Loader2, FileAudio, Zap } from 'lucide-react';
 import type { 
   UploadValidationResult,
   UploadProgress,
@@ -299,6 +291,8 @@ export function ValidationModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 // Validation Error Item Component
@@ -320,7 +314,4 @@ function ValidationErrorItem({ error }: { error: UploadValidationError }) {
       </div>
     </div>
   );
-
-  // Use portal to render modal at document root
-  return createPortal(modalContent, document.body);
 }

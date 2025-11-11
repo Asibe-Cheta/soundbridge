@@ -5,20 +5,7 @@ import type { ChatInterfaceProps, MessageAttachment } from '../../lib/types/mess
 import { MessageBubble } from './MessageBubble';
 import { CollaborationForm } from './CollaborationForm';
 import { FileUpload } from './FileUpload';
-import {
-  Send,
-  Paperclip,
-  Mic,
-  Smile,
-  MoreVertical,
-  Phone,
-  Video,
-  Search,
-  Info,
-  ArrowUp,
-  Loader2,
-  AlertCircle
-} from 'lucide-react';
+import { Send, Paperclip, Mic, Smile, MoreVertical, Phone, Video, Search, Info, ArrowUp, Loader2, AlertCircle } from 'lucide-react';
 
 export function ChatInterface({
   conversationId,

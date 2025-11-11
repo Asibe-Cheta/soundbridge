@@ -3,12 +3,10 @@ import { createClient, type SupabaseClient, type User } from '@supabase/supabase
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
-import type { Database } from './types';
-
 type AuthMode = 'cookie' | 'bearer';
 
 export interface SupabaseRouteAuth {
-  supabase: SupabaseClient<Database>;
+  supabase: SupabaseClient<any>;
   user: User | null;
   error: Error | null;
   mode: AuthMode;
@@ -31,7 +29,7 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
   }
 
   let mode: AuthMode = 'cookie';
-  let supabase: SupabaseClient<Database>;
+  let supabase: SupabaseClient<any>;
   let user: User | null = null;
   let authError: Error | null = null;
 
@@ -40,7 +38,7 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
   if (headerValue && (headerValue.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
     const token = headerValue.startsWith('Bearer ') ? headerValue.substring(7) : headerValue;
     mode = 'bearer';
-    supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    supabase = createClient<any>(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -54,7 +52,7 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
   } else {
     mode = 'cookie';
     const cookieStore = cookies();
-    supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
     const { data, error } = await supabase.auth.getUser();
     user = data?.user ?? null;
     authError = error ?? null;

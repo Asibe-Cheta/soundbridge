@@ -4,18 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { FixedSizeGrid as Grid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import {
-  Search,
-  Filter,
-  User,
-  Music,
-  MapPin,
-  Users,
-  Loader2,
-  AlertCircle,
-  Mic,
-  TrendingUp
-} from 'lucide-react';
+import { Search, Filter, User, Music, MapPin, Users, Loader2, AlertCircle, Mic, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Footer } from '../../src/components/layout/Footer';
 import { CreatorCard } from '../../src/components/creator/CreatorCard';

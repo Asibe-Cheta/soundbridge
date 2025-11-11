@@ -6,9 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import {
-  LogOut, User, Upload, Search, Bell, Settings, Home, Menu
-} from 'lucide-react';
+import { LogOut, User, Upload, Search, Bell, Settings, Home, Menu } from 'lucide-react';
 
 interface HeaderProps {
   showSearch?: boolean;

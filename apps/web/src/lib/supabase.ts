@@ -1,8 +1,8 @@
-// @ts-nocheck
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createServerComponentClient as createServerComponentClientHelper } from '@supabase/auth-helpers-nextjs';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from './types';
+
+type Database = any;
 
 // Environment variables with robust validation and fallbacks
 const getEnvVar = (key: string, required = true): string => {
@@ -46,7 +46,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Browser client (for client-side operations)
-export const createBrowserClient = () => {
+type TypedSupabaseClient = SupabaseClient<any>;
+
+export const createBrowserClient = (): TypedSupabaseClient => {
   try {
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('❌ Supabase environment variables not configured for browser client');
@@ -55,15 +57,17 @@ export const createBrowserClient = () => {
       throw new Error('Supabase environment variables not configured for browser client. Check your .env.local file.');
     }
     
-    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    const client = createClient<any>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-        captcha: false, // Disable captcha to match mobile app experience
+        storageKey: 'soundbridge-auth',
       },
     });
+
+    return client;
   } catch (error) {
     console.error('Error creating browser client:', error);
     throw error;
@@ -71,7 +75,7 @@ export const createBrowserClient = () => {
 };
 
 // Server client (for server-side operations with service role)
-export const createServerClient = () => {
+export const createServerClient = (): TypedSupabaseClient => {
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       console.error('❌ Supabase environment variables not configured for server client');
@@ -80,12 +84,14 @@ export const createServerClient = () => {
       throw new Error('Supabase environment variables not configured for server client. Check your .env.local file.');
     }
     
-    return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+    const client = createClient<any>(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
+
+    return client;
   } catch (error) {
     console.error('Error creating server client:', error);
     throw error;
@@ -93,7 +99,7 @@ export const createServerClient = () => {
 };
 
 // API route client (for API routes that need user session)
-export const createApiClient = () => {
+export const createApiClient = (): TypedSupabaseClient => {
   try {
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('❌ Supabase environment variables not configured for API client');
@@ -103,12 +109,14 @@ export const createApiClient = () => {
     }
     
     // For API routes, we use the anon key with session handling
-    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    const client = createClient<any>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
       },
     });
+
+    return client;
   } catch (error) {
     console.error('Error creating API client:', error);
     throw error;
@@ -116,7 +124,7 @@ export const createApiClient = () => {
 };
 
 // API route client with cookies (for Next.js API routes)
-export const createApiClientWithCookies = async (cookies: any) => {
+export const createApiClientWithCookies = async (cookies: any): Promise<TypedSupabaseClient> => {
   try {
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('❌ Supabase environment variables not configured for API client with cookies');
@@ -126,7 +134,7 @@ export const createApiClientWithCookies = async (cookies: any) => {
     }
     
     // Create client with cookies for session handling
-    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    const client = createClient<any>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -138,6 +146,8 @@ export const createApiClientWithCookies = async (cookies: any) => {
         },
       },
     });
+
+    return client;
   } catch (error) {
     console.error('Error creating API client with cookies:', error);
     throw error;
@@ -145,7 +155,7 @@ export const createApiClientWithCookies = async (cookies: any) => {
 };
 
 // Service role client (for admin operations that bypass RLS)
-export const createServiceClient = () => {
+export const createServiceClient = (): TypedSupabaseClient => {
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       console.error('❌ Supabase environment variables not configured for service client');
@@ -154,12 +164,14 @@ export const createServiceClient = () => {
       throw new Error('Supabase environment variables not configured for service client. Check your .env.local file.');
     }
     
-    return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+    const client = createClient<any>(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
+
+    return client;
   } catch (error) {
     console.error('Error creating service client:', error);
     throw error;
@@ -178,10 +190,10 @@ export const createServerComponentClient = () => {
   // Only import cookies in server context
   if (isServer) {
     const { cookies } = require('next/headers');
-    return createServerComponentClientHelper<Database>({ cookies });
+    return createServerComponentClientHelper<any>({ cookies });
   } else {
     // Fallback for client context
-    return createClientComponentClient<Database>({
+    return createClientComponentClient<any>({
       supabaseUrl,
       supabaseKey: supabaseAnonKey,
     });
@@ -189,7 +201,7 @@ export const createServerComponentClient = () => {
 };
 
 // Single global client instance to prevent multiple GoTrueClient warnings
-let _globalSupabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+let _globalSupabaseClient: TypedSupabaseClient | null = null;
 
 const getGlobalClient = () => {
   if (!_globalSupabaseClient) {
@@ -200,25 +212,24 @@ const getGlobalClient = () => {
       throw new Error('Supabase environment variables not configured for global client. Check your .env.local file.');
     }
     
-    _globalSupabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    const client = createClient<any>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-        captcha: false, // Disable captcha to match mobile app experience
-        storage: {
-          key: 'soundbridge-auth'
-        }
+        storageKey: 'soundbridge-auth',
       },
     });
+
+    _globalSupabaseClient = client;
   }
   
   return _globalSupabaseClient;
 };
 
 // Default client for backward compatibility - uses single global instance
-export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
+export const supabase = new Proxy({} as TypedSupabaseClient, {
   get(target, prop) {
     const client = getGlobalClient();
     return client[prop as keyof typeof client];
@@ -885,4 +896,4 @@ export const db = {
 };
 
 // Export types for use in other files
-export type { Database } from './types'; 
+export type { Database as GeneratedDatabase } from './types';

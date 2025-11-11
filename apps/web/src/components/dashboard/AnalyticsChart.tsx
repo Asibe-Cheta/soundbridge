@@ -2,15 +2,7 @@
 
 import React from 'react';
 import type { AnalyticsData } from '../../lib/dashboard-service';
-import {
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  PieChart,
-  Activity,
-  Target,
-  Zap
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, PieChart, Activity, Target, Zap } from 'lucide-react';
 
 interface AnalyticsChartProps {
   data: AnalyticsData;

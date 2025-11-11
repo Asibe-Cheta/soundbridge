@@ -2,9 +2,7 @@
 
 import React from 'react';
 import { Footer } from '../../src/components/layout/Footer';
-import {
-  BookOpen
-} from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 export default function ResourcesPage() {
   return (

@@ -5,28 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import {
-  CheckCircle,
-  Music,
-  Mic,
-  User,
-  Home,
-  Loader2,
-  AlertTriangle,
-  Share2,
-  Heart,
-  MessageCircle,
-  Plus,
-  TrendingUp,
-  Users,
-  Calendar,
-  Globe,
-  ArrowRight,
-  Download,
-  Play,
-  Pause,
-  Volume2
-} from 'lucide-react';
+import { CheckCircle, Music, Mic, User, Home, Loader2, AlertTriangle, Share2, Heart, MessageCircle, Plus, TrendingUp, Users, Calendar, Globe, ArrowRight, Download, Play, Pause, Volume2 } from 'lucide-react';
 
 function UploadSuccessContent() {
   const searchParams = useSearchParams();

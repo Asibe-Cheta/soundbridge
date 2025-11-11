@@ -11,29 +11,7 @@ import type { AudioTrack } from '@/src/lib/types/creator';
 import { Footer } from '@/src/components/layout/Footer';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { 
-  ArrowLeft, 
-  Music, 
-  Play, 
-  Pause, 
-  Heart, 
-  Share2, 
-  MoreHorizontal,
-  Loader2,
-  AlertCircle,
-  Copy,
-  User,
-  Upload,
-  Bell,
-  Settings,
-  Home,
-  Calendar,
-  Mic,
-  Users,
-  Menu,
-  X,
-  LogOut
-} from 'lucide-react';
+import { ArrowLeft, Music, Play, Pause, Heart, Share2, MoreHorizontal, Loader2, AlertCircle, Copy, User, Upload, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, LogOut } from 'lucide-react';
 
 interface MusicPageProps {
   params: Promise<{ username: string }>;

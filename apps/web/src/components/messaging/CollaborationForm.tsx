@@ -2,19 +2,7 @@
 
 import React, { useState } from 'react';
 import type { CollaborationFormProps, CollaborationRequest } from '../../lib/types/messaging';
-import {
-  Calendar,
-  DollarSign,
-  Users,
-  Music,
-  Mic,
-  Video,
-  FileText,
-  Send,
-  X,
-  AlertCircle,
-  CheckCircle
-} from 'lucide-react';
+import { Calendar, DollarSign, Users, Music, Mic, Video, FileText, Send, X, AlertCircle, CheckCircle } from 'lucide-react';
 
 export function CollaborationForm({
   recipientId,

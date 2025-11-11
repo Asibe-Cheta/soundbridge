@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createBrowserClient } from './supabase';
 import type { Profile, Follow } from './types';
 import type { AudioTrack, Event, Message } from './types/creator';

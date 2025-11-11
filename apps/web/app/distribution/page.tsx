@@ -4,21 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ExportTools } from '../../src/components/distribution/ExportTools';
 import { Footer } from '../../src/components/layout/Footer';
-import { 
-  Package, 
-  Download, 
-  Globe, 
-  Music, 
-  Mic, 
-  Calendar,
-  ArrowLeft,
-  Home,
-  User,
-  Settings,
-  LogOut,
-  Search,
-  Bell
-} from 'lucide-react';
+import { Package, Download, Globe, Music, Mic, Calendar, ArrowLeft, Home, User, Settings, LogOut, Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
