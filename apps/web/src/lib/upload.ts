@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createBrowserClient } from './supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type {

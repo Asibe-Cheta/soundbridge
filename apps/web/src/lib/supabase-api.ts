@@ -4,7 +4,7 @@ import type { Database } from './types';
 
 // API route client that can access cookies (for server-side operations)
 export const createApiClientWithCookies = async () => {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   return createServerComponentClient<Database>({
     cookies: () => cookieStore,
   });
