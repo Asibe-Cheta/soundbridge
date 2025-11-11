@@ -140,7 +140,7 @@ export default function HomePage() {
           <HeroSection />
           
           {/* Main CTAs Section */}
-          <section className="mb-12 lg:mb-16 mt-12 lg:mt-16">
+          <section className="mb-12 lg:mb-16 mt-20 lg:mt-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-12 lg:mb-16">
             {/* Upload Music CTA */}
             <div className={`relative rounded-2xl p-8 lg:p-10 overflow-hidden border ${
@@ -205,14 +205,14 @@ export default function HomePage() {
         </section>
 
         {/* Get the App Section - Inspired by Klarna */}
-        <section className={`mb-12 lg:mb-16 rounded-2xl overflow-hidden ${
+        <section className={`mb-12 lg:mb-16 rounded-2xl overflow-hidden relative ${
           theme === 'dark' 
             ? 'bg-gradient-to-br from-gray-800 to-gray-900' 
             : 'bg-white'
         }`}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center p-8 lg:p-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-end p-8 lg:p-12 min-h-[500px] lg:min-h-[600px]">
             {/* Left Side - Text Content */}
-            <div className="order-2 lg:order-1">
+            <div className="order-2 lg:order-1 pb-8 lg:pb-12">
               <h2 className={`text-3xl lg:text-5xl font-bold mb-4 lg:mb-6 ${
                 theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
@@ -258,19 +258,19 @@ export default function HomePage() {
             </div>
 
             {/* Right Side - Phone Mockup */}
-            <div className="order-1 lg:order-2 flex items-end justify-center lg:justify-end relative">
-              <div className="relative w-full max-w-[300px] lg:max-w-[400px]">
+            <div className="order-1 lg:order-2 flex items-end justify-center lg:justify-end relative h-full">
+              <div className="relative w-full h-full flex items-end justify-end">
                 <Image
                   src="/images/sb-mockup.png"
                   alt="SoundBridge Mobile App"
-                  width={400}
-                  height={800}
-                  className="w-full h-auto object-contain"
+                  width={500}
+                  height={1000}
+                  className="w-auto h-full max-w-full object-contain object-bottom"
                   priority
                   unoptimized
                   style={{
                     maxHeight: '100%',
-                    objectPosition: 'bottom',
+                    height: 'auto',
                   }}
                 />
               </div>

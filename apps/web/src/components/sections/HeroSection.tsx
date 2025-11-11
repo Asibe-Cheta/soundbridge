@@ -77,7 +77,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="hero-section mb-12 lg:mb-16">
+    <section className="hero-section mb-20 lg:mb-24">
       {/* Featured Creator - Full Width */}
       <div className="relative rounded-2xl overflow-hidden mb-6 h-[400px] lg:h-[500px]">
         {featuredCreator ? (
