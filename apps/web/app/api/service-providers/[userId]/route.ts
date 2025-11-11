@@ -4,6 +4,7 @@ import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/crea
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,11 +23,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const serviceSupabase = createServiceClient();
   const auth = await getSupabaseRouteClient(request, false);
 
-  const { data: provider, error } = await serviceSupabase
+  type ServiceProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
+
+  const { data: providerData, error } = await serviceSupabase
     .from('service_provider_profiles')
     .select('*')
     .eq('user_id', userId)
     .maybeSingle();
+
+  const provider = (providerData ?? null) as ServiceProviderProfileRow | null;
 
   if (error) {
     return NextResponse.json(
@@ -176,6 +181,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'You can only update your own service provider profile' }, { status: 403, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+  type ServiceProviderProfileUpdate = Database['public']['Tables']['service_provider_profiles']['Update'];
+
   let body: Partial<{
     displayName: string;
     headline: string | null;
@@ -197,7 +205,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields provided for update' }, { status: 400, headers: corsHeaders });
   }
 
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: ServiceProviderProfileUpdate = {
     updated_at: new Date().toISOString(),
   };
 
@@ -262,12 +270,14 @@ export async function PATCH(
     updatePayload.is_verified = body.isVerified;
   }
 
-  const { data, error: updateError } = await supabase
+  const { data: updateData, error: updateError } = await supabaseClient
     .from('service_provider_profiles')
     .update(updatePayload)
     .eq('user_id', userId)
     .select('*')
     .single();
+
+  const data = (updateData ?? null) as ServiceProviderProfileRow | null;
 
   if (updateError) {
     return NextResponse.json(
