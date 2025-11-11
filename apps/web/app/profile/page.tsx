@@ -308,25 +308,62 @@ export default function ProfilePage() {
 
   const loadProfileData = async () => {
     try {
+      console.log('🔍 Loading profile data for user:', user?.id);
+      
+      // First try to get profile from the profiles table
       const response = await fetch('/api/profile/upload-image', {
         method: 'GET',
       });
       
+      console.log('📊 Profile response status:', response.status);
+      
       if (response.ok) {
         const result = await response.json();
+        console.log('📊 Profile result:', result);
+        
         if (result.success && result.profile) {
+          console.log('✅ Profile data received:', result.profile);
+          
+          // Update profile data with actual values from database
           setProfileData(prev => ({
             ...prev,
-            displayName: result.profile.display_name || 'Your Name',
-            username: result.profile?.username || 'username',
+            displayName: result.profile.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+            username: result.profile.username || user?.email?.split('@')[0] || 'username',
             bio: result.profile.bio || 'Tell your story...',
             location: result.profile.location || 'Location not set',
+            website: result.profile.website || '',
             avatarUrl: result.profile.avatar_url || ''
           }));
+        } else {
+          // Profile doesn't exist yet, use user metadata
+          console.log('⚠️ Profile not found, using user metadata');
+          setProfileData(prev => ({
+            ...prev,
+            displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+            username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
+            email: user?.email || '',
+            avatarUrl: user?.user_metadata?.avatar_url || ''
+          }));
         }
+      } else {
+        console.error('❌ Profile API returned error status:', response.status);
+        // Fallback to user metadata
+        setProfileData(prev => ({
+          ...prev,
+          displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+          username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
+          email: user?.email || ''
+        }));
       }
     } catch (error) {
-      console.error('Error loading profile data:', error);
+      console.error('❌ Error loading profile data:', error);
+      // Fallback to user metadata on error
+      setProfileData(prev => ({
+        ...prev,
+        displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+        username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
+        email: user?.email || ''
+      }));
     }
   };
 
