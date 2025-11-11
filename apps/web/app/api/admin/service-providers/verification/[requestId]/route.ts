@@ -47,7 +47,7 @@ export async function PATCH(
     );
   }
 
-  if (profile?.role !== 'admin') {
+  if (!profile || profile.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: corsHeaders });
   }
 
