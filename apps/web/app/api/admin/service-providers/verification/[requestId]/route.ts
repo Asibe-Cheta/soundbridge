@@ -34,11 +34,18 @@ export async function PATCH(
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  type AdminProfile = {
+    role: string | null;
+    email: string | null;
+    display_name: string | null;
+    username: string | null;
+  };
+
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, email, display_name, username')
     .eq('id', user.id)
-    .maybeSingle();
+    .maybeSingle<AdminProfile>();
 
   if (profileError) {
     return NextResponse.json(
