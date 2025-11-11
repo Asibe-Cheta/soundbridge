@@ -1038,5 +1038,6 @@ export default function EventsPage() {
         <Footer />
       </main>
     </>
+    </div>
   );
 }
