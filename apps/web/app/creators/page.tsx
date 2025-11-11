@@ -88,6 +88,11 @@ interface MobileCreatorItemProps {
 }
 
 const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) => {
+  const { user } = useAuth();
+  
+  // Don't show follow button if this is the current user's card
+  const isOwnProfile = user && creator.id === user.id;
+  
   return (
     <div style={{
       display: 'flex',
@@ -203,27 +208,30 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleFollow(creator.id);
-          }}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.8rem',
-            transition: 'all 0.2s ease',
-            background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
-            color: 'white',
-            ...(creator.isFollowing && { border: '1px solid rgba(255, 255, 255, 0.2)' })
-          }}
-        >
-          {creator.isFollowing ? 'Following' : 'Follow'}
-        </button>
+        {/* Only show follow button if not viewing own profile */}
+        {!isOwnProfile && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleFollow(creator.id);
+            }}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.8rem',
+              transition: 'all 0.2s ease',
+              background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
+              color: 'white',
+              ...(creator.isFollowing && { border: '1px solid rgba(255, 255, 255, 0.2)' })
+            }}
+          >
+            {creator.isFollowing ? 'Following' : 'Follow'}
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -396,6 +404,11 @@ export default function CreatorsPage() {
   const handleFollow = async (creatorId: string) => {
     const creator = creators.find(c => c.id === creatorId);
     if (!creator || !user) return;
+    
+    // Prevent following yourself
+    if (creator.id === user.id) {
+      return;
+    }
 
     try {
       const isFollowing = creator.isFollowing;
