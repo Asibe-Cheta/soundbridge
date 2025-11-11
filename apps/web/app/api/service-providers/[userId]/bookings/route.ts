@@ -6,6 +6,10 @@ import type { Database } from '@/src/lib/types';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
 import type { BookingStatus } from '@/src/constants/bookings';
 
+type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
+type ServiceBookingInsert = Database['public']['Tables']['service_bookings']['Insert'];
+type ServiceBookingUpdate = Database['public']['Tables']['service_bookings']['Update'];
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
