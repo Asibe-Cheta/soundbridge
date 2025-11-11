@@ -463,48 +463,6 @@ export default function UnifiedUploadPage() {
         ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
         : 'bg-gray-50'
     }`}>
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-pink-500 rounded-lg flex items-center justify-center">
-                  <Music className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-gray-900 dark:text-gray-100">SOUNDBRIDGE</span>
-              </Link>
-            </div>
-            
-            <nav className="hidden md:flex space-x-8">
-              <Link href="/" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">For You</Link>
-              <Link href="/discover" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Discover</Link>
-              <Link href="/events" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Events</Link>
-              <Link href="/creators" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Creators</Link>
-            </nav>
-
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:block">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search creators, events, pod..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              
-              <div className="relative">
-                <button className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Content Type Selection */}
         <div className="mb-8">
