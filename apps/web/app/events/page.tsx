@@ -8,6 +8,7 @@ import { FixedSizeGrid as Grid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, MapPin, DollarSign, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useTheme } from '../../src/contexts/ThemeContext';
 import { useEvents } from '../../src/hooks/useEvents';
 import { Footer } from '../../src/components/layout/Footer';
 import SearchDropdown from '../../src/components/search/SearchDropdown';
@@ -344,6 +345,7 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
 
 export default function EventsPage() {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -575,6 +577,11 @@ export default function EventsPage() {
   ];
 
   return (
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
     <>
       {/* Main Content */}
       <main className="main-container">

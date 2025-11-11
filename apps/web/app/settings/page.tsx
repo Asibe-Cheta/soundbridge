@@ -68,6 +68,7 @@ interface PrivacySettings {
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('account');
   const [isEditing, setIsEditing] = useState(false);
@@ -1899,7 +1900,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
       {/* Main Content */}
       <main className="main-container">
         {/* Settings Header */}

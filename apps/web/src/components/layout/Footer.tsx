@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Instagram, Twitter, Youtube, Music, Mic, Calendar, Users, HelpCircle, Mail, Shield, FileText } from 'lucide-react';
 
 export function Footer() {
   const [isMobile, setIsMobile] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -22,13 +24,9 @@ export function Footer() {
       <div className="grid grid-4">
         {/* Company Card */}
         <div className="card">
-          <h3 style={{ 
-            fontWeight: '600', 
-            marginBottom: isMobile ? '0.5rem' : '1rem', 
-            color: '#EC4899',
-            fontSize: isMobile ? '0.9rem' : '1rem',
-            lineHeight: isMobile ? '1.2' : 'inherit'
-          }}>Company</h3>
+          <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
+            theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
+          }`}>Company</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
             <Link href="/about" style={{ 
               color: 'var(--text-primary)', 
@@ -79,13 +77,9 @@ export function Footer() {
 
         {/* Creators Card */}
         <div className="card">
-          <h3 style={{ 
-            fontWeight: '600', 
-            marginBottom: isMobile ? '0.5rem' : '1rem', 
-            color: '#EC4899',
-            fontSize: isMobile ? '0.9rem' : '1rem',
-            lineHeight: isMobile ? '1.2' : 'inherit'
-          }}>Creators</h3>
+          <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
+            theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
+          }`}>Creators</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
             <Link href="/upload" style={{ 
               color: 'var(--text-primary)', 
@@ -148,13 +142,9 @@ export function Footer() {
 
         {/* Community Card */}
         <div className="card">
-          <h3 style={{ 
-            fontWeight: '600', 
-            marginBottom: isMobile ? '0.5rem' : '1rem', 
-            color: '#EC4899',
-            fontSize: isMobile ? '0.9rem' : '1rem',
-            lineHeight: isMobile ? '1.2' : 'inherit'
-          }}>Community</h3>
+          <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
+            theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
+          }`}>Community</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
             <Link href="/discover" style={{ 
               color: 'var(--text-primary)', 
@@ -205,13 +195,9 @@ export function Footer() {
 
         {/* Support Card */}
         <div className="card">
-          <h3 style={{ 
-            fontWeight: '600', 
-            marginBottom: isMobile ? '0.5rem' : '1rem', 
-            color: '#EC4899',
-            fontSize: isMobile ? '0.9rem' : '1rem',
-            lineHeight: isMobile ? '1.2' : 'inherit'
-          }}>Support</h3>
+          <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
+            theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
+          }`}>Support</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
             <Link href="/help" style={{ 
               color: 'var(--text-primary)', 
@@ -274,18 +260,12 @@ export function Footer() {
       </div>
 
       {/* Bottom Section */}
-      <div style={{ 
-        marginTop: isMobile ? '1rem' : '2rem', 
-        textAlign: 'center', 
-        padding: isMobile ? '0.5rem' : '1rem', 
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)' 
-      }}>
-        <div style={{ 
-          marginBottom: isMobile ? '0.5rem' : '1rem', 
-          color: 'var(--text-secondary)', 
-          fontSize: isMobile ? '0.7rem' : '0.9rem',
-          lineHeight: isMobile ? '1.3' : 'inherit'
-        }}>
+      <div className={`${isMobile ? 'mt-4 py-2' : 'mt-8 py-4'} text-center border-t ${
+        theme === 'dark' ? 'border-white/10' : 'border-gray-200'
+      }`}>
+        <div className={`${isMobile ? 'mb-2 text-xs' : 'mb-4 text-sm'} ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
           © 2024 SoundBridge. Connecting creators across UK & Nigeria
         </div>
         
