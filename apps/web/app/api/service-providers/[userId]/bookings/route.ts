@@ -189,6 +189,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+
   let payload: UpdateBookingRequest;
   try {
     payload = await request.json();
