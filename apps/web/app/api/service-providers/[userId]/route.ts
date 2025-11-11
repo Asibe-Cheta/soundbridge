@@ -13,6 +13,8 @@ const corsHeaders = {
 };
 
 type IncludeKey = 'offerings' | 'portfolio' | 'availability' | 'reviews';
+type ServiceProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
+type ServiceProviderProfileUpdate = Database['public']['Tables']['service_provider_profiles']['Update'];
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
@@ -22,8 +24,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { userId } = await params;
   const serviceSupabase = createServiceClient();
   const auth = await getSupabaseRouteClient(request, false);
-
-  type ServiceProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
 
   const { data: providerData, error } = await serviceSupabase
     .from('service_provider_profiles')
@@ -182,7 +182,6 @@ export async function PATCH(
   }
 
   const supabaseClient = supabase as any;
-  type ServiceProviderProfileUpdate = Database['public']['Tables']['service_provider_profiles']['Update'];
 
   let body: Partial<{
     displayName: string;
