@@ -264,7 +264,7 @@ export default function HomePage() {
                 style={{
                   backgroundImage: `url('/images/sb-mockup.png')`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'bottom right',
+                  backgroundPosition: 'top right',
                   backgroundRepeat: 'no-repeat',
                 }}
               />
