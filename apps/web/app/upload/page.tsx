@@ -8,6 +8,7 @@ import { ImageUpload } from '../../src/components/ui/ImageUpload';
 import Image from 'next/image';
 import { useAudioUpload } from '../../src/hooks/useAudioUpload';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useTheme } from '../../src/contexts/ThemeContext';
 import { AudioQualitySelector } from '../../src/components/upload/AudioQualitySelector';
 import UploadEducationModal from '../../src/components/upload/UploadEducationModal';
 import RightsVerificationForm from '../../src/components/upload/RightsVerificationForm';
@@ -18,6 +19,7 @@ type ContentType = 'music' | 'podcast';
 
 export default function UnifiedUploadPage() {
   const { user, loading, signOut } = useAuth();
+  const { theme } = useTheme();
   const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -456,7 +458,11 @@ export default function UnifiedUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

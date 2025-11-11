@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { CreatorProfileSkeleton } from '../../../src/components/ui/Skeleton';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useTheme } from '../../../src/contexts/ThemeContext';
 import { useAudioPlayer } from '../../../src/contexts/AudioPlayerContext';
 import { CustomBranding } from '../../../src/components/branding/CustomBranding';
 import { TipCreator } from '../../../src/components/revenue/TipCreator';
@@ -54,6 +55,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   const { user } = useAuth();
+  const { theme } = useTheme();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const [availabilityState, availabilityActions] = useAvailability();
   const router = useRouter();
