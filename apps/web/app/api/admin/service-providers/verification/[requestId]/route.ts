@@ -72,6 +72,7 @@ export async function PATCH(
 
   try {
     const supabaseAdmin = createServiceClient();
+    const adminClient = supabaseAdmin as any;
 
     type VerificationRequestRecord = {
       id: string;
@@ -139,7 +140,7 @@ export async function PATCH(
       reviewer_notes: payload.notes ?? null,
     };
 
-    const { error: updateRequestError } = await supabaseAdmin
+    const { error: updateRequestError } = await adminClient
       .from('service_provider_verification_requests')
       .update({
         status: decisionStatus,
@@ -165,7 +166,7 @@ export async function PATCH(
       verification_requested_at: existingRequest.submitted_at,
     };
 
-    const { error: updateProfileError } = await supabaseAdmin
+    const { error: updateProfileError } = await adminClient
       .from('service_provider_profiles')
       .update({
         is_verified: payload.action === 'approve',
