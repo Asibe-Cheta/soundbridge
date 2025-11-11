@@ -4,7 +4,6 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import type { Database } from '@/src/lib/types';
-type SupabaseClient = ReturnType<typeof createServiceClient>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -140,9 +139,14 @@ export async function PATCH(
       reviewer_notes: payload.notes ?? null,
     };
 
-    const { error: updateRequestError } = await (supabaseAdmin as SupabaseClient)
+    const { error: updateRequestError } = await supabaseAdmin
       .from('service_provider_verification_requests')
-      .update(requestUpdate as Record<string, unknown>)
+      .update({
+        status: decisionStatus,
+        reviewed_at: nowIso,
+        reviewer_id: user.id,
+        reviewer_notes: payload.notes ?? null,
+      })
       .eq('id', requestId);
 
     if (updateRequestError) {
@@ -161,9 +165,16 @@ export async function PATCH(
       verification_requested_at: existingRequest.submitted_at,
     };
 
-    const { error: updateProfileError } = await (supabaseAdmin as SupabaseClient)
+    const { error: updateProfileError } = await supabaseAdmin
       .from('service_provider_profiles')
-      .update(profileUpdate as Record<string, unknown>)
+      .update({
+        is_verified: payload.action === 'approve',
+        verification_status: decisionStatus,
+        verification_reviewed_at: nowIso,
+        verification_reviewer_id: user.id,
+        verification_notes: payload.notes ?? null,
+        verification_requested_at: existingRequest.submitted_at,
+      })
       .eq('user_id', existingRequest.provider_id);
 
     if (updateProfileError) {
