@@ -360,7 +360,11 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      <div className={`min-h-screen ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+          : 'bg-gray-50'
+      } text-white`}>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
@@ -377,7 +381,11 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
   return (
     <CustomBranding userId={creator.id}>
-      <div className="min-h-screen text-white">
+      <div className={`min-h-screen ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+          : 'bg-gray-50'
+      } text-white`}>
         {/* Main Content */}
         <div className={`container mx-auto ${isMobile ? 'px-2 py-4' : 'px-4 py-8'}`}>
         {/* Creator Header */}
