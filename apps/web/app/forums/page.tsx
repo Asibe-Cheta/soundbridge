@@ -1,12 +1,19 @@
 'use client';
 
 import React from 'react';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Footer } from '../../src/components/layout/Footer';
 import { MessageSquare, Users, TrendingUp, Clock, Star, Search, Filter } from 'lucide-react';
 
 export default function ForumsPage() {
+  const { theme } = useTheme();
+  
   return (
-    <div style={{ backgroundColor: '#000000', minHeight: '100vh' }}>
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
       {/* Main Content */}
       <main style={{
         padding: '2rem',
@@ -39,11 +46,9 @@ export default function ForumsPage() {
               Forums
             </h1>
           </div>
-          <p style={{
-            fontSize: '1.2rem',
-            color: 'rgba(255, 255, 255, 0.8)',
-            maxWidth: '600px',
-            margin: '0 auto',
+          <p className={`text-lg max-w-2xl mx-auto ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`} style={{
             lineHeight: '1.6'
           }}>
             Connect with the SoundBridge community. Share ideas, ask questions, and discover new music together.
@@ -57,61 +62,58 @@ export default function ForumsPage() {
           gap: '1rem',
           marginBottom: '3rem'
         }}>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            textAlign: 'center'
-          }}>
-            <Users size={32} style={{ color: '#DC2626', marginBottom: '0.5rem' }} />
-            <h3 style={{ color: 'white', margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>2,847</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>Active Members</p>
+          <div className={`rounded-xl p-6 text-center border ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <Users size={32} className="text-red-600 mb-2 mx-auto" />
+            <h3 className={`text-2xl font-bold mb-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>2,847</h3>
+            <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Active Members</p>
           </div>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            textAlign: 'center'
-          }}>
-            <MessageSquare size={32} style={{ color: '#EC4899', marginBottom: '0.5rem' }} />
-            <h3 style={{ color: 'white', margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>15,623</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>Discussions</p>
+          <div className={`rounded-xl p-6 text-center border ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <MessageSquare size={32} className="text-pink-600 mb-2 mx-auto" />
+            <h3 className={`text-2xl font-bold mb-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>15,623</h3>
+            <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Discussions</p>
           </div>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            textAlign: 'center'
-          }}>
-            <TrendingUp size={32} style={{ color: '#10B981', marginBottom: '0.5rem' }} />
-            <h3 style={{ color: 'white', margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>8,942</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>Posts Today</p>
+          <div className={`rounded-xl p-6 text-center border ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <TrendingUp size={32} className="text-green-600 mb-2 mx-auto" />
+            <h3 className={`text-2xl font-bold mb-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>8,942</h3>
+            <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Posts Today</p>
           </div>
         </section>
 
         {/* Coming Soon Message */}
-        <section style={{
-          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(236, 72, 153, 0.1))',
-          border: '2px solid rgba(220, 38, 38, 0.3)',
-          borderRadius: '16px',
-          padding: '3rem',
-          textAlign: 'center',
-          marginBottom: '3rem'
-        }}>
-          <Clock size={64} style={{ color: '#DC2626', marginBottom: '1rem' }} />
-          <h2 style={{
-            fontSize: '2rem',
-            color: 'white',
-            marginBottom: '1rem'
-          }}>
+        <section className={`rounded-2xl p-8 lg:p-12 text-center mb-12 border ${
+          theme === 'dark'
+            ? 'bg-gradient-to-r from-red-600/10 to-pink-500/10 border-red-500/30'
+            : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200'
+        }`}>
+          <Clock size={64} className={`mb-4 mx-auto ${
+            theme === 'dark' ? 'text-red-500' : 'text-red-600'
+          }`} />
+          <h2 className={`text-2xl lg:text-3xl font-bold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
             Forums Coming Soon!
           </h2>
-          <p style={{
-            fontSize: '1.1rem',
-            color: 'rgba(255, 255, 255, 0.8)',
+          <p className={`text-lg lg:text-xl ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`} style={{
             lineHeight: '1.6',
             maxWidth: '600px',
             margin: '0 auto'
@@ -127,15 +129,18 @@ export default function ForumsPage() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
           gap: '2rem'
         }}>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '2rem'
-          }}>
-            <MessageSquare size={32} style={{ color: '#DC2626', marginBottom: '1rem' }} />
-            <h3 style={{ color: 'white', marginBottom: '1rem' }}>Discussion Categories</h3>
-            <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: '1.5rem' }}>
+          <div className={`rounded-xl p-8 border ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <MessageSquare size={32} className="text-red-600 mb-4" />
+            <h3 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Discussion Categories</h3>
+            <ul className={`space-y-2 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`} style={{ paddingLeft: '1.5rem' }}>
               <li>Music Discovery</li>
               <li>Event Discussions</li>
               <li>Creator Spotlights</li>
@@ -144,15 +149,18 @@ export default function ForumsPage() {
             </ul>
           </div>
           
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '2rem'
-          }}>
-            <Star size={32} style={{ color: '#EC4899', marginBottom: '1rem' }} />
-            <h3 style={{ color: 'white', marginBottom: '1rem' }}>Community Features</h3>
-            <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: '1.5rem' }}>
+          <div className={`rounded-xl p-8 border ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <Star size={32} className="text-pink-600 mb-4" />
+            <h3 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Community Features</h3>
+            <ul className={`space-y-2 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`} style={{ paddingLeft: '1.5rem' }}>
               <li>Upvote/Downvote Posts</li>
               <li>User Reputation System</li>
               <li>Moderated Discussions</li>
@@ -161,15 +169,18 @@ export default function ForumsPage() {
             </ul>
           </div>
           
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '2rem'
-          }}>
-            <Search size={32} style={{ color: '#10B981', marginBottom: '1rem' }} />
-            <h3 style={{ color: 'white', marginBottom: '1rem' }}>Advanced Features</h3>
-            <ul style={{ color: 'rgba(255, 255, 255, 0.8)', paddingLeft: '1.5rem' }}>
+          <div className={`rounded-xl p-8 border ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-sm'
+          }`}>
+            <Search size={32} className="text-green-600 mb-4" />
+            <h3 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Advanced Features</h3>
+            <ul className={`space-y-2 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`} style={{ paddingLeft: '1.5rem' }}>
               <li>Advanced Search & Filtering</li>
               <li>Tag-based Organization</li>
               <li>Mobile App Integration</li>

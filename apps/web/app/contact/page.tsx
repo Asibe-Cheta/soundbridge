@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { ArrowLeft, Mail, MapPin, MessageSquare, Send } from 'lucide-react';
 
 export default function ContactPage() {
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -57,10 +59,11 @@ export default function ContactPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-gradient)',
-      color: 'var(--text-primary)',
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`} style={{
       padding: '2rem'
     }}>
       <div style={{

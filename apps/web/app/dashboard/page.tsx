@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
 import { Settings, Upload, Calendar, Music, BarChart3, Users, Activity, AlertCircle, X, AlertTriangle, TrendingUp, Heart, Play, FileAudio, Clock, Plus, MessageCircle, Home, Star, DollarSign, Briefcase } from 'lucide-react';
@@ -15,6 +16,7 @@ import { ServiceProviderDashboard } from '../../src/components/service-provider/
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
   const {
     stats,
@@ -79,9 +81,11 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--bg-primary)',
+      <div className={`min-h-screen ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+          : 'bg-gray-50'
+      }`} style={{
         color: 'var(--text-primary)'
       }}>
 

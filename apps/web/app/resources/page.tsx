@@ -1,22 +1,28 @@
 'use client';
 
 import React from 'react';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Footer } from '../../src/components/layout/Footer';
 import { BookOpen } from 'lucide-react';
 
 export default function ResourcesPage() {
+  const { theme } = useTheme();
+  
   return (
-    <div style={{ backgroundColor: 'var(--bg-primary)', minHeight: '100vh' }}>
+    <div className={`min-h-screen ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+        : 'bg-gray-50'
+    }`}>
 
       {/* Main Content */}
       <main className="main-container" style={{ backgroundColor: 'var(--bg-primary)' }}>
         {/* Hero Section */}
-        <section style={{
-          padding: '4rem 2rem',
-          textAlign: 'center',
-          background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
-          borderBottom: '1px solid var(--border-color)'
-        }}>
+        <section className={`py-16 px-4 lg:px-8 text-center border-b ${
+          theme === 'dark'
+            ? 'bg-gradient-to-r from-red-600/10 to-pink-500/10 border-white/10'
+            : 'bg-gradient-to-r from-red-50 to-pink-50 border-gray-200'
+        }`}>
           <div style={{
             maxWidth: '800px',
             margin: '0 auto'
@@ -33,9 +39,9 @@ export default function ResourcesPage() {
             }}>
               Resources
             </h1>
-            <p style={{
-              fontSize: '1.25rem',
-              color: 'var(--text-secondary)',
+            <p className={`text-lg lg:text-xl ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`} style={{
               lineHeight: '1.6',
               marginBottom: '2rem'
             }}>
@@ -50,25 +56,22 @@ export default function ResourcesPage() {
           maxWidth: '1200px',
           margin: '0 auto'
         }}>
-          <div style={{
-            textAlign: 'center',
-            padding: '4rem 2rem',
-            background: 'var(--bg-secondary)',
-            borderRadius: '16px',
-            border: '1px solid var(--border-color)'
-          }}>
-            <BookOpen size={64} color="var(--accent-primary)" style={{ marginBottom: '2rem' }} />
-            <h2 style={{
-              fontSize: '2rem',
-              fontWeight: '700',
-              color: 'var(--text-primary)',
-              marginBottom: '1rem'
-            }}>
+          <div className={`text-center p-8 lg:p-16 rounded-2xl border ${
+            theme === 'dark'
+              ? 'bg-white/10 backdrop-blur-lg border-white/10'
+              : 'bg-white border-gray-200 shadow-lg'
+          }`}>
+            <BookOpen size={64} className={`mb-8 mx-auto ${
+              theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
+            }`} />
+            <h2 className={`text-2xl lg:text-3xl font-bold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Content Coming Soon
             </h2>
-            <p style={{
-              fontSize: '1.1rem',
-              color: 'var(--text-secondary)',
+            <p className={`text-lg ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`} style={{
               lineHeight: '1.6',
               maxWidth: '500px',
               margin: '0 auto'
