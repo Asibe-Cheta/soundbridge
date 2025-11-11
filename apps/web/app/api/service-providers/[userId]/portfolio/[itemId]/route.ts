@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,10 @@ export async function PATCH(
     return NextResponse.json({ error: 'You can only update your own portfolio items' }, { status: 403, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+  type PortfolioItemRow = Database['public']['Tables']['service_portfolio_items']['Row'];
+  type PortfolioItemUpdate = Database['public']['Tables']['service_portfolio_items']['Update'];
+
   let body: Partial<{
     mediaUrl: string;
     thumbnailUrl: string | null;
@@ -44,7 +49,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields provided for update' }, { status: 400, headers: corsHeaders });
   }
 
-  const updatePayload: Record<string, unknown> = {};
+  const updatePayload: PortfolioItemUpdate = {};
 
   if (body.mediaUrl !== undefined) {
     if (!body.mediaUrl || typeof body.mediaUrl !== 'string') {
@@ -65,13 +70,15 @@ export async function PATCH(
     updatePayload.display_order = body.displayOrder;
   }
 
-  const { data, error: updateError } = await supabase
+  const { data: updateData, error: updateError } = await supabaseClient
     .from('service_portfolio_items')
     .update(updatePayload)
     .eq('provider_id', userId)
     .eq('id', itemId)
     .select('*')
     .single();
+
+  const data = (updateData ?? null) as PortfolioItemRow | null;
 
   if (updateError) {
     return NextResponse.json(
@@ -98,7 +105,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'You can only delete your own portfolio items' }, { status: 403, headers: corsHeaders });
   }
 
-  const { error: deleteError } = await supabase
+  const supabaseClient = supabase as any;
+
+  const { error: deleteError } = await supabaseClient
     .from('service_portfolio_items')
     .delete()
     .eq('provider_id', userId)
