@@ -3,9 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe-esg';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/src/lib/types';
-type SupabaseTypedClient = SupabaseClient<Database>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,13 +48,15 @@ export async function POST(
   }
 
   type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
-  const supabaseClient = supabase as unknown as SupabaseTypedClient;
+  const supabaseClient = supabase as any;
 
-  const { data: booking, error: bookingError } = await supabaseClient
+  const { data: bookingData, error: bookingError } = await supabaseClient
     .from('service_bookings')
     .select('*')
     .eq('id', bookingId)
-    .maybeSingle<ServiceBookingRow>();
+    .maybeSingle();
+
+  const booking = (bookingData ?? null) as ServiceBookingRow | null;
 
   if (bookingError || !booking) {
     return NextResponse.json(
@@ -115,18 +115,20 @@ export async function POST(
   }
 
   const bookingUpdate: Database['public']['Tables']['service_bookings']['Update'] = {
-    status: 'paid' as const,
+    status: 'paid',
     paid_at: now,
     stripe_payment_intent_id: paymentIntent.id,
     auto_release_at: Number.isNaN(releaseDate.valueOf()) ? null : releaseDate.toISOString(),
-  } satisfies Database['public']['Tables']['service_bookings']['Update'];
+  };
 
-  const { data: updatedBooking, error: updateError } = await supabaseClient
+  const { data: updatedData, error: updateError } = await supabaseClient
     .from('service_bookings')
-    .update(bookingUpdate as Database['public']['Tables']['service_bookings']['Update'])
+    .update(bookingUpdate)
     .eq('id', booking.id)
     .select('*')
-    .single<ServiceBookingRow>();
+    .single();
+
+  const updatedBooking = (updatedData ?? null) as ServiceBookingRow | null;
 
   if (updateError || !updatedBooking) {
     return NextResponse.json(
