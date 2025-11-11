@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Play, Users, Music } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import type { AudioTrack } from '@/src/lib/types/audio';
 
@@ -25,6 +26,7 @@ interface FeaturedCreator {
 }
 
 export function HeroSection() {
+  const { user } = useAuth();
   const { playTrack } = useAudioPlayer();
   const [trendingTracks, setTrendingTracks] = useState<TrendingTrack[]>([]);
   const [featuredCreator, setFeaturedCreator] = useState<FeaturedCreator | null>(null);
@@ -111,13 +113,16 @@ export function HeroSection() {
                   <Play className="w-5 h-5" />
                   View Profile
                 </Link>
-                <Link
-                  href={`/creator/${featuredCreator.username}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg text-white rounded-lg hover:bg-white/20 transition-all font-semibold border border-white/20"
-                >
-                  <Users className="w-5 h-5" />
-                  Follow
-                </Link>
+                {/* Only show Follow button if featured creator is not the current user */}
+                {user && featuredCreator.id !== user.id && (
+                  <Link
+                    href={`/creator/${featuredCreator.username}`}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg text-white rounded-lg hover:bg-white/20 transition-all font-semibold border border-white/20"
+                  >
+                    <Users className="w-5 h-5" />
+                    Follow
+                  </Link>
+                )}
               </div>
             </div>
           </>

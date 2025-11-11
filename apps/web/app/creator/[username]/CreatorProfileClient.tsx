@@ -103,7 +103,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
         availabilityActions.fetchAvailability(creator.id);
 
         // Check if current user is following this creator
-        if (user) {
+        if (user && creator.id !== user.id) {
           try {
             const response = await fetch(`/api/follows?following_id=${creator.id}`);
             if (response.ok) {
@@ -113,6 +113,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
           } catch (error) {
             console.error('Error checking follow status:', error);
           }
+        } else if (user && creator.id === user.id) {
+          // User viewing their own profile, don't show follow option
+          setIsFollowing(false);
         }
 
         // Load messages if user is logged in
