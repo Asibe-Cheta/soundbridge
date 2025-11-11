@@ -400,48 +400,22 @@ export default function DiscoverPage() {
     const state = emptyStates[type as keyof typeof emptyStates] || emptyStates.music;
 
     return (
-      <div className="card" style={{ 
+      <div className={`card ${theme === 'dark' ? 'bg-white/5 backdrop-blur-lg border-white/10' : 'bg-white border-gray-200'} border-dashed`} style={{ 
         gridColumn: type === 'music' ? 'span 6' : 'span 3', 
         textAlign: 'center', 
-        padding: '3rem 2rem',
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px dashed rgba(255, 255, 255, 0.1)'
+        padding: '3rem 2rem'
       }}>
-        <div style={{ color: '#EC4899', marginBottom: '1rem' }}>
+        <div className={`mb-4 ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`}>
           {state.icon}
         </div>
-        <h3 style={{ color: '#EC4899', marginBottom: '1rem', fontSize: '1.2rem' }}>
+        <h3 className={`mb-4 text-lg ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`}>
           {state.title}
         </h3>
-        <p style={{ color: '#ccc', marginBottom: '2rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+        <p className={`mb-8 text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
           {state.description}
         </p>
-        <Link href={state.actionLink} style={{ textDecoration: 'none' }}>
-          <button style={{ 
-            background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-            color: 'white',
-            border: 'none',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.9rem',
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.5rem',
-            margin: '0 auto',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-          }}
-          >
+        <Link href={state.actionLink} className="no-underline">
+          <button className={`flex items-center gap-2 px-6 py-3 mx-auto rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5`}>
             <Plus size={16} />
             {state.action}
           </button>
@@ -456,70 +430,32 @@ export default function DiscoverPage() {
         return (
           <>
             {trendingLoading && !showFallback ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-                <Loader2 size={32} className="animate-spin" style={{ color: '#EC4899' }} />
+              <div className="flex justify-center p-8">
+                <Loader2 size={32} className={`animate-spin ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`} />
               </div>
             ) : showFallback ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
-                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Content Loading Slowly</h3>
-                <p style={{ color: '#ccc', marginBottom: '1rem' }}>We&apos;re having trouble loading content. Please try refreshing the page.</p>
+              <div className={`text-center p-8 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                <AlertCircle size={48} className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`} />
+                <h3 className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}>Content Loading Slowly</h3>
+                <p className={`mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>We&apos;re having trouble loading content. Please try refreshing the page.</p>
                 <button 
                   onClick={() => {
                     setShowFallback(false);
                     getTrendingContent(20);
                   }} 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
+                  className="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   Try Again
                 </button>
               </div>
             ) : trendingError ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
-                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Music</h3>
-                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
+              <div className={`text-center p-8 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                <AlertCircle size={48} className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`} />
+                <h3 className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}>Error Loading Music</h3>
+                <p className={`mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{trendingError}</p>
                 <button 
                   onClick={() => getTrendingContent(20)} 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
+                  className="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   Try Again
                 </button>
@@ -664,12 +600,12 @@ export default function DiscoverPage() {
                         />
                       </div>
                     </div>
-                                         <div style={{ fontWeight: '600', fontSize: isMobile ? '0.8rem' : 'inherit' }}>{track.title}</div>
-                     <div style={{ color: '#999', fontSize: isMobile ? '0.7rem' : '0.9rem' }}>{track.creator?.display_name || 'Unknown Artist'}</div>
+                                         <div className={`font-semibold ${isMobile ? 'text-xs' : ''} ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{track.title}</div>
+                     <div className={`${isMobile ? 'text-xs' : 'text-sm'} ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{track.creator?.display_name || 'Unknown Artist'}</div>
                     <div className="waveform"></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                      <span style={{ color: '#EC4899', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>{track.genre}</span>
-                      <span style={{ color: '#999', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>{track.formatted_duration || '3:24'}</span>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className={`${isMobile ? 'text-xs' : 'text-sm'} ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`}>{track.genre}</span>
+                      <span className={`${isMobile ? 'text-xs' : 'text-sm'} ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{track.formatted_duration || '3:24'}</span>
                     </div>
                   </div>
                 ))}
@@ -677,17 +613,14 @@ export default function DiscoverPage() {
             ) : (
               <>
                 {/* Fallback content when trending content fails to load */}
-                  <div style={{
-                  background: 'rgba(255, 255, 255, 0.02)', 
-                  border: '1px dashed rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '2rem',
-                  marginBottom: '2rem',
-                  textAlign: 'center'
-                }}>
-                  <AlertCircle size={48} style={{ color: '#EC4899', marginBottom: '1rem' }} />
-                  <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>Content Loading Issue</h3>
-                  <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+                  <div className={`rounded-xl p-8 mb-8 text-center border-dashed ${
+                    theme === 'dark'
+                      ? 'bg-white/5 backdrop-blur-lg border-white/10'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                  <AlertCircle size={48} className={`mb-4 ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`} />
+                  <h3 className={`mb-4 ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`}>Content Loading Issue</h3>
+                  <p className={`mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                     We&apos;re having trouble loading trending content. This might be due to database connection issues.
                   </p>
                   <button 
@@ -695,26 +628,7 @@ export default function DiscoverPage() {
                       setShowFallback(false);
                       getTrendingContent(20);
                     }} 
-                    style={{
-                      background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '0.9rem',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                    }}
+                    className="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                   >
                     Try Again
                   </button>
@@ -757,32 +671,13 @@ export default function DiscoverPage() {
                 </div>
               ))
             ) : error ? (
-              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
-                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
-                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Creators</h3>
-                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{error}</p>
+              <div className={`card col-span-3 text-center p-8 ${theme === 'dark' ? 'bg-white/10 backdrop-blur-lg border-white/10' : 'bg-white border-gray-200'}`}>
+                <AlertCircle size={48} className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`} />
+                <h3 className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}>Error Loading Creators</h3>
+                <p className={`mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{error}</p>
                 <button 
                   onClick={() => window.location.reload()} 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
+                  className="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   Try Again
                 </button>
@@ -817,8 +712,8 @@ export default function DiscoverPage() {
                       )}
                       <div className="play-button">▶</div>
                     </div>
-                    <div style={{ fontWeight: '600' }}>{creator.profile.display_name}</div>
-                    <div style={{ color: '#999', fontSize: '0.9rem' }}>
+                    <div className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{creator.profile.display_name}</div>
+                    <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                       {creator.profile.location || 'Location not set'}
                     </div>
                     <div className="stats">
@@ -853,32 +748,13 @@ export default function DiscoverPage() {
                 </div>
               ))
             ) : trendingError ? (
-              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
-                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
-                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Events</h3>
-                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
+              <div className={`card col-span-3 text-center p-8 ${theme === 'dark' ? 'bg-white/10 backdrop-blur-lg border-white/10' : 'bg-white border-gray-200'}`}>
+                <AlertCircle size={48} className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`} />
+                <h3 className={`mb-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}>Error Loading Events</h3>
+                <p className={`mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{trendingError}</p>
                 <button 
                   onClick={() => getTrendingContent(20)} 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-                  }}
+                  className="px-6 py-3 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   Try Again
                 </button>
@@ -888,12 +764,12 @@ export default function DiscoverPage() {
                 <Link key={event.id} href={`/events/${event.id}`} style={{ textDecoration: 'none' }}>
                   <div className="event-card">
                     <div className="event-card-content">
-                      <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>{event.formatted_date}</div>
-                      <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>{event.title}</div>
-                      <div style={{ color: '#ccc', fontSize: '0.9rem' }}>{event.location}</div>
-                      <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>{event.formatted_price}</span>
-                        <span style={{ color: '#999', fontSize: '0.8rem' }}>{event.attendee_count?.toLocaleString() || 0} attending</span>
+                      <div className={`text-sm ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'}`}>{event.formatted_date}</div>
+                      <div className={`font-semibold my-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{event.title}</div>
+                      <div className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{event.location}</div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className={`bg-pink-500/20 ${theme === 'dark' ? 'text-pink-500' : 'text-pink-600'} px-2 py-1 rounded-full text-xs`}>{event.formatted_price}</span>
+                        <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{event.attendee_count?.toLocaleString() || 0} attending</span>
                       </div>
                     </div>
                   </div>
