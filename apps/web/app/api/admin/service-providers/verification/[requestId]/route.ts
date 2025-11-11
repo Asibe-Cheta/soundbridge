@@ -132,14 +132,16 @@ export async function PATCH(
     const nowIso = new Date().toISOString();
     const decisionStatus = payload.action === 'approve' ? 'approved' : 'rejected';
 
+    const requestUpdate: Database['public']['Tables']['service_provider_verification_requests']['Update'] = {
+      status: decisionStatus,
+      reviewed_at: nowIso,
+      reviewer_id: user.id,
+      reviewer_notes: payload.notes ?? null,
+    };
+
     const { error: updateRequestError } = await supabaseAdmin
       .from('service_provider_verification_requests')
-      .update<Database['public']['Tables']['service_provider_verification_requests']['Update']>({
-        status: decisionStatus,
-        reviewed_at: nowIso,
-        reviewer_id: user.id,
-        reviewer_notes: payload.notes ?? null,
-      })
+      .update(requestUpdate)
       .eq('id', requestId);
 
     if (updateRequestError) {
@@ -149,16 +151,18 @@ export async function PATCH(
       );
     }
 
+    const profileUpdate: Database['public']['Tables']['service_provider_profiles']['Update'] = {
+      is_verified: payload.action === 'approve',
+      verification_status: decisionStatus,
+      verification_reviewed_at: nowIso,
+      verification_reviewer_id: user.id,
+      verification_notes: payload.notes ?? null,
+      verification_requested_at: existingRequest.submitted_at,
+    };
+
     const { error: updateProfileError } = await supabaseAdmin
       .from('service_provider_profiles')
-      .update<Database['public']['Tables']['service_provider_profiles']['Update']>({
-        is_verified: payload.action === 'approve',
-        verification_status: decisionStatus,
-        verification_reviewed_at: nowIso,
-        verification_reviewer_id: user.id,
-        verification_notes: payload.notes ?? null,
-        verification_requested_at: existingRequest.submitted_at,
-      })
+      .update(profileUpdate)
       .eq('user_id', existingRequest.provider_id);
 
     if (updateProfileError) {
