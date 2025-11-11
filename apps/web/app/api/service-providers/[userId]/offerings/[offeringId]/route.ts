@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/creatorTypes';
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +30,10 @@ export async function PATCH(
     return NextResponse.json({ error: 'You can only update your own offerings' }, { status: 403, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+  type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
+  type ServiceOfferingUpdate = Database['public']['Tables']['service_offerings']['Update'];
+
   let body: Partial<{
     title: string;
     category: string;
@@ -49,7 +54,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields provided for update' }, { status: 400, headers: corsHeaders });
   }
 
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: ServiceOfferingUpdate = {
     updated_at: new Date().toISOString(),
   };
 
@@ -99,13 +104,15 @@ export async function PATCH(
     updatePayload.is_active = body.isActive;
   }
 
-  const { data, error: updateError } = await supabase
+  const { data: updateData, error: updateError } = await supabaseClient
     .from('service_offerings')
     .update(updatePayload)
     .eq('provider_id', userId)
     .eq('id', offeringId)
     .select('*')
     .single();
+
+  const data = (updateData ?? null) as ServiceOfferingRow | null;
 
   if (updateError) {
     return NextResponse.json(
@@ -132,7 +139,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'You can only delete your own offerings' }, { status: 403, headers: corsHeaders });
   }
 
-  const { error: deleteError } = await supabase
+  const supabaseClient = supabase as any;
+
+  const { error: deleteError } = await supabaseClient
     .from('service_offerings')
     .delete()
     .eq('provider_id', userId)
