@@ -4,6 +4,7 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import type { Database } from '@/src/lib/types';
+type SupabaseClient = ReturnType<typeof createServiceClient>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -139,9 +140,9 @@ export async function PATCH(
       reviewer_notes: payload.notes ?? null,
     };
 
-    const { error: updateRequestError } = await supabaseAdmin
-      .from<Database['public']['Tables']['service_provider_verification_requests']['Row'], Database['public']['Tables']['service_provider_verification_requests']['Insert']>('service_provider_verification_requests')
-      .update(requestUpdate)
+    const { error: updateRequestError } = await (supabaseAdmin as SupabaseClient)
+      .from('service_provider_verification_requests')
+      .update(requestUpdate as Record<string, unknown>)
       .eq('id', requestId);
 
     if (updateRequestError) {
@@ -160,9 +161,9 @@ export async function PATCH(
       verification_requested_at: existingRequest.submitted_at,
     };
 
-    const { error: updateProfileError } = await supabaseAdmin
-      .from<Database['public']['Tables']['service_provider_profiles']['Row'], Database['public']['Tables']['service_provider_profiles']['Insert']>('service_provider_profiles')
-      .update(profileUpdate)
+    const { error: updateProfileError } = await (supabaseAdmin as SupabaseClient)
+      .from('service_provider_profiles')
+      .update(profileUpdate as Record<string, unknown>)
       .eq('user_id', existingRequest.provider_id);
 
     if (updateProfileError) {
