@@ -17,6 +17,7 @@ interface CreatorCardProps {
   trackCount: number;
   isFollowing?: boolean;
   isVerified?: boolean;
+  currentUserId?: string; // Add current user ID to check
   onFollow?: (id: string) => void;
   onClick?: (id: string) => void;
   className?: string;
@@ -32,11 +33,15 @@ export function CreatorCard({
   trackCount,
   isFollowing = false,
   isVerified = false,
+  currentUserId,
   onFollow,
   onClick,
   className
 }: CreatorCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Don't show follow button if this is the current user's card
+  const isOwnProfile = currentUserId && id === currentUserId;
 
   const handleFollow = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -115,34 +120,36 @@ export function CreatorCard({
               </div>
             </div>
 
-            {/* Follow Button */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Button
-                variant={isFollowing ? "glassmorphism" : "default"}
-                size="sm"
-                onClick={handleFollow}
-                className={cn(
-                  "min-w-[80px]",
-                  isFollowing && "text-white/80 hover:text-white"
-                )}
+            {/* Follow Button - Only show if not viewing own profile */}
+            {!isOwnProfile && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
               >
-                {isFollowing ? (
-                  <>
-                    <Check className="w-3 h-3 mr-1" />
-                    Following
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-3 h-3 mr-1" />
-                    Follow
-                  </>
-                )}
-              </Button>
-            </motion.div>
+                <Button
+                  variant={isFollowing ? "glassmorphism" : "default"}
+                  size="sm"
+                  onClick={handleFollow}
+                  className={cn(
+                    "min-w-[80px]",
+                    isFollowing && "text-white/80 hover:text-white"
+                  )}
+                >
+                  {isFollowing ? (
+                    <>
+                      <Check className="w-3 h-3 mr-1" />
+                      Following
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3 h-3 mr-1" />
+                      Follow
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            )}
           </div>
 
           {/* Stats */}
