@@ -229,7 +229,7 @@ export default function HomePage() {
                 theme === 'dark' ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-yellow-100 border border-yellow-200'
               }`}>
                 <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                  📱 Mobile App Coming Soon
+                  Mobile App Coming Soon
                 </p>
               </div>
               <div className="flex flex-wrap gap-4">
@@ -261,15 +261,29 @@ export default function HomePage() {
             <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
               <div className="relative w-full max-w-[280px] lg:max-w-[320px]">
                 <div className="relative w-full aspect-[9/19] bg-gradient-to-br from-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
-                  <div className="w-full h-full bg-black rounded-[2.5rem] overflow-hidden flex items-center justify-center">
-                    <Image
-                      src="/images/sb-mockup.png"
-                      alt="SoundBridge Mobile App"
-                      width={320}
-                      height={640}
-                      className="w-full h-auto"
-                      priority
-                    />
+                  <div className="w-full h-full bg-black rounded-[2.5rem] overflow-hidden flex items-center justify-center relative">
+                    {/* Try to load the mockup image, fallback to placeholder */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Image
+                        src="/images/sb-mockup.png"
+                        alt="SoundBridge Mobile App"
+                        width={320}
+                        height={640}
+                        className="w-full h-auto object-contain"
+                        priority
+                        onError={(e) => {
+                          // Hide image on error and show placeholder
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                      {/* Placeholder that shows if image fails */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40 p-8 text-center">
+                        <Smartphone className="w-16 h-16 mb-4 opacity-50" />
+                        <p className="text-sm">Mobile App</p>
+                        <p className="text-xs mt-1">Coming Soon</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
