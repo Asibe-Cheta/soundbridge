@@ -123,7 +123,7 @@ export async function POST(
 
   const { data: updatedBooking, error: updateError } = await supabaseClient
     .from('service_bookings')
-    .update(bookingUpdate)
+    .update(bookingUpdate as Database['public']['Tables']['service_bookings']['Update'])
     .eq('id', booking.id)
     .select('*')
     .single<ServiceBookingRow>();
