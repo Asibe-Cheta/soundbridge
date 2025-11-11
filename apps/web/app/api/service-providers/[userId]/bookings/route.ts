@@ -100,6 +100,8 @@ export async function POST(
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
+  const supabaseClient = supabase as any;
+
   let payload: CreateBookingRequest;
   try {
     payload = await request.json();
