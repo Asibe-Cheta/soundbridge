@@ -140,7 +140,7 @@ export async function PATCH(
     };
 
     const { error: updateRequestError } = await supabaseAdmin
-      .from<Database['public']['Tables']['service_provider_verification_requests']['Row']>('service_provider_verification_requests')
+      .from<Database['public']['Tables']['service_provider_verification_requests']['Row'], Database['public']['Tables']['service_provider_verification_requests']['Insert']>('service_provider_verification_requests')
       .update(requestUpdate)
       .eq('id', requestId);
 
@@ -161,7 +161,7 @@ export async function PATCH(
     };
 
     const { error: updateProfileError } = await supabaseAdmin
-      .from<Database['public']['Tables']['service_provider_profiles']['Row']>('service_provider_profiles')
+      .from<Database['public']['Tables']['service_provider_profiles']['Row'], Database['public']['Tables']['service_provider_profiles']['Insert']>('service_provider_profiles')
       .update(profileUpdate)
       .eq('user_id', existingRequest.provider_id);
 
