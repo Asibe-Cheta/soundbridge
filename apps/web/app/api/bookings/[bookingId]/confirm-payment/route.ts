@@ -114,17 +114,19 @@ export async function POST(
     releaseDate.setDate(releaseDate.getDate() + holdDays);
   }
 
+  const bookingUpdate = {
+    status: 'paid' as const,
+    paid_at: now,
+    stripe_payment_intent_id: paymentIntent.id,
+    auto_release_at: Number.isNaN(releaseDate.valueOf()) ? null : releaseDate.toISOString(),
+  } satisfies Database['public']['Tables']['service_bookings']['Update'];
+
   const { data: updatedBooking, error: updateError } = await supabaseClient
     .from('service_bookings')
-    .update({
-      status: 'paid',
-      paid_at: now,
-      stripe_payment_intent_id: paymentIntent.id,
-      auto_release_at: Number.isNaN(releaseDate.valueOf()) ? null : releaseDate.toISOString(),
-    })
+    .update(bookingUpdate)
     .eq('id', booking.id)
     .select('*')
-    .single();
+    .single<ServiceBookingRow>();
 
   if (updateError || !updatedBooking) {
     return NextResponse.json(
