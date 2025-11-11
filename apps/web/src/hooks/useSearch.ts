@@ -156,6 +156,8 @@ export function useSearch() {
             creators: [...(prev.results?.creators || []), ...data.creators],
             events: [...(prev.results?.events || []), ...data.events],
             podcasts: [...(prev.results?.podcasts || []), ...data.podcasts],
+            services: [...(prev.results?.services || []), ...data.services],
+            venues: [...(prev.results?.venues || []), ...data.venues],
             total_results: data.total_results,
             has_more: data.has_more
           },
@@ -314,12 +316,15 @@ export function useSearch() {
     getNearbyContent,
 
     // Computed values
-    hasResults: !!state.results && (
-      state.results.music.length > 0 ||
-      state.results.creators.length > 0 ||
-      state.results.events.length > 0 ||
-      state.results.podcasts.length > 0
-    ),
+    hasResults: !!state.results &&
+      (
+        state.results.music.length > 0 ||
+        state.results.creators.length > 0 ||
+        state.results.events.length > 0 ||
+        state.results.podcasts.length > 0 ||
+        state.results.services.length > 0 ||
+        state.results.venues.length > 0
+      ),
     totalResults: state.results?.total_results || 0,
     canLoadMore: state.pagination.has_next && !state.loading
   };

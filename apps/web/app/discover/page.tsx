@@ -40,7 +40,8 @@ import {
   Upload,
   Menu,
   X,
-  Home
+  Home,
+  Briefcase
 } from 'lucide-react';
 
 export default function DiscoverPage() {
@@ -142,6 +143,8 @@ export default function DiscoverPage() {
     { id: 'music', label: 'Music', icon: Music },
     { id: 'creators', label: 'Creators', icon: Users },
     { id: 'events', label: 'Events', icon: Calendar },
+    { id: 'services', label: 'Services', icon: Briefcase },
+    { id: 'venues', label: 'Venues', icon: Home },
     { id: 'podcasts', label: 'Podcasts', icon: Mic }
   ];
 
@@ -386,6 +389,20 @@ export default function DiscoverPage() {
         description: "Create exciting events and bring people together through music!",
         action: "Create Event",
         actionLink: "/events/create"
+      },
+      services: {
+        icon: <Briefcase size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Service Providers Yet",
+        description: "Offer your creative services and connect with artists and organizers.",
+        action: "Become a Service Provider",
+        actionLink: "/dashboard?section=service-provider"
+      },
+      venues: {
+        icon: <Home size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Venues Listed",
+        description: "Showcase your venue and start receiving booking inquiries.",
+        action: "List a Venue",
+        actionLink: "/dashboard?section=service-provider"
       },
       podcasts: {
         icon: <Mic size={48} className="mx-auto mb-4 opacity-50" />,
@@ -900,6 +917,225 @@ export default function DiscoverPage() {
               ))
             ) : (
               renderEmptyState('events')
+            )}
+          </div>
+        );
+
+      case 'services':
+        return (
+          <div className="grid grid-3">
+            {trendingLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.1)' }} />
+                  <div style={{ height: '16px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px' }} />
+                  <div style={{ height: '14px', width: '80%', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }} />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ flex: 1, height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px' }} />
+                    <div style={{ width: '70px', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px' }} />
+                  </div>
+                </div>
+              ))
+            ) : trendingError ? (
+              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
+                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
+                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Services</h3>
+                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
+                <button
+                  onClick={() => getTrendingContent(20)}
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : trendingResults?.services && trendingResults.services.length > 0 ? (
+              trendingResults.services.map((provider) => {
+                const ratingLabel =
+                  provider.review_count > 0
+                    ? `${provider.average_rating.toFixed(1)} • ${provider.review_count} ${
+                        provider.review_count === 1 ? 'review' : 'reviews'
+                      }`
+                    : 'Awaiting reviews';
+
+                return (
+                  <Link key={provider.user_id} href={`/service-providers/${provider.user_id}`} style={{ textDecoration: 'none' }}>
+                    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Briefcase size={20} style={{ color: '#EC4899' }} />
+                            <span style={{ fontWeight: 600, color: 'white', fontSize: '1rem' }}>{provider.display_name}</span>
+                          </div>
+                          {provider.headline && (
+                            <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>{provider.headline}</p>
+                          )}
+                        </div>
+                        {provider.is_verified && (
+                          <span
+                            style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              padding: '0.2rem 0.6rem',
+                              borderRadius: '999px',
+                              background: 'rgba(34,197,94,0.18)',
+                              color: '#34d399',
+                            }}
+                          >
+                            Verified
+                          </span>
+                        )}
+                      </div>
+
+                      {provider.categories.length > 0 && (
+                        <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                          {provider.categories.slice(0, 3).map((category) => (
+                            <span
+                              key={category}
+                              style={{
+                                fontSize: '0.7rem',
+                                letterSpacing: '0.02em',
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '999px',
+                                background: 'rgba(236, 72, 153, 0.15)',
+                                color: '#f472b6',
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {category.replace('_', ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{ratingLabel}</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f97316' }}>
+                          {provider.default_rate !== null
+                            ? `${provider.rate_currency || 'USD'} ${provider.default_rate.toFixed(0)}/${'hr'}`
+                            : 'Custom pricing'}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              renderEmptyState('services')
+            )}
+          </div>
+        );
+
+      case 'venues':
+        return (
+          <div className="grid grid-3">
+            {trendingLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(96, 165, 250, 0.12)' }} />
+                  <div style={{ height: '16px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px' }} />
+                  <div style={{ height: '14px', width: '70%', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }} />
+                  <div style={{ height: '12px', width: '55%', background: 'rgba(255,255,255,0.05)', borderRadius: '999px' }} />
+                </div>
+              ))
+            ) : trendingError ? (
+              <div className="card" style={{ gridColumn: 'span 3', textAlign: 'center', padding: '2rem' }}>
+                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
+                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Venues</h3>
+                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
+                <button
+                  onClick={() => getTrendingContent(20)}
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : trendingResults?.venues && trendingResults.venues.length > 0 ? (
+              trendingResults.venues.map((venue) => {
+                const address = venue.address || {};
+                const city = (address as any)?.city;
+                const country = (address as any)?.country;
+                const line1 = (address as any)?.line1;
+
+                return (
+                  <Link key={venue.id} href={`/venues/${venue.id}`} style={{ textDecoration: 'none' }}>
+                    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Home size={20} style={{ color: '#60a5fa' }} />
+                        <span style={{ fontWeight: 600, color: 'white', fontSize: '1rem' }}>{venue.name}</span>
+                      </div>
+                      {line1 && (
+                        <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                          {line1}
+                          {(city || country) && ` · ${[city, country].filter(Boolean).join(', ')}`}
+                        </div>
+                      )}
+                      {!line1 && (city || country) && (
+                        <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                          {[city, country].filter(Boolean).join(', ')}
+                        </div>
+                      )}
+                      {venue.description && (
+                        <p style={{ color: '#d1d5db', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                          {venue.description.length > 160 ? `${venue.description.slice(0, 157)}…` : venue.description}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#9ca3af', fontSize: '0.8rem' }}>
+                          <Users size={14} />
+                          <span>{venue.capacity ? `${venue.capacity.toLocaleString()} capacity` : 'Capacity TBC'}</span>
+                        </div>
+                        {venue.amenities && venue.amenities.length > 0 && (
+                          <div style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                            {venue.amenities.slice(0, 2).join(' · ')}
+                            {venue.amenities.length > 2 && ' + more'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              renderEmptyState('venues')
             )}
           </div>
         );

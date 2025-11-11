@@ -74,36 +74,113 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
 
         // Handle deep linking for auth callbacks
-        const handleDeepLink = (url: string) => {
-          console.log('Deep link received:', url);
+        const handleDeepLink = async (url: string) => {
+          console.log('­ƒöù Deep link received:', url);
           
-          // Handle both custom scheme and Expo development URLs
-          if (url.includes('soundbridge://auth/callback') || url.includes('exp://') && url.includes('/auth/callback')) {
-            console.log('Auth callback received via deep link');
+          // Check if this looks like an OAuth callback
+          const isOAuthCallback = url.includes('access_token=') || 
+                                 url.includes('code=') || 
+                                 url.includes('error=') ||
+                                 url.includes('soundbridge://auth/callback') ||
+                                 url.includes('/auth/callback') ||
+                                 (url.includes('exp://') && url.includes('192.168.1.122') && url.includes('auth/callback'));
+          
+          if (isOAuthCallback) {
+            console.log('­ƒÄ» Potential OAuth callback detected');
             
-            // Extract parameters from URL
-            let urlParams: URLSearchParams;
-            if (url.includes('?')) {
-              urlParams = new URLSearchParams(url.split('?')[1]);
-            } else {
-              urlParams = new URLSearchParams();
-            }
-            
-            const verified = urlParams.get('verified');
-            const next = urlParams.get('next');
-            
-            if (verified === 'true') {
-              console.log('Email verification completed via deep link');
-              // The user is already verified, we can proceed
-              setLoading(false);
+            // Try to manually process the OAuth response
+            try {
+              console.log('­ƒöä Manually processing OAuth callback...');
               
-              // If there's a next parameter, we could handle navigation here
-              if (next) {
-                console.log('Next destination:', next);
+              // Extract URL parameters
+              let urlParams: URLSearchParams;
+              if (url.includes('#')) {
+                // Handle hash-based parameters (common in OAuth)
+                urlParams = new URLSearchParams(url.split('#')[1]);
+              } else if (url.includes('?')) {
+                // Handle query-based parameters
+                urlParams = new URLSearchParams(url.split('?')[1]);
+              } else {
+                urlParams = new URLSearchParams();
               }
-            } else {
-              // Handle regular auth callback - Supabase will automatically process this
-              console.log('Regular auth callback processing');
+              
+              const paramObject = Object.fromEntries(urlParams);
+              console.log('­ƒôï OAuth parameters:', paramObject);
+              console.log('­ƒôï Raw URL:', url);
+              
+              const accessToken = urlParams.get('access_token');
+              const refreshToken = urlParams.get('refresh_token');
+              const error = urlParams.get('error');
+              
+              if (error) {
+                console.error('ÔØî OAuth error:', error);
+                setLoading(false);
+                return;
+              }
+              
+              console.log('­ƒöì Checking for access token...');
+              console.log('­ƒöì Access token found:', !!accessToken);
+              console.log('­ƒöì Refresh token found:', !!refreshToken);
+              
+              if (accessToken) {
+                console.log('­ƒÄë Access token found, setting session...');
+                console.log('­ƒöì Access token length:', accessToken.length);
+                console.log('­ƒöì Refresh token length:', refreshToken?.length || 0);
+                
+                // Try to set the session manually
+                const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+                  access_token: accessToken,
+                  refresh_token: refreshToken || '',
+                });
+                
+                console.log('­ƒöì setSession result:', { session: !!session, error: sessionError });
+                
+                if (sessionError) {
+                  console.error('ÔØî Error setting session:', sessionError);
+                  console.error('ÔØî Session error details:', sessionError.message);
+                } else if (session) {
+                  console.log('Ô£à Session set successfully:', session.user?.email);
+                  console.log('Ô£à Session user ID:', session.user?.id);
+                  setSession(session);
+                  setUser(session.user);
+                  await loadUserProfile(session.user.id);
+                  setLoading(false);
+                  return;
+                } else {
+                  console.log('ÔÜá´©Å setSession returned no session and no error');
+                }
+              } else {
+                console.log('ÔØî No access token found in OAuth callback');
+              }
+              
+              // Fallback: try to get session after a delay
+              setTimeout(async () => {
+                try {
+                  console.log('­ƒöä Fallback: Checking session after OAuth callback...');
+                  const { data: { session }, error } = await supabase.auth.getSession();
+                  
+                  if (error) {
+                    console.error('ÔØî Error refreshing session:', error);
+                    setLoading(false);
+                  } else if (session) {
+                    console.log('Ô£à Session refreshed successfully:', session.user?.email);
+                    setSession(session);
+                    setUser(session.user);
+                    await loadUserProfile(session.user.id);
+                    setLoading(false);
+                  } else {
+                    console.log('ÔÜá´©Å No session found after OAuth callback');
+                    setLoading(false);
+                  }
+                } catch (err) {
+                  console.error('ÔØî Exception refreshing session:', err);
+                  setLoading(false);
+                }
+              }, 2000);
+              
+            } catch (err) {
+              console.error('ÔØî Exception processing OAuth callback:', err);
+              setLoading(false);
             }
           }
         };
@@ -140,6 +217,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setError(error instanceof Error ? error.message : 'Sign in failed');
         setLoading(false);
         return { success: false, error };
+      }
+      
+      // Update last login time
+      if (data.user) {
+        await supabase
+          .from('profiles')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', data.user.id);
+        
+        console.log(`Ô£à Updated last login for user: ${data.user.id}`);
       }
       
       return { success: true };

@@ -113,6 +113,24 @@ export class SendGridService {
   }
 
   /**
+   * Send any templated email payload via SendGrid
+   */
+  static async sendTemplatedEmail(emailData: EmailData): Promise<boolean> {
+    try {
+      if (!emailData.templateId) {
+        console.error('SendGrid templateId missing for templated email');
+        return false;
+      }
+
+      await this.sendEmail(emailData);
+      return true;
+    } catch (error) {
+      console.error('Error sending SendGrid templated email:', error);
+      return false;
+    }
+  }
+
+  /**
    * Test email configuration
    */
   static async testConfiguration(): Promise<{ success: boolean; error?: string }> {

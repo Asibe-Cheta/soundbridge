@@ -5,13 +5,15 @@ export interface SearchResult {
   creators: Profile[];
   events: Event[];
   podcasts: AudioTrack[];
+  services: ServiceProviderSummary[];
+  venues: VenueSummary[];
   total_results: number;
   has_more: boolean;
 }
 
 export interface SearchFilters {
   query?: string;
-  content_types?: ('music' | 'creators' | 'events' | 'podcasts')[];
+  content_types?: ('music' | 'creators' | 'events' | 'podcasts' | 'services' | 'venues')[];
   genre?: string;
   category?: string;
   location?: string;
@@ -137,6 +139,42 @@ export interface SearchMetrics {
   average_results: number;
   popular_queries: TrendingSearch[];
   search_success_rate: number;
+}
+
+export interface ServiceProviderSummary {
+  user_id: string;
+  display_name: string;
+  headline?: string | null;
+  bio?: string | null;
+  categories: string[];
+  default_rate?: number | null;
+  rate_currency?: string | null;
+  average_rating: number;
+  review_count: number;
+  status: 'draft' | 'pending_review' | 'active' | 'suspended';
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VenueSummary {
+  id: string;
+  owner_id: string;
+  name: string;
+  description?: string | null;
+  address?: {
+    city?: string;
+    country?: string;
+    line1?: string;
+    line2?: string;
+    state?: string;
+    postal_code?: string;
+  } | null;
+  capacity?: number | null;
+  amenities?: string[] | null;
+  status: 'draft' | 'pending_review' | 'active' | 'archived';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LocationSearch {

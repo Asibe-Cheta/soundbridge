@@ -26,12 +26,14 @@ import {
   MessageCircle,
   Home,
   Star,
-  DollarSign
+  DollarSign,
+  Briefcase
 } from 'lucide-react';
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
 import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';
 import { PayoutRequest } from '../../src/components/revenue/PayoutRequest';
+import { ServiceProviderDashboard } from '../../src/components/service-provider/ServiceProviderDashboard';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -44,7 +46,9 @@ export default function DashboardPage() {
     setError
   } = useDashboard();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'settings' | 'availability' | 'revenue'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'revenue' | 'service-provider' | 'availability' | 'settings'
+  >('overview');
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -90,6 +94,7 @@ export default function DashboardPage() {
     { id: 'followers', label: 'Followers', icon: Users },
     { id: 'subscription', label: 'Subscription', icon: Star },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
+    { id: 'service-provider', label: 'Service Provider', icon: Briefcase },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -128,7 +133,20 @@ export default function DashboardPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as 'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'settings' | 'availability')}
+                  onClick={() =>
+                    setActiveTab(
+                      item.id as
+                        | 'overview'
+                        | 'content'
+                        | 'analytics'
+                        | 'followers'
+                        | 'subscription'
+                        | 'revenue'
+                        | 'service-provider'
+                        | 'availability'
+                        | 'settings'
+                    )
+                  }
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -574,6 +592,21 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeTab === 'service-provider' && user && (
+            <div
+              style={{
+                background: 'var(--bg-secondary)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: '1rem',
+                padding: '2rem',
+              }}
+            >
+              <ServiceProviderDashboard userId={user.id} />
+            </div>
+          )}
+
           {/* Other tabs would go here - keeping it simple for now */}
           {activeTab === 'availability' && (
             <div style={{
@@ -685,7 +718,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab !== 'overview' && activeTab !== 'availability' && activeTab !== 'revenue' && (
+          {activeTab !== 'overview' && activeTab !== 'availability' && activeTab !== 'revenue' && activeTab !== 'service-provider' && (
             <div style={{
               background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',

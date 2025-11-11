@@ -6,7 +6,9 @@ import type {
   AudioTrack,
   Event,
   Profile,
-  SearchAnalytics
+  SearchAnalytics,
+  ServiceProviderSummary,
+  VenueSummary,
 } from './types/search';
 
 export class SearchService {
@@ -28,8 +30,10 @@ export class SearchService {
         creators: [],
         events: [],
         podcasts: [],
+        services: [],
+        venues: [],
         total_results: 0,
-        has_more: false
+        has_more: false,
       };
 
       // Search music tracks
@@ -56,9 +60,24 @@ export class SearchService {
         results.podcasts = podcastResults.data || [];
       }
 
+      if (filters.content_types?.includes('services') || !filters.content_types) {
+        const serviceResults = await this.searchServiceProviders(query, filters, offset, limit);
+        results.services = serviceResults.data || [];
+      }
+
+      if (filters.content_types?.includes('venues') || !filters.content_types) {
+        const venueResults = await this.searchVenues(query, filters, offset, limit);
+        results.venues = venueResults.data || [];
+      }
+
       // Calculate totals
-      results.total_results = results.music.length + results.creators.length +
-        results.events.length + results.podcasts.length;
+      results.total_results =
+        results.music.length +
+        results.creators.length +
+        results.events.length +
+        results.podcasts.length +
+        results.services.length +
+        results.venues.length;
       results.has_more = results.total_results >= limit;
 
       return { data: results, error: null };
@@ -355,6 +374,115 @@ export class SearchService {
     }
   }
 
+  private async searchServiceProviders(
+    query: string,
+    filters: SearchFilters,
+    offset: number,
+    limit: number,
+  ): Promise<{ data: ServiceProviderSummary[] | null; error: any }> {
+    try {
+      let supabaseQuery = this.supabase
+        .from('service_provider_profiles')
+        .select('*')
+        .eq('status', 'active')
+        .or(`display_name.ilike.%${query}%,headline.ilike.%${query}%,bio.ilike.%${query}%`);
+
+      if (filters.category && filters.category !== 'all') {
+        supabaseQuery = supabaseQuery.contains('categories', [filters.category]);
+      }
+
+      const sortBy = filters.sort_by || 'relevance';
+      switch (sortBy) {
+        case 'trending':
+        case 'popular':
+          supabaseQuery = supabaseQuery.order('average_rating', { ascending: false });
+          break;
+        case 'latest':
+          supabaseQuery = supabaseQuery.order('updated_at', { ascending: false });
+          break;
+        default:
+          supabaseQuery = supabaseQuery.order('review_count', { ascending: false });
+      }
+
+      const { data, error } = await supabaseQuery.range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Error searching service providers:', error);
+        return { data: null, error };
+      }
+
+      const formatted: ServiceProviderSummary[] = (data || []).map((provider) => ({
+        user_id: provider.user_id,
+        display_name: provider.display_name,
+        headline: provider.headline,
+        bio: provider.bio,
+        categories: provider.categories || [],
+        default_rate: provider.default_rate,
+        rate_currency: provider.rate_currency,
+        average_rating: provider.average_rating ?? 0,
+        review_count: provider.review_count ?? 0,
+        status: provider.status,
+        is_verified: provider.is_verified,
+        created_at: provider.created_at,
+        updated_at: provider.updated_at,
+      }));
+
+      return { data: formatted, error: null };
+    } catch (error) {
+      console.error('Unexpected error searching service providers:', error);
+      return { data: null, error };
+    }
+  }
+
+  private async searchVenues(
+    query: string,
+    filters: SearchFilters,
+    offset: number,
+    limit: number,
+  ): Promise<{ data: VenueSummary[] | null; error: any }> {
+    try {
+      let supabaseQuery = this.supabase
+        .from('venues')
+        .select('*')
+        .eq('status', 'active')
+        .or(`name.ilike.%${query}%,description.ilike.%${query}%`);
+
+      const sortBy = filters.sort_by || 'relevance';
+      switch (sortBy) {
+        case 'latest':
+          supabaseQuery = supabaseQuery.order('created_at', { ascending: false });
+          break;
+        default:
+          supabaseQuery = supabaseQuery.order('updated_at', { ascending: false });
+      }
+
+      const { data, error } = await supabaseQuery.range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Error searching venues:', error);
+        return { data: null, error };
+      }
+
+      const formatted: VenueSummary[] = (data || []).map((venue) => ({
+        id: venue.id,
+        owner_id: venue.owner_id,
+        name: venue.name,
+        description: venue.description,
+        address: venue.address || null,
+        capacity: venue.capacity,
+        amenities: venue.amenities || [],
+        status: venue.status,
+        created_at: venue.created_at,
+        updated_at: venue.updated_at,
+      }));
+
+      return { data: formatted, error: null };
+    } catch (error) {
+      console.error('Unexpected error searching venues:', error);
+      return { data: null, error };
+    }
+  }
+
   /**
    * Get search suggestions for autocomplete
    */
@@ -486,8 +614,10 @@ export class SearchService {
         creators: [],
         events: [],
         podcasts: [],
+        services: [],
+        venues: [],
         total_results: 0,
-        has_more: false
+        has_more: false,
       };
 
       // In production, this would call the get_nearby_events RPC function
@@ -510,8 +640,10 @@ export class SearchService {
         creators: [],
         events: [],
         podcasts: [],
+        services: [],
+        venues: [],
         total_results: 0,
-        has_more: false
+        has_more: false,
       };
 
       // Get trending music
@@ -570,8 +702,61 @@ export class SearchService {
         }));
       }
 
-      results.total_results = results.music.length + results.creators.length +
-        results.events.length + results.podcasts.length;
+      // Get featured service providers
+      const { data: trendingProviders } = await this.supabase
+        .from('service_provider_profiles')
+        .select('*')
+        .eq('status', 'active')
+        .order('average_rating', { ascending: false })
+        .limit(limit);
+
+      if (trendingProviders) {
+        results.services = trendingProviders.map((provider) => ({
+          user_id: provider.user_id,
+          display_name: provider.display_name,
+          headline: provider.headline,
+          bio: provider.bio,
+          categories: provider.categories || [],
+          default_rate: provider.default_rate,
+          rate_currency: provider.rate_currency,
+          average_rating: provider.average_rating ?? 0,
+          review_count: provider.review_count ?? 0,
+          status: provider.status,
+          is_verified: provider.is_verified,
+          created_at: provider.created_at,
+          updated_at: provider.updated_at,
+        }));
+      }
+
+      const { data: activeVenues } = await this.supabase
+        .from('venues')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (activeVenues) {
+        results.venues = activeVenues.map((venue) => ({
+          id: venue.id,
+          owner_id: venue.owner_id,
+          name: venue.name,
+          description: venue.description,
+          address: venue.address || null,
+          capacity: venue.capacity,
+          amenities: venue.amenities || [],
+          status: venue.status,
+          created_at: venue.created_at,
+          updated_at: venue.updated_at,
+        }));
+      }
+
+      results.total_results =
+        results.music.length +
+        results.creators.length +
+        results.events.length +
+        results.podcasts.length +
+        results.services.length +
+        results.venues.length;
 
       return { data: results, error: null };
     } catch (error) {

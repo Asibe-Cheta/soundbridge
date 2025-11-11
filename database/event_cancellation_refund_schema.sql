@@ -81,11 +81,11 @@ CREATE TRIGGER trigger_update_bundles_on_event_cancellation
   WHEN (NEW.status = 'cancelled')
   EXECUTE FUNCTION update_bundle_purchases_on_cancellation();
 
--- =====================================================
 -- RLS Policies for Cancellation Data
 -- =====================================================
 
 -- Organizers can cancel their own events
+DROP POLICY IF EXISTS "Organizers can cancel their own events" ON events;
 CREATE POLICY "Organizers can cancel their own events"
   ON events
   FOR UPDATE
@@ -93,12 +93,14 @@ CREATE POLICY "Organizers can cancel their own events"
   WITH CHECK (auth.uid() = creator_id);
 
 -- Users can view their refund status
+DROP POLICY IF EXISTS "Users can view their own refund status" ON ticket_purchases;
 CREATE POLICY "Users can view their own refund status"
   ON ticket_purchases
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Organizers can view refund statistics for their events
+DROP POLICY IF EXISTS "Organizers can view refund statistics" ON ticket_purchases;
 CREATE POLICY "Organizers can view refund statistics"
   ON ticket_purchases
   FOR SELECT

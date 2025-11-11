@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -392,6 +392,49 @@ export default function HomeScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function capitalize(value?: string | null): string {
+  if (!value) return '';
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+  if (!items.length || size <= 0) {
+    return [];
+  }
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function extractEventGenres(event: Event): string[] {
+  const tags = new Set<string>();
+
+  const addValue = (value?: string | null) => {
+    if (value) {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) {
+        tags.add(trimmed);
+      }
+    }
+  };
+
+  const addValues = (values?: string[] | null) => {
+    if (Array.isArray(values)) {
+      values.forEach(addValue);
+    }
+  };
+
+  addValue(event.genre);
+  addValues(event.genres);
+  addValues(event.tags);
+  addValue(event.category);
+
+  return Array.from(tags);
 }
 
 const styles = StyleSheet.create({

@@ -65,6 +65,44 @@ import {
   Minus
 } from 'lucide-react';
 
+const CREATOR_TYPE_COPY: Record<
+  string,
+  { label: string; description: string; accent: string; helper?: string }
+> = {
+  musician: {
+    label: 'Musician',
+    description: 'Publish tracks, build playlists, and grow your fanbase on SoundBridge.',
+    accent: 'text-pink-400',
+  },
+  dj: {
+    label: 'DJ',
+    description: 'Share live mixes, manage residencies, and surface club-ready sets.',
+    accent: 'text-yellow-400',
+  },
+  podcaster: {
+    label: 'Podcaster',
+    description: 'Upload episodes, track listeners, and syndicate your show.',
+    accent: 'text-blue-400',
+  },
+  event_organizer: {
+    label: 'Event Organizer',
+    description: 'Create events, manage line-ups, and sell tickets with SoundBridge tools.',
+    accent: 'text-emerald-400',
+  },
+  service_provider: {
+    label: 'Service Provider',
+    description: 'Offer creative services (mixing, lessons, media) and manage bookings.',
+    accent: 'text-orange-400',
+    helper: 'Enabling this role unlocks the Service Provider dashboard for offerings, portfolio, and availability.',
+  },
+  venue_owner: {
+    label: 'Venue Owner',
+    description: 'List venues, manage availability, and accept booking inquiries (coming soon).',
+    accent: 'text-purple-400',
+    helper: 'We’ll notify you when venue listings go live.',
+  },
+};
+
 // NotificationSettings interface removed - now handled by dedicated notifications page
 
 interface SecuritySettings {
@@ -168,6 +206,83 @@ export default function SettingsPage() {
     dataUsage: 'unlimited'
   });
 
+  const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
+  const [availableCreatorTypes, setAvailableCreatorTypes] = useState<string[]>([]);
+  const [isCreatorTypesLoading, setIsCreatorTypesLoading] = useState(false);
+  const [isCreatorTypesSaving, setIsCreatorTypesSaving] = useState(false);
+  const [creatorTypesError, setCreatorTypesError] = useState<string | null>(null);
+  const [creatorTypesSuccess, setCreatorTypesSuccess] = useState(false);
+
+  const loadCreatorTypes = async (userId: string) => {
+    try {
+      setIsCreatorTypesLoading(true);
+      setCreatorTypesError(null);
+
+      const response = await fetch(`/api/users/${userId}/creator-types`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load creator roles.');
+      }
+
+      setCreatorTypes(data.creatorTypes ?? []);
+      const options: string[] =
+        Array.isArray(data.allCreatorTypes) && data.allCreatorTypes.length > 0
+          ? data.allCreatorTypes
+          : Object.keys(CREATOR_TYPE_COPY);
+      setAvailableCreatorTypes(options);
+    } catch (error: any) {
+      console.error('Error loading creator roles:', error);
+      setCreatorTypesError(error.message || 'Unable to load creator roles.');
+    } finally {
+      setIsCreatorTypesLoading(false);
+    }
+  };
+
+  const handleCreatorTypeToggle = async (type: string) => {
+    if (!user) return;
+
+    const next = new Set(creatorTypes);
+    if (next.has(type)) {
+      next.delete(type);
+    } else {
+      next.add(type);
+    }
+
+    const nextList = Array.from(next);
+
+    try {
+      setIsCreatorTypesSaving(true);
+      setCreatorTypesError(null);
+      setCreatorTypesSuccess(false);
+
+      const response = await fetch(`/api/users/${user.id}/creator-types`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorTypes: nextList }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update creator roles.');
+      }
+
+      setCreatorTypes(data.creatorTypes ?? nextList);
+      setCreatorTypesSuccess(true);
+      setTimeout(() => setCreatorTypesSuccess(false), 3000);
+    } catch (error: any) {
+      console.error('Error updating creator roles:', error);
+      setCreatorTypesError(error.message || 'Unable to update creator roles.');
+      setCreatorTypes(prev => [...prev]);
+    } finally {
+      setIsCreatorTypesSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
@@ -181,6 +296,8 @@ export default function SettingsPage() {
         email: user.email || '',
         phone: user.phone || ''
       }));
+
+      loadCreatorTypes(user.id);
       
       // Load session details on mount
       handleLoadSessionDetails();
@@ -939,6 +1056,103 @@ export default function SettingsPage() {
               <option value="NGN">NGN (₦)</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Creator Roles */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Creator Roles</h3>
+          {isCreatorTypesLoading && (
+            <div className="flex items-center space-x-2 text-xs text-gray-400">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              <span>Loading…</span>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {creatorTypesError && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-start space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5" />
+                <span className="text-red-300 text-sm">{creatorTypesError}</span>
+              </div>
+            </div>
+          )}
+
+          {creatorTypesSuccess && (
+            <div className="bg-emerald-900/20 border border-emerald-500/50 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-emerald-400" />
+                <span className="text-emerald-200 text-sm">Your creator roles were updated.</span>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-300">
+            Choose every way you create on SoundBridge. We tailor your dashboard, discovery placement, and tools to match these roles.
+          </p>
+
+          <div className="space-y-3">
+            {(availableCreatorTypes.length > 0 ? availableCreatorTypes : Object.keys(CREATOR_TYPE_COPY)).map((type) => {
+              const meta = CREATOR_TYPE_COPY[type] || {
+                label: type,
+                description: '',
+                accent: 'text-white',
+              };
+              const isSelected = creatorTypes.includes(type);
+
+              return (
+                <label
+                  key={type}
+                  className={`flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 transition hover:border-pink-500/40 ${
+                    isSelected ? 'border-pink-500/40 bg-pink-500/10' : ''
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 rounded border-gray-600 bg-gray-900 text-pink-500 focus:ring-pink-400"
+                    checked={isSelected}
+                    disabled={isCreatorTypesSaving || isCreatorTypesLoading}
+                    onChange={() => handleCreatorTypeToggle(type)}
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold uppercase tracking-wide ${meta.accent}`}>
+                        {meta.label}
+                      </span>
+                      {type === 'service_provider' && (
+                        <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-200">
+                          New
+                        </span>
+                      )}
+                      {type === 'venue_owner' && (
+                        <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-200">
+                          Coming Soon
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300">{meta.description}</p>
+                    {meta.helper && <p className="text-xs text-gray-400">{meta.helper}</p>}
+                    {type === 'service_provider' && isSelected && (
+                      <Link
+                        href="/dashboard?section=service-provider"
+                        className="inline-flex items-center text-xs font-medium text-orange-300 hover:text-orange-200"
+                      >
+                        Configure service tools
+                        <ChevronRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Some roles may require verification before they appear publicly. You can update your selection whenever you like.
+          </p>
         </div>
       </div>
 

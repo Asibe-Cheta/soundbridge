@@ -231,16 +231,25 @@ GRANT EXECUTE ON FUNCTION check_upload_quota(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_creator_earnings_summary(UUID, TIMESTAMP, TIMESTAMP) TO authenticated;
 
 -- ==============================================
--- 6. RLS POLICIES (if needed)
 -- ==============================================
 
 -- Profiles table already has RLS enabled
 -- Ensure users can update their own preferences
-CREATE POLICY IF NOT EXISTS "Users can update their own preferences" 
-  ON profiles 
-  FOR UPDATE 
-  USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+      AND tablename = 'profiles' 
+      AND policyname = 'Users can update their own preferences'
+  ) THEN
+    CREATE POLICY "Users can update their own preferences" 
+      ON profiles 
+      FOR UPDATE 
+      USING (auth.uid() = id)
+      WITH CHECK (auth.uid() = id);
+  END IF;
+END $$;
 
 -- ==============================================
 -- 7. VERIFICATION QUERIES

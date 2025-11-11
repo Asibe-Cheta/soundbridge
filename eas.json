@@ -1,0 +1,25 @@
+{
+  "build": {
+    "production": {
+      "ios": {
+        "resourceClass": "default",
+        "env": {
+          "EXPO_NO_WEB": "1"
+        }
+      }
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "asibechetachukwu@gmail.com",
+        "ascAppId": "6754335651",
+        "appleTeamId": "PVQF78H486"
+      }
+    }
+  }
+}
