@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe-esg';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/src/lib/types';
-type SupabaseClient = ReturnType<typeof getSupabaseRouteClient>['supabase'];
+type SupabaseTypedClient = SupabaseClient<Database>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +50,7 @@ export async function POST(
   }
 
   type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
-  const supabaseClient = supabase as SupabaseClient;
+  const supabaseClient = supabase as SupabaseTypedClient;
 
   const { data: booking, error: bookingError } = await supabaseClient
     .from('service_bookings')
