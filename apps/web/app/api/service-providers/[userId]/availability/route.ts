@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
 
 interface AvailabilityPayload {
   startTime: string;
@@ -32,7 +33,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'You can only view your own availability' }, { status: 403, headers: corsHeaders });
   }
 
-  const { data, error: queryError } = await supabase
+  const supabaseClient = supabase as any;
+  type AvailabilityRow = Database['public']['Tables']['service_provider_availability']['Row'];
+  type AvailabilityInsert = Database['public']['Tables']['service_provider_availability']['Insert'];
+
+  const { data, error: queryError } = await supabaseClient
     .from('service_provider_availability')
     .select('*')
     .eq('provider_id', userId)
@@ -84,7 +89,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'endTime must be after startTime' }, { status: 400, headers: corsHeaders });
   }
 
-  const payload = {
+  const payload: AvailabilityInsert = {
     provider_id: userId,
     start_time: startDate.toISOString(),
     end_time: endDate.toISOString(),
@@ -94,11 +99,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error: insertError } = await supabase
+  const { data: insertData, error: insertError } = await supabaseClient
     .from('service_provider_availability')
     .insert(payload)
     .select('*')
     .single();
+
+  const data = (insertData ?? null) as AvailabilityRow | null;
 
   if (insertError) {
     return NextResponse.json(
