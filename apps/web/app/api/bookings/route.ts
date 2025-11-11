@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     .eq('user_id', payload.providerId)
     .single();
 
-  const providerProfile = (providerData ?? null) as ServiceProviderProfileRow | null;
+  const providerProfile = (providerData ?? null) as (ServiceProviderProfileRow & { timezone?: string | null }) | null;
 
   if (providerError || !providerProfile) {
     return NextResponse.json({ error: 'Provider not found', details: providerError?.message }, { status: 404, headers: corsHeaders });
