@@ -31,7 +31,12 @@ export async function GET(
     return NextResponse.json({ error: 'You can only view your own bookings' }, { status: 403, headers: corsHeaders });
   }
 
-  const { data, error: queryError } = await supabase
+  const supabaseClient = supabase as any;
+  type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
+  type ServiceBookingInsert = Database['public']['Tables']['service_bookings']['Insert'];
+  type ServiceBookingUpdate = Database['public']['Tables']['service_bookings']['Update'];
+
+  const { data, error: queryError } = await supabaseClient
     .from('service_bookings')
     .select(
       `
@@ -121,7 +126,7 @@ export async function POST(
 
   const { platformFee, providerPayout } = calculateFees(payload.totalAmount, payload.bookingType);
 
-  const { data, error: insertError } = await supabase
+  const { data: insertData, error: insertError } = await supabaseClient
     .from('service_bookings')
     .insert({
       provider_id: payload.providerId,
@@ -141,6 +146,8 @@ export async function POST(
     .select('*')
     .single();
 
+  const data = (insertData ?? null) as ServiceBookingRow | null;
+
   if (insertError) {
     return NextResponse.json(
       { error: 'Failed to create booking request', details: insertError.message },
@@ -148,7 +155,7 @@ export async function POST(
     );
   }
 
-  await supabase.from('booking_activity').insert({
+  await supabaseClient.from('booking_activity').insert({
     booking_id: data.id,
     actor_id: user.id,
     action: 'booking_requested',
@@ -188,7 +195,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'bookingId query parameter required' }, { status: 400, headers: corsHeaders });
   }
 
-  const { data: existingBooking, error: fetchError } = await supabase
+  const { data: existingBooking, error: fetchError } = await supabaseClient
     .from('service_bookings')
     .select('*')
     .eq('id', bookingId)
@@ -235,7 +242,7 @@ export async function PATCH(
   }
 
   const now = new Date().toISOString();
-  const statusUpdates: Partial<Database['public']['Tables']['service_bookings']['Update']> = {
+  const statusUpdates: Partial<ServiceBookingUpdate> = {
     status: payload.status,
   };
   let holdDaysApplied: number | null = null;
@@ -252,7 +259,7 @@ export async function PATCH(
     case 'paid': {
       statusUpdates.paid_at = now;
       let holdDays = 14;
-      const { count: completedCount, error: completedError } = await supabase
+      const { count: completedCount, error: completedError } = await supabaseClient
         .from('service_bookings')
         .select('id', { count: 'exact', head: true })
         .eq('provider_id', existingBooking.provider_id)
@@ -285,7 +292,7 @@ export async function PATCH(
     statusUpdates.booking_notes = payload.notes;
   }
 
-  const { data: updatedBooking, error: updateError } = await supabase
+  const { data: updatedBooking, error: updateError } = await supabaseClient
     .from('service_bookings')
     .update(statusUpdates)
     .eq('id', bookingId)
@@ -317,14 +324,14 @@ export async function PATCH(
     activityMetadata.dispute_reason = statusUpdates.dispute_reason;
   }
 
-  await supabase.from('booking_activity').insert({
+  await supabaseClient.from('booking_activity').insert({
     booking_id: bookingId,
     actor_id: user.id,
     action: `status_changed_${payload.status}`,
     metadata: activityMetadata,
   });
 
-  const { data: hydratedBooking, error: hydrateError } = await supabase
+  const { data: hydratedBooking, error: hydrateError } = await supabaseClient
     .from('service_bookings')
     .select(
       `
