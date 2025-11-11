@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/creatorTypes';
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import type { Database } from '@/src/lib/types';
 
 interface CreateOfferingPayload {
   title: string;
@@ -36,7 +37,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'You can only view your own offerings' }, { status: 403, headers: corsHeaders });
   }
 
-  const { data, error: queryError } = await supabase
+  const supabaseClient = supabase as any;
+  type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
+  type ServiceOfferingInsert = Database['public']['Tables']['service_offerings']['Insert'];
+
+  const { data, error: queryError } = await supabaseClient
     .from('service_offerings')
     .select('*')
     .eq('provider_id', userId)
@@ -63,6 +68,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (user.id !== userId) {
     return NextResponse.json({ error: 'You can only create offerings for your own profile' }, { status: 403, headers: corsHeaders });
   }
+
+  const supabaseClient = supabase as any;
 
   let body: CreateOfferingPayload;
   try {
@@ -99,7 +106,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  const payload = {
+  const payload: ServiceOfferingInsert = {
     provider_id: userId,
     title: title.trim(),
     category,
@@ -111,11 +118,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error: insertError } = await supabase
+  const { data: insertData, error: insertError } = await supabaseClient
     .from('service_offerings')
     .insert(payload)
     .select('*')
     .single();
+
+  const data = (insertData ?? null) as ServiceOfferingRow | null;
 
   if (insertError) {
     return NextResponse.json(
