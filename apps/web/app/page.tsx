@@ -140,7 +140,7 @@ export default function HomePage() {
           <HeroSection />
           
           {/* Main CTAs Section */}
-          <section className="mb-12 lg:mb-16 mt-20 lg:mt-24">
+          <section className="mb-12 lg:mb-16 mt-24 lg:mt-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-12 lg:mb-16">
             {/* Upload Music CTA */}
             <div className={`relative rounded-2xl p-8 lg:p-10 overflow-hidden border ${
@@ -210,9 +210,9 @@ export default function HomePage() {
             ? 'bg-gradient-to-br from-gray-800 to-gray-900' 
             : 'bg-white'
         }`}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-end p-8 lg:p-12 min-h-[500px] lg:min-h-[600px]">
-            {/* Left Side - Text Content */}
-            <div className="order-2 lg:order-1 pb-8 lg:pb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px] lg:min-h-[600px]">
+            {/* Left Container - Text Content */}
+            <div className="order-2 lg:order-1 p-8 lg:p-12 flex flex-col justify-center border-0">
               <h2 className={`text-3xl lg:text-5xl font-bold mb-4 lg:mb-6 ${
                 theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
@@ -257,23 +257,16 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Side - Phone Mockup */}
-            <div className="order-1 lg:order-2 flex items-end justify-center lg:justify-end relative h-full">
-              <div className="relative w-full h-full flex items-end justify-end">
-                <Image
-                  src="/images/sb-mockup.png"
-                  alt="SoundBridge Mobile App"
-                  width={500}
-                  height={1000}
-                  className="w-auto h-full max-w-full object-contain object-bottom"
-                  priority
-                  unoptimized
-                  style={{
-                    maxHeight: '100%',
-                    height: 'auto',
-                  }}
-                />
-              </div>
+            {/* Right Container - Phone Mockup as Background (no padding/margin) */}
+            <div className="order-1 lg:order-2 relative min-h-[400px] lg:min-h-[600px] m-0 p-0">
+              <div 
+                className="absolute inset-0 bg-contain bg-bottom bg-no-repeat"
+                style={{
+                  backgroundImage: `url('/images/sb-mockup.png')`,
+                  backgroundSize: 'contain',
+                  backgroundPosition: 'bottom center',
+                }}
+              />
             </div>
           </div>
         </section>
