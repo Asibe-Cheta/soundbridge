@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import type { ProviderBadgeTier } from '@/src/lib/types';
+import type { Database, ProviderBadgeTier } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -169,7 +169,10 @@ async function fetchBadgeInsights(
   supabase: Awaited<ReturnType<typeof getSupabaseRouteClient>>['supabase'],
   providerId: string,
 ) {
-  const { data: provider, error: providerError } = await supabase
+  type ProviderProfileRow = Database['public']['Tables']['service_provider_profiles']['Row'];
+  const supabaseClient = supabase as any;
+
+  const { data: providerData, error: providerError } = await supabaseClient
     .from('service_provider_profiles')
     .select(
       `
@@ -189,6 +192,8 @@ async function fetchBadgeInsights(
     .eq('user_id', providerId)
     .maybeSingle();
 
+  const provider = (providerData ?? null) as ProviderProfileRow | null;
+
   if (providerError) {
     console.error('Failed to fetch provider badge insights', providerError);
     throw new Error('Failed to load badge data');
@@ -198,7 +203,7 @@ async function fetchBadgeInsights(
     return null;
   }
 
-  const { data: history, error: historyError } = await supabase
+  const { data: history, error: historyError } = await supabaseClient
     .from('provider_badge_history')
     .select('id, previous_tier, new_tier, created_at, reason')
     .eq('provider_id', providerId)
@@ -299,11 +304,18 @@ export async function PATCH(
     return NextResponse.json({ error: 'No fields provided for update' }, { status: 400, headers: corsHeaders });
   }
 
-  const { data: provider, error: providerError } = await auth.supabase
+  type ProviderTrustProfile = Pick<
+    Database['public']['Tables']['service_provider_profiles']['Row'],
+    'completed_booking_count' | 'first_booking_discount_enabled' | 'first_booking_discount_percent' | 'show_payment_protection'
+  >;
+
+  const { data: providerData, error: providerError } = await auth.supabase
     .from('service_provider_profiles')
     .select('completed_booking_count, first_booking_discount_enabled, first_booking_discount_percent, show_payment_protection')
     .eq('user_id', userId)
     .maybeSingle();
+
+  const provider = (providerData ?? null) as ProviderTrustProfile | null;
 
   if (providerError) {
     console.error('Failed to load provider trust settings', providerError);
