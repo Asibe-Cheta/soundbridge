@@ -50,7 +50,7 @@ export async function POST(
   }
 
   type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
-  const supabaseClient = supabase as SupabaseTypedClient;
+  const supabaseClient = supabase as unknown as SupabaseTypedClient;
 
   const { data: booking, error: bookingError } = await supabaseClient
     .from('service_bookings')
@@ -114,7 +114,7 @@ export async function POST(
     releaseDate.setDate(releaseDate.getDate() + holdDays);
   }
 
-  const bookingUpdate = {
+  const bookingUpdate: Database['public']['Tables']['service_bookings']['Update'] = {
     status: 'paid' as const,
     paid_at: now,
     stripe_payment_intent_id: paymentIntent.id,
