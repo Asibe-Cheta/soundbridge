@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe-esg';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +29,12 @@ export async function POST(
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }
 
-  const { data: booking, error: bookingError } = await supabase
+  type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
+  type ProviderConnectAccountRow = Database['public']['Tables']['provider_connect_accounts']['Row'];
+
+  const supabaseClient = supabase as any;
+
+  const { data: bookingData, error: bookingError } = await supabaseClient
     .from('service_bookings')
     .select(
       `
@@ -41,6 +47,10 @@ export async function POST(
     )
     .eq('id', bookingId)
     .single();
+
+  const booking = (bookingData ?? null) as (ServiceBookingRow & {
+    provider_profile?: { display_name?: string | null } | null;
+  }) | null;
 
   if (bookingError || !booking) {
     return NextResponse.json(
@@ -63,11 +73,13 @@ export async function POST(
     );
   }
 
-  const { data: connectAccount, error: connectError } = await supabase
+  const { data: connectData, error: connectError } = await supabaseClient
     .from('provider_connect_accounts')
     .select('*')
     .eq('provider_id', booking.provider_id)
     .single();
+
+  const connectAccount = (connectData ?? null) as ProviderConnectAccountRow | null;
 
   if (connectError || !connectAccount?.stripe_account_id) {
     return NextResponse.json(
@@ -143,7 +155,7 @@ export async function POST(
       currency,
       automatic_payment_methods: { enabled: true },
       transfer_data: {
-        destination: connectAccount.stripe_account_id,
+        destination: connectAccount?.stripe_account_id ?? undefined,
       },
       application_fee_amount: applicationFeeAmount,
       metadata: {
@@ -156,7 +168,7 @@ export async function POST(
 
     paymentIntentId = newIntent.id;
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from('service_bookings')
       .update({
         stripe_payment_intent_id: newIntent.id,
@@ -168,7 +180,7 @@ export async function POST(
       console.error('Booking updated but failed to persist payment intent id', updateError);
     }
 
-    await supabase.from('booking_activity').insert({
+    await supabaseClient.from('booking_activity').insert({
       booking_id: booking.id,
       actor_id: user.id,
       action: 'payment_intent_created',
