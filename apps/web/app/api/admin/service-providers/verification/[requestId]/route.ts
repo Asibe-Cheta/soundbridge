@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
+import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,7 +134,7 @@ export async function PATCH(
 
     const { error: updateRequestError } = await supabaseAdmin
       .from('service_provider_verification_requests')
-      .update({
+      .update<Database['public']['Tables']['service_provider_verification_requests']['Update']>({
         status: decisionStatus,
         reviewed_at: nowIso,
         reviewer_id: user.id,
@@ -150,7 +151,7 @@ export async function PATCH(
 
     const { error: updateProfileError } = await supabaseAdmin
       .from('service_provider_profiles')
-      .update({
+      .update<Database['public']['Tables']['service_provider_profiles']['Update']>({
         is_verified: payload.action === 'approve',
         verification_status: decisionStatus,
         verification_reviewed_at: nowIso,
