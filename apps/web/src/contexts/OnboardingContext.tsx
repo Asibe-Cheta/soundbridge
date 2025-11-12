@@ -82,10 +82,22 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     }
   }, [user]);
 
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = async (): Promise<{ success: boolean; status: number }> => {
     try {
       console.log('🔍 Checking onboarding status for user:', user?.id);
-      const response = await fetch('/api/user/onboarding-status');
+      const response = await fetch('/api/user/onboarding-status', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        // Authentication failed - don't retry, just return false
+        console.error('❌ Authentication failed for onboarding status check');
+        return { success: false, status: 401 };
+      }
+
       if (response.ok) {
         const data = await response.json();
         console.log('📊 Onboarding status response:', data);
@@ -111,14 +123,14 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             currentStep: 'completed',
           }));
         }
-        return true; // Success
+        return { success: true, status: response.status };
       } else {
         console.error('❌ Failed to check onboarding status:', response.status);
-        return false; // Failed
+        return { success: false, status: response.status };
       }
     } catch (error) {
       console.error('❌ Error checking onboarding status:', error);
-      return false; // Failed
+      return { success: false, status: 0 };
     }
   };
 
@@ -130,10 +142,24 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
     while (attempts < maxAttempts) {
       console.log(`🔄 Onboarding status check attempt ${attempts + 1}/${maxAttempts}`);
-      const success = await checkOnboardingStatus();
       
-      if (success) {
+      // Check if user is still authenticated before retrying
+      if (!user) {
+        console.log('🔒 User no longer authenticated, stopping retry');
+        return;
+      }
+      
+      const result = await checkOnboardingStatus();
+      
+      if (result.success) {
         return; // Success, exit retry loop
+      }
+      
+      // If we got a 401, don't retry - authentication issue won't be fixed by retrying
+      if (result.status === 401) {
+        console.log('🔒 Authentication failed (401) - stopping retries');
+        console.log('🔒 Authentication failed - not showing onboarding modal');
+        return;
       }
       
       attempts++;
