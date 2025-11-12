@@ -38,7 +38,7 @@ export default function BecomeServiceProviderPage() {
     }
   }, [user, session, authLoading, pathname]);
 
-  const checkCreatorTypes = async () => {
+  const checkCreatorTypes = async (retryCount = 0) => {
     // Double-check user and session exist before making API call
     if (!user?.id || !session) {
       setCheckingStatus(false);
@@ -58,7 +58,14 @@ export default function BecomeServiceProviderPage() {
       });
 
       if (response.status === 401) {
-        // Authentication failed - session may have expired
+        // If we get 401 and haven't retried yet, wait a bit and retry (cookies might still be setting)
+        if (retryCount < 2) {
+          console.log(`⏳ Got 401, retrying in ${(retryCount + 1) * 1000}ms... (attempt ${retryCount + 1}/2)`);
+          await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
+          return checkCreatorTypes(retryCount + 1);
+        }
+        
+        // After retries, authentication failed
         console.error('Authentication failed - session may have expired');
         setError('Your session has expired. Please log in again to continue.');
         // Give user a moment to see the error, then redirect
