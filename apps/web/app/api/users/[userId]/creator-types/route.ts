@@ -233,7 +233,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Try to get user profile, but handle case where it might not exist
         const { data: baseProfile, error: profileError } = await serviceClient
           .from('profiles')
-          .select('display_name, full_name, username')
+          .select('display_name, username')
           .eq('id', userId)
           .maybeSingle(); // Use maybeSingle() instead of single() to handle missing profiles
 
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           console.log('✅ Profile query successful:', {
             userId,
             hasProfile: !!baseProfile,
-            displayName: baseProfile?.display_name || baseProfile?.full_name || baseProfile?.username,
+            displayName: baseProfile?.display_name || baseProfile?.username,
           });
         }
 
@@ -327,7 +327,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           // Use profile data if available
           displayName =
             baseProfile.display_name ||
-            baseProfile.full_name ||
             baseProfile.username ||
             user.email?.split('@')[0] ||
             'Service Provider';
