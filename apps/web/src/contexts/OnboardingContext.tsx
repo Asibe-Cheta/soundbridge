@@ -35,7 +35,7 @@ interface OnboardingProviderProps {
 }
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
-  const { user } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
     currentStep: 'role_selection',
     selectedRole: null,
@@ -47,7 +47,12 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   // Check if user needs onboarding on mount
   useEffect(() => {
-    if (user) {
+    // Wait for auth to finish loading before checking onboarding
+    if (authLoading) return;
+    
+    // Only check onboarding if user has a valid session (actually authenticated)
+    // This prevents checking when user exists but session is expired
+    if (user && session) {
       // Check for onboarding URL parameter (from OAuth callback)
       const urlParams = new URLSearchParams(window.location.search);
       const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
@@ -70,7 +75,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         checkOnboardingStatusWithRetry();
       }
     } else {
-      // Reset onboarding state when user logs out
+      // Reset onboarding state when user logs out or has no valid session
       setOnboardingState({
         currentStep: 'role_selection',
         selectedRole: null,
@@ -80,7 +85,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         showOnboarding: false,
       });
     }
-  }, [user]);
+  }, [user, session, authLoading]);
 
   const checkOnboardingStatus = async (): Promise<{ success: boolean; status: number }> => {
     try {
