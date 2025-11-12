@@ -9,7 +9,7 @@ import Footer from '@/src/components/layout/Footer';
 import { Briefcase, CheckCircle, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function BecomeServiceProviderPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -24,17 +24,23 @@ export default function BecomeServiceProviderPage() {
     
     if (authLoading) return; // Wait for auth to finish loading
     
-    if (user?.id) {
-      checkCreatorTypes();
-    } else {
+    // Wait for both user and session to be available (session ensures cookies are set)
+    if (user?.id && session) {
+      // Add a small delay to ensure cookies are fully set after sign-in
+      const timer = setTimeout(() => {
+        checkCreatorTypes();
+      }, 500);
+      return () => clearTimeout(timer);
+    } else if (!user && !authLoading) {
       // User not authenticated, redirect to login
       setCheckingStatus(false);
       router.push('/login?redirectTo=/become-service-provider');
     }
-  }, [user, authLoading, pathname]);
+  }, [user, session, authLoading, pathname]);
 
   const checkCreatorTypes = async () => {
-    if (!user?.id) {
+    // Double-check user and session exist before making API call
+    if (!user?.id || !session) {
       setCheckingStatus(false);
       setError('Please log in to continue.');
       setTimeout(() => {
@@ -155,11 +161,13 @@ export default function BecomeServiceProviderPage() {
   };
 
   // Don't render anything if user is not authenticated (will redirect)
-  if (!user && !authLoading) {
+  // Also check for session to ensure cookies are set
+  if ((!user || !session) && !authLoading) {
     return null;
   }
 
-  if (authLoading || checkingStatus) {
+  // Show loading state while checking auth or status
+  if (authLoading || checkingStatus || !user?.id || !session) {
     return (
       <ProtectedRoute>
         <div className={`min-h-screen flex items-center justify-center ${
