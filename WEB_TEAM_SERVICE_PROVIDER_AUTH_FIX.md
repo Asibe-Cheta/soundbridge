@@ -13,7 +13,9 @@
 - Users clicking "Become a Service Provider" button encountered a 401 Unauthorized error
 - React Error #130 (Minified React error - typically hydration/undefined value issues)
 - Page failed to load with error: "Failed to check onboarding status: 401"
-- API endpoint `/api/users/{userId}/creator-types` returning 401 Unauthorized
+- API endpoints returning 401 Unauthorized:
+  - `/api/users/{userId}/creator-types`
+  - `/api/user/onboarding-status`
 
 ### **Error Logs:**
 ```
@@ -21,6 +23,7 @@
 ❌ Failed to check onboarding status after all retries
 🔒 Authentication failed - not showing onboarding modal
 Error: Minified React error #130
+GET /api/user/onboarding-status [HTTP/2 401 128ms]
 GET /api/users/{userId}/creator-types [HTTP/2 401 181ms]
 ```
 
@@ -347,6 +350,40 @@ The authentication error was caused by missing `credentials: 'include'` in fetch
 **Last Updated:** November 12, 2025  
 **Related Files:**
 - `apps/web/app/become-service-provider/page.tsx`
+- `apps/web/src/contexts/OnboardingContext.tsx`
 - `apps/web/app/api/users/[userId]/creator-types/route.ts`
+- `apps/web/app/api/user/onboarding-status/route.ts`
 - `apps/web/src/lib/api-auth.ts`
+
+---
+
+## Additional Fix: Onboarding Status Check
+
+### **Issue:**
+The onboarding status check in `OnboardingContext.tsx` was also missing `credentials: 'include'`, causing 401 errors and unnecessary retries.
+
+### **Fix Applied:**
+1. Added `credentials: 'include'` to onboarding status fetch call
+2. Updated retry logic to stop retrying on 401 errors (authentication failures won't be fixed by retrying)
+3. Improved error handling to return status codes for better retry decision-making
+
+### **Code Changes:**
+```typescript
+// Before
+const response = await fetch('/api/user/onboarding-status');
+
+// After
+const response = await fetch('/api/user/onboarding-status', {
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Also updated retry logic to check for 401 and stop retrying
+if (result.status === 401) {
+  console.log('🔒 Authentication failed (401) - stopping retries');
+  return;
+}
+```
 
