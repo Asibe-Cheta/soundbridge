@@ -228,13 +228,61 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           );
         }
 
-        // Use profile data if available, otherwise use user email or fallback
-        const displayName =
-          baseProfile?.display_name ||
-          baseProfile?.full_name ||
-          baseProfile?.username ||
-          user.email?.split('@')[0] || // Use email username as fallback
-          'Service Provider';
+        // If profile doesn't exist, create it first (required for foreign key constraint)
+        let displayName = user.email?.split('@')[0] || 'Service Provider';
+        
+        if (!baseProfile) {
+          console.log('📝 Profile does not exist, creating profile for user:', userId);
+          
+          const defaultUsername = `user${userId.substring(0, 8)}`;
+          displayName = user.email?.split('@')[0] || 'New User';
+          
+          const { error: createProfileError } = await supabaseClient
+            .from('profiles')
+            .insert({
+              id: userId,
+              username: defaultUsername,
+              display_name: displayName,
+              role: 'listener',
+              location: 'london',
+              country: 'UK',
+              bio: '',
+              onboarding_completed: false,
+              onboarding_step: 'role_selection',
+              selected_role: 'listener',
+              profile_completed: false,
+              first_action_completed: false,
+              onboarding_skipped: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (createProfileError) {
+            console.error('❌ Error creating profile for service provider:', {
+              userId,
+              error: createProfileError.message,
+              code: createProfileError.code,
+              details: createProfileError.details,
+            });
+            return NextResponse.json(
+              { 
+                error: 'Failed to create user profile', 
+                details: process.env.NODE_ENV === 'development' ? createProfileError.message : undefined 
+              },
+              { status: 500, headers: corsHeaders },
+            );
+          }
+          
+          console.log('✅ Profile created successfully for user:', userId);
+        } else {
+          // Use profile data if available
+          displayName =
+            baseProfile.display_name ||
+            baseProfile.full_name ||
+            baseProfile.username ||
+            user.email?.split('@')[0] ||
+            'Service Provider';
+        }
 
         console.log('📝 Creating service provider profile:', {
           userId,
@@ -261,6 +309,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             error: insertProviderError.message,
             code: insertProviderError.code,
             details: insertProviderError.details,
+            hint: insertProviderError.hint,
           });
           return NextResponse.json(
             { 
