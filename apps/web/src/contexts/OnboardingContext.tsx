@@ -93,11 +93,21 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const checkOnboardingStatus = async (): Promise<{ success: boolean; status: number }> => {
     try {
       console.log('🔍 Checking onboarding status for user:', user?.id);
+      
+      // Build headers with session token as fallback for cookie-based auth
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add Authorization header with session token if available
+      // This ensures API routes can authenticate even if cookies aren't set yet
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
       const response = await fetch('/api/user/onboarding-status', {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (response.status === 401) {

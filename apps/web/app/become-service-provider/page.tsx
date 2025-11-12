@@ -200,7 +200,8 @@ export default function BecomeServiceProviderPage() {
   }
 
   // Show loading state while checking auth or status
-  if (authLoading || checkingStatus || !user?.id || !session) {
+  // CRITICAL: Ensure user.id exists before rendering to prevent React Error #130
+  if (authLoading || checkingStatus || !user || !user.id || !session || !session.access_token) {
     return (
       <ProtectedRoute>
         <div className={`min-h-screen flex items-center justify-center ${
