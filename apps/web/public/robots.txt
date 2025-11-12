@@ -20,6 +20,11 @@ Allow: /search/
 Allow: /feed/
 Allow: /podcast/
 Allow: /legal/
+Allow: /help/
+Allow: /service-providers/
+Allow: /discover/
+Allow: /about/
+Allow: /contact/
 
 # Crawl delay for respectful crawling
 Crawl-delay: 1
@@ -31,6 +36,7 @@ Sitemap: https://www.soundbridge.live/sitemap.xml
 Sitemap: https://www.soundbridge.live/sitemap-creators.xml
 Sitemap: https://www.soundbridge.live/sitemap-events.xml
 Sitemap: https://www.soundbridge.live/sitemap-podcasts.xml
+Sitemap: https://www.soundbridge.live/sitemap-service-providers.xml
 
 # Host directive
 Host: https://www.soundbridge.live

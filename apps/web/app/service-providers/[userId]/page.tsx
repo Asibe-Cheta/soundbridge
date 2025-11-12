@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { ArrowLeft, Briefcase, CheckCircle2, Clock, Layers, Shield, Sparkles, Star } from 'lucide-react';
 
 import BookProviderDialog from '@/src/components/bookings/BookProviderDialog';
+import { PortfolioItem } from '@/src/components/service-provider/PortfolioItem';
 import { createServiceClient } from '@/src/lib/supabase';
 import type { ServiceProviderSummary } from '@/src/lib/types/search';
 import type { ProviderBadgeTier } from '@/src/lib/types';
@@ -584,50 +585,11 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
               }}
             >
               {provider.portfolio.map((item) => (
-                <Link
+                <PortfolioItem
                   key={item.id}
-                  href={item.media_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: '1rem',
-                    border: '1px solid var(--border-primary)',
-                    overflow: 'hidden',
-                    background: 'var(--bg-secondary)',
-                  }}
-                >
-                  {item.thumbnail_url ? (
-                    <Image
-                      src={item.thumbnail_url}
-                      alt={item.caption ?? 'Portfolio item'}
-                      width={400}
-                      height={280}
-                      style={{ width: '100%', height: '220px', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        height: '220px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, rgba(236,72,153,0.4), rgba(220,38,38,0.4))',
-                        color: 'white',
-                      }}
-                    >
-                      <Briefcase size={32} />
-                    </div>
-                  )}
-                  <div style={{ padding: '0.85rem' }}>
-                    <p style={{ color: 'white', fontSize: '0.95rem', margin: 0, fontWeight: 600 }}>
-                      {item.caption || 'Portfolio item'}
-                    </p>
-                    <p style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: '0.35rem' }}>
-                      Added {formatRelativeDate(item.created_at)}
-                    </p>
-                  </div>
-                </Link>
+                  item={item}
+                  formatRelativeDate={formatRelativeDate}
+                />
               ))}
             </div>
           ) : (

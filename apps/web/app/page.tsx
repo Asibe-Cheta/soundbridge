@@ -7,7 +7,7 @@ import { HeroSection } from '@/src/components/sections/HeroSection';
 import { Footer } from '@/src/components/layout/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Music, Users, Calendar, Mic, ArrowRight, Upload, Sparkles, Smartphone, Check, Share2, Heart, TrendingUp, MessageCircle, Plus, Play } from 'lucide-react';
+import { Music, Users, Calendar, Mic, ArrowRight, Upload, Sparkles, Smartphone, Check, Share2, Heart, TrendingUp, MessageCircle, Plus, Play, Briefcase } from 'lucide-react';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -113,6 +113,23 @@ export default function HomePage() {
                 </h3>
                 <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                   Discover shows
+                </p>
+              </Link>
+              
+              <Link 
+                href="/discover?tab=services"
+                className={`group p-6 rounded-xl transition-all border ${
+                  theme === 'dark'
+                    ? 'bg-white/10 backdrop-blur-lg hover:bg-white/20 border-white/10 hover:border-orange-500/50'
+                    : 'bg-white hover:bg-gray-50 border-gray-200 shadow-sm hover:border-orange-300'
+                }`}
+              >
+                <Briefcase className={`w-8 h-8 mb-3 transition-transform group-hover:scale-110 ${theme === 'dark' ? 'text-orange-500' : 'text-orange-600'}`} />
+                <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  Find Services
+                </h3>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Hire professionals
                 </p>
               </Link>
             </div>

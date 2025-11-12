@@ -3,7 +3,7 @@
 import Script from 'next/script';
 
 interface StructuredDataProps {
-  type: 'organization' | 'website' | 'music.song' | 'event' | 'person' | 'podcast';
+  type: 'organization' | 'website' | 'music.song' | 'event' | 'person' | 'podcast' | 'service';
   data: any;
 }
 
@@ -36,7 +36,7 @@ export const organizationStructuredData = {
   name: 'SoundBridge',
   url: 'https://soundbridge.com',
   logo: 'https://soundbridge.com/images/logos/logo-white-lockup.png',
-  description: 'Connect with music creators, discover amazing events, and be part of a vibrant music community',
+  description: 'Connect with music creators, discover amazing events, hire professional services, and be part of a vibrant music community',
   sameAs: [
     'https://twitter.com/soundbridge',
     'https://facebook.com/soundbridge',
@@ -63,7 +63,7 @@ export const websiteStructuredData = {
   '@type': 'WebSite',
   name: 'SoundBridge',
   url: 'https://soundbridge.com',
-  description: 'Connect with music creators, discover amazing events, and be part of a vibrant music community',
+  description: 'Connect with music creators, discover amazing events, hire professional services, and be part of a vibrant music community',
   publisher: {
     '@type': 'Organization',
     name: 'SoundBridge',
@@ -199,6 +199,48 @@ export const personStructuredData = (person: {
   ...(person.sameAs && { sameAs: person.sameAs }),
   ...(person.jobTitle && { jobTitle: person.jobTitle }),
   ...(person.worksFor && { worksFor: { '@type': 'Organization', name: person.worksFor } }),
+});
+
+export const serviceProviderStructuredData = (provider: {
+  name: string;
+  description?: string;
+  url: string;
+  image?: string;
+  serviceType?: string[];
+  price?: string;
+  currency?: string;
+  rating?: number;
+  reviewCount?: number;
+  location?: string;
+}) => ({
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  name: provider.name,
+  ...(provider.description && { description: provider.description }),
+  url: provider.url,
+  ...(provider.image && {
+    image: {
+      '@type': 'ImageObject',
+      url: provider.image,
+    },
+  }),
+  ...(provider.serviceType && { serviceType: provider.serviceType }),
+  ...(provider.price && {
+    offers: {
+      '@type': 'Offer',
+      price: provider.price,
+      priceCurrency: provider.currency || 'USD',
+    },
+  }),
+  ...(provider.rating && { aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: provider.rating,
+    reviewCount: provider.reviewCount || 0,
+  }}),
+  ...(provider.location && { areaServed: {
+    '@type': 'City',
+    name: provider.location,
+  }}),
 });
 
 export const podcastStructuredData = (podcast: {

@@ -31,6 +31,8 @@ export default function DashboardPage() {
   >('overview');
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
+  const [isLoadingCreatorTypes, setIsLoadingCreatorTypes] = useState(true);
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -42,6 +44,31 @@ export default function DashboardPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Load creator types to check if user is already a service provider
+  useEffect(() => {
+    const loadCreatorTypes = async () => {
+      if (!user) return;
+      
+      try {
+        const response = await fetch(`/api/users/${user.id}/creator-types`);
+        if (response.ok) {
+          const data = await response.json();
+          setCreatorTypes(data.creatorTypes || []);
+        }
+      } catch (error) {
+        console.error('Error loading creator types:', error);
+      } finally {
+        setIsLoadingCreatorTypes(false);
+      }
+    };
+
+    if (user) {
+      loadCreatorTypes();
+    }
+  }, [user]);
+
+  const isServiceProvider = creatorTypes.includes('service_provider');
 
   const handleSignOut = async () => {
     try {
@@ -265,7 +292,15 @@ export default function DashboardPage() {
                     description: 'Chat with community',
                     href: '/messaging',
                     gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)'
-                  }
+                  },
+                  ...(!isServiceProvider && !isLoadingCreatorTypes ? [{
+                    icon: Briefcase,
+                    title: 'Become a Service Provider',
+                    subtitle: 'Offer your services',
+                    description: 'Start earning',
+                    href: '/become-service-provider',
+                    gradient: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)'
+                  }] : [])
                 ].map((action, index) => {
                   const Icon = action.icon;
                   return (

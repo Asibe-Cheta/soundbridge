@@ -18,7 +18,8 @@ import {
   Calendar,
   Upload,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  Briefcase
 } from 'lucide-react';
 
 export default function HelpPage() {
@@ -60,6 +61,18 @@ export default function HelpPage() {
       ]
     },
     {
+      icon: Briefcase,
+      title: 'Service Providers',
+      description: 'Offer professional services and earn money',
+      articles: [
+        { title: 'Complete Service Provider Guide', slug: 'service-provider-guide' },
+        { title: 'How to become a service provider', slug: 'become-service-provider' },
+        { title: 'Setting up your service profile', slug: 'service-profile-setup' },
+        { title: 'Managing bookings and payments', slug: 'service-bookings' },
+        { title: 'Getting verified as a provider', slug: 'service-verification' }
+      ]
+    },
+    {
       icon: CreditCard,
       title: 'Payments & Earnings',
       description: 'Understanding payments and revenue',
@@ -97,6 +110,7 @@ export default function HelpPage() {
   const popularArticles = [
     { title: 'How to upload music', category: 'Uploading Content', slug: 'upload-track' },
     { title: 'Creating your first event', category: 'Events', slug: 'create-event' },
+    { title: 'Complete Service Provider Guide', category: 'Service Providers', slug: 'service-provider-guide' },
     { title: 'Getting paid on SoundBridge', category: 'Payments & Earnings', slug: 'payments' },
     { title: 'Setting up your creator profile', category: 'Getting Started', slug: 'setup-profile' },
     { title: 'Understanding copyright', category: 'Uploading Content', slug: 'copyright' }

@@ -702,16 +702,61 @@ export class SearchService {
         }));
       }
 
-      // Get featured service providers
+      // Get trending service providers with improved algorithm
+      // Algorithm weights: completed bookings (40%), ratings (30%), verification (15%), recency (15%)
       const { data: trendingProviders } = await this.supabase
         .from('service_provider_profiles')
-        .select('*')
+        .select(`
+          *,
+          bookings:service_bookings!service_bookings_provider_id_fkey(
+            id,
+            status
+          )
+        `)
         .eq('status', 'active')
-        .order('average_rating', { ascending: false })
-        .limit(limit);
+        .limit(limit * 2); // Get more to sort properly
 
       if (trendingProviders) {
-        results.services = trendingProviders.map((provider) => ({
+        // Calculate trending score for each provider
+        const providersWithScore = trendingProviders.map((provider) => {
+          const completedBookings = (provider.bookings as any[])?.filter(
+            (b: any) => b.status === 'completed'
+          ).length || 0;
+          
+          const rating = provider.average_rating ?? 0;
+          const reviewCount = provider.review_count ?? 0;
+          const isVerified = provider.is_verified ? 1 : 0;
+          
+          // Recency score: more recent updates get higher score
+          const daysSinceUpdate = provider.updated_at
+            ? Math.max(0, (Date.now() - new Date(provider.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+            : 365;
+          const recencyScore = Math.max(0, 1 - daysSinceUpdate / 90); // Decay over 90 days
+          
+          // Trending score calculation
+          const bookingScore = Math.min(completedBookings / 10, 1) * 0.4; // Normalize to 0-10 bookings
+          const ratingScore = (rating / 5) * 0.3; // Normalize to 0-5 rating
+          const verificationScore = isVerified * 0.15;
+          const recencyWeight = recencyScore * 0.15;
+          
+          // Bonus for providers with reviews
+          const reviewBonus = Math.min(reviewCount / 20, 0.1); // Up to 10% bonus for 20+ reviews
+          
+          const trendingScore = bookingScore + ratingScore + verificationScore + recencyWeight + reviewBonus;
+          
+          return {
+            ...provider,
+            trendingScore,
+            completedBookings,
+          };
+        });
+
+        // Sort by trending score and take top results
+        const sortedProviders = providersWithScore
+          .sort((a, b) => b.trendingScore - a.trendingScore)
+          .slice(0, limit);
+
+        results.services = sortedProviders.map((provider) => ({
           user_id: provider.user_id,
           display_name: provider.display_name,
           headline: provider.headline,
@@ -723,6 +768,8 @@ export class SearchService {
           review_count: provider.review_count ?? 0,
           status: provider.status,
           is_verified: provider.is_verified,
+          badge_tier: (provider as any).badge_tier || 'new_provider',
+          completed_booking_count: provider.completedBookings,
           created_at: provider.created_at,
           updated_at: provider.updated_at,
         }));

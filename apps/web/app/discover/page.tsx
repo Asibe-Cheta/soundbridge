@@ -379,7 +379,7 @@ export default function DiscoverPage() {
         title: "No Service Providers Yet",
         description: "Offer your creative services and connect with artists and organizers.",
         action: "Become a Service Provider",
-        actionLink: "/dashboard?section=service-provider"
+        actionLink: "/become-service-provider"
       },
       venues: {
         icon: <Home size={48} className="mx-auto mb-4 opacity-50" />,

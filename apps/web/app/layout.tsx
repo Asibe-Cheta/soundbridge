@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     default: 'SoundBridge - Connect Through Music',
     template: '%s | SoundBridge'
   },
-  description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community. Upload your music, create events, and collaborate with artists worldwide.',
+  description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community. Upload your music, create events, hire professional services, and collaborate with artists worldwide.',
   keywords: [
     'music platform',
     'music creators',
@@ -46,7 +46,20 @@ export const metadata: Metadata = {
     'music networking',
     'music upload',
     'podcast platform',
-    'music streaming'
+    'music streaming',
+    'service provider',
+    'music services',
+    'sound engineering',
+    'music lessons',
+    'music photography',
+    'music videography',
+    'music production services',
+    'mixing and mastering',
+    'session musicians',
+    'event management',
+    'music professionals',
+    'freelance music services',
+    'hire music professionals'
   ],
   authors: [{ name: 'SoundBridge Team' }],
   creator: 'SoundBridge',
@@ -62,7 +75,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'SoundBridge - Connect Through Music',
-    description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community.',
+    description: 'Join SoundBridge to connect with music creators, discover amazing events, hire professional services, and be part of a vibrant music community.',
     url: 'https://soundbridge.com',
     siteName: 'SoundBridge',
     images: [
@@ -80,7 +93,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'SoundBridge - Connect Through Music',
-    description: 'Join SoundBridge to connect with music creators, discover amazing events, and be part of a vibrant music community.',
+    description: 'Join SoundBridge to connect with music creators, discover amazing events, hire professional services, and be part of a vibrant music community.',
     images: ['/images/og-image.jpg'],
     creator: '@soundbridge',
     site: '@soundbridge',
