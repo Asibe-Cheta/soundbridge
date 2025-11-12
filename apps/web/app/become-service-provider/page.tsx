@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
-import Footer from '@/src/components/layout/Footer';
+import { Footer } from '@/src/components/layout/Footer';
 import { Briefcase, CheckCircle, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function BecomeServiceProviderPage() {
