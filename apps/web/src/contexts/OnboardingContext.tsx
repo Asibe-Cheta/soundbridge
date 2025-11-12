@@ -101,10 +101,11 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       });
 
       if (response.status === 401) {
-        // Authentication failed - session is expired, clear it
-        console.error('❌ Authentication failed for onboarding status check - clearing session');
-        // Clear the expired session
-        await signOut();
+        // Authentication failed - but don't clear session immediately
+        // It might be a temporary cookie issue, especially right after sign-in
+        console.error('❌ Authentication failed for onboarding status check (401)');
+        // Don't clear session on 401 - let the auth context handle session validation
+        // This prevents clearing the session right after sign-in when cookies might still be setting
         return { success: false, status: 401 };
       }
 
