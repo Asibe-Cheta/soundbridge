@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { CREATOR_TYPES, isValidCreatorType } from '@/src/constants/creatorTypes';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 interface CreatorTypesPayload {
   creatorTypes: string[];
@@ -205,27 +206,50 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
 
       if (!providerProfile) {
+        // Use service role client for profile operations to bypass RLS
+        // This ensures we can check/create profiles even if RLS policies are restrictive
+        let serviceClient;
+        try {
+          serviceClient = createServiceClient();
+        } catch (serviceClientError) {
+          console.error('❌ Failed to create service client:', serviceClientError);
+          // Fall back to user client if service client fails
+          serviceClient = supabaseClient;
+        }
+
         // Try to get user profile, but handle case where it might not exist
-        const { data: baseProfile, error: profileError } = await supabaseClient
+        const { data: baseProfile, error: profileError } = await serviceClient
           .from('profiles')
           .select('display_name, full_name, username')
           .eq('id', userId)
           .maybeSingle(); // Use maybeSingle() instead of single() to handle missing profiles
 
+        // Check if error is due to RLS/permissions vs actual database error
         if (profileError) {
-          console.error('❌ Error loading profile for service provider:', {
-            userId,
-            error: profileError.message,
-            code: profileError.code,
-            details: profileError.details,
-          });
-          return NextResponse.json(
-            { 
-              error: 'Unable to load profile to seed service provider record', 
-              details: process.env.NODE_ENV === 'development' ? profileError.message : undefined 
-            },
-            { status: 500, headers: corsHeaders },
-          );
+          // If it's a "not found" type error (PGRST116), treat as no profile exists
+          // Otherwise, log and return error
+          const isNotFoundError = profileError.code === 'PGRST116' || 
+                                  profileError.message?.includes('No rows') ||
+                                  profileError.message?.includes('not found');
+          
+          if (!isNotFoundError) {
+            console.error('❌ Error loading profile for service provider:', {
+              userId,
+              error: profileError.message,
+              code: profileError.code,
+              details: profileError.details,
+              hint: profileError.hint,
+            });
+            return NextResponse.json(
+              { 
+                error: 'Unable to load profile to seed service provider record', 
+                details: process.env.NODE_ENV === 'development' ? profileError.message : undefined 
+              },
+              { status: 500, headers: corsHeaders },
+            );
+          }
+          // If it's a "not found" error, continue to create profile
+          console.log('📝 Profile not found (treating as missing), will create:', userId);
         }
 
         // If profile doesn't exist, create it first (required for foreign key constraint)
@@ -237,7 +261,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           const defaultUsername = `user${userId.substring(0, 8)}`;
           displayName = user.email?.split('@')[0] || 'New User';
           
-          const { error: createProfileError } = await supabaseClient
+          const { error: createProfileError } = await serviceClient
             .from('profiles')
             .insert({
               id: userId,
@@ -263,6 +287,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               error: createProfileError.message,
               code: createProfileError.code,
               details: createProfileError.details,
+              hint: createProfileError.hint,
             });
             return NextResponse.json(
               { 
