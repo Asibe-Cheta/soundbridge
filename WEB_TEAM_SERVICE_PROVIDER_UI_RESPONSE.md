@@ -632,6 +632,13 @@ If you need clarification on any aspect, please reach out. We're happy to:
 
 ---
 
+## Related Documentation
+
+**Important:** If you encounter authentication errors (401 Unauthorized) when implementing the "Become a Service Provider" feature, please refer to:
+- **`WEB_TEAM_SERVICE_PROVIDER_AUTH_FIX.md`** - Contains detailed error analysis, fix implementation, and mobile-specific guidance for handling authentication errors.
+
+---
+
 **Status:** ✅ Complete Response Provided  
 **Last Updated:** November 12, 2025  
 **Next Review:** After Mobile Team Implementation
