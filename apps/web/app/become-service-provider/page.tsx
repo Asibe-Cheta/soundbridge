@@ -20,16 +20,22 @@ export default function BecomeServiceProviderPage() {
   useEffect(() => {
     if (authLoading) return; // Wait for auth to finish loading
     
-    if (user) {
+    if (user?.id) {
       checkCreatorTypes();
     } else {
+      // User not authenticated, redirect to login
+      setCheckingStatus(false);
       router.push('/login?redirectTo=/become-service-provider');
     }
   }, [user, authLoading]);
 
   const checkCreatorTypes = async () => {
-    if (!user) {
+    if (!user?.id) {
       setCheckingStatus(false);
+      setError('Please log in to continue.');
+      setTimeout(() => {
+        router.push('/login?redirectTo=/become-service-provider');
+      }, 1000);
       return;
     }
 
@@ -77,8 +83,11 @@ export default function BecomeServiceProviderPage() {
   };
 
   const handleBecomeProvider = async () => {
-    if (!user) {
-      router.push('/login?redirectTo=/become-service-provider');
+    if (!user?.id) {
+      setError('Please log in to continue.');
+      setTimeout(() => {
+        router.push('/login?redirectTo=/become-service-provider');
+      }, 1000);
       return;
     }
 
