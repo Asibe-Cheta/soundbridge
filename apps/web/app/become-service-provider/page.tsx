@@ -150,6 +150,11 @@ export default function BecomeServiceProviderPage() {
     }
   };
 
+  // Don't render anything if user is not authenticated (will redirect)
+  if (!user && !authLoading) {
+    return null;
+  }
+
   if (authLoading || checkingStatus) {
     return (
       <ProtectedRoute>
