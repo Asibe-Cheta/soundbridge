@@ -130,19 +130,26 @@ export function HeroSection() {
                   View Profile
                 </Link>
                 {/* Show Follow button unless user is logged in and viewing their own profile */}
-                {(!user || featuredCreator.id !== user.id) && (
-                  <Link
-                    href={`/creator/${featuredCreator.username}`}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-semibold border ${
-                      theme === 'dark'
-                        ? 'bg-white/10 backdrop-blur-lg text-white hover:bg-white/20 border-white/20'
-                        : 'bg-white/90 backdrop-blur-lg text-gray-900 hover:bg-white border-white/30 shadow-lg'
-                    }`}
-                  >
-                    <Users className="w-5 h-5" />
-                    Follow
-                  </Link>
-                )}
+                {(() => {
+                  const isOwnProfile = user && featuredCreator.id === user.id;
+                  // Hide button only if user is logged in AND viewing their own profile
+                  if (isOwnProfile) {
+                    return null;
+                  }
+                  return (
+                    <Link
+                      href={`/creator/${featuredCreator.username}`}
+                      className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-semibold border ${
+                        theme === 'dark'
+                          ? 'bg-white/10 backdrop-blur-lg text-white hover:bg-white/20 border-white/20'
+                          : 'bg-white/90 backdrop-blur-lg text-gray-900 hover:bg-white border-white/30 shadow-lg'
+                      }`}
+                    >
+                      <Users className="w-5 h-5" />
+                      Follow
+                    </Link>
+                  );
+                })()}
               </div>
             </div>
           </>
