@@ -704,22 +704,37 @@ export class SearchService {
 
       // Get trending service providers with improved algorithm
       // Algorithm weights: completed bookings (40%), ratings (30%), verification (15%), recency (15%)
+      // Note: We query service_bookings separately since there's no direct FK from service_provider_profiles
       const { data: trendingProviders } = await this.supabase
         .from('service_provider_profiles')
-        .select(`
-          *,
-          bookings:service_bookings!service_bookings_provider_id_fkey(
-            id,
-            status
-          )
-        `)
+        .select('*')
         .eq('status', 'active')
         .limit(limit * 2); // Get more to sort properly
+      
+      // Get bookings separately and match by provider_id = user_id
+      let providerBookingsMap: Record<string, any[]> = {};
+      if (trendingProviders && trendingProviders.length > 0) {
+        const providerIds = trendingProviders.map(p => p.user_id);
+        const { data: bookings } = await this.supabase
+          .from('service_bookings')
+          .select('provider_id, status')
+          .in('provider_id', providerIds);
+        
+        // Group bookings by provider_id
+        providerBookingsMap = (bookings || []).reduce((acc, booking) => {
+          if (!acc[booking.provider_id]) {
+            acc[booking.provider_id] = [];
+          }
+          acc[booking.provider_id].push(booking);
+          return acc;
+        }, {} as Record<string, any[]>);
+      }
 
       if (trendingProviders) {
         // Calculate trending score for each provider
         const providersWithScore = trendingProviders.map((provider) => {
-          const completedBookings = (provider.bookings as any[])?.filter(
+          const bookings = providerBookingsMap[provider.user_id] || [];
+          const completedBookings = bookings.filter(
             (b: any) => b.status === 'completed'
           ).length || 0;
           
