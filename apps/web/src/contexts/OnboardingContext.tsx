@@ -35,7 +35,7 @@ interface OnboardingProviderProps {
 }
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading, signOut } = useAuth();
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
     currentStep: 'role_selection',
     selectedRole: null,
@@ -98,8 +98,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       });
 
       if (response.status === 401) {
-        // Authentication failed - don't retry, just return false
-        console.error('❌ Authentication failed for onboarding status check');
+        // Authentication failed - session is expired, clear it
+        console.error('❌ Authentication failed for onboarding status check - clearing session');
+        // Clear the expired session
+        await signOut();
         return { success: false, status: 401 };
       }
 
