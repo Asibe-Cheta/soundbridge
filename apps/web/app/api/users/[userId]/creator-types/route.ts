@@ -19,37 +19,71 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
-  const { supabase, user, error } = await getSupabaseRouteClient(request, true);
-  const supabaseClient = supabase as any;
+  
+  try {
+    const { supabase, user, error, mode } = await getSupabaseRouteClient(request, true);
+    const supabaseClient = supabase as any;
 
-  if (error || !user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
-  }
+    // Enhanced error logging
+    if (error || !user) {
+      console.error('❌ Creator types API auth failure:', {
+        userId,
+        mode,
+        error: error?.message,
+        hasUser: !!user,
+        cookieHeader: request.headers.get('cookie') ? 'present' : 'missing',
+      });
+      
+      return NextResponse.json(
+        { 
+          error: 'Authentication required',
+          details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+        },
+        { status: 401, headers: corsHeaders }
+      );
+    }
 
-  if (user.id !== userId) {
-    return NextResponse.json({ error: 'You can only view your own creator types' }, { status: 403, headers: corsHeaders });
-  }
+    if (user.id !== userId) {
+      return NextResponse.json({ error: 'You can only view your own creator types' }, { status: 403, headers: corsHeaders });
+    }
 
-  const { data, error: queryError } = await supabaseClient
-    .from('user_creator_types')
-    .select('creator_type')
-    .eq('user_id', userId)
-    .order('creator_type', { ascending: true });
+    const { data, error: queryError } = await supabaseClient
+      .from('user_creator_types')
+      .select('creator_type')
+      .eq('user_id', userId)
+      .order('creator_type', { ascending: true });
 
-  if (queryError) {
+    if (queryError) {
+      console.error('❌ Creator types query error:', {
+        userId,
+        error: queryError.message,
+        code: queryError.code,
+        details: queryError.details,
+      });
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to load creator types', 
+          details: process.env.NODE_ENV === 'development' ? queryError.message : undefined
+        },
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to load creator types', details: queryError.message },
-      { status: 500, headers: corsHeaders },
+      {
+        creatorTypes: (data || []).map((entry) => entry.creator_type),
+        allCreatorTypes: CREATOR_TYPES,
+      },
+      { headers: corsHeaders },
+    );
+  } catch (err) {
+    console.error('❌ Unexpected error in creator-types GET:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: corsHeaders }
     );
   }
-
-  return NextResponse.json(
-    {
-      creatorTypes: (data || []).map((entry) => entry.creator_type),
-      allCreatorTypes: CREATOR_TYPES,
-    },
-    { headers: corsHeaders },
-  );
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {

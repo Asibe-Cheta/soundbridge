@@ -51,11 +51,29 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
     authError = error ?? null;
   } else {
     mode = 'cookie';
-    const cookieStore = cookies();
-    supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
-    const { data, error } = await supabase.auth.getUser();
-    user = data?.user ?? null;
-    authError = error ?? null;
+    try {
+      const cookieStore = cookies();
+      supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
+      const { data, error } = await supabase.auth.getUser();
+      user = data?.user ?? null;
+      authError = error ?? null;
+      
+      // Debug logging in development
+      if (process.env.NODE_ENV === 'development' && (!user || authError)) {
+        console.log('🔍 Cookie auth debug:', {
+          hasCookies: cookieStore.getAll().length > 0,
+          cookieNames: cookieStore.getAll().map(c => c.name),
+          error: authError?.message,
+        });
+      }
+    } catch (cookieError) {
+      console.error('❌ Error reading cookies:', cookieError);
+      authError = cookieError instanceof Error ? cookieError : new Error('Failed to read cookies');
+      user = null;
+      // Still create a supabase client for error handling
+      const cookieStore = cookies();
+      supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
+    }
   }
 
   if (requireAuth && (!user || authError)) {
