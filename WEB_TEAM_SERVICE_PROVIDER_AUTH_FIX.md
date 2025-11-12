@@ -477,3 +477,275 @@ if (result.status === 401) {
 }
 ```
 
+---
+
+## Additional Fixes: Database Schema Mismatches & Profile Creation
+
+### **Issue 1: Missing `full_name` Column in Profiles Table**
+
+**Error:** `column profiles.full_name does not exist (Code: 42703)`
+
+**Root Cause:**
+The code was trying to select `full_name` from the `profiles` table, but this column doesn't exist in the actual database schema. The `profiles` table only has `display_name` and `username`.
+
+**Fix Applied:**
+Removed `full_name` from the SELECT query and fallback logic in `apps/web/app/api/users/[userId]/creator-types/route.ts`:
+
+```typescript
+// Before
+.select('display_name, full_name, username')
+
+// After
+.select('display_name, username')
+
+// Also updated displayName fallback logic:
+const displayName =
+  baseProfile?.display_name ||
+  baseProfile?.username ||
+  user.email?.split('@')[0] ||
+  'Service Provider';
+```
+
+**Commit:** `dd911839` - "Fix: Remove non-existent full_name column from profiles query"
+
+---
+
+### **Issue 2: Missing `id_verified` Column in Service Provider Profiles**
+
+**Error:** `column service_provider_profiles.id_verified does not exist (Code: 42703)`
+
+**Root Cause:**
+The badge insights API was trying to select `id_verified` from `service_provider_profiles`, but this column doesn't exist in the production database (even though it exists in the schema file).
+
+**Fix Applied:**
+Removed `id_verified` from the SELECT query and set a default value in `apps/web/app/api/service-providers/[userId]/badges/route.ts`:
+
+```typescript
+// Before
+.select(`
+  ...
+  id_verified,
+  ...
+`)
+
+// After
+.select(`
+  ...
+  is_verified,
+  ...
+`)
+
+// Return object:
+return {
+  ...
+  idVerified: false, // Column doesn't exist in database yet, default to false
+  ...
+};
+```
+
+**Commit:** `c8cdd17c` - "Fix: Remove non-existent id_verified column from badge insights query"
+
+**Note:** If you want to add this column later, run:
+```sql
+ALTER TABLE service_provider_profiles 
+ADD COLUMN IF NOT EXISTS id_verified BOOLEAN NOT NULL DEFAULT FALSE;
+```
+
+---
+
+### **Issue 3: RLS Policy Blocking Profile Queries**
+
+**Error:** `Unable to load profile to seed service provider record`
+
+**Root Cause:**
+When creating a service provider profile, the code needed to check if a user profile exists first (required for foreign key constraint). However, RLS policies were blocking the query even when using the authenticated user's client.
+
+**Fix Applied:**
+Used service role client (bypasses RLS) for profile operations in `apps/web/app/api/users/[userId]/creator-types/route.ts`:
+
+```typescript
+// Use service role client for profile operations to bypass RLS
+let serviceClient;
+try {
+  serviceClient = createServiceClient();
+  console.log('✅ Service client created successfully for profile operations');
+} catch (serviceClientError: any) {
+  console.error('❌ CRITICAL: Failed to create service client:', {
+    error: serviceClientError?.message,
+    hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  });
+  return NextResponse.json(
+    { 
+      error: 'Server configuration error: Service role key not available', 
+      details: process.env.NODE_ENV === 'development' 
+        ? 'SUPABASE_SERVICE_ROLE_KEY environment variable is missing or invalid'
+        : undefined
+    },
+    { status: 500, headers: corsHeaders },
+  );
+}
+
+// Use serviceClient instead of supabaseClient for profile queries
+const { data: baseProfile, error: profileError } = await serviceClient
+  .from('profiles')
+  .select('display_name, username')
+  .eq('id', userId)
+  .maybeSingle();
+```
+
+**Why This Works:**
+- Service role client uses `SUPABASE_SERVICE_ROLE_KEY` which bypasses all RLS policies
+- Safe to use here because we're already authenticated (checked earlier in the route)
+- Ensures profile operations work even if RLS policies are restrictive
+
+**Commit:** `ae4d3bb4` - "Fix RLS issue: Use service role client for profile operations to bypass RLS policies"
+
+---
+
+### **Issue 4: Profile Creation Before Service Provider Profile**
+
+**Error:** Foreign key constraint violation when creating service provider profile
+
+**Root Cause:**
+The `service_provider_profiles` table has a foreign key constraint: `user_id` must exist in the `profiles` table. If a user doesn't have a profile record, the insert fails.
+
+**Fix Applied:**
+Added logic to create a profile if it doesn't exist before creating the service provider profile:
+
+```typescript
+// If profile doesn't exist, create it first (required for foreign key constraint)
+if (!baseProfile) {
+  console.log('📝 Profile does not exist, creating profile for user:', userId);
+  
+  const defaultUsername = `user${userId.substring(0, 8)}`;
+  displayName = user.email?.split('@')[0] || 'New User';
+  
+  const { error: createProfileError } = await serviceClient
+    .from('profiles')
+    .insert({
+      id: userId,
+      username: defaultUsername,
+      display_name: displayName,
+      role: 'listener',
+      location: 'london',
+      country: 'UK',
+      bio: '',
+      onboarding_completed: false,
+      onboarding_step: 'role_selection',
+      selected_role: 'listener',
+      profile_completed: false,
+      first_action_completed: false,
+      onboarding_skipped: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (createProfileError) {
+    // Handle error
+    return NextResponse.json(
+      { 
+        error: 'Failed to create user profile', 
+        details: process.env.NODE_ENV === 'development' ? createProfileError.message : undefined 
+      },
+      { status: 500, headers: corsHeaders },
+    );
+  }
+  
+  console.log('✅ Profile created successfully for user:', userId);
+}
+```
+
+**Commit:** `243343c6` - "Fix 500 error when creating service provider profile - create user profile if missing"
+
+---
+
+### **Issue 5: Improved Error Handling & Logging**
+
+**Problem:**
+Error messages were generic and didn't provide enough detail to diagnose issues. Server-side errors weren't being logged properly.
+
+**Fix Applied:**
+1. **Always include error details in API responses** (not just in development):
+```typescript
+return NextResponse.json(
+  { 
+    error: 'Unable to load profile to seed service provider record', 
+    details: `${profileError.message} (Code: ${profileError.code})`,
+    hint: profileError.hint,
+  },
+  { status: 500, headers: corsHeaders },
+);
+```
+
+2. **Enhanced client-side error logging**:
+```typescript
+if (!postResponse.ok) {
+  const errorData = await postResponse.json().catch(() => ({}));
+  console.error('❌ POST creator-types error:', {
+    status: postResponse.status,
+    error: errorData.error,
+    details: errorData.details,
+    hint: errorData.hint,
+    code: errorData.code,
+    fullResponse: errorData,
+  });
+  const errorMessage = errorData.error || 'Failed to add service provider type';
+  const detailsMessage = errorData.details ? `\n\nDetails: ${data.details}` : '';
+  throw new Error(`${errorMessage}${detailsMessage}`);
+}
+```
+
+**Benefits:**
+- Errors are visible in browser console for debugging
+- Error messages on page include details
+- Server logs include full error context
+- Easier to diagnose production issues
+
+**Commits:**
+- `5b92464c` - "Always include error details in API responses and improve client-side error logging"
+- `63115e76` - "Improve error handling and logging for profile operations - always use service client"
+- `2260c94d` - "Improve error handling for badge insights API to show detailed error messages"
+
+---
+
+## Summary of All Fixes
+
+### **Authentication Fixes:**
+1. ✅ Added `credentials: 'include'` to all fetch calls
+2. ✅ Added Authorization header fallback with session token
+3. ✅ Fixed critical bearer token bug (`getUser(token)` instead of `getUser()`)
+4. ✅ Created `/api/auth/sync-session` endpoint to set cookies after login
+5. ✅ Improved session validation and error handling
+
+### **Database Schema Fixes:**
+1. ✅ Removed non-existent `full_name` column from profiles query
+2. ✅ Removed non-existent `id_verified` column from badge insights query
+3. ✅ Used service role client to bypass RLS for profile operations
+4. ✅ Added logic to create profile if missing before creating service provider profile
+
+### **Error Handling Improvements:**
+1. ✅ Always include error details in API responses
+2. ✅ Enhanced client-side error logging
+3. ✅ Better error messages for users
+4. ✅ Improved server-side logging with full context
+
+### **Key Learnings:**
+1. **Always verify database schema matches code** - Schema files may not reflect actual database state
+2. **Use service role client for admin operations** - Bypasses RLS when appropriate
+3. **Create dependencies first** - Ensure foreign key dependencies exist before creating records
+4. **Include detailed error messages** - Makes debugging much easier
+5. **Test with actual database** - Don't assume schema files match production
+
+---
+
+**Status:** ✅ All Issues Fixed and Tested  
+**Last Updated:** November 12, 2025  
+**Related Files:**
+- `apps/web/app/become-service-provider/page.tsx`
+- `apps/web/app/api/users/[userId]/creator-types/route.ts`
+- `apps/web/app/api/service-providers/[userId]/badges/route.ts`
+- `apps/web/src/contexts/OnboardingContext.tsx`
+- `apps/web/src/contexts/AuthContext.tsx`
+- `apps/web/src/lib/api-auth.ts`
+- `apps/web/src/lib/supabase.ts`
+
