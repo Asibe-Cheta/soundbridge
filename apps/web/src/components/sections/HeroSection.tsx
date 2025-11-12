@@ -129,8 +129,8 @@ export function HeroSection() {
                   <Play className="w-5 h-5" />
                   View Profile
                 </Link>
-                {/* Only show Follow button if featured creator is not the current user */}
-                {user && featuredCreator.id !== user.id && (
+                {/* Show Follow button unless user is logged in and viewing their own profile */}
+                {(!user || featuredCreator.id !== user.id) && (
                   <Link
                     href={`/creator/${featuredCreator.username}`}
                     className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-all font-semibold border ${
