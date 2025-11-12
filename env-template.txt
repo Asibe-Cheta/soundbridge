@@ -16,3 +16,7 @@ SUPABASE_AUTH_HOOK_SECRET=v1,whsec_uSQqTD/sYuYLTwQECV2m5SyJ813LNQ/Q03pnelolZ0jh
 
 # Site Configuration
 NEXT_PUBLIC_SITE_URL=https://soundbridge.live
+
+# Cloudinary Configuration (for file uploads)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
