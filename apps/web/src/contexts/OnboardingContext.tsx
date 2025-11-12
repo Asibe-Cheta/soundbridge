@@ -143,18 +143,24 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   // Retry logic for onboarding status check
   const checkOnboardingStatusWithRetry = async () => {
+    // Double-check we have valid session before even starting
+    if (!user || !session) {
+      console.log('🔒 No valid session - skipping onboarding check');
+      return;
+    }
+
     let attempts = 0;
     const maxAttempts = 3;
     const retryDelay = 1000;
 
     while (attempts < maxAttempts) {
-      console.log(`🔄 Onboarding status check attempt ${attempts + 1}/${maxAttempts}`);
-      
-      // Check if user is still authenticated with valid session before retrying
+      // Check if user is still authenticated with valid session before each attempt
       if (!user || !session) {
         console.log('🔒 User no longer authenticated or session expired, stopping retry');
         return;
       }
+      
+      console.log(`🔄 Onboarding status check attempt ${attempts + 1}/${maxAttempts}`);
       
       const result = await checkOnboardingStatus();
       
