@@ -520,7 +520,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to load badge insights.');
+        console.error('❌ Badge insights API error:', {
+          status: response.status,
+          error: data?.error,
+          details: data?.details,
+          fullResponse: data,
+        });
+        const errorMessage = data?.error || 'Failed to load badge insights.';
+        const detailsMessage = data?.details ? `\n\nDetails: ${data.details}` : '';
+        throw new Error(`${errorMessage}${detailsMessage}`);
       }
 
       if (data?.insights) {

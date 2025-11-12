@@ -199,8 +199,13 @@ async function fetchBadgeInsights(
   const provider = (providerData ?? null) as ProviderProfileRow | null;
 
   if (providerError) {
-    console.error('Failed to fetch provider badge insights', providerError);
-    throw new Error('Failed to load badge data');
+    console.error('Failed to fetch provider badge insights', {
+      error: providerError.message,
+      code: providerError.code,
+      details: providerError.details,
+      hint: providerError.hint,
+    });
+    throw new Error(`Failed to load badge data: ${providerError.message}${providerError.code ? ` (Code: ${providerError.code})` : ''}`);
   }
 
   if (!provider) {
@@ -271,9 +276,19 @@ export async function GET(
     }
 
     return NextResponse.json({ insights }, { headers: corsHeaders });
-  } catch (error) {
-    console.error('Error fetching badge insights', error);
-    return NextResponse.json({ error: 'Failed to load badge insights' }, { status: 500, headers: corsHeaders });
+  } catch (error: any) {
+    console.error('Error fetching badge insights', {
+      error: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+    });
+    return NextResponse.json(
+      { 
+        error: 'Failed to load badge insights',
+        details: error?.message || 'Unknown error',
+      },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
 
