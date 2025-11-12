@@ -211,11 +211,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         let serviceClient;
         try {
           serviceClient = createServiceClient();
-        } catch (serviceClientError) {
-          console.error('❌ Failed to create service client:', serviceClientError);
-          // Fall back to user client if service client fails
-          serviceClient = supabaseClient;
+          console.log('✅ Service client created successfully for profile operations');
+        } catch (serviceClientError: any) {
+          console.error('❌ CRITICAL: Failed to create service client:', {
+            error: serviceClientError?.message,
+            hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            stack: serviceClientError?.stack,
+          });
+          return NextResponse.json(
+            { 
+              error: 'Server configuration error: Service role key not available', 
+              details: process.env.NODE_ENV === 'development' 
+                ? 'SUPABASE_SERVICE_ROLE_KEY environment variable is missing or invalid'
+                : undefined
+            },
+            { status: 500, headers: corsHeaders },
+          );
         }
+
+        console.log('🔍 Checking for existing profile:', userId);
 
         // Try to get user profile, but handle case where it might not exist
         const { data: baseProfile, error: profileError } = await serviceClient
@@ -226,30 +240,42 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         // Check if error is due to RLS/permissions vs actual database error
         if (profileError) {
+          // Log full error details for debugging
+          console.error('❌ Profile query error (using service client):', {
+            userId,
+            error: profileError.message,
+            code: profileError.code,
+            details: profileError.details,
+            hint: profileError.hint,
+          });
+
           // If it's a "not found" type error (PGRST116), treat as no profile exists
-          // Otherwise, log and return error
+          // Otherwise, this is a real database error
           const isNotFoundError = profileError.code === 'PGRST116' || 
                                   profileError.message?.includes('No rows') ||
-                                  profileError.message?.includes('not found');
+                                  profileError.message?.includes('not found') ||
+                                  profileError.message?.toLowerCase().includes('no rows returned');
           
           if (!isNotFoundError) {
-            console.error('❌ Error loading profile for service provider:', {
-              userId,
-              error: profileError.message,
-              code: profileError.code,
-              details: profileError.details,
-              hint: profileError.hint,
-            });
+            // Real database error - return it
             return NextResponse.json(
               { 
                 error: 'Unable to load profile to seed service provider record', 
-                details: process.env.NODE_ENV === 'development' ? profileError.message : undefined 
+                details: process.env.NODE_ENV === 'development' 
+                  ? `${profileError.message} (Code: ${profileError.code})`
+                  : undefined 
               },
               { status: 500, headers: corsHeaders },
             );
           }
           // If it's a "not found" error, continue to create profile
           console.log('📝 Profile not found (treating as missing), will create:', userId);
+        } else {
+          console.log('✅ Profile query successful:', {
+            userId,
+            hasProfile: !!baseProfile,
+            displayName: baseProfile?.display_name || baseProfile?.full_name || baseProfile?.username,
+          });
         }
 
         // If profile doesn't exist, create it first (required for foreign key constraint)
