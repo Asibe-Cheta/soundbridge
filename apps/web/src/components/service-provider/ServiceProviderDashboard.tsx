@@ -8,6 +8,7 @@ import { Briefcase, CalendarCheck, CalendarClock, CalendarX, CheckCircle, Clock,
 import { SERVICE_CATEGORIES } from '@/src/constants/creatorTypes';
 import { BOOKING_STATUS_META, type BookingStatus } from '@/src/constants/bookings';
 import { SUPPORTED_CURRENCIES } from '@/src/constants/currency';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 type ProviderStatus = 'draft' | 'pending_review' | 'active' | 'suspended';
 interface BookingParticipant {
@@ -409,6 +410,7 @@ function HelperPill({
 }
 
 export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> = ({ userId }) => {
+  const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -484,7 +486,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       setLoadingVerification(true);
       setVerificationError(null);
 
-      const response = await fetch(`/api/service-providers/${userId}/verification/status`);
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const response = await fetch(`/api/service-providers/${userId}/verification/status`, {
+        credentials: 'include',
+        headers,
+      });
 
       if (response.status === 404) {
         setVerificationStatus(null);
@@ -510,7 +519,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     try {
       setLoadingBadges(true);
       setBadgeError(null);
-      const response = await fetch(`/api/service-providers/${userId}/badges`);
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const response = await fetch(`/api/service-providers/${userId}/badges`, {
+        credentials: 'include',
+        headers,
+      });
 
       if (response.status === 404) {
         setBadgeInsights(null);
@@ -554,9 +570,19 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     try {
       setError(null);
       setLoading(true);
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
       const [profileResponse, bookingsResponse] = await Promise.all([
-        fetch(`/api/service-providers/${userId}?include=offerings,portfolio,availability,reviews`),
-        fetch(`/api/service-providers/${userId}/bookings`),
+        fetch(`/api/service-providers/${userId}?include=offerings,portfolio,availability,reviews`, {
+          credentials: 'include',
+          headers,
+        }),
+        fetch(`/api/service-providers/${userId}/bookings`, {
+          credentials: 'include',
+          headers,
+        }),
       ]);
 
       if (profileResponse.status === 404) {
@@ -661,9 +687,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       const method = profileData ? 'PATCH' : 'POST';
       const url = profileData ? `/api/service-providers/${userId}` : `/api/service-providers`;
 
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify(profileData ? payload : { ...payload, displayName: payload.displayName }),
       });
 
@@ -735,9 +767,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         return;
       }
 
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/badges`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           showPaymentProtection: trustSettings.showPaymentProtection,
           firstBookingDiscountEnabled: trustSettings.firstBookingDiscountEnabled,
@@ -778,9 +816,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         return;
       }
 
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/offerings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           title: offeringDraft.title.trim(),
           category: offeringDraft.category,
@@ -816,9 +860,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
   const handleToggleOffering = async (id: string, isActive: boolean) => {
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/offerings/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({ isActive }),
       });
 
@@ -837,8 +887,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
   const handleDeleteOffering = async (id: string) => {
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/offerings/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
+        headers,
       });
 
       const data = await response.json();
@@ -859,9 +916,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         return;
       }
 
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/portfolio`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           mediaUrl: portfolioDraft.mediaUrl.trim(),
           thumbnailUrl: portfolioDraft.thumbnailUrl.trim() || null,
@@ -889,8 +952,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
   const handleDeletePortfolio = async (id: string) => {
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/portfolio/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
+        headers,
       });
 
       const data = await response.json();
@@ -911,9 +981,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         return;
       }
 
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/availability`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           startTime: new Date(availabilityDraft.startTime).toISOString(),
           endTime: new Date(availabilityDraft.endTime).toISOString(),
@@ -943,8 +1019,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
   const handleDeleteAvailability = async (id: string) => {
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/availability/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
+        headers,
       });
 
       const data = await response.json();
@@ -976,9 +1059,15 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     setVerificationSuccess(null);
 
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/service-providers/${userId}/verification/request`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           notes: verificationForm.notes || undefined,
           documents: [
