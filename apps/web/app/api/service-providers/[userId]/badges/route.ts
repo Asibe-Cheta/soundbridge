@@ -187,7 +187,6 @@ async function fetchBadgeInsights(
         average_rating,
         review_count,
         is_verified,
-        id_verified,
         show_payment_protection,
         first_booking_discount_enabled,
         first_booking_discount_percent
@@ -236,7 +235,7 @@ async function fetchBadgeInsights(
     averageRating,
     reviewCount: provider.review_count ?? 0,
     isVerified: provider.is_verified,
-    idVerified: provider.id_verified,
+    idVerified: false, // Column doesn't exist in database yet, default to false
     showPaymentProtection: provider.show_payment_protection,
     firstBookingDiscountEnabled: provider.first_booking_discount_enabled,
     firstBookingDiscountPercent: Number(provider.first_booking_discount_percent ?? 0),
