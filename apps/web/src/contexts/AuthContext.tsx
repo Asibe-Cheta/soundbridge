@@ -48,12 +48,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('AuthProvider: Getting initial session...');
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('AuthProvider: Initial session result:', session ? 'Found' : 'None');
-        setSession(session);
-        setUser(session?.user ?? null);
+        
+        // Validate session is actually still valid by checking with server
+        if (session) {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error || !user) {
+            // Session exists but is invalid - clear it
+            console.log('AuthProvider: Session expired, clearing...');
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+          } else {
+            // Session is valid
+            console.log('AuthProvider: Valid session found');
+            setSession(session);
+            setUser(user);
+          }
+        } else {
+          console.log('AuthProvider: No session found');
+          setSession(null);
+          setUser(null);
+        }
       } catch (error) {
         console.error('Error getting initial session:', error);
         setError('Failed to get initial session');
+        setSession(null);
+        setUser(null);
       } finally {
         console.log('AuthProvider: Setting loading to false');
         setLoading(false);
