@@ -86,8 +86,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
+        
+        // Handle sign out events
+        if (event === 'SIGNED_OUT' || !session) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
+        // For other events, validate the session is still valid
+        if (session) {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error || !user) {
+            // Session is invalid - clear it
+            console.log('AuthProvider: Session invalid in onAuthStateChange, clearing...');
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+          } else {
+            // Session is valid
+            setSession(session);
+            setUser(user);
+          }
+        } else {
+          setSession(null);
+          setUser(null);
+        }
         setLoading(false);
       }
     );
