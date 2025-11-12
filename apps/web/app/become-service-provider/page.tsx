@@ -17,6 +17,12 @@ export default function BecomeServiceProviderPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAlreadyProvider, setIsAlreadyProvider] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     // Only run if we're actually on this page (not during prefetch or SSR)
@@ -193,6 +199,11 @@ export default function BecomeServiceProviderPage() {
     }
   };
 
+  // Prevent hydration mismatch - don't render until mounted
+  if (!isMounted) {
+    return null;
+  }
+
   // Don't render anything if user is not authenticated (will redirect)
   // Also check for session to ensure cookies are set
   if ((!user || !session) && !authLoading) {
@@ -200,8 +211,11 @@ export default function BecomeServiceProviderPage() {
   }
 
   // Show loading state while checking auth or status
-  // CRITICAL: Ensure user.id exists before rendering to prevent React Error #130
-  if (authLoading || checkingStatus || !user || !user.id || !session || !session.access_token) {
+  // CRITICAL: Ensure user.id and session.access_token exist before rendering to prevent React Error #130
+  const hasValidUser = user && typeof user.id === 'string' && user.id.length > 0;
+  const hasValidSession = session && typeof session.access_token === 'string' && session.access_token.length > 0;
+  
+  if (authLoading || checkingStatus || !hasValidUser || !hasValidSession) {
     return (
       <ProtectedRoute>
         <div className={`min-h-screen flex items-center justify-center ${
