@@ -148,9 +148,9 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     while (attempts < maxAttempts) {
       console.log(`🔄 Onboarding status check attempt ${attempts + 1}/${maxAttempts}`);
       
-      // Check if user is still authenticated before retrying
-      if (!user) {
-        console.log('🔒 User no longer authenticated, stopping retry');
+      // Check if user is still authenticated with valid session before retrying
+      if (!user || !session) {
+        console.log('🔒 User no longer authenticated or session expired, stopping retry');
         return;
       }
       
