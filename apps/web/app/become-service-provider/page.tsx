@@ -18,6 +18,10 @@ export default function BecomeServiceProviderPage() {
   const [checkingStatus, setCheckingStatus] = useState(true);
 
   useEffect(() => {
+    // Only run if we're actually on this page (not during prefetch)
+    if (typeof window === 'undefined') return;
+    if (window.location.pathname !== '/become-service-provider') return;
+    
     if (authLoading) return; // Wait for auth to finish loading
     
     if (user?.id) {
