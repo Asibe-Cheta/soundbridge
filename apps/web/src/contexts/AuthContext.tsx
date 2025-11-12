@@ -147,7 +147,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      return { data, error };
+      
+      if (error) {
+        return { data: null, error };
+      }
+      
+      // After successful login, sync session to cookies for server-side API routes
+      // This ensures cookies are set so API routes can authenticate requests
+      if (data.session) {
+        try {
+          await fetch('/api/auth/sync-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+            }),
+          });
+          console.log('✅ Session synced to cookies');
+        } catch (syncError) {
+          // Don't fail login if cookie sync fails - Authorization header will still work
+          console.warn('⚠️ Failed to sync session to cookies (Authorization header will be used):', syncError);
+        }
+      }
+      
+      return { data, error: null };
     } catch (error) {
       console.error('Error signing in:', error);
       return { data: null, error };
