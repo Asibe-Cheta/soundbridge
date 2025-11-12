@@ -23,7 +23,7 @@ export default function BecomeServiceProviderPage() {
     if (user) {
       checkCreatorTypes();
     } else {
-      router.push('/auth/signin?redirect=/become-service-provider');
+      router.push('/login?redirectTo=/become-service-provider');
     }
   }, [user, authLoading]);
 
@@ -42,9 +42,13 @@ export default function BecomeServiceProviderPage() {
       });
 
       if (response.status === 401) {
-        // Authentication failed - redirect to sign in
-        console.error('Authentication failed - redirecting to sign in');
-        router.push('/auth/signin?redirect=/become-service-provider');
+        // Authentication failed - session may have expired
+        console.error('Authentication failed - session may have expired');
+        setError('Your session has expired. Please log in again to continue.');
+        // Give user a moment to see the error, then redirect
+        setTimeout(() => {
+          router.push('/login?redirectTo=/become-service-provider');
+        }, 2000);
         return;
       }
 
@@ -74,7 +78,7 @@ export default function BecomeServiceProviderPage() {
 
   const handleBecomeProvider = async () => {
     if (!user) {
-      router.push('/auth/signin?redirect=/become-service-provider');
+      router.push('/login?redirectTo=/become-service-provider');
       return;
     }
 
@@ -91,7 +95,7 @@ export default function BecomeServiceProviderPage() {
       });
 
       if (getResponse.status === 401) {
-        router.push('/auth/signin?redirect=/become-service-provider');
+        router.push('/login?redirectTo=/become-service-provider');
         return;
       }
 
@@ -119,7 +123,7 @@ export default function BecomeServiceProviderPage() {
         });
 
         if (postResponse.status === 401) {
-          router.push('/auth/signin?redirect=/become-service-provider');
+          router.push('/login?redirectTo=/become-service-provider');
           return;
         }
 
