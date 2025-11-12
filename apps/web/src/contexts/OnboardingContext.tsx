@@ -71,8 +71,11 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
           }));
         }, 1000); // Small delay to ensure user context is ready
       } else {
-        // Normal onboarding check with retry logic
-        checkOnboardingStatusWithRetry();
+        // Add delay after sign-in to allow cookies to be set before checking onboarding
+        const delay = session ? 1500 : 0; // Give extra time if we just signed in
+        setTimeout(() => {
+          checkOnboardingStatusWithRetry();
+        }, delay);
       }
     } else {
       // Reset onboarding state when user logs out or has no valid session
