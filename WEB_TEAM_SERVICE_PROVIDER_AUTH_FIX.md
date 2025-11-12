@@ -357,6 +357,96 @@ The authentication error was caused by missing `credentials: 'include'` in fetch
 
 ---
 
+## Latest Fix: Authorization Header Fallback + Critical Bearer Token Bug
+
+### **Issue:**
+Even after adding `credentials: 'include'`, cookies weren't being set properly after client-side sign-in. The `createBrowserClient` stores sessions in localStorage, while `createRouteHandlerClient` expects cookies. This mismatch caused persistent 401 errors.
+
+### **Root Cause:**
+1. **Cookie mismatch**: When users sign in using `signInWithPassword` on the client side, Supabase sets the session in localStorage but doesn't automatically set cookies for server-side routes. The API routes using `createRouteHandlerClient` couldn't read the session from cookies.
+
+2. **CRITICAL BUG**: When using bearer token authentication, `getUser()` was being called without the token parameter. Supabase requires the token to be passed explicitly: `getUser(token)`, not just `getUser()`.
+
+### **Fix Applied:**
+1. **Added Authorization header with session token** as a fallback authentication method
+2. **Fixed bearer token validation** - Changed `getUser()` to `getUser(token)` when using bearer auth
+3. **Enhanced null safety checks** to prevent React Error #130
+4. **Used local variables** (`userId`) instead of direct property access to avoid race conditions
+5. **Enhanced error logging** to show Authorization header presence
+
+### **Code Changes:**
+
+**Client-side (become-service-provider/page.tsx):**
+```typescript
+// Before
+const response = await fetch(`/api/users/${user.id}/creator-types`, {
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// After
+const userId = user?.id;
+if (!userId) {
+  // Handle error
+  return;
+}
+
+const headers: HeadersInit = {
+  'Content-Type': 'application/json',
+};
+
+// Add Authorization header with session token as fallback
+if (session?.access_token) {
+  headers['Authorization'] = `Bearer ${session.access_token}`;
+}
+
+const response = await fetch(`/api/users/${userId}/creator-types`, {
+  credentials: 'include',
+  headers,
+});
+```
+
+**Server-side (api-auth.ts) - CRITICAL FIX:**
+```typescript
+// Before - WRONG! getUser() without token doesn't validate bearer token
+if (headerValue && headerValue.startsWith('Bearer ')) {
+  const token = headerValue.substring(7);
+  supabase = createClient(/* ... */);
+  const { data, error } = await supabase.auth.getUser(); // ❌ Missing token!
+}
+
+// After - CORRECT! Must pass token to getUser()
+if (headerValue && headerValue.startsWith('Bearer ')) {
+  const token = headerValue.substring(7);
+  supabase = createClient(/* ... */);
+  const { data, error } = await supabase.auth.getUser(token); // ✅ Token passed!
+}
+```
+
+### **How It Works:**
+1. Client sends Authorization header with `Bearer {session.access_token}` if session exists
+2. The API route (`getSupabaseRouteClient`) checks for Authorization header first
+3. If present, it extracts the token and calls `getUser(token)` - **CRITICAL: token must be passed**
+4. If not present, it falls back to cookie-based authentication
+5. This ensures authentication works even if cookies aren't set yet
+
+### **Why This Fix Was Critical:**
+The bug was that `getUser()` was called without the token parameter. Supabase's `getUser()` method has two signatures:
+- `getUser()` - Reads from cookies/localStorage (for cookie-based auth)
+- `getUser(token)` - Validates the provided bearer token (for bearer auth)
+
+Without passing the token, Supabase couldn't validate the bearer token, causing all bearer auth requests to fail with 401.
+
+### **Benefits:**
+- ✅ Works immediately after sign-in (no waiting for cookies)
+- ✅ Fallback mechanism ensures reliability
+- ✅ Prevents React Error #130 with proper null checks
+- ✅ Compatible with both cookie and bearer token authentication
+
+---
+
 ## Additional Fix: Onboarding Status Check
 
 ### **Issue:**

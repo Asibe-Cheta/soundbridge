@@ -46,9 +46,20 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
       },
     });
 
-    const { data, error } = await supabase.auth.getUser();
+    // IMPORTANT: getUser() must be called with the token parameter when using bearer auth
+    const { data, error } = await supabase.auth.getUser(token);
     user = data?.user ?? null;
     authError = error ?? null;
+    
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development' && (!user || authError)) {
+      console.log('🔍 Bearer auth debug:', {
+        hasToken: !!token,
+        tokenLength: token?.length || 0,
+        error: authError?.message,
+        mode: 'bearer',
+      });
+    }
   } else {
     mode = 'cookie';
     try {

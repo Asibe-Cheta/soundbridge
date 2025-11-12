@@ -26,12 +26,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Enhanced error logging
     if (error || !user) {
+      const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
       console.error('❌ Creator types API auth failure:', {
         userId,
         mode,
         error: error?.message,
         hasUser: !!user,
         cookieHeader: request.headers.get('cookie') ? 'present' : 'missing',
+        authHeader: authHeader ? 'present' : 'missing',
+        authHeaderPrefix: authHeader?.substring(0, 20) || 'none',
       });
       
       return NextResponse.json(

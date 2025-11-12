@@ -50,11 +50,31 @@ export default function BecomeServiceProviderPage() {
     }
 
     try {
-      const response = await fetch(`/api/users/${user.id}/creator-types`, {
+      // Ensure user.id exists before making the API call
+      const userId = user?.id;
+      if (!userId) {
+        setCheckingStatus(false);
+        setError('Please log in to continue.');
+        setTimeout(() => {
+          router.push('/login?redirectTo=/become-service-provider');
+        }, 1000);
+        return;
+      }
+
+      // Build headers with session token as fallback if cookies aren't set
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add Authorization header with session token as fallback for cookie-based auth
+      // This ensures API routes can authenticate even if cookies aren't set yet
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`/api/users/${userId}/creator-types`, {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (response.status === 401) {
@@ -100,7 +120,8 @@ export default function BecomeServiceProviderPage() {
   };
 
   const handleBecomeProvider = async () => {
-    if (!user?.id) {
+    const userId = user?.id;
+    if (!userId || !session) {
       setError('Please log in to continue.');
       setTimeout(() => {
         router.push('/login?redirectTo=/become-service-provider');
@@ -112,12 +133,19 @@ export default function BecomeServiceProviderPage() {
     setError(null);
 
     try {
+      // Build headers with session token as fallback
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       // First, get current creator types
-      const getResponse = await fetch(`/api/users/${user.id}/creator-types`, {
+      const getResponse = await fetch(`/api/users/${userId}/creator-types`, {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (getResponse.status === 401) {
@@ -137,12 +165,10 @@ export default function BecomeServiceProviderPage() {
       if (!currentTypes.includes('service_provider')) {
         const newTypes = [...currentTypes, 'service_provider'];
         
-        const postResponse = await fetch(`/api/users/${user.id}/creator-types`, {
+        const postResponse = await fetch(`/api/users/${userId}/creator-types`, {
           method: 'POST',
           credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             creatorTypes: newTypes,
           }),
