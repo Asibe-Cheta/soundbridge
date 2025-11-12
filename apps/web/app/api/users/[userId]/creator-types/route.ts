@@ -221,9 +221,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           return NextResponse.json(
             { 
               error: 'Server configuration error: Service role key not available', 
-              details: process.env.NODE_ENV === 'development' 
-                ? 'SUPABASE_SERVICE_ROLE_KEY environment variable is missing or invalid'
-                : undefined
+              details: 'SUPABASE_SERVICE_ROLE_KEY environment variable is missing or invalid',
+              code: 'SERVICE_CLIENT_ERROR',
             },
             { status: 500, headers: corsHeaders },
           );
@@ -261,9 +260,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json(
               { 
                 error: 'Unable to load profile to seed service provider record', 
-                details: process.env.NODE_ENV === 'development' 
-                  ? `${profileError.message} (Code: ${profileError.code})`
-                  : undefined 
+                details: `${profileError.message} (Code: ${profileError.code})`,
+                hint: profileError.hint,
               },
               { status: 500, headers: corsHeaders },
             );

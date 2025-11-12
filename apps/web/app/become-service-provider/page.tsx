@@ -187,7 +187,19 @@ export default function BecomeServiceProviderPage() {
 
         if (!postResponse.ok) {
           const errorData = await postResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to add service provider type');
+          console.error('❌ POST creator-types error:', {
+            status: postResponse.status,
+            error: errorData.error,
+            details: errorData.details,
+            hint: errorData.hint,
+            code: errorData.code,
+            fullResponse: errorData,
+          });
+          // Include details in error message for better debugging
+          const errorMessage = errorData.error || 'Failed to add service provider type';
+          const detailsMessage = errorData.details ? `\n\nDetails: ${errorData.details}` : '';
+          const hintMessage = errorData.hint ? `\n\nHint: ${errorData.hint}` : '';
+          throw new Error(`${errorMessage}${detailsMessage}${hintMessage}`);
         }
       }
 
