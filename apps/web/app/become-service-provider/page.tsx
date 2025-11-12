@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
@@ -12,15 +12,15 @@ export default function BecomeServiceProviderPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAlreadyProvider, setIsAlreadyProvider] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
   useEffect(() => {
-    // Only run if we're actually on this page (not during prefetch)
-    if (typeof window === 'undefined') return;
-    if (window.location.pathname !== '/become-service-provider') return;
+    // Only run if we're actually on this page (not during prefetch or SSR)
+    if (pathname !== '/become-service-provider') return;
     
     if (authLoading) return; // Wait for auth to finish loading
     
@@ -31,7 +31,7 @@ export default function BecomeServiceProviderPage() {
       setCheckingStatus(false);
       router.push('/login?redirectTo=/become-service-provider');
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, pathname]);
 
   const checkCreatorTypes = async () => {
     if (!user?.id) {
