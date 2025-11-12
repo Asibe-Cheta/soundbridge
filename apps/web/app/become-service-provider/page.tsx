@@ -18,18 +18,36 @@ export default function BecomeServiceProviderPage() {
   const [checkingStatus, setCheckingStatus] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (authLoading) return; // Wait for auth to finish loading
+    
+    if (user) {
       checkCreatorTypes();
-    } else if (!authLoading && !user) {
+    } else {
       router.push('/auth/signin?redirect=/become-service-provider');
     }
   }, [user, authLoading]);
 
   const checkCreatorTypes = async () => {
-    if (!user) return;
+    if (!user) {
+      setCheckingStatus(false);
+      return;
+    }
 
     try {
-      const response = await fetch(`/api/users/${user.id}/creator-types`);
+      const response = await fetch(`/api/users/${user.id}/creator-types`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        // Authentication failed - redirect to sign in
+        console.error('Authentication failed - redirecting to sign in');
+        router.push('/auth/signin?redirect=/become-service-provider');
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         const hasServiceProvider = data.creatorTypes?.includes('service_provider');
@@ -41,9 +59,14 @@ export default function BecomeServiceProviderPage() {
             router.push('/dashboard?section=service-provider');
           }, 2000);
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to check creator types:', errorData.error || 'Unknown error');
+        setError('Failed to load your account information. Please try again.');
       }
     } catch (err) {
       console.error('Error checking creator types:', err);
+      setError('An error occurred while checking your account status. Please try again.');
     } finally {
       setCheckingStatus(false);
     }
@@ -60,9 +83,21 @@ export default function BecomeServiceProviderPage() {
 
     try {
       // First, get current creator types
-      const getResponse = await fetch(`/api/users/${user.id}/creator-types`);
+      const getResponse = await fetch(`/api/users/${user.id}/creator-types`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (getResponse.status === 401) {
+        router.push('/auth/signin?redirect=/become-service-provider');
+        return;
+      }
+
       if (!getResponse.ok) {
-        throw new Error('Failed to load current creator types');
+        const errorData = await getResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to load current creator types');
       }
 
       const getData = await getResponse.json();
@@ -74,6 +109,7 @@ export default function BecomeServiceProviderPage() {
         
         const postResponse = await fetch(`/api/users/${user.id}/creator-types`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -82,8 +118,13 @@ export default function BecomeServiceProviderPage() {
           }),
         });
 
+        if (postResponse.status === 401) {
+          router.push('/auth/signin?redirect=/become-service-provider');
+          return;
+        }
+
         if (!postResponse.ok) {
-          const errorData = await postResponse.json();
+          const errorData = await postResponse.json().catch(() => ({}));
           throw new Error(errorData.error || 'Failed to add service provider type');
         }
       }
