@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
@@ -10,6 +11,7 @@ import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar }
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
