@@ -73,9 +73,17 @@ export default function Navbar() {
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      await signOut();
+      const result = await signOut();
+      // signOut now handles redirect internally, but we can show a loading state
+      if (result.error) {
+        console.warn('Sign out completed with warning:', result.error);
+        // Still redirect even if there was an error (session might be invalid)
+        router.push('/');
+      }
     } catch (error) {
       console.error('Error signing out:', error);
+      // Force redirect even on error
+      router.push('/');
     }
   };
 

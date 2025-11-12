@@ -117,9 +117,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const { error } = await supabase.auth.signOut();
-      return { error };
+      
+      // Even if there's an error (like 403 - session not found), 
+      // we should still clear local state since the session is invalid anyway
+      if (error) {
+        console.warn('Sign out error (clearing local state anyway):', error.message);
+        
+        // Check if it's a session_not_found error (403)
+        if (error.message?.includes('session_not_found') || error.message?.includes('Session from session_id')) {
+          console.log('Session already invalid - clearing local state');
+        }
+      }
+      
+      // Always clear local state regardless of error
+      setSession(null);
+      setUser(null);
+      
+      // Clear localStorage manually to ensure cleanup
+      try {
+        localStorage.removeItem('soundbridge-auth');
+        localStorage.removeItem('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Redirect to home/login page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+      
+      return { error: null }; // Return success since we cleared local state
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Unexpected error signing out:', error);
+      
+      // Still clear local state on unexpected errors
+      setSession(null);
+      setUser(null);
+      
+      // Clear localStorage
+      try {
+        localStorage.removeItem('soundbridge-auth');
+        localStorage.removeItem('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Redirect anyway
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+      
       return { error };
     }
   };
