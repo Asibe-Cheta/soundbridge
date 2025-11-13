@@ -670,6 +670,30 @@ export default function ServiceProviderGuidePage() {
               <div className={`prose prose-lg max-w-none ${
                 theme === 'dark' ? 'prose-invert' : ''
               }`}>
+                <div className={`p-6 rounded-lg border mb-6 ${
+                  theme === 'dark'
+                    ? 'bg-blue-500/10 border-blue-500/20'
+                    : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <p className={`font-semibold mb-2 ${
+                    theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
+                  }`}>
+                    📖 Want More Details?
+                  </p>
+                  <p className={`mb-3 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    This section covers the basics. For a complete, step-by-step guide to the booking workflow, payment protection, and service delivery, see our detailed guide:
+                  </p>
+                  <Link 
+                    href="/help/service-bookings"
+                    className={`inline-flex items-center gap-2 font-semibold ${
+                      theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                    }`}
+                  >
+                    Complete Guide: How Bookings Work →
+                  </Link>
+                </div>
                 <p className={`text-lg leading-relaxed mb-6 ${
                   theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                 }`}>

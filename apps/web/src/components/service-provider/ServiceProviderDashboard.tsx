@@ -3,11 +3,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Briefcase, CalendarCheck, CalendarClock, CalendarX, CheckCircle, Clock, CreditCard, DollarSign, Edit3, ExternalLink, Layers, Loader2, ListChecks, Plus, RefreshCcw, ShieldAlert, ShieldCheck, Sparkles, Star, Trash2, Upload, User, X } from 'lucide-react';
+import { Briefcase, CalendarCheck, CalendarClock, CalendarX, CheckCircle, Clock, CreditCard, DollarSign, Edit3, ExternalLink, HelpCircle, Layers, Loader2, ListChecks, Plus, RefreshCcw, ShieldAlert, ShieldCheck, Sparkles, Star, Trash2, Upload, User, X } from 'lucide-react';
 
 import { SERVICE_CATEGORIES } from '@/src/constants/creatorTypes';
 import { BOOKING_STATUS_META, type BookingStatus } from '@/src/constants/bookings';
-import { SUPPORTED_CURRENCIES } from '@/src/constants/currency';
+import { SUPPORTED_CURRENCIES, CURRENCY_INFO } from '@/src/constants/currency';
 import { useAuth } from '@/src/contexts/AuthContext';
 
 type ProviderStatus = 'draft' | 'pending_review' | 'active' | 'suspended';
@@ -351,7 +351,7 @@ const verificationPrerequisiteEntries: VerificationPrerequisiteEntry[] = [
   { id: 'connectAccount', label: 'Stripe payouts ready' },
 ];
 
-function SectionCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function SectionCard({ title, action, helpLink, children }: { title: string; action?: React.ReactNode; helpLink?: string; children: React.ReactNode }) {
   return (
     <section
       style={{
@@ -367,7 +367,32 @@ function SectionCard({ title, action, children }: { title: string; action?: Reac
       }}
     >
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</h3>
+          {helpLink && (
+            <Link
+              href={helpLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                color: 'var(--text-secondary)',
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+              title="Learn more about this section"
+            >
+              <HelpCircle size={16} />
+            </Link>
+          )}
+        </div>
         {action}
       </header>
       <div>{children}</div>
@@ -1242,6 +1267,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   const renderBookingsSection = () => (
     <SectionCard
       title="Bookings"
+      helpLink="/help/service-bookings"
       action={
         <HelperPill tone="info">
           <CalendarClock size={14} /> Track requests and in-progress work.
@@ -1881,6 +1907,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     return (
       <SectionCard
         title="Verification"
+        helpLink="/help/service-verification"
         action={
           <HelperPill tone={meta.tone}>
             {derivedStatus === 'approved' ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
@@ -2305,6 +2332,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     return (
       <SectionCard
         title="Service Provider Profile"
+        helpLink="/help/service-provider-guide#creating-profile"
         action={
           profileData && (
             <HelperPill tone={verificationMeta.tone}>
@@ -2419,11 +2447,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 color: 'var(--text-primary)',
               }}
             >
-              {SUPPORTED_CURRENCIES.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
+              {SUPPORTED_CURRENCIES.map((currency) => {
+                const info = CURRENCY_INFO[currency];
+                return (
+                  <option key={currency} value={currency}>
+                    {currency} - {info.name} ({info.symbol})
+                  </option>
+                );
+              })}
             </select>
           </label>
 
@@ -2535,6 +2566,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   const renderOfferingsSection = () => (
     <SectionCard
       title="Service Offerings"
+      helpLink="/help/service-provider-guide#managing-offerings"
       action={
         <HelperPill tone="warning">
           <Layers size={14} /> Tip: active offerings appear on your public profile.
@@ -2621,11 +2653,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               color: 'var(--text-primary)',
             }}
           >
-            {SUPPORTED_CURRENCIES.map((currency) => (
-              <option key={currency} value={currency}>
-                {currency}
-              </option>
-            ))}
+            {SUPPORTED_CURRENCIES.map((currency) => {
+              const info = CURRENCY_INFO[currency];
+              return (
+                <option key={currency} value={currency}>
+                  {currency} - {info.name} ({info.symbol})
+                </option>
+              );
+            })}
           </select>
         </label>
 
@@ -2789,6 +2824,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   const renderPortfolioSection = () => (
     <SectionCard
       title="Portfolio"
+      helpLink="/help/service-provider-guide#showcasing-work"
       action={
         <HelperPill>
           <Upload size={14} /> Showcase past projects and deliverables.

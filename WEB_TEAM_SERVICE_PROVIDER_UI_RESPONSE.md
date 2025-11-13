@@ -112,7 +112,7 @@ return (
 1. **Title** (text input) - e.g., "Full mix & master"
 2. **Category** (dropdown) - From `SERVICE_CATEGORIES` array
 3. **Rate Amount** (number input) - Decimal with 2 decimal places
-4. **Rate Currency** (dropdown) - From `SUPPORTED_CURRENCIES` array
+4. **Rate Currency** (dropdown) - From `SUPPORTED_CURRENCIES` array (40+ currencies supported, see Currency Options section below)
 5. **Rate Unit** (text input) - e.g., "hour", "session", "project"
 6. **Description** (textarea, 3 rows) - Detailed service description
 7. **Active Toggle** (checkbox) - "Active by default"
@@ -603,7 +603,168 @@ ProfileScreen → Settings → Creator Tools → Service Provider Dashboard
 
 ---
 
-## 8. Summary & Next Steps
+## 8. Recent Updates & Enhancements (December 2024)
+
+### **8.1 Expanded Currency Options** ✅
+
+**Status:** ✅ **COMPLETED**
+
+The currency options have been significantly expanded from 4 to **40+ currencies** covering major markets worldwide.
+
+**Supported Currencies:**
+- **Americas:** USD, CAD, MXN, BRL, ARS, CLP, COP, PEN
+- **Europe:** EUR, GBP, CHF, SEK, NOK, DKK, PLN, RUB, TRY
+- **Asia-Pacific:** JPY, CNY, AUD, NZD, SGD, HKD, KRW, THB, MYR, PHP, IDR, VND, INR
+- **Middle East & Africa:** AED, SAR, ILS, NGN, GHS, KES, EGP, ZAR
+
+**Display Format:**
+- Currency dropdowns now show: `USD - US Dollar ($)` for better clarity
+- Includes currency name and symbol for user-friendly selection
+- Uses `CURRENCY_INFO` constant for display metadata
+
+**Code Reference:**
+```typescript
+// apps/web/src/constants/currency.ts
+export const SUPPORTED_CURRENCIES = [
+  'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'CAD', 'AUD', 'CHF', 'NZD', 'SGD',
+  'HKD', 'SEK', 'NOK', 'DKK', 'PLN', 'MXN', 'BRL', 'INR', 'ZAR', 'KRW',
+  'TRY', 'RUB', 'THB', 'MYR', 'PHP', 'IDR', 'VND', 'AED', 'SAR', 'ILS',
+  'NGN', 'GHS', 'KES', 'EGP', 'ARS', 'CLP', 'COP', 'PEN'
+] as const;
+
+export const CURRENCY_INFO: Record<SupportedCurrency, { name: string; symbol: string }> = {
+  USD: { name: 'US Dollar', symbol: '$' },
+  EUR: { name: 'Euro', symbol: '€' },
+  // ... (40+ currencies)
+};
+```
+
+**Mobile Implementation:**
+- Use the same `SUPPORTED_CURRENCIES` array
+- Display format: `{code} - {name} ({symbol})` in dropdowns
+- Consider grouping by region for better UX on mobile
+
+---
+
+### **8.2 Help Tooltips & Documentation Links** ✅
+
+**Status:** ✅ **COMPLETED**
+
+All dashboard sections now include help tooltips (question mark icons) that link to comprehensive help articles.
+
+**Implementation:**
+- Each `SectionCard` component accepts an optional `helpLink` prop
+- Help icon appears next to section title
+- Opens help article in new tab
+- Hover effect changes color to accent color
+
+**Help Articles Available:**
+1. **`/help/service-provider-guide`** - Complete service provider guide
+2. **`/help/service-bookings`** - Detailed booking workflow guide
+3. **`/help/service-verification`** - Verification process guide
+4. **`/help/service-provider-quick-start`** - Quick start guide for new providers
+
+**Section Help Links:**
+- **Bookings Section** → `/help/service-bookings`
+- **Verification Section** → `/help/service-verification`
+- **Profile Section** → `/help/service-provider-guide#creating-profile`
+- **Offerings Section** → `/help/service-provider-guide#managing-offerings`
+- **Portfolio Section** → `/help/service-provider-guide#showcasing-work`
+
+**Code Reference:**
+```typescript
+// apps/web/src/components/service-provider/ServiceProviderDashboard.tsx
+function SectionCard({ title, action, helpLink, children }: { 
+  title: string; 
+  action?: React.ReactNode; 
+  helpLink?: string; 
+  children: React.ReactNode 
+}) {
+  return (
+    <section>
+      <header>
+        <div>
+          <h3>{title}</h3>
+          {helpLink && (
+            <Link href={helpLink} target="_blank" rel="noopener noreferrer">
+              <HelpCircle size={16} />
+            </Link>
+          )}
+        </div>
+        {action}
+      </header>
+      {children}
+    </section>
+  );
+}
+```
+
+**Mobile Implementation:**
+- Add help icons to section headers
+- Link to web help articles (or implement mobile-native help screens)
+- Consider in-app tooltips for quick context
+
+---
+
+### **8.3 Comprehensive Help Documentation** ✅
+
+**Status:** ✅ **COMPLETED**
+
+New comprehensive help articles have been created to explain the complex service provider workflow:
+
+**New Help Articles:**
+
+1. **How Bookings Work (`/help/service-bookings`)**
+   - Complete step-by-step booking workflow
+   - Payment protection (escrow) explanation
+   - Service delivery methods (in-person, online, file-based)
+   - Status flow: pending → confirmed → paid → completed
+   - Communication guidelines
+   - FAQ section
+
+2. **Getting Verified (`/help/service-verification`)**
+   - Verification requirements checklist
+   - Document submission process
+   - Status explanations (not_requested, pending, approved, rejected)
+   - Tips for successful verification
+
+3. **Quick Start Guide (`/help/service-provider-quick-start`)**
+   - 7-step quick start process
+   - Links to detailed guides
+   - Next steps after profile setup
+
+**Mobile Implementation:**
+- Link to these help articles from mobile app
+- Consider creating mobile-native versions with React Native components
+- Use deep linking to specific sections (e.g., `#creating-profile`)
+
+---
+
+### **8.4 Service Provider Workflow Documentation** ✅
+
+**Status:** ✅ **COMPLETED**
+
+Complete workflow documentation has been created explaining:
+- What happens when service providers fill all fields
+- Profile status workflow (draft → pending_review → active → suspended)
+- How clients discover and book services
+- Service delivery process (in-person, online, file-based)
+- Payment and escrow system
+- Communication methods
+
+**Documentation File:**
+- `SERVICE_PROVIDER_WORKFLOW_EXPLANATION.md` - Complete workflow guide
+
+**Key Points:**
+- Only `active` profiles are visible to public
+- Service providers can manually set status to `active` (admin approval recommended for future)
+- Booking flow: Discovery → View Profile → Book → Pay → Deliver → Complete → Review
+- Payment held in escrow until service completion
+- Multiple service delivery methods supported
+
+---
+
+## 9. Summary & Next Steps
 
 ### **Key Takeaways**
 
@@ -640,6 +801,13 @@ If you need clarification on any aspect, please reach out. We're happy to:
 ---
 
 **Status:** ✅ Complete Response Provided  
-**Last Updated:** November 12, 2025  
+**Last Updated:** December 12, 2024  
+**Recent Updates:** 
+- ✅ Expanded currency options (40+ currencies)
+- ✅ Added help tooltips to all dashboard sections
+- ✅ Created comprehensive help documentation
+- ✅ Added Quick Start guide
+- ✅ Documented complete service provider workflow
+
 **Next Review:** After Mobile Team Implementation
 
