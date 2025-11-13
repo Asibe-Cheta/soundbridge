@@ -33,10 +33,19 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
   let user: User | null = null;
   let authError: Error | null = null;
 
-  const headerValue = BEARER_HEADER_KEYS.map((key) => request.headers.get(key)).find(Boolean);
+  // Check for bearer token in any of the supported headers
+  let token: string | null = null;
+  
+  for (const headerKey of BEARER_HEADER_KEYS) {
+    const headerValue = request.headers.get(headerKey);
+    if (headerValue) {
+      // Extract token: remove "Bearer " prefix if present, otherwise use value as-is
+      token = headerValue.startsWith('Bearer ') ? headerValue.substring(7) : headerValue;
+      break; // Use first matching header
+    }
+  }
 
-  if (headerValue && (headerValue.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-    const token = headerValue.startsWith('Bearer ') ? headerValue.substring(7) : headerValue;
+  if (token) {
     mode = 'bearer';
     supabase = createClient<any>(supabaseUrl, supabaseAnonKey, {
       global: {
