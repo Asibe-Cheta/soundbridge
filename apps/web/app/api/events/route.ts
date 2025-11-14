@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+
+// CORS headers for mobile app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -24,21 +31,25 @@ export async function POST(request: NextRequest) {
       if (!eventData[field]) {
         return NextResponse.json(
           { error: `${field} is required` },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
     }
 
-    // Validate category
+    // Validate category - Support both web and mobile app categories
     const validCategories = [
-      'Christian', 'Secular', 'Carnival', 'Gospel', 'Hip-Hop',
-      'Afrobeat', 'Jazz', 'Classical', 'Rock', 'Pop', 'Other'
+      // Mobile app categories
+      'Music Concert', 'Birthday Party', 'Carnival', 'Get Together', 'Music Karaoke',
+      'Comedy Night', 'Gospel Concert', 'Instrumental', 'Jazz Room', 'Workshop',
+      'Conference', 'Festival', 'Other',
+      // Legacy web categories (for backward compatibility)
+      'Christian', 'Secular', 'Gospel', 'Hip-Hop', 'Afrobeat', 'Jazz', 'Classical', 'Rock', 'Pop'
     ];
 
     if (!validCategories.includes(eventData.category)) {
       return NextResponse.json(
-        { error: 'Invalid category' },
-        { status: 400 }
+        { error: 'Invalid category', validCategories },
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -47,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (isNaN(eventDate.getTime())) {
       return NextResponse.json(
         { error: 'Invalid event date' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -55,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (eventDate < new Date()) {
       return NextResponse.json(
         { error: 'Event date cannot be in the past' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -63,14 +74,14 @@ export async function POST(request: NextRequest) {
     if (eventData.price_gbp && (isNaN(eventData.price_gbp) || eventData.price_gbp < 0)) {
       return NextResponse.json(
         { error: 'Invalid GBP price' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     if (eventData.price_ngn && (isNaN(eventData.price_ngn) || eventData.price_ngn < 0)) {
       return NextResponse.json(
         { error: 'Invalid NGN price' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -78,7 +89,7 @@ export async function POST(request: NextRequest) {
     if (eventData.max_attendees && (isNaN(eventData.max_attendees) || eventData.max_attendees < 1)) {
       return NextResponse.json(
         { error: 'Invalid max attendees' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -105,27 +116,27 @@ export async function POST(request: NextRequest) {
     if (createError) {
       console.error('Event creation error:', createError);
       return NextResponse.json(
-        { error: 'Failed to create event' },
-        { status: 500 }
+        { error: 'Failed to create event', details: createError.message },
+        { status: 500, headers: corsHeaders }
       );
     }
 
     return NextResponse.json({
       success: true,
       event
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Event creation API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const { supabase } = await getSupabaseRouteClient(request, false);
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
@@ -221,7 +232,7 @@ export async function GET(request: NextRequest) {
       console.error('Events fetch error:', error);
       return NextResponse.json(
         { error: 'Failed to fetch events' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -241,12 +252,12 @@ export async function GET(request: NextRequest) {
       success: true,
       events: transformedEvents,
       total: transformedEvents.length
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Events fetch API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
