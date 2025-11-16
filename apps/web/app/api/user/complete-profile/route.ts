@@ -96,18 +96,16 @@ export async function POST(request: NextRequest) {
       display_name: display_name,
       bio: body.bio || null,
       country: body.country || null,
-      genres: body.genres || null,
       avatar_url: body.avatar_url || null,
       
       // Creator-specific fields
       collaboration_enabled: body.collaboration_enabled || false,
-      min_notice_days: body.min_notice_days || 7,
+      auto_decline_unavailable: body.auto_decline_unavailable !== undefined ? body.auto_decline_unavailable : true,
       social_links: body.social_links || null,
       
       // Onboarding completion
       onboarding_completed: true,
       onboarding_step: 'completed',
-      onboarding_completed_at: new Date().toISOString(),
       profile_completed: true,
       
       // Update timestamp
