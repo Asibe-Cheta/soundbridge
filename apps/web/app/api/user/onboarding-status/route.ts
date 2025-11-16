@@ -92,8 +92,10 @@ export async function GET(request: NextRequest) {
         bio,
         location,
         country,
+        genres,
         avatar_url,
         collaboration_enabled,
+        min_notice_days,
         auto_decline_unavailable,
         social_links,
         onboarding_completed,
@@ -103,7 +105,22 @@ export async function GET(request: NextRequest) {
         updated_at
       `)
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+
+    // If no profile exists, return needs onboarding
+    if (!profile) {
+      console.log('⚠️ No profile found for user:', user.id);
+      return NextResponse.json({
+        success: true,
+        needsOnboarding: true,
+        profile: null,
+        onboarding: {
+          completed: false,
+          step: 'role_selection',
+          profileCompleted: false
+        }
+      }, { headers: corsHeaders });
+    }
 
     if (profileError) {
       console.error('❌ Error fetching profile:', profileError);
