@@ -83,7 +83,14 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
             },
             set(name: string, value: string, options: CookieOptions) {
               try {
-                cookieStore.set({ name, value, ...options });
+                cookieStore.set({ 
+                  name, 
+                  value, 
+                  ...options,
+                  sameSite: 'lax', // Required for cookies to work across paths
+                  path: '/', // Make cookies available to all routes
+                  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+                });
               } catch (error) {
                 // Handle cookie setting errors (can happen in middleware)
               }
@@ -127,7 +134,14 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
             },
             set(name: string, value: string, options: CookieOptions) {
               try {
-                cookieStore.set({ name, value, ...options });
+                cookieStore.set({ 
+                  name, 
+                  value, 
+                  ...options,
+                  sameSite: 'lax',
+                  path: '/',
+                  secure: process.env.NODE_ENV === 'production',
+                });
               } catch (error) {
                 // Ignore errors
               }

@@ -34,14 +34,21 @@ export async function GET(request: NextRequest) {
           },
           set(name: string, value: string, options: CookieOptions) {
             try {
-              cookieStore.set({ name, value, ...options });
+              cookieStore.set({ 
+                name, 
+                value, 
+                ...options,
+                sameSite: 'lax', // Required for cookies to work across paths
+                path: '/', // Make cookies available to all routes
+                secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+              });
             } catch (error) {
               // Handle cookie setting errors (can happen in middleware)
             }
           },
           remove(name: string, options: CookieOptions) {
             try {
-              cookieStore.set({ name, value: '', ...options });
+              cookieStore.set({ name, value: '', ...options, maxAge: 0 });
             } catch (error) {
               // Handle cookie removal errors
             }
