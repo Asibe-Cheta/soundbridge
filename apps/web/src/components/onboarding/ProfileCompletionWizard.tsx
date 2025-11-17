@@ -5,7 +5,8 @@ import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward, AlertCircle } from 'lucide-react';
 import { CountrySelector } from './CountrySelector';
-import { supabase } from '@/src/lib/supabase';
+import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
+import Image from 'next/image';
 
 interface ProfileCompletionWizardProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
     try {
       setIsUploading(true);
       
-      // Upload avatar if selected
+      // Upload avatar if selected (doesn't require auth)
       let avatarUrl = null;
       if (formData.avatar) {
         const formDataUpload = new FormData();
@@ -116,60 +117,58 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         }
       }
 
-      // Get the current session from Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Update profile using the complete-profile endpoint
-      const response = await fetch('/api/user/complete-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Send access token in Authorization header as fallback to cookies
-          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
-        },
-        credentials: 'include', // Required for cookie-based auth
-        body: JSON.stringify({
-          role: onboardingState.selectedRole,
-          display_name: formData.displayName,
-          avatar_url: avatarUrl,
-          country: formData.country,
-          bio: formData.bio,
-          genres: formData.genres
-        }),
-      });
-
-      if (response.ok) {
-        // Save genre preferences to the genres API
-        if (formData.genres.length > 0 && user?.id) {
-          try {
-            await fetch(`/api/users/${user.id}/genres`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                genre_ids: formData.genres
-              }),
-            });
-          } catch (genreError) {
-            console.error('Error saving genre preferences:', genreError);
-            // Don't block onboarding completion if genre save fails
-          }
+      // Update profile using the complete-profile endpoint with bearer token
+      const { data: profileData, error: profileError } = await fetchJsonWithAuth(
+        '/api/user/complete-profile',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            role: onboardingState.selectedRole,
+            display_name: formData.displayName,
+            avatar_url: avatarUrl,
+            country: formData.country,
+            bio: formData.bio,
+            genres: formData.genres
+          }),
         }
+      );
 
-        // Mark profile as completed and move to completion
-        setProfileCompleted(true);
-        
-        // Complete the entire onboarding process
-        if (completeOnboarding) {
-          await completeOnboarding();
-        }
-        
-        // Close the modal
-        onClose();
+      if (profileError) {
+        console.error('❌ Error completing profile:', profileError);
+        alert(`Failed to complete profile: ${profileError}`);
+        return;
       }
+
+      console.log('✅ Profile completed successfully:', profileData);
+
+      // Save genre preferences to the genres API
+      if (formData.genres.length > 0 && user?.id) {
+        try {
+          await fetchJsonWithAuth(`/api/users/${user.id}/genres`, {
+            method: 'POST',
+            body: JSON.stringify({
+              genre_ids: formData.genres
+            }),
+          });
+        } catch (genreError) {
+          console.error('Error saving genre preferences:', genreError);
+          // Don't block onboarding completion if genre save fails
+        }
+      }
+
+      // Mark profile as completed and move to completion
+      setProfileCompleted(true);
+      
+      // Complete the entire onboarding process
+      if (completeOnboarding) {
+        await completeOnboarding();
+      }
+      
+      // Close the modal
+      onClose();
     } catch (error) {
       console.error('Error completing profile:', error);
+      alert('An unexpected error occurred. Please try again.');
     } finally {
       setIsUploading(false);
     }

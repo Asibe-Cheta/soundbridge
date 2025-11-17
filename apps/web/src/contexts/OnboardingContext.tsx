@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
 
 export type UserRole = 'musician' | 'podcaster' | 'event_promoter' | 'listener';
 export type OnboardingStep = 'role_selection' | 'profile_setup' | 'first_action' | 'completed';
@@ -94,33 +95,21 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     try {
       console.log('🔍 Checking onboarding status for user:', user?.id);
       
-      // Build headers with session token as fallback for cookie-based auth
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-      
-      // Add Authorization header with session token if available
-      // This ensures API routes can authenticate even if cookies aren't set yet
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      
-      const response = await fetch('/api/user/onboarding-status', {
-        credentials: 'include',
-        headers,
-      });
+      // Use fetchJsonWithAuth for consistent bearer token auth
+      const { data, error, response } = await fetchJsonWithAuth('/api/user/onboarding-status');
 
-      if (response.status === 401) {
-        // Authentication failed - but don't clear session immediately
-        // It might be a temporary cookie issue, especially right after sign-in
-        console.error('❌ Authentication failed for onboarding status check (401)');
-        // Don't clear session on 401 - let the auth context handle session validation
-        // This prevents clearing the session right after sign-in when cookies might still be setting
-        return { success: false, status: 401 };
+      if (error || !response.ok) {
+        if (response?.status === 401) {
+          // Authentication failed - but don't clear session immediately
+          // It might be a temporary issue, especially right after sign-in
+          console.error('❌ Authentication failed for onboarding status check (401)');
+          return { success: false, status: 401 };
+        }
+        console.error('❌ Failed to check onboarding status:', error);
+        return { success: false, status: response?.status || 500 };
       }
 
-      if (response.ok) {
-        const data = await response.json();
+      if (data) {
         console.log('📊 Onboarding status response:', data);
         
         if (data.needsOnboarding) {
@@ -228,11 +217,9 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         return;
       }
 
-      await fetch('/api/user/onboarding-progress', {
+      // Use fetchJsonWithAuth for consistent bearer token auth
+      await fetchJsonWithAuth('/api/user/onboarding-progress', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           ...updates,
           userId: user.id
@@ -252,36 +239,26 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
       console.log('🔧 Completing onboarding for user:', user.id);
       
-      // Get the current session from Supabase  
-      const supabase = (await import('@/src/lib/supabase')).supabase;
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch('/api/user/complete-onboarding', {
+      // Use fetchJsonWithAuth for consistent bearer token auth
+      const { data, error } = await fetchJsonWithAuth('/api/user/complete-onboarding', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Send access token in Authorization header as fallback to cookies
-          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
-        },
-        credentials: 'include', // Required for cookie-based auth
         body: JSON.stringify({
           userId: user.id
         }),
       });
-
-      const result = await response.json();
       
-      if (result.success) {
-        console.log('✅ Onboarding completed successfully');
-        setOnboardingState(prev => ({
-          ...prev,
-          isOnboardingActive: false,
-          showOnboarding: false,
-          currentStep: 'completed',
-        }));
-      } else {
-        console.error('❌ Failed to complete onboarding:', result.error);
+      if (error || !data?.success) {
+        console.error('❌ Failed to complete onboarding:', error || data?.error);
+        return;
       }
+
+      console.log('✅ Onboarding completed successfully');
+      setOnboardingState(prev => ({
+        ...prev,
+        isOnboardingActive: false,
+        showOnboarding: false,
+        currentStep: 'completed',
+      }));
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
     }
@@ -296,29 +273,26 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
       console.log('🔧 Skipping onboarding for user:', user.id);
       
-      const response = await fetch('/api/user/skip-onboarding', {
+      // Use fetchJsonWithAuth for consistent bearer token auth
+      const { data, error } = await fetchJsonWithAuth('/api/user/skip-onboarding', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           userId: user.id
         }),
       });
-
-      const result = await response.json();
       
-      if (result.success) {
-        console.log('✅ Onboarding skipped successfully');
-        setOnboardingState(prev => ({
-          ...prev,
-          isOnboardingActive: false,
-          showOnboarding: false,
-          currentStep: 'completed',
-        }));
-      } else {
-        console.error('❌ Failed to skip onboarding:', result.error);
+      if (error || !data?.success) {
+        console.error('❌ Failed to skip onboarding:', error || data?.error);
+        return;
       }
+
+      console.log('✅ Onboarding skipped successfully');
+      setOnboardingState(prev => ({
+        ...prev,
+        isOnboardingActive: false,
+        showOnboarding: false,
+        currentStep: 'completed',
+      }));
     } catch (error) {
       console.error('❌ Error skipping onboarding:', error);
     }
