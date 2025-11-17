@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -21,50 +19,8 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔧 Complete Profile API called');
 
-    // Multi-header authentication support for mobile app
-    let supabase;
-    let user;
-    let authError;
-
-    // Check for Authorization header (mobile app) - try ALL mobile app headers
-    const authHeader = request.headers.get('authorization') || 
-                      request.headers.get('Authorization') ||
-                      request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token') ||
-                      request.headers.get('x-supabase-token');
-    
-    console.log('🚨 MOBILE APP HEADER DEBUG (Profile):');
-    console.log('- authorization:', request.headers.get('authorization'));
-    console.log('- Authorization:', request.headers.get('Authorization'));  
-    console.log('- x-authorization:', request.headers.get('x-authorization'));
-    console.log('- x-auth-token:', request.headers.get('x-auth-token'));
-    console.log('- x-supabase-token:', request.headers.get('x-supabase-token'));
-    console.log('- Final authHeader:', authHeader);
-    
-    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-      // Handle both "Bearer token" format and raw token format
-      const token = authHeader.startsWith('Bearer ') ? 
-                   authHeader.substring(7) : 
-                   authHeader;
-      
-      // Create a fresh Supabase client with the provided token
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      
-      // Get user with the token
-      const { data, error } = await supabase.auth.getUser(token);
-      user = data.user;
-      authError = error;
-    } else {
-      console.log('🚨 Using cookie-based auth (no Bearer token found)');
-      // Use cookie-based auth (web app)
-      supabase = createRouteHandlerClient({ cookies });
-      const { data, error } = await supabase.auth.getUser();
-      user = data.user;
-      authError = error;
-    }
+    // Use unified authentication helper (supports both cookie and bearer token)
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
