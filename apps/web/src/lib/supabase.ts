@@ -216,8 +216,8 @@ const getGlobalClient = () => {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false, // Disabled to allow server-side handling
-        flowType: 'implicit', // Use implicit flow (no PKCE) for server-side OAuth completion
+        detectSessionInUrl: true, // Auto-detect session from URL hash (implicit flow)
+        flowType: 'implicit', // Use implicit flow for web OAuth
         storageKey: 'soundbridge-auth',
       },
     });
