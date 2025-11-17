@@ -257,13 +257,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { data: null, error: new Error('Supabase client not initialized') };
     }
     try {
-      // Use implicit flow with client-side detection
-      // Redirect to home page where AuthProvider will auto-detect the session
+      // Standard Supabase OAuth with PKCE
+      // Supabase handles the OAuth flow via its callback endpoint, then redirects to our site
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/`, // Redirect to home page (clean URL)
-          skipBrowserRedirect: false, // Let Supabase handle the redirect
+          redirectTo: `${window.location.origin}/`, // Redirect to home after OAuth completes
         },
       });
       

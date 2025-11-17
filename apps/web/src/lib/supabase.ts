@@ -216,9 +216,9 @@ const getGlobalClient = () => {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true, // Auto-detect session from URL hash (implicit flow)
-        flowType: 'implicit', // Use implicit flow for web OAuth
+        detectSessionInUrl: true, // Auto-detect session after OAuth redirect
         storageKey: 'soundbridge-auth',
+        // Note: flowType defaults to 'pkce' which is correct for Supabase OAuth
       },
     });
 
