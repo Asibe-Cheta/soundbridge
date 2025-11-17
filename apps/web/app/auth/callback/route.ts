@@ -120,8 +120,15 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(new URL(`/login?error=oauth_session_failed&message=${encodeURIComponent(oauthError.message)}`, request.url));
         }
 
-        if (data.user) {
+        if (data.session && data.user) {
           console.log('✅ OAuth login successful for user:', data.user.email);
+          
+          // Explicitly set the session on the Supabase client
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+          console.log('✅ Session set on server-side client');
           
           // Create profile if it doesn't exist for OAuth users
           try {
