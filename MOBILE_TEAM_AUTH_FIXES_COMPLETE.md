@@ -279,6 +279,176 @@ const checkOnboarding = async (accessToken: string) => {
 
 ---
 
+## 3. ✅ Google OAuth Authentication (FIXED)
+
+**Status:** ✅ Fixed and deployed
+
+### Issue Identified
+
+**Problem:** OAuth was failing with error:
+```
+oauth_session_failed: invalid request: both auth code and code verifier should be non-empty
+```
+
+**Root Cause:**  
+PKCE (Proof Key for Code Exchange) flow requires the same client instance to exchange the authorization code. The server-side callback route couldn't access the PKCE code verifier stored in the browser's localStorage.
+
+### Solution Implemented
+
+**Changed OAuth callback handling from server-side to client-side:**
+
+#### 1. Server Route Update (`apps/web/app/auth/callback/route.ts`)
+Now redirects OAuth callbacks to client-side handler:
+
+```typescript
+if (code) {
+  console.log('Redirecting to client-side OAuth handler for PKCE flow');
+  return NextResponse.redirect(
+    new URL(`/auth/oauth-callback?code=${code}${next ? `&next=${encodeURIComponent(next)}` : ''}`, request.url)
+  );
+}
+```
+
+#### 2. New Client-Side Page (`apps/web/app/auth/oauth-callback/page.tsx`)
+Handles OAuth callback in browser context:
+
+```typescript
+'use client';
+
+const handleOAuthCallback = async () => {
+  const code = searchParams.get('code');
+  const supabase = createBrowserClient(); // Has access to PKCE verifier in localStorage
+  
+  // Exchange code for session (PKCE flow completes successfully)
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  
+  if (data.user) {
+    // Create profile if doesn't exist
+    // Handle onboarding redirect
+    // Show success state
+  }
+};
+```
+
+**Key Features:**
+- ✅ Access to localStorage with PKCE code verifier
+- ✅ Automatic profile creation for new OAuth users
+- ✅ Extracts name from Google metadata
+- ✅ Handles onboarding redirect
+- ✅ Shows loading/success/error states with visual feedback
+
+### OAuth Flow (Now Working)
+
+1. ✅ User clicks "Sign in with Google"
+2. ✅ Google authorization popup appears
+3. ✅ User selects/authorizes Google account
+4. ✅ Redirected to `/auth/oauth-callback` (client-side)
+5. ✅ Code exchanged for session (PKCE flow completes)
+6. ✅ Profile created automatically (if new user)
+7. ✅ Lands on dashboard or onboarding
+
+### OAuth Configuration
+
+**PKCE Flow Enabled** (`apps/web/src/lib/supabase.ts`):
+```typescript
+const client = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce', // ← Requires client-side callback handling
+    storageKey: 'soundbridge-auth',
+  },
+});
+```
+
+**Provider Sign-In** (`apps/web/src/contexts/AuthContext.tsx`):
+```typescript
+const signInWithProvider = async (provider: 'google' | 'facebook' | 'apple') => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+  return { data, error };
+};
+```
+
+### Profile Creation for OAuth Users
+
+**Automatic Profile Creation:**
+```typescript
+const fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || '';
+const firstName = fullName.split(' ')[0] || '';
+const lastName = fullName.split(' ').slice(1).join(' ') || '';
+const displayName = fullName || data.user.email?.split('@')[0] || 'New User';
+
+await supabase.from('profiles').insert({
+  id: data.user.id,
+  username: `user${data.user.id.substring(0, 8)}`,
+  display_name: displayName,
+  first_name: firstName,
+  last_name: lastName,
+  avatar_url: data.user.user_metadata?.avatar_url || null,
+  role: 'listener',
+  location: 'london',
+  country: 'UK',
+  onboarding_completed: false,
+  // ... other fields
+});
+```
+
+### Mobile Team Implementation
+
+**For React Native / Expo:**
+
+You'll need to handle OAuth differently since you can't use browser localStorage. Use Supabase's mobile-specific OAuth flow:
+
+```typescript
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+
+// Complete WebBrowser session when redirecting back
+WebBrowser.maybeCompleteAuthSession();
+
+const signInWithGoogle = async () => {
+  const redirectUrl = makeRedirectUri({
+    scheme: 'soundbridge', // Your app scheme
+    path: 'auth/callback',
+  });
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: redirectUrl,
+      skipBrowserRedirect: false,
+    },
+  });
+
+  if (error) {
+    console.error('OAuth error:', error);
+    return;
+  }
+
+  // The session will be automatically handled by Supabase
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session) {
+    // Check if profile exists, create if needed
+    await ensureProfileExists(session.user);
+  }
+};
+```
+
+**Important for Mobile:**
+- Use `expo-web-browser` for OAuth flow
+- Configure deep linking with your app scheme
+- Add redirect URL to Supabase dashboard (e.g., `soundbridge://auth/callback`)
+- Mobile doesn't need PKCE workaround - it's handled automatically
+
+---
+
 ## 🧪 Testing Checklist for Mobile Team
 
 ### Registration Testing:
@@ -296,10 +466,16 @@ const checkOnboarding = async (accessToken: string) => {
 - [ ] Login with new password
 
 ### OAuth Testing (Google):
-- [ ] Sign in with Google
-- [ ] Verify profile created automatically
-- [ ] Check all required profile fields are populated
-- [ ] Confirm no errors in console
+- [x] Sign in with Google - **FIXED** ✅
+- [x] Verify profile created automatically - **WORKING** ✅
+- [x] Check all required profile fields are populated - **WORKING** ✅
+- [x] Confirm no errors in console - **FIXED** ✅
+
+**OAuth Fix Details:**
+- **Issue:** PKCE flow was failing with "invalid request: both auth code and code verifier should be non-empty"
+- **Solution:** Changed OAuth callback from server-side to client-side handling
+- **New Flow:** `/auth/callback` → `/auth/oauth-callback` (client-side page with PKCE verifier access)
+- **Status:** Fully working, ready for mobile team to test
 
 ### API Endpoint Testing:
 - [ ] Call `/api/user/onboarding-status` after registration
@@ -318,6 +494,7 @@ const checkOnboarding = async (accessToken: string) => {
 | Updated API endpoints | No more 500 errors | Test endpoints with Bearer tokens |
 | Fixed password reset flow | Session-based validation | Update password reset screen logic |
 | Restored database columns | More profile fields available | Update profile types/interfaces |
+| **Fixed OAuth PKCE flow** | **Google login now works** | **Test OAuth on mobile with deep linking** |
 
 ---
 
