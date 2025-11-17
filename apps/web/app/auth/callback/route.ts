@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
@@ -22,12 +22,37 @@ export async function GET(request: NextRequest) {
     console.log('🔧 WEB CALLBACK: Is mobile:', isMobile);
     console.log('🔧 WEB CALLBACK: Type:', type, 'Token hash:', !!tokenHash, 'Code:', !!code);
     
+    // Create Supabase client with proper cookie handling (Next.js 15 + @supabase/ssr)
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              // Handle cookie setting errors (can happen in middleware)
+            }
+          },
+          remove(name: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value: '', ...options });
+            } catch (error) {
+              // Handle cookie removal errors
+            }
+          },
+        },
+      }
+    );
+    
     // If it's a mobile device, handle verification and redirect to mobile app
     if (isMobile && type === 'signup' && tokenHash && !code) {
       console.log('🔧 WEB CALLBACK: Mobile email verification detected, processing verification');
-      
-      const cookieStore = await cookies(); // Await cookies in Next.js 15+
-      const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
       
       try {
         // Verify the email
@@ -98,9 +123,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL(`/auth/mobile-callback?error=verification_failed`, request.url));
       }
     }
-
-    const cookieStore = await cookies(); // Await cookies in Next.js 15+
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     // Handle OAuth errors
     if (error) {
