@@ -58,20 +58,69 @@ export async function POST(request: NextRequest) {
 
     console.log('🔄 Updating onboarding progress:', updateData);
 
-    // Update the profile
-    const { data: updatedProfile, error: updateError } = await supabase
+    // Check if profile exists first
+    const { data: existingProfile } = await supabase
       .from('profiles')
-      .update(updateData)
+      .select('id')
       .eq('id', user.id)
-      .select()
-      .single();
+      .maybeSingle();
 
-    if (updateError) {
-      console.error('❌ Error updating onboarding progress:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to update onboarding progress', details: updateError.message },
-        { status: 500, headers: corsHeaders }
-      );
+    let updatedProfile;
+
+    if (!existingProfile) {
+      console.log('⚠️ Profile does not exist for user, creating it:', user.id);
+
+      // Create profile with the update data
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          username: `user${user.id.substring(0, 8)}`,
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
+          role: 'listener',
+          location: 'london',
+          country: 'UK',
+          bio: '',
+          onboarding_completed: false,
+          onboarding_step: 'role_selection',
+          selected_role: 'listener',
+          profile_completed: false,
+          first_action_completed: false,
+          onboarding_skipped: false,
+          ...updateData, // Apply the update data on top of defaults
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('❌ Error creating profile:', createError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to create profile', details: createError.message },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      updatedProfile = newProfile;
+    } else {
+      // Update existing profile
+      const { data, error: updateError } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Error updating onboarding progress:', updateError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to update onboarding progress', details: updateError.message },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      updatedProfile = data;
     }
 
     console.log('✅ Onboarding progress updated successfully for user:', user.id);
