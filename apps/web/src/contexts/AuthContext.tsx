@@ -274,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { data, error };
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error);
-      return { data, null, error };
+      return { data: null, error };
     }
   };
 
