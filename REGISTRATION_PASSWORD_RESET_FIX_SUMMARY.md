@@ -23,25 +23,30 @@
 - `DROP_PROBLEMATIC_TRIGGERS.sql` - **THE FINAL FIX** - Dropped the culprit trigger
 
 ### 2. **Password Reset "Invalid Link" Error** ❌ → ✅
-**Problem:** Password reset emails worked, but clicking the link showed "Invalid Reset Link" with 500 errors
+**Problem:** Password reset emails worked, but clicking the link showed "Invalid Reset Link" 
 
-**Root Cause:**
-Multiple API endpoints querying non-existent columns in the `profiles` table:
-- `genres` column (doesn't exist)
-- `min_notice_days` column (doesn't exist)
-- Missing `auto_decline_unavailable` column (exists but not selected)
-- Missing `onboarding_completed_at` column reference
-
-**Affected Endpoints Fixed:**
-1. `/api/user/onboarding-status` - GET endpoint
-2. `/api/user/profile-status` - GET endpoint  
-3. `/api/user/complete-profile` - POST endpoint
+**Root Causes:**
+1. **Initial Issue**: Multiple API endpoints querying non-existent columns:
+   - Incorrectly assumed `genres`, `min_notice_days` didn't exist (they actually DO exist!)
+   - Missing profile handling when user profile doesn't exist
+   
+2. **Actual Issue**: Password reset page validation logic flaw:
+   - Page checked for `access_token` in URL params
+   - Auth callback used `verifyOtp()` which creates a **session** (not URL tokens)
+   - Callback redirected to `/update-password` without tokens in URL
+   - Page saw no tokens → showed "Invalid Reset Link"
 
 **Solution:**
-- Removed `genres` from all SELECT queries
-- Removed `min_notice_days` from all queries
-- Added `auto_decline_unavailable` where needed
-- Removed `onboarding_completed_at` from updates (column doesn't exist)
+1. **Fixed API endpoints**: 
+   - Restored actual columns (`genres`, `min_notice_days`, `onboarding_completed_at`)
+   - Added `.maybeSingle()` instead of `.single()` to handle missing profiles gracefully
+   - Return `needsOnboarding: true` when profile doesn't exist
+
+2. **Fixed password reset page**:
+   - Changed from URL token validation to **session-based validation**
+   - Added `checkSession()` that uses `supabase.auth.getSession()`
+   - Added loading spinner for better UX
+   - Now works with the session created by `verifyOtp()`
 
 ## ✅ Current Status
 
@@ -144,24 +149,31 @@ Vercel automatically deploys on push to main branch.
 ### Password Reset ✅
 - Reset email: Sent successfully via SendGrid
 - Token consumption: Working (single-use tokens)
-- Password update form: Loads correctly
+- Password update form: Loads correctly with session-based auth
+- UX: Fast session verification with loading spinner
 - Note: Tokens expire after ~1 hour and are single-use only
+- **Key Fix**: Changed from URL token validation to session-based validation
 
 ## 📝 Key Learnings
 
-1. **Always check actual database schema** before writing queries
-2. **Triggers can silently fail** - use diagnostics to find them
-3. **Multiple deployments may be needed** - Vercel caching
-4. **Column mismatches cause 500 errors** - not clear error messages
+1. **Always check actual database schema** before writing queries - Don't assume columns exist/don't exist
+2. **Triggers can silently fail** - Use diagnostics to find hidden triggers blocking operations
+3. **Multiple deployments may be needed** - Vercel caching can cause confusion
+4. **Column mismatches cause 500 errors** - Database errors don't always provide clear messages
 5. **Hard refresh required** after deployment to clear browser cache
+6. **Session-based auth > URL tokens** - More reliable for password reset flows
+7. **UX matters** - Add loading states and spinners for better perceived performance
+8. **Rate limits exist** - Supabase limits password reset emails (default: 2/hour)
 
-## 🎯 Next Steps
+## 🎯 Recommended Next Steps
 
-1. ✅ Wait for Vercel deployment
-2. ✅ Test password reset with new deployment
-3. ✅ Clean up obsolete SQL files
-4. ⏳ Document final working schema
-5. ⏳ Consider adding schema validation tests
+1. ✅ Registration - Working perfectly
+2. ✅ Password Reset - Working perfectly  
+3. ✅ Cleanup - All temporary files removed
+4. ⏳ **Optional**: Add automated tests for auth flows
+5. ⏳ **Optional**: Document complete database schema
+6. ⏳ **Optional**: Monitor rate limits in production
+7. ⏳ **Optional**: Consider adding password strength requirements
 
 ---
 
