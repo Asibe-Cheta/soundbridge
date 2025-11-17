@@ -121,6 +121,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Required for cookie-based auth
         body: JSON.stringify({
           role: onboardingState.selectedRole,
           display_name: formData.displayName,

@@ -257,6 +257,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Required for cookie-based auth
         body: JSON.stringify({
           userId: user.id
         }),
