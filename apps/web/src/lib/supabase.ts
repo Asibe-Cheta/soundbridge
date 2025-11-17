@@ -216,8 +216,8 @@ const getGlobalClient = () => {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false, // Disabled to prevent race condition with manual PKCE exchange
-        flowType: 'pkce',
+        detectSessionInUrl: false, // Disabled to allow server-side handling
+        flowType: 'implicit', // Use implicit flow (no PKCE) for server-side OAuth completion
         storageKey: 'soundbridge-auth',
       },
     });
