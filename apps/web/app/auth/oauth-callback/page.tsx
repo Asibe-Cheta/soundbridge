@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@/src/lib/supabase';
+import { supabase } from '@/src/lib/supabase';
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -26,9 +26,8 @@ function OAuthCallbackContent() {
 
         console.log('🔐 Client-side OAuth: Exchanging code for session...');
         
-        // Create browser client (has access to localStorage with PKCE code verifier)
-        const supabase = createBrowserClient();
-
+        // Use the GLOBAL supabase client (same instance that initiated OAuth)
+        // This ensures we have access to the PKCE code_verifier stored in localStorage
         // Exchange the code for a session (PKCE flow)
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
