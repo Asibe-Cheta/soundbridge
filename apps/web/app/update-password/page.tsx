@@ -15,21 +15,37 @@ function UpdatePasswordContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isValidSession, setIsValidSession] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
   });
 
-  // Get the access token from URL params
-  const accessToken = searchParams.get('access_token');
-  const refreshToken = searchParams.get('refresh_token');
-
   useEffect(() => {
-    // If no access token, redirect to login
-    if (!accessToken) {
-      setError('Invalid or expired reset link. Please request a new password reset.');
-    }
-  }, [accessToken]);
+    // Check if user has a valid session (they should be signed in via password reset link)
+    const checkSession = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          setError('Invalid or expired reset link. Please request a new password reset.');
+          setIsValidSession(false);
+        } else {
+          setIsValidSession(true);
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+        setError('Unable to verify session. Please try again.');
+        setIsValidSession(false);
+      } finally {
+        setCheckingSession(false);
+      }
+    };
+
+    checkSession();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +209,27 @@ function UpdatePasswordContent() {
     );
   }
 
-  if (!accessToken) {
+  // Show loading while checking session
+  if (checkingSession) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}
+      >
+        <div style={{ color: 'white', fontSize: '1.2rem' }}>
+          Verifying session...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isValidSession) {
     return (
       <div
         style={{
