@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { createBrowserClient } from '@/src/lib/supabase';
+import { supabase } from '@/src/lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -23,17 +23,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Create Supabase client with error handling
-  const supabase = React.useMemo(() => {
-    try {
-      return createBrowserClient();
-    } catch (err) {
-      console.error('Failed to create Supabase client:', err);
-      setError('Failed to initialize authentication');
-      setLoading(false);
-      return null;
-    }
-  }, []);
+  // Use global Supabase client instance to ensure PKCE code_verifier is shared
+  // across all components (critical for OAuth flow)
 
   useEffect(() => {
     if (!supabase) {
