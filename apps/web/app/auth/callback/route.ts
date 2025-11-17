@@ -243,7 +243,33 @@ export async function GET(request: NextRequest) {
 
         // Redirect to intended destination
         console.log('Redirecting OAuth user to:', next);
-        return NextResponse.redirect(new URL(next, request.url));
+        
+        // Create redirect response
+        const response = NextResponse.redirect(new URL(next, request.url));
+        
+        // Explicitly set auth cookies in the response for browser persistence
+        if (data.session) {
+          const maxAge = 60 * 60 * 24 * 7; // 7 days
+          
+          // Set access token cookie
+          response.cookies.set({
+            name: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`,
+            value: JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+              expires_at: data.session.expires_at,
+            }),
+            maxAge,
+            path: '/',
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: false, // Allow JavaScript access for client-side auth
+          });
+          
+          console.log('✅ Explicitly set auth cookies in redirect response');
+        }
+        
+        return response;
         
       } catch (exchangeError) {
         console.error('❌ OAuth code exchange error:', exchangeError);

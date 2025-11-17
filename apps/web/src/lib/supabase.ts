@@ -217,8 +217,10 @@ const getGlobalClient = () => {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true, // Auto-detect session after OAuth redirect
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'soundbridge-auth',
         // Note: flowType defaults to 'pkce' which is correct for Supabase OAuth
+        // The session will be stored in localStorage client-side, and cookies server-side
       },
     });
 
