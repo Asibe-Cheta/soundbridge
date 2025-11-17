@@ -27,6 +27,8 @@ function UpdatePasswordContent() {
     const checkSession = async () => {
       try {
         const supabase = createBrowserClient();
+        
+        // Use getSession() which is faster than getUser() since it doesn't make a network request
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError || !session) {
@@ -44,7 +46,12 @@ function UpdatePasswordContent() {
       }
     };
 
-    checkSession();
+    // Add a small delay to prevent flash of loading screen for fast connections
+    const timer = setTimeout(() => {
+      checkSession();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,8 +229,25 @@ function UpdatePasswordContent() {
           padding: '2rem'
         }}
       >
-        <div style={{ color: 'white', fontSize: '1.2rem' }}>
-          Verifying session...
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid rgba(255, 255, 255, 0.1)',
+            borderTop: '4px solid #DC2626',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }} />
+          <div style={{ color: 'white', fontSize: '1rem', opacity: 0.8 }}>
+            Verifying...
+          </div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       </div>
     );
