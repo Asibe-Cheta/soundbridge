@@ -45,10 +45,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Map frontend role values to database enum values
+    // Frontend: 'musician', 'podcaster', 'event_promoter' -> Database: 'creator'
+    // Frontend: 'listener' -> Database: 'listener'
+    const databaseRole = (role === 'listener') ? 'listener' : 'creator';
+
     // Prepare update data
     const updateData: any = {
       // Basic profile fields
-      role: role,
+      role: databaseRole,
       display_name: display_name,
       bio: body.bio || null,
       country: body.country || null,
