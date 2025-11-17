@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     if (isMobile && type === 'signup' && tokenHash && !code) {
       console.log('🔧 WEB CALLBACK: Mobile email verification detected, processing verification');
       
-      const supabase = createRouteHandlerClient({ cookies });
+      const cookieStore = await cookies(); // Await cookies in Next.js 15+
+      const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
       
       try {
         // Verify the email
@@ -98,7 +99,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies(); // Await cookies in Next.js 15+
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     // Handle OAuth errors
     if (error) {
@@ -122,13 +124,7 @@ export async function GET(request: NextRequest) {
 
         if (data.session && data.user) {
           console.log('✅ OAuth login successful for user:', data.user.email);
-          
-          // Explicitly set the session on the Supabase client
-          await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-          console.log('✅ Session set on server-side client');
+          console.log('✅ Session cookies automatically set by createRouteHandlerClient');
           
           // Create profile if it doesn't exist for OAuth users
           try {
