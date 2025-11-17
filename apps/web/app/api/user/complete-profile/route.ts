@@ -73,20 +73,56 @@ export async function POST(request: NextRequest) {
 
     console.log('🔄 Updating profile with data:', Object.keys(updateData));
 
-    // Update the profile
-    const { data: updatedProfile, error: updateError } = await supabase
+    // Check if profile exists first
+    const { data: existingProfile } = await supabase
       .from('profiles')
-      .update(updateData)
+      .select('id')
       .eq('id', user.id)
-      .select()
-      .single();
+      .maybeSingle();
 
-    if (updateError) {
-      console.error('❌ Error updating profile:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to update profile', details: updateError.message },
-        { status: 500, headers: corsHeaders }
-      );
+    let updatedProfile;
+
+    if (!existingProfile) {
+      // Profile doesn't exist, create it
+      console.log('⚠️ Profile does not exist for user, creating it:', user.id);
+      
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          username: `user${user.id.substring(0, 8)}`,
+          ...updateData,
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('❌ Error creating profile:', createError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to create profile', details: createError.message },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+      
+      updatedProfile = newProfile;
+    } else {
+      // Profile exists, update it
+      const { data, error: updateError } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Error updating profile:', updateError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to update profile', details: updateError.message },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+      
+      updatedProfile = data;
     }
 
     console.log('✅ Profile updated successfully for user:', user.id);
