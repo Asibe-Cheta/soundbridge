@@ -257,19 +257,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { data: null, error: new Error('Supabase client not initialized') };
     }
     try {
-      // Use skipBrowserRedirect to handle OAuth redirect on the same page (implicit flow)
-      // This avoids server-side complexity and works reliably on all devices
+      // Use implicit flow with client-side detection
+      // Redirect to home page where AuthProvider will auto-detect the session
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          skipBrowserRedirect: true, // Handle redirect client-side for implicit flow
+          redirectTo: `${window.location.origin}/`, // Redirect to home page (clean URL)
+          skipBrowserRedirect: false, // Let Supabase handle the redirect
         },
       });
-      
-      if (data?.url) {
-        // Redirect to OAuth provider
-        window.location.href = data.url;
-      }
       
       return { data, error };
     } catch (error) {
