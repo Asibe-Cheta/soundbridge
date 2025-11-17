@@ -216,7 +216,7 @@ const getGlobalClient = () => {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: false, // Disabled to prevent race condition with manual PKCE exchange
         flowType: 'pkce',
         storageKey: 'soundbridge-auth',
       },
