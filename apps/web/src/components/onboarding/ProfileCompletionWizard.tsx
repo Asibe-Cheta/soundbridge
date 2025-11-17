@@ -5,6 +5,7 @@ import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Upload, MapPin, Music, X, ArrowRight, ArrowLeft, Check, SkipForward, AlertCircle } from 'lucide-react';
 import { CountrySelector } from './CountrySelector';
+import { supabase } from '@/src/lib/supabase';
 
 interface ProfileCompletionWizardProps {
   isOpen: boolean;
@@ -115,11 +116,16 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         }
       }
 
+      // Get the current session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
       // Update profile using the complete-profile endpoint
       const response = await fetch('/api/user/complete-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Send access token in Authorization header as fallback to cookies
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
         },
         credentials: 'include', // Required for cookie-based auth
         body: JSON.stringify({

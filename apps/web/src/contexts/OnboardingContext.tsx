@@ -252,10 +252,16 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
       console.log('🔧 Completing onboarding for user:', user.id);
       
+      // Get the current session from Supabase  
+      const supabase = (await import('@/src/lib/supabase')).supabase;
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/user/complete-onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Send access token in Authorization header as fallback to cookies
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
         },
         credentials: 'include', // Required for cookie-based auth
         body: JSON.stringify({
