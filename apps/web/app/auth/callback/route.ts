@@ -107,26 +107,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Handle OAuth callback (Google, Facebook, Apple)
+    // SERVER-SIDE APPROACH - Works on mobile (no localStorage/PKCE dependency)
     if (code) {
-      console.log('Processing OAuth callback with code:', code);
+      console.log('🔐 Server-side OAuth: Processing callback with code');
       
-      // For PKCE flow, we need to handle this client-side
-      // Redirect to a client-side page that will exchange the code
-      console.log('Redirecting to client-side OAuth handler for PKCE flow');
-      return NextResponse.redirect(new URL(`/auth/oauth-callback?code=${code}${next ? `&next=${encodeURIComponent(next)}` : ''}`, request.url));
-      
-      /* OLD SERVER-SIDE APPROACH (doesn't work with PKCE):
       try {
-        // Exchange the code for a session
+        // Exchange the code for a session (server-side, mobile-safe)
         const { data, error: oauthError } = await supabase.auth.exchangeCodeForSession(code);
         
         if (oauthError) {
-          console.error('OAuth session exchange error:', oauthError);
+          console.error('❌ OAuth session exchange error:', oauthError);
           return NextResponse.redirect(new URL(`/login?error=oauth_session_failed&message=${encodeURIComponent(oauthError.message)}`, request.url));
         }
 
         if (data.user) {
-          console.log('OAuth login successful for user:', data.user.email);
+          console.log('✅ OAuth login successful for user:', data.user.email);
           
           // Create profile if it doesn't exist for OAuth users
           try {
@@ -219,10 +214,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL(next, request.url));
         
       } catch (exchangeError) {
-        console.error('OAuth code exchange error:', exchangeError);
+        console.error('❌ OAuth code exchange error:', exchangeError);
         return NextResponse.redirect(new URL('/login?error=oauth_exchange_failed', request.url));
       }
-      */
     }
 
     // Handle email confirmation (existing logic)
