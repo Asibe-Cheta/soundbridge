@@ -519,6 +519,8 @@ If you encounter any issues:
 - ✅ All fixes are live on production (www.soundbridge.live)
 - ✅ Database triggers have been updated
 - ✅ API endpoints are working correctly
+- ✅ **Google OAuth is fully working** (tested and confirmed)
+- ✅ **Onboarding completion is working** (complete-profile endpoint fixed)
 - ✅ Email sending via SendGrid is operational
 
 **Rate Limits to Note:**
