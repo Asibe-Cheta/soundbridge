@@ -110,6 +110,12 @@ export async function GET(request: NextRequest) {
     if (code) {
       console.log('Processing OAuth callback with code:', code);
       
+      // For PKCE flow, we need to handle this client-side
+      // Redirect to a client-side page that will exchange the code
+      console.log('Redirecting to client-side OAuth handler for PKCE flow');
+      return NextResponse.redirect(new URL(`/auth/oauth-callback?code=${code}${next ? `&next=${encodeURIComponent(next)}` : ''}`, request.url));
+      
+      /* OLD SERVER-SIDE APPROACH (doesn't work with PKCE):
       try {
         // Exchange the code for a session
         const { data, error: oauthError } = await supabase.auth.exchangeCodeForSession(code);
@@ -216,6 +222,7 @@ export async function GET(request: NextRequest) {
         console.error('OAuth code exchange error:', exchangeError);
         return NextResponse.redirect(new URL('/login?error=oauth_exchange_failed', request.url));
       }
+      */
     }
 
     // Handle email confirmation (existing logic)
