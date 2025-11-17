@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
@@ -72,8 +72,33 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
   } else {
     mode = 'cookie';
     try {
-      const cookieStore = cookies();
-      supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
+      const cookieStore = await cookies(); // Await cookies in Next.js 15
+      supabase = createServerClient(
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value, ...options });
+              } catch (error) {
+                // Handle cookie setting errors (can happen in middleware)
+              }
+            },
+            remove(name: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value: '', ...options });
+              } catch (error) {
+                // Handle cookie removal errors
+              }
+            },
+          },
+        }
+      );
+      
       const { data, error } = await supabase.auth.getUser();
       user = data?.user ?? null;
       authError = error ?? null;
@@ -91,8 +116,32 @@ export async function getSupabaseRouteClient(request: NextRequest, requireAuth =
       authError = cookieError instanceof Error ? cookieError : new Error('Failed to read cookies');
       user = null;
       // Still create a supabase client for error handling
-      const cookieStore = cookies();
-      supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
+      const cookieStore = await cookies();
+      supabase = createServerClient(
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value, ...options });
+              } catch (error) {
+                // Ignore errors
+              }
+            },
+            remove(name: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value: '', ...options });
+              } catch (error) {
+                // Ignore errors
+              }
+            },
+          },
+        }
+      );
     }
   }
 
