@@ -11,8 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
-import { getSupabaseRouteClient } from '@/apps/web/src/lib/api-auth';
-import { encryptSecret } from '@/apps/web/src/lib/encryption';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { encryptSecret } from '@/src/lib/encryption';
 
 export async function POST(request: NextRequest) {
   try {

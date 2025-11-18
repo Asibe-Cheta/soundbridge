@@ -13,8 +13,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseRouteClient } from '@/apps/web/src/lib/api-auth';
-import { generateBackupCodesWithHashes } from '@/apps/web/src/lib/backup-codes';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { generateBackupCodesWithHashes } from '@/src/lib/backup-codes';
 
 export async function POST(request: NextRequest) {
   try {

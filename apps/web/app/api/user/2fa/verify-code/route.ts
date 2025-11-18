@@ -27,7 +27,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
 import { createClient } from '@supabase/supabase-js';
-import { decryptSecret } from '@/apps/web/src/lib/encryption';
+import { decryptSecret } from '@/src/lib/encryption';
 
 // Create a service role client for server-side operations
 const supabaseAdmin = createClient(

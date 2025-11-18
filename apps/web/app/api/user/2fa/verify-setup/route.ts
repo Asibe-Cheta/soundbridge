@@ -15,9 +15,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
-import { getSupabaseRouteClient } from '@/apps/web/src/lib/api-auth';
-import { decryptSecret } from '@/apps/web/src/lib/encryption';
-import { generateBackupCodesWithHashes } from '@/apps/web/src/lib/backup-codes';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { decryptSecret } from '@/src/lib/encryption';
+import { generateBackupCodesWithHashes } from '@/src/lib/backup-codes';
 
 export async function POST(request: NextRequest) {
   try {

@@ -25,7 +25,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { verifyBackupCode, formatBackupCode, isValidBackupCodeFormat } from '@/apps/web/src/lib/backup-codes';
+import { verifyBackupCode, formatBackupCode, isValidBackupCodeFormat } from '@/src/lib/backup-codes';
 
 // Create a service role client for server-side operations
 const supabaseAdmin = createClient(
