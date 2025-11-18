@@ -338,7 +338,7 @@ export async function processQueue(): Promise<void> {
  * - 0 9 * * * - Morning batch (9 AM)
  * - 0 14 * * * - Afternoon batch (2 PM)
  * - 0 19 * * * - Evening batch (7 PM)
- * - */15 * * * * - Queue processor (every 15 mins)
+ * - Every 15 minutes - Queue processor
  */
 export async function runScheduler(job: 'morning' | 'afternoon' | 'evening' | 'queue'): Promise<void> {
   try {
