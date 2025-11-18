@@ -1,22 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/notifications?job=morning",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/notifications?job=afternoon",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/notifications?job=evening",
-      "schedule": "0 19 * * *"
-    },
-    {
-      "path": "/api/cron/notifications?job=queue",
-      "schedule": "*/15 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
