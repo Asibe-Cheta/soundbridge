@@ -1,8 +1,9 @@
 {
-  "buildCommand": "cd apps/web && npm run build",
-  "installCommand": "cd apps/web && npm install",
-  "outputDirectory": "apps/web/.next",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
   "framework": "nextjs",
+  "root": "apps/web",
   "crons": [
     {
       "path": "/api/cron/notifications?job=morning",

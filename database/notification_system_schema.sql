@@ -1,36 +1,48 @@
 /**
- * SoundBridge Notification System
- * Comprehensive database schema for intelligent push notifications
+ * SoundBridge Notification System - Database Schema
+ * 
+ * This schema creates all tables, indexes, functions, triggers, and RLS policies
+ * required for the comprehensive notification system.
  * 
  * Features:
- * - Smart targeting (location + genre based)
- * - Time-windowed delivery (8am-10pm user timezone)
- * - Rate limiting (max 5/day, with exceptions)
- * - Granular user controls
- * - Deep linking support
- * - Audit logging
+ * - User notification preferences with time windows and rate limiting
+ * - Creator subscriptions with granular notification controls
+ * - Push token management for Expo notifications
+ * - Notification audit logs
+ * - Scheduled notification queue
  * 
- * Created: November 18, 2025
- * Version: 1.0
+ * Prerequisites:
+ * - profiles table must exist
+ * - uuid-ossp extension must be enabled
  */
 
 -- =====================================================
--- TABLE 1: user_notification_preferences
--- Stores user notification settings and state
+-- CLEANUP: Drop existing tables if they exist
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS user_notification_preferences (
+DROP TABLE IF EXISTS notification_queue CASCADE;
+DROP TABLE IF EXISTS notification_logs CASCADE;
+DROP TABLE IF EXISTS user_push_tokens CASCADE;
+DROP TABLE IF EXISTS creator_subscriptions CASCADE;
+DROP TABLE IF EXISTS user_notification_preferences CASCADE;
+
+-- =====================================================
+-- TABLE 1: user_notification_preferences
+-- Stores user notification settings and rate limiting state
+-- =====================================================
+
+CREATE TABLE user_notification_preferences (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   
   -- Master controls
   notifications_enabled BOOLEAN DEFAULT TRUE,
-  notification_start_hour INTEGER DEFAULT 8 CHECK (notification_start_hour >= 0 AND notification_start_hour < 24),
-  notification_end_hour INTEGER DEFAULT 22 CHECK (notification_end_hour >= 0 AND notification_end_hour <= 24),
+  notification_start_hour INTEGER DEFAULT 8,
+  notification_end_hour INTEGER DEFAULT 22,
   timezone VARCHAR(100) NOT NULL DEFAULT 'UTC',
   
   -- Rate limiting
-  max_notifications_per_day INTEGER DEFAULT 5 CHECK (max_notifications_per_day >= 0 AND max_notifications_per_day <= 100),
+  max_notifications_per_day INTEGER DEFAULT 5,
   notification_count_today INTEGER DEFAULT 0,
   last_notification_reset_date DATE DEFAULT CURRENT_DATE,
   
@@ -48,37 +60,15 @@ CREATE TABLE IF NOT EXISTS user_notification_preferences (
   
   -- Metadata
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  UNIQUE(user_id)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Indexes for fast lookups
-CREATE INDEX idx_user_notif_prefs_user_id ON user_notification_preferences(user_id);
-CREATE INDEX idx_user_notif_prefs_enabled ON user_notification_preferences(notifications_enabled) WHERE notifications_enabled = TRUE;
-CREATE INDEX idx_user_notif_prefs_location ON user_notification_preferences(location_state, location_country) WHERE notifications_enabled = TRUE;
-
--- RLS Policies
-ALTER TABLE user_notification_preferences ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own notification preferences"
-  ON user_notification_preferences FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own notification preferences"
-  ON user_notification_preferences FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own notification preferences"
-  ON user_notification_preferences FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
 
 -- =====================================================
 -- TABLE 2: creator_subscriptions
--- Tracks which creators users follow and per-creator notification preferences
+-- Tracks which creators users follow and notification preferences
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS creator_subscriptions (
+CREATE TABLE creator_subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   creator_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -97,36 +87,17 @@ CREATE TABLE IF NOT EXISTS creator_subscriptions (
   CHECK (user_id != creator_id)
 );
 
--- Indexes
-CREATE INDEX idx_creator_subs_user_id ON creator_subscriptions(user_id);
-CREATE INDEX idx_creator_subs_creator_id ON creator_subscriptions(creator_id);
-CREATE INDEX idx_creator_subs_notify_music ON creator_subscriptions(creator_id) WHERE notify_on_music_upload = TRUE;
-CREATE INDEX idx_creator_subs_notify_event ON creator_subscriptions(creator_id) WHERE notify_on_event_post = TRUE;
-CREATE INDEX idx_creator_subs_notify_podcast ON creator_subscriptions(creator_id) WHERE notify_on_podcast_upload = TRUE;
-CREATE INDEX idx_creator_subs_notify_collab ON creator_subscriptions(creator_id) WHERE notify_on_collaboration_availability = TRUE;
-
--- RLS Policies
-ALTER TABLE creator_subscriptions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own subscriptions"
-  ON creator_subscriptions FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can manage their own subscriptions"
-  ON creator_subscriptions FOR ALL
-  USING (auth.uid() = user_id);
-
 -- =====================================================
 -- TABLE 3: user_push_tokens
 -- Stores Expo push tokens for sending notifications
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS user_push_tokens (
+CREATE TABLE user_push_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   
   -- Push token details
-  push_token TEXT NOT NULL,
+  push_token TEXT NOT NULL UNIQUE,
   platform VARCHAR(20) NOT NULL CHECK (platform IN ('ios', 'android')),
   device_id VARCHAR(255),
   device_name VARCHAR(255),
@@ -137,32 +108,15 @@ CREATE TABLE IF NOT EXISTS user_push_tokens (
   
   -- Metadata
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  UNIQUE(push_token)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Indexes
-CREATE INDEX idx_push_tokens_user_id ON user_push_tokens(user_id);
-CREATE INDEX idx_push_tokens_active ON user_push_tokens(user_id, active) WHERE active = TRUE;
-
--- RLS Policies
-ALTER TABLE user_push_tokens ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own push tokens"
-  ON user_push_tokens FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can manage their own push tokens"
-  ON user_push_tokens FOR ALL
-  USING (auth.uid() = user_id);
 
 -- =====================================================
 -- TABLE 4: notification_logs
 -- Tracks all sent notifications for history and analytics
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS notification_logs (
+CREATE TABLE notification_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   
@@ -176,13 +130,13 @@ CREATE TABLE IF NOT EXISTS notification_logs (
   related_entity_type VARCHAR(50),
   related_entity_id UUID,
   
-  -- Delivery status
+  -- Delivery tracking
   sent_at TIMESTAMPTZ DEFAULT NOW(),
   delivered_at TIMESTAMPTZ,
   read_at TIMESTAMPTZ,
   clicked_at TIMESTAMPTZ,
   
-  -- Push notification receipt (from Expo)
+  -- Expo push receipt
   expo_receipt_id TEXT,
   expo_status VARCHAR(50),
   
@@ -190,30 +144,12 @@ CREATE TABLE IF NOT EXISTS notification_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes
-CREATE INDEX idx_notif_logs_user_id ON notification_logs(user_id);
-CREATE INDEX idx_notif_logs_sent_at ON notification_logs(sent_at DESC);
-CREATE INDEX idx_notif_logs_type ON notification_logs(notification_type);
-CREATE INDEX idx_notif_logs_unread ON notification_logs(user_id, read_at) WHERE read_at IS NULL;
-CREATE INDEX idx_notif_logs_related_entity ON notification_logs(related_entity_type, related_entity_id);
-
--- RLS Policies
-ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own notification logs"
-  ON notification_logs FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own notification logs"
-  ON notification_logs FOR UPDATE
-  USING (auth.uid() = user_id);
-
 -- =====================================================
 -- TABLE 5: notification_queue
--- Queue system for batching and scheduling notifications
+-- Queue system for scheduling notifications
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS notification_queue (
+CREATE TABLE notification_queue (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   
@@ -229,7 +165,7 @@ CREATE TABLE IF NOT EXISTS notification_queue (
   
   -- Scheduling
   scheduled_for TIMESTAMPTZ,
-  priority INTEGER DEFAULT 0 CHECK (priority >= 0 AND priority <= 2),
+  priority INTEGER DEFAULT 0,
   
   -- Status
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'cancelled')),
@@ -240,25 +176,95 @@ CREATE TABLE IF NOT EXISTS notification_queue (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes
+-- =====================================================
+-- INDEXES: For optimal query performance
+-- =====================================================
+
+-- user_notification_preferences indexes
+CREATE INDEX idx_user_notif_prefs_user_id ON user_notification_preferences(user_id);
+CREATE INDEX idx_user_notif_prefs_enabled ON user_notification_preferences(notifications_enabled) WHERE notifications_enabled = TRUE;
+
+-- creator_subscriptions indexes
+CREATE INDEX idx_creator_subs_user_id ON creator_subscriptions(user_id);
+CREATE INDEX idx_creator_subs_creator_id ON creator_subscriptions(creator_id);
+CREATE INDEX idx_creator_subs_notify_music ON creator_subscriptions(creator_id) WHERE notify_on_music_upload = TRUE;
+CREATE INDEX idx_creator_subs_notify_event ON creator_subscriptions(creator_id) WHERE notify_on_event_post = TRUE;
+
+-- user_push_tokens indexes
+CREATE INDEX idx_push_tokens_user_id ON user_push_tokens(user_id);
+CREATE INDEX idx_push_tokens_active ON user_push_tokens(user_id, active) WHERE active = TRUE;
+
+-- notification_logs indexes
+CREATE INDEX idx_notif_logs_user_id ON notification_logs(user_id);
+CREATE INDEX idx_notif_logs_sent_at ON notification_logs(sent_at DESC);
+CREATE INDEX idx_notif_logs_type ON notification_logs(notification_type);
+CREATE INDEX idx_notif_logs_unread ON notification_logs(user_id, read_at) WHERE read_at IS NULL;
+
+-- notification_queue indexes
 CREATE INDEX idx_notif_queue_user_id ON notification_queue(user_id);
 CREATE INDEX idx_notif_queue_scheduled ON notification_queue(scheduled_for) WHERE status = 'pending';
 CREATE INDEX idx_notif_queue_status ON notification_queue(status);
-CREATE INDEX idx_notif_queue_priority ON notification_queue(priority DESC, scheduled_for) WHERE status = 'pending';
 
--- RLS Policies
+-- =====================================================
+-- ROW LEVEL SECURITY: Enable and create policies
+-- =====================================================
+
+ALTER TABLE user_notification_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE creator_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_push_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_queue ENABLE ROW LEVEL SECURITY;
 
--- Service role only for queue management
-CREATE POLICY "Service role can manage notification queue"
-  ON notification_queue FOR ALL
+-- user_notification_preferences policies
+CREATE POLICY "Users can view own preferences" 
+  ON user_notification_preferences FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own preferences" 
+  ON user_notification_preferences FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own preferences" 
+  ON user_notification_preferences FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+-- creator_subscriptions policies
+CREATE POLICY "Users can view own subscriptions" 
+  ON creator_subscriptions FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own subscriptions" 
+  ON creator_subscriptions FOR ALL 
+  USING (auth.uid() = user_id);
+
+-- user_push_tokens policies
+CREATE POLICY "Users can view own tokens" 
+  ON user_push_tokens FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own tokens" 
+  ON user_push_tokens FOR ALL 
+  USING (auth.uid() = user_id);
+
+-- notification_logs policies
+CREATE POLICY "Users can view own notification history" 
+  ON notification_logs FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notification logs" 
+  ON notification_logs FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+-- notification_queue policies (service role only)
+CREATE POLICY "Service role can manage queue" 
+  ON notification_queue FOR ALL 
   USING (auth.jwt()->>'role' = 'service_role');
 
 -- =====================================================
--- HELPER FUNCTIONS
+-- FUNCTIONS: Utility functions for notification system
 -- =====================================================
 
--- Function to auto-update updated_at timestamp
+-- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -267,183 +273,81 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Triggers for updated_at
-CREATE TRIGGER update_user_notification_preferences_updated_at
-  BEFORE UPDATE ON user_notification_preferences
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_creator_subscriptions_updated_at
-  BEFORE UPDATE ON creator_subscriptions
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_user_push_tokens_updated_at
-  BEFORE UPDATE ON user_push_tokens
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Function to reset daily notification count
-CREATE OR REPLACE FUNCTION reset_notification_count_if_new_day()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.last_notification_reset_date < CURRENT_DATE THEN
-    NEW.notification_count_today = 0;
-    NEW.last_notification_reset_date = CURRENT_DATE;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER check_notification_count_reset
-  BEFORE UPDATE ON user_notification_preferences
-  FOR EACH ROW EXECUTE FUNCTION reset_notification_count_if_new_day();
-
--- Function to create default notification preferences on user signup
-CREATE OR REPLACE FUNCTION create_default_notification_preferences()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO user_notification_preferences (
-    user_id,
-    timezone,
-    location_country
-  ) VALUES (
-    NEW.id,
-    'UTC',
-    NEW.country
-  )
-  ON CONFLICT (user_id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER create_user_notification_preferences
-  AFTER INSERT ON profiles
-  FOR EACH ROW EXECUTE FUNCTION create_default_notification_preferences();
-
--- =====================================================
--- UTILITY FUNCTIONS FOR NOTIFICATION LOGIC
--- =====================================================
-
--- Check if user can receive a notification (rate limit + time window)
-CREATE OR REPLACE FUNCTION can_send_notification(
-  p_user_id UUID,
-  p_notification_type VARCHAR(50),
-  p_check_time TIMESTAMPTZ DEFAULT NOW()
-)
-RETURNS BOOLEAN AS $$
-DECLARE
-  v_prefs RECORD;
-  v_user_local_hour INTEGER;
-  v_unlimited_types TEXT[] := ARRAY['tip', 'collaboration', 'wallet', 'event_reminder', 'track_approved', 'creator_post'];
-BEGIN
-  -- Get user preferences
-  SELECT * INTO v_prefs
-  FROM user_notification_preferences
-  WHERE user_id = p_user_id;
-  
-  -- If no preferences, allow (will create on first notification)
-  IF v_prefs IS NULL THEN
-    RETURN TRUE;
-  END IF;
-  
-  -- Check master toggle
-  IF NOT v_prefs.notifications_enabled THEN
-    RETURN FALSE;
-  END IF;
-  
-  -- Check specific notification type toggle
-  IF p_notification_type = 'event' AND NOT v_prefs.event_notifications_enabled THEN
-    RETURN FALSE;
-  ELSIF p_notification_type = 'message' AND NOT v_prefs.message_notifications_enabled THEN
-    RETURN FALSE;
-  ELSIF p_notification_type = 'tip' AND NOT v_prefs.tip_notifications_enabled THEN
-    RETURN FALSE;
-  ELSIF p_notification_type = 'collaboration' AND NOT v_prefs.collaboration_notifications_enabled THEN
-    RETURN FALSE;
-  ELSIF p_notification_type = 'wallet' AND NOT v_prefs.wallet_notifications_enabled THEN
-    RETURN FALSE;
-  END IF;
-  
-  -- Unlimited types bypass rate limit
-  IF p_notification_type = ANY(v_unlimited_types) THEN
-    RETURN TRUE;
-  END IF;
-  
-  -- Check rate limit
-  IF v_prefs.notification_count_today >= v_prefs.max_notifications_per_day THEN
-    RETURN FALSE;
-  END IF;
-  
-  RETURN TRUE;
-END;
-$$ LANGUAGE plpgsql;
-
--- Increment notification count for rate limiting
+-- Function to increment daily notification count
 CREATE OR REPLACE FUNCTION increment_notification_count(p_user_id UUID)
 RETURNS VOID AS $$
 BEGIN
   UPDATE user_notification_preferences
-  SET notification_count_today = notification_count_today + 1,
-      last_notification_reset_date = CURRENT_DATE
+  SET notification_count_today = notification_count_today + 1
   WHERE user_id = p_user_id;
 END;
 $$ LANGUAGE plpgsql;
 
--- Get follower count for a creator
-CREATE OR REPLACE FUNCTION get_creator_follower_count(p_creator_id UUID)
-RETURNS INTEGER AS $$
-DECLARE
-  v_count INTEGER;
+-- Function to reset daily notification counts
+CREATE OR REPLACE FUNCTION reset_notification_counts()
+RETURNS VOID AS $$
 BEGIN
-  SELECT COUNT(*) INTO v_count
-  FROM creator_subscriptions
-  WHERE creator_id = p_creator_id;
-  
-  RETURN COALESCE(v_count, 0);
+  UPDATE user_notification_preferences
+  SET 
+    notification_count_today = 0,
+    last_notification_reset_date = CURRENT_DATE
+  WHERE last_notification_reset_date < CURRENT_DATE;
 END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- GRANT PERMISSIONS
+-- TRIGGERS: Automated actions
 -- =====================================================
 
--- Grant access to authenticated users
+-- Trigger to update updated_at on user_notification_preferences
+CREATE TRIGGER update_user_notification_preferences_updated_at
+  BEFORE UPDATE ON user_notification_preferences
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to update updated_at on creator_subscriptions
+CREATE TRIGGER update_creator_subscriptions_updated_at
+  BEFORE UPDATE ON creator_subscriptions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to update updated_at on user_push_tokens
+CREATE TRIGGER update_user_push_tokens_updated_at
+  BEFORE UPDATE ON user_push_tokens
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- PERMISSIONS: Grant access to authenticated users
+-- =====================================================
+
 GRANT SELECT, INSERT, UPDATE ON user_notification_preferences TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON creator_subscriptions TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON user_push_tokens TO authenticated;
 GRANT SELECT, UPDATE ON notification_logs TO authenticated;
-
--- Grant service role full access to queue
 GRANT ALL ON notification_queue TO service_role;
 
--- Grant usage on sequences
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
-
 -- =====================================================
--- INDEXES FOR PERFORMANCE
+-- VERIFICATION: Confirm all tables were created
 -- =====================================================
 
--- Composite indexes for common queries
-CREATE INDEX idx_notif_prefs_state_genres ON user_notification_preferences(location_state, preferred_event_genres) WHERE notifications_enabled = TRUE AND event_notifications_enabled = TRUE;
-
-CREATE INDEX idx_notif_logs_user_unread ON notification_logs(user_id, sent_at DESC) WHERE read_at IS NULL;
-
--- =====================================================
--- COMMENTS FOR DOCUMENTATION
--- =====================================================
-
-COMMENT ON TABLE user_notification_preferences IS 'Stores user notification settings including master toggle, time windows, rate limits, and targeting preferences';
-COMMENT ON TABLE creator_subscriptions IS 'Tracks creator follows with granular per-creator notification preferences';
-COMMENT ON TABLE user_push_tokens IS 'Stores Expo push tokens for sending notifications to user devices';
-COMMENT ON TABLE notification_logs IS 'Audit log of all sent notifications with delivery status and analytics';
-COMMENT ON TABLE notification_queue IS 'Queue for scheduled and batch notifications';
-
-COMMENT ON FUNCTION can_send_notification IS 'Checks if a notification can be sent to a user based on preferences, rate limits, and time windows';
-COMMENT ON FUNCTION increment_notification_count IS 'Increments daily notification count for rate limiting';
-COMMENT ON FUNCTION get_creator_follower_count IS 'Gets the number of followers for a creator';
-
--- =====================================================
--- VERIFICATION QUERY
--- =====================================================
-
--- Run this to verify all tables were created:
--- SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE '%notif%' OR table_name LIKE '%creator_sub%' OR table_name LIKE '%push_token%';
+DO $$
+DECLARE
+  table_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO table_count
+  FROM information_schema.tables
+  WHERE table_schema = 'public' 
+    AND table_name IN (
+      'user_notification_preferences',
+      'creator_subscriptions',
+      'user_push_tokens',
+      'notification_logs',
+      'notification_queue'
+    );
+  
+  IF table_count = 5 THEN
+    RAISE NOTICE '✅ SUCCESS! All 5 notification tables created successfully!';
+    RAISE NOTICE 'Tables: user_notification_preferences, creator_subscriptions, user_push_tokens, notification_logs, notification_queue';
+  ELSE
+    RAISE EXCEPTION 'ERROR: Only % of 5 tables were created. Please check the logs above.', table_count;
+  END IF;
+END $$;
 
