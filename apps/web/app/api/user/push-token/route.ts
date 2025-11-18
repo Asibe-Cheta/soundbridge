@@ -1,163 +1,206 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { Expo } from 'expo-server-sdk';
-
-const expo = new Expo();
-
 /**
+ * API Endpoint: Register/Update Push Token
  * POST /api/user/push-token
- * Register or update a user's Expo push token
+ * 
+ * Registers or updates an Expo push token for the authenticated user
+ * 
+ * Authentication: Required (Bearer token)
  */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
+    console.log('📱 Push Token Registration: Starting...');
+    
     // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { supabase, user } = await getSupabaseRouteClient(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
     }
-
+    
     // Parse request body
-    const body = await request.json();
-    const { push_token, device_type, device_name, device_id, app_version } = body;
-
-    // Validate push_token
-    if (!push_token) {
-      return NextResponse.json({ error: 'push_token is required' }, { status: 400 });
-    }
-
-    // Validate Expo push token format
-    if (!Expo.isExpoPushToken(push_token)) {
+    const { pushToken, platform, deviceId, deviceName } = await request.json();
+    
+    // Validate inputs
+    if (!pushToken || !platform) {
       return NextResponse.json(
-        { error: 'Invalid Expo push token format' },
+        { error: 'pushToken and platform are required' },
         { status: 400 }
       );
     }
-
-    // Validate device_type
-    if (!device_type || !['ios', 'android', 'web'].includes(device_type)) {
+    
+    if (!['ios', 'android'].includes(platform)) {
       return NextResponse.json(
-        { error: 'device_type must be one of: ios, android, web' },
+        { error: 'platform must be ios or android' },
         { status: 400 }
       );
     }
-
-    // Validate device_id
-    if (!device_id) {
-      return NextResponse.json({ error: 'device_id is required' }, { status: 400 });
-    }
-
-    // Upsert push token (insert if not exists, update if exists)
-    const { data: tokenData, error: upsertError } = await supabase
+    
+    console.log(`📱 Registering push token for user ${user.id} on ${platform}`);
+    
+    // Check if token already exists
+    const { data: existingToken } = await supabase
       .from('user_push_tokens')
-      .upsert(
-        {
-          user_id: user.id,
-          push_token,
-          device_type,
-          device_name: device_name || null,
-          device_id,
-          app_version: app_version || null,
-          is_active: true,
-          last_used_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'user_id,device_id',
-          ignoreDuplicates: false,
-        }
-      )
-      .select()
+      .select('id, user_id')
+      .eq('push_token', pushToken)
       .single();
-
-    if (upsertError) {
-      console.error('Error upserting push token:', upsertError);
-      return NextResponse.json(
-        { error: 'Failed to register push token', details: upsertError.message },
-        { status: 500 }
-      );
+    
+    let tokenId: string;
+    
+    if (existingToken) {
+      // Update existing token
+      if (existingToken.user_id !== user.id) {
+        // Token belongs to different user - deactivate old and create new
+        await supabase
+          .from('user_push_tokens')
+          .update({ active: false })
+          .eq('push_token', pushToken);
+        
+        const { data: newToken, error: insertError } = await supabase
+          .from('user_push_tokens')
+          .insert({
+            user_id: user.id,
+            push_token: pushToken,
+            platform,
+            device_id: deviceId || null,
+            device_name: deviceName || null,
+            active: true,
+            last_used_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        
+        if (insertError) {
+          console.error('Error creating new token:', insertError);
+          return NextResponse.json(
+            { error: 'Failed to register push token' },
+            { status: 500 }
+          );
+        }
+        
+        tokenId = newToken!.id;
+      } else {
+        // Update existing token for same user
+        const { error: updateError } = await supabase
+          .from('user_push_tokens')
+          .update({
+            active: true,
+            device_id: deviceId || null,
+            device_name: deviceName || null,
+            last_used_at: new Date().toISOString(),
+          })
+          .eq('id', existingToken.id);
+        
+        if (updateError) {
+          console.error('Error updating token:', updateError);
+          return NextResponse.json(
+            { error: 'Failed to update push token' },
+            { status: 500 }
+          );
+        }
+        
+        tokenId = existingToken.id;
+      }
+    } else {
+      // Create new token
+      const { data: newToken, error: insertError } = await supabase
+        .from('user_push_tokens')
+        .insert({
+          user_id: user.id,
+          push_token: pushToken,
+          platform,
+          device_id: deviceId || null,
+          device_name: deviceName || null,
+          active: true,
+          last_used_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+      
+      if (insertError) {
+        console.error('Error inserting token:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to register push token' },
+          { status: 500 }
+        );
+      }
+      
+      tokenId = newToken!.id;
     }
-
-    console.log('✅ Push token registered successfully for user:', user.id);
-
+    
+    console.log(`✅ Push token registered successfully: ${tokenId}`);
+    
     return NextResponse.json({
       success: true,
-      data: tokenData,
       message: 'Push token registered successfully',
+      tokenId,
     });
-  } catch (error) {
-    console.error('Error in POST /api/user/push-token:', error);
+  } catch (error: any) {
+    console.error('❌ Error in push token registration:', error);
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-/**
- * DELETE /api/user/push-token
- * Deactivate a user's push token
- */
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
+    console.log('📱 Push Token Deletion: Starting...');
+    
     // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get device_id from query params
-    const { searchParams } = new URL(request.url);
-    const device_id = searchParams.get('device_id');
-
-    if (!device_id) {
-      return NextResponse.json({ error: 'device_id is required' }, { status: 400 });
-    }
-
-    // Deactivate push token
-    const { error: updateError } = await supabase
-      .from('user_push_tokens')
-      .update({ is_active: false })
-      .eq('user_id', user.id)
-      .eq('device_id', device_id);
-
-    if (updateError) {
-      console.error('Error deactivating push token:', updateError);
+    const { supabase, user } = await getSupabaseRouteClient(request);
+    
+    if (!user) {
       return NextResponse.json(
-        { error: 'Failed to deactivate push token', details: updateError.message },
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Get push token from query params
+    const { searchParams } = new URL(request.url);
+    const pushToken = searchParams.get('pushToken');
+    
+    if (!pushToken) {
+      return NextResponse.json(
+        { error: 'pushToken query parameter required' },
+        { status: 400 }
+      );
+    }
+    
+    // Deactivate token
+    const { error } = await supabase
+      .from('user_push_tokens')
+      .update({ active: false })
+      .eq('push_token', pushToken)
+      .eq('user_id', user.id);
+    
+    if (error) {
+      console.error('Error deactivating token:', error);
+      return NextResponse.json(
+        { error: 'Failed to deactivate push token' },
         { status: 500 }
       );
     }
-
-    console.log('✅ Push token deactivated successfully for user:', user.id);
-
+    
+    console.log(`✅ Push token deactivated successfully`);
+    
     return NextResponse.json({
       success: true,
       message: 'Push token deactivated successfully',
     });
-  } catch (error) {
-    console.error('Error in DELETE /api/user/push-token:', error);
+  } catch (error: any) {
+    console.error('❌ Error in push token deletion:', error);
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
