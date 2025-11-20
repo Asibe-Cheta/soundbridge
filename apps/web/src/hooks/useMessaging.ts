@@ -265,6 +265,11 @@ export function useMessaging() {
     setMessages([]);
     setHasMoreMessages(true);
     setTypingUsers([]);
+    
+    // Immediately update unread count for this conversation to 0
+    setConversations(prev => prev.map(conv => 
+      conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+    ));
 
     // Load messages for the selected conversation (this will mark them as read)
     await loadMessages(conversationId);
@@ -272,7 +277,7 @@ export function useMessaging() {
     // Subscribe to real-time updates
     subscribeToMessages(conversationId);
     
-    // Reload conversations to update unread counts
+    // Reload conversations to update unread counts from database
     await loadConversations();
   }, [loadMessages, subscribeToMessages, loadConversations]);
 
