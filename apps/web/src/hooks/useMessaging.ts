@@ -260,18 +260,21 @@ export function useMessaging() {
   }, [selectedConversationId, hasMoreMessages, isLoading, messages.length, loadMessages]);
 
   // Select conversation
-  const selectConversation = useCallback((conversationId: string) => {
+  const selectConversation = useCallback(async (conversationId: string) => {
     setSelectedConversationId(conversationId);
     setMessages([]);
     setHasMoreMessages(true);
     setTypingUsers([]);
 
-    // Load messages for the selected conversation
-    loadMessages(conversationId);
+    // Load messages for the selected conversation (this will mark them as read)
+    await loadMessages(conversationId);
 
     // Subscribe to real-time updates
     subscribeToMessages(conversationId);
-  }, [loadMessages, subscribeToMessages]);
+    
+    // Reload conversations to update unread counts
+    await loadConversations();
+  }, [loadMessages, subscribeToMessages, loadConversations]);
 
   // Delete message
   const deleteMessage = useCallback(async (messageId: string) => {
