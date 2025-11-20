@@ -21,6 +21,7 @@ import CreatorSetupScreen from './src/screens/CreatorSetupScreen';
 // Import contexts
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { AudioPlayerProvider } from './src/contexts/AudioPlayerContext';
+import { useUnreadMessages } from './src/hooks/useUnreadMessages';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -28,6 +29,7 @@ const Stack = createStackNavigator();
 // Main Tab Navigator
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { unreadCount } = useUnreadMessages();
   
   return (
     <Tab.Navigator
@@ -87,7 +89,22 @@ function MainTabs() {
           ),
         }}
       />
-      <Tab.Screen name="Messages" component={MessagesScreen} />
+      <Tab.Screen 
+        name="Messages" 
+        component={MessagesScreen}
+        options={{
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: '#DC2626',
+            color: '#FFFFFF',
+            fontSize: 11,
+            fontWeight: 'bold',
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+          },
+        }}
+      />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
     );
