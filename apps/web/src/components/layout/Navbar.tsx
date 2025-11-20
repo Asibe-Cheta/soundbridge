@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle } from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -435,18 +435,30 @@ export default function Navbar() {
                >
                  Creators
                </Link>
-               <Link href="/about" style={{ 
-                 textDecoration: 'none', 
-                 color: 'var(--text-primary)',
-                 transition: 'all 0.3s ease',
-                 padding: '0.5rem 1rem',
-                 borderRadius: '8px'
-               }}
-               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-               >
-                 About
-               </Link>
+              <Link href="/live" style={{ 
+                textDecoration: 'none', 
+                color: 'var(--text-primary)',
+                transition: 'all 0.3s ease',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                Live
+              </Link>
+              <Link href="/about" style={{ 
+                textDecoration: 'none', 
+                color: 'var(--text-primary)',
+                transition: 'all 0.3s ease',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                About
+              </Link>
              </nav>
              
              {/* Spacer between navigation and search */}
@@ -936,6 +948,29 @@ export default function Navbar() {
             >
               <User size={20} style={{ color: '#10B981' }} />
               Creators
+            </Link>
+            <Link 
+              href="/live" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{ 
+                textDecoration: 'none', 
+                color: 'white',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                fontSize: isMobile ? '0.9rem' : '17px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <Radio size={20} style={{ color: '#EF4444' }} />
+              Live
             </Link>
             <Link 
               href="/about" 
