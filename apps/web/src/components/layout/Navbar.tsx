@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar } from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -249,6 +249,24 @@ export default function Navbar() {
                       >
                         <Bell size={16} />
                         Notifications
+                      </div>
+                    </Link>
+                    <Link href="/messaging" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        color: 'var(--text-primary)',
+                        borderRadius: '8px',
+                        transition: 'all 0.3s ease',
+                        fontWeight: '500'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <MessageCircle size={16} />
+                        Messages
                       </div>
                     </Link>
                     <Link href="/profile" style={{ textDecoration: 'none' }}>
@@ -586,6 +604,24 @@ export default function Navbar() {
                      >
                        <Bell size={16} />
                        Notifications
+                     </div>
+                   </Link>
+                   <Link href="/messaging" style={{ textDecoration: 'none' }}>
+                     <div style={{
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '0.75rem',
+                       padding: '0.75rem',
+                       color: 'var(--text-primary)',
+                       borderRadius: '8px',
+                       transition: 'all 0.3s ease',
+                       fontWeight: '500'
+                     }}
+                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                     >
+                       <MessageCircle size={16} />
+                       Messages
                      </div>
                    </Link>
                    <Link href="/profile" style={{ textDecoration: 'none' }}>
