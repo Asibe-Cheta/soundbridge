@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+
+// CORS headers for mobile app compatibility
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
+};
+
+// Helper function to create JSON response with CORS headers
+function jsonResponse(data: any, status: number) {
+  return NextResponse.json(data, {
+    status,
+    headers: CORS_HEADERS
+  });
+}
 
 /**
  * POST /api/live-sessions/generate-token
@@ -32,53 +46,61 @@ export async function POST(request: NextRequest) {
     const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 
     if (!appId || !appCertificate) {
-      console.error('❌ Agora credentials not configured');
-      return NextResponse.json(
+      console.error('❌ [TOKEN API] Agora credentials not configured');
+      return jsonResponse(
         { 
           success: false,
           error: 'Agora credentials not configured. Please contact support.' 
         },
-        { status: 500 }
+        500
       );
     }
 
-    // 2. Verify user is authenticated
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // 2. Verify user is authenticated (supports both Bearer tokens and cookies)
+    const { supabase, user, error: authError, mode } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
-      console.error('❌ Authentication failed:', authError);
-      return NextResponse.json(
+      console.error('❌ [TOKEN API] Authentication failed:', authError, 'Auth mode:', mode);
+      console.error('❌ [TOKEN API] Request headers:', {
+        hasAuth: !!request.headers.get('authorization'),
+        hasXAuth: !!request.headers.get('x-authorization'),
+        hasXToken: !!request.headers.get('x-supabase-token'),
+      });
+      return jsonResponse(
         { 
           success: false,
           error: 'Authentication required' 
         },
-        { status: 401 }
+        401
       );
     }
+
+    console.log(`✅ [TOKEN API] User authenticated via ${mode}:`, user.id);
 
     // 3. Parse request body
     const body = await request.json();
     const { sessionId, role } = body;
 
+    console.log(`🔍 [TOKEN API] Request:`, { sessionId, role, userId: user.id });
+
     // 4. Validate request
     if (!sessionId) {
-      return NextResponse.json(
+      return jsonResponse(
         { 
           success: false,
           error: 'sessionId is required' 
         },
-        { status: 400 }
+        400
       );
     }
 
     if (!role || !['audience', 'broadcaster'].includes(role)) {
-      return NextResponse.json(
+      return jsonResponse(
         { 
           success: false,
           error: 'role must be "audience" or "broadcaster"' 
         },
-        { status: 400 }
+        400
       );
     }
 
@@ -90,35 +112,44 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (sessionError || !session) {
-      console.error('❌ Session not found:', sessionError);
-      return NextResponse.json(
+      console.error('❌ [TOKEN API] Session not found:', sessionError);
+      return jsonResponse(
         { 
           success: false,
           error: 'Session not found' 
         },
-        { status: 404 }
+        404
       );
     }
 
+    console.log(`✅ [TOKEN API] Session found:`, { 
+      sessionId, 
+      status: session.status, 
+      creatorId: session.creator_id,
+      isCreator: session.creator_id === user.id 
+    });
+
     // 6. Check if session is live or scheduled
     if (session.status !== 'live' && session.status !== 'scheduled') {
-      return NextResponse.json(
+      console.error(`❌ [TOKEN API] Session not active. Status: ${session.status}`);
+      return jsonResponse(
         { 
           success: false,
           error: 'Session is not active' 
         },
-        { status: 400 }
+        400
       );
     }
 
     // 7. Verify user can be broadcaster (only creator can broadcast)
     if (role === 'broadcaster' && session.creator_id !== user.id) {
-      return NextResponse.json(
+      console.error(`❌ [TOKEN API] User ${user.id} tried to broadcast session owned by ${session.creator_id}`);
+      return jsonResponse(
         { 
           success: false,
           error: 'Only the session creator can broadcast' 
         },
-        { status: 403 }
+        403
       );
     }
 
@@ -136,6 +167,8 @@ export async function POST(request: NextRequest) {
     const expirationTimeInSeconds = 86400;
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+
+    console.log(`🔑 [TOKEN API] Generating token:`, { channelName, uid, role: agoraRole, expiresIn: '24h' });
 
     // Build the token
     const token = RtcTokenBuilder.buildTokenWithUid(
@@ -159,25 +192,25 @@ export async function POST(request: NextRequest) {
         onConflict: 'session_id,user_id'
       });
 
-    // 10. Return token
-    console.log(`✅ Token generated for user ${user.id} in session ${sessionId} (role: ${role})`);
+    // 10. Return token with CORS headers
+    console.log(`✅ [TOKEN API] Token generated successfully for user ${user.id} in session ${sessionId} (role: ${role})`);
     
-    return NextResponse.json({
+    return jsonResponse({
       success: true,
       token,
       channelName,
       uid,
       expiresAt: new Date(privilegeExpiredTs * 1000).toISOString()
-    });
+    }, 200);
 
   } catch (error) {
-    console.error('❌ Token generation error:', error);
-    return NextResponse.json(
+    console.error('❌ [TOKEN API] Unexpected error:', error);
+    return jsonResponse(
       { 
         success: false,
         error: 'Failed to generate token. Please try again.' 
       },
-      { status: 500 }
+      500
     );
   }
 }
@@ -186,11 +219,6 @@ export async function POST(request: NextRequest) {
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers: CORS_HEADERS,
   });
 }
-
