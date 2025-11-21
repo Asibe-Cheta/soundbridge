@@ -177,19 +177,28 @@ export default function DiscoverPage() {
   useEffect(() => {
     const loadTrendingContent = async () => {
       try {
-        // Add a timeout to prevent infinite loading
+        // Add a timeout to prevent infinite loading (increased to 30 seconds for better reliability)
         const timeoutId = setTimeout(() => {
-          console.warn('Trending content loading timeout - falling back to empty state');
+          console.warn('⏱️ Trending content loading timeout (30s) - falling back to empty state');
           setShowFallback(true);
-        }, 10000); // 10 second timeout
+          setPageLoaded(true);
+        }, 30000); // 30 second timeout
         
         console.log('🔄 Loading trending content...');
         const result = await getTrendingContent(20);
-        console.log('✅ Trending content result:', result);
+        console.log('✅ Trending content loaded successfully:', {
+          music: result?.music?.length || 0,
+          events: result?.events?.length || 0,
+          creators: result?.creators?.length || 0,
+          podcasts: result?.podcasts?.length || 0,
+          services: result?.services?.length || 0,
+          venues: result?.venues?.length || 0
+        });
         clearTimeout(timeoutId);
         setPageLoaded(true);
       } catch (error) {
         console.error('❌ Error loading trending content:', error);
+        setShowFallback(true);
         setPageLoaded(true); // Set to true even on error to show the page
       }
     };

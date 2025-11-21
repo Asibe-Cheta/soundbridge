@@ -635,6 +635,9 @@ export class SearchService {
    */
   async getTrendingContent(limit = 20): Promise<{ data: SearchResult | null; error: any }> {
     try {
+      console.log('🚀 Starting parallel trending content fetch...');
+      const startTime = Date.now();
+
       const results: SearchResult = {
         music: [],
         creators: [],
@@ -646,26 +649,100 @@ export class SearchService {
         has_more: false,
       };
 
-      // Get trending music
-      const { data: trendingMusic } = await this.supabase
-        .from('audio_tracks')
-        .select(`
-          *,
-          creator:profiles!audio_tracks_creator_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            location,
-            country
-          )
-        `)
-        .eq('is_public', true)
-        .order('play_count', { ascending: false })
-        .limit(limit);
+      // Run all queries in parallel for better performance
+      const [
+        musicResult,
+        eventsResult,
+        providersResult,
+        venuesResult
+      ] = await Promise.all([
+        // Get trending music
+        this.supabase
+          .from('audio_tracks')
+          .select(`
+            *,
+            creator:profiles!audio_tracks_creator_id_fkey(
+              id,
+              username,
+              display_name,
+              avatar_url,
+              location,
+              country
+            )
+          `)
+          .eq('is_public', true)
+          .order('play_count', { ascending: false })
+          .limit(limit)
+          .then(res => {
+            console.log(`✅ Music loaded: ${res.data?.length || 0} tracks (${Date.now() - startTime}ms)`);
+            return res;
+          })
+          .catch(err => {
+            console.error('❌ Music query failed:', err);
+            return { data: null, error: err };
+          }),
 
-      if (trendingMusic) {
-        results.music = trendingMusic.map(track => ({
+        // Get trending events
+        this.supabase
+          .from('events')
+          .select(`
+            *,
+            creator:profiles!events_creator_id_fkey(
+              id,
+              username,
+              display_name,
+              avatar_url,
+              location,
+              country
+            )
+          `)
+          .gte('event_date', new Date().toISOString())
+          .order('current_attendees', { ascending: false })
+          .limit(limit)
+          .then(res => {
+            console.log(`✅ Events loaded: ${res.data?.length || 0} events (${Date.now() - startTime}ms)`);
+            return res;
+          })
+          .catch(err => {
+            console.error('❌ Events query failed:', err);
+            return { data: null, error: err };
+          }),
+
+        // Get trending service providers
+        this.supabase
+          .from('service_provider_profiles')
+          .select('*')
+          .eq('status', 'active')
+          .limit(limit * 2)
+          .then(res => {
+            console.log(`✅ Providers loaded: ${res.data?.length || 0} providers (${Date.now() - startTime}ms)`);
+            return res;
+          })
+          .catch(err => {
+            console.error('❌ Providers query failed:', err);
+            return { data: null, error: err };
+          }),
+
+        // Get active venues
+        this.supabase
+          .from('venues')
+          .select('*')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(limit)
+          .then(res => {
+            console.log(`✅ Venues loaded: ${res.data?.length || 0} venues (${Date.now() - startTime}ms)`);
+            return res;
+          })
+          .catch(err => {
+            console.error('❌ Venues query failed:', err);
+            return { data: null, error: err };
+          })
+      ]);
+
+      // Process music results
+      if (musicResult.data) {
+        results.music = musicResult.data.map(track => ({
           ...track,
           formatted_duration: this.formatDuration(track.duration),
           formatted_play_count: this.formatPlayCount(track.play_count),
@@ -674,26 +751,9 @@ export class SearchService {
         }));
       }
 
-      // Get trending events
-      const { data: trendingEvents } = await this.supabase
-        .from('events')
-        .select(`
-          *,
-          creator:profiles!events_creator_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            location,
-            country
-          )
-        `)
-        .gte('event_date', new Date().toISOString())
-        .order('current_attendees', { ascending: false })
-        .limit(limit);
-
-      if (trendingEvents) {
-        results.events = trendingEvents.map(event => ({
+      // Process events results
+      if (eventsResult.data) {
+        results.events = eventsResult.data.map(event => ({
           ...event,
           formatted_date: this.formatEventDate(event.event_date),
           formatted_price: this.formatEventPrice(event.price_gbp, event.price_ngn, event.creator?.country),
@@ -702,39 +762,29 @@ export class SearchService {
         }));
       }
 
-      // Get trending service providers with improved algorithm
-      // Algorithm weights: completed bookings (40%), ratings (30%), verification (15%), recency (15%)
-      // Note: We query service_bookings separately since there's no direct FK from service_provider_profiles
-      const { data: trendingProviders } = await this.supabase
-        .from('service_provider_profiles')
-        .select('*')
-        .eq('status', 'active')
-        .limit(limit * 2); // Get more to sort properly
-      
-      // Get bookings separately and match by provider_id = user_id
-      let providerBookingsMap: Record<string, any[]> = {};
-      if (trendingProviders && trendingProviders.length > 0) {
-        const providerIds = trendingProviders.map(p => p.user_id);
+      // Process service providers with bookings
+      if (providersResult.data && providersResult.data.length > 0) {
+        const providerIds = providersResult.data.map(p => p.user_id);
         const { data: bookings } = await this.supabase
           .from('service_bookings')
           .select('provider_id, status')
           .in('provider_id', providerIds);
         
+        console.log(`✅ Bookings loaded: ${bookings?.length || 0} bookings (${Date.now() - startTime}ms)`);
+
         // Group bookings by provider_id
-        providerBookingsMap = (bookings || []).reduce((acc, booking) => {
+        const providerBookingsMap = (bookings || []).reduce((acc, booking) => {
           if (!acc[booking.provider_id]) {
             acc[booking.provider_id] = [];
           }
           acc[booking.provider_id].push(booking);
           return acc;
         }, {} as Record<string, any[]>);
-      }
 
-      if (trendingProviders) {
         // Calculate trending score for each provider
-        const providersWithScore = trendingProviders.map((provider) => {
-          const bookings = providerBookingsMap[provider.user_id] || [];
-          const completedBookings = bookings.filter(
+        const providersWithScore = providersResult.data.map((provider) => {
+          const providerBookings = providerBookingsMap[provider.user_id] || [];
+          const completedBookings = providerBookings.filter(
             (b: any) => b.status === 'completed'
           ).length || 0;
           
@@ -746,16 +796,14 @@ export class SearchService {
           const daysSinceUpdate = provider.updated_at
             ? Math.max(0, (Date.now() - new Date(provider.updated_at).getTime()) / (1000 * 60 * 60 * 24))
             : 365;
-          const recencyScore = Math.max(0, 1 - daysSinceUpdate / 90); // Decay over 90 days
+          const recencyScore = Math.max(0, 1 - daysSinceUpdate / 90);
           
           // Trending score calculation
-          const bookingScore = Math.min(completedBookings / 10, 1) * 0.4; // Normalize to 0-10 bookings
-          const ratingScore = (rating / 5) * 0.3; // Normalize to 0-5 rating
+          const bookingScore = Math.min(completedBookings / 10, 1) * 0.4;
+          const ratingScore = (rating / 5) * 0.3;
           const verificationScore = isVerified * 0.15;
           const recencyWeight = recencyScore * 0.15;
-          
-          // Bonus for providers with reviews
-          const reviewBonus = Math.min(reviewCount / 20, 0.1); // Up to 10% bonus for 20+ reviews
+          const reviewBonus = Math.min(reviewCount / 20, 0.1);
           
           const trendingScore = bookingScore + ratingScore + verificationScore + recencyWeight + reviewBonus;
           
@@ -790,15 +838,9 @@ export class SearchService {
         }));
       }
 
-      const { data: activeVenues } = await this.supabase
-        .from('venues')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (activeVenues) {
-        results.venues = activeVenues.map((venue) => ({
+      // Process venues results
+      if (venuesResult.data) {
+        results.venues = venuesResult.data.map((venue) => ({
           id: venue.id,
           owner_id: venue.owner_id,
           name: venue.name,
@@ -820,9 +862,12 @@ export class SearchService {
         results.services.length +
         results.venues.length;
 
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ All trending content loaded in ${totalTime}ms`);
+
       return { data: results, error: null };
     } catch (error) {
-      console.error('Error getting trending content:', error);
+      console.error('❌ Error getting trending content:', error);
       return { data: null, error };
     }
   }
