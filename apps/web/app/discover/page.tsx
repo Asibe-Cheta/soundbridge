@@ -177,12 +177,12 @@ export default function DiscoverPage() {
   useEffect(() => {
     const loadTrendingContent = async () => {
       try {
-        // Add a timeout to prevent infinite loading (increased to 30 seconds for better reliability)
+        // Add a timeout to prevent infinite loading (15 seconds should be plenty for server-side API)
         const timeoutId = setTimeout(() => {
-          console.warn('⏱️ Trending content loading timeout (30s) - falling back to empty state');
+          console.warn('⏱️ Trending content loading timeout (15s) - showing fallback');
           setShowFallback(true);
           setPageLoaded(true);
-        }, 30000); // 30 second timeout
+        }, 15000); // 15 second timeout (server-side API is much faster)
         
         console.log('🔄 Loading trending content...');
         const result = await getTrendingContent(20);
