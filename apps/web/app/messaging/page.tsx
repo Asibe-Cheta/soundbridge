@@ -133,7 +133,7 @@ export default function MessagingPage() {
           <p style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: '1.5rem' }}>
             Please log in to access the messaging feature.
           </p>
-          <Link href="/auth/login" style={{ textDecoration: 'none' }}>
+          <Link href="/login" style={{ textDecoration: 'none' }}>
             <button style={{
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               color: 'white',

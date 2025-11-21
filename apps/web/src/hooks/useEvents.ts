@@ -275,7 +275,8 @@ export function useEvents(): [EventsState, EventsActions] {
   // Initial load
   useEffect(() => {
     fetchEvents();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   return [
     state,
