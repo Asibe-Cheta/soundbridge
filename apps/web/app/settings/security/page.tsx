@@ -18,7 +18,10 @@ import {
   RefreshCw,
   ArrowLeft,
   Download,
-  ChevronLeft
+  ChevronLeft,
+  HelpCircle,
+  Info,
+  ExternalLink
 } from 'lucide-react';
 
 interface TwoFactorStatus {
@@ -310,9 +313,24 @@ export default function SecuritySettingsPage() {
             <span>Back to Settings</span>
           </button>
           
-          <div className="flex items-center gap-3 mb-2">
-            <Shield className="text-pink-400" size={32} />
-            <h1 className="text-3xl font-bold text-white">Security Settings</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Shield className="text-pink-400" size={32} />
+              <h1 className="text-3xl font-bold text-white">Security Settings</h1>
+            </div>
+            <button
+              onClick={() => {
+                const helpSection = document.getElementById('help-section');
+                if (helpSection) {
+                  helpSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-xl text-blue-400 font-medium transition-colors"
+            >
+              <HelpCircle size={18} />
+              <span className="hidden sm:inline">How to Set Up 2FA</span>
+              <span className="sm:hidden">Help</span>
+            </button>
           </div>
           <p className="text-white/70">Protect your account with two-factor authentication</p>
         </div>
@@ -760,9 +778,9 @@ export default function SecuritySettingsPage() {
 
         {/* Recent Activity */}
         {status && status.enabled && status.recentActivity && status.recentActivity.length > 0 && !isSettingUp && !showBackupCodes && !isDisabling && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <Activity className="text-white/70" size={24} />
+              <Clock className="text-white/70" size={24} />
               <h2 className="text-xl font-bold text-white">Recent 2FA Activity</h2>
             </div>
 
@@ -799,6 +817,248 @@ export default function SecuritySettingsPage() {
             </div>
           </div>
         )}
+
+        {/* Help Section */}
+        <div id="help-section" className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <HelpCircle className="text-blue-400" size={28} />
+            <h2 className="text-2xl font-bold text-white">How to Set Up Two-Factor Authentication</h2>
+          </div>
+
+          <div className="space-y-6">
+            {/* Cross-Device Setup Instructions */}
+            <div className="bg-blue-500/10 border border-blue-500/50 rounded-xl p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <Info className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h3 className="text-blue-400 font-bold text-lg mb-2">Important: Cross-Device Setup</h3>
+                  <p className="text-blue-300 mb-3">
+                    To scan the QR code, you need <strong>two devices</strong>:
+                  </p>
+                  <ul className="space-y-2 text-blue-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 mt-1">•</span>
+                      <span><strong>Device 1:</strong> Your computer (where you're viewing this page) OR another phone</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 mt-1">•</span>
+                      <span><strong>Device 2:</strong> Your phone with Google Authenticator installed</span>
+                    </li>
+                  </ul>
+                  <p className="text-blue-300 mt-3">
+                    <strong>Why?</strong> You can't scan a QR code displayed on your phone with the same phone. You need to view the QR code on one device and scan it with your phone's camera.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Step-by-Step Guide */}
+            <div>
+              <h3 className="text-white font-bold text-lg mb-4">Step-by-Step Instructions</h3>
+              <div className="space-y-4">
+                {/* Step 1 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-bold mb-2">Download an Authenticator App</h4>
+                    <p className="text-white/70 mb-2">Install one of these apps on your phone:</p>
+                    <ul className="space-y-1 text-white/70">
+                      <li className="flex items-center gap-2">
+                        <Smartphone size={16} className="text-pink-400" />
+                        <span>Google Authenticator (iOS/Android)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Smartphone size={16} className="text-pink-400" />
+                        <span>Authy (iOS/Android)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Smartphone size={16} className="text-pink-400" />
+                        <span>Microsoft Authenticator (iOS/Android)</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-bold mb-2">Enable 2FA on This Page</h4>
+                    <p className="text-white/70 mb-2">
+                      Make sure you're viewing this page on a device where you can easily see the screen (computer, tablet, or another phone).
+                    </p>
+                    <p className="text-white/70">
+                      Click the <strong>"Enable Two-Factor Authentication"</strong> button above.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-bold mb-2">Scan the QR Code</h4>
+                    <p className="text-white/70 mb-2">
+                      On your phone, open your authenticator app and:
+                    </p>
+                    <ol className="list-decimal list-inside space-y-1 text-white/70 ml-4">
+                      <li>Tap the <strong>"+"</strong> or <strong>"Add"</strong> button</li>
+                      <li>Select <strong>"Scan a QR code"</strong></li>
+                      <li>Point your phone camera at the QR code on this screen</li>
+                      <li>Wait for "SoundBridge" to appear in your authenticator app</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    4
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-bold mb-2">Verify the Code</h4>
+                    <p className="text-white/70 mb-2">
+                      After scanning, your authenticator app will show a 6-digit code that changes every 30 seconds.
+                    </p>
+                    <p className="text-white/70">
+                      Enter this code on this page to complete the setup.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 5 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    5
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-bold mb-2">Save Your Backup Codes</h4>
+                    <p className="text-white/70 mb-2">
+                      You'll receive 10 backup codes. <strong>Save them immediately!</strong>
+                    </p>
+                    <ul className="space-y-1 text-white/70">
+                      <li className="flex items-center gap-2">
+                        <Download size={16} className="text-green-400" />
+                        <span>Download them as a text file</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Copy size={16} className="text-green-400" />
+                        <span>Copy and paste into a secure password manager</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Key size={16} className="text-green-400" />
+                        <span>Write them down and store in a safe place</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Using 2FA Across Devices */}
+            <div className="bg-purple-500/10 border border-purple-500/50 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <Smartphone className="text-purple-400 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h3 className="text-purple-400 font-bold text-lg mb-2">Using 2FA on Multiple Devices</h3>
+                  <p className="text-purple-300 mb-3">
+                    Once you set up 2FA using this web app, the same authenticator app works everywhere:
+                  </p>
+                  <ul className="space-y-2 text-purple-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-purple-400 mt-1">✓</span>
+                      <span><strong>Web App:</strong> When logging in from any browser, open Google Authenticator on your phone to get the code</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-purple-400 mt-1">✓</span>
+                      <span><strong>Mobile App:</strong> When logging in on the SoundBridge mobile app, use the same Google Authenticator code</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-purple-400 mt-1">✓</span>
+                      <span><strong>One Setup, Everywhere:</strong> You only need to scan the QR code once, and it works for all devices</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Warnings */}
+            <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h3 className="text-red-400 font-bold text-lg mb-2">⚠️ Important Warnings</h3>
+                  <ul className="space-y-3 text-red-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-400 mt-1 font-bold">1.</span>
+                      <div>
+                        <strong>Don't Lose Your Phone:</strong> If you lose access to your authenticator app, you'll need your backup codes to log in. Without them, you could be locked out permanently.
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-400 mt-1 font-bold">2.</span>
+                      <div>
+                        <strong>Save Backup Codes Immediately:</strong> You can only see your backup codes once after setup. If you skip saving them, you'll need to regenerate new ones while logged in.
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-400 mt-1 font-bold">3.</span>
+                      <div>
+                        <strong>Each Backup Code Works Once:</strong> Once you use a backup code to log in, it becomes invalid. Always regenerate new codes when you're running low.
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-400 mt-1 font-bold">4.</span>
+                      <div>
+                        <strong>Keep Codes Secure:</strong> Treat backup codes like passwords. Anyone with your backup codes can bypass 2FA and access your account.
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-400 mt-1 font-bold">5.</span>
+                      <div>
+                        <strong>Changing Phones?</strong> Before wiping your old phone, either:
+                        <ul className="mt-2 ml-4 space-y-1">
+                          <li>• Transfer your authenticator app to your new phone (most apps support this)</li>
+                          <li>• Disable 2FA on SoundBridge, then re-enable it on your new phone</li>
+                          <li>• Have your backup codes ready to log in with your new phone</li>
+                        </ul>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Troubleshooting */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+              <h3 className="text-white font-bold text-lg mb-3">Troubleshooting</h3>
+              <div className="space-y-3 text-white/70">
+                <div>
+                  <p className="font-bold text-white mb-1">❓ Can't scan the QR code?</p>
+                  <p>Use the manual entry option. Copy the secret key and enter it manually in your authenticator app.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-white mb-1">❓ Code not working?</p>
+                  <p>Make sure your phone's time is set correctly. Authenticator codes are time-based and won't work if your phone's clock is off.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-white mb-1">❓ Lost your phone?</p>
+                  <p>Use one of your backup codes to log in. Once logged in, you can disable 2FA and set it up again with a new device.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-white mb-1">❓ Used all backup codes?</p>
+                  <p>Log in with your authenticator app and regenerate new backup codes immediately from this page.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
