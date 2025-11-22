@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { createClient } from '@/src/lib/supabase-browser';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -182,9 +183,16 @@ function LoginContent() {
             }
             
             // 2FA is required - show verification screen
-            // IMPORTANT: Sign out from Supabase to prevent access without 2FA verification
-            await signOut();
-            console.log('🚪 Signed out from Supabase - awaiting 2FA verification');
+            // IMPORTANT: Clear session without redirecting (signOut() causes navigation)
+            // We need to clear the session to prevent unauthorized access, but stay on the login page
+            try {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              console.log('🚪 Signed out from Supabase - awaiting 2FA verification');
+            } catch (signOutError) {
+              console.warn('Error signing out (continuing anyway):', signOutError);
+              // Continue even if signOut fails - we'll verify 2FA before allowing access
+            }
             
             // Set state BEFORE setting loading to false to ensure UI updates
             setRequires2FA(true);
