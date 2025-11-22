@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { createClient } from '@/src/lib/supabase-browser';
+import { supabase } from '@/src/lib/supabase';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -186,7 +186,6 @@ function LoginContent() {
             // IMPORTANT: Clear session without redirecting (signOut() causes navigation)
             // We need to clear the session to prevent unauthorized access, but stay on the login page
             try {
-              const supabase = createClient();
               await supabase.auth.signOut();
               console.log('🚪 Signed out from Supabase - awaiting 2FA verification');
             } catch (signOutError) {
