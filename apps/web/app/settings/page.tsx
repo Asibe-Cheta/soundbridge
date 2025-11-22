@@ -342,6 +342,7 @@ export default function SettingsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
       });
 
       const data = await response.json();

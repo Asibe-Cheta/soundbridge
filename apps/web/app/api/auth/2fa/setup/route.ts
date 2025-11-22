@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 
@@ -7,11 +7,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔐 2FA Setup API called');
     
-    // Create a route handler client that can access cookies
-    const supabase = await createApiClientWithCookies();
-
-    // Get user from request cookies
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use the proper route client that handles both cookies and bearer tokens
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
