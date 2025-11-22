@@ -97,6 +97,13 @@ export default function SecuritySettingsPage() {
 
       const data = await response.json();
 
+      if (response.status === 401) {
+        // Not authenticated - redirect to login
+        console.error('Not authenticated, redirecting to login');
+        router.push('/login?redirect=/settings/security');
+        return;
+      }
+
       if (data.success) {
         setStatus(data);
       } else {
@@ -506,6 +513,21 @@ export default function SecuritySettingsPage() {
               
               <h2 className="text-2xl font-bold text-white mb-2">Set Up Two-Factor Authentication</h2>
               <p className="text-white/70">Follow these steps to enable 2FA on your account</p>
+            </div>
+
+            {/* Important Notice */}
+            <div className="bg-blue-500/10 border border-blue-500/50 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+                <div className="flex-1">
+                  <p className="text-blue-400 font-medium mb-1">New QR Code Required</p>
+                  <p className="text-blue-300 text-sm">
+                    Each time you set up 2FA, a <strong>new unique secret</strong> is generated. 
+                    If you previously had 2FA enabled, you must <strong>remove the old SoundBridge entry</strong> from your authenticator app 
+                    and scan this new QR code. Old codes will not work.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Step 1: Scan QR Code */}
