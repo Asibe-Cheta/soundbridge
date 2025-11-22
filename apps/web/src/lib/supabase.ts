@@ -185,6 +185,33 @@ import { createBrowserClient as createBrowserClientSSR } from '@supabase/ssr';
 // Single global client instance to prevent multiple GoTrueClient warnings
 let _globalSupabaseClient: TypedSupabaseClient | null = null;
 
+const getCookieOptions = () => {
+  if (typeof window === 'undefined') return undefined;
+  
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  if (isLocalhost) {
+    return {
+      path: '/',
+      sameSite: 'lax',
+      secure: false,
+    };
+  }
+
+  const parts = hostname.split('.');
+  const baseDomain = parts.length >= 2
+    ? `.${parts.slice(-2).join('.')}`
+    : hostname;
+
+  return {
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: window.location.protocol === 'https:',
+    domain: baseDomain,
+  };
+};
+
 const getGlobalClient = () => {
   if (!_globalSupabaseClient) {
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -197,10 +224,13 @@ const getGlobalClient = () => {
     // Use the cookie-based browser client from @supabase/ssr
     // This ensures sessions work across both client and server
     if (typeof window !== 'undefined') {
+      const cookieOptions = getCookieOptions();
+
       _globalSupabaseClient = createBrowserClientSSR<any>(
         supabaseUrl,
         supabaseAnonKey,
         {
+          cookieOptions,
           cookies: {
             get(name: string) {
               // Read cookie from document.cookie
