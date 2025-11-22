@@ -180,7 +180,7 @@ export const createServerComponentClient = () => {
 };
 
 // Import the new cookie-based browser client
-import { createClient as createBrowserClientSSR } from '@supabase/ssr';
+import { createBrowserClient as createBrowserClientSSR } from '@supabase/ssr';
 
 // Single global client instance to prevent multiple GoTrueClient warnings
 let _globalSupabaseClient: TypedSupabaseClient | null = null;
