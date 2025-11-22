@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/src/lib/supabase';
+import { createClient } from '@/src/lib/supabase-browser';
 
 interface AuthContextType {
   user: User | null;
@@ -23,8 +23,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Use global Supabase client instance to ensure PKCE code_verifier is shared
-  // across all components (critical for OAuth flow)
+  // Create Supabase client with cookie-based session storage
+  // This ensures sessions work across both client and server
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     if (!supabase) {
