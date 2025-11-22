@@ -81,13 +81,59 @@ export async function POST(request: NextRequest) {
     // Generate QR code data URL
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url!);
 
-    console.log('✅ 2FA secret generated and stored for user:', user.id);
+    // CRITICAL: Extract and verify the secret from otpauth_url
+    // The QR code uses the secret from the URL, so we MUST use the same one
+    const otpauthMatch = secret.otpauth_url?.match(/secret=([A-Z2-7=]+)/);
+    const secretFromUrl = otpauthMatch ? otpauthMatch[1] : null;
+    
+    // Use the secret from the URL (what's actually in the QR code) as the source of truth
+    // If URL secret exists and differs, prefer it; otherwise use base32
+    const secretToUse = secretFromUrl || secret.base32;
+    
+    // Remove padding from both for comparison
+    const base32NoPadding = secret.base32?.replace(/=+$/, '') || '';
+    const urlSecretNoPadding = secretFromUrl?.replace(/=+$/, '') || '';
+    const secretsMatch = base32NoPadding === urlSecretNoPadding;
+    
+    console.log('✅ 2FA secret generated and stored for user:', user.id, {
+      base32Length: secret.base32?.length,
+      base32Prefix: secret.base32?.substring(0, 12) + '...',
+      base32Full: secret.base32,
+      otpauthUrlSecret: secretFromUrl ? secretFromUrl.substring(0, 12) + '...' : 'not found',
+      otpauthUrlFull: secretFromUrl,
+      secretToUsePrefix: secretToUse.substring(0, 12) + '...',
+      secretToUseFull: secretToUse,
+      secretsMatch: secretsMatch,
+      otpauthUrl: secret.otpauth_url,
+    });
+
+    if (!secretsMatch && secretFromUrl) {
+      console.warn('⚠️ Secret mismatch detected! Using URL secret (from QR code) instead of base32.');
+      console.warn('Base32 secret:', secret.base32);
+      console.warn('URL secret:', secretFromUrl);
+      
+      // Update the database with the URL secret (what's actually in the QR code)
+      const encryptedUrlSecret = encryptSecret(secretFromUrl);
+      await supabase
+        .from('two_factor_secrets')
+        .update({ encrypted_secret: encryptedUrlSecret })
+        .eq('user_id', user.id);
+      console.log('✅ Updated database with URL secret');
+    }
+
+    // Generate a test code to verify the secret works
+    const testCode = speakeasy.totp({
+      secret: secretToUse,
+      encoding: 'base32',
+      step: 30,
+    });
+    console.log('🔍 Test code generated with secretToUse:', testCode);
 
     return NextResponse.json({
       success: true,
-      secret: secret.base32,
+      secret: secretToUse, // Return the secret that's actually in the QR code
       qrCode: qrCodeUrl,
-      manualEntryKey: secret.base32
+      manualEntryKey: secretToUse
     });
 
   } catch (error) {
