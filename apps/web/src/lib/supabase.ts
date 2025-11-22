@@ -197,7 +197,53 @@ const getGlobalClient = () => {
     // Use the cookie-based browser client from @supabase/ssr
     // This ensures sessions work across both client and server
     if (typeof window !== 'undefined') {
-      _globalSupabaseClient = createBrowserClientSSR<any>(supabaseUrl, supabaseAnonKey);
+      _globalSupabaseClient = createBrowserClientSSR<any>(
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+          cookies: {
+            get(name: string) {
+              // Read cookie from document.cookie
+              const value = `; ${document.cookie}`;
+              const parts = value.split(`; ${name}=`);
+              if (parts.length === 2) {
+                return parts.pop()?.split(';').shift();
+              }
+            },
+            set(name: string, value: string, options: any) {
+              // Write cookie to document.cookie
+              let cookie = `${name}=${value}`;
+              if (options?.maxAge) {
+                cookie += `; max-age=${options.maxAge}`;
+              }
+              if (options?.path) {
+                cookie += `; path=${options.path}`;
+              }
+              if (options?.domain) {
+                cookie += `; domain=${options.domain}`;
+              }
+              if (options?.sameSite) {
+                cookie += `; samesite=${options.sameSite}`;
+              }
+              if (options?.secure) {
+                cookie += '; secure';
+              }
+              document.cookie = cookie;
+            },
+            remove(name: string, options: any) {
+              // Remove cookie by setting max-age to 0
+              let cookie = `${name}=; max-age=0`;
+              if (options?.path) {
+                cookie += `; path=${options.path}`;
+              }
+              if (options?.domain) {
+                cookie += `; domain=${options.domain}`;
+              }
+              document.cookie = cookie;
+            },
+          },
+        }
+      );
     } else {
       // Server-side: use the old client (this should rarely be used)
       _globalSupabaseClient = createClient<any>(supabaseUrl, supabaseAnonKey, {
