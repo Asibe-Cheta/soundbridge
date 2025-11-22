@@ -76,6 +76,18 @@ function LoginContent() {
     }
   }, [searchParams]);
 
+  // Restore form data from sessionStorage when component mounts or when not in 2FA mode
+  React.useEffect(() => {
+    if (!requires2FA && typeof window !== 'undefined') {
+      const savedEmail = sessionStorage.getItem('login_email');
+      const savedPassword = sessionStorage.getItem('login_password');
+      if (savedEmail && savedPassword && (!formData.email || !formData.password)) {
+        console.log('📝 Restoring form data from sessionStorage');
+        setFormData({ email: savedEmail, password: savedPassword });
+      }
+    }
+  }, [requires2FA]); // Only run when requires2FA changes
+
   // Persist 2FA state in sessionStorage to survive re-renders after signOut
   const [requires2FA, setRequires2FA] = useState(() => {
     if (typeof window !== 'undefined') {
