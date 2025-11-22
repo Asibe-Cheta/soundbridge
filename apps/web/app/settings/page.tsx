@@ -377,6 +377,13 @@ export default function SettingsPage() {
         return;
       }
 
+      // Debug: Log what we're sending
+      console.log('🔍 Sending 2FA verification:', {
+        token: twoFAToken,
+        secretLength: twoFASecret?.length,
+        secretPrefix: twoFASecret?.substring(0, 12) + '...',
+      });
+
       const response = await fetch('/api/auth/2fa/verify', {
         method: 'POST',
         headers: {

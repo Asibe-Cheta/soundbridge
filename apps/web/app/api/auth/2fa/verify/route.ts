@@ -48,8 +48,26 @@ export async function POST(request: NextRequest) {
 
     if (clientSecret && typeof clientSecret === 'string') {
       // Use client-provided secret (this matches what the user scanned in their authenticator app)
-      console.log('✅ Using client-provided secret (matches authenticator app)');
-      decryptedSecret = clientSecret;
+      // Trim whitespace and ensure it's valid base32
+      const trimmedSecret = clientSecret.trim();
+      
+      // Validate it's a valid base32 string (only A-Z, 2-7, and = for padding)
+      if (!/^[A-Z2-7=]+$/.test(trimmedSecret)) {
+        console.error('❌ Invalid secret format (not base32):', trimmedSecret.substring(0, 20) + '...');
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Invalid secret format. Please start a fresh setup.' 
+          },
+          { status: 400 }
+        );
+      }
+      
+      console.log('✅ Using client-provided secret (matches authenticator app)', {
+        length: trimmedSecret.length,
+        prefix: trimmedSecret.substring(0, 12) + '...',
+      });
+      decryptedSecret = trimmedSecret;
       secretSource = 'client';
       
       // Also update the database with this secret (in case it's different from what's stored)
@@ -119,13 +137,25 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate what the current code should be for debugging
-    const currentCode = speakeasy.totp({
-      secret: decryptedSecret,
-      encoding: 'base32',
-      step: 30,
-    });
-    
-    console.log('🔍 Current expected TOTP code:', currentCode);
+    let currentCode: string;
+    try {
+      currentCode = speakeasy.totp({
+        secret: decryptedSecret,
+        encoding: 'base32',
+        step: 30,
+      });
+      console.log('🔍 Current expected TOTP code:', currentCode);
+    } catch (codeGenError: any) {
+      console.error('❌ Failed to generate expected code:', codeGenError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Invalid secret format. Please start a fresh setup.',
+          code: 'INVALID_SECRET'
+        },
+        { status: 400 }
+      );
+    }
 
     // Try to verify with multiple time windows for better tolerance
     const verified = speakeasy.totp.verify({
