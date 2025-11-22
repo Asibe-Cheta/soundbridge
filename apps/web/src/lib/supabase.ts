@@ -226,55 +226,16 @@ const getGlobalClient = () => {
     if (typeof window !== 'undefined') {
       const cookieOptions = getCookieOptions();
 
+      // Let @supabase/ssr handle cookies automatically with our domain settings
+      // The library will use document.cookie automatically when no cookies option is provided
+      // We only provide cookieOptions to set the domain correctly
       _globalSupabaseClient = createBrowserClientSSR<any>(
         supabaseUrl,
         supabaseAnonKey,
         {
           cookieOptions,
-          cookies: {
-            get(name: string) {
-              // Read cookie from document.cookie
-              const value = `; ${document.cookie}`;
-              const parts = value.split(`; ${name}=`);
-              if (parts.length === 2) {
-                return parts.pop()?.split(';').shift();
-              }
-            },
-            set(name: string, value: string, options: any = {}) {
-              // Write cookie to document.cookie
-              let cookie = `${name}=${value}`;
-              
-              // Default path ensures cookie is available across the app
-              const path = options?.path || '/';
-              cookie += `; path=${path}`;
-
-              if (options?.maxAge) {
-                cookie += `; max-age=${options.maxAge}`;
-              }
-              if (options?.expires) {
-                cookie += `; expires=${options.expires.toUTCString?.() ?? options.expires}`;
-              }
-              if (options?.domain) {
-                cookie += `; domain=${options.domain}`;
-              }
-              if (options?.sameSite) {
-                cookie += `; samesite=${options.sameSite}`;
-              }
-              if (options?.secure) {
-                cookie += '; secure';
-              }
-              document.cookie = cookie;
-            },
-            remove(name: string, options: any = {}) {
-              // Remove cookie by setting max-age to 0
-              const path = options?.path || '/';
-              let cookie = `${name}=; max-age=0; path=${path}`;
-              if (options?.domain) {
-                cookie += `; domain=${options.domain}`;
-              }
-              document.cookie = cookie;
-            },
-          },
+          // Don't provide custom cookies handlers - let the library handle it automatically
+          // This ensures proper chunking and cookie management
         }
       );
     } else {
