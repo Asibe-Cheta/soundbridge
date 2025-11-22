@@ -87,19 +87,22 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 3.5. Check if there's a verified session for this user (recent verification)
     // ================================================
-    // If user just verified 2FA, allow them to proceed
+    // If user just verified 2FA in the last 30 seconds, allow them to proceed
+    // This handles the case where user verifies 2FA and then immediately signs in again
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
     const { data: verifiedSession } = await supabase
       .from('two_factor_verification_sessions')
-      .select('id, verified, expires_at')
+      .select('id, verified, expires_at, created_at')
       .eq('user_id', user.id)
       .eq('verified', true)
       .gt('expires_at', new Date().toISOString())
+      .gt('created_at', thirtySecondsAgo) // Only if verified in last 30 seconds
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (verifiedSession) {
-      console.log('✅ User has a verified 2FA session - allowing login');
+      console.log('✅ User has a recently verified 2FA session (within 30s) - allowing login');
       
       // Delete the verified session (one-time use)
       await supabase
@@ -115,6 +118,8 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+    
+    console.log('🔒 2FA is enabled and no recent verification found - requiring 2FA');
     
     // ================================================
     // 4. 2FA is enabled - create verification session

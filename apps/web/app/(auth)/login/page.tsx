@@ -46,7 +46,7 @@ function LoginLoading() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, signInWithProvider } = useAuth();
+  const { signIn, signInWithProvider, signOut } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +95,8 @@ function LoginContent() {
         
         // Check if 2FA is required
         try {
+          console.log('🔍 Checking if 2FA is required for user:', data.user.id);
+          
           const check2FAResponse = await fetch('/api/user/2fa/check-required', {
             method: 'POST',
             headers: {
@@ -107,17 +109,30 @@ function LoginContent() {
             }),
           });
 
+          console.log('📊 2FA check response status:', check2FAResponse.status);
+          
           const check2FAData = await check2FAResponse.json();
+          console.log('📊 2FA check response data:', check2FAData);
 
           if (check2FAData.success && check2FAData.data?.twoFactorRequired) {
+            console.log('🔒 2FA is required - showing verification screen');
+            console.log('📝 Session token:', check2FAData.data.sessionToken);
+            
             // 2FA is required - show verification screen
+            // IMPORTANT: Sign out from Supabase to prevent access without 2FA verification
+            await signOut();
+            console.log('🚪 Signed out from Supabase - awaiting 2FA verification');
+            
             setRequires2FA(true);
             setTwoFASessionToken(check2FAData.data.sessionToken);
             setIsLoading(false);
             return;
+          } else {
+            console.log('✅ 2FA not required or already verified');
+            console.log('📊 Response:', check2FAData);
           }
         } catch (checkError) {
-          console.error('Error checking 2FA:', checkError);
+          console.error('❌ Error checking 2FA:', checkError);
           // If check fails, proceed with normal login (fail open for now)
         }
 
