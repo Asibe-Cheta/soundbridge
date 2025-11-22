@@ -52,16 +52,50 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Persist form data in sessionStorage to survive re-renders after signOut
+  // Initialize all state first (before any useEffect that depends on them)
   const [formData, setFormData] = useState(() => {
     if (typeof window !== 'undefined') {
-      const savedEmail = sessionStorage.getItem('login_email');
-      const savedPassword = sessionStorage.getItem('login_password');
-      if (savedEmail && savedPassword) {
-        return { email: savedEmail, password: savedPassword };
+      try {
+        const savedEmail = sessionStorage.getItem('login_email');
+        const savedPassword = sessionStorage.getItem('login_password');
+        if (savedEmail && savedPassword) {
+          return { email: savedEmail, password: savedPassword };
+        }
+      } catch (e) {
+        // Ignore sessionStorage errors
       }
     }
     return { email: '', password: '' };
   });
+
+  // Persist 2FA state in sessionStorage to survive re-renders after signOut
+  const [requires2FA, setRequires2FA] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const persisted = sessionStorage.getItem('2fa_required');
+        const token = sessionStorage.getItem('2fa_session_token');
+        if (persisted === 'true' && token) {
+          return true;
+        }
+      } catch (e) {
+        // Ignore sessionStorage errors
+      }
+    }
+    return false;
+  });
+  const [twoFASessionToken, setTwoFASessionToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return sessionStorage.getItem('2fa_session_token');
+      } catch (e) {
+        // Ignore sessionStorage errors
+      }
+    }
+    return null;
+  });
+  const [twoFACode, setTwoFACode] = useState('');
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
 
   // Check for URL parameters for confirmation errors
   React.useEffect(() => {
@@ -80,35 +114,18 @@ function LoginContent() {
   // Restore form data from sessionStorage when component mounts or when not in 2FA mode
   React.useEffect(() => {
     if (!requires2FA && typeof window !== 'undefined') {
-      const savedEmail = sessionStorage.getItem('login_email');
-      const savedPassword = sessionStorage.getItem('login_password');
-      if (savedEmail && savedPassword && (!formData.email || !formData.password)) {
-        console.log('📝 Restoring form data from sessionStorage');
-        setFormData({ email: savedEmail, password: savedPassword });
+      try {
+        const savedEmail = sessionStorage.getItem('login_email');
+        const savedPassword = sessionStorage.getItem('login_password');
+        if (savedEmail && savedPassword && (!formData.email || !formData.password)) {
+          console.log('📝 Restoring form data from sessionStorage');
+          setFormData({ email: savedEmail, password: savedPassword });
+        }
+      } catch (e) {
+        // Ignore sessionStorage errors
       }
     }
-  }, [requires2FA]); // Only run when requires2FA changes
-
-  // Persist 2FA state in sessionStorage to survive re-renders after signOut
-  const [requires2FA, setRequires2FA] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const persisted = sessionStorage.getItem('2fa_required');
-      const token = sessionStorage.getItem('2fa_session_token');
-      if (persisted === 'true' && token) {
-        return true;
-      }
-    }
-    return false;
-  });
-  const [twoFASessionToken, setTwoFASessionToken] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('2fa_session_token');
-    }
-    return null;
-  });
-  const [twoFACode, setTwoFACode] = useState('');
-  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
-  const [twoFAError, setTwoFAError] = useState<string | null>(null);
+  }, [requires2FA, formData.email, formData.password]); // Include dependencies
 
   // Sync 2FA state to sessionStorage
   React.useEffect(() => {
