@@ -101,21 +101,18 @@ export async function GET(request: NextRequest) {
     }
     
     // ================================================
-    // 5. Return response
+    // 5. Return response (flat format for mobile app compatibility)
     // ================================================
     return NextResponse.json({
       success: true,
-      data: {
-        enabled: isEnabled,
-        method: secret?.method || null,
-        enabledAt: secret?.created_at || null,
-        backupCodes: {
-          total: backupCodesCount,
-          unused: unusedBackupCodesCount,
-          needsRegeneration: unusedBackupCodesCount <= 2,
-        },
-        recentActivity: recentActivity || [],
-      },
+      enabled: isEnabled,
+      method: secret?.method || null,
+      configuredAt: secret?.created_at || null,
+      enabledAt: secret?.created_at || null, // Alias for backwards compatibility
+      backupCodesRemaining: unusedBackupCodesCount,
+      backupCodesTotal: backupCodesCount,
+      needsRegenerateBackupCodes: unusedBackupCodesCount <= 2,
+      recentActivity: recentActivity || [],
     });
     
   } catch (error: any) {
