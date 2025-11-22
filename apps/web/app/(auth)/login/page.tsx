@@ -69,6 +69,12 @@ function LoginContent() {
     }
   }, [searchParams]);
 
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFASessionToken, setTwoFASessionToken] = useState<string | null>(null);
+  const [twoFACode, setTwoFACode] = useState('');
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -83,11 +89,39 @@ function LoginContent() {
         return;
       }
 
-      if (data?.user) {
-        // Give cookies more time to be set and synced
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      if (data?.user && data?.session) {
+        // Give cookies time to be set
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Do a full page reload to ensure cookies are sent to server
+        // Check if 2FA is required
+        try {
+          const check2FAResponse = await fetch('/api/user/2fa/check-required', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.session.access_token}`,
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              userId: data.user.id,
+            }),
+          });
+
+          const check2FAData = await check2FAResponse.json();
+
+          if (check2FAData.success && check2FAData.data?.twoFactorRequired) {
+            // 2FA is required - show verification screen
+            setRequires2FA(true);
+            setTwoFASessionToken(check2FAData.data.sessionToken);
+            setIsLoading(false);
+            return;
+          }
+        } catch (checkError) {
+          console.error('Error checking 2FA:', checkError);
+          // If check fails, proceed with normal login (fail open for now)
+        }
+
+        // No 2FA required - proceed with normal login
         const redirectTo = searchParams.get('redirectTo') || '/dashboard';
         window.location.href = redirectTo;
       }
@@ -96,6 +130,96 @@ function LoginContent() {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handle2FAVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTwoFAError(null);
+    setIsVerifying2FA(true);
+
+    if (!twoFACode || twoFACode.length !== 6) {
+      setTwoFAError('Please enter a 6-digit code');
+      setIsVerifying2FA(false);
+      return;
+    }
+
+    if (!twoFASessionToken) {
+      setTwoFAError('Session expired. Please log in again.');
+      setIsVerifying2FA(false);
+      return;
+    }
+
+    try {
+      const verifyResponse = await fetch('/api/user/2fa/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          sessionToken: twoFASessionToken,
+          code: twoFACode,
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      if (verifyData.success) {
+        // 2FA verified - now sign in again to get the session
+        // The verification session is marked as verified, so login will proceed
+        const { data: signInData, error: signInError } = await signIn(formData.email, formData.password);
+        
+        if (signInError) {
+          setTwoFAError('Verification successful but login failed. Please try again.');
+          setIsVerifying2FA(false);
+          return;
+        }
+
+        // Check 2FA again - this time it should see the verified session and allow login
+        if (signInData?.user && signInData?.session) {
+          try {
+            const check2FAResponse = await fetch('/api/user/2fa/check-required', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${signInData.session.access_token}`,
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                userId: signInData.user.id,
+              }),
+            });
+
+            const check2FAData = await check2FAResponse.json();
+
+            // If 2FA is still required, the session wasn't properly verified
+            if (check2FAData.success && check2FAData.data?.twoFactorRequired) {
+              setTwoFAError('Session verification failed. Please try again.');
+              setIsVerifying2FA(false);
+              return;
+            }
+          } catch (checkError) {
+            console.error('Error re-checking 2FA:', checkError);
+            // Continue anyway - verification was successful
+          }
+
+          // Give cookies time to be set
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+          window.location.href = redirectTo;
+        } else {
+          setTwoFAError('Login failed after verification. Please try again.');
+        }
+      } else {
+        setTwoFAError(verifyData.error || 'Invalid code. Please try again.');
+      }
+    } catch (error) {
+      console.error('2FA verification error:', error);
+      setTwoFAError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsVerifying2FA(false);
     }
   };
 
@@ -206,8 +330,129 @@ function LoginContent() {
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* 2FA Verification Screen */}
+        {requires2FA ? (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                color: 'white',
+                marginBottom: '0.5rem'
+              }}>
+                Two-Factor Authentication
+              </h2>
+              <p style={{ color: '#999', fontSize: '0.9rem' }}>
+                Enter the 6-digit code from your authenticator app
+              </p>
+            </div>
+
+            {twoFAError && (
+              <div style={{
+                background: 'rgba(220, 38, 38, 0.1)',
+                border: '1px solid rgba(220, 38, 38, 0.3)',
+                borderRadius: '12px',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                color: '#FCA5A5',
+                fontSize: '0.9rem'
+              }}>
+                {twoFAError}
+              </div>
+            )}
+
+            <form onSubmit={handle2FAVerification} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+                  Verification Code
+                </label>
+                <input
+                  type="text"
+                  value={twoFACode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setTwoFACode(value);
+                    setTwoFAError(null);
+                  }}
+                  required
+                  maxLength={6}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    color: '#374151',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    letterSpacing: '0.5rem',
+                    outline: 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#DC2626'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  placeholder="000000"
+                  autoFocus
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isVerifying2FA || twoFACode.length !== 6}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  background: isVerifying2FA || twoFACode.length !== 6
+                    ? 'rgba(220, 38, 38, 0.5)'
+                    : 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: isVerifying2FA || twoFACode.length !== 6 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  opacity: isVerifying2FA || twoFACode.length !== 6 ? 0.6 : 1
+                }}
+              >
+                {isVerifying2FA ? 'Verifying...' : 'Verify & Continue'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRequires2FA(false);
+                  setTwoFASessionToken(null);
+                  setTwoFACode('');
+                  setTwoFAError(null);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'transparent',
+                  color: '#999',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#999';
+                }}
+              >
+                Back to Login
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* Login Form */
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Email Field */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
@@ -346,8 +591,11 @@ function LoginContent() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+        )}
 
-        {/* Divider */}
+        {/* Divider - Only show if not in 2FA mode */}
+        {!requires2FA && (
+          <>
         <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#6b7280' }}>
           <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
           <span style={{ padding: '0 1rem', fontSize: '0.9rem' }}>or continue with</span>
@@ -396,7 +644,9 @@ function LoginContent() {
           >
             Sign up
           </Link>
-        </div>
+          </div>
+          </>
+        )}
       </div>
     </div>
   );

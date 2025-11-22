@@ -83,6 +83,38 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    // ================================================
+    // 3.5. Check if there's a verified session for this user (recent verification)
+    // ================================================
+    // If user just verified 2FA, allow them to proceed
+    const { data: verifiedSession } = await supabase
+      .from('two_factor_verification_sessions')
+      .select('id, verified, expires_at')
+      .eq('user_id', user.id)
+      .eq('verified', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (verifiedSession) {
+      console.log('✅ User has a verified 2FA session - allowing login');
+      
+      // Delete the verified session (one-time use)
+      await supabase
+        .from('two_factor_verification_sessions')
+        .delete()
+        .eq('id', verifiedSession.id);
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          twoFactorRequired: false,
+          message: '2FA already verified for this session',
+        },
+      });
+    }
     
     // ================================================
     // 4. 2FA is enabled - create verification session
