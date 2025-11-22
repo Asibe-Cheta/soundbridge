@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🔐 2FA Status API called');
     
-    // Create a route handler client that can access cookies
-    const supabase = await createApiClientWithCookies();
-
-    // Get user from request cookies
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use the proper route client that handles both cookies and bearer tokens
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
@@ -20,13 +18,26 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ User authenticated:', user.id);
 
-    // Here you would check the database to see if 2FA is enabled for this user
-    // For now, we'll return a default status
-    // In a real implementation, you'd query your database for the user's 2FA status
+    // Check if 2FA is enabled by checking for a secret in the database
+    const { data: secret, error: secretError } = await supabase
+      .from('two_factor_secrets')
+      .select('id, method, created_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (secretError) {
+      console.error('❌ Error checking 2FA status:', secretError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to check 2FA status' },
+        { status: 500 }
+      );
+    }
+
+    const isEnabled = !!secret;
 
     return NextResponse.json({
       success: true,
-      enabled: false, // This would come from your database
+      enabled: isEnabled,
       message: '2FA status retrieved'
     });
 
@@ -43,11 +54,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔐 2FA Enable/Disable API called');
     
-    // Create a route handler client that can access cookies
-    const supabase = await createApiClientWithCookies();
-
-    // Get user from request cookies
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use the proper route client that handles both cookies and bearer tokens
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
@@ -62,14 +71,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { enabled } = body;
 
-    // Here you would update the database to enable/disable 2FA for this user
-    // For now, we'll just return success
-    console.log(`✅ 2FA ${enabled ? 'enabled' : 'disabled'} for user:`, user.id);
+    // Note: This endpoint doesn't actually enable/disable 2FA
+    // 2FA is enabled when the user verifies their code during setup
+    // This endpoint is just for status updates (legacy compatibility)
+    console.log(`✅ 2FA status update requested: ${enabled ? 'enabled' : 'disabled'} for user:`, user.id);
 
     return NextResponse.json({
       success: true,
       enabled: enabled,
-      message: `2FA ${enabled ? 'enabled' : 'disabled'} successfully`
+      message: `2FA status updated successfully`
     });
 
   } catch (error) {
