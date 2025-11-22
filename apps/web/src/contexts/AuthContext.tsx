@@ -39,23 +39,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getInitialSession = async () => {
       try {
         console.log('AuthProvider: Getting initial session...');
+        
+        // Small delay to allow cookies to sync after redirect
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         const { data: { session } } = await supabase.auth.getSession();
         
-        // Validate session is actually still valid by checking with server
+        // Trust the session from getSession() - don't validate immediately
+        // The session will be validated by onAuthStateChange if it's invalid
         if (session) {
-          const { data: { user }, error } = await supabase.auth.getUser();
-          if (error || !user) {
-            // Session exists but is invalid - clear it
-            console.log('AuthProvider: Session expired, clearing...');
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-          } else {
-            // Session is valid
-            console.log('AuthProvider: Valid session found');
-            setSession(session);
-            setUser(user);
-          }
+          console.log('AuthProvider: Session found:', session.user.email);
+          setSession(session);
+          setUser(session.user);
         } else {
           console.log('AuthProvider: No session found');
           setSession(null);
