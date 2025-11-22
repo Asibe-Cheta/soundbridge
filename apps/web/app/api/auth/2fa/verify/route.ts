@@ -41,36 +41,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try to retrieve the encrypted secret from database first
-    const { data: secretRecord, error: fetchError } = await supabase
-      .from('two_factor_secrets')
-      .select('encrypted_secret')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
+    // Prioritize client-provided secret if available (this is what the user's authenticator app is using)
+    // Only fall back to database secret if client secret is not provided
     let decryptedSecret: string;
+    let secretSource: 'client' | 'database';
 
-    if (secretRecord && !fetchError) {
-      // Secret exists in database - use it
-      console.log('✅ Found secret in database');
-      try {
-        decryptedSecret = decryptSecret(secretRecord.encrypted_secret);
-        console.log('✅ Secret decrypted from database');
-      } catch (decryptError: any) {
-        console.error('❌ Failed to decrypt secret from database:', decryptError);
-        return NextResponse.json(
-          { success: false, error: 'Failed to decrypt 2FA secret. Please start a fresh setup.' },
-          { status: 500 }
-        );
-      }
-    } else if (clientSecret && typeof clientSecret === 'string') {
-      // Fallback: use secret from client (for backward compatibility during transition)
-      console.log('⚠️ Using client-provided secret (fallback mode)');
+    if (clientSecret && typeof clientSecret === 'string') {
+      // Use client-provided secret (this matches what the user scanned in their authenticator app)
+      console.log('✅ Using client-provided secret (matches authenticator app)');
       decryptedSecret = clientSecret;
+      secretSource = 'client';
       
-      // Also store it in the database for future use
+      // Also update the database with this secret (in case it's different from what's stored)
       try {
         const encryptedSecret = encryptSecret(clientSecret);
+        // Delete any existing secret first
+        await supabase
+          .from('two_factor_secrets')
+          .delete()
+          .eq('user_id', user.id);
+        
+        // Insert the new secret
         await supabase
           .from('two_factor_secrets')
           .insert({
@@ -78,20 +69,42 @@ export async function POST(request: NextRequest) {
             encrypted_secret: encryptedSecret,
             method: 'totp',
           });
-        console.log('✅ Stored client secret in database for future use');
+        console.log('✅ Updated database with client secret');
       } catch (storeError) {
-        console.warn('⚠️ Failed to store secret in database (continuing anyway):', storeError);
+        console.warn('⚠️ Failed to update secret in database (continuing anyway):', storeError);
       }
     } else {
-      // No secret found anywhere
-      console.error('❌ No 2FA secret found in database or request');
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'No 2FA setup found. Please click "Set Up Two-Factor Authentication" again to start fresh.' 
-        },
-        { status: 404 }
-      );
+      // Fallback: try to retrieve from database
+      const { data: secretRecord, error: fetchError } = await supabase
+        .from('two_factor_secrets')
+        .select('encrypted_secret')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (secretRecord && !fetchError) {
+        console.log('✅ Found secret in database (no client secret provided)');
+        try {
+          decryptedSecret = decryptSecret(secretRecord.encrypted_secret);
+          secretSource = 'database';
+          console.log('✅ Secret decrypted from database');
+        } catch (decryptError: any) {
+          console.error('❌ Failed to decrypt secret from database:', decryptError);
+          return NextResponse.json(
+            { success: false, error: 'Failed to decrypt 2FA secret. Please start a fresh setup.' },
+            { status: 500 }
+          );
+        }
+      } else {
+        // No secret found anywhere
+        console.error('❌ No 2FA secret found in database or request');
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'No 2FA setup found. Please click "Set Up Two-Factor Authentication" again to start fresh.' 
+          },
+          { status: 404 }
+        );
+      }
     }
 
     // Verify the token
@@ -100,6 +113,7 @@ export async function POST(request: NextRequest) {
       code: token,
       codeLength: token.length,
       secretLength: decryptedSecret.length,
+      secretSource: secretSource,
       secretPrefix: decryptedSecret.substring(0, 12) + '...',
       secretSuffix: '...' + decryptedSecret.substring(decryptedSecret.length - 8),
     });
