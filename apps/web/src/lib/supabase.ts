@@ -210,14 +210,19 @@ const getGlobalClient = () => {
                 return parts.pop()?.split(';').shift();
               }
             },
-            set(name: string, value: string, options: any) {
+            set(name: string, value: string, options: any = {}) {
               // Write cookie to document.cookie
               let cookie = `${name}=${value}`;
+              
+              // Default path ensures cookie is available across the app
+              const path = options?.path || '/';
+              cookie += `; path=${path}`;
+
               if (options?.maxAge) {
                 cookie += `; max-age=${options.maxAge}`;
               }
-              if (options?.path) {
-                cookie += `; path=${options.path}`;
+              if (options?.expires) {
+                cookie += `; expires=${options.expires.toUTCString?.() ?? options.expires}`;
               }
               if (options?.domain) {
                 cookie += `; domain=${options.domain}`;
@@ -230,12 +235,10 @@ const getGlobalClient = () => {
               }
               document.cookie = cookie;
             },
-            remove(name: string, options: any) {
+            remove(name: string, options: any = {}) {
               // Remove cookie by setting max-age to 0
-              let cookie = `${name}=; max-age=0`;
-              if (options?.path) {
-                cookie += `; path=${options.path}`;
-              }
+              const path = options?.path || '/';
+              let cookie = `${name}=; max-age=0; path=${path}`;
               if (options?.domain) {
                 cookie += `; domain=${options.domain}`;
               }
