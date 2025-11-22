@@ -14,6 +14,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import speakeasy from 'speakeasy';
+import { decryptSecret } from '@/src/lib/encryption';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,29 +44,92 @@ export async function POST(request: NextRequest) {
     // 2. Parse and validate request
     // ================================================
     const body = await request.json();
-    const { password } = body;
+    const { code } = body;
     
-    if (!password || typeof password !== 'string') {
+    if (!code || typeof code !== 'string') {
       return NextResponse.json(
         { 
           success: false,
-          error: 'Password is required to disable 2FA',
+          error: 'Verification code is required to disable 2FA',
           code: 'INVALID_REQUEST'
         },
         { status: 400 }
       );
     }
     
-    // ================================================
-    // 3. Verify password
-    // ================================================
-    const { error: passwordError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: password,
-    });
+    // Validate code format (6 digits)
+    if (!/^\d{6}$/.test(code)) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Invalid code format. Must be 6 digits.',
+          code: 'INVALID_CODE_FORMAT'
+        },
+        { status: 400 }
+      );
+    }
     
-    if (passwordError) {
-      console.log('❌ Invalid password');
+    // ================================================
+    // 3. Check if 2FA is enabled and get secret
+    // ================================================
+    const { data: secretRecord, error: checkError } = await supabase
+      .from('two_factor_secrets')
+      .select('encrypted_secret')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('❌ Error checking 2FA status:', checkError);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to check 2FA status',
+          code: 'DATABASE_ERROR'
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!secretRecord) {
+      console.log('⚠️ 2FA is not enabled');
+      return NextResponse.json(
+        { 
+          success: false,
+          error: '2FA is not enabled',
+          code: 'NOT_ENABLED'
+        },
+        { status: 400 }
+      );
+    }
+
+    // ================================================
+    // 4. Decrypt and verify TOTP code
+    // ================================================
+    let decryptedSecret: string;
+    try {
+      decryptedSecret = decryptSecret(secretRecord.encrypted_secret);
+    } catch (decryptError: any) {
+      console.error('❌ Failed to decrypt secret:', decryptError);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to decrypt 2FA secret',
+          code: 'DECRYPTION_FAILED'
+        },
+        { status: 500 }
+      );
+    }
+
+    // Verify the TOTP code
+    const verified = speakeasy.totp.verify({
+      secret: decryptedSecret,
+      encoding: 'base32',
+      token: code,
+      window: 2 // Allow 2 time windows (±1 minute tolerance)
+    });
+
+    if (!verified) {
+      console.log('❌ Invalid TOTP code for disable');
       
       // Log failed attempt
       await supabase
@@ -77,54 +142,21 @@ export async function POST(request: NextRequest) {
           ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
           user_agent: request.headers.get('user-agent'),
           metadata: {
-            reason: 'invalid_password',
+            reason: 'invalid_code',
           },
         });
       
       return NextResponse.json(
         { 
           success: false,
-          error: 'Invalid password',
-          code: 'INVALID_PASSWORD'
+          error: 'Invalid verification code',
+          code: 'INVALID_CODE'
         },
         { status: 401 }
       );
     }
     
-    console.log('✅ Password verified');
-    
-    // ================================================
-    // 4. Check if 2FA is enabled
-    // ================================================
-    const { data: secret, error: checkError } = await supabase
-      .from('two_factor_secrets')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    
-    if (checkError) {
-      console.error('❌ Error checking 2FA status:', checkError);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Failed to check 2FA status',
-          code: 'DATABASE_ERROR'
-        },
-        { status: 500 }
-      );
-    }
-    
-    if (!secret) {
-      console.log('⚠️ 2FA is not enabled');
-      return NextResponse.json(
-        { 
-          success: false,
-          error: '2FA is not enabled',
-          code: 'NOT_ENABLED'
-        },
-        { status: 400 }
-      );
-    }
+    console.log('✅ TOTP code verified');
     
     // ================================================
     // 5. Delete TOTP secret
