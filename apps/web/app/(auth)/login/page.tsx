@@ -84,9 +84,12 @@ function LoginContent() {
       }
 
       if (data?.user) {
-        // Redirect to the intended page or dashboard
+        // Wait a moment for cookies to be set
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Do a full page reload to ensure cookies are sent to server
         const redirectTo = searchParams.get('redirectTo') || '/dashboard';
-        router.push(redirectTo);
+        window.location.href = redirectTo;
       }
     } catch (error) {
       console.error('Login error:', error);

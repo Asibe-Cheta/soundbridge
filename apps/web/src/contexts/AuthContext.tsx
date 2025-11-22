@@ -87,21 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        // For SIGNED_IN events, give cookies time to be set before validating
+        // For SIGNED_IN events, trust the session immediately
         if (event === 'SIGNED_IN' && session) {
-          // Set session immediately for sign-in to avoid loading state
+          // Set session immediately for sign-in
           setSession(session);
           setUser(session.user);
           setLoading(false);
           
-          // Validate session after a short delay to allow cookies to be set
-          setTimeout(async () => {
-            const { data: { user }, error } = await supabase.auth.getUser();
-            if (error || !user) {
-              console.log('AuthProvider: Session validation failed after sign-in, but keeping session');
-              // Don't clear session immediately after sign-in - cookies might still be setting
-            }
-          }, 1000);
+          // Don't validate immediately - cookies need time to sync
+          // The session will be validated on the next page load
           return;
         }
         
