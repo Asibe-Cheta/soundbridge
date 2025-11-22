@@ -50,9 +50,16 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+  // Persist form data in sessionStorage to survive re-renders after signOut
+  const [formData, setFormData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedEmail = sessionStorage.getItem('login_email');
+      const savedPassword = sessionStorage.getItem('login_password');
+      if (savedEmail && savedPassword) {
+        return { email: savedEmail, password: savedPassword };
+      }
+    }
+    return { email: '', password: '' };
   });
 
   // Check for URL parameters for confirmation errors
@@ -156,6 +163,12 @@ function LoginContent() {
             console.log('🔒 2FA is required - showing verification screen');
             console.log('📝 Session token:', check2FAData.data.sessionToken);
             
+            // Save email/password to sessionStorage before signing out
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('login_email', formData.email);
+              sessionStorage.setItem('login_password', formData.password);
+            }
+            
             // 2FA is required - show verification screen
             // IMPORTANT: Sign out from Supabase to prevent access without 2FA verification
             await signOut();
@@ -227,7 +240,18 @@ function LoginContent() {
       if (verifyData.success) {
         // 2FA verified - now sign in again to get the session
         // The verification session is marked as verified, so login will proceed
-        const { data: signInData, error: signInError } = await signIn(formData.email, formData.password);
+        // Get email/password from sessionStorage if formData is empty (after re-render)
+        const email = formData.email || (typeof window !== 'undefined' ? sessionStorage.getItem('login_email') : null) || '';
+        const password = formData.password || (typeof window !== 'undefined' ? sessionStorage.getItem('login_password') : null) || '';
+        
+        if (!email || !password) {
+          setTwoFAError('Email and password not found. Please log in again.');
+          setIsVerifying2FA(false);
+          return;
+        }
+        
+        console.log('🔐 Signing in after 2FA verification with email:', email);
+        const { data: signInData, error: signInError } = await signIn(email, password);
         
         if (signInError) {
           setTwoFAError('Verification successful but login failed. Please try again.');
@@ -263,6 +287,14 @@ function LoginContent() {
             // Continue anyway - verification was successful
           }
 
+          // Clear sessionStorage after successful login
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('login_email');
+            sessionStorage.removeItem('login_password');
+            sessionStorage.removeItem('2fa_required');
+            sessionStorage.removeItem('2fa_session_token');
+          }
+          
           // Give cookies time to be set
           await new Promise(resolve => setTimeout(resolve, 1000));
           
