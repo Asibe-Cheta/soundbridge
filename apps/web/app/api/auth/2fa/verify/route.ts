@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import speakeasy from 'speakeasy';
-import { decryptSecret } from '@/src/lib/encryption';
+import { decryptSecret, encryptSecret } from '@/src/lib/encryption';
 import { generateBackupCodesWithHashes } from '@/src/lib/backup-codes';
 
 export async function POST(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const body = await request.json();
-    const { token } = body;
+    const { token, secret: clientSecret } = body; // Accept secret for backward compatibility
 
     // Validate input
     if (!token || typeof token !== 'string') {
@@ -41,34 +41,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Retrieve the encrypted secret from database
+    // Try to retrieve the encrypted secret from database first
     const { data: secretRecord, error: fetchError } = await supabase
       .from('two_factor_secrets')
       .select('encrypted_secret')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (fetchError || !secretRecord) {
-      console.error('❌ Failed to retrieve 2FA secret:', fetchError);
+    let decryptedSecret: string;
+
+    if (secretRecord && !fetchError) {
+      // Secret exists in database - use it
+      console.log('✅ Found secret in database');
+      try {
+        decryptedSecret = decryptSecret(secretRecord.encrypted_secret);
+        console.log('✅ Secret decrypted from database');
+      } catch (decryptError: any) {
+        console.error('❌ Failed to decrypt secret from database:', decryptError);
+        return NextResponse.json(
+          { success: false, error: 'Failed to decrypt 2FA secret. Please start a fresh setup.' },
+          { status: 500 }
+        );
+      }
+    } else if (clientSecret && typeof clientSecret === 'string') {
+      // Fallback: use secret from client (for backward compatibility during transition)
+      console.log('⚠️ Using client-provided secret (fallback mode)');
+      decryptedSecret = clientSecret;
+      
+      // Also store it in the database for future use
+      try {
+        const encryptedSecret = encryptSecret(clientSecret);
+        await supabase
+          .from('two_factor_secrets')
+          .insert({
+            user_id: user.id,
+            encrypted_secret: encryptedSecret,
+            method: 'totp',
+          });
+        console.log('✅ Stored client secret in database for future use');
+      } catch (storeError) {
+        console.warn('⚠️ Failed to store secret in database (continuing anyway):', storeError);
+      }
+    } else {
+      // No secret found anywhere
+      console.error('❌ No 2FA secret found in database or request');
       return NextResponse.json(
-        { success: false, error: 'No 2FA setup found. Please initiate setup first.' },
+        { 
+          success: false, 
+          error: 'No 2FA setup found. Please click "Set Up Two-Factor Authentication" again to start fresh.' 
+        },
         { status: 404 }
       );
     }
 
-    // Decrypt the secret
-    let decryptedSecret: string;
-    try {
-      decryptedSecret = decryptSecret(secretRecord.encrypted_secret);
-    } catch (decryptError: any) {
-      console.error('❌ Failed to decrypt secret:', decryptError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to decrypt 2FA secret' },
-        { status: 500 }
-      );
-    }
-
     // Verify the token
+    console.log('🔍 Verifying TOTP code:', {
+      userId: user.id,
+      codeLength: token.length,
+      secretLength: decryptedSecret.length,
+      secretPrefix: decryptedSecret.substring(0, 8) + '...',
+    });
+
     const verified = speakeasy.totp.verify({
       secret: decryptedSecret,
       encoding: 'base32',
@@ -77,7 +110,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!verified) {
-      console.error('❌ 2FA token verification failed for user:', user.id);
+      console.error('❌ 2FA token verification failed for user:', user.id, {
+        code: token,
+        secretPrefix: decryptedSecret.substring(0, 8) + '...',
+      });
       
       // Log failed verification
       await supabase
