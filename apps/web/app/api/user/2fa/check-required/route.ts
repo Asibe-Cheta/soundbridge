@@ -45,10 +45,16 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 1. Authenticate user
     // ================================================
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request);
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
+      console.error('❌ Auth error details:', {
+        hasError: !!authError,
+        errorMessage: authError?.message,
+        hasUser: !!user,
+        userId: user?.id,
+      });
       return NextResponse.json(
         { 
           success: false,
@@ -165,11 +171,21 @@ export async function POST(request: NextRequest) {
     
     if (sessionError || !session) {
       console.error('❌ Failed to create verification session:', sessionError);
+      console.error('❌ Session error details:', {
+        hasError: !!sessionError,
+        errorMessage: sessionError?.message,
+        errorCode: sessionError?.code,
+        errorDetails: sessionError?.details,
+        errorHint: sessionError?.hint,
+        hasSession: !!session,
+        userId: user.id,
+      });
       return NextResponse.json(
         { 
           success: false,
           error: 'Failed to create verification session',
-          code: 'SESSION_CREATION_FAILED'
+          code: 'SESSION_CREATION_FAILED',
+          details: sessionError?.message || 'Unknown error'
         },
         { status: 500 }
       );

@@ -111,6 +111,16 @@ function LoginContent() {
 
           console.log('📊 2FA check response status:', check2FAResponse.status);
           
+          if (!check2FAResponse.ok) {
+            console.error('❌ 2FA check failed with status:', check2FAResponse.status);
+            const errorData = await check2FAResponse.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('❌ Error response:', errorData);
+            // Don't proceed with login if 2FA check fails - user might have 2FA enabled
+            setError('Failed to verify 2FA status. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+          
           const check2FAData = await check2FAResponse.json();
           console.log('📊 2FA check response data:', check2FAData);
 
@@ -123,9 +133,13 @@ function LoginContent() {
             await signOut();
             console.log('🚪 Signed out from Supabase - awaiting 2FA verification');
             
+            // Set state BEFORE setting loading to false to ensure UI updates
             setRequires2FA(true);
             setTwoFASessionToken(check2FAData.data.sessionToken);
+            setError(null); // Clear any previous errors
             setIsLoading(false);
+            
+            console.log('✅ State updated - requires2FA:', true, 'sessionToken:', check2FAData.data.sessionToken ? 'present' : 'missing');
             return;
           } else {
             console.log('✅ 2FA not required or already verified');
@@ -133,7 +147,9 @@ function LoginContent() {
           }
         } catch (checkError) {
           console.error('❌ Error checking 2FA:', checkError);
-          // If check fails, proceed with normal login (fail open for now)
+          setError('Failed to check 2FA status. Please try again.');
+          setIsLoading(false);
+          return;
         }
 
         // No 2FA required - proceed with normal login
