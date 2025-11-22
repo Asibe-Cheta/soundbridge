@@ -1,17 +1,15 @@
 /**
  * Browser-side Supabase client with cookie-based session storage
  * This ensures sessions work across both client and server
+ * 
+ * IMPORTANT: This now uses the shared global instance from supabase.ts
+ * to avoid multiple GoTrueClient instances
  */
 
-import { createBrowserClient } from '@supabase/ssr';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { supabase } from './supabase';
 
 export function createClient() {
-  return createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey
-  );
+  // Return the global instance to avoid multiple clients
+  return supabase;
 }
 

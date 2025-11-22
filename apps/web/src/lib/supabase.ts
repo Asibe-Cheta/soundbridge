@@ -49,29 +49,8 @@ if (process.env.NODE_ENV === 'development') {
 type TypedSupabaseClient = SupabaseClient<any>;
 
 export const createBrowserClient = (): TypedSupabaseClient => {
-  try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('❌ Supabase environment variables not configured for browser client');
-      console.error('Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY');
-      console.error('Available:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
-      throw new Error('Supabase environment variables not configured for browser client. Check your .env.local file.');
-    }
-    
-    const client = createClient<any>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce',
-        storageKey: 'soundbridge-auth',
-      },
-    });
-
-    return client;
-  } catch (error) {
-    console.error('Error creating browser client:', error);
-    throw error;
-  }
+  // Return the global client to avoid multiple instances
+  return getGlobalClient();
 };
 
 // Server client (for server-side operations with service role)
@@ -200,6 +179,9 @@ export const createServerComponentClient = () => {
   }
 };
 
+// Import the new cookie-based browser client
+import { createClient as createBrowserClientSSR } from '@supabase/ssr';
+
 // Single global client instance to prevent multiple GoTrueClient warnings
 let _globalSupabaseClient: TypedSupabaseClient | null = null;
 
@@ -212,19 +194,19 @@ const getGlobalClient = () => {
       throw new Error('Supabase environment variables not configured for global client. Check your .env.local file.');
     }
     
-    const client = createClient<any>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true, // Auto-detect session after OAuth redirect
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'soundbridge-auth',
-        // Note: flowType defaults to 'pkce' which is correct for Supabase OAuth
-        // The session will be stored in localStorage client-side, and cookies server-side
-      },
-    });
-
-    _globalSupabaseClient = client;
+    // Use the cookie-based browser client from @supabase/ssr
+    // This ensures sessions work across both client and server
+    if (typeof window !== 'undefined') {
+      _globalSupabaseClient = createBrowserClientSSR<any>(supabaseUrl, supabaseAnonKey);
+    } else {
+      // Server-side: use the old client (this should rarely be used)
+      _globalSupabaseClient = createClient<any>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+    }
   }
   
   return _globalSupabaseClient;
