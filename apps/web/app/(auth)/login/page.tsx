@@ -69,11 +69,39 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  const [requires2FA, setRequires2FA] = useState(false);
-  const [twoFASessionToken, setTwoFASessionToken] = useState<string | null>(null);
+  // Persist 2FA state in sessionStorage to survive re-renders after signOut
+  const [requires2FA, setRequires2FA] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const persisted = sessionStorage.getItem('2fa_required');
+      const token = sessionStorage.getItem('2fa_session_token');
+      if (persisted === 'true' && token) {
+        return true;
+      }
+    }
+    return false;
+  });
+  const [twoFASessionToken, setTwoFASessionToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('2fa_session_token');
+    }
+    return null;
+  });
   const [twoFACode, setTwoFACode] = useState('');
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
   const [twoFAError, setTwoFAError] = useState<string | null>(null);
+
+  // Sync 2FA state to sessionStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (requires2FA && twoFASessionToken) {
+        sessionStorage.setItem('2fa_required', 'true');
+        sessionStorage.setItem('2fa_session_token', twoFASessionToken);
+      } else {
+        sessionStorage.removeItem('2fa_required');
+        sessionStorage.removeItem('2fa_session_token');
+      }
+    }
+  }, [requires2FA, twoFASessionToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -456,6 +484,11 @@ function LoginContent() {
                   setTwoFASessionToken(null);
                   setTwoFACode('');
                   setTwoFAError(null);
+                  // Clear sessionStorage
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('2fa_required');
+                    sessionStorage.removeItem('2fa_session_token');
+                  }
                 }}
                 style={{
                   width: '100%',
