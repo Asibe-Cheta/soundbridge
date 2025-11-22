@@ -367,13 +367,13 @@ export async function POST(request: NextRequest) {
     // ================================================
     // For web app: We need to create a session that can be used immediately
     // We'll use the admin API to generate a session
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: sessionData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userData.user.email!,
     });
 
-    if (sessionError || !sessionData) {
-      console.error('❌ Failed to generate session link:', sessionError);
+    if (linkError || !sessionData) {
+      console.error('❌ Failed to generate session link:', linkError);
       // Still return success, but note that session creation failed
       return NextResponse.json({
         success: true,
