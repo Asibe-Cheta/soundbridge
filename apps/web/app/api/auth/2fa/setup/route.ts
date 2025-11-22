@@ -28,11 +28,24 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
+    // If a secret exists, delete it to allow fresh setup
+    // This handles cases where setup was started but never completed
     if (existingSecret) {
-      return NextResponse.json(
-        { success: false, error: '2FA is already enabled. Disable it first to set up again.' },
-        { status: 400 }
-      );
+      console.log('⚠️ Existing 2FA secret found, deleting to allow fresh setup...');
+      
+      // Delete existing secret
+      await supabase
+        .from('two_factor_secrets')
+        .delete()
+        .eq('user_id', user.id);
+      
+      // Also delete any backup codes (they're invalid if secret is being reset)
+      await supabase
+        .from('two_factor_backup_codes')
+        .delete()
+        .eq('user_id', user.id);
+      
+      console.log('✅ Cleared existing 2FA data for fresh setup');
     }
 
     // Generate a secret key for the user
