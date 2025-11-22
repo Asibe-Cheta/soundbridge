@@ -84,8 +84,8 @@ function LoginContent() {
       }
 
       if (data?.user) {
-        // Wait a moment for cookies to be set
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Give cookies more time to be set and synced
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         // Do a full page reload to ensure cookies are sent to server
         const redirectTo = searchParams.get('redirectTo') || '/dashboard';
