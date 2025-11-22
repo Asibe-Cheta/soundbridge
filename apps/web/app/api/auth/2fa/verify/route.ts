@@ -97,22 +97,53 @@ export async function POST(request: NextRequest) {
     // Verify the token
     console.log('🔍 Verifying TOTP code:', {
       userId: user.id,
+      code: token,
       codeLength: token.length,
       secretLength: decryptedSecret.length,
-      secretPrefix: decryptedSecret.substring(0, 8) + '...',
+      secretPrefix: decryptedSecret.substring(0, 12) + '...',
+      secretSuffix: '...' + decryptedSecret.substring(decryptedSecret.length - 8),
     });
 
+    // Generate what the current code should be for debugging
+    const currentCode = speakeasy.totp({
+      secret: decryptedSecret,
+      encoding: 'base32',
+      step: 30,
+    });
+    
+    console.log('🔍 Current expected TOTP code:', currentCode);
+
+    // Try to verify with multiple time windows for better tolerance
     const verified = speakeasy.totp.verify({
       secret: decryptedSecret,
       encoding: 'base32',
       token: token,
-      window: 2 // Allow 2 time windows (±1 minute tolerance)
+      window: 2, // Allow 2 time windows (±1 minute tolerance)
+      step: 30, // 30-second time steps (standard)
     });
 
+    // If verification fails, try with a larger window (for clock skew)
+    let verifiedWithLargeWindow = false;
     if (!verified) {
+      console.log('⚠️ Initial verification failed, trying with larger window...');
+      verifiedWithLargeWindow = speakeasy.totp.verify({
+        secret: decryptedSecret,
+        encoding: 'base32',
+        token: token,
+        window: 4, // Allow 4 time windows (±2 minutes tolerance)
+        step: 30,
+      });
+    }
+
+    const isVerified = verified || verifiedWithLargeWindow;
+
+    if (!isVerified) {
       console.error('❌ 2FA token verification failed for user:', user.id, {
-        code: token,
-        secretPrefix: decryptedSecret.substring(0, 8) + '...',
+        providedCode: token,
+        expectedCode: currentCode,
+        secretLength: decryptedSecret.length,
+        secretPrefix: decryptedSecret.substring(0, 12) + '...',
+        timeWindow: verified ? 'standard' : verifiedWithLargeWindow ? 'large' : 'none',
       });
       
       // Log failed verification
@@ -128,12 +159,18 @@ export async function POST(request: NextRequest) {
         });
       
       return NextResponse.json(
-        { success: false, error: 'Invalid verification code' },
+        { 
+          success: false, 
+          error: 'Invalid verification code. Please make sure you\'re using the current code from your authenticator app.',
+          code: 'INVALID_CODE'
+        },
         { status: 400 }
       );
     }
 
-    console.log('✅ 2FA token verified for user:', user.id);
+    console.log('✅ 2FA token verified for user:', user.id, {
+      usedLargeWindow: !verified && verifiedWithLargeWindow,
+    });
 
     // Generate backup codes
     const { codes, hashes } = await generateBackupCodesWithHashes(8);
