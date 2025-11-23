@@ -155,14 +155,61 @@ export async function POST(request: NextRequest) {
     if (session.verified) {
       console.log('✅ Session already verified');
       
-      // Generate new Supabase session
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.generateLink({
+      // Get user email for token generation
+      const { data: userDataForVerified, error: userErrorForVerified } = await supabaseAdmin.auth.admin.getUserById(
+        session.user_id
+      );
+      
+      if (userErrorForVerified || !userDataForVerified.user) {
+        console.error('❌ Failed to get user:', userErrorForVerified);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to retrieve user',
+            code: 'USER_NOT_FOUND'
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Generate magic link to get hashed token
+      const { data: linkDataForVerified, error: linkErrorForVerified } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
-        email: (await supabaseAdmin.auth.admin.getUserById(session.user_id)).data.user?.email || '',
+        email: userDataForVerified.user.email!,
       });
       
-      if (authError || !authData) {
-        console.error('❌ Failed to generate session:', authError);
+      if (linkErrorForVerified || !linkDataForVerified?.properties?.hashed_token) {
+        console.error('❌ Failed to generate link:', linkErrorForVerified);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to create session',
+            code: 'SESSION_CREATION_FAILED'
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Create non-admin client to verify OTP and get session tokens
+      const supabaseAnon = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+      
+      // Verify OTP to create session and get tokens
+      const { data: sessionDataForVerified, error: verifyErrorForVerified } = await supabaseAnon.auth.verifyOtp({
+        type: 'email',
+        token_hash: linkDataForVerified.properties.hashed_token,
+      });
+      
+      if (verifyErrorForVerified || !sessionDataForVerified?.session) {
+        console.error('❌ Failed to verify OTP for already verified session:', verifyErrorForVerified);
         return NextResponse.json(
           { 
             success: false,
@@ -177,6 +224,10 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           verified: true,
+          accessToken: sessionDataForVerified.session.access_token,
+          refreshToken: sessionDataForVerified.session.refresh_token,
+          userId: session.user_id,
+          email: userDataForVerified.user.email,
           message: 'Already verified',
         },
       });
@@ -326,14 +377,14 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Generate new access token for the user
-    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+    // Generate magic link to get hashed token
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userData.user.email!,
     });
     
-    if (tokenError || !tokenData) {
-      console.error('❌ Failed to generate tokens:', tokenError);
+    if (linkError || !linkData?.properties?.hashed_token) {
+      console.error('❌ Failed to generate link:', linkError);
       return NextResponse.json(
         { 
           success: false,
@@ -344,7 +395,37 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('✅ Session tokens generated');
+    // Create non-admin client to verify OTP and get session tokens
+    const supabaseAnon = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+    
+    // Verify OTP to create session and get tokens
+    const { data: sessionData, error: verifyError } = await supabaseAnon.auth.verifyOtp({
+      type: 'email',
+      token_hash: linkData.properties.hashed_token,
+    });
+    
+    if (verifyError || !sessionData?.session) {
+      console.error('❌ Failed to verify OTP:', verifyError);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to create session',
+          code: 'SESSION_CREATION_FAILED'
+        },
+        { status: 500 }
+      );
+    }
+    
+    console.log('✅ Session tokens generated successfully');
     
     // ================================================
     // 12. Log successful verification
@@ -361,51 +442,21 @@ export async function POST(request: NextRequest) {
       });
     
     console.log('✅ 2FA verification completed successfully');
-    
-    // ================================================
-    // 13. Create a proper Supabase session for the user
-    // ================================================
-    // For web app: We need to create a session that can be used immediately
-    // We'll use the admin API to generate a session
-    const { data: sessionData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userData.user.email!,
-    });
-
-    if (linkError || !sessionData) {
-      console.error('❌ Failed to generate session link:', linkError);
-      // Still return success, but note that session creation failed
-      return NextResponse.json({
-        success: true,
-        data: {
-          verified: true,
-          userId: session.user_id,
-          message: 'Verification successful. Please sign in again.',
-          needsReSignIn: true,
-        },
-      });
-    }
-
-    // Extract tokens from the properties if available
-    // Note: generateLink returns a link, but we need to extract tokens differently
-    // For now, we'll return success and let the client sign in again
-    // A better approach would be to use admin.createUser() or admin.updateUserById()
-    // to set a session, but that's more complex
-    
-    console.log('✅ 2FA verification completed successfully');
 
     // ================================================
-    // 14. Return response with session info
+    // 13. Return response with session tokens
     // ================================================
     return NextResponse.json({
       success: true,
       data: {
         verified: true,
+        accessToken: sessionData.session.access_token,
+        refreshToken: sessionData.session.refresh_token,
         userId: session.user_id,
         email: userData.user.email,
         message: 'Verification successful',
-        // Note: For web, client should sign in again after verification
-        // The session is marked as verified, so subsequent login will work
+        // Note: Web app can continue using re-sign-in flow if preferred
+        // Mobile app should use these tokens to set Supabase session
       },
     });
     
