@@ -47,29 +47,37 @@ import { createClient } from '@supabase/supabase-js';
 import { encryptSecret } from '@/src/lib/encryption';
 import crypto from 'crypto';
 
-// Create admin client for server-side operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+// Helper function to create admin client (ensures fresh client with correct env vars)
+function getSupabaseAdmin() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
   }
-);
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
 
-// Create regular client for token generation (uses anon key)
-const supabaseAnon = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+// Helper function to create anon client
+function getSupabaseAnon() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,6 +116,9 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 2. Validate credentials using Supabase Auth
     // ================================================
+    // Create fresh admin client for this request
+    const supabaseAdmin = getSupabaseAdmin();
+    
     // Sign in to validate credentials (this creates a session, but we'll sign out immediately)
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email,
@@ -166,6 +177,9 @@ export async function POST(request: NextRequest) {
     if (!secret) {
       console.log('✅ No 2FA required - authenticating user');
       
+      // Create fresh anon client for token generation
+      const supabaseAnon = getSupabaseAnon();
+      
       // Re-authenticate to get session tokens
       const { data: authData, error: authError } = await supabaseAnon.auth.signInWithPassword({
         email,
@@ -219,6 +233,19 @@ export async function POST(request: NextRequest) {
     // Create verification session (expires in 5 minutes)
     // IMPORTANT: Using supabaseAdmin (service role) to bypass RLS
     // The RLS policy "Service role only for verification sessions" allows service_role full access
+    
+    // Ensure we're using the admin client (should already be created above, but verify)
+    // Note: supabaseAdmin is already created at the start of the function
+    
+    // Debug logging to verify service role client usage
+    console.log('🔍 Service Role Client Verification:');
+    console.log('  - supabaseAdmin exists:', !!supabaseAdmin);
+    console.log('  - SUPABASE_SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log('  - SUPABASE_SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0);
+    console.log('  - SUPABASE_SERVICE_ROLE_KEY starts with:', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 10) || 'N/A');
+    console.log('  - SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('  - Client type check:', typeof supabaseAdmin);
+    
     const { data: session, error: sessionError } = await supabaseAdmin
       .from('two_factor_verification_sessions')
       .insert({
