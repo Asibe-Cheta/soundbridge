@@ -546,6 +546,9 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 13. Return response with session tokens
     // ================================================
+    // Get email from session (if from login-initiate) or from sessionData (legacy flow)
+    const userEmail = session.email || sessionData.user?.email || 'unknown';
+    
     return NextResponse.json({
       success: true,
       data: {
@@ -553,7 +556,7 @@ export async function POST(request: NextRequest) {
         accessToken: sessionData.session.access_token,
         refreshToken: sessionData.session.refresh_token,
         userId: session.user_id,
-        email: userData.user.email,
+        email: userEmail,
         message: 'Verification successful',
         // Note: Web app can continue using re-sign-in flow if preferred
         // Mobile app should use these tokens to set Supabase session
