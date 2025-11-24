@@ -6,9 +6,12 @@
  * 
  * Request Body:
  * {
- *   "sessionToken": "temp-session-uuid",
+ *   "sessionToken": "temp-session-uuid", // Legacy: session_token (TEXT)
+ *   "verificationSessionId": "uuid", // New: session id (UUID) from login-initiate
  *   "code": "123456" // 6-digit TOTP code
  * }
+ * 
+ * Note: Either sessionToken OR verificationSessionId must be provided
  * 
  * Response:
  * {
@@ -27,7 +30,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
 import { createClient } from '@supabase/supabase-js';
-import { decryptSecret } from '@/src/lib/encryption';
+import { decryptSecret, encryptSecret } from '@/src/lib/encryption';
 
 // Create a service role client for server-side operations
 const supabaseAdmin = createClient(
@@ -52,13 +55,14 @@ export async function POST(request: NextRequest) {
     // 1. Parse and validate request
     // ================================================
     const body = await request.json();
-    const { sessionToken, code } = body;
+    const { sessionToken, verificationSessionId, code } = body;
     
-    if (!sessionToken || typeof sessionToken !== 'string') {
+    // Either sessionToken (legacy) or verificationSessionId (new) must be provided
+    if (!sessionToken && !verificationSessionId) {
       return NextResponse.json(
         { 
           success: false,
-          error: 'Session token is required',
+          error: 'Either sessionToken or verificationSessionId is required',
           code: 'INVALID_REQUEST'
         },
         { status: 400 }
@@ -93,11 +97,28 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 2. Retrieve verification session
     // ================================================
-    const { data: session, error: sessionError } = await supabaseAdmin
-      .from('two_factor_verification_sessions')
-      .select('*')
-      .eq('session_token', sessionToken)
-      .maybeSingle();
+    let session;
+    let sessionError;
+    
+    if (verificationSessionId) {
+      // New flow: lookup by UUID id
+      const result = await supabaseAdmin
+        .from('two_factor_verification_sessions')
+        .select('*')
+        .eq('id', verificationSessionId)
+        .maybeSingle();
+      session = result.data;
+      sessionError = result.error;
+    } else {
+      // Legacy flow: lookup by session_token
+      const result = await supabaseAdmin
+        .from('two_factor_verification_sessions')
+        .select('*')
+        .eq('session_token', sessionToken)
+        .maybeSingle();
+      session = result.data;
+      sessionError = result.error;
+    }
     
     if (sessionError || !session) {
       console.error('❌ Session not found:', sessionError);
@@ -155,43 +176,8 @@ export async function POST(request: NextRequest) {
     if (session.verified) {
       console.log('✅ Session already verified');
       
-      // Get user email for token generation
-      const { data: userDataForVerified, error: userErrorForVerified } = await supabaseAdmin.auth.admin.getUserById(
-        session.user_id
-      );
-      
-      if (userErrorForVerified || !userDataForVerified.user) {
-        console.error('❌ Failed to get user:', userErrorForVerified);
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Failed to retrieve user',
-            code: 'USER_NOT_FOUND'
-          },
-          { status: 500 }
-        );
-      }
-      
-      // Generate magic link to get hashed token
-      const { data: linkDataForVerified, error: linkErrorForVerified } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: userDataForVerified.user.email!,
-      });
-      
-      if (linkErrorForVerified || !linkDataForVerified?.properties?.hashed_token) {
-        console.error('❌ Failed to generate link:', linkErrorForVerified);
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Failed to create session',
-            code: 'SESSION_CREATION_FAILED'
-          },
-          { status: 500 }
-        );
-      }
-      
-      // Create non-admin client to verify OTP and get session tokens
-      const supabaseAnon = createClient(
+      // Create non-admin client for token generation
+      const supabaseAnonForVerified = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
@@ -202,14 +188,90 @@ export async function POST(request: NextRequest) {
         }
       );
       
-      // Verify OTP to create session and get tokens
-      const { data: sessionDataForVerified, error: verifyErrorForVerified } = await supabaseAnon.auth.verifyOtp({
-        type: 'email',
-        token_hash: linkDataForVerified.properties.hashed_token,
-      });
+      let sessionDataForVerified;
+      let verifyErrorForVerified;
+      let userEmail;
+      
+      // If we have email and password_hash (from login-initiate), use direct authentication
+      if (session.email && session.password_hash) {
+        console.log('✅ Using stored credentials for already verified session');
+        
+        try {
+          // Decrypt password
+          const decryptedPassword = decryptSecret(session.password_hash);
+          
+          // Authenticate directly with email and password
+          const authResult = await supabaseAnonForVerified.auth.signInWithPassword({
+            email: session.email,
+            password: decryptedPassword,
+          });
+          
+          sessionDataForVerified = authResult.data;
+          verifyErrorForVerified = authResult.error;
+          userEmail = session.email;
+        } catch (decryptError: any) {
+          console.error('❌ Failed to decrypt password:', decryptError);
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Failed to authenticate',
+              code: 'AUTHENTICATION_FAILED'
+            },
+            { status: 500 }
+          );
+        }
+      } else {
+        // Legacy flow: use generateLink + verifyOtp
+        console.log('✅ Using legacy generateLink flow for already verified session');
+        
+        const { data: userDataForVerified, error: userErrorForVerified } = await supabaseAdmin.auth.admin.getUserById(
+          session.user_id
+        );
+        
+        if (userErrorForVerified || !userDataForVerified.user) {
+          console.error('❌ Failed to get user:', userErrorForVerified);
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Failed to retrieve user',
+              code: 'USER_NOT_FOUND'
+            },
+            { status: 500 }
+          );
+        }
+        
+        userEmail = userDataForVerified.user.email!;
+        
+        // Generate magic link to get hashed token
+        const { data: linkDataForVerified, error: linkErrorForVerified } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: userEmail,
+        });
+        
+        if (linkErrorForVerified || !linkDataForVerified?.properties?.hashed_token) {
+          console.error('❌ Failed to generate link:', linkErrorForVerified);
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Failed to create session',
+              code: 'SESSION_CREATION_FAILED'
+            },
+            { status: 500 }
+          );
+        }
+        
+        // Verify OTP to create session and get tokens
+        const verifyResult = await supabaseAnonForVerified.auth.verifyOtp({
+          type: 'email',
+          token_hash: linkDataForVerified.properties.hashed_token,
+        });
+        
+        sessionDataForVerified = verifyResult.data;
+        verifyErrorForVerified = verifyResult.error;
+      }
       
       if (verifyErrorForVerified || !sessionDataForVerified?.session) {
-        console.error('❌ Failed to verify OTP for already verified session:', verifyErrorForVerified);
+        console.error('❌ Failed to create session for already verified:', verifyErrorForVerified);
         return NextResponse.json(
           { 
             success: false,
@@ -227,7 +289,7 @@ export async function POST(request: NextRequest) {
           accessToken: sessionDataForVerified.session.access_token,
           refreshToken: sessionDataForVerified.session.refresh_token,
           userId: session.user_id,
-          email: userDataForVerified.user.email,
+          email: userEmail,
           message: 'Already verified',
         },
       });
@@ -359,43 +421,9 @@ export async function POST(request: NextRequest) {
       .eq('id', session.id);
     
     // ================================================
-    // 11. Generate Supabase session tokens using admin API
+    // 11. Generate Supabase session tokens
     // ================================================
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
-      session.user_id
-    );
-    
-    if (userError || !userData.user) {
-      console.error('❌ Failed to get user:', userError);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Failed to retrieve user',
-          code: 'USER_NOT_FOUND'
-        },
-        { status: 500 }
-      );
-    }
-    
-    // Generate magic link to get hashed token
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userData.user.email!,
-    });
-    
-    if (linkError || !linkData?.properties?.hashed_token) {
-      console.error('❌ Failed to generate link:', linkError);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Failed to create session',
-          code: 'TOKEN_GENERATION_FAILED'
-        },
-        { status: 500 }
-      );
-    }
-    
-    // Create non-admin client to verify OTP and get session tokens
+    // Create non-admin client for token generation
     const supabaseAnon = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -407,14 +435,86 @@ export async function POST(request: NextRequest) {
       }
     );
     
-    // Verify OTP to create session and get tokens
-    const { data: sessionData, error: verifyError } = await supabaseAnon.auth.verifyOtp({
-      type: 'email',
-      token_hash: linkData.properties.hashed_token,
-    });
+    let sessionData;
+    let verifyError;
+    
+    // If we have email and password_hash (from login-initiate), use direct authentication
+    if (session.email && session.password_hash) {
+      console.log('✅ Using stored credentials for authentication');
+      
+      try {
+        // Decrypt password
+        const decryptedPassword = decryptSecret(session.password_hash);
+        
+        // Authenticate directly with email and password
+        const authResult = await supabaseAnon.auth.signInWithPassword({
+          email: session.email,
+          password: decryptedPassword,
+        });
+        
+        sessionData = authResult.data;
+        verifyError = authResult.error;
+      } catch (decryptError: any) {
+        console.error('❌ Failed to decrypt password:', decryptError);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to authenticate',
+            code: 'AUTHENTICATION_FAILED'
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Legacy flow: use generateLink + verifyOtp
+      console.log('✅ Using legacy generateLink flow');
+      
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+        session.user_id
+      );
+      
+      if (userError || !userData.user) {
+        console.error('❌ Failed to get user:', userError);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to retrieve user',
+            code: 'USER_NOT_FOUND'
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Generate magic link to get hashed token
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: userData.user.email!,
+      });
+      
+      if (linkError || !linkData?.properties?.hashed_token) {
+        console.error('❌ Failed to generate link:', linkError);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to create session',
+            code: 'TOKEN_GENERATION_FAILED'
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Verify OTP to create session and get tokens
+      const verifyResult = await supabaseAnon.auth.verifyOtp({
+        type: 'email',
+        token_hash: linkData.properties.hashed_token,
+      });
+      
+      sessionData = verifyResult.data;
+      verifyError = verifyResult.error;
+    }
     
     if (verifyError || !sessionData?.session) {
-      console.error('❌ Failed to verify OTP:', verifyError);
+      console.error('❌ Failed to create session:', verifyError);
       return NextResponse.json(
         { 
           success: false,

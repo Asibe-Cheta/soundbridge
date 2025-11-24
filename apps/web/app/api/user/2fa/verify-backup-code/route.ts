@@ -6,9 +6,12 @@
  * 
  * Request Body:
  * {
- *   "sessionToken": "temp-session-uuid",
+ *   "sessionToken": "temp-session-uuid", // Legacy: session_token (TEXT)
+ *   "verificationSessionId": "uuid", // New: session id (UUID) from login-initiate
  *   "backupCode": "A3F2-K8L9M0" // Backup code
  * }
+ * 
+ * Note: Either sessionToken OR verificationSessionId must be provided
  * 
  * Response:
  * {
@@ -26,6 +29,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyBackupCode, formatBackupCode, isValidBackupCodeFormat } from '@/src/lib/backup-codes';
+import { decryptSecret } from '@/src/lib/encryption';
 
 // Create a service role client for server-side operations
 const supabaseAdmin = createClient(
@@ -50,13 +54,14 @@ export async function POST(request: NextRequest) {
     // 1. Parse and validate request
     // ================================================
     const body = await request.json();
-    const { sessionToken, backupCode } = body;
+    const { sessionToken, verificationSessionId, backupCode } = body;
     
-    if (!sessionToken || typeof sessionToken !== 'string') {
+    // Either sessionToken (legacy) or verificationSessionId (new) must be provided
+    if (!sessionToken && !verificationSessionId) {
       return NextResponse.json(
         { 
           success: false,
-          error: 'Session token is required',
+          error: 'Either sessionToken or verificationSessionId is required',
           code: 'INVALID_REQUEST'
         },
         { status: 400 }
@@ -98,11 +103,28 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 2. Retrieve verification session
     // ================================================
-    const { data: session, error: sessionError } = await supabaseAdmin
-      .from('two_factor_verification_sessions')
-      .select('*')
-      .eq('session_token', sessionToken)
-      .maybeSingle();
+    let session;
+    let sessionError;
+    
+    if (verificationSessionId) {
+      // New flow: lookup by UUID id
+      const result = await supabaseAdmin
+        .from('two_factor_verification_sessions')
+        .select('*')
+        .eq('id', verificationSessionId)
+        .maybeSingle();
+      session = result.data;
+      sessionError = result.error;
+    } else {
+      // Legacy flow: lookup by session_token
+      const result = await supabaseAdmin
+        .from('two_factor_verification_sessions')
+        .select('*')
+        .eq('session_token', sessionToken)
+        .maybeSingle();
+      session = result.data;
+      sessionError = result.error;
+    }
     
     if (sessionError || !session) {
       console.error('❌ Session not found:', sessionError);
@@ -342,13 +364,123 @@ export async function POST(request: NextRequest) {
     console.log('✅ Backup code verification completed successfully');
     
     // ================================================
-    // 13. Return response
+    // 13. Generate Supabase session tokens
+    // ================================================
+    // Create non-admin client for token generation
+    const supabaseAnon = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+    
+    let sessionData;
+    let verifyError;
+    
+    // If we have email and password_hash (from login-initiate), use direct authentication
+    if (session.email && session.password_hash) {
+      console.log('✅ Using stored credentials for authentication');
+      
+      try {
+        // Decrypt password
+        const decryptedPassword = decryptSecret(session.password_hash);
+        
+        // Authenticate directly with email and password
+        const authResult = await supabaseAnon.auth.signInWithPassword({
+          email: session.email,
+          password: decryptedPassword,
+        });
+        
+        sessionData = authResult.data;
+        verifyError = authResult.error;
+      } catch (decryptError: any) {
+        console.error('❌ Failed to decrypt password:', decryptError);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to authenticate',
+            code: 'AUTHENTICATION_FAILED'
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Legacy flow: use generateLink + verifyOtp
+      console.log('✅ Using legacy generateLink flow');
+      
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+        session.user_id
+      );
+      
+      if (userError || !userData.user) {
+        console.error('❌ Failed to get user:', userError);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to retrieve user',
+            code: 'USER_NOT_FOUND'
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Generate magic link to get hashed token
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: userData.user.email!,
+      });
+      
+      if (linkError || !linkData?.properties?.hashed_token) {
+        console.error('❌ Failed to generate link:', linkError);
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to create session',
+            code: 'TOKEN_GENERATION_FAILED'
+          },
+          { status: 500 }
+        );
+      }
+      
+      // Verify OTP to create session and get tokens
+      const verifyResult = await supabaseAnon.auth.verifyOtp({
+        type: 'email',
+        token_hash: linkData.properties.hashed_token,
+      });
+      
+      sessionData = verifyResult.data;
+      verifyError = verifyResult.error;
+    }
+    
+    if (verifyError || !sessionData?.session) {
+      console.error('❌ Failed to create session:', verifyError);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to create session',
+          code: 'SESSION_CREATION_FAILED'
+        },
+        { status: 500 }
+      );
+    }
+    
+    console.log('✅ Session tokens generated successfully');
+    
+    // ================================================
+    // 14. Return response
     // ================================================
     return NextResponse.json({
       success: true,
       data: {
         verified: true,
         userId: session.user_id,
+        email: session.email || sessionData.user?.email,
+        accessToken: sessionData.session.access_token,
+        refreshToken: sessionData.session.refresh_token,
         remainingCodes: remainingCodes,
         warning: remainingCodes <= 2
           ? 'You have only ' + remainingCodes + ' backup code(s) remaining. Generate new ones soon.'
