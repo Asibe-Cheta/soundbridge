@@ -217,6 +217,8 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent');
     
     // Create verification session (expires in 5 minutes)
+    // IMPORTANT: Using supabaseAdmin (service role) to bypass RLS
+    // The RLS policy "Service role only for verification sessions" allows service_role full access
     const { data: session, error: sessionError } = await supabaseAdmin
       .from('two_factor_verification_sessions')
       .insert({
@@ -235,6 +237,16 @@ export async function POST(request: NextRequest) {
     
     if (sessionError || !session) {
       console.error('❌ Failed to create verification session:', sessionError);
+      console.error('❌ Session error details:', {
+        hasError: !!sessionError,
+        errorMessage: sessionError?.message,
+        errorCode: sessionError?.code,
+        errorDetails: sessionError?.details,
+        errorHint: sessionError?.hint,
+        hasSession: !!session,
+        userId: userId,
+        usingServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      });
       return NextResponse.json(
         { 
           success: false,
