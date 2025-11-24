@@ -1,448 +1,242 @@
+/**
+ * GET /api/search
+ * 
+ * Search for posts, professionals, and opportunities
+ * 
+ * Query Parameters:
+ * - q: Search query (required)
+ * - type: Filter by type ('posts', 'professionals', 'opportunities', or 'all')
+ * - page: Page number (default: 1)
+ * - limit: Results per page (default: 20, max: 50)
+ * 
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "posts": [...],
+ *     "professionals": [...],
+ *     "opportunities": [...],
+ *     "pagination": { page, limit, total, has_more }
+ *   }
+ * }
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    console.log('🔍 Search API called');
+
+    // Authenticate user
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q') || '';
+    const query = searchParams.get('q');
+    const type = searchParams.get('type') || 'all';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const contentTypes = searchParams.get('content_types')?.split(',') || [];
-    const genre = searchParams.get('genre') || '';
-    const category = searchParams.get('category') || '';
-    const location = searchParams.get('location') || '';
-    const country = searchParams.get('country') || '';
-    const dateRange = searchParams.get('date_range') || '';
-    const priceRange = searchParams.get('price_range') || '';
-    const sortBy = searchParams.get('sort_by') || 'relevance';
-
-    // Perform search based on content types
-    const results: {
-      music: unknown[];
-      creators: unknown[];
-      events: unknown[];
-      podcasts: unknown[];
-      total_results: number;
-      has_more: boolean;
-    } = {
-      music: [],
-      creators: [],
-      events: [],
-      podcasts: [],
-      total_results: 0,
-      has_more: false
-    };
-
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
     const offset = (page - 1) * limit;
 
-    // Search music tracks
-    if (!contentTypes.length || contentTypes.includes('music')) {
-      let musicQuery = supabase
-        .from('audio_tracks')
-        .select(`
-          *,
-          creator:profiles!audio_tracks_creator_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            location,
-            country
-          )
-        `)
-        .eq('is_public', true)
-        .not('genre', 'eq', 'podcast')
-        .not('genre', 'eq', 'Podcast')
-        .not('genre', 'eq', 'PODCAST');
+    if (!query || query.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Search query is required' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
-      if (query) {
-        musicQuery = musicQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`);
-      }
+    const searchTerm = `%${query.trim()}%`;
 
-      if (genre && genre !== 'all') {
-        musicQuery = musicQuery.eq('genre', genre);
-      }
+    const results: {
+      posts: any[];
+      professionals: any[];
+      opportunities: any[];
+    } = {
+      posts: [],
+      professionals: [],
+      opportunities: [],
+    };
 
-      if (location && location !== 'all') {
-        musicQuery = musicQuery.ilike('creator.location', `%${location}%`);
-      }
-
-      if (country) {
-        musicQuery = musicQuery.eq('creator.country', country);
-      }
-
-      // Apply sorting
-      switch (sortBy) {
-        case 'trending':
-          musicQuery = musicQuery.order('play_count', { ascending: false });
-          break;
-        case 'latest':
-          musicQuery = musicQuery.order('created_at', { ascending: false });
-          break;
-        case 'popular':
-          musicQuery = musicQuery.order('like_count', { ascending: false });
-          break;
-        default:
-          musicQuery = musicQuery.order('play_count', { ascending: false });
-      }
-
-      const { data: musicData, error: musicError } = await musicQuery
+    // Search posts
+    if (type === 'all' || type === 'posts') {
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select('id, content, post_type, created_at, user_id')
+        .ilike('content', searchTerm)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      if (!musicError && musicData) {
-        results.music = musicData.map(track => ({
-          ...track,
-          formatted_duration: formatDuration(track.duration),
-          formatted_play_count: formatPlayCount(track.play_count),
-          formatted_like_count: formatPlayCount(track.like_count),
-          creator_name: track.creator?.display_name || 'Unknown Artist'
-        }));
+      if (!postsError && posts) {
+        const postIds = posts.map((p) => p.id);
+        const userIds = [...new Set(posts.map((p) => p.user_id))];
+
+        // Get authors
+        const { data: authors } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, professional_headline')
+          .in('id', userIds);
+
+        // Get engagement counts
+        const { data: reactions } = await supabase
+          .from('post_reactions')
+          .select('post_id')
+          .in('post_id', postIds);
+
+        const { data: comments } = await supabase
+          .from('post_comments')
+          .select('post_id')
+          .in('post_id', postIds)
+          .is('deleted_at', null);
+
+        const authorMap = new Map();
+        if (authors) {
+          authors.forEach((a) => authorMap.set(a.id, a));
+        }
+
+        const reactionCounts = new Map();
+        if (reactions) {
+          reactions.forEach((r) => {
+            reactionCounts.set(r.post_id, (reactionCounts.get(r.post_id) || 0) + 1);
+          });
+        }
+
+        const commentCounts = new Map();
+        if (comments) {
+          comments.forEach((c) => {
+            commentCounts.set(c.post_id, (commentCounts.get(c.post_id) || 0) + 1);
+          });
+        }
+
+        results.posts = posts.map((post) => {
+          const author = authorMap.get(post.user_id);
+          return {
+            id: post.id,
+            content: post.content,
+            post_type: post.post_type,
+            created_at: post.created_at,
+            author: {
+              id: post.user_id,
+              name: author?.display_name || author?.username || 'Unknown',
+              username: author?.username,
+              avatar_url: author?.avatar_url,
+            },
+            reaction_count: reactionCounts.get(post.id) || 0,
+            comment_count: commentCounts.get(post.id) || 0,
+          };
+        });
       }
     }
 
-    // Search creators
-    if (!contentTypes.length || contentTypes.includes('creators')) {
-      let creatorQuery = supabase
+    // Search professionals
+    if (type === 'all' || type === 'professionals') {
+      const { data: professionals, error: profError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          followers:follows!follows_following_id_fkey(count),
-          tracks:audio_tracks!audio_tracks_creator_id_fkey(count)
-        `)
-        .eq('role', 'creator');
-
-      if (query) {
-        creatorQuery = creatorQuery.or(`display_name.ilike.%${query}%,username.ilike.%${query}%,bio.ilike.%${query}%`);
-      }
-
-      if (location && location !== 'all') {
-        creatorQuery = creatorQuery.ilike('location', `%${location}%`);
-      }
-
-      if (country) {
-        creatorQuery = creatorQuery.eq('country', country);
-      }
-
-      // Apply sorting
-      switch (sortBy) {
-        case 'trending':
-          creatorQuery = creatorQuery.order('created_at', { ascending: false });
-          break;
-        case 'popular':
-          creatorQuery = creatorQuery.order('created_at', { ascending: false });
-          break;
-        default:
-          creatorQuery = creatorQuery.order('created_at', { ascending: false });
-      }
-
-      const { data: creatorData, error: creatorError } = await creatorQuery
+        .select('id, username, display_name, avatar_url, professional_headline, location, country')
+        .or(`display_name.ilike.${searchTerm},username.ilike.${searchTerm},professional_headline.ilike.${searchTerm}`)
+        .neq('id', user.id) // Exclude self
+        .order('display_name', { ascending: true })
         .range(offset, offset + limit - 1);
 
-      if (!creatorError && creatorData) {
-        console.log('🔍 API: Found creators:', creatorData.length, creatorData.map(c => ({ id: c.id, display_name: c.display_name, first_name: c.first_name, last_name: c.last_name, username: c.username })));
-        results.creators = creatorData.map(creator => ({
-          ...creator,
-          followers_count: creator.followers?.[0]?.count || 0,
-          tracks_count: creator.tracks?.[0]?.count || 0
+      if (!profError && professionals) {
+        results.professionals = professionals.map((prof) => ({
+          id: prof.id,
+          name: prof.display_name || prof.username || 'Unknown',
+          username: prof.username,
+          avatar_url: prof.avatar_url,
+          headline: prof.professional_headline,
+          location: prof.location,
+          country: prof.country,
         }));
-      } else if (creatorError) {
-        console.error('❌ API: Error searching creators:', creatorError);
       }
     }
 
-    // Search events
-    if (!contentTypes.length || contentTypes.includes('events')) {
-      let eventQuery = supabase
-        .from('events')
-        .select(`
-          *,
-          creator:profiles!events_creator_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            location,
-            country
-          ),
-          attendees:event_attendees!event_attendees_event_id_fkey(count)
-        `);
+    // Search opportunities (posts with type 'opportunity')
+    if (type === 'all' || type === 'opportunities') {
+      const { data: opportunities, error: oppError } = await supabase
+        .from('posts')
+        .select('id, content, created_at, user_id')
+        .eq('post_type', 'opportunity')
+        .ilike('content', searchTerm)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-      if (query) {
-        eventQuery = eventQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,location.ilike.%${query}%,venue.ilike.%${query}%`);
-      }
+      if (!oppError && opportunities) {
+        const userIds = [...new Set(opportunities.map((o) => o.user_id))];
+        const { data: authors } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', userIds);
 
-      if (category && category !== 'all') {
-        eventQuery = eventQuery.eq('category', category);
-      }
-
-      if (location && location !== 'all') {
-        eventQuery = eventQuery.ilike('location', `%${location}%`);
-      }
-
-      if (country) {
-        eventQuery = eventQuery.eq('creator.country', country);
-      }
-
-      // Apply date range filter
-      if (dateRange && dateRange !== 'all') {
-        const validDateRanges = ['today', 'week', 'month', 'next-month'] as const;
-        if (validDateRanges.includes(dateRange as any)) {
-          const dateFilter = getDateRangeFilter(dateRange as 'today' | 'week' | 'month' | 'next-month');
-          if (dateFilter) {
-            eventQuery = eventQuery.gte('event_date', dateFilter.start);
-            if (dateFilter.end) {
-              eventQuery = eventQuery.lte('event_date', dateFilter.end);
-            }
-          }
+        const authorMap = new Map();
+        if (authors) {
+          authors.forEach((a) => authorMap.set(a.id, a));
         }
-      }
 
-      // Apply price range filter
-      if (priceRange && priceRange !== 'all') {
-        const validPriceRanges = ['free', 'low', 'medium', 'high'] as const;
-        if (validPriceRanges.includes(priceRange as any)) {
-          const priceFilter = getPriceRangeFilter(priceRange as 'free' | 'low' | 'medium' | 'high');
-          if (priceFilter) {
-            if (country === 'Nigeria') {
-              eventQuery = eventQuery.gte('price_ngn', priceFilter.min);
-              if (priceFilter.max) {
-                eventQuery = eventQuery.lte('price_ngn', priceFilter.max);
-              }
-            } else {
-              eventQuery = eventQuery.gte('price_gbp', priceFilter.min);
-              if (priceFilter.max) {
-                eventQuery = eventQuery.lte('price_gbp', priceFilter.max);
-              }
-            }
-          }
-        }
-      }
-
-      // Apply sorting
-      switch (sortBy) {
-        case 'trending':
-          eventQuery = eventQuery.order('current_attendees', { ascending: false });
-          break;
-        case 'latest':
-          eventQuery = eventQuery.order('event_date', { ascending: true });
-          break;
-        case 'nearest':
-          eventQuery = eventQuery.order('event_date', { ascending: true });
-          break;
-        default:
-          eventQuery = eventQuery.order('created_at', { ascending: false });
-      }
-
-      const { data: eventData, error: eventError } = await eventQuery
-        .range(offset, offset + limit - 1);
-
-      if (!eventError && eventData) {
-        results.events = eventData.map(event => ({
-          ...event,
-          formatted_date: formatEventDate(event.event_date),
-          formatted_price: formatEventPrice(event.price_gbp, event.price_ngn, event.creator?.country),
-          attendee_count: event.attendees?.[0]?.count || 0,
-          creator_name: event.creator?.display_name || 'Unknown Organizer'
-        }));
+        results.opportunities = opportunities.map((opp) => {
+          const author = authorMap.get(opp.user_id);
+          return {
+            id: opp.id,
+            content: opp.content,
+            created_at: opp.created_at,
+            author: {
+              id: opp.user_id,
+              name: author?.display_name || author?.username || 'Unknown',
+              username: author?.username,
+              avatar_url: author?.avatar_url,
+            },
+          };
+        });
       }
     }
 
-    // Search podcasts (audio tracks with podcast genre)
-    if (!contentTypes.length || contentTypes.includes('podcasts')) {
-      let podcastQuery = supabase
-        .from('audio_tracks')
-        .select(`
-          *,
-          creator:profiles!audio_tracks_creator_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            location,
-            country
-          )
-        `)
-        .eq('is_public', true)
-        .in('genre', ['podcast', 'Podcast', 'PODCAST']);
+    const totalResults =
+      results.posts.length + results.professionals.length + results.opportunities.length;
 
-      if (query) {
-        podcastQuery = podcastQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
-      }
+    console.log(`✅ Search completed: ${totalResults} results for query "${query}"`);
 
-      if (location && location !== 'all') {
-        podcastQuery = podcastQuery.ilike('creator.location', `%${location}%`);
-      }
-
-      if (country) {
-        podcastQuery = podcastQuery.eq('creator.country', country);
-      }
-
-      // Apply sorting
-      switch (sortBy) {
-        case 'trending':
-          podcastQuery = podcastQuery.order('play_count', { ascending: false });
-          break;
-        case 'latest':
-          podcastQuery = podcastQuery.order('created_at', { ascending: false });
-          break;
-        case 'popular':
-          podcastQuery = podcastQuery.order('like_count', { ascending: false });
-          break;
-        default:
-          podcastQuery = podcastQuery.order('play_count', { ascending: false });
-      }
-
-      const { data: podcastData, error: podcastError } = await podcastQuery
-        .range(offset, offset + limit - 1);
-
-      if (!podcastError && podcastData) {
-        results.podcasts = podcastData.map(track => ({
-          ...track,
-          formatted_duration: formatDuration(track.duration),
-          formatted_play_count: formatPlayCount(track.play_count),
-          formatted_like_count: formatPlayCount(track.like_count),
-          creator_name: track.creator?.display_name || 'Unknown Artist'
-        }));
-      }
-    }
-
-    // Calculate totals
-    results.total_results = results.music.length + results.creators.length +
-      results.events.length + results.podcasts.length;
-    results.has_more = results.total_results >= limit;
-
-    return NextResponse.json({
-      success: true,
-      data: results,
-      pagination: {
-        page,
-        limit,
-        has_next: results.has_more,
-        has_previous: page > 1
-      }
-    });
-
-  } catch (error) {
-    console.error('Search API error:', error);
     return NextResponse.json(
-      { success: false, error: 'Search failed' },
-      { status: 500 }
+      {
+        success: true,
+        data: {
+          ...results,
+          pagination: {
+            page,
+            limit,
+            total: totalResults,
+            has_more: totalResults >= limit,
+          },
+        },
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error: any) {
+    console.error('❌ Unexpected error searching:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error', details: error.message },
+      { status: 500, headers: corsHeaders }
     );
   }
 }
-
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const body = await request.json();
-    const { query, filters, results_count } = body;
-
-    // Record search analytics (in a real app, this would go to a search_analytics table)
-    console.log('Search analytics:', {
-      query,
-      filters,
-      results_count,
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
-
-    return NextResponse.json({ success: true });
-
-  } catch (error) {
-    console.error('Search analytics error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to record analytics' },
-      { status: 500 }
-    );
-  }
-}
-
-// Utility functions
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
-
-function formatPlayCount(count: number): string {
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
-  }
-  return count.toString();
-}
-
-function formatEventDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Tomorrow';
-  } else if (diffDays < 7) {
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
-  } else {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-    });
-  }
-}
-
-function formatEventPrice(priceGbp: number | null, priceNgn: number | null, country: string | null): string {
-  if (country === 'Nigeria' && priceNgn) {
-    return `₦${priceNgn.toLocaleString()}`;
-  } else if (priceGbp) {
-    return `£${priceGbp.toLocaleString()}`;
-  }
-  return 'Free';
-}
-
-function getDateRangeFilter(dateRange: 'today' | 'week' | 'month' | 'next-month'): { start: string; end?: string } | null {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  switch (dateRange) {
-    case 'today':
-      return { start: today.toISOString() };
-    case 'week':
-      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return { start: weekAgo.toISOString() };
-    case 'month':
-      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      return { start: monthAgo.toISOString() };
-    case 'next-month':
-      const nextMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-      return { start: today.toISOString(), end: nextMonth.toISOString() };
-    default:
-      return null;
-  }
-}
-
-function getPriceRangeFilter(priceRange: 'free' | 'low' | 'medium' | 'high'): { min: number; max?: number } | null {
-  switch (priceRange) {
-    case 'free':
-      return { min: 0, max: 0 };
-    case 'low':
-      return { min: 0, max: 20 };
-    case 'medium':
-      return { min: 20, max: 50 };
-    case 'high':
-      return { min: 50 };
-    default:
-      return null;
-  }
-} 
