@@ -68,7 +68,7 @@ export interface Bookmark {
   id: string;
   user_id: string;
   content_id: string;
-  content_type: 'track' | 'event';
+  content_type: 'track' | 'event' | 'post';
   created_at: string;
   // Joined fields
   content?: {
@@ -251,7 +251,7 @@ export interface CreateShareRequest {
 
 export interface CreateBookmarkRequest {
   content_id: string;
-  content_type: 'track' | 'event';
+  content_type: 'track' | 'event' | 'post';
 }
 
 export interface CreatePlaylistRequest {

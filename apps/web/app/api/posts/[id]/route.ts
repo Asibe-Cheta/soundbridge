@@ -168,6 +168,141 @@ export async function GET(
   }
 }
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const postId = params.id;
+    console.log('✏️ Update Post API called:', postId);
+
+    // Authenticate user
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { content, visibility, post_type } = body;
+
+    // Check if post exists and belongs to user
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('user_id, content')
+      .eq('id', postId)
+      .is('deleted_at', null)
+      .single();
+
+    if (postError || !post) {
+      return NextResponse.json(
+        { success: false, error: 'Post not found' },
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    if (post.user_id !== user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - you can only edit your own posts' },
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    // Validation
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (content !== undefined) {
+      if (!content || content.trim().length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Content cannot be empty' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      if (content.length > 500) {
+        return NextResponse.json(
+          { success: false, error: 'Content must be 500 characters or less' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      updateData.content = content.trim();
+    }
+
+    if (visibility !== undefined) {
+      if (!['connections', 'public'].includes(visibility)) {
+        return NextResponse.json(
+          { success: false, error: 'Visibility must be "connections" or "public"' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      updateData.visibility = visibility;
+    }
+
+    if (post_type !== undefined) {
+      if (!['update', 'opportunity', 'achievement', 'collaboration', 'event'].includes(post_type)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid post_type' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      updateData.post_type = post_type;
+    }
+
+    // Update post
+    const { data: updatedPost, error: updateError } = await supabase
+      .from('posts')
+      .update(updateData)
+      .eq('id', postId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('❌ Error updating post:', updateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update post', details: updateError.message },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    console.log('✅ Post updated successfully:', postId);
+
+    // Get author profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url, professional_headline')
+      .eq('id', updatedPost.user_id)
+      .single();
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          ...updatedPost,
+          author: {
+            id: updatedPost.user_id,
+            name: profile?.display_name || profile?.username || 'Unknown',
+            username: profile?.username,
+            avatar_url: profile?.avatar_url,
+            role: profile?.professional_headline,
+          },
+        },
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error: any) {
+    console.error('❌ Unexpected error updating post:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error', details: error.message },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

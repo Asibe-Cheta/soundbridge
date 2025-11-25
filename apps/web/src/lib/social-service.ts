@@ -521,7 +521,7 @@ export class SocialService {
     }
   }
 
-  async getBookmarks(userId: string, contentType?: 'track' | 'event'): Promise<{ data: Bookmark[] | null; error: any }> {
+  async getBookmarks(userId: string, contentType?: 'track' | 'event' | 'post'): Promise<{ data: Bookmark[] | null; error: any }> {
     try {
       let query = this.supabase
         .from('bookmarks')
@@ -543,7 +543,7 @@ export class SocialService {
     }
   }
 
-  async isBookmarked(userId: string, contentId: string, contentType: 'track' | 'event'): Promise<{ data: boolean; error: any }> {
+  async isBookmarked(userId: string, contentId: string, contentType: 'track' | 'event' | 'post'): Promise<{ data: boolean; error: any }> {
     try {
       const { data, error } = await this.supabase
         .from('bookmarks')

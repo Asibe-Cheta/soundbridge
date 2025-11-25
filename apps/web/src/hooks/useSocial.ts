@@ -302,7 +302,7 @@ export function useSocial() {
     }
   }, [user?.id]);
 
-  const isBookmarked = useCallback(async (contentId: string, contentType: 'track' | 'event') => {
+  const isBookmarked = useCallback(async (contentId: string, contentType: 'track' | 'event' | 'post') => {
     if (!user?.id) return { data: false, error: 'User not authenticated' };
 
     try {

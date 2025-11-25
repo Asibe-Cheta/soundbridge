@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio } from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -387,18 +387,48 @@ export default function Navbar() {
              </div>
              {/* Desktop Navigation */}
              <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
-               <Link href="/" style={{ 
-                 textDecoration: 'none', 
-                 color: 'var(--text-primary)',
-                 transition: 'all 0.3s ease',
-                 padding: '0.5rem 1rem',
-                 borderRadius: '8px'
-               }}
-               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-               >
-                 For You
-               </Link>
+               {/* Show Feed and Network for signed-in users, otherwise show For You */}
+               {user ? (
+                 <>
+                   <Link href="/feed" style={{ 
+                     textDecoration: 'none', 
+                     color: 'var(--text-primary)',
+                     transition: 'all 0.3s ease',
+                     padding: '0.5rem 1rem',
+                     borderRadius: '8px'
+                   }}
+                   onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                   >
+                     Feed
+                   </Link>
+                   <Link href="/network" style={{ 
+                     textDecoration: 'none', 
+                     color: 'var(--text-primary)',
+                     transition: 'all 0.3s ease',
+                     padding: '0.5rem 1rem',
+                     borderRadius: '8px'
+                   }}
+                   onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                   >
+                     Network
+                   </Link>
+                 </>
+               ) : (
+                 <Link href="/" style={{ 
+                   textDecoration: 'none', 
+                   color: 'var(--text-primary)',
+                   transition: 'all 0.3s ease',
+                   padding: '0.5rem 1rem',
+                   borderRadius: '8px'
+                 }}
+                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                 >
+                   For You
+                 </Link>
+               )}
                <Link href="/discover" style={{ 
                  textDecoration: 'none', 
                  color: 'var(--text-primary)',
@@ -828,29 +858,81 @@ export default function Navbar() {
             gap: '0.5rem',
             marginBottom: '2rem'
           }}>
-            <Link 
-              href="/" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <Home size={20} style={{ color: '#DC2626' }} />
-              For You
-            </Link>
+            {/* Show Feed and Network for signed-in users, otherwise show For You */}
+            {user ? (
+              <>
+                <Link 
+                  href="/feed" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ 
+                    textDecoration: 'none', 
+                    color: 'white',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    fontSize: isMobile ? '0.9rem' : '17px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                >
+                  <Rss size={20} style={{ color: '#DC2626' }} />
+                  Feed
+                </Link>
+                <Link 
+                  href="/network" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ 
+                    textDecoration: 'none', 
+                    color: 'white',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    fontSize: isMobile ? '0.9rem' : '17px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                >
+                  <Users2 size={20} style={{ color: '#EC4899' }} />
+                  Network
+                </Link>
+              </>
+            ) : (
+              <Link 
+                href="/" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'white',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  fontSize: isMobile ? '0.9rem' : '17px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+              >
+                <Home size={20} style={{ color: '#DC2626' }} />
+                For You
+              </Link>
+            )}
             <Link 
               href="/discover" 
               onClick={() => setIsMobileMenuOpen(false)}

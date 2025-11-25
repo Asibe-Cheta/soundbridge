@@ -9,6 +9,9 @@ import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import { BrandingSettings } from '@/src/components/branding/BrandingSettings';
 import { RevenueDashboard } from '@/src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '@/src/components/revenue/BankAccountManager';
+import { ProfessionalSections } from '@/src/components/profile/ProfessionalSections';
+import { PostCard } from '@/src/components/posts/PostCard';
+import { Post } from '@/src/lib/types/post';
 import { useRouter } from 'next/navigation';
 import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign } from 'lucide-react';
 
@@ -242,6 +245,10 @@ export default function ProfilePage() {
     engagementRateChange: 0
   });
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
+  const [professionalHeadline, setProfessionalHeadline] = useState<string>('');
+  const [connectionCount, setConnectionCount] = useState<number>(0);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
 
   useEffect(() => {
     // Only redirect if we're not loading and there's no user
@@ -252,6 +259,8 @@ export default function ProfilePage() {
       loadProfileData();
       // Load analytics data
       loadAnalyticsData();
+      // Load user posts for Activity section
+      loadUserPosts();
     }
   }, [user, loading, router]);
 
@@ -334,6 +343,12 @@ export default function ProfilePage() {
             website: result.profile.website || '',
             avatarUrl: result.profile.avatar_url || ''
           }));
+          
+          // Fetch professional headline and connection count
+          await Promise.all([
+            fetchProfessionalHeadline(),
+            fetchConnectionCount(),
+          ]);
         } else {
           // Profile doesn't exist yet, use user metadata
           console.log('⚠️ Profile not found, using user metadata');
@@ -471,8 +486,91 @@ export default function ProfilePage() {
     }));
   };
 
+  const fetchProfessionalHeadline = async () => {
+    try {
+      const response = await fetch('/api/profile/headline', { credentials: 'include' });
+      const data = await response.json();
+      if (data.success && data.headline) {
+        setProfessionalHeadline(data.headline);
+      }
+    } catch (err) {
+      console.error('Failed to fetch headline:', err);
+    }
+  };
+
+  const fetchConnectionCount = async () => {
+    try {
+      const response = await fetch('/api/connections?limit=1', { credentials: 'include' });
+      const data = await response.json();
+      if (data.success) {
+        setConnectionCount(data.data?.pagination?.total || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch connection count:', err);
+    }
+  };
+
+  const loadUserPosts = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setIsLoadingPosts(true);
+      const response = await fetch(`/api/posts/user/${user.id}?limit=10`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success && data.data?.posts) {
+        setUserPosts(data.data.posts);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user posts:', err);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
+
   const renderOverviewTab = () => (
     <div className="space-y-6">
+      {/* Professional Sections */}
+      {user?.id && (
+        <ProfessionalSections 
+          userId={user.id} 
+          isOwner={true}
+          onHeadlineUpdate={fetchProfessionalHeadline}
+          onConnectionUpdate={fetchConnectionCount}
+        />
+      )}
+
+      {/* Activity Section - User Posts */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Activity</h3>
+          <Link href="/feed" className="btn-secondary">
+            <Activity size={16} />
+            View All Posts
+          </Link>
+        </div>
+        <div className="card-content">
+          {isLoadingPosts ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            </div>
+          ) : userPosts.length > 0 ? (
+            <div className="space-y-4">
+              {userPosts.map((post) => (
+                <PostCard key={post.id} post={post} onUpdate={loadUserPosts} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <Activity size={48} className="mx-auto mb-4 opacity-50" />
+              <p>No posts yet</p>
+              <p className="text-sm">Start sharing your professional journey!</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {isLoadingAnalytics ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
@@ -1037,6 +1135,29 @@ export default function ProfilePage() {
               </div>
               <div className="profile-meta">
                 <span className="profile-username">@{profileData.username}</span>
+                {professionalHeadline && (
+                  <span className="profile-headline" style={{ 
+                    display: 'block', 
+                    marginTop: '0.25rem',
+                    fontSize: '0.875rem',
+                    color: '#9ca3af'
+                  }}>
+                    {professionalHeadline}
+                  </span>
+                )}
+                {connectionCount > 0 && (
+                  <span className="profile-connections" style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    marginLeft: '0.5rem',
+                    fontSize: '0.875rem',
+                    color: '#9ca3af'
+                  }}>
+                    <Users size={14} />
+                    {connectionCount} {connectionCount === 1 ? 'connection' : 'connections'}
+                  </span>
+                )}
                 {profileData.location && (
                   <span className="profile-location">
                     <MapPin size={14} />
