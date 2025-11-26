@@ -47,16 +47,26 @@ export default function FeedPage() {
 
   // Fetch posts
   const fetchPosts = useCallback(async (pageNum: number, append: boolean = false) => {
-    // Don't block if we're already loading more posts, but allow initial load
-    if (loadingMore) return;
-    if (!append && loading) return; // Only block if we're already loading and not appending
+    // Prevent duplicate calls - block if already loading
+    if (loadingMore) {
+      console.log('⏸️ Blocked: Already loading more');
+      return;
+    }
+    if (!append && loading && initialLoadStarted) {
+      console.log('⏸️ Blocked: Initial load already in progress');
+      return;
+    }
 
     try {
-      if (!append) setLoading(true);
-      else setLoadingMore(true);
+      if (!append) {
+        setLoading(true);
+        setInitialLoadStarted(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
 
-      console.log('🔄 Fetching feed posts...', { pageNum, append });
+      console.log('🔄 Fetching feed posts...', { pageNum, append, user: user?.id });
 
       // Add timeout to fetch request
       const controller = new AbortController();
@@ -154,8 +164,8 @@ export default function FeedPage() {
     fetchPosts(1, false);
   };
 
-  // Show loading state
-  if (authLoading || loading) {
+  // Show loading state - show spinner if auth is loading OR if we're fetching posts
+  if (authLoading || (loading && initialLoadStarted)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
