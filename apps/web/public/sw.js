@@ -1,6 +1,6 @@
-const CACHE_NAME = 'soundbridge-v1';
-const STATIC_CACHE = 'soundbridge-static-v1';
-const AUDIO_CACHE = 'soundbridge-audio-v1';
+const CACHE_NAME = 'soundbridge-v2';
+const STATIC_CACHE = 'soundbridge-static-v2';
+const AUDIO_CACHE = 'soundbridge-audio-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -103,22 +103,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle static assets
+  // Handle static assets - network first for scripts/styles to get latest code
   if (request.destination === 'script' || request.destination === 'style') {
-    event.respondWith(
-      caches.match(request).then((response) => {
-        return response || fetch(request);
-      })
-    );
-    return;
-  }
-
-  // Handle navigation requests
-  if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful navigation responses
+          // Update cache with fresh response
           if (response.status === 200) {
             const responseClone = response.clone();
             caches.open(STATIC_CACHE).then((cache) => {
@@ -128,7 +118,23 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Return cached response if network fails
+          // Fallback to cache only if network fails
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Handle navigation requests - network first to get latest HTML
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' })
+        .then((response) => {
+          // Don't cache navigation requests to ensure fresh content
+          return response;
+        })
+        .catch(() => {
+          // Return cached response only if network completely fails
           return caches.match(request);
         })
     );
