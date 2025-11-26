@@ -118,8 +118,7 @@ await apiFetch(
 }
 ```
 
-**Common 500 Error - RLS Policy Issue:**
-If you see this error with details containing `"new row violates row-level security policy"`, it means the database RLS policy needs to be updated. See **Section 11** for details and resolution.
+**Note:** RLS policy issues have been resolved (see Section 10). If you encounter a 500 error, check the specific error details in the response.
 
 ---
 
@@ -483,7 +482,7 @@ async deletePost(postId: string): Promise<void> {
 | `401 Unauthorized` | Missing/invalid auth token | Ensure Bearer token is included in headers |
 | `403 Forbidden` | Not post owner | Verify user owns the post |
 | `404 Not Found` | Invalid post ID | Check post ID format and existence |
-| `500 + RLS error` | Database policy issue | Contact web team - fix should be applied |
+| `500 Server Error` | Server or database error | Check error details, retry, or contact support |
 | `500 Other` | Server error | Check error details, retry, or contact support |
 
 ---
