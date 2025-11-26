@@ -52,7 +52,7 @@ export default function FeedPage() {
       console.log('⏸️ Blocked: Already loading more');
       return;
     }
-    if (!append && loading && initialLoadStarted) {
+    if (!append && loading && hasTriedFetch) {
       console.log('⏸️ Blocked: Initial load already in progress');
       return;
     }
@@ -60,7 +60,7 @@ export default function FeedPage() {
     try {
       if (!append) {
         setLoading(true);
-        setInitialLoadStarted(true);
+        setHasTriedFetch(true);
       } else {
         setLoadingMore(true);
       }
@@ -165,7 +165,7 @@ export default function FeedPage() {
   };
 
   // Show loading state - show spinner if auth is loading OR if we're fetching posts
-  if (authLoading || (loading && initialLoadStarted)) {
+  if (authLoading || (loading && hasTriedFetch)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
