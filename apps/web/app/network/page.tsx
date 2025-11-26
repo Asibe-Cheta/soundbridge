@@ -42,14 +42,11 @@ interface ConnectionSuggestion {
 
 interface Connection {
   id: string;
-  user: {
-    id: string;
-    name: string;
-    username?: string;
-    avatar_url?: string;
-    role?: string;
-    location?: string;
-  };
+  name: string;
+  username?: string;
+  avatar_url?: string;
+  role?: string;
+  location?: string;
   connected_at: string;
 }
 
@@ -508,41 +505,41 @@ export default function NetworkPage() {
                     className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 hover:border-white/20 transition-colors"
                   >
                     <div className="flex items-start gap-3 mb-3">
-                      <Link href={`/creator/${connection.user.username || connection.user.id}`}>
+                      <Link href={`/creator/${connection.username || connection.id}`}>
                         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
-                          {connection.user.avatar_url ? (
+                          {connection.avatar_url ? (
                             <Image
-                              src={connection.user.avatar_url}
-                              alt={connection.user.name}
+                              src={connection.avatar_url}
+                              alt={connection.name}
                               fill
                               className="object-cover"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
-                              {connection.user.name.charAt(0)}
+                              {connection.name?.charAt(0) || 'U'}
                             </div>
                           )}
                         </div>
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <Link href={`/creator/${connection.user.username || connection.user.id}`}>
+                        <Link href={`/creator/${connection.username || connection.id}`}>
                           <h3 className="text-white font-semibold hover:text-red-400 transition-colors truncate">
-                            {connection.user.name}
+                            {connection.name}
                           </h3>
                         </Link>
-                        {connection.user.role && (
-                          <p className="text-gray-400 text-xs truncate">{connection.user.role}</p>
+                        {connection.role && (
+                          <p className="text-gray-400 text-xs truncate">{connection.role}</p>
                         )}
-                        {connection.user.location && (
+                        {connection.location && (
                           <p className="text-gray-500 text-xs flex items-center gap-1 mt-1">
                             <MapPin size={12} />
-                            {connection.user.location}
+                            {connection.location}
                           </p>
                         )}
                       </div>
                     </div>
                     <Link
-                      href={`/creator/${connection.user.username || connection.user.id}`}
+                      href={`/creator/${connection.username || connection.id}`}
                       className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm font-medium"
                     >
                       View Profile

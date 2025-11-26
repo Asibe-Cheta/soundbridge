@@ -208,17 +208,27 @@ export async function GET(request: NextRequest) {
     const suggestions = Array.from(scoredCandidates.values())
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
-      .map((item) => ({
-        id: item.profile.id,
-        name: item.profile.display_name || item.profile.username || 'Unknown',
-        username: item.profile.username,
-        avatar_url: item.profile.avatar_url,
-        headline: item.profile.professional_headline,
-        location: item.profile.location,
-        country: item.profile.country,
-        mutual_connections: mutualConnectionMap.get(item.profile.id) || 0,
-        suggestion_reasons: item.reasons,
-      }));
+      .map((item) => {
+        const mutualCount = mutualConnectionMap.get(item.profile.id) || 0;
+        const reasons = item.reasons;
+        const reasonText = reasons.length > 0 
+          ? reasons[0] 
+          : 'Suggested for you';
+        
+        return {
+          id: item.profile.id,
+          user: {
+            id: item.profile.id,
+            name: item.profile.display_name || item.profile.username || 'Unknown',
+            username: item.profile.username,
+            avatar_url: item.profile.avatar_url,
+            role: item.profile.professional_headline,
+            location: item.profile.location,
+          },
+          reason: reasonText,
+          mutual_connections: mutualCount > 0 ? mutualCount : undefined,
+        };
+      });
 
     console.log(`✅ Generated ${suggestions.length} connection suggestions for user ${user.id}`);
 
