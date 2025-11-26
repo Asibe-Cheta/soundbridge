@@ -35,31 +35,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     console.log('AuthProvider: Initializing...');
     
-    // Get initial session with timeout protection
+    // Get initial session with timeout protection (shorter timeout for mobile)
     const getInitialSession = async () => {
       let timeoutId: NodeJS.Timeout | null = null;
       let completed = false;
 
+      // Detect mobile for shorter timeout
+      const isMobile = typeof window !== 'undefined' && 
+        (window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      const timeoutDuration = isMobile ? 3000 : 5000; // 3s for mobile, 5s for desktop
+
       const timeoutPromise = new Promise<void>((resolve) => {
         timeoutId = setTimeout(() => {
           if (!completed) {
-            console.warn('AuthProvider: Session check timeout (5s) - setting loading to false');
+            console.warn(`AuthProvider: Session check timeout (${timeoutDuration}ms) - setting loading to false`);
             setLoading(false);
             setSession(null);
             setUser(null);
             completed = true;
           }
           resolve();
-        }, 5000); // 5 second timeout
+        }, timeoutDuration);
       });
 
       try {
         console.log('AuthProvider: Getting initial session...');
         
-        // Small delay to allow cookies to sync after redirect
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Smaller delay for mobile
+        const delay = isMobile ? 100 : 200;
+        await new Promise(resolve => setTimeout(resolve, delay));
         
-        const sessionPromise = supabase.auth.getSession();
+        // Wrap getSession in a timeout-aware promise
+        const sessionPromise = supabase.auth.getSession().catch((err) => {
+          console.error('AuthProvider: getSession error:', err);
+          return { data: { session: null }, error: err };
+        });
+        
         const result = await Promise.race([
           sessionPromise,
           timeoutPromise.then(() => ({ data: { session: null } }))

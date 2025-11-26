@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { HeroSection } from '@/src/components/sections/HeroSection';
@@ -13,8 +13,22 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const { theme } = useTheme();
 
-  // Show loading state while checking auth
-  if (loading) {
+  // Show loading state while checking auth (with timeout fallback)
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    // Fallback timeout: if loading takes more than 4 seconds, show content anyway
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('HomePage: Loading timeout - showing content anyway');
+        setLoadingTimeout(true);
+      }
+    }, 4000);
+    
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  if (loading && !loadingTimeout) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
         theme === 'dark' 
