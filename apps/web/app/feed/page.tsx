@@ -53,28 +53,57 @@ export default function FeedPage() {
       else setLoadingMore(true);
       setError(null);
 
-      const response = await fetch(`/api/posts/feed?page=${pageNum}&limit=15`, {
-        credentials: 'include',
-      });
+      console.log('🔄 Fetching feed posts...', { pageNum, append });
 
-      const data = await response.json();
+      // Add timeout to fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to load feed');
+      try {
+        const response = await fetch(`/api/posts/feed?page=${pageNum}&limit=15`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('📡 Feed API response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Feed API error response:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to load feed'}`);
+        }
+
+        const data = await response.json();
+        console.log('📦 Feed API response data:', { success: data.success, postCount: data.data?.posts?.length });
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load feed');
+        }
+
+        const newPosts = data.data?.posts || [];
+        const pagination = data.data?.pagination || {};
+
+        console.log('✅ Feed posts fetched:', { count: newPosts.length, hasMore: pagination.has_more });
+
+        if (append) {
+          setPosts(prev => [...prev, ...newPosts]);
+        } else {
+          setPosts(newPosts);
+        }
+
+        setHasMore(pagination.has_more || false);
+        setPage(pageNum);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        throw fetchError;
       }
-
-      const newPosts = data.data?.posts || [];
-      const pagination = data.data?.pagination || {};
-
-      if (append) {
-        setPosts(prev => [...prev, ...newPosts]);
-      } else {
-        setPosts(newPosts);
-      }
-
-      setHasMore(pagination.has_more || false);
-      setPage(pageNum);
     } catch (err: any) {
+      console.error('❌ Error fetching feed:', err);
       setError(err.message || 'Failed to load feed');
     } finally {
       setLoading(false);

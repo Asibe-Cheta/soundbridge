@@ -41,6 +41,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
   try {
     console.log('📰 Get Feed API called');
 
@@ -54,6 +55,8 @@ export async function GET(request: NextRequest) {
         { status: 401, headers: corsHeaders }
       );
     }
+
+    console.log('✅ User authenticated:', user.id);
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -103,6 +106,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('post_type', postType);
     }
 
+    console.log('🔍 Querying posts from database...');
     const { data: allPosts, error: postsError } = await query;
 
     if (postsError) {
@@ -112,6 +116,8 @@ export async function GET(request: NextRequest) {
         { status: 500, headers: corsHeaders }
       );
     }
+
+    console.log(`📊 Found ${allPosts?.length || 0} posts from database`);
 
     if (!allPosts || allPosts.length === 0) {
       console.log('📭 No posts found in database');
@@ -429,9 +435,10 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    console.log(`✅ Fetched ${formattedPosts.length} ranked posts for user ${user.id}`);
+    const elapsedTime = Date.now() - startTime;
+    console.log(`✅ Fetched ${formattedPosts.length} ranked posts for user ${user.id} in ${elapsedTime}ms`);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         data: {
@@ -446,8 +453,13 @@ export async function GET(request: NextRequest) {
       },
       { headers: corsHeaders }
     );
+
+    console.log('📤 Sending feed response...');
+    return response;
   } catch (error: any) {
-    console.error('❌ Unexpected error fetching feed:', error);
+    const elapsedTime = Date.now() - startTime;
+    console.error(`❌ Unexpected error fetching feed (after ${elapsedTime}ms):`, error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json(
       { success: false, error: 'Internal server error', details: error.message },
       { status: 500, headers: corsHeaders }
