@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { PostCard } from '@/src/components/posts/PostCard';
@@ -15,7 +15,7 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false); // Start as false, will be set to true when fetch starts
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasTriedFetch, setHasTriedFetch] = useState(false); // Track if we've attempted to fetch
+  const hasTriedFetchRef = useRef(false); // Track if we've attempted to fetch (use ref to avoid re-renders)
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
