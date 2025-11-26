@@ -75,6 +75,13 @@ export default function FeedPage() {
           throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to load feed'}`);
         }
 
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.includes('application/json')) {
+          const text = await response.text();
+          console.error('❌ Invalid response type:', contentType, text);
+          throw new Error('Invalid response format from server');
+        }
+
         const data = await response.json();
         console.log('📦 Feed API response data:', { success: data.success, postCount: data.data?.posts?.length });
 
