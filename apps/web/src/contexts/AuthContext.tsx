@@ -111,8 +111,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (timeoutId && !completed) {
           clearTimeout(timeoutId);
         }
+        // Always set loading to false in finally block
         if (!completed) {
           console.log('AuthProvider: Setting loading to false');
+          setLoading(false);
+        } else {
+          // Even if timeout completed, ensure loading is false
+          console.log('AuthProvider: Ensuring loading is false (timeout case)');
           setLoading(false);
         }
       }

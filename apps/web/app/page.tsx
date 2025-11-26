@@ -13,21 +13,35 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const { theme } = useTheme();
 
-  // Show loading state while checking auth (with timeout fallback)
+  // Show loading state while checking auth (with aggressive timeout fallback for mobile)
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
-    // Fallback timeout: if loading takes more than 4 seconds, show content anyway
+    // Detect mobile
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && 
+        (window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)));
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  useEffect(() => {
+    // Aggressive timeout: 2s for mobile, 3s for desktop
+    const timeoutDuration = isMobile ? 2000 : 3000;
     const timeout = setTimeout(() => {
       if (loading) {
-        console.warn('HomePage: Loading timeout - showing content anyway');
+        console.warn(`HomePage: Loading timeout (${timeoutDuration}ms) - showing content anyway`);
         setLoadingTimeout(true);
       }
-    }, 4000);
+    }, timeoutDuration);
     
     return () => clearTimeout(timeout);
-  }, [loading]);
+  }, [loading, isMobile]);
 
+  // Show loading only for a very short time, then always show content
   if (loading && !loadingTimeout) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
