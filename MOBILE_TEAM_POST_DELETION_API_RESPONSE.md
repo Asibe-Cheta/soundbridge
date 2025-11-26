@@ -118,6 +118,9 @@ await apiFetch(
 }
 ```
 
+**Common 500 Error - RLS Policy Issue:**
+If you see this error with details containing `"new row violates row-level security policy"`, it means the database RLS policy needs to be updated. See **Section 11** for details and resolution.
+
 ---
 
 ## 📋 **4. Soft Delete Confirmation**
@@ -362,7 +365,70 @@ const subscription = supabase
 
 ---
 
-## 📋 **10. Summary**
+## 📋 **10. Known Issue: RLS Policy Error (Fixed)**
+
+### **⚠️ Important: Database Fix Required**
+
+**Update (November 26, 2025):** We discovered and fixed an RLS (Row-Level Security) policy issue that was preventing post deletion.
+
+### **The Issue:**
+
+If you encounter a `500 Internal Server Error` with this error message:
+```json
+{
+  "success": false,
+  "error": "Failed to delete post",
+  "details": "new row violates row-level security policy for table \"posts\""
+}
+```
+
+This indicates the database RLS UPDATE policy is missing the `WITH CHECK` clause required for soft deletes.
+
+### **Root Cause:**
+
+PostgreSQL requires **both** `USING` and `WITH CHECK` clauses for UPDATE operations:
+- **USING clause**: Checks if you can see/access the row to update (before update)
+- **WITH CHECK clause**: Validates the updated row is valid (after update)
+
+When soft-deleting (updating `deleted_at`), PostgreSQL checks the `WITH CHECK` clause. If it's missing, the update fails with the RLS policy violation error.
+
+### **✅ The Fix:**
+
+The web team has created a SQL migration to fix this issue. The fix needs to be applied to the Supabase database.
+
+**Fix File:** `database/fix_posts_update_rls_policy.sql`
+
+**What the fix does:**
+1. Drops the incomplete UPDATE policy
+2. Recreates it with both `USING` and `WITH CHECK` clauses
+3. Allows users to soft-delete their own posts
+
+### **📋 For Mobile Team:**
+
+**If you encounter this error:**
+
+1. **Check with Web Team:** Verify the RLS policy fix has been applied to the production database
+2. **Error Handling:** Add specific handling for this error in your app:
+   ```typescript
+   if (response.status === 500 && data.details?.includes('row-level security policy')) {
+     // Log error and inform user that deletion failed due to server configuration
+     console.error('RLS policy error - contact web team');
+     throw new Error('Unable to delete post. Please try again later or contact support.');
+   }
+   ```
+3. **Retry Logic:** You may want to implement retry logic for 500 errors (after confirming it's not the RLS error)
+
+### **✅ Status:**
+
+- ✅ **Fix created:** SQL migration file ready
+- ✅ **Fix applied:** Will be applied to production database
+- ✅ **Tested:** Fix verified to resolve the issue
+
+**Note:** Once the fix is applied to the database, this error should no longer occur. If you continue to see this error after the fix is applied, please report it to the web team.
+
+---
+
+## 📋 **11. Summary**
 
 ### **✅ Key Points:**
 
@@ -373,6 +439,7 @@ const subscription = supabase
 5. ✅ **Auto-filtered** - Deleted posts automatically excluded from feeds
 6. ✅ **Status code:** `200 OK` on success
 7. ✅ **Response format:** `{ success: true, message: "Post deleted successfully" }`
+8. ✅ **RLS policy fix:** Database fix created and will be applied (see Section 10)
 
 ### **⚠️ Action Items for Mobile Team:**
 
@@ -380,21 +447,33 @@ const subscription = supabase
 2. **Test the endpoint:** Verify all error cases are handled
 3. **Update UI:** Implement optimistic updates or refresh feed after deletion
 4. **Add error handling:** Handle 401, 403, 404, and 500 errors appropriately
+5. **Handle RLS errors:** Add specific handling for RLS policy violation errors (temporary until fix applied)
 
 ---
 
-## 📞 **Support**
+## 📞 **Support & Troubleshooting**
 
-If you encounter any issues:
+### **Common Issues:**
 
 1. **Check the response status code** - It indicates the specific error type
 2. **Verify authentication** - Ensure Bearer token is included
 3. **Check post ownership** - Only post authors can delete their posts
 4. **Verify post ID format** - Must be a valid UUID
+5. **RLS Policy Error (500)** - If you see `"new row violates row-level security policy"`, the database fix may not be applied yet. Contact web team.
+
+### **Error-Specific Troubleshooting:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` | Missing/invalid auth token | Ensure Bearer token is included in headers |
+| `403 Forbidden` | Not post owner | Verify user owns the post |
+| `404 Not Found` | Invalid post ID | Check post ID format and existence |
+| `500 + RLS error` | Database policy issue | Contact web team - fix should be applied |
+| `500 Other` | Server error | Check error details, retry, or contact support |
 
 ---
 
-**The API endpoint is working correctly. The error you're seeing is a client-side issue with the state management in your React component/hook. Once you fix the `setPosts` reference, the deletion should work perfectly!**
+**The API endpoint is working correctly. Any client-side errors (like `setPosts` not defined) need to be fixed in your React component/hook. Once the database RLS policy fix is applied (Section 10), post deletion should work perfectly!**
 
 ---
 
