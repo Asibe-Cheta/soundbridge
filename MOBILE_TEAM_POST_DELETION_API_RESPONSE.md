@@ -473,7 +473,7 @@ async deletePost(postId: string): Promise<void> {
 2. **Verify authentication** - Ensure Bearer token is included
 3. **Check post ownership** - Only post authors can delete their posts
 4. **Verify post ID format** - Must be a valid UUID
-5. **RLS Policy Error (500)** - If you see `"new row violates row-level security policy"`, the database fix may not be applied yet. Contact web team.
+5. **Server Errors (500)** - Check the specific error message in the response. RLS policy issues have been resolved (see Section 10).
 
 ### **Error-Specific Troubleshooting:**
 
