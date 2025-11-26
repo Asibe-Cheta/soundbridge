@@ -89,11 +89,12 @@ export async function GET(request: NextRequest) {
 
     // Fetch all eligible posts (we'll rank them in memory)
     // Optimized: Only select needed columns, use index-friendly query
+    // Get all public posts and connection posts, filter in memory
     let query = supabase
       .from('posts')
       .select('id, user_id, content, visibility, post_type, created_at, deleted_at')
       .is('deleted_at', null)
-      .or('visibility.eq.public,visibility.eq.connections')
+      .in('visibility', ['public', 'connections'])
       .order('created_at', { ascending: false })
       .limit(200); // Fetch more than needed for ranking
 
@@ -113,6 +114,37 @@ export async function GET(request: NextRequest) {
     }
 
     if (!allPosts || allPosts.length === 0) {
+      console.log('📭 No posts found in database');
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            posts: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              has_more: false,
+            },
+          },
+        },
+        { headers: corsHeaders }
+      );
+    }
+
+    // Filter out connection-only posts where user is not connected
+    const eligiblePosts = allPosts.filter((post) => {
+      // Include public posts
+      if (post.visibility === 'public') return true;
+      // Include connection posts only if user is connected or it's their own post
+      if (post.visibility === 'connections') {
+        return connectedUserIds.has(post.user_id);
+      }
+      return false;
+    });
+
+    if (eligiblePosts.length === 0) {
+      console.log('📭 No eligible posts after filtering');
       return NextResponse.json(
         {
           success: true,
@@ -173,7 +205,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Rank posts by priority
-    const rankedPosts = allPosts
+    const rankedPosts = eligiblePosts
       .map((post) => {
         const authorProfile = authorProfileMap.get(post.user_id);
         const isConnected = connectedUserIds.has(post.user_id);
@@ -241,10 +273,48 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     const paginatedPosts = rankedPosts.slice(offset, offset + limit);
 
+    // Early return if no posts to fetch details for
+    if (paginatedPosts.length === 0) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            posts: [],
+            pagination: {
+              page,
+              limit,
+              total: rankedPosts.length,
+              has_more: rankedPosts.length > offset + limit,
+            },
+          },
+        },
+        { headers: corsHeaders }
+      );
+    }
+
     // Get detailed data for paginated posts
     // Optimized: Parallel batch queries
     const paginatedPostIds = paginatedPosts.map((p) => p.id);
     const paginatedUserIds = [...new Set(paginatedPosts.map((p) => p.user_id))];
+
+    // Ensure we have valid IDs before querying
+    if (paginatedPostIds.length === 0 || paginatedUserIds.length === 0) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            posts: [],
+            pagination: {
+              page,
+              limit,
+              total: rankedPosts.length,
+              has_more: false,
+            },
+          },
+        },
+        { headers: corsHeaders }
+      );
+    }
 
     const [profilesResult, reactionsResult, attachmentsResult, commentsResult] = await Promise.all([
       supabase
@@ -266,10 +336,24 @@ export async function GET(request: NextRequest) {
         .is('deleted_at', null),
     ]);
 
-    const profiles = profilesResult.data;
-    const postReactions = reactionsResult.data;
-    const attachments = attachmentsResult.data;
-    const commentCounts = commentsResult.data;
+    // Check for query errors
+    if (profilesResult.error) {
+      console.error('❌ Error fetching profiles:', profilesResult.error);
+    }
+    if (reactionsResult.error) {
+      console.error('❌ Error fetching reactions:', reactionsResult.error);
+    }
+    if (attachmentsResult.error) {
+      console.error('❌ Error fetching attachments:', attachmentsResult.error);
+    }
+    if (commentsResult.error) {
+      console.error('❌ Error fetching comments:', commentsResult.error);
+    }
+
+    const profiles = profilesResult.data || [];
+    const postReactions = reactionsResult.data || [];
+    const attachments = attachmentsResult.data || [];
+    const commentCounts = commentsResult.data || [];
 
     // Build maps
     const profileMap = new Map();
