@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { PostCard } from '@/src/components/posts/PostCard';
 import { CreatePostModal } from '@/src/components/posts/CreatePostModal';
+import { FeedLeftSidebar } from '@/src/components/feed/FeedLeftSidebar';
+import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
 import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
@@ -201,108 +203,119 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      <div className="container mx-auto px-4 py-6 max-w-3xl">
-        {/* Create Post Card */}
-        <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 mb-4 hover:border-white/20 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
-              {profilePic ? (
-                <Image
-                  src={profilePic}
-                  alt="Your profile"
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white font-semibold">
-                  {user?.user_metadata?.full_name?.charAt(0) || 'U'}
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="flex gap-6">
+          {/* Left Sidebar */}
+          <FeedLeftSidebar />
+
+          {/* Center Feed - Narrower */}
+          <main className="flex-1 max-w-2xl mx-auto">
+            {/* Create Post Card */}
+            <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 mb-4 hover:border-white/20 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                  {profilePic ? (
+                    <Image
+                      src={profilePic}
+                      alt="Your profile"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white font-semibold">
+                      {user?.user_metadata?.full_name?.charAt(0) || 'U'}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="flex-1 text-left px-4 py-3 bg-gray-800/50 border border-white/10 rounded-lg text-gray-400 hover:bg-gray-800 hover:border-white/20 transition-colors"
-            >
-              Share an update, opportunity, or achievement...
-            </button>
-          </div>
-        </div>
-
-        {/* Live Audio Sessions Banner */}
-        <div className="bg-gradient-to-r from-red-600/20 to-pink-500/20 backdrop-blur-lg rounded-xl border border-red-500/30 p-6 mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-600 to-pink-500 flex items-center justify-center">
-                <Radio size={24} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-lg">Live Audio Sessions</h3>
-                <p className="text-gray-300 text-sm">
-                  Join live rooms • Host your own • Connect in real-time
-                </p>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="flex-1 text-left px-4 py-3 bg-gray-800/50 border border-white/10 rounded-lg text-gray-400 hover:bg-gray-800 hover:border-white/20 transition-colors"
+                >
+                  Share an update, opportunity, or achievement...
+                </button>
               </div>
             </div>
-            <button
-              onClick={() => router.push('/live')}
-              className="px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors font-medium"
-            >
-              Explore Live Rooms
-            </button>
-          </div>
-        </div>
 
-        {/* Posts Feed */}
-        {posts.length === 0 && !loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No posts yet</p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-colors font-medium"
-            >
-              <Plus size={20} />
-              Create Your First Post
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} onUpdate={handlePostCreated} />
-            ))}
+            {/* Live Audio Sessions Banner */}
+            <div className="bg-gradient-to-r from-red-600/20 to-pink-500/20 backdrop-blur-lg rounded-xl border border-red-500/30 p-6 mb-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-600 to-pink-500 flex items-center justify-center">
+                    <Radio size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-lg">Live Audio Sessions</h3>
+                    <p className="text-gray-300 text-sm">
+                      Join live rooms • Host your own • Connect in real-time
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push('/live')}
+                  className="px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors font-medium"
+                >
+                  Explore Live Rooms
+                </button>
+              </div>
+            </div>
 
-            {/* Loading More Indicator */}
-            {loadingMore && (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+            {/* Posts Feed */}
+            {posts.length === 0 && !loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400 mb-4">No posts yet</p>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-colors font-medium"
+                >
+                  <Plus size={20} />
+                  Create Your First Post
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <PostCard key={post.id} post={post} onUpdate={handlePostCreated} />
+                ))}
+
+                {/* Loading More Indicator */}
+                {loadingMore && (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                  </div>
+                )}
+
+                {/* End of Feed */}
+                {!hasMore && posts.length > 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>You've reached the end of your feed</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* End of Feed */}
-            {!hasMore && posts.length > 0 && (
-              <div className="text-center py-8 text-gray-400">
-                <p>You've reached the end of your feed</p>
+            {/* Error Banner (for non-fatal errors) */}
+            {error && posts.length > 0 && (
+              <div className="fixed bottom-4 right-4 bg-red-500/90 backdrop-blur-sm border border-red-400 rounded-lg p-4 shadow-xl max-w-sm z-50">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium">Error</p>
+                    <p className="text-white/90 text-xs mt-1">{error}</p>
+                  </div>
+                  <button
+                    onClick={() => setError(null)}
+                    className="text-white/80 hover:text-white"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             )}
-          </div>
-        )}
+          </main>
 
-        {/* Error Banner (for non-fatal errors) */}
-        {error && posts.length > 0 && (
-          <div className="fixed bottom-4 right-4 bg-red-500/90 backdrop-blur-sm border border-red-400 rounded-lg p-4 shadow-xl max-w-sm z-50">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-white text-sm font-medium">Error</p>
-                <p className="text-white/90 text-xs mt-1">{error}</p>
-              </div>
-              <button
-                onClick={() => setError(null)}
-                className="text-white/80 hover:text-white"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
+          {/* Right Sidebar */}
+          <FeedRightSidebar />
+        </div>
       </div>
 
       {/* Create Post Modal */}
