@@ -13,8 +13,9 @@ export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false, will be set to true when fetch starts
   const [loadingMore, setLoadingMore] = useState(false);
+  const [hasTriedFetch, setHasTriedFetch] = useState(false); // Track if we've attempted to fetch
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -46,7 +47,9 @@ export default function FeedPage() {
 
   // Fetch posts
   const fetchPosts = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (loadingMore || (!append && loading)) return;
+    // Don't block if we're already loading more posts, but allow initial load
+    if (loadingMore) return;
+    if (!append && loading) return; // Only block if we're already loading and not appending
 
     try {
       if (!append) setLoading(true);
@@ -116,12 +119,16 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [loading, loadingMore]);
+  }, [loading, loadingMore, hasTriedFetch, user]);
 
   // Initial load
   useEffect(() => {
+    console.log('🔍 Feed page useEffect triggered:', { user: !!user, authLoading, loading });
     if (user && !authLoading) {
+      console.log('✅ Conditions met, calling fetchPosts...');
       fetchPosts(1, false);
+    } else {
+      console.log('⏸️ Conditions not met - waiting:', { hasUser: !!user, authLoading });
     }
   }, [user, authLoading, fetchPosts]);
 
