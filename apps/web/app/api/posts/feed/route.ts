@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     // Get engagement metrics for ranking
     // Optimized: Batch queries, only select needed columns
     const postIds = allPosts.map((p) => p.id);
-    const [reactionsResult, commentsResult] = await Promise.all([
+    const [engagementReactionsResult, engagementCommentsResult] = await Promise.all([
       supabase
         .from('post_reactions')
         .select('post_id')
@@ -154,8 +154,8 @@ export async function GET(request: NextRequest) {
         .is('deleted_at', null),
     ]);
 
-    const reactions = reactionsResult.data;
-    const comments = commentsResult.data;
+    const reactions = engagementReactionsResult.data;
+    const comments = engagementCommentsResult.data;
 
     // Calculate engagement scores
     const engagementMap = new Map<string, number>();
