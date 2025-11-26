@@ -35,20 +35,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     console.log('AuthProvider: Initializing...');
     
-    // Get initial session
+    // Get initial session with timeout protection
     const getInitialSession = async () => {
+      const timeoutId = setTimeout(() => {
+        console.warn('AuthProvider: Session check timeout (5s) - setting loading to false');
+        setLoading(false);
+        setSession(null);
+        setUser(null);
+      }, 5000); // 5 second timeout
+
       try {
         console.log('AuthProvider: Getting initial session...');
         
         // Small delay to allow cookies to sync after redirect
         await new Promise(resolve => setTimeout(resolve, 200));
         
-        const { data: { session } } = await supabase.auth.getSession();
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([
+          sessionPromise,
+          new Promise<{ data: { session: null } }>((resolve) => 
+            setTimeout(() => resolve({ data: { session: null } }), 4000)
+          )
+        ]) as { data: { session: any } };
+        
+        clearTimeout(timeoutId);
         
         // Trust the session from getSession() - don't validate immediately
         // The session will be validated by onAuthStateChange if it's invalid
         if (session) {
-          console.log('AuthProvider: Session found:', session.user.email);
+          console.log('AuthProvider: Session found:', session.user?.email);
           setSession(session);
           setUser(session.user);
         } else {
@@ -57,11 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
       } catch (error) {
+        clearTimeout(timeoutId);
         console.error('Error getting initial session:', error);
         setError('Failed to get initial session');
         setSession(null);
         setUser(null);
       } finally {
+        clearTimeout(timeoutId);
         console.log('AuthProvider: Setting loading to false');
         setLoading(false);
       }
