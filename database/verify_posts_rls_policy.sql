@@ -61,14 +61,36 @@ WHERE schemaname = 'public'
   AND cmd = 'UPDATE';
 
 -- ============================================================================
--- Verify the exact policy definition
+-- Verify the exact policy definition using pg_policies and pg_policy
 -- ============================================================================
 
 SELECT 
-  pg_get_policydef(oid) AS policy_definition
-FROM pg_policies p
-JOIN pg_policy pol ON pol.polname = p.policyname
-WHERE schemaname = 'public' 
-  AND tablename = 'posts' 
-  AND cmd = 'UPDATE';
+  pol.polname AS policy_name,
+  pol.polcmd AS command,
+  CASE pol.polcmd
+    WHEN 'r' THEN 'SELECT'
+    WHEN 'a' THEN 'INSERT'
+    WHEN 'w' THEN 'UPDATE'
+    WHEN 'd' THEN 'DELETE'
+    ELSE 'OTHER'
+  END AS command_type,
+  pg_get_expr(pol.polqual, pol.polrelid) AS using_clause,
+  pg_get_expr(pol.polwithcheck, pol.polrelid) AS with_check_clause,
+  CASE 
+    WHEN pg_get_expr(pol.polqual, pol.polrelid) IS NOT NULL 
+     AND pg_get_expr(pol.polwithcheck, pol.polrelid) IS NOT NULL 
+    THEN '✅ Has both clauses'
+    WHEN pg_get_expr(pol.polqual, pol.polrelid) IS NOT NULL 
+    THEN '⚠️ Missing WITH CHECK clause'
+    WHEN pg_get_expr(pol.polwithcheck, pol.polrelid) IS NOT NULL 
+    THEN '⚠️ Missing USING clause'
+    ELSE '❌ Missing both clauses'
+  END AS status
+FROM pg_policy pol
+JOIN pg_class cls ON cls.oid = pol.polrelid
+JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace
+WHERE nsp.nspname = 'public' 
+  AND cls.relname = 'posts'
+  AND pol.polcmd = 'w'  -- 'w' = UPDATE
+ORDER BY pol.polname;
 
