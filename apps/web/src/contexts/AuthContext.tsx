@@ -37,12 +37,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Get initial session with timeout protection
     const getInitialSession = async () => {
-      const timeoutId = setTimeout(() => {
-        console.warn('AuthProvider: Session check timeout (5s) - setting loading to false');
-        setLoading(false);
-        setSession(null);
-        setUser(null);
-      }, 5000); // 5 second timeout
+      let timeoutId: NodeJS.Timeout | null = null;
+      let completed = false;
+
+      const timeoutPromise = new Promise<void>((resolve) => {
+        timeoutId = setTimeout(() => {
+          if (!completed) {
+            console.warn('AuthProvider: Session check timeout (5s) - setting loading to false');
+            setLoading(false);
+            setSession(null);
+            setUser(null);
+            completed = true;
+          }
+          resolve();
+        }, 5000); // 5 second timeout
+      });
 
       try {
         console.log('AuthProvider: Getting initial session...');
@@ -51,14 +60,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 200));
         
         const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([
+        const result = await Promise.race([
           sessionPromise,
-          new Promise<{ data: { session: null } }>((resolve) => 
-            setTimeout(() => resolve({ data: { session: null } }), 4000)
-          )
+          timeoutPromise.then(() => ({ data: { session: null } }))
         ]) as { data: { session: any } };
         
-        clearTimeout(timeoutId);
+        if (completed) {
+          return; // Timeout already handled
+        }
+
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        completed = true;
+        
+        const { data: { session } } = result;
         
         // Trust the session from getSession() - don't validate immediately
         // The session will be validated by onAuthStateChange if it's invalid
@@ -72,15 +88,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
       } catch (error) {
-        clearTimeout(timeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        completed = true;
         console.error('Error getting initial session:', error);
         setError('Failed to get initial session');
         setSession(null);
         setUser(null);
       } finally {
-        clearTimeout(timeoutId);
-        console.log('AuthProvider: Setting loading to false');
-        setLoading(false);
+        if (timeoutId && !completed) {
+          clearTimeout(timeoutId);
+        }
+        if (!completed) {
+          console.log('AuthProvider: Setting loading to false');
+          setLoading(false);
+        }
       }
     };
 
