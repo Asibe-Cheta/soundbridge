@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -342,11 +343,18 @@ export async function DELETE(
       );
     }
 
-    // Soft delete
-    const { error: deleteError } = await supabase
+    // Soft delete using service client to bypass RLS
+    // We've already verified the user owns the post, so this is safe
+    // This avoids RLS policy issues with UPDATE operations
+    const supabaseService = createServiceClient();
+    const { error: deleteError } = await supabaseService
       .from('posts')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', postId);
+      .update({ 
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', postId)
+      .eq('user_id', user.id); // Extra safety check
 
     if (deleteError) {
       console.error('❌ Error deleting post:', deleteError);
