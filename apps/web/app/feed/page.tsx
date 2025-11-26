@@ -129,20 +129,22 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [loading, loadingMore, user]);
+  }, [user]); // Remove loading/loadingMore to prevent infinite loop - use ref for tracking instead
 
   // Initial load - only run once when user is available
   useEffect(() => {
-    console.log('🔍 Feed page useEffect triggered:', { user: !!user, authLoading, loading, hasTriedFetch: hasTriedFetchRef.current });
+    console.log('🔍 Feed page useEffect triggered:', { user: !!user, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     
     // Only fetch if user is available, auth is done, and we haven't tried fetching yet
     if (user && !authLoading && !hasTriedFetchRef.current) {
       console.log('✅ Conditions met, calling fetchPosts...');
+      hasTriedFetchRef.current = true; // Set flag BEFORE calling to prevent double calls
       fetchPosts(1, false);
     } else {
       console.log('⏸️ Conditions not met - waiting:', { hasUser: !!user, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     }
-  }, [user, authLoading]); // Remove fetchPosts from dependencies to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]); // Only depend on user and authLoading, not fetchPosts
 
   // Infinite scroll
   useEffect(() => {
