@@ -37,10 +37,15 @@ export function FeedLeftSidebar() {
 
   const loadProfileData = async () => {
     try {
-      const response = await fetch(`/api/profile?user_id=${user?.id}`);
+      const response = await fetch(`/api/profile?user_id=${user?.id}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
       if (data.success && data.profile) {
         setProfile(data.profile);
+      } else {
+        // If profile doesn't exist, still show user info from auth
+        console.log('Profile not found, using auth user data');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -80,13 +85,17 @@ export function FeedLeftSidebar() {
     );
   }
 
-  const displayName = profile?.display_name || profile?.username || user?.user_metadata?.full_name || 'User';
-  const username = profile?.username || user?.email?.split('@')[0] || '';
+  // Get display name with proper fallback chain
+  const displayName = profile?.display_name 
+    || profile?.username 
+    || user?.user_metadata?.full_name 
+    || user?.email?.split('@')[0] 
+    || 'User';
   const headline = profile?.professional_headline || '';
 
   return (
     <aside className="w-64 flex-shrink-0 hidden lg:block">
-      <div className="sticky top-20 space-y-4">
+      <div className="space-y-4">
         {/* Profile Card */}
         <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 overflow-hidden">
           <div className="p-4 border-b border-white/10">

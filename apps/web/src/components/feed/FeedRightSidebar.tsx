@@ -65,7 +65,7 @@ export function FeedRightSidebar() {
 
   return (
     <aside className="w-80 flex-shrink-0 hidden xl:block">
-      <div className="sticky top-20 space-y-4">
+      <div className="space-y-4">
         {/* Quick Actions */}
         <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4">
           <h4 className="text-xs font-semibold text-gray-400 uppercase mb-3">Quick Actions</h4>
