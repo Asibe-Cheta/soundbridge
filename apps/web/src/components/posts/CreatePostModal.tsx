@@ -176,30 +176,12 @@ export function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostMo
     setError(null);
 
     try {
-      // Upload attachments first
-      let imageUrl = uploadedImageUrl;
-      let audioUrl = uploadedAudioUrl;
-
-      if (imageFile && !imageUrl) {
-        imageUrl = await uploadImage();
-        setUploadedImageUrl(imageUrl);
-      }
-
-      if (audioFile && !audioUrl) {
-        audioUrl = await uploadAudio();
-        setUploadedAudioUrl(audioUrl);
-      }
-
-      // Create post
+      // Step 1: Create post first
       const postData: any = {
         content: content.trim(),
         visibility,
         post_type: postType,
       };
-
-      // Note: Attachments will be handled separately after post creation
-      // The API expects attachment URLs to be uploaded first, then linked to post
-      // For now, we'll create the post and handle attachments in a follow-up call
       
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -216,9 +198,54 @@ export function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostMo
         throw new Error(data.error || 'Failed to create post');
       }
 
-      // If we have attachments, we need to create them
-      // This is a simplified version - in production, you might want to create attachments
-      // in a separate API call or modify the create post API to accept attachments
+      const postId = data.data.id;
+
+      // Step 2: Upload attachments with post_id to create attachment records
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('post_id', postId);
+
+        try {
+          const uploadResponse = await fetch('/api/posts/upload-image', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+
+          const uploadData = await uploadResponse.json();
+          if (!uploadData.success) {
+            console.error('Failed to upload image:', uploadData.error);
+            // Continue anyway - post is created
+          }
+        } catch (uploadErr) {
+          console.error('Error uploading image:', uploadErr);
+          // Continue anyway - post is created
+        }
+      }
+
+      if (audioFile) {
+        const formData = new FormData();
+        formData.append('file', audioFile);
+        formData.append('post_id', postId);
+
+        try {
+          const uploadResponse = await fetch('/api/posts/upload-audio', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+
+          const uploadData = await uploadResponse.json();
+          if (!uploadData.success) {
+            console.error('Failed to upload audio:', uploadData.error);
+            // Continue anyway - post is created
+          }
+        } catch (uploadErr) {
+          console.error('Error uploading audio:', uploadErr);
+          // Continue anyway - post is created
+        }
+      }
       
       // Reset form
       setContent('');
