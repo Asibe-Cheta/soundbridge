@@ -525,5 +525,36 @@ If you encounter any issues or need clarification:
 
 ---
 
+## 📋 **8. Post Deletion API**
+
+### **Endpoint:**
+- **URL:** `DELETE /api/posts/{postId}`
+- **Method:** `DELETE`
+- **Authentication:** Required
+
+### **Request:**
+- No request body required
+- Post ID in URL path
+
+### **Response:**
+```typescript
+{
+  "success": true,
+  "message": "Post deleted successfully"
+}
+```
+
+### **Behavior:**
+- ✅ Soft delete (sets `deleted_at` timestamp)
+- ✅ Only post author can delete
+- ✅ Returns `200 OK` on success
+- ✅ Returns `403 Forbidden` if not post owner
+- ✅ Returns `404 Not Found` if post doesn't exist
+- ✅ Deleted posts automatically filtered from feed queries
+
+**See `MOBILE_TEAM_POST_DELETION_API_RESPONSE.md` for complete documentation.**
+
+---
+
 **Thank you for working with us to ensure seamless feed synchronization!**
 
