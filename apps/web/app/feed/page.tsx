@@ -52,7 +52,7 @@ export default function FeedPage() {
       console.log('⏸️ Blocked: Already loading more');
       return;
     }
-    if (!append && loading && hasTriedFetch) {
+    if (!append && loading && hasTriedFetchRef.current) {
       console.log('⏸️ Blocked: Initial load already in progress');
       return;
     }
@@ -60,7 +60,7 @@ export default function FeedPage() {
     try {
       if (!append) {
         setLoading(true);
-        setHasTriedFetch(true);
+        hasTriedFetchRef.current = true; // Use ref instead of state
       } else {
         setLoadingMore(true);
       }
@@ -129,18 +129,20 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [loading, loadingMore, hasTriedFetch, user]);
+  }, [loading, loadingMore, user]);
 
-  // Initial load
+  // Initial load - only run once when user is available
   useEffect(() => {
-    console.log('🔍 Feed page useEffect triggered:', { user: !!user, authLoading, loading });
-    if (user && !authLoading) {
+    console.log('🔍 Feed page useEffect triggered:', { user: !!user, authLoading, loading, hasTriedFetch: hasTriedFetchRef.current });
+    
+    // Only fetch if user is available, auth is done, and we haven't tried fetching yet
+    if (user && !authLoading && !hasTriedFetchRef.current) {
       console.log('✅ Conditions met, calling fetchPosts...');
       fetchPosts(1, false);
     } else {
-      console.log('⏸️ Conditions not met - waiting:', { hasUser: !!user, authLoading });
+      console.log('⏸️ Conditions not met - waiting:', { hasUser: !!user, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     }
-  }, [user, authLoading, fetchPosts]);
+  }, [user, authLoading]); // Remove fetchPosts from dependencies to prevent infinite loop
 
   // Infinite scroll
   useEffect(() => {
@@ -165,7 +167,7 @@ export default function FeedPage() {
   };
 
   // Show loading state - show spinner if auth is loading OR if we're fetching posts
-  if (authLoading || (loading && hasTriedFetch)) {
+  if (authLoading || (loading && hasTriedFetchRef.current)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
