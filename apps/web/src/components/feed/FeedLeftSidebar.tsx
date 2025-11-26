@@ -41,11 +41,13 @@ export function FeedLeftSidebar() {
         credentials: 'include',
       });
       const data = await response.json();
+      console.log('Profile API response:', data);
       if (data.success && data.profile) {
+        console.log('Setting profile data:', data.profile);
         setProfile(data.profile);
       } else {
         // If profile doesn't exist, still show user info from auth
-        console.log('Profile not found, using auth user data');
+        console.log('Profile not found in API response, using auth user data');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -85,12 +87,13 @@ export function FeedLeftSidebar() {
     );
   }
 
-  // Get display name with proper fallback chain
+  // Get display name - match the same logic as PostCard (display_name || username || fallback)
+  // This matches exactly how post authors are displayed in the feed
   const displayName = profile?.display_name 
     || profile?.username 
     || user?.user_metadata?.full_name 
     || user?.email?.split('@')[0] 
-    || 'User';
+    || 'Unknown';
   const headline = profile?.professional_headline || '';
 
   return (
