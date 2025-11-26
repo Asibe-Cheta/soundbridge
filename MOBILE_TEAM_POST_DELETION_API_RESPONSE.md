@@ -365,15 +365,15 @@ const subscription = supabase
 
 ---
 
-## 📋 **10. Known Issue: RLS Policy Error (Fixed)**
+## 📋 **10. RLS Policy Issue (RESOLVED)**
 
-### **⚠️ Important: Database Fix Required**
+### **✅ Status: FIXED**
 
-**Update (November 26, 2025):** We discovered and fixed an RLS (Row-Level Security) policy issue that was preventing post deletion.
+**Update (November 26, 2025):** The RLS (Row-Level Security) policy issue has been resolved. Post deletion now works correctly.
 
-### **The Issue:**
+### **The Issue (Historical):**
 
-If you encounter a `500 Internal Server Error` with this error message:
+Previously, there was an RLS policy issue that could cause this error:
 ```json
 {
   "success": false,
@@ -382,49 +382,64 @@ If you encounter a `500 Internal Server Error` with this error message:
 }
 ```
 
-This indicates the database RLS UPDATE policy is missing the `WITH CHECK` clause required for soft deletes.
-
-### **Root Cause:**
+### **Root Cause (Historical):**
 
 PostgreSQL requires **both** `USING` and `WITH CHECK` clauses for UPDATE operations:
 - **USING clause**: Checks if you can see/access the row to update (before update)
 - **WITH CHECK clause**: Validates the updated row is valid (after update)
 
-When soft-deleting (updating `deleted_at`), PostgreSQL checks the `WITH CHECK` clause. If it's missing, the update fails with the RLS policy violation error.
+### **✅ Resolution:**
 
-### **✅ The Fix:**
+The issue has been resolved through two approaches:
 
-The web team has created a SQL migration to fix this issue. The fix needs to be applied to the Supabase database.
+1. **RLS Policy Fix:** The database RLS policy now has both `USING` and `WITH CHECK` clauses properly configured
+   - Verified: Policy exists with both clauses
+   - Status: ✅ Working correctly
 
-**Fix File:** `database/fix_posts_update_rls_policy.sql`
-
-**What the fix does:**
-1. Drops the incomplete UPDATE policy
-2. Recreates it with both `USING` and `WITH CHECK` clauses
-3. Allows users to soft-delete their own posts
+2. **Code Fix:** The API endpoint now uses the service client for deletion operations
+   - Verifies ownership first (using user session)
+   - Uses service client to perform soft delete (bypasses RLS)
+   - Maintains security through application-level authorization checks
 
 ### **📋 For Mobile Team:**
 
-**If you encounter this error:**
+**This error should no longer occur.** If you do encounter deletion errors:
 
-1. **Check with Web Team:** Verify the RLS policy fix has been applied to the production database
-2. **Error Handling:** Add specific handling for this error in your app:
-   ```typescript
-   if (response.status === 500 && data.details?.includes('row-level security policy')) {
-     // Log error and inform user that deletion failed due to server configuration
-     console.error('RLS policy error - contact web team');
-     throw new Error('Unable to delete post. Please try again later or contact support.');
-   }
-   ```
-3. **Retry Logic:** You may want to implement retry logic for 500 errors (after confirming it's not the RLS error)
+1. **Check error details:** Look at the specific error message
+2. **Verify authentication:** Ensure Bearer token is valid
+3. **Check post ownership:** Only post authors can delete posts
+4. **Report issues:** If deletion fails with a 500 error, share the exact error details
 
-### **✅ Status:**
+### **Error Handling (Recommended):**
 
-- ✅ **Fix created:** SQL migration file ready
-- ✅ **Fix applied:** Will be applied to production database
-- ✅ **Tested:** Fix verified to resolve the issue
+```typescript
+async deletePost(postId: string): Promise<void> {
+  try {
+    const response = await apiFetch(`/api/posts/${postId}`, {
+      method: 'DELETE',
+      session,
+    });
 
-**Note:** Once the fix is applied to the database, this error should no longer occur. If you continue to see this error after the fix is applied, please report it to the web team.
+    const data = await response.json();
+    
+    if (!data.success) {
+      if (response.status === 401) {
+        throw new Error('Please log in to delete posts');
+      } else if (response.status === 403) {
+        throw new Error('You can only delete your own posts');
+      } else if (response.status === 404) {
+        throw new Error('Post not found');
+      } else {
+        // Generic error handling for 500 or other errors
+        throw new Error(data.error || 'Failed to delete post');
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    throw error;
+  }
+}
+```
 
 ---
 
@@ -439,7 +454,7 @@ The web team has created a SQL migration to fix this issue. The fix needs to be 
 5. ✅ **Auto-filtered** - Deleted posts automatically excluded from feeds
 6. ✅ **Status code:** `200 OK` on success
 7. ✅ **Response format:** `{ success: true, message: "Post deleted successfully" }`
-8. ✅ **RLS policy fix:** Database fix created and will be applied (see Section 10)
+8. ✅ **RLS policy fix:** Resolved - Both RLS policy and code fixes applied (see Section 10)
 
 ### **⚠️ Action Items for Mobile Team:**
 
@@ -447,7 +462,7 @@ The web team has created a SQL migration to fix this issue. The fix needs to be 
 2. **Test the endpoint:** Verify all error cases are handled
 3. **Update UI:** Implement optimistic updates or refresh feed after deletion
 4. **Add error handling:** Handle 401, 403, 404, and 500 errors appropriately
-5. **Handle RLS errors:** Add specific handling for RLS policy violation errors (temporary until fix applied)
+5. **Error handling:** Implement comprehensive error handling for all status codes
 
 ---
 
@@ -473,7 +488,7 @@ The web team has created a SQL migration to fix this issue. The fix needs to be 
 
 ---
 
-**The API endpoint is working correctly. Any client-side errors (like `setPosts` not defined) need to be fixed in your React component/hook. Once the database RLS policy fix is applied (Section 10), post deletion should work perfectly!**
+**The API endpoint is working correctly. The RLS policy issue has been resolved (Section 10), and post deletion should work reliably. Any client-side errors (like `setPosts` not defined) need to be fixed in your React component/hook.**
 
 ---
 
