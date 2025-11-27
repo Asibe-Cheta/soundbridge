@@ -129,6 +129,15 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error fetching revenue data:', error);
     }
 
+    // Get waitlist count
+    const { count: waitlistCount, error: waitlistError } = await supabase
+      .from('waitlist')
+      .select('*', { count: 'exact', head: true });
+
+    if (waitlistError) {
+      console.error('❌ Error fetching waitlist count:', waitlistError);
+    }
+
     const overviewData = {
       statistics: {
         // Review Queue Stats
@@ -146,7 +155,10 @@ export async function GET(request: NextRequest) {
         total_tracks: totalTracks || 0,
         total_events: totalEvents || 0,
         total_messages: totalMessages || 0,
-        total_revenue: totalRevenue
+        total_revenue: totalRevenue,
+        
+        // Waitlist Stats
+        waitlist_count: waitlistCount || 0
       },
       
       // Recent activity

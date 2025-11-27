@@ -895,6 +895,18 @@ function OverviewTab({ theme, data, loading }: { theme: string; data: any; loadi
             </div>
           </div>
         </div>
+
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+          <div className="flex items-center">
+            <div className={`p-2 ${theme === 'dark' ? 'bg-pink-900' : 'bg-pink-100'} rounded-lg`}>
+              <Mail className={`h-6 w-6 ${theme === 'dark' ? 'text-pink-400' : 'text-pink-600'}`} />
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Waitlist Signups</p>
+              <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.waitlist_count || 0}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
