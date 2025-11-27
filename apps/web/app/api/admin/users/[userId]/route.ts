@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
+import { PlainTextEmailService } from '@/src/lib/plain-text-email-service';
+import { PlainTextEmailService } from '@/src/lib/plain-text-email-service';
 
 export async function GET(
   request: NextRequest,
@@ -204,21 +206,52 @@ export async function POST(
               console.error('💡 Please create a SendGrid dynamic template and set SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID in your Vercel environment variables');
             }
             
-            // Send email using SendGrid
-            if (templateId && sendGridApiKey) {
+            // Try plain text email first (better deliverability), fallback to template
+            const usePlainText = process.env.USE_PLAIN_TEXT_ACCOUNT_EMAILS === 'true';
+            
+            if (usePlainText) {
+              console.log('📧 Using plain text email for better deliverability...');
+              const plainTextEmail = PlainTextEmailService.generateAccountTakedownEmail(userName, emailMessage);
+              plainTextEmail.to = userEmail;
+              
+              const emailSent = await PlainTextEmailService.sendPlainTextEmail(plainTextEmail);
+              
+              if (!emailSent) {
+                console.error('❌ Failed to send plain text account takedown email');
+                // Fallback to template if plain text fails
+                if (templateId && sendGridApiKey) {
+                  console.log('📧 Falling back to template email...');
+                  await SendGridService.sendTemplatedEmail({
+                    to: userEmail,
+                    from: 'contact@soundbridge.live',
+                    templateId: templateId,
+                    subject: 'Action Required: Your SoundBridge Account',
+                    dynamicTemplateData: {
+                      user_name: userName,
+                      reason: emailMessage,
+                      support_email: 'contact@soundbridge.live',
+                      app_name: 'SoundBridge',
+                      subject: 'Action Required: Your SoundBridge Account'
+                    }
+                  });
+                }
+              } else {
+                console.log(`✅ Plain text account takedown email sent successfully to ${userEmail}`);
+              }
+            } else if (templateId && sendGridApiKey) {
               console.log('📧 Calling SendGridService.sendTemplatedEmail...');
               
               const emailSent = await SendGridService.sendTemplatedEmail({
                 to: userEmail,
                 from: 'contact@soundbridge.live',
                 templateId: templateId,
-                subject: 'Important Account Update - SoundBridge',
+                subject: 'Action Required: Your SoundBridge Account',
                 dynamicTemplateData: {
                   user_name: userName,
                   reason: emailMessage,
                   support_email: 'contact@soundbridge.live',
                   app_name: 'SoundBridge',
-                  subject: 'Important Account Update - SoundBridge'
+                  subject: 'Action Required: Your SoundBridge Account'
                 }
               });
               
@@ -313,20 +346,50 @@ export async function POST(
               console.error('💡 Please create a SendGrid dynamic template and set SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID in your Vercel environment variables');
             }
             
-            // Send restoration email
-            if (restoreTemplateId && sendGridApiKey) {
+            // Try plain text email first (better deliverability), fallback to template
+            const usePlainText = process.env.USE_PLAIN_TEXT_ACCOUNT_EMAILS === 'true';
+            
+            if (usePlainText) {
+              console.log('📧 Using plain text email for better deliverability...');
+              const plainTextEmail = PlainTextEmailService.generateAccountRestorationEmail(userName);
+              plainTextEmail.to = unbanUserEmail;
+              
+              const emailSent = await PlainTextEmailService.sendPlainTextEmail(plainTextEmail);
+              
+              if (!emailSent) {
+                console.error('❌ Failed to send plain text account restoration email');
+                // Fallback to template if plain text fails
+                if (restoreTemplateId && sendGridApiKey) {
+                  console.log('📧 Falling back to template email...');
+                  await SendGridService.sendTemplatedEmail({
+                    to: unbanUserEmail,
+                    from: 'contact@soundbridge.live',
+                    templateId: restoreTemplateId,
+                    subject: 'Action Required: Your SoundBridge Account',
+                    dynamicTemplateData: {
+                      user_name: userName,
+                      support_email: 'contact@soundbridge.live',
+                      app_name: 'SoundBridge',
+                      subject: 'Action Required: Your SoundBridge Account'
+                    }
+                  });
+                }
+              } else {
+                console.log(`✅ Plain text account restoration email sent successfully to ${unbanUserEmail}`);
+              }
+            } else if (restoreTemplateId && sendGridApiKey) {
               console.log('📧 Calling SendGridService.sendTemplatedEmail...');
               
               const emailSent = await SendGridService.sendTemplatedEmail({
                 to: unbanUserEmail,
                 from: 'contact@soundbridge.live',
                 templateId: restoreTemplateId,
-                subject: 'Your Account is Ready - SoundBridge',
+                subject: 'Action Required: Your SoundBridge Account',
                 dynamicTemplateData: {
                   user_name: userName,
                   support_email: 'contact@soundbridge.live',
                   app_name: 'SoundBridge',
-                  subject: 'Your Account is Ready - SoundBridge'
+                  subject: 'Action Required: Your SoundBridge Account'
                 }
               });
               

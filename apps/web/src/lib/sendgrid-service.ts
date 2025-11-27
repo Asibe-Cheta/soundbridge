@@ -118,14 +118,17 @@ export class SendGridService {
       headers: {
         'X-Entity-Ref-ID': `soundbridge-${Date.now()}`,
         'X-Mailer': 'SoundBridge Platform',
-        'Precedence': 'bulk', // Indicates transactional email
-        'Auto-Submitted': 'auto-generated', // Indicates automated email
+        'Precedence': 'list', // Changed from 'bulk' - these aren't bulk emails
+        'Importance': 'high', // High importance for account notifications
         'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        'X-Priority': '3' // Normal priority (not urgent)
+        'X-Priority': '1', // High priority (changed from 3)
+        'X-MSMail-Priority': 'High',
+        'X-Auto-Response-Suppress': 'OOF, AutoReply'
+        // Removed 'Auto-Submitted' - can trigger spam filters
       },
       // Add categories for tracking and filtering
-      categories: ['account-notification', 'soundbridge', 'transactional']
+      categories: ['account-security', 'transactional', 'soundbridge']
     };
 
     // Add subject if provided (overrides template subject)
