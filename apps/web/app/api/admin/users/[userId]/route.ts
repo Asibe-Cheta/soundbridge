@@ -212,6 +212,7 @@ export async function POST(
                 to: userEmail,
                 from: 'contact@soundbridge.live',
                 templateId: templateId,
+                subject: 'Your SoundBridge Account Has Been Suspended',
                 dynamicTemplateData: {
                   user_name: userName,
                   reason: emailMessage,
@@ -291,6 +292,7 @@ export async function POST(
                 to: unbanUserEmail,
                 from: 'contact@soundbridge.live',
                 templateId: restoreTemplateId,
+                subject: 'Your SoundBridge Account Has Been Restored',
                 dynamicTemplateData: {
                   user_name: userName,
                   support_email: 'contact@soundbridge.live',

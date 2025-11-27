@@ -9,6 +9,7 @@ export interface EmailData {
   fromName?: string;
   templateId: string;
   dynamicTemplateData: Record<string, any>;
+  subject?: string; // Optional subject override for dynamic templates
 }
 
 export interface PasswordResetData {
@@ -104,7 +105,7 @@ export class SendGridService {
       throw new Error('SENDGRID_API_KEY is not configured in environment variables');
     }
 
-    const msg = {
+    const msg: any = {
       to: emailData.to,
       from: {
         email: emailData.from || this.fromEmail,
@@ -113,6 +114,11 @@ export class SendGridService {
       templateId: emailData.templateId,
       dynamicTemplateData: emailData.dynamicTemplateData
     };
+
+    // Add subject if provided (overrides template subject)
+    if (emailData.subject) {
+      msg.subject = emailData.subject;
+    }
 
     console.log('📧 SendGrid email payload:', {
       to: msg.to,
