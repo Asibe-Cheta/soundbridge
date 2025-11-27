@@ -4,6 +4,8 @@
  * Use this for account notifications that are going to spam
  */
 
+import sgMail from '@sendgrid/mail';
+
 export interface PlainTextEmailData {
   to: string;
   from?: string;
@@ -22,13 +24,13 @@ export class PlainTextEmailService {
    */
   static async sendPlainTextEmail(emailData: PlainTextEmailData): Promise<boolean> {
     try {
-      const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
-
       if (!process.env.SENDGRID_API_KEY) {
         console.error('❌ SENDGRID_API_KEY is not configured');
         return false;
       }
+
+      // Set API key (must be done in function, not at module level, for Next.js serverless)
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
       const msg: any = {
         to: emailData.to,

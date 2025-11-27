@@ -208,18 +208,54 @@ export async function POST(
             // Try plain text email first (better deliverability), fallback to template
             const usePlainText = process.env.USE_PLAIN_TEXT_ACCOUNT_EMAILS === 'true';
             
+            console.log(`📧 USE_PLAIN_TEXT_ACCOUNT_EMAILS: ${usePlainText} (env value: ${process.env.USE_PLAIN_TEXT_ACCOUNT_EMAILS})`);
+            
             if (usePlainText) {
               console.log('📧 Using plain text email for better deliverability...');
-              const plainTextEmail = PlainTextEmailService.generateAccountTakedownEmail(userName, emailMessage);
-              plainTextEmail.to = userEmail;
+              console.log(`📧 Generating email for: ${userName} (${userEmail})`);
               
-              const emailSent = await PlainTextEmailService.sendPlainTextEmail(plainTextEmail);
-              
-              if (!emailSent) {
-                console.error('❌ Failed to send plain text account takedown email');
-                // Fallback to template if plain text fails
+              try {
+                const plainTextEmail = PlainTextEmailService.generateAccountTakedownEmail(userName, emailMessage);
+                plainTextEmail.to = userEmail;
+                
+                console.log('📧 Plain text email data:', {
+                  to: plainTextEmail.to,
+                  subject: plainTextEmail.subject,
+                  textLength: plainTextEmail.text.length
+                });
+                
+                const emailSent = await PlainTextEmailService.sendPlainTextEmail(plainTextEmail);
+                
+                if (!emailSent) {
+                  console.error('❌ Failed to send plain text account takedown email');
+                  console.error('📧 Attempting fallback to template email...');
+                  // Fallback to template if plain text fails
+                  if (templateId && sendGridApiKey) {
+                    await SendGridService.sendTemplatedEmail({
+                      to: userEmail,
+                      from: 'contact@soundbridge.live',
+                      templateId: templateId,
+                      subject: 'Action Required: Your SoundBridge Account',
+                      dynamicTemplateData: {
+                        user_name: userName,
+                        reason: emailMessage,
+                        support_email: 'contact@soundbridge.live',
+                        app_name: 'SoundBridge',
+                        subject: 'Action Required: Your SoundBridge Account'
+                      }
+                    });
+                  } else {
+                    console.error('❌ Cannot fallback - template ID or API key missing');
+                  }
+                } else {
+                  console.log(`✅ Plain text account takedown email sent successfully to ${userEmail}`);
+                }
+              } catch (plainTextError) {
+                console.error('❌ Error in plain text email sending:', plainTextError);
+                console.error('Error details:', plainTextError instanceof Error ? plainTextError.message : String(plainTextError));
+                // Fallback to template
                 if (templateId && sendGridApiKey) {
-                  console.log('📧 Falling back to template email...');
+                  console.log('📧 Falling back to template email due to error...');
                   await SendGridService.sendTemplatedEmail({
                     to: userEmail,
                     from: 'contact@soundbridge.live',
@@ -234,8 +270,6 @@ export async function POST(
                     }
                   });
                 }
-              } else {
-                console.log(`✅ Plain text account takedown email sent successfully to ${userEmail}`);
               }
             } else if (templateId && sendGridApiKey) {
               console.log('📧 Calling SendGridService.sendTemplatedEmail...');
@@ -348,18 +382,53 @@ export async function POST(
             // Try plain text email first (better deliverability), fallback to template
             const usePlainText = process.env.USE_PLAIN_TEXT_ACCOUNT_EMAILS === 'true';
             
+            console.log(`📧 USE_PLAIN_TEXT_ACCOUNT_EMAILS: ${usePlainText} (env value: ${process.env.USE_PLAIN_TEXT_ACCOUNT_EMAILS})`);
+            
             if (usePlainText) {
               console.log('📧 Using plain text email for better deliverability...');
-              const plainTextEmail = PlainTextEmailService.generateAccountRestorationEmail(userName);
-              plainTextEmail.to = unbanUserEmail;
+              console.log(`📧 Generating restoration email for: ${userName} (${unbanUserEmail})`);
               
-              const emailSent = await PlainTextEmailService.sendPlainTextEmail(plainTextEmail);
-              
-              if (!emailSent) {
-                console.error('❌ Failed to send plain text account restoration email');
-                // Fallback to template if plain text fails
+              try {
+                const plainTextEmail = PlainTextEmailService.generateAccountRestorationEmail(userName);
+                plainTextEmail.to = unbanUserEmail;
+                
+                console.log('📧 Plain text email data:', {
+                  to: plainTextEmail.to,
+                  subject: plainTextEmail.subject,
+                  textLength: plainTextEmail.text.length
+                });
+                
+                const emailSent = await PlainTextEmailService.sendPlainTextEmail(plainTextEmail);
+                
+                if (!emailSent) {
+                  console.error('❌ Failed to send plain text account restoration email');
+                  console.error('📧 Attempting fallback to template email...');
+                  // Fallback to template if plain text fails
+                  if (restoreTemplateId && sendGridApiKey) {
+                    await SendGridService.sendTemplatedEmail({
+                      to: unbanUserEmail,
+                      from: 'contact@soundbridge.live',
+                      templateId: restoreTemplateId,
+                      subject: 'Action Required: Your SoundBridge Account',
+                      dynamicTemplateData: {
+                        user_name: userName,
+                        support_email: 'contact@soundbridge.live',
+                        app_name: 'SoundBridge',
+                        subject: 'Action Required: Your SoundBridge Account'
+                      }
+                    });
+                  } else {
+                    console.error('❌ Cannot fallback - template ID or API key missing');
+                  }
+                } else {
+                  console.log(`✅ Plain text account restoration email sent successfully to ${unbanUserEmail}`);
+                }
+              } catch (plainTextError) {
+                console.error('❌ Error in plain text email sending:', plainTextError);
+                console.error('Error details:', plainTextError instanceof Error ? plainTextError.message : String(plainTextError));
+                // Fallback to template
                 if (restoreTemplateId && sendGridApiKey) {
-                  console.log('📧 Falling back to template email...');
+                  console.log('📧 Falling back to template email due to error...');
                   await SendGridService.sendTemplatedEmail({
                     to: unbanUserEmail,
                     from: 'contact@soundbridge.live',
@@ -373,8 +442,6 @@ export async function POST(
                     }
                   });
                 }
-              } else {
-                console.log(`✅ Plain text account restoration email sent successfully to ${unbanUserEmail}`);
               }
             } else if (restoreTemplateId && sendGridApiKey) {
               console.log('📧 Calling SendGridService.sendTemplatedEmail...');
