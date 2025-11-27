@@ -547,6 +547,7 @@ export default function AdminDashboard() {
             setUserDetails(null);
           }}
           onAction={handleUserAction}
+          onBanUser={handleBanUser}
         />
       )}
 
@@ -586,17 +587,38 @@ function UserDetailModal({
   user, 
   loading, 
   onClose, 
-  onAction 
+  onAction,
+  onBanUser
 }: { 
   user: any; 
   loading: boolean; 
   onClose: () => void; 
   onAction: (action: string, userId: string, data?: any) => void;
+  onBanUser?: (user: any) => void;
 }) {
   const { theme } = useTheme();
 
   const handleAction = async (action: string, data?: any) => {
     await onAction(action, user.id, data);
+  };
+
+  const handleBanClick = () => {
+    if (onBanUser) {
+      // Close this modal first, then open ban modal
+      onClose();
+      // Small delay to ensure modal closes before opening ban modal
+      setTimeout(() => {
+        onBanUser(user);
+      }, 100);
+    } else {
+      // Fallback to direct action if onBanUser not provided
+      handleAction('ban_user', { reason: 'Administrative action' });
+    }
+  };
+
+  const handleUnbanClick = () => {
+    // For unban, we can call directly since no email message is needed
+    handleAction('unban_user');
   };
 
   return (
@@ -751,14 +773,14 @@ function UserDetailModal({
               </button>
               {user.is_active ? (
                 <button
-                  onClick={() => handleAction('ban_user', { reason: 'Administrative action' })}
+                  onClick={handleBanClick}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   Ban User
                 </button>
               ) : (
                 <button
-                  onClick={() => handleAction('unban_user')}
+                  onClick={handleUnbanClick}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
                   Unban User
