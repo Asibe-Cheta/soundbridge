@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
@@ -12,6 +12,7 @@ import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
@@ -27,6 +28,18 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Get search placeholder based on current route
+  const getSearchPlaceholder = () => {
+    if (pathname?.startsWith('/feed')) {
+      return 'Search professionals, posts, opportunities...';
+    } else if (pathname?.startsWith('/discover')) {
+      return 'Search artists, music, events, venues...';
+    } else if (pathname?.startsWith('/network')) {
+      return 'Search connections...';
+    }
+    return 'Search creators, events, podcasts...';
+  };
 
   // Handle search focus from mobile menu
   useEffect(() => {
@@ -99,7 +112,7 @@ export default function Navbar() {
             {/* Hidden Mobile Search Bar for Focus */}
             <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
               <SearchDropdown 
-                placeholder="Search creators, events, podcasts..." 
+                placeholder={getSearchPlaceholder()} 
                 onFocusSuccess={() => {
                   console.log('Mobile search focus successful, closing menu');
                   setIsMobileMenuOpen(false);
@@ -233,25 +246,7 @@ export default function Navbar() {
                         Dashboard
                       </div>
                     </Link>
-                    <Link href="/notifications" style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        color: 'var(--text-primary)',
-                        borderRadius: '8px',
-                        transition: 'all 0.3s ease',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <Bell size={16} />
-                        Notifications
-                      </div>
-                    </Link>
-                    <Link href="/messaging" style={{ textDecoration: 'none' }}>
+                   <Link href="/messaging" style={{ textDecoration: 'none' }}>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -498,7 +493,7 @@ export default function Navbar() {
            {/* CENTER - Search Bar */}
            <div className="navbar-center">
              <SearchDropdown 
-               placeholder="Search creators, events, podcasts..." 
+               placeholder={getSearchPlaceholder()} 
                onFocusSuccess={() => {
                  console.log('Search focus successful, checking conditions:', { isMobile, shouldFocusSearch });
                  // Only close mobile menu if we're on mobile and focus was triggered from mobile menu

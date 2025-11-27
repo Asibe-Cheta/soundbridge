@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { HeroSection } from '@/src/components/sections/HeroSection';
@@ -12,6 +13,7 @@ import { Music, Users, Calendar, Mic, ArrowRight, Upload, Sparkles, Smartphone, 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const { theme } = useTheme();
+  const router = useRouter();
 
   // Show loading state while checking auth (with aggressive timeout fallback for mobile)
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -59,8 +61,33 @@ export default function HomePage() {
     );
   }
 
-  // For signed-in users, show discover-like content with interactive cards
+  // Redirect authenticated users to feed page (professional networking focus)
+  useEffect(() => {
+    if (user && !loading) {
+      router.push('/feed');
+    }
+  }, [user, loading, router]);
+
+  // For signed-in users, show loading state during redirect
   if (user) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900' 
+          : 'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            SoundBridge
+          </h1>
+          <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Redirecting to feed...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // For non-authenticated users, show discover-like content with interactive cards
+  // (Original home page content remains for non-authenticated users)
     return (
       <div className={`min-h-screen ${
         theme === 'dark' 

@@ -72,6 +72,14 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
+    // Get user's genre preferences for better feed ranking
+    const { data: userGenres } = await supabase
+      .from('user_genres')
+      .select('genre_id')
+      .eq('user_id', user.id);
+    
+    const userGenreIds = userGenres?.map(ug => ug.genre_id) || [];
+
     // Get user's connections
     const { data: connections } = await supabase
       .from('connections')
