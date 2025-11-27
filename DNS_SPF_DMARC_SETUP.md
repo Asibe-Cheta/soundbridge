@@ -3,47 +3,54 @@
 ## Current Status
 ✅ **Subdomain Authentication**: `em361.soundbridge.live` is verified in SendGrid
 ✅ **Single Sender**: `contact@soundbridge.live` is verified
-⚠️ **Root Domain SPF/DMARC**: Missing or not properly configured
-⚠️ **Gmail Deliverability**: Emails going to spam due to missing root domain records
+⚠️ **Root Domain SPF**: EXISTS but only includes PrivateEmail (missing SendGrid)
+⚠️ **Root Domain DMARC**: EXISTS but missing reporting addresses
+⚠️ **Gmail Deliverability**: Emails going to spam because SPF doesn't authorize SendGrid
 
 ## The Problem
 
-Even though your SendGrid subdomain is authenticated, Gmail and other providers check for **SPF and DMARC records on the root domain** (`soundbridge.live`) when emails are sent from `contact@soundbridge.live`.
+You already have SPF and DMARC records, but they're not configured correctly:
 
-**Current DNS Records (from Namecheap):**
-- ✅ CNAME records for SendGrid subdomain authentication
-- ❌ **Missing**: SPF TXT record for root domain
-- ❌ **Missing**: DMARC TXT record for root domain
+**Current SPF Record:**
+- Host `@`: `v=spf1 include:spf.privateemail.com ~all`
+- ❌ **Problem**: This only authorizes PrivateEmail, NOT SendGrid!
+- When Gmail checks SPF for emails from SendGrid, it fails because SendGrid isn't included
 
-## Solution: Add SPF and DMARC Records
+**Current DMARC Record:**
+- Host `_dmarc`: `v=DMARC1 p=none`
+- ⚠️ **Missing**: Reporting addresses (rua/ruf) for monitoring
 
-### Step 1: Add SPF Record for Root Domain
+## Solution: UPDATE Existing Records
+
+### Step 1: UPDATE SPF Record for Root Domain
 
 **In Namecheap DNS Management:**
 
 1. Go to **Advanced DNS** for `soundbridge.live`
-2. Click **"ADD NEW RECORD"**
-3. Select **TXT** record type
-4. Configure as follows:
+2. Find the existing **TXT record** with Host `@` that has value `v=spf1 include:spf.privateemail.com ~all`
+3. Click the **trash can icon** to delete it (or edit it)
+4. Click **"ADD NEW RECORD"**
+5. Select **TXT** record type
+6. Configure as follows:
    - **Host**: `@` (or leave blank for root domain)
-   - **Value**: `v=spf1 include:sendgrid.net ~all`
+   - **Value**: `v=spf1 include:sendgrid.net include:spf.privateemail.com ~all`
    - **TTL**: `Automatic` (or `3600`)
 
-**Alternative SPF (if you have other email services):**
-If you also use other email services (like PrivateEmail from Namecheap), use:
-```
-v=spf1 include:sendgrid.net include:_spf.privateemail.com ~all
-```
+**Important**: You must include BOTH `sendgrid.net` AND `spf.privateemail.com` because:
+- SendGrid is used for transactional emails (account takedown, waitlist, etc.)
+- PrivateEmail is used for receiving emails (MX records point to it)
 
 **Note**: The `~all` means "soft fail" - emails from unauthorized servers will be accepted but marked. Use `-all` for "hard fail" (strict) after testing.
 
-### Step 2: Add DMARC Record
+### Step 2: UPDATE DMARC Record
 
 **In Namecheap DNS Management:**
 
-1. Click **"ADD NEW RECORD"** again
-2. Select **TXT** record type
-3. Configure as follows:
+1. Find the existing **TXT record** with Host `_dmarc` that has value `v=DMARC1 p=none`
+2. Click the **trash can icon** to delete it (or edit it)
+3. Click **"ADD NEW RECORD"**
+4. Select **TXT** record type
+5. Configure as follows:
    - **Host**: `_dmarc` (this creates `_dmarc.soundbridge.live`)
    - **Value**: `v=DMARC1; p=none; rua=mailto:contact@soundbridge.live; ruf=mailto:contact@soundbridge.live; fo=1`
    - **TTL**: `Automatic` (or `3600`)
@@ -66,7 +73,8 @@ v=DMARC1; p=quarantine; rua=mailto:contact@soundbridge.live; pct=100
 1. **Check SPF Record:**
    - Go to: https://mxtoolbox.com/spf.aspx
    - Enter: `soundbridge.live`
-   - Should show: `v=spf1 include:sendgrid.net ~all`
+   - Should show: `v=spf1 include:sendgrid.net include:spf.privateemail.com ~all`
+   - ✅ Both SendGrid and PrivateEmail should be included
 
 2. **Check DMARC Record:**
    - Go to: https://mxtoolbox.com/dmarc.aspx
@@ -116,8 +124,8 @@ v=DMARC1; p=quarantine; rua=mailto:contact@soundbridge.live; pct=100
 3. **CNAME**: `em361` → `u54701625.wl126.sendgrid.net.` ✅ (already set)
 4. **CNAME**: `s1._domainkey` → `s1.domainkey.u54701625.wl126.sendgrid.net.` ✅ (already set)
 5. **CNAME**: `s2._domainkey` → `s2.domainkey.u54701625.wl126.sendgrid.net.` ✅ (already set)
-6. **TXT**: `@` → `v=spf1 include:sendgrid.net ~all` ⚠️ **ADD THIS**
-7. **TXT**: `_dmarc` → `v=DMARC1; p=none; rua=mailto:contact@soundbridge.live; ruf=mailto:contact@soundbridge.live; fo=1` ⚠️ **ADD THIS**
+6. **TXT**: `@` → `v=spf1 include:sendgrid.net include:spf.privateemail.com ~all` ⚠️ **UPDATE EXISTING** (currently only has `spf.privateemail.com`)
+7. **TXT**: `_dmarc` → `v=DMARC1; p=none; rua=mailto:contact@soundbridge.live; ruf=mailto:contact@soundbridge.live; fo=1` ⚠️ **UPDATE EXISTING** (currently missing rua/ruf)
 
 ### Mail Settings (MX Records):
 - Your existing MX records for PrivateEmail are fine (don't change these)
@@ -162,13 +170,14 @@ v=DMARC1; p=quarantine; rua=mailto:contact@soundbridge.live; pct=100
 
 ## Next Steps
 
-1. ✅ Add SPF TXT record to Namecheap DNS
-2. ✅ Add DMARC TXT record to Namecheap DNS
-3. ✅ Wait 24-48 hours for propagation
-4. ✅ Test with Mail-Tester.com
-5. ✅ Send test emails to Gmail
-6. ✅ Monitor DMARC reports
-7. ✅ Adjust DMARC policy after monitoring period
+1. ✅ **UPDATE** existing SPF TXT record to include `sendgrid.net` (keep `spf.privateemail.com` too)
+2. ✅ **UPDATE** existing DMARC TXT record to include reporting addresses (rua/ruf)
+3. ✅ Wait 24-48 hours for DNS propagation
+4. ✅ Verify records using MXToolbox (links in Step 3)
+5. ✅ Test with Mail-Tester.com
+6. ✅ Send test emails to Gmail
+7. ✅ Monitor DMARC reports (will be sent to contact@soundbridge.live)
+8. ✅ Adjust DMARC policy after monitoring period (1-2 weeks)
 
 ---
 
