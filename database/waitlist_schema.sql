@@ -5,8 +5,11 @@
 CREATE TABLE IF NOT EXISTS waitlist (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
-    role TEXT, -- "artist", "producer", "venue", "fan", "dj", "other"
-    location TEXT, -- UK city/region
+    role TEXT, -- "artist", "producer", "venue", "fan", "dj", "manager", "other"
+    location TEXT, -- Legacy field - stores structured JSON: {"country": "United Kingdom", "state": "England", "city": "Wokingham"}
+    country TEXT, -- Country name (e.g., "United Kingdom")
+    state TEXT, -- State/Region/Province (e.g., "England", "Scotland", "Wales", "Northern Ireland")
+    city TEXT, -- City name (e.g., "Wokingham", "London")
     genres TEXT[], -- music genres interested in
     referral_source TEXT, -- where they heard about us
     signed_up_at TIMESTAMPTZ DEFAULT NOW(),
@@ -19,6 +22,8 @@ CREATE TABLE IF NOT EXISTS waitlist (
 CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 CREATE INDEX IF NOT EXISTS idx_waitlist_signed_up_at ON waitlist(signed_up_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waitlist_role ON waitlist(role) WHERE role IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_waitlist_country ON waitlist(country) WHERE country IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_waitlist_state ON waitlist(state) WHERE state IS NOT NULL;
 
 -- Enable Row Level Security
 ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;

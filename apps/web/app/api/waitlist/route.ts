@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 Waitlist signup API called');
     
     const body = await request.json();
-    const { email, role, location, genres, referral_source } = body;
+    const { email, role, location, country, state, city, genres, referral_source } = body;
 
     // Validate required fields
     if (!email) {
@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
       .insert({
         email: email.toLowerCase().trim(),
         role: role || null,
-        location: location || null,
+        location: location || null, // Legacy field - stores JSON string if provided
+        country: country || null,
+        state: state || null,
+        city: city || null,
         genres: genres || null,
         referral_source: referral_source || null,
         confirmed: false

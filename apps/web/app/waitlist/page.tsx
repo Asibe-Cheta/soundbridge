@@ -17,8 +17,11 @@ import {
   Plus,
   Minus,
   Loader2,
-  Lock
+  Lock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import { CountrySelector } from '@/src/components/onboarding/CountrySelector';
 
 export default function WaitlistPage() {
   const { theme } = useTheme();
@@ -28,6 +31,16 @@ export default function WaitlistPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [signupCount, setSignupCount] = useState<number | null>(null);
+  
+  // Extended form fields
+  const [showExtendedForm, setShowExtendedForm] = useState(false);
+  const [role, setRole] = useState('');
+  const [country, setCountry] = useState('');
+  const [state, setState] = useState('');
+  const [city, setCity] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [genres, setGenres] = useState<Array<{id: string; name: string}>>([]);
+  const [loadingGenres, setLoadingGenres] = useState(false);
 
   // Fetch signup count dynamically
   useEffect(() => {
@@ -49,6 +62,28 @@ export default function WaitlistPage() {
     fetchCount();
   }, []);
 
+  // Fetch genres
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        setLoadingGenres(true);
+        const response = await fetch('/api/genres?category=music&active=true');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.genres) {
+            setGenres(result.genres);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching genres:', error);
+      } finally {
+        setLoadingGenres(false);
+      }
+    };
+    
+    fetchGenres();
+  }, []);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -56,12 +91,33 @@ export default function WaitlistPage() {
     setErrorMessage('');
 
     try {
+      // Build location object
+      const locationData: any = {};
+      if (country) locationData.country = country;
+      if (state) locationData.state = state;
+      if (city) locationData.city = city;
+      
+      const requestBody: any = {
+        email: email.trim(),
+      };
+      
+      // Only include extended fields if provided
+      if (role) requestBody.role = role;
+      if (Object.keys(locationData).length > 0) {
+        requestBody.country = locationData.country;
+        requestBody.state = locationData.state;
+        requestBody.city = locationData.city;
+        // Also store as JSON string in location field for backward compatibility
+        requestBody.location = JSON.stringify(locationData);
+      }
+      if (selectedGenres.length > 0) requestBody.genres = selectedGenres;
+
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
@@ -69,6 +125,13 @@ export default function WaitlistPage() {
       if (response.ok && result.success) {
         setSubmitStatus('success');
         setEmail('');
+        // Reset extended form
+        setShowExtendedForm(false);
+        setRole('');
+        setCountry('');
+        setState('');
+        setCity('');
+        setSelectedGenres([]);
         // Update count if provided
         if (result.already_exists) {
           // User already exists, but still show success
@@ -166,58 +229,221 @@ export default function WaitlistPage() {
     'Merchandise Sales - Sell directly to fans (coming soon)'
   ];
 
+  // Toggle genre selection
+  const toggleGenre = (genreId: string) => {
+    setSelectedGenres(prev => 
+      prev.includes(genreId) 
+        ? prev.filter(id => id !== genreId)
+        : [...prev, genreId]
+    );
+  };
+
   // Render email form inline to prevent input focus loss from component recreation
   const renderEmailForm = (className = '') => (
     <form onSubmit={handleSubmit} className={className}>
-      <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email address"
-          required
-          disabled={isSubmitting}
-          className={`flex-1 px-6 py-4 rounded-xl text-base border transition-all ${
-            theme === 'dark'
-              ? 'bg-white/10 backdrop-blur-lg text-white placeholder-gray-400 border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-              : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-          } ${submitStatus === 'error' ? 'border-red-500' : ''}`}
-          style={{ minHeight: '56px' }}
-        />
+      <div className="max-w-2xl mx-auto space-y-4">
+        {/* Basic Email Input */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email address"
+            required
+            disabled={isSubmitting}
+            className={`flex-1 px-6 py-4 rounded-xl text-base border transition-all ${
+              theme === 'dark'
+                ? 'bg-white/10 backdrop-blur-lg text-white placeholder-gray-400 border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+            } ${submitStatus === 'error' ? 'border-red-500' : ''}`}
+            style={{ minHeight: '56px' }}
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`px-8 py-4 rounded-xl font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/30'
+                : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/30'
+            }`}
+            style={{ minHeight: '56px' }}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Joining...
+              </span>
+            ) : (
+              'Get Early Access'
+            )}
+          </button>
+        </div>
+
+        {/* Extended Form Toggle */}
         <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`px-8 py-4 rounded-xl font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+          type="button"
+          onClick={() => setShowExtendedForm(!showExtendedForm)}
+          className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             theme === 'dark'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/30'
-              : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/30'
+              ? 'text-gray-400 hover:text-white hover:bg-white/10'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
           }`}
-          style={{ minHeight: '56px' }}
         >
-          {isSubmitting ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Joining...
-            </span>
+          {showExtendedForm ? (
+            <>
+              <ChevronUp className="w-4 h-4" />
+              Hide additional details (optional)
+            </>
           ) : (
-            'Get Early Access'
+            <>
+              <ChevronDown className="w-4 h-4" />
+              Tell us more about yourself (optional)
+            </>
           )}
         </button>
-      </div>
-      {submitStatus === 'error' && errorMessage && (
-        <p className="text-red-500 text-sm mt-2 text-center">{errorMessage}</p>
-      )}
-      {submitStatus === 'success' && (
-        <p className="text-green-500 text-sm mt-2 text-center">
-          🎉 You're on the list! Check your email for confirmation.
+
+        {/* Extended Form Fields */}
+        {showExtendedForm && (
+          <div className={`p-6 rounded-xl border space-y-4 ${
+            theme === 'dark'
+              ? 'bg-white/5 backdrop-blur-lg border-white/10'
+              : 'bg-gray-50 border-gray-200'
+          }`}>
+            {/* Role Selection */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                I am a... (optional)
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className={`w-full px-4 py-3 rounded-lg border text-base ${
+                  theme === 'dark'
+                    ? 'bg-white/10 backdrop-blur-lg text-white border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                    : 'bg-white text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                }`}
+              >
+                <option value="">Select your role</option>
+                <option value="artist">Artist / Musician</option>
+                <option value="producer">Producer / Beatmaker</option>
+                <option value="dj">DJ</option>
+                <option value="venue">Venue Owner / Manager</option>
+                <option value="manager">Artist Manager</option>
+                <option value="label">Record Label</option>
+                <option value="fan">Music Fan</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* Location Fields */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Location (optional)
+              </label>
+              <div className="space-y-3">
+                <CountrySelector
+                  value={country}
+                  onChange={setCountry}
+                  placeholder="Select country"
+                  className="w-full"
+                />
+                {country && (
+                  <>
+                    <input
+                      type="text"
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      placeholder="State / Region / Province (e.g., England, Scotland, California)"
+                      className={`w-full px-4 py-3 rounded-lg border text-base ${
+                        theme === 'dark'
+                          ? 'bg-white/10 backdrop-blur-lg text-white placeholder-gray-400 border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                          : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                      }`}
+                    />
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="City (e.g., Wokingham, London, New York)"
+                      className={`w-full px-4 py-3 rounded-lg border text-base ${
+                        theme === 'dark'
+                          ? 'bg-white/10 backdrop-blur-lg text-white placeholder-gray-400 border-white/20 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                          : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                      }`}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Genres Selection */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Favorite Genres (optional) - Select all that apply
+              </label>
+              {loadingGenres ? (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Loading genres...
+                  </span>
+                </div>
+              ) : genres.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {genres.map((genre) => (
+                    <button
+                      key={genre.id}
+                      type="button"
+                      onClick={() => toggleGenre(genre.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        selectedGenres.includes(genre.id)
+                          ? theme === 'dark'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-purple-600 text-white'
+                          : theme === 'dark'
+                          ? 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {selectedGenres.includes(genre.id) && (
+                        <Check className="w-3 h-3 inline mr-1" />
+                      )}
+                      {genre.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  No genres available
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Status Messages */}
+        {submitStatus === 'error' && errorMessage && (
+          <p className="text-red-500 text-sm text-center">{errorMessage}</p>
+        )}
+        {submitStatus === 'success' && (
+          <p className="text-green-500 text-sm text-center">
+            🎉 You're on the list! Check your email for confirmation.
+          </p>
+        )}
+        
+        <p className={`text-sm text-center flex items-center justify-center gap-2 ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        }`}>
+          <Lock className="w-4 h-4" />
+          We respect your privacy. Unsubscribe anytime.
         </p>
-      )}
-      <p className={`text-sm mt-4 text-center flex items-center justify-center gap-2 ${
-        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-      }`}>
-        <Lock className="w-4 h-4" />
-        We respect your privacy. Unsubscribe anytime.
-      </p>
+      </div>
     </form>
   );
 

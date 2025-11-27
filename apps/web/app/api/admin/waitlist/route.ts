@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     
     // Apply search filter
     if (search) {
-      query = query.or(`email.ilike.%${search}%,role.ilike.%${search}%,location.ilike.%${search}%`);
+      query = query.or(`email.ilike.%${search}%,role.ilike.%${search}%,location.ilike.%${search}%,country.ilike.%${search}%,state.ilike.%${search}%,city.ilike.%${search}%`);
     }
     
     // Apply sorting

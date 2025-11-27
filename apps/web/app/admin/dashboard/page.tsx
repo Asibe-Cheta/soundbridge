@@ -1742,11 +1742,13 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
   };
 
   const exportToCSV = () => {
-    const headers = ['Email', 'Role', 'Location', 'Genres', 'Referral Source', 'Signed Up At', 'Confirmed'];
+    const headers = ['Email', 'Role', 'Country', 'State/Region', 'City', 'Genres', 'Referral Source', 'Signed Up At', 'Confirmed'];
     const rows = waitlistData.map(item => [
       item.email || '',
       item.role || '',
-      item.location || '',
+      item.country || '',
+      item.state || '',
+      item.city || '',
       Array.isArray(item.genres) ? item.genres.join(', ') : (item.genres || ''),
       item.referral_source || '',
       item.signed_up_at ? new Date(item.signed_up_at).toLocaleString() : '',
@@ -1855,6 +1857,9 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
                       Location
                     </th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Country
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
                       Genres
                     </th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
@@ -1874,8 +1879,13 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
                       <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                         {item.role || '-'}
                       </td>
+                      <td className={`px-6 py-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {item.city && item.state
+                          ? `${item.city}, ${item.state}`
+                          : item.location || '-'}
+                      </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                        {item.location || '-'}
+                        {item.country || '-'}
                       </td>
                       <td className={`px-6 py-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                         {Array.isArray(item.genres) && item.genres.length > 0
