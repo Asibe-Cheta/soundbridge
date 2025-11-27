@@ -111,16 +111,21 @@ export class SendGridService {
         email: emailData.from || this.fromEmail,
         name: emailData.fromName || this.fromName
       },
+      replyTo: 'contact@soundbridge.live', // Allow users to reply
       templateId: emailData.templateId,
       dynamicTemplateData: emailData.dynamicTemplateData,
       // Add headers for better deliverability
       headers: {
         'X-Entity-Ref-ID': `soundbridge-${Date.now()}`,
+        'X-Mailer': 'SoundBridge Platform',
+        'Precedence': 'bulk', // Indicates transactional email
+        'Auto-Submitted': 'auto-generated', // Indicates automated email
         'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Priority': '3' // Normal priority (not urgent)
       },
       // Add categories for tracking and filtering
-      categories: ['account-notification', 'soundbridge']
+      categories: ['account-notification', 'soundbridge', 'transactional']
     };
 
     // Add subject if provided (overrides template subject)

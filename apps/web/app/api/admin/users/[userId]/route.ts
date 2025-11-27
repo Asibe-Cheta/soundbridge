@@ -212,13 +212,13 @@ export async function POST(
                 to: userEmail,
                 from: 'contact@soundbridge.live',
                 templateId: templateId,
-                subject: 'Your SoundBridge Account Has Been Suspended',
+                subject: 'Important Account Update - SoundBridge',
                 dynamicTemplateData: {
                   user_name: userName,
                   reason: emailMessage,
                   support_email: 'contact@soundbridge.live',
                   app_name: 'SoundBridge',
-                  subject: 'Your SoundBridge Account Has Been Suspended'
+                  subject: 'Important Account Update - SoundBridge'
                 }
               });
               
@@ -321,12 +321,12 @@ export async function POST(
                 to: unbanUserEmail,
                 from: 'contact@soundbridge.live',
                 templateId: restoreTemplateId,
-                subject: 'Your SoundBridge Account Has Been Restored',
+                subject: 'Your Account is Ready - SoundBridge',
                 dynamicTemplateData: {
                   user_name: userName,
                   support_email: 'contact@soundbridge.live',
                   app_name: 'SoundBridge',
-                  subject: 'Your SoundBridge Account Has Been Restored'
+                  subject: 'Your Account is Ready - SoundBridge'
                 }
               });
               
