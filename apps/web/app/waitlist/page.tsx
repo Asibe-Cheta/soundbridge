@@ -8,6 +8,7 @@ import {
   ArrowLeft, 
   DollarSign, 
   Handshake, 
+  Music,
   MapPin, 
   Mic, 
   Target, 
