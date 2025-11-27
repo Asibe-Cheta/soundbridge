@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   },
   // Disable TypeScript checking at the webpack level
   webpack: (config, { isServer }) => {
-    // Disable TypeScript checking
+    // Ensure UTF-8 encoding for all source files
     config.module.rules = config.module.rules.map((rule: any) => {
       if (rule.test && rule.test.toString().includes('tsx?')) {
         return {
