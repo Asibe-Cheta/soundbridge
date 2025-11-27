@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { PlainTextEmailService } from '@/src/lib/plain-text-email-service';
-import { PlainTextEmailService } from '@/src/lib/plain-text-email-service';
 
 export async function GET(
   request: NextRequest,
