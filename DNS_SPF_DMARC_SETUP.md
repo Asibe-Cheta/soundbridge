@@ -56,15 +56,40 @@ You already have SPF and DMARC records, but they're not configured correctly:
    - **TTL**: `Automatic` (or `3600`)
 
 **DMARC Policy Explanation:**
-- `p=none`: Monitor mode - don't reject emails, just report
+- `p=none`: Monitor mode - don't reject emails, just report (✅ **RECOMMENDED TO START**)
 - `rua`: Email address to receive aggregate reports
 - `ruf`: Email address to receive forensic reports
 - `fo=1`: Generate reports for all failures
 
-**After testing (1-2 weeks), you can change to:**
+**⚠️ About the "DMARC Policy Not Enabled" Warning:**
+
+This warning from MXToolbox is **expected and safe to ignore** for now. Here's why:
+
+1. **Starting with `p=none` is best practice:**
+   - Allows you to monitor email authentication without blocking legitimate emails
+   - Gives you time to identify and fix any authentication issues
+   - Prevents accidentally blocking important emails during setup
+
+2. **The warning is just a recommendation:**
+   - It's suggesting you eventually move to `p=quarantine` or `p=reject`
+   - But this should only be done **after** monitoring for 1-2 weeks
+   - Your current setup is correct for the initial phase
+
+3. **When to move to stricter policies:**
+   - After 1-2 weeks of monitoring with `p=none`
+   - When DMARC reports show 100% pass rate for SPF/DKIM
+   - When you're confident all legitimate emails are authenticating correctly
+
+**After monitoring (1-2 weeks), you can gradually tighten:**
 ```
+# Step 1: Quarantine mode (emails go to spam if they fail)
 v=DMARC1; p=quarantine; rua=mailto:contact@soundbridge.live; pct=100
+
+# Step 2: Reject mode (emails are rejected if they fail) - Most strict
+v=DMARC1; p=reject; rua=mailto:contact@soundbridge.live; pct=100
 ```
+
+**Note:** BIMI (Brand Indicators for Message Identification) requires `p=quarantine` or `p=reject` at 100%, but this is optional and only needed if you want to display your logo in email clients. For deliverability, `p=none` is perfectly fine.
 
 ### Step 3: Verify Records
 
@@ -184,6 +209,9 @@ v=DMARC1; p=quarantine; rua=mailto:contact@soundbridge.live; pct=100
 **Important Notes:**
 - DNS changes can take 24-48 hours to fully propagate globally
 - Gmail may take a few days to recognize new SPF/DMARC records
-- Start with `p=none` in DMARC, then gradually tighten to `p=quarantine` or `p=reject`
-- Monitor DMARC reports to identify any issues
+- **Start with `p=none` in DMARC** - This is the recommended approach, not an error
+- The "DMARC Policy Not Enabled" warning is expected and safe to ignore initially
+- Monitor DMARC reports for 1-2 weeks before moving to stricter policies
+- Gradually tighten to `p=quarantine` or `p=reject` only after confirming 100% authentication success
+- BIMI (logo display) requires stricter policies, but is optional for deliverability
 
