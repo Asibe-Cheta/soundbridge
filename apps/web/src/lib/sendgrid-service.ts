@@ -112,7 +112,15 @@ export class SendGridService {
         name: emailData.fromName || this.fromName
       },
       templateId: emailData.templateId,
-      dynamicTemplateData: emailData.dynamicTemplateData
+      dynamicTemplateData: emailData.dynamicTemplateData,
+      // Add headers for better deliverability
+      headers: {
+        'X-Entity-Ref-ID': `soundbridge-${Date.now()}`,
+        'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+      },
+      // Add categories for tracking and filtering
+      categories: ['account-notification', 'soundbridge']
     };
 
     // Add subject if provided (overrides template subject)
