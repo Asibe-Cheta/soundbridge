@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import Image from 'next/image';
-import { X } from 'lucide-react';
+import { X, Download } from 'lucide-react';
 
 interface ImageModalProps {
   imageUrl: string;
