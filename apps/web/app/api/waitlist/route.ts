@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { SendGridService } from '@/src/lib/sendgrid-service';
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY!;
+const SENDGRID_WAITLIST_TEMPLATE_ID = process.env.SENDGRID_WAITLIST_TEMPLATE_ID;
 const CONTACT_EMAIL = 'contact@soundbridge.live';
 
 export async function POST(request: NextRequest) {
@@ -74,111 +75,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Send confirmation email via SendGrid
-    try {
-      const emailContent = {
-        personalizations: [
-          {
-            to: [{ email: email.toLowerCase().trim() }]
-          }
-        ],
-        from: {
-          email: process.env.SENDGRID_FROM_EMAIL || CONTACT_EMAIL,
-          name: 'SoundBridge Team'
-        },
-        subject: 'Welcome to SoundBridge Waitlist! 🎵',
-        content: [
-          {
-            type: 'text/plain',
-            value: `Hi there!
-
-Thanks for joining the SoundBridge waitlist! You're now part of an exclusive group of artists, producers, and music professionals who will get early access.
-
-Here's what happens next:
-✅ We'll email you with exclusive updates as we build
-✅ You'll be first to know when we launch (Q2 2026)
-✅ Early access to all features before public release
-
-In the meantime:
-- Follow our journey on social media
-- Have questions? Reply to this email
-- Know other artists? Share: soundbridge.live/waitlist
-
-Building the future of music together 🚀
-
-Justice Asibe
-Founder, SoundBridge
-${CONTACT_EMAIL}`
+    if (SENDGRID_WAITLIST_TEMPLATE_ID) {
+      try {
+        const emailSent = await SendGridService.sendTemplatedEmail({
+          to: email.toLowerCase().trim(),
+          from: CONTACT_EMAIL,
+          templateId: SENDGRID_WAITLIST_TEMPLATE_ID,
+          dynamicTemplateData: {
+            subject: 'Welcome to SoundBridge Waitlist! 🎵',
+            name: email.split('@')[0], // Basic name from email
+            waitlist_link: 'https://soundbridge.live/waitlist',
+            social_media_link: 'https://twitter.com/soundbridge', // Update with actual social link
+            founder_name: 'Justice Asibe',
+            contact_email: CONTACT_EMAIL,
           },
-          {
-            type: 'text/html',
-            value: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
-                <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                  <h2 style="color: #8B5CF6; border-bottom: 2px solid #8B5CF6; padding-bottom: 10px; margin-top: 0;">
-                    Welcome to SoundBridge Waitlist! 🎵
-                  </h2>
-                  
-                  <p style="color: #333; font-size: 16px; line-height: 1.6;">
-                    Hi there!
-                  </p>
-                  
-                  <p style="color: #333; font-size: 16px; line-height: 1.6;">
-                    Thanks for joining the SoundBridge waitlist! You're now part of an exclusive group of artists, producers, and music professionals who will get early access.
-                  </p>
-                  
-                  <div style="background-color: #f0f0f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="color: #333; margin-top: 0;">Here's what happens next:</h3>
-                    <ul style="color: #333; font-size: 16px; line-height: 1.8;">
-                      <li>✅ We'll email you with exclusive updates as we build</li>
-                      <li>✅ You'll be first to know when we launch (Q2 2026)</li>
-                      <li>✅ Early access to all features before public release</li>
-                    </ul>
-                  </div>
-                  
-                  <div style="margin: 20px 0;">
-                    <h3 style="color: #333;">In the meantime:</h3>
-                    <ul style="color: #333; font-size: 16px; line-height: 1.8;">
-                      <li>Follow our journey on social media</li>
-                      <li>Have questions? Reply to this email</li>
-                      <li>Know other artists? Share: <a href="https://soundbridge.live/waitlist" style="color: #8B5CF6;">soundbridge.live/waitlist</a></li>
-                    </ul>
-                  </div>
-                  
-                  <p style="color: #333; font-size: 16px; line-height: 1.6; margin-top: 30px;">
-                    Building the future of music together 🚀
-                  </p>
-                  
-                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 14px; color: #666;">
-                    <p style="margin: 5px 0;"><strong>Justice Asibe</strong></p>
-                    <p style="margin: 5px 0;">Founder, SoundBridge</p>
-                    <p style="margin: 5px 0;"><a href="mailto:${CONTACT_EMAIL}" style="color: #8B5CF6;">${CONTACT_EMAIL}</a></p>
-                  </div>
-                </div>
-              </div>
-            `
-          }
-        ]
-      };
+        });
 
-      const emailResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SENDGRID_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(emailContent)
-      });
-
-      if (!emailResponse.ok) {
-        const errorText = await emailResponse.text();
-        console.error('❌ SendGrid API failed:', emailResponse.status, errorText);
+        if (!emailSent) {
+          console.error('❌ Failed to send waitlist confirmation email via SendGrid');
+          // Don't fail the request if email fails - signup is still successful
+        } else {
+          console.log('✅ Confirmation email sent successfully via SendGrid template');
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending confirmation email:', emailError);
         // Don't fail the request if email fails - signup is still successful
-      } else {
-        console.log('✅ Confirmation email sent successfully');
       }
-    } catch (emailError) {
-      console.error('❌ Error sending confirmation email:', emailError);
-      // Don't fail the request if email fails - signup is still successful
+    } else {
+      console.warn('⚠️ SENDGRID_WAITLIST_TEMPLATE_ID not set. Skipping confirmation email.');
+      console.log('💡 To enable waitlist confirmation emails, create a SendGrid template and set SENDGRID_WAITLIST_TEMPLATE_ID in your environment variables.');
     }
 
     console.log('✅ Waitlist signup successful');

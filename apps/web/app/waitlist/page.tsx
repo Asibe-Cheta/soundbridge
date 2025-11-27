@@ -1,26 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { Footer } from '@/src/components/layout/Footer';
 import { 
   ArrowLeft, 
-  Mail, 
   DollarSign, 
   Handshake, 
-  Music, 
   MapPin, 
   Mic, 
   Target, 
-  TrendingUp,
   Check,
   X,
   Plus,
   Minus,
   Loader2,
-  Lock,
-  Sparkles
+  Lock
 } from 'lucide-react';
 
 export default function WaitlistPage() {
@@ -52,7 +48,7 @@ export default function WaitlistPage() {
     fetchCount();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('idle');
@@ -87,7 +83,7 @@ export default function WaitlistPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [email]);
 
   const faqs = [
     {
@@ -169,7 +165,8 @@ export default function WaitlistPage() {
     'Merchandise Sales - Sell directly to fans (coming soon)'
   ];
 
-  const EmailForm = ({ className = '' }: { className?: string }) => (
+  // Render email form inline to prevent input focus loss from component recreation
+  const renderEmailForm = (className = '') => (
     <form onSubmit={handleSubmit} className={className}>
       <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
         <input
@@ -238,7 +235,6 @@ export default function WaitlistPage() {
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}
           >
-            <Music className="w-8 h-8" />
             <span className="text-xl font-bold">SoundBridge</span>
           </Link>
           <Link
@@ -269,7 +265,7 @@ export default function WaitlistPage() {
             Be among the first artists to earn 95% from tips, connect with industry professionals, and build your music career on your terms.
           </p>
           
-          <EmailForm className="mb-6" />
+          {renderEmailForm('mb-6')}
           
           {signupCount !== null && (
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -548,7 +544,7 @@ export default function WaitlistPage() {
           }`}>
             Be the first to know when we launch. Limited founding member spots available.
           </p>
-          <EmailForm />
+          {renderEmailForm()}
         </div>
       </section>
 
