@@ -170,7 +170,11 @@ export async function POST(request: NextRequest) {
         entity_id_param: data.contentId,
         description_param: `Content reported for ${data.reportType}: ${content.title}`,
         legal_basis_param: 'User Reporting System'
-    });
+      });
+    } catch (rpcError) {
+      // Log error but don't fail the report submission
+      console.error('Failed to log legal action:', rpcError);
+    }
     
     // Auto-flag content if it's a copyright report
     if (data.reportType === 'copyright_infringement') {

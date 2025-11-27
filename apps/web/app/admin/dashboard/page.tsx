@@ -1496,7 +1496,8 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
                     )}
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
