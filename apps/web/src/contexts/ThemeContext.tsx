@@ -17,6 +17,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
+    // Guard against SSR
+    if (typeof window === 'undefined') return;
+    
     const savedTheme = localStorage.getItem('theme') as Theme;
     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     const initialTheme = savedTheme || systemTheme;
@@ -27,6 +30,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Apply theme to document and localStorage
   const applyTheme = (newTheme: Theme) => {
+    // Guard against SSR
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    
     const root = document.documentElement;
     
     if (newTheme === 'dark') {
@@ -37,7 +43,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('dark');
     }
     
-    localStorage.setItem('theme', newTheme);
+    try {
+      localStorage.setItem('theme', newTheme);
+    } catch (e) {
+      // localStorage might not be available
+      console.warn('Failed to save theme to localStorage:', e);
+    }
   };
 
   const setTheme = (newTheme: Theme) => {
