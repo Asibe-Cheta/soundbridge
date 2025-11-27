@@ -22,8 +22,9 @@ CREATE TABLE IF NOT EXISTS waitlist (
 CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 CREATE INDEX IF NOT EXISTS idx_waitlist_signed_up_at ON waitlist(signed_up_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waitlist_role ON waitlist(role) WHERE role IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_waitlist_country ON waitlist(country) WHERE country IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_waitlist_state ON waitlist(state) WHERE state IS NOT NULL;
+
+-- Note: country, state, and city indexes are created in the migration script
+-- See: waitlist_migration_add_location_fields.sql
 
 -- Enable Row Level Security
 ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
