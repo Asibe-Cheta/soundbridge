@@ -11,6 +11,7 @@ import {
   ThumbsUp, Heart, Flame, PartyPopper, MessageCircle, Share2, Bookmark, 
   MoreHorizontal, Clock, Globe, Users, Play, Pause, ExternalLink
 } from 'lucide-react';
+import { ImageModal } from './ImageModal';
 
 interface PostCardProps {
   post: Post;
@@ -50,6 +51,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
   });
   const [isReacting, setIsReacting] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Check bookmark status
   useEffect(() => {
@@ -320,18 +322,24 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
 
       {/* Image Attachment */}
       {imageAttachment && (
-        <div className="mb-4 rounded-lg overflow-hidden">
-          <Image
-            src={imageAttachment.file_url}
-            alt="Post attachment"
-            width={800}
-            height={600}
-            className="w-full h-auto max-h-96 object-cover cursor-pointer"
-            onClick={() => {
-              // TODO: Open image in lightbox/modal
-            }}
+        <>
+          <div className="mb-4 rounded-lg overflow-hidden">
+            <Image
+              src={imageAttachment.file_url}
+              alt="Post attachment"
+              width={800}
+              height={600}
+              className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => setIsImageModalOpen(true)}
+            />
+          </div>
+          <ImageModal
+            imageUrl={imageAttachment.file_url}
+            alt={`Post image by ${post.author?.name || 'User'}`}
+            isOpen={isImageModalOpen}
+            onClose={() => setIsImageModalOpen(false)}
           />
-        </div>
+        </>
       )}
 
       {/* Audio Attachment */}
