@@ -88,7 +88,7 @@ export default function HomePage() {
 
   // For non-authenticated users, show discover-like content with interactive cards
   // (Original home page content remains for non-authenticated users)
-    return (
+  return (
       <div className={`min-h-screen ${
         theme === 'dark' 
           ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900' 
