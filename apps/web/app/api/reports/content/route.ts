@@ -13,7 +13,7 @@ const ContentReportSchema = z.object({
     'copyright_infringement', 'spam', 'inappropriate_content', 
     'harassment', 'fake_content', 'unauthorized_use', 'other'
   ]),
-  contentType: z.enum(['track', 'profile', 'comment', 'playlist']),
+  contentType: z.enum(['track', 'profile', 'comment', 'playlist', 'post']),
   contentId: z.string().uuid('Valid content ID is required'),
   contentTitle: z.string().optional(),
   contentUrl: z.string().url().optional(),
@@ -50,12 +50,54 @@ export async function POST(request: NextRequest) {
     
     const data = validationResult.data;
     
-    // Verify content exists
-    const { data: content, error: contentError } = await supabase
-      .from('audio_tracks')
-      .select('id, title, user_id')
-      .eq('id', data.contentId as any)
-      .single() as { data: any; error: any };
+    // Verify content exists - check the correct table based on content type
+    let content: any = null;
+    let contentError: any = null;
+    let contentTitle: string | null = null;
+    let contentUserId: string | null = null;
+    
+    if (data.contentType === 'post') {
+      // Check posts table
+      const { data: postData, error: postError } = await supabase
+        .from('posts')
+        .select('id, content, user_id')
+        .eq('id', data.contentId as any)
+        .single() as { data: any; error: any };
+      
+      content = postData;
+      contentError = postError;
+      contentTitle = postData?.content || data.contentTitle || null;
+      contentUserId = postData?.user_id || null;
+    } else if (data.contentType === 'comment') {
+      // Check post_comments table
+      const { data: commentData, error: commentError } = await supabase
+        .from('post_comments')
+        .select('id, content, user_id')
+        .eq('id', data.contentId as any)
+        .single() as { data: any; error: any };
+      
+      content = commentData;
+      contentError = commentError;
+      contentTitle = commentData?.content || data.contentTitle || null;
+      contentUserId = commentData?.user_id || null;
+    } else if (data.contentType === 'track') {
+      // Check audio_tracks table
+      const { data: trackData, error: trackError } = await supabase
+        .from('audio_tracks')
+        .select('id, title, user_id')
+        .eq('id', data.contentId as any)
+        .single() as { data: any; error: any };
+      
+      content = trackData;
+      contentError = trackError;
+      contentTitle = trackData?.title || data.contentTitle || null;
+      contentUserId = trackData?.user_id || null;
+    } else {
+      // For other types (profile, playlist), we'll allow the report without verification
+      // as they might not exist in the expected tables
+      content = { id: data.contentId };
+      contentTitle = data.contentTitle || null;
+    }
     
     if (contentError || !content) {
       return NextResponse.json({
@@ -98,7 +140,7 @@ export async function POST(request: NextRequest) {
         // Content Information
         content_id: data.contentId,
         content_type: data.contentType,
-        content_title: data.contentTitle || content.title,
+        content_title: data.contentTitle || contentTitle || content.title || content.content || 'Untitled',
         content_url: data.contentUrl,
         
         // Report Details
@@ -117,7 +159,7 @@ export async function POST(request: NextRequest) {
           ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
           user_agent: request.headers.get('user-agent'),
           timestamp: new Date().toISOString(),
-          content_owner_id: content.user_id
+          content_owner_id: contentUserId || content.user_id
         },
         
         // Auto-flagging
@@ -148,13 +190,13 @@ export async function POST(request: NextRequest) {
             report_type: data.reportType,
             content_id: data.contentId,
             content_type: data.contentType,
-            content_title: data.contentTitle || content.title,
+            content_title: data.contentTitle || contentTitle || content.title || content.content || 'Untitled',
             reporter_id: reporterId,
             reporter_name: data.reporterName,
             reporter_email: data.reporterEmail,
             reason: data.reason,
             description: data.description,
-            content_owner_id: content.user_id
+            content_owner_id: contentUserId || content.user_id
           }
         });
     } catch (queueError) {
@@ -168,7 +210,7 @@ export async function POST(request: NextRequest) {
         action_type_param: 'content_reported',
         entity_type_param: 'content',
         entity_id_param: data.contentId,
-        description_param: `Content reported for ${data.reportType}: ${content.title}`,
+        description_param: `Content reported for ${data.reportType}: ${contentTitle || content.title || content.content || 'Untitled'}`,
         legal_basis_param: 'User Reporting System'
       });
     } catch (rpcError) {
@@ -204,7 +246,7 @@ export async function POST(request: NextRequest) {
         type: 'content_report',
         priority: priority,
         reportId: report.id,
-        contentTitle: content.title,
+        contentTitle: contentTitle || content.title || content.content || 'Untitled',
         reportType: data.reportType,
         reporterType: reporterId ? 'user' : 'anonymous'
       });

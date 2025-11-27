@@ -63,7 +63,7 @@ export function ReportPostModal({
         credentials: 'include',
         body: JSON.stringify({
           reportType: selectedReason,
-          contentType: contentType === 'post' ? 'comment' : 'comment', // Using 'comment' as posts are stored as comments in content_reports
+          contentType: contentType === 'post' ? 'post' : 'comment',
           contentId: postId,
           contentTitle: postTitle,
           reason: reportReasons.find(r => r.value === selectedReason)?.label || selectedReason,
