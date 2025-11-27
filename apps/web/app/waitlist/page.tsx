@@ -280,27 +280,36 @@ export default function WaitlistPage() {
         </div>
 
         {/* Extended Form Toggle */}
-        <button
-          type="button"
-          onClick={() => setShowExtendedForm(!showExtendedForm)}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            theme === 'dark'
-              ? 'text-gray-400 hover:text-white hover:bg-white/10'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-          }`}
-        >
-          {showExtendedForm ? (
-            <>
-              <ChevronUp className="w-4 h-4" />
-              Hide additional details (optional)
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4" />
-              Tell us more about yourself (optional)
-            </>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowExtendedForm(!showExtendedForm)}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              theme === 'dark'
+                ? 'text-gray-400 hover:text-white hover:bg-white/10'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            {showExtendedForm ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                Hide additional details (optional)
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Tell us more about yourself (optional)
+              </>
+            )}
+          </button>
+          {!showExtendedForm && (
+            <p className={`text-xs text-center px-4 ${
+              theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+            }`}>
+              💡 Help us personalize your SoundBridge experience and optimize content recommendations by sharing your role, location, and favorite genres.
+            </p>
           )}
-        </button>
+        </div>
 
         {/* Extended Form Fields */}
         {showExtendedForm && (
@@ -309,6 +318,18 @@ export default function WaitlistPage() {
               ? 'bg-white/5 backdrop-blur-lg border-white/10'
               : 'bg-gray-50 border-gray-200'
           }`}>
+            {/* Why fill this out message */}
+            <div className={`p-4 rounded-lg mb-4 ${
+              theme === 'dark'
+                ? 'bg-purple-500/20 border border-purple-500/30'
+                : 'bg-purple-50 border border-purple-200'
+            }`}>
+              <p className={`text-sm leading-relaxed ${
+                theme === 'dark' ? 'text-purple-200' : 'text-purple-900'
+              }`}>
+                <strong className="font-semibold">Why share this information?</strong> By telling us about your role, location, and favorite genres, we can personalize your SoundBridge experience, optimize content recommendations, and help you get the most out of the platform when we launch.
+              </p>
+            </div>
             {/* Role Selection */}
             <div>
               <label className={`block text-sm font-medium mb-2 ${
