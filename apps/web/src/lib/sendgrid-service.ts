@@ -99,6 +99,11 @@ export class SendGridService {
    * Generic email sending method
    */
   private static async sendEmail(emailData: EmailData): Promise<void> {
+    // Check if API key is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error('SENDGRID_API_KEY is not configured in environment variables');
+    }
+
     const msg = {
       to: emailData.to,
       from: {
@@ -113,11 +118,23 @@ export class SendGridService {
       to: msg.to,
       from: msg.from.email,
       templateId: msg.templateId,
-      hasDynamicData: !!msg.dynamicTemplateData
+      hasDynamicData: !!msg.dynamicTemplateData,
+      dynamicDataKeys: Object.keys(msg.dynamicTemplateData || {})
     });
 
-    const result = await sgMail.send(msg);
-    console.log('📧 SendGrid response:', result);
+    try {
+      const result = await sgMail.send(msg);
+      console.log('✅ SendGrid email sent successfully');
+      console.log('📧 SendGrid response status:', result[0]?.statusCode);
+      console.log('📧 SendGrid response headers:', result[0]?.headers);
+    } catch (error: any) {
+      console.error('❌ SendGrid email sending failed');
+      console.error('Error code:', error?.code);
+      console.error('Error message:', error?.message);
+      console.error('Error response:', error?.response?.body);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+      throw error;
+    }
   }
 
   /**
@@ -126,14 +143,37 @@ export class SendGridService {
   static async sendTemplatedEmail(emailData: EmailData): Promise<boolean> {
     try {
       if (!emailData.templateId) {
-        console.error('SendGrid templateId missing for templated email');
+        console.error('❌ SendGrid templateId missing for templated email');
+        console.error('Email data received:', {
+          to: emailData.to,
+          from: emailData.from,
+          hasTemplateId: !!emailData.templateId
+        });
         return false;
       }
 
+      if (!process.env.SENDGRID_API_KEY) {
+        console.error('❌ SENDGRID_API_KEY is not configured');
+        return false;
+      }
+
+      console.log('📧 Attempting to send templated email via SendGrid');
+      console.log('📧 Template ID:', emailData.templateId);
+      console.log('📧 Recipient:', emailData.to);
+      
       await this.sendEmail(emailData);
+      
+      console.log('✅ Templated email sent successfully');
       return true;
-    } catch (error) {
-      console.error('Error sending SendGrid templated email:', error);
+    } catch (error: any) {
+      console.error('❌ Error sending SendGrid templated email');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error?.message);
+      if (error?.response) {
+        console.error('SendGrid API response:', error.response.body);
+        console.error('SendGrid API status:', error.response.statusCode);
+      }
+      console.error('Full error stack:', error?.stack);
       return false;
     }
   }

@@ -184,12 +184,30 @@ export async function POST(
             const userName = userProfile?.display_name || userProfile?.username || 'User';
             
             console.log(`📧 Attempting to send account takedown email to: ${userEmail}`);
-            console.log(`📧 Template ID: ${process.env.SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID ? 'Set' : 'NOT SET'}`);
+            console.log(`📧 User name: ${userName}`);
+            console.log(`📧 Email message: ${emailMessage}`);
             
-            // Send email using SendGrid
+            // Check SendGrid configuration
+            const sendGridApiKey = process.env.SENDGRID_API_KEY;
             const templateId = process.env.SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID;
             
-            if (templateId) {
+            console.log(`📧 SendGrid API Key: ${sendGridApiKey ? 'Set' : 'NOT SET'}`);
+            console.log(`📧 Template ID: ${templateId ? `Set (${templateId})` : 'NOT SET'}`);
+            
+            if (!sendGridApiKey) {
+              console.error('❌ SENDGRID_API_KEY is not configured in environment variables');
+              console.error('💡 Please set SENDGRID_API_KEY in your Vercel environment variables');
+            }
+            
+            if (!templateId) {
+              console.error('❌ SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID is not configured');
+              console.error('💡 Please create a SendGrid dynamic template and set SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID in your Vercel environment variables');
+            }
+            
+            // Send email using SendGrid
+            if (templateId && sendGridApiKey) {
+              console.log('📧 Calling SendGridService.sendTemplatedEmail...');
+              
               const emailSent = await SendGridService.sendTemplatedEmail({
                 to: userEmail,
                 from: 'contact@soundbridge.live',
@@ -205,13 +223,18 @@ export async function POST(
               
               if (!emailSent) {
                 console.error('❌ Failed to send account takedown email via SendGrid template');
-                console.error('Check SendGrid dashboard for delivery status');
+                console.error('💡 Check the logs above for detailed error information');
+                console.error('💡 Verify your SendGrid template ID and API key are correct');
+                console.error('💡 Check SendGrid dashboard for delivery status and any bounces/blocks');
               } else {
                 console.log(`✅ Account takedown email sent successfully to ${userEmail}`);
+                console.log('💡 If email is not received, check:');
+                console.log('   1. Spam/junk folder');
+                console.log('   2. SendGrid Activity Feed for delivery status');
+                console.log('   3. SendGrid Suppression List for blocked emails');
               }
             } else {
-              console.warn('⚠️ SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID not configured. Email not sent.');
-              console.warn('💡 To enable email notifications, create a SendGrid template and set SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID in environment variables.');
+              console.warn('⚠️ Cannot send email - missing required configuration');
             }
           } catch (emailError) {
             console.error('❌ Error sending account takedown email:', emailError);
