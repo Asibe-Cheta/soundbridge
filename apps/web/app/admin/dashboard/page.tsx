@@ -103,6 +103,9 @@ export default function AdminDashboard() {
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [banReason, setBanReason] = useState('');
+  
+  // Waitlist modal state
+  const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -449,7 +452,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Content */}
-        {activeTab === 'overview' && <OverviewTab theme={theme} data={overviewData} loading={tabLoading.overview} />}
+        {activeTab === 'overview' && <OverviewTab theme={theme} data={overviewData} loading={tabLoading.overview} onWaitlistClick={() => setWaitlistModalOpen(true)} />}
         {activeTab === 'content' && <ContentReviewTab theme={theme} queueItems={queueItems} loading={loading} onItemSelect={setSelectedItem} />}
         {activeTab === 'users' && <UserManagementTab theme={theme} data={usersData} loading={tabLoading.users} onRefresh={loadUsersData} onViewUser={handleViewUser} onBanUser={handleBanUser} />}
         {activeTab === 'analytics' && <AnalyticsTab theme={theme} data={analyticsData} loading={tabLoading.analytics} onRefresh={loadAnalyticsData} />}
@@ -491,6 +494,14 @@ export default function AdminDashboard() {
           onConfirm={confirmBanUser}
           reason={banReason}
           onReasonChange={setBanReason}
+        />
+      )}
+
+      {/* Waitlist Modal */}
+      {waitlistModalOpen && (
+        <WaitlistModal
+          theme={theme}
+          onClose={() => setWaitlistModalOpen(false)}
         />
       )}
     </div>
@@ -773,7 +784,7 @@ function BanUserModal({
 }
 
 // Tab Components
-function OverviewTab({ theme, data, loading }: { theme: string; data: any; loading: boolean }) {
+function OverviewTab({ theme, data, loading, onWaitlistClick }: { theme: string; data: any; loading: boolean; onWaitlistClick?: () => void }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -896,15 +907,21 @@ function OverviewTab({ theme, data, loading }: { theme: string; data: any; loadi
           </div>
         </div>
 
-        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow`}>
+        <div 
+          className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow ${onWaitlistClick ? 'hover:opacity-90' : ''}`}
+          onClick={onWaitlistClick}
+        >
           <div className="flex items-center">
             <div className={`p-2 ${theme === 'dark' ? 'bg-pink-900' : 'bg-pink-100'} rounded-lg`}>
               <Mail className={`h-6 w-6 ${theme === 'dark' ? 'text-pink-400' : 'text-pink-600'}`} />
             </div>
-            <div className="ml-4">
+            <div className="ml-4 flex-1">
               <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Waitlist Signups</p>
               <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{statistics?.waitlist_count || 0}</p>
             </div>
+            {onWaitlistClick && (
+              <Eye className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+            )}
           </div>
         </div>
       </div>
@@ -1671,6 +1688,269 @@ function ItemDetailModal({
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Waitlist Modal Component
+function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void }) {
+  const [waitlistData, setWaitlistData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 50;
+
+  useEffect(() => {
+    loadWaitlistData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchTerm]);
+
+  const loadWaitlistData = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy: 'signed_up_at',
+        sortOrder: 'desc',
+      });
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      const response = await fetch(`/api/admin/waitlist?${params.toString()}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setWaitlistData(result.data || []);
+          setTotalPages(result.pagination?.totalPages || 1);
+          setTotal(result.pagination?.total || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading waitlist data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Email', 'Role', 'Location', 'Genres', 'Referral Source', 'Signed Up At', 'Confirmed'];
+    const rows = waitlistData.map(item => [
+      item.email || '',
+      item.role || '',
+      item.location || '',
+      Array.isArray(item.genres) ? item.genres.join(', ') : (item.genres || ''),
+      item.referral_source || '',
+      item.signed_up_at ? new Date(item.signed_up_at).toLocaleString() : '',
+      item.confirmed ? 'Yes' : 'No'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `waitlist-signups-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
+      <div 
+        className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={`${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
+          <div>
+            <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Waitlist Signups
+            </h2>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+              Total: {total} signups
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportToCSV}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-700 text-white hover:bg-gray-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Export CSV
+            </button>
+            <button
+              onClick={onClose}
+              className={`p-2 rounded-lg ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+            >
+              <X className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className="relative">
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1); // Reset to first page on search
+              }}
+              placeholder="Search by email, role, or location..."
+              className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+            />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+              <span className={`ml-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Loading waitlist...</span>
+            </div>
+          ) : waitlistData.length === 0 ? (
+            <div className="text-center py-12">
+              <Mail className={`h-12 w-12 mx-auto ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`} />
+              <p className={`mt-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                {searchTerm ? 'No signups found matching your search.' : 'No waitlist signups yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={`${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                  <tr>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Email
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Role
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Location
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Genres
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Signed Up
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                  {waitlistData.map((item, index) => (
+                    <tr key={item.id || index} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                      <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {item.email}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {item.role || '-'}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {item.location || '-'}
+                      </td>
+                      <td className={`px-6 py-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {Array.isArray(item.genres) && item.genres.length > 0
+                          ? item.genres.join(', ')
+                          : item.genres || '-'}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {item.signed_up_at
+                          ? new Date(item.signed_up_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : '-'}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        {item.confirmed ? (
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'}`}>
+                            Confirmed
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${theme === 'dark' ? 'bg-yellow-900 text-yellow-300' : 'bg-yellow-100 text-yellow-800'}`}>
+                            Pending
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className={`px-6 py-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} flex items-center justify-between`}>
+            <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} signups
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  page === 1
+                    ? 'opacity-50 cursor-not-allowed'
+                    : theme === 'dark'
+                    ? 'bg-gray-700 text-white hover:bg-gray-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Previous
+              </button>
+              <span className={`px-4 py-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  page === totalPages
+                    ? 'opacity-50 cursor-not-allowed'
+                    : theme === 'dark'
+                    ? 'bg-gray-700 text-white hover:bg-gray-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
