@@ -103,6 +103,7 @@ export default function AdminDashboard() {
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [banReason, setBanReason] = useState('');
+  const [banEmailMessage, setBanEmailMessage] = useState('');
   
   // Waitlist modal state
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
@@ -186,11 +187,19 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadUsersData = async () => {
+  const loadUsersData = async (page: number = 1, search: string = '', role: string = '', status: string = '') => {
     try {
       setTabLoading(prev => ({ ...prev, users: true }));
       
-      const response = await fetch('/api/admin/users', {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '50'
+      });
+      if (search) params.append('search', search);
+      if (role) params.append('role', role);
+      if (status) params.append('status', status);
+      
+      const response = await fetch(`/api/admin/users?${params.toString()}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
@@ -288,6 +297,8 @@ export default function AdminDashboard() {
 
   const handleUserAction = async (action: string, userId: string, data?: any) => {
     try {
+      console.log('🔄 Performing user action:', action, 'for user:', userId, 'with data:', data);
+      
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -297,32 +308,44 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('User action completed:', result.message);
+        console.log('✅ User action completed:', result.message);
+        
+        // Show success message
+        alert(result.message || 'Action completed successfully');
         
         // Refresh users data
-        await loadUsersData();
+        await loadUsersData(1);
         
         // Close modals
         setSelectedUser(null);
         setBanModalOpen(false);
         setBanReason('');
+        setBanEmailMessage('');
         
         return result;
       } else {
-        console.error('Failed to perform user action');
+        const errorData = await response.json();
+        console.error('❌ Failed to perform user action:', errorData);
+        alert(`Failed to perform action: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error performing user action:', error);
+      console.error('❌ Error performing user action:', error);
+      alert('An error occurred while performing the action. Please check the console for details.');
     }
   };
 
   const handleViewUser = async (user: any) => {
     setSelectedUser(user);
+    // Load user details to get email
     await loadUserDetails(user.id);
   };
-
-  const handleBanUser = (user: any) => {
+  
+  const handleBanUser = async (user: any) => {
     setSelectedUser(user);
+    // Ensure we have user details with email before opening modal
+    if (!userDetails || userDetails.id !== user.id) {
+      await loadUserDetails(user.id);
+    }
     if (user.banned_at) {
       // User is already banned, so this is an unban action
       handleUserAction('unban_user', user.id);
@@ -332,9 +355,54 @@ export default function AdminDashboard() {
     }
   };
 
-  const confirmBanUser = async () => {
-    if (selectedUser && banReason.trim()) {
-      await handleUserAction('ban_user', selectedUser.id, { reason: banReason });
+  const confirmBanUser = async (emailMsg?: string) => {
+    if (selectedUser) {
+      const isBanning = !selectedUser.banned_at && selectedUser.is_active;
+      const emailMessage = emailMsg || banEmailMessage;
+      
+      // Ensure we have user details with email
+      if (!userDetails || userDetails.id !== selectedUser.id) {
+        console.log('Loading user details to get email...');
+        await loadUserDetails(selectedUser.id);
+      }
+      
+      const userEmail = userDetails?.email || selectedUser.email;
+      console.log('📧 User email for ban action:', userEmail);
+      console.log('📧 Email message:', emailMessage);
+      
+      if (isBanning) {
+        if (!banReason.trim() || !emailMessage.trim()) {
+          alert('Please provide both a reason and an email message to the user.');
+          return;
+        }
+        
+        if (!userEmail) {
+          const proceed = confirm('Warning: User email not found. The account will be banned but no email will be sent. Continue?');
+          if (!proceed) return;
+        }
+        
+        await handleUserAction('ban_user', selectedUser.id, { 
+          reason: banReason,
+          emailMessage: emailMessage,
+          userEmail: userEmail
+        });
+      } else {
+        // Unban - send restoration email
+        if (!userEmail) {
+          const proceed = confirm('Warning: User email not found. The account will be restored but no email will be sent. Continue?');
+          if (!proceed) return;
+        }
+        
+        await handleUserAction('unban_user', selectedUser.id, {
+          userEmail: userEmail
+        });
+      }
+      
+      // Reset state
+      setBanModalOpen(false);
+      setSelectedUser(null);
+      setBanReason('');
+      setBanEmailMessage('');
     }
   };
 
@@ -490,10 +558,15 @@ export default function AdminDashboard() {
             setBanModalOpen(false);
             setSelectedUser(null);
             setBanReason('');
+            setBanEmailMessage('');
           }}
-          onConfirm={confirmBanUser}
+          onConfirm={(emailMsg) => {
+            confirmBanUser(emailMsg);
+          }}
           reason={banReason}
           onReasonChange={setBanReason}
+          emailMessage={banEmailMessage}
+          onEmailMessageChange={setBanEmailMessage}
         />
       )}
 
@@ -705,22 +778,27 @@ function BanUserModal({
   onClose, 
   onConfirm, 
   reason, 
-  onReasonChange 
+  onReasonChange,
+  emailMessage,
+  onEmailMessageChange
 }: { 
   user: any; 
   onClose: () => void; 
-  onConfirm: () => void; 
+  onConfirm: (emailMessage: string) => void; 
   reason: string; 
   onReasonChange: (reason: string) => void;
+  emailMessage: string;
+  onEmailMessageChange: (message: string) => void;
 }) {
   const { theme } = useTheme();
+  const isBanning = !user.banned_at && user.is_active;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {user.is_active ? 'Ban User' : 'Unban User'}
+            {isBanning ? 'Take Down Account' : 'Restore Account'}
           </h2>
           <button
             onClick={onClose}
@@ -736,25 +814,67 @@ function BanUserModal({
               User: <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                 {user.display_name || user.username}
               </span>
+              {user.email && (
+                <span className={`ml-2 text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                  ({user.email})
+                </span>
+              )}
             </p>
           </div>
 
-          {user.is_active && (
+          {isBanning && (
+            <>
+              <div className="mb-4">
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                  Reason for account takedown (internal)
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => onReasonChange(e.target.value)}
+                  placeholder="Enter reason for taking down this account (for admin records)..."
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
+                  rows={3}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                  Email message to user (required)
+                </label>
+                <p className={`text-xs mb-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                  This message will be sent to the user explaining why their account was taken down.
+                </p>
+                <textarea
+                  data-email-message
+                  value={emailMessage}
+                  onChange={(e) => onEmailMessageChange(e.target.value)}
+                  placeholder="Dear [User Name],&#10;&#10;We are writing to inform you that your SoundBridge account has been temporarily suspended due to a violation of our Terms of Service...&#10;&#10;Please provide a clear explanation of the violation and any steps they can take to resolve the issue."
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
+                  rows={8}
+                  required
+                />
+                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                  {emailMessage.length} characters
+                </p>
+              </div>
+            </>
+          )}
+
+          {!isBanning && (
             <div className="mb-4">
-              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                Reason for ban
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => onReasonChange(e.target.value)}
-                placeholder="Enter reason for banning this user..."
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  theme === 'dark' 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-                rows={3}
-              />
+              <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-blue-900/20 border border-blue-800' : 'bg-blue-50 border border-blue-200'}`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-blue-300' : 'text-blue-800'}`}>
+                  Restoring this account will reactivate the user's access to SoundBridge. An email notification will be sent to the user.
+                </p>
+              </div>
             </div>
           )}
 
@@ -766,15 +886,15 @@ function BanUserModal({
               Cancel
             </button>
             <button
-              onClick={onConfirm}
-              disabled={user.is_active && !reason.trim()}
+              onClick={() => onConfirm(emailMessage)}
+              disabled={isBanning && (!reason.trim() || !emailMessage.trim())}
               className={`px-4 py-2 rounded-lg ${
-                user.is_active 
+                isBanning
                   ? 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
                   : 'bg-green-600 text-white hover:bg-green-700'
               }`}
             >
-              {user.is_active ? 'Ban User' : 'Unban User'}
+              {isBanning ? 'Take Down Account' : 'Restore Account'}
             </button>
           </div>
         </div>
@@ -1046,7 +1166,57 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
   onViewUser: (user: any) => void;
   onBanUser: (user: any) => void;
 }) {
-  if (loading) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any>(null);
+
+  const handleSearch = async (page: number = 1) => {
+    if (!searchTerm.trim() && !roleFilter && !statusFilter) {
+      setSearchResults(null);
+      setCurrentPage(1);
+      onRefresh();
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '50'
+      });
+      if (searchTerm.trim()) params.append('search', searchTerm.trim());
+      if (roleFilter) params.append('role', roleFilter);
+      if (statusFilter) params.append('status', statusFilter);
+
+      const response = await fetch(`/api/admin/users?${params.toString()}`, {
+        credentials: 'include'
+      });
+      const result = await response.json();
+      if (result.success) {
+        setSearchResults(result.data);
+        setCurrentPage(page);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const displayData = searchResults || data;
+  const displayUsers = displayData?.users || [];
+  const displayPagination = displayData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 };
+
+  if (loading && !searchResults) {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
@@ -1055,7 +1225,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
     );
   }
 
-  if (!data) {
+  if (!data && !searchResults) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-600">No users data available</p>
@@ -1069,14 +1239,93 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
     );
   }
 
-  const { statistics, users, pagination } = data;
+  const { statistics, users, pagination } = displayData || { statistics: null, users: [], pagination: null };
 
   return (
     <div className="space-y-6">
+      {/* Search and Filters */}
+      <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
+                placeholder="Search by name, username, or email..."
+                className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className={`px-4 py-2 rounded-lg border ${
+                theme === 'dark' 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="creator">Creator</option>
+              <option value="listener">Listener</option>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={`px-4 py-2 rounded-lg border ${
+                theme === 'dark' 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <button
+              onClick={() => handleSearch(1)}
+              disabled={isSearching}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSearching ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              Search
+            </button>
+            {searchResults && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSearchResults(null);
+                  setRoleFilter('');
+                  setStatusFilter('');
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Statistics */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
         <div className="flex justify-between items-center mb-4">
-          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>User Statistics</h3>
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            User Statistics {searchResults && `(Search Results: ${displayPagination.total})`}
+          </h3>
           <button 
             onClick={onRefresh}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -1117,8 +1366,45 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
 
       {/* Users List */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow overflow-hidden`}>
-        <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Recent Users</h3>
+        <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            {searchResults ? 'Search Results' : 'All Users'} ({displayPagination.total || 0})
+          </h3>
+          {displayPagination.pages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const newPage = Math.max(1, currentPage - 1);
+                  if (searchResults) {
+                    handleSearch(newPage);
+                  } else {
+                    loadUsersData(newPage);
+                  }
+                }}
+                disabled={currentPage === 1 || isSearching}
+                className={`px-3 py-1 rounded ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'} disabled:opacity-50`}
+              >
+                Previous
+              </button>
+              <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Page {currentPage} of {displayPagination.pages || 1}
+              </span>
+              <button
+                onClick={() => {
+                  const newPage = Math.min(displayPagination.pages || 1, currentPage + 1);
+                  if (searchResults) {
+                    handleSearch(newPage);
+                  } else {
+                    loadUsersData(newPage);
+                  }
+                }}
+                disabled={currentPage >= (displayPagination.pages || 1) || isSearching}
+                className={`px-3 py-1 rounded ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'} disabled:opacity-50`}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="overflow-x-auto">
@@ -1133,8 +1419,15 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
               </tr>
             </thead>
             <tbody className={`${theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'} divide-y`}>
-              {users?.slice(0, 10).map((user: any) => (
-                <tr key={user.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+              {displayUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className={`px-6 py-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {searchTerm ? 'No users found matching your search' : 'No users available'}
+                  </td>
+                </tr>
+              ) : (
+                displayUsers.map((user: any) => (
+                  <tr key={user.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">

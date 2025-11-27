@@ -72,14 +72,6 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    // Get user's genre preferences for better feed ranking
-    const { data: userGenres } = await supabase
-      .from('user_genres')
-      .select('genre_id')
-      .eq('user_id', user.id);
-    
-    const userGenreIds = userGenres?.map(ug => ug.genre_id) || [];
-
     // Get user's connections
     const { data: connections } = await supabase
       .from('connections')
@@ -94,6 +86,23 @@ export async function GET(request: NextRequest) {
           connectedUserIds.add(conn.connected_user_id);
         } else {
           connectedUserIds.add(conn.user_id);
+        }
+      });
+    }
+
+    // Get blocked users (users I've blocked and users who blocked me)
+    const { data: blockedUsers } = await supabase
+      .from('blocked_users')
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`);
+
+    const blockedUserIds = new Set<string>();
+    if (blockedUsers) {
+      blockedUsers.forEach((block) => {
+        if (block.blocker_id === user.id) {
+          blockedUserIds.add(block.blocked_id); // Users I've blocked
+        } else if (block.blocked_id === user.id) {
+          blockedUserIds.add(block.blocker_id); // Users who blocked me
         }
       });
     }
@@ -146,8 +155,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Filter out connection-only posts where user is not connected
+    // Filter out connection-only posts where user is not connected and blocked users
     const eligiblePosts = allPosts.filter((post) => {
+      // Exclude posts from blocked users
+      if (blockedUserIds.has(post.user_id)) {
+        return false;
+      }
       // Include public posts
       if (post.visibility === 'public') return true;
       // Include connection posts only if user is connected or it's their own post

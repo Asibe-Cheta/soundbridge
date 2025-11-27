@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { SendGridService } from '@/src/lib/sendgrid-service';
 
 export async function GET(
   request: NextRequest,
@@ -156,8 +157,79 @@ export async function POST(
         if (banError) {
           throw new Error(`Failed to ban user: ${banError.message}`);
         }
+        
+        // Send email notification to user
+        const emailMessage = body.emailMessage || data?.emailMessage;
+        
+        // Get user's email from auth.users table (more reliable than from request)
+        let userEmail: string | null = null;
+        try {
+          const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+          userEmail = authUser?.user?.email || body.userEmail || data?.userEmail || null;
+        } catch (authError) {
+          console.error('Error fetching user email from auth:', authError);
+          // Fallback to email from request body
+          userEmail = body.userEmail || data?.userEmail || null;
+        }
+        
+        if (userEmail && emailMessage) {
+          try {
+            // Get user's display name
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', userId)
+              .single();
+            
+            const userName = userProfile?.display_name || userProfile?.username || 'User';
+            
+            console.log(`📧 Attempting to send account takedown email to: ${userEmail}`);
+            console.log(`📧 Template ID: ${process.env.SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID ? 'Set' : 'NOT SET'}`);
+            
+            // Send email using SendGrid
+            const templateId = process.env.SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID;
+            
+            if (templateId) {
+              const emailSent = await SendGridService.sendTemplatedEmail({
+                to: userEmail,
+                from: 'contact@soundbridge.live',
+                templateId: templateId,
+                dynamicTemplateData: {
+                  user_name: userName,
+                  reason: emailMessage,
+                  support_email: 'contact@soundbridge.live',
+                  app_name: 'SoundBridge',
+                  subject: 'Your SoundBridge Account Has Been Suspended'
+                }
+              });
+              
+              if (!emailSent) {
+                console.error('❌ Failed to send account takedown email via SendGrid template');
+                console.error('Check SendGrid dashboard for delivery status');
+              } else {
+                console.log(`✅ Account takedown email sent successfully to ${userEmail}`);
+              }
+            } else {
+              console.warn('⚠️ SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID not configured. Email not sent.');
+              console.warn('💡 To enable email notifications, create a SendGrid template and set SENDGRID_ACCOUNT_TAKEDOWN_TEMPLATE_ID in environment variables.');
+            }
+          } catch (emailError) {
+            console.error('❌ Error sending account takedown email:', emailError);
+            console.error('Error details:', emailError instanceof Error ? emailError.message : String(emailError));
+            // Don't fail the ban if email fails
+          }
+        } else {
+          if (!userEmail) {
+            console.warn('⚠️ User email not found. Cannot send account takedown email.');
+            console.warn(`User ID: ${userId}, Email from body: ${body.userEmail}, Email from data: ${data?.userEmail}`);
+          }
+          if (!emailMessage) {
+            console.warn('⚠️ Email message not provided. Cannot send account takedown email.');
+          }
+        }
+        
         result = { banned: true, banned_at: new Date().toISOString() };
-        message = 'User banned successfully';
+        message = 'User account taken down successfully. Email notification sent.';
         break;
 
       case 'unban_user':
@@ -173,8 +245,54 @@ export async function POST(
         if (unbanError) {
           throw new Error(`Failed to unban user: ${unbanError.message}`);
         }
+        
+        // Send email notification to user about account restoration
+        const unbanUserEmail = body.userEmail || data?.userEmail;
+        
+        if (unbanUserEmail) {
+          try {
+            // Get user's display name
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', userId)
+              .single();
+            
+            const userName = userProfile?.display_name || userProfile?.username || 'User';
+            
+            // Send restoration email
+            const restoreTemplateId = process.env.SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID;
+            
+            if (restoreTemplateId) {
+              const emailSent = await SendGridService.sendTemplatedEmail({
+                to: unbanUserEmail,
+                from: 'contact@soundbridge.live',
+                templateId: restoreTemplateId,
+                dynamicTemplateData: {
+                  user_name: userName,
+                  support_email: 'contact@soundbridge.live',
+                  app_name: 'SoundBridge',
+                  subject: 'Your SoundBridge Account Has Been Restored'
+                }
+              });
+              
+              if (!emailSent) {
+                console.error('Failed to send account restoration email via SendGrid template');
+              } else {
+                console.log(`Account restoration email sent to ${unbanUserEmail}`);
+              }
+            } else {
+              console.warn('SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID not configured. Email not sent.');
+              console.warn('To enable email notifications, create a SendGrid template and set SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID in environment variables.');
+            }
+          } catch (emailError) {
+            console.error('Error sending account restoration email:', emailError);
+            // Don't fail the unban if email fails
+          }
+        }
+        
         result = { banned: false, unbanned_at: new Date().toISOString() };
-        message = 'User unbanned successfully';
+        message = 'User account restored successfully. Email notification sent.';
         break;
 
       case 'update_role':

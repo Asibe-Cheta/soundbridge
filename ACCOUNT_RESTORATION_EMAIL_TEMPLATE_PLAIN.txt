@@ -1,0 +1,35 @@
+ACCOUNT RESTORED
+
+Dear {{user_name}},
+
+We are pleased to inform you that your SoundBridge account has been restored and you now have full access to all platform features again.
+
+YOUR ACCOUNT IS ACTIVE
+You can now log in, upload content, interact with other users, and enjoy all the features SoundBridge has to offer.
+
+WELCOME BACK! HERE'S WHAT YOU CAN DO:
+✅ Upload and share your music
+✅ Connect with other creators and fans
+✅ Discover events and opportunities
+✅ Build your professional network
+✅ Access all premium features
+
+IMPORTANT REMINDER
+Please ensure that your future activity on SoundBridge complies with our Terms of Service and Community Guidelines to maintain a positive experience for all users.
+
+LOG IN TO SOUNDBRIDGE:
+https://www.soundbridge.live/login
+
+NEED HELP?
+If you have any questions or need assistance, please don't hesitate to contact us at {{support_email}}
+
+We're excited to have you back on SoundBridge! 🎵
+
+---
+SoundBridge Support Team
+{{app_name}}
+{{support_email}}
+
+You're receiving this email because your SoundBridge account has been restored.
+{{app_name}} - The LinkedIn for Music Creators
+

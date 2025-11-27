@@ -109,7 +109,15 @@ export class SendGridService {
       dynamicTemplateData: emailData.dynamicTemplateData
     };
 
-    await sgMail.send(msg);
+    console.log('📧 SendGrid email payload:', {
+      to: msg.to,
+      from: msg.from.email,
+      templateId: msg.templateId,
+      hasDynamicData: !!msg.dynamicTemplateData
+    });
+
+    const result = await sgMail.send(msg);
+    console.log('📧 SendGrid response:', result);
   }
 
   /**

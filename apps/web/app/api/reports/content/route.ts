@@ -135,13 +135,41 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
+    // Create entry in admin review queue
+    try {
+      await supabase
+        .from('admin_review_queue')
+        .insert({
+          queue_type: 'content_report',
+          priority: priority,
+          status: 'pending',
+          reference_data: {
+            report_id: report.id,
+            report_type: data.reportType,
+            content_id: data.contentId,
+            content_type: data.contentType,
+            content_title: data.contentTitle || content.title,
+            reporter_id: reporterId,
+            reporter_name: data.reporterName,
+            reporter_email: data.reporterEmail,
+            reason: data.reason,
+            description: data.description,
+            content_owner_id: content.user_id
+          }
+        });
+    } catch (queueError) {
+      // Log error but don't fail the report submission
+      console.error('Failed to create review queue entry:', queueError);
+    }
+
     // Log legal compliance action
-    await supabase.rpc('log_legal_action', {
-      action_type_param: 'content_reported',
-      entity_type_param: 'content',
-      entity_id_param: data.contentId,
-      description_param: `Content reported for ${data.reportType}: ${content.title}`,
-      legal_basis_param: 'User Reporting System'
+    try {
+      await supabase.rpc('log_legal_action', {
+        action_type_param: 'content_reported',
+        entity_type_param: 'content',
+        entity_id_param: data.contentId,
+        description_param: `Content reported for ${data.reportType}: ${content.title}`,
+        legal_basis_param: 'User Reporting System'
     });
     
     // Auto-flag content if it's a copyright report

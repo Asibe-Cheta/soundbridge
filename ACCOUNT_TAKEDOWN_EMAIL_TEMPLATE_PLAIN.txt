@@ -1,0 +1,33 @@
+ACCOUNT SUSPENSION NOTICE
+
+Dear {{user_name}},
+
+We are writing to inform you that your SoundBridge account has been temporarily suspended due to a violation of our Terms of Service or Community Guidelines.
+
+REASON FOR SUSPENSION:
+{{reason}}
+
+WHAT THIS MEANS:
+- Your account is temporarily suspended and you cannot access SoundBridge
+- Your content may be hidden from other users
+- You will not be able to upload new content or interact with the platform
+
+IF YOU BELIEVE THIS IS AN ERROR:
+If you believe this action was taken in error, you can appeal this decision by contacting our support team. Please provide:
+- Your account email address
+- A detailed explanation of why you believe the suspension was incorrect
+- Any relevant information or evidence
+
+CONTACT SUPPORT:
+{{support_email}}
+
+We take violations of our Terms of Service seriously to ensure a safe and positive environment for all users. We appreciate your understanding.
+
+---
+SoundBridge Support Team
+{{app_name}}
+{{support_email}}
+
+You're receiving this email because your SoundBridge account has been suspended.
+{{app_name}} - The LinkedIn for Music Creators
+

@@ -13,7 +13,8 @@ import { ProfessionalSections } from '@/src/components/profile/ProfessionalSecti
 import { PostCard } from '@/src/components/posts/PostCard';
 import { Post } from '@/src/lib/types/post';
 import { useRouter } from 'next/navigation';
-import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign } from 'lucide-react';
+import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign, Flag } from 'lucide-react';
+import { BlockUserModal } from '@/src/components/users/BlockUserModal';
 
 interface ProfileStats {
   totalPlays: number;
@@ -249,18 +250,37 @@ export default function ProfilePage() {
   const [connectionCount, setConnectionCount] = useState<number>(0);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [viewingUserProfile, setViewingUserProfile] = useState<any>(null);
+  const [isViewingOtherUser, setIsViewingOtherUser] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isCheckingBlock, setIsCheckingBlock] = useState(false);
 
   useEffect(() => {
     // Only redirect if we're not loading and there's no user
     if (!loading && !user) {
       router.push('/login');
     } else if (!loading && user) {
-      // Load profile data from the API
-      loadProfileData();
-      // Load analytics data
-      loadAnalyticsData();
-      // Load user posts for Activity section
-      loadUserPosts();
+      // Check if viewing another user's profile
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetUserId = urlParams.get('user_id');
+      
+      if (targetUserId && targetUserId !== user.id) {
+        setViewingUserId(targetUserId);
+        setIsViewingOtherUser(true);
+        loadOtherUserProfile(targetUserId);
+        checkBlockStatus(targetUserId);
+      } else {
+        setIsViewingOtherUser(false);
+        setViewingUserId(null);
+        // Load profile data from the API
+        loadProfileData();
+        // Load analytics data
+        loadAnalyticsData();
+        // Load user posts for Activity section
+        loadUserPosts();
+      }
     }
   }, [user, loading, router]);
 
@@ -510,12 +530,61 @@ export default function ProfilePage() {
     }
   };
 
-  const loadUserPosts = async () => {
-    if (!user?.id) return;
+  const loadOtherUserProfile = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/profile?user_id=${userId}`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success && data.profile) {
+        setViewingUserProfile(data.profile);
+        setProfileData({
+          displayName: data.profile.display_name || 'User',
+          username: data.profile.username || 'username',
+          bio: data.profile.bio || '',
+          location: data.profile.location || 'Location not set',
+          website: data.profile.website || '',
+          email: '',
+          phone: '',
+          genre: 'Not specified',
+          experience: 'Beginner',
+          avatarUrl: data.profile.avatar_url || ''
+        });
+        setProfessionalHeadline(data.profile.professional_headline || '');
+        // Load their posts
+        loadUserPosts(userId);
+      }
+    } catch (err) {
+      console.error('Failed to load other user profile:', err);
+    }
+  };
+
+  const checkBlockStatus = async (userId: string) => {
+    if (!user?.id || !userId) return;
+    
+    setIsCheckingBlock(true);
+    try {
+      const response = await fetch(`/api/users/block?checkUserId=${userId}`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIsBlocked(data.isBlocked || data.isBlockedBy);
+      }
+    } catch (err) {
+      console.error('Failed to check block status:', err);
+    } finally {
+      setIsCheckingBlock(false);
+    }
+  };
+
+  const loadUserPosts = async (targetUserId?: string) => {
+    const userId = targetUserId || user?.id;
+    if (!userId) return;
     
     try {
       setIsLoadingPosts(true);
-      const response = await fetch(`/api/posts/user/${user.id}?limit=10`, {
+      const response = await fetch(`/api/posts/user/${userId}?limit=10`, {
         credentials: 'include',
       });
       const data = await response.json();
@@ -1114,22 +1183,58 @@ export default function ProfilePage() {
                       </button>
                     </>
                   ) : (
-                    <button 
-                      onClick={() => {
-                        console.log('🔧 Edit Profile button clicked!');
-                        setIsEditing(true);
-                      }} 
-                      className="btn-primary"
-                      style={{
-                        position: 'relative',
-                        zIndex: 1000,
-                        pointerEvents: 'auto',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Edit3 size={16} />
-                      Edit Profile
-                    </button>
+                    <>
+                      {!isViewingOtherUser ? (
+                        <button 
+                          onClick={() => {
+                            console.log('🔧 Edit Profile button clicked!');
+                            setIsEditing(true);
+                          }} 
+                          className="btn-primary"
+                          style={{
+                            position: 'relative',
+                            zIndex: 1000,
+                            pointerEvents: 'auto',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Edit3 size={16} />
+                          Edit Profile
+                        </button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setShowBlockModal(true)}
+                            className={`${isBlocked ? 'btn-secondary' : 'btn-primary'} flex items-center gap-2`}
+                            style={{
+                              position: 'relative',
+                              zIndex: 1000,
+                              pointerEvents: 'auto',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Shield size={16} />
+                            {isBlocked ? 'Unblock' : 'Block'}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              // TODO: Add report user functionality
+                              console.log('Report user');
+                            }}
+                            className="btn-secondary flex items-center gap-2"
+                            style={{
+                              position: 'relative',
+                              zIndex: 1000,
+                              pointerEvents: 'auto',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Flag size={16} />
+                            Report
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1240,6 +1345,23 @@ export default function ProfilePage() {
         <BrandingSettings
           userId={user.id}
           onClose={() => setShowBrandingSettings(false)}
+        />
+      )}
+
+      {/* Block User Modal */}
+      {isViewingOtherUser && viewingUserId && (
+        <BlockUserModal
+          isOpen={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          userId={viewingUserId}
+          userName={profileData.displayName || profileData.username || 'this user'}
+          isCurrentlyBlocked={isBlocked}
+          onBlocked={() => {
+            setIsBlocked(true);
+          }}
+          onUnblocked={() => {
+            setIsBlocked(false);
+          }}
         />
       )}
     </div>

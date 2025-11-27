@@ -9,9 +9,11 @@ import { useSocial } from '@/src/hooks/useSocial';
 import { Post, PostAttachment } from '@/src/lib/types/post';
 import { 
   ThumbsUp, Heart, Flame, PartyPopper, MessageCircle, Share2, Bookmark, 
-  MoreHorizontal, Clock, Globe, Users, Play, Pause, ExternalLink
+  MoreHorizontal, Clock, Globe, Users, Play, Pause, ExternalLink, Shield, Flag
 } from 'lucide-react';
 import { ImageModal } from './ImageModal';
+import { BlockUserModal } from '@/src/components/users/BlockUserModal';
+import { ReportPostModal } from './ReportPostModal';
 
 interface PostCardProps {
   post: Post;
@@ -52,15 +54,34 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
   const [isReacting, setIsReacting] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
-  // Check bookmark status
+  // Check bookmark status and block status
   useEffect(() => {
     if (user?.id && post.id) {
       checkBookmark(post.id, 'post').then(({ data }) => {
         setIsBookmarked(data);
       });
+      
+      // Check if user is blocked
+      if (post.user_id && post.user_id !== user.id) {
+        fetch(`/api/users/block?checkUserId=${post.user_id}`, {
+          credentials: 'include'
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setIsBlocked(data.isBlocked || data.isBlockedBy);
+            }
+          })
+          .catch(() => {
+            // Silently fail - block check is optional
+          });
+      }
     }
-  }, [user?.id, post.id]);
+  }, [user?.id, post.id, post.user_id]);
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -279,24 +300,30 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                     Edit
                   </button>
                 )}
-                <button
-                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10"
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    // TODO: Implement hide/report
-                  }}
-                >
-                  Hide
-                </button>
-                <button
-                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10 rounded-b-lg"
-                  onClick={() => {
-                    setShowMoreMenu(false);
-                    // TODO: Implement report
-                  }}
-                >
-                  Report
-                </button>
+                {post.user_id !== user?.id && (
+                  <>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10"
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        setShowBlockModal(true);
+                      }}
+                    >
+                      <Shield className="inline-block w-4 h-4 mr-2" />
+                      {isBlocked ? 'Unblock User' : 'Block User'}
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10 rounded-b-lg"
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        setShowReportModal(true);
+                      }}
+                    >
+                      <Flag className="inline-block w-4 h-4 mr-2" />
+                      Report
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -511,6 +538,36 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             View post
           </button>
         </Link>
+      )}
+
+      {/* Block User Modal */}
+      {post.user_id && post.user_id !== user?.id && (
+        <BlockUserModal
+          isOpen={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          userId={post.user_id}
+          userName={post.author?.name || post.author?.username || 'this user'}
+          isCurrentlyBlocked={isBlocked}
+          onBlocked={() => {
+            setIsBlocked(true);
+            if (onUpdate) onUpdate();
+          }}
+          onUnblocked={() => {
+            setIsBlocked(false);
+            if (onUpdate) onUpdate();
+          }}
+        />
+      )}
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <ReportPostModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          postId={post.id}
+          postTitle={post.content.substring(0, 50)}
+          contentType="post"
+        />
       )}
     </div>
   );
