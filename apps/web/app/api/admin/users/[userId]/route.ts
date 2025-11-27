@@ -271,7 +271,16 @@ export async function POST(
         }
         
         // Send email notification to user about account restoration
-        const unbanUserEmail = body.userEmail || data?.userEmail;
+        // Get user's email from auth.users table (more reliable than from request)
+        let unbanUserEmail: string | null = null;
+        try {
+          const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+          unbanUserEmail = authUser?.user?.email || body.userEmail || data?.userEmail || null;
+        } catch (authError) {
+          console.error('Error fetching user email from auth:', authError);
+          // Fallback to email from request body
+          unbanUserEmail = body.userEmail || data?.userEmail || null;
+        }
         
         if (unbanUserEmail) {
           try {
@@ -284,10 +293,30 @@ export async function POST(
             
             const userName = userProfile?.display_name || userProfile?.username || 'User';
             
-            // Send restoration email
+            console.log(`📧 Attempting to send account restoration email to: ${unbanUserEmail}`);
+            console.log(`📧 User name: ${userName}`);
+            
+            // Check SendGrid configuration
+            const sendGridApiKey = process.env.SENDGRID_API_KEY;
             const restoreTemplateId = process.env.SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID;
             
-            if (restoreTemplateId) {
+            console.log(`📧 SendGrid API Key: ${sendGridApiKey ? 'Set' : 'NOT SET'}`);
+            console.log(`📧 Template ID: ${restoreTemplateId ? `Set (${restoreTemplateId})` : 'NOT SET'}`);
+            
+            if (!sendGridApiKey) {
+              console.error('❌ SENDGRID_API_KEY is not configured in environment variables');
+              console.error('💡 Please set SENDGRID_API_KEY in your Vercel environment variables');
+            }
+            
+            if (!restoreTemplateId) {
+              console.error('❌ SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID is not configured');
+              console.error('💡 Please create a SendGrid dynamic template and set SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID in your Vercel environment variables');
+            }
+            
+            // Send restoration email
+            if (restoreTemplateId && sendGridApiKey) {
+              console.log('📧 Calling SendGridService.sendTemplatedEmail...');
+              
               const emailSent = await SendGridService.sendTemplatedEmail({
                 to: unbanUserEmail,
                 from: 'contact@soundbridge.live',
@@ -302,18 +331,28 @@ export async function POST(
               });
               
               if (!emailSent) {
-                console.error('Failed to send account restoration email via SendGrid template');
+                console.error('❌ Failed to send account restoration email via SendGrid template');
+                console.error('💡 Check the logs above for detailed error information');
+                console.error('💡 Verify your SendGrid template ID and API key are correct');
+                console.error('💡 Check SendGrid dashboard for delivery status and any bounces/blocks');
               } else {
-                console.log(`Account restoration email sent to ${unbanUserEmail}`);
+                console.log(`✅ Account restoration email sent successfully to ${unbanUserEmail}`);
+                console.log('💡 If email is not received, check:');
+                console.log('   1. Spam/junk folder');
+                console.log('   2. SendGrid Activity Feed for delivery status');
+                console.log('   3. SendGrid Suppression List for blocked emails');
               }
             } else {
-              console.warn('SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID not configured. Email not sent.');
-              console.warn('To enable email notifications, create a SendGrid template and set SENDGRID_ACCOUNT_RESTORED_TEMPLATE_ID in environment variables.');
+              console.warn('⚠️ Cannot send email - missing required configuration');
             }
           } catch (emailError) {
-            console.error('Error sending account restoration email:', emailError);
+            console.error('❌ Error sending account restoration email:', emailError);
+            console.error('Error details:', emailError instanceof Error ? emailError.message : String(emailError));
             // Don't fail the unban if email fails
           }
+        } else {
+          console.warn('⚠️ User email not found. Cannot send account restoration email.');
+          console.warn(`User ID: ${userId}, Email from body: ${body.userEmail}, Email from data: ${data?.userEmail}`);
         }
         
         result = { banned: false, unbanned_at: new Date().toISOString() };
