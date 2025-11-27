@@ -40,6 +40,59 @@ export function ReportPostModal({
 
   if (!isOpen) return null;
 
+  const handleSubmit = async () => {
+    if (!selectedReason) {
+      setError('Please select a reason for reporting');
+      return;
+    }
+
+    if (selectedReason === 'other' && !description.trim()) {
+      setError('Please provide details about the violation');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/reports/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          reportType: selectedReason,
+          contentType: contentType === 'post' ? 'comment' : 'comment', // Using 'comment' as posts are stored as comments in content_reports
+          contentId: postId,
+          contentTitle: postTitle,
+          reason: reportReasons.find(r => r.value === selectedReason)?.label || selectedReason,
+          description: description.trim() || undefined,
+          reporterName: user?.user_metadata?.full_name || user?.email?.split('@')[0],
+          reporterEmail: user?.email
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit report');
+      }
+
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+        setSelectedReason('');
+        setDescription('');
+        setSuccess(false);
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while submitting the report');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Render modal using portal to ensure it's at the document root level
   const modalContent = (
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
@@ -248,59 +301,6 @@ export function ReportPostModal({
       </div>
     </div>
   );
-
-  const handleSubmit = async () => {
-    if (!selectedReason) {
-      setError('Please select a reason for reporting');
-      return;
-    }
-
-    if (selectedReason === 'other' && !description.trim()) {
-      setError('Please provide details about the violation');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/reports/content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          reportType: selectedReason,
-          contentType: contentType === 'post' ? 'comment' : 'comment', // Using 'comment' as posts are stored as comments in content_reports
-          contentId: postId,
-          contentTitle: postTitle,
-          reason: reportReasons.find(r => r.value === selectedReason)?.label || selectedReason,
-          description: description.trim() || undefined,
-          reporterName: user?.user_metadata?.full_name || user?.email?.split('@')[0],
-          reporterEmail: user?.email
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to submit report');
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-        setSelectedReason('');
-        setDescription('');
-        setSuccess(false);
-      }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while submitting the report');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Use portal to render modal at document root level, ensuring it's always on top
   return createPortal(modalContent, document.body);
