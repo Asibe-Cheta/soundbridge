@@ -1,0 +1,20 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Force LF line endings for all text files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.sql text eol=lf
+
+# Ensure UTF-8 encoding
+*.ts charset=utf-8
+*.tsx charset=utf-8
+*.js charset=utf-8
+*.jsx charset=utf-8
+
