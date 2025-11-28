@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient, createClient } from '@/src/lib/supabase';
+import { createServiceClient } from '@/src/lib/supabase';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 // Validation schema for admin actions
@@ -15,53 +17,12 @@ const AdminActionSchema = z.object({
 // Middleware to check admin permissions
 async function checkAdminPermissions(request: NextRequest) {
   try {
-    // Try to get token from Authorization header first
-    const authHeader = request.headers.get('authorization');
-    let accessToken = authHeader?.replace('Bearer ', '');
+    // Use createRouteHandlerClient for proper cookie handling (like other APIs)
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
-    // If no header, try to extract from cookies
-    if (!accessToken) {
-      const cookieHeader = request.headers.get('cookie') || '';
-      // Supabase stores tokens in cookies with pattern: sb-<project-ref>-auth-token
-      const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^.]+)/)?.[1];
-      const cookiePattern = projectRef ? `sb-${projectRef}-auth-token` : null;
-      
-      if (cookiePattern) {
-        const match = cookieHeader.match(new RegExp(`${cookiePattern}=([^;]+)`));
-        if (match) {
-          try {
-            const cookieValue = decodeURIComponent(match[1]);
-            // Cookie value might be JSON with access_token
-            const parsed = JSON.parse(cookieValue);
-            accessToken = parsed.access_token || parsed;
-          } catch {
-            // If not JSON, use as-is
-            accessToken = decodeURIComponent(match[1]);
-          }
-        }
-      }
-    }
-    
-    if (!accessToken) {
-      console.error('❌ No access token found in request headers or cookies');
-      return { error: 'Authentication required', status: 401 };
-    }
-
-    // Create a client with the access token
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }
-      }
-    );
-    
-    // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    // Get user from session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error('❌ Auth error:', authError?.message);
       return { error: 'Authentication required', status: 401 };
