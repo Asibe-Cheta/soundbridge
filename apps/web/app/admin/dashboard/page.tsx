@@ -421,15 +421,14 @@ export default function AdminDashboard() {
 
   const handleAdminAction = async (action: string, queueId: string, additionalData?: any) => {
     try {
-      const token = localStorage.getItem('sb-access-token');
-      if (!token) return;
+      console.log('📋 Submitting admin action:', { action, queueId, additionalData });
 
       const response = await fetch('/api/admin/review-queue', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Include cookies for auth
         body: JSON.stringify({
           action,
           queueId,
@@ -437,17 +436,20 @@ export default function AdminDashboard() {
         })
       });
 
-      if (response.ok) {
+      const result = await response.json();
+      console.log('📋 Action response:', result);
+
+      if (response.ok && result.success) {
         await loadReviewQueue(); // Refresh the queue
         setSelectedItem(null);
-        alert('Action completed successfully');
+        alert(`Action completed successfully: ${result.message || action}`);
       } else {
-        const error = await response.json();
-        alert(`Action failed: ${error.error}`);
+        console.error('❌ Action failed:', result);
+        alert(`Action failed: ${result.error || 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error('Error performing admin action:', error);
-      alert('Action failed');
+    } catch (error: any) {
+      console.error('❌ Error performing admin action:', error);
+      alert(`Action failed: ${error.message || 'Network error'}`);
     }
   };
 
@@ -1865,12 +1867,21 @@ function ItemDetailModal({
   const [notes, setNotes] = useState('');
   const [assignTo, setAssignTo] = useState('');
 
+  const [actionTaken, setActionTaken] = useState('');
+  const [resolution, setResolution] = useState('');
+
   const handleSubmitAction = () => {
     if (!action) return;
 
     const actionData: any = {};
     if (notes) actionData.reviewNotes = notes;
     if (assignTo) actionData.assignTo = assignTo;
+    
+    // For resolve action, collect actionTaken and resolution
+    if (action === 'resolve') {
+      if (actionTaken) actionData.actionTaken = actionTaken;
+      if (resolution) actionData.resolution = resolution;
+    }
 
     onAction(action, item.id, actionData);
   };
@@ -1986,6 +1997,36 @@ function ItemDetailModal({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              )}
+
+              {action === 'resolve' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Action Taken</label>
+                    <select
+                      value={actionTaken}
+                      onChange={(e) => setActionTaken(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select action taken</option>
+                      <option value="content_removed">Content Removed</option>
+                      <option value="user_warned">User Warned</option>
+                      <option value="user_banned">User Banned</option>
+                      <option value="no_violation">No Violation Found</option>
+                      <option value="dismissed">Dismissed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Resolution</label>
+                    <input
+                      type="text"
+                      value={resolution}
+                      onChange={(e) => setResolution(e.target.value)}
+                      placeholder="Brief resolution summary"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </>
               )}
             </div>
 
