@@ -94,13 +94,22 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
+    console.log(`📋 Fetched ${queueItems?.length || 0} items from admin_review_queue`);
+    console.log('📋 Queue items:', JSON.stringify(queueItems, null, 2));
+
     // Get detailed information for each queue item
     const enrichedQueueItems = await Promise.all(
       (queueItems || [] as any[]).map(async (item: any) => {
         let referenceData = null;
         
+        // Check if reference_type and reference_id exist
+        const refType = item.reference_type || item.reference_data?.reference_type;
+        const refId = item.reference_id || item.reference_data?.reference_id;
+        
+        console.log(`📋 Processing item ${item.id}: reference_type=${refType}, reference_id=${refId}`);
+        
         try {
-          switch (item.reference_type) {
+          switch (refType) {
             case 'dmca_takedown_requests':
               const { data: dmcaData } = await supabase
                 .from('dmca_takedown_requests')
@@ -108,21 +117,24 @@ export async function GET(request: NextRequest) {
                   *,
                   content:audio_tracks(id, title, user_id, file_url)
                 `)
-                .eq('id', item.reference_id)
+                .eq('id', refId)
                 .single();
               referenceData = dmcaData;
               break;
               
             case 'content_reports':
-              const { data: reportData } = await supabase
+              const { data: reportData, error: reportError } = await supabase
                 .from('content_reports')
-                .select(`
-                  *,
-                  content:audio_tracks(id, title, user_id, file_url)
-                `)
-                .eq('id', item.reference_id)
+                .select('*')
+                .eq('id', refId)
                 .single();
-              referenceData = reportData;
+              
+              if (reportError) {
+                console.error(`❌ Error fetching content report ${refId}:`, reportError);
+              } else {
+                console.log(`✅ Fetched content report ${refId}:`, reportData?.id);
+                referenceData = reportData;
+              }
               break;
               
             case 'content_flags':
@@ -132,21 +144,30 @@ export async function GET(request: NextRequest) {
                   *,
                   content:audio_tracks(id, title, user_id, file_url)
                 `)
-                .eq('id', item.reference_id)
+                .eq('id', refId)
                 .single();
               referenceData = flagData;
               break;
+              
+            default:
+              console.warn(`⚠️ Unknown reference_type: ${refType} for item ${item.id}`);
+              // Use existing reference_data if available
+              referenceData = item.reference_data;
           }
         } catch (error) {
-          console.error(`Failed to fetch reference data for ${item.reference_type}:`, error);
+          console.error(`❌ Failed to fetch reference data for ${refType} (${refId}):`, error);
+          // Fallback to existing reference_data
+          referenceData = item.reference_data || item.metadata;
         }
 
         return {
           ...item,
-          reference_data: referenceData
+          reference_data: referenceData || item.reference_data || item.metadata
         };
       })
     );
+    
+    console.log(`✅ Enriched ${enrichedQueueItems.length} queue items`);
 
     // Get statistics
     const { data: stats } = await supabase
