@@ -47,14 +47,10 @@ export async function GET(request: NextRequest) {
     const assignedTo = searchParams.get('assigned_to');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    // Build query
+    // Build query - simplified to avoid foreign key issues
     let query = supabase
       .from('admin_review_queue')
-      .select(`
-        *,
-        assigned_to:profiles(id, display_name, email),
-        assigned_by:profiles!admin_review_queue_assigned_by_fkey(id, display_name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -75,10 +71,12 @@ export async function GET(request: NextRequest) {
     const { data: queueItems, error } = await query;
 
     if (error) {
-      console.error('Review queue fetch error:', error);
+      console.error('❌ Review queue fetch error:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return NextResponse.json({
         success: false,
-        error: 'Failed to fetch review queue'
+        error: 'Failed to fetch review queue',
+        details: error.message
       }, { status: 500 });
     }
 
