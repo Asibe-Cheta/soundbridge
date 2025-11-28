@@ -140,6 +140,7 @@ export default function AdminDashboard() {
   const loadReviewQueue = async () => {
     try {
       setLoading(true);
+      console.log('📋 Loading review queue...');
       
       // Supabase automatically handles auth tokens in API calls
       const response = await fetch('/api/admin/review-queue', {
@@ -150,15 +151,27 @@ export default function AdminDashboard() {
         credentials: 'include' // Include cookies for auth
       });
 
+      console.log('📋 Review queue response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('📋 Review queue data received:', {
+          itemsCount: data.data?.length || 0,
+          hasStatistics: !!data.statistics,
+          success: data.success
+        });
         setQueueItems(data.data || []);
         setStatistics(data.statistics || null);
       } else {
-        console.error('Failed to load review queue');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Failed to load review queue:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
       }
     } catch (error) {
-      console.error('Error loading review queue:', error);
+      console.error('❌ Error loading review queue:', error);
     } finally {
       setLoading(false);
     }
