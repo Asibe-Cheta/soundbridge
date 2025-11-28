@@ -188,13 +188,15 @@ export async function POST(request: NextRequest) {
     
     // Create entry in admin review queue
     try {
-      await supabase
+      const queueInsertResult = await supabase
         .from('admin_review_queue')
         .insert({
           queue_type: 'content_report',
           priority: priority,
           status: 'pending',
           reference_data: {
+            reference_type: 'content_reports',
+            reference_id: report.id,
             report_id: report.id,
             report_type: data.reportType,
             content_id: data.contentId,
@@ -207,10 +209,20 @@ export async function POST(request: NextRequest) {
             description: data.description,
             content_owner_id: contentUserId || content.user_id
           }
-        });
+        })
+        .select()
+        .single();
+      
+      if (queueInsertResult.error) {
+        console.error('Failed to create review queue entry:', queueInsertResult.error);
+        console.error('Queue insert error details:', JSON.stringify(queueInsertResult.error, null, 2));
+      } else {
+        console.log('✅ Successfully created admin review queue entry:', queueInsertResult.data?.id);
+      }
     } catch (queueError) {
       // Log error but don't fail the report submission
       console.error('Failed to create review queue entry:', queueError);
+      console.error('Queue error details:', JSON.stringify(queueError, null, 2));
     }
 
     // Log legal compliance action
