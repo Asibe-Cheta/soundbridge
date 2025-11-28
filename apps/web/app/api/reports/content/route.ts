@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
         
         // Report Details
         reason: data.reason,
+        report_reason: data.reason, // Some database schemas use report_reason instead of reason
         description: data.description,
         evidence_urls: data.evidenceUrls,
         additional_info: data.additionalInfo,

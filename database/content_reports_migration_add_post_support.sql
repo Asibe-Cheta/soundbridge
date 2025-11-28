@@ -57,6 +57,9 @@ ALTER TABLE content_reports
 ADD COLUMN IF NOT EXISTS reason TEXT;
 
 ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS report_reason TEXT;
+
+ALTER TABLE content_reports 
 ADD COLUMN IF NOT EXISTS description TEXT;
 
 ALTER TABLE content_reports 
