@@ -16,6 +16,37 @@ ADD CONSTRAINT content_reports_content_type_check
 CHECK (content_type IN ('track', 'profile', 'comment', 'playlist', 'post'));
 
 -- Step 3: Add missing columns if they don't exist
+-- Content Information columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS content_title VARCHAR(500);
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS content_url TEXT;
+
+-- Report Details columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS description TEXT;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS evidence_urls TEXT[];
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS additional_info TEXT;
+
+-- Copyright Specific Fields
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS copyrighted_work_title VARCHAR(500);
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS copyrighted_work_owner VARCHAR(255);
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS copyright_evidence TEXT;
+
+-- Metadata and flags
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+
 ALTER TABLE content_reports 
 ADD COLUMN IF NOT EXISTS auto_flagged BOOLEAN DEFAULT false;
 
