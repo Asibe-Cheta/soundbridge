@@ -15,21 +15,35 @@ const AdminActionSchema = z.object({
 // Middleware to check admin permissions
 async function checkAdminPermissions(request: NextRequest) {
   try {
-    // Get access token from cookies
-    const cookieHeader = request.headers.get('cookie') || '';
-    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=');
-      if (key && value) acc[key] = decodeURIComponent(value);
-      return acc;
-    }, {} as Record<string, string>);
+    // Try to get token from Authorization header first
+    const authHeader = request.headers.get('authorization');
+    let accessToken = authHeader?.replace('Bearer ', '');
     
-    // Look for Supabase auth token in cookies
-    const accessToken = cookies['sb-access-token'] || 
-                       cookies['sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/https?:\/\//, '').split('.')[0] + '-auth-token'] ||
-                       request.headers.get('authorization')?.replace('Bearer ', '');
+    // If no header, try to extract from cookies
+    if (!accessToken) {
+      const cookieHeader = request.headers.get('cookie') || '';
+      // Supabase stores tokens in cookies with pattern: sb-<project-ref>-auth-token
+      const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^.]+)/)?.[1];
+      const cookiePattern = projectRef ? `sb-${projectRef}-auth-token` : null;
+      
+      if (cookiePattern) {
+        const match = cookieHeader.match(new RegExp(`${cookiePattern}=([^;]+)`));
+        if (match) {
+          try {
+            const cookieValue = decodeURIComponent(match[1]);
+            // Cookie value might be JSON with access_token
+            const parsed = JSON.parse(cookieValue);
+            accessToken = parsed.access_token || parsed;
+          } catch {
+            // If not JSON, use as-is
+            accessToken = decodeURIComponent(match[1]);
+          }
+        }
+      }
+    }
     
     if (!accessToken) {
-      console.error('❌ No access token found in request');
+      console.error('❌ No access token found in request headers or cookies');
       return { error: 'Authentication required', status: 401 };
     }
 
@@ -49,9 +63,11 @@ async function checkAdminPermissions(request: NextRequest) {
     // Get user from token
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (authError || !user) {
-      console.error('❌ Auth error:', authError);
+      console.error('❌ Auth error:', authError?.message);
       return { error: 'Authentication required', status: 401 };
     }
+
+    console.log('✅ User authenticated:', user.email);
 
     // Use service client to check role (bypasses RLS)
     const serviceClient = createServiceClient();
@@ -62,13 +78,14 @@ async function checkAdminPermissions(request: NextRequest) {
       .single() as { data: { role: string } | null };
 
     if (!profile || !['admin', 'legal_admin', 'moderator'].includes(profile.role)) {
-      console.error('❌ User does not have admin permissions:', profile?.role);
+      console.error('❌ User does not have admin permissions. Role:', profile?.role);
       return { error: 'Admin permissions required', status: 403 };
     }
 
+    console.log('✅ User has admin permissions:', profile.role);
     return { user, profile };
-  } catch (error) {
-    console.error('❌ Authentication check failed:', error);
+  } catch (error: any) {
+    console.error('❌ Authentication check failed:', error?.message || error);
     return { error: 'Authentication failed', status: 401 };
   }
 }
