@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { createServiceClient, createClient } from '@/src/lib/supabase';
 import { z } from 'zod';
 
 // Validation schema for admin actions
@@ -15,26 +15,60 @@ const AdminActionSchema = z.object({
 // Middleware to check admin permissions
 async function checkAdminPermissions(request: NextRequest) {
   try {
-    const supabase = await createApiClientWithCookies();
+    // Get access token from cookies
+    const cookieHeader = request.headers.get('cookie') || '';
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      if (key && value) acc[key] = decodeURIComponent(value);
+      return acc;
+    }, {} as Record<string, string>);
     
-    // Get user from request cookies
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Look for Supabase auth token in cookies
+    const accessToken = cookies['sb-access-token'] || 
+                       cookies['sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/https?:\/\//, '').split('.')[0] + '-auth-token'] ||
+                       request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!accessToken) {
+      console.error('❌ No access token found in request');
       return { error: 'Authentication required', status: 401 };
     }
 
-    const { data: profile } = await supabase
+    // Create a client with the access token
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      }
+    );
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !user) {
+      console.error('❌ Auth error:', authError);
+      return { error: 'Authentication required', status: 401 };
+    }
+
+    // Use service client to check role (bypasses RLS)
+    const serviceClient = createServiceClient();
+    const { data: profile } = await serviceClient
       .from('profiles')
       .select('role')
       .eq('id', user.id as any)
       .single() as { data: { role: string } | null };
 
     if (!profile || !['admin', 'legal_admin', 'moderator'].includes(profile.role)) {
+      console.error('❌ User does not have admin permissions:', profile?.role);
       return { error: 'Admin permissions required', status: 403 };
     }
 
     return { user, profile };
   } catch (error) {
+    console.error('❌ Authentication check failed:', error);
     return { error: 'Authentication failed', status: 401 };
   }
 }
@@ -54,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ Admin permissions verified');
-    const supabase = await createApiClientWithCookies();
+    const supabase = createServiceClient();
 
     const { searchParams } = new URL(request.url);
     const queueType = searchParams.get('type');
