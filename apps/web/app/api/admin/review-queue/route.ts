@@ -17,39 +17,71 @@ const AdminActionSchema = z.object({
 // Middleware to check admin permissions
 async function checkAdminPermissions(request: NextRequest) {
   try {
-    // Try to get cookies from next/headers first (App Router way)
-    let supabase;
-    try {
-      const cookieStore = await cookies();
-      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    } catch (cookieError) {
-      // If that fails, try extracting from request headers
-      console.log('⚠️ cookies() failed, trying request headers...');
-      const cookieHeader = request.headers.get('cookie') || '';
-      
-      // Create a simple cookie store from request headers
-      const cookieMap = new Map<string, string>();
-      cookieHeader.split(';').forEach(cookie => {
-        const [key, value] = cookie.trim().split('=');
-        if (key && value) {
-          cookieMap.set(key, decodeURIComponent(value));
-        }
-      });
-      
-      supabase = createRouteHandlerClient({
-        cookies: () => ({
-          get: (name: string) => ({ value: cookieMap.get(name) || '' }),
-          set: () => {},
-          remove: () => {}
-        }) as any
-      });
+    // Extract cookies from request
+    const cookieHeader = request.headers.get('cookie') || '';
+    console.log('📋 Cookie header present:', !!cookieHeader);
+    
+    // Parse cookies
+    const cookieMap = new Map<string, string>();
+    cookieHeader.split(';').forEach(cookie => {
+      const [key, value] = cookie.trim().split('=');
+      if (key && value) {
+        cookieMap.set(key.trim(), decodeURIComponent(value));
+      }
+    });
+    
+    // Find Supabase auth cookie (pattern: sb-<project-ref>-auth-token)
+    const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
+    const authCookieName = projectRef ? `sb-${projectRef}-auth-token` : null;
+    
+    console.log('📋 Looking for auth cookie:', authCookieName);
+    console.log('📋 Available cookies:', Array.from(cookieMap.keys()));
+    
+    let accessToken: string | null = null;
+    
+    // Try to find the auth token in cookies
+    if (authCookieName && cookieMap.has(authCookieName)) {
+      try {
+        const cookieValue = cookieMap.get(authCookieName)!;
+        const parsed = JSON.parse(cookieValue);
+        accessToken = parsed.access_token || parsed;
+        console.log('✅ Found access token in cookie');
+      } catch {
+        accessToken = cookieMap.get(authCookieName)!;
+        console.log('✅ Using cookie value as token');
+      }
     }
     
-    // Get user from session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Also check Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      accessToken = authHeader.replace('Bearer ', '');
+      console.log('✅ Found access token in Authorization header');
+    }
+    
+    if (!accessToken) {
+      console.error('❌ No access token found in cookies or headers');
+      return { error: 'Authentication required', status: 401 };
+    }
+    
+    // Create Supabase client with token
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      }
+    );
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (authError || !user) {
       console.error('❌ Auth error:', authError?.message);
-      console.error('❌ Auth error details:', JSON.stringify(authError, null, 2));
       return { error: 'Authentication required', status: 401 };
     }
 
