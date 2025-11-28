@@ -15,7 +15,14 @@ ALTER TABLE content_reports
 ADD CONSTRAINT content_reports_content_type_check 
 CHECK (content_type IN ('track', 'profile', 'comment', 'playlist', 'post'));
 
--- Step 3: Make content_id nullable or remove the constraint entirely
+-- Step 3: Add missing columns if they don't exist
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS auto_flagged BOOLEAN DEFAULT false;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS requires_legal_review BOOLEAN DEFAULT false;
+
+-- Step 4: Make content_id nullable or remove the constraint entirely
 -- Since content_id can reference different tables (posts, audio_tracks, profiles, etc.),
 -- we'll remove the foreign key constraint. The application logic will handle validation.
 -- Note: If you want to keep referential integrity, you could create separate columns

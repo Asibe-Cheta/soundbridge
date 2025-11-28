@@ -105,7 +105,7 @@ export function ReportPostModal({
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-md rounded-xl shadow-2xl ${
+        className={`relative w-full max-w-md max-h-[90vh] rounded-xl shadow-2xl flex flex-col ${
           theme === 'dark'
             ? 'bg-gray-800 border border-gray-700'
             : 'bg-white border border-gray-200'
@@ -151,7 +151,7 @@ export function ReportPostModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {success ? (
             <div
               className={`p-4 rounded-lg text-center ${
