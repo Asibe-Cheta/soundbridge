@@ -1,18 +1,24 @@
-# Block Feature - Mobile Implementation Documentation
+# Block & Report Feature - Mobile Implementation Documentation, 28 November, 2025
 
 ## Table of Contents
 1. [Overview](#overview)
-2. [Database Schema](#database-schema)
-3. [API Endpoints](#api-endpoints)
-4. [UI/UX Guidelines](#uiux-guidelines)
-5. [Implementation Steps](#implementation-steps)
-6. [Edge Cases & Considerations](#edge-cases--considerations)
-7. [Testing Guidelines](#testing-guidelines)
-8. [Error Handling](#error-handling)
+2. [Block Feature](#block-feature)
+3. [Report Feature](#report-feature)
+4. [Database Schema](#database-schema)
+5. [API Endpoints](#api-endpoints)
+6. [UI/UX Guidelines](#uiux-guidelines)
+7. [Implementation Steps](#implementation-steps)
+8. [Edge Cases & Considerations](#edge-cases--considerations)
+9. [Testing Guidelines](#testing-guidelines)
+10. [Error Handling](#error-handling)
 
 ---
 
 ## Overview
+
+This documentation covers two related features: **Block** and **Report**. Both features help users maintain a safe and positive experience on the platform.
+
+### Block Feature
 
 The block feature allows users to block other users to prevent interaction and hide content. When User A blocks User B:
 - User A will not see User B's posts, content, or profile
@@ -21,13 +27,26 @@ The block feature allows users to block other users to prevent interaction and h
 - Blocking is bidirectional (if A blocks B, both are blocked from each other)
 - Users can unblock at any time
 
+### Report Feature
+
+The report feature allows users to report inappropriate content or behavior to administrators. Reports are reviewed by admins who can take action such as removing content or banning users.
+
 ### Key Features
+
+**Block:**
 - ✅ Block/Unblock users
 - ✅ Optional reason for blocking (stored for user reference only)
 - ✅ Automatic content filtering (posts, feeds, search results)
 - ✅ Block status checking
 - ✅ List of blocked users
 - ✅ Bidirectional blocking
+
+**Report:**
+- ✅ Report posts, comments, tracks, profiles, and playlists
+- ✅ Multiple report types (spam, harassment, copyright, etc.)
+- ✅ Optional detailed description
+- ✅ Anonymous reporting support
+- ✅ Reports appear in admin dashboard for review
 
 ---
 
@@ -293,8 +312,9 @@ const blockedUsers = data.data || [];
 
 **Post Cards/Feed:**
 - Add "Block User" option in the "More" menu (three dots)
+- Add "Report" option in the "More" menu (three dots)
 - Show in context menu when long-pressing a post
-- Use shield icon (🛡️) for visual consistency
+- Use shield icon (🛡️) for block, flag icon (🚩) for report
 
 **User Lists:**
 - Add block option in user detail views
@@ -321,6 +341,34 @@ const blockedUsers = data.data || [];
 - Show user avatar and name prominently
 - Make it clear this action is reversible
 
+### 3. Report Modal/Confirmation
+
+**Required Elements:**
+- Clear title: "Report [Content Type]"
+- Content preview (post text, track title, profile name, etc.)
+- Report type selection (radio buttons or dropdown):
+  - Spam or misleading content
+  - Inappropriate or offensive content
+  - Harassment or bullying
+  - Fake or misleading information
+  - Copyright infringement
+  - Other violation
+- Description field (required if "Other" is selected, optional otherwise)
+- Character counter for description (max 1000 characters)
+- Explanation of what happens:
+  - "Your report will be reviewed by our moderation team"
+  - "We'll take appropriate action if a violation is found"
+  - "You may not receive a direct response"
+- Cancel and Submit buttons
+- Loading state during API call
+- Success confirmation after submission
+
+**Visual Design:**
+- Use warning/alert colors (red/orange) for report action
+- Show content being reported prominently
+- Make report types easy to select
+- Clear visual hierarchy
+
 ### 3. Block Status Indicators
 
 **When User is Blocked:**
@@ -341,7 +389,7 @@ const blockedUsers = data.data || [];
 - Allow searching/filtering blocked users
 - Show empty state: "You haven't blocked anyone"
 
-### 4. Content Filtering
+### 5. Content Filtering
 
 **Feeds:**
 - Automatically filter out posts from blocked users
@@ -513,7 +561,29 @@ export const BlockUserModal: React.FC<BlockUserModalProps> = ({
 };
 ```
 
-### Step 3: Integrate Block Check in User Profile
+### Step 5: Integrate Report in Post/Comment Cards
+
+```typescript
+// PostCard.tsx
+const [showReportModal, setShowReportModal] = useState(false);
+
+const handleReport = () => {
+  setShowReportModal(true);
+};
+
+<ReportContentModal
+  visible={showReportModal}
+  onClose={() => setShowReportModal(false)}
+  contentType="post"
+  contentId={post.id}
+  contentTitle={post.content || 'Post'}
+  onReported={() => {
+    // Optionally refresh feed or show success message
+  }}
+/>
+```
+
+### Step 6: Integrate Block Check in User Profile
 
 ```typescript
 // UserProfileScreen.tsx
@@ -539,7 +609,7 @@ const checkBlockStatus = async () => {
 };
 ```
 
-### Step 4: Filter Blocked Users from Feeds
+### Step 7: Filter Blocked Users from Feeds
 
 ```typescript
 // FeedService.ts
@@ -557,7 +627,7 @@ async getFeed(): Promise<Post[]> {
 }
 ```
 
-### Step 5: Create Blocked Users Settings Screen
+### Step 8: Create Blocked Users Settings Screen
 
 ```typescript
 // BlockedUsersScreen.tsx
@@ -776,13 +846,22 @@ try {
 
 ## Support & Questions
 
-For questions or issues with the block feature implementation:
-- Check API documentation: `/api/users/block`
-- Review database schema: `database/user_blocks_schema.sql`
+For questions or issues with the block or report feature implementation:
+- **Block API:** `/api/users/block`
+- **Report API:** `/api/reports/content`
+- **Database Schemas:**
+  - Block: `database/user_blocks_schema.sql`
+  - Reports: `database/content_reports_migration_add_post_support.sql`
+- **Admin Dashboard:** `/admin/dashboard` (Content Review tab)
 - Contact web team for API clarifications
+
+## Related Documentation
+
+- **Admin Content Review Guide:** See `ADMIN_CONTENT_REVIEW_GUIDE.md` for information on how admins review and process reports
+- **Report Testing Guide:** See `REPORTING_FEATURE_TESTING_GUIDE.md` for detailed testing instructions
 
 ---
 
-**Last Updated:** November 27, 2025  
-**Version:** 1.0.0
+**Last Updated:** November 28, 2025  
+**Version:** 2.0.0 (Added Report Feature)
 
