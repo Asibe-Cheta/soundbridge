@@ -17,14 +17,39 @@ const AdminActionSchema = z.object({
 // Middleware to check admin permissions
 async function checkAdminPermissions(request: NextRequest) {
   try {
-    // Use createRouteHandlerClient for proper cookie handling (like other APIs)
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    // Try to get cookies from next/headers first (App Router way)
+    let supabase;
+    try {
+      const cookieStore = await cookies();
+      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    } catch (cookieError) {
+      // If that fails, try extracting from request headers
+      console.log('⚠️ cookies() failed, trying request headers...');
+      const cookieHeader = request.headers.get('cookie') || '';
+      
+      // Create a simple cookie store from request headers
+      const cookieMap = new Map<string, string>();
+      cookieHeader.split(';').forEach(cookie => {
+        const [key, value] = cookie.trim().split('=');
+        if (key && value) {
+          cookieMap.set(key, decodeURIComponent(value));
+        }
+      });
+      
+      supabase = createRouteHandlerClient({
+        cookies: () => ({
+          get: (name: string) => ({ value: cookieMap.get(name) || '' }),
+          set: () => {},
+          remove: () => {}
+        }) as any
+      });
+    }
     
     // Get user from session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error('❌ Auth error:', authError?.message);
+      console.error('❌ Auth error details:', JSON.stringify(authError, null, 2));
       return { error: 'Authentication required', status: 401 };
     }
 
@@ -47,6 +72,7 @@ async function checkAdminPermissions(request: NextRequest) {
     return { user, profile };
   } catch (error: any) {
     console.error('❌ Authentication check failed:', error?.message || error);
+    console.error('❌ Full error:', JSON.stringify(error, null, 2));
     return { error: 'Authentication failed', status: 401 };
   }
 }
