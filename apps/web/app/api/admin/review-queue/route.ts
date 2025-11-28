@@ -41,15 +41,19 @@ async function checkAdminPermissions(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('📋 Review Queue API called');
+    
     // Check admin permissions
     const authResult = await checkAdminPermissions(request);
     if ('error' in authResult) {
+      console.error('❌ Admin permission check failed:', authResult.error);
       return NextResponse.json({
         success: false,
         error: authResult.error
       }, { status: authResult.status });
     }
 
+    console.log('✅ Admin permissions verified');
     const supabase = await createApiClientWithCookies();
 
     const { searchParams } = new URL(request.url);
@@ -168,6 +172,9 @@ export async function GET(request: NextRequest) {
     );
     
     console.log(`✅ Enriched ${enrichedQueueItems.length} queue items`);
+
+    // Return the enriched items
+    console.log('📋 Returning queue items:', enrichedQueueItems.length);
 
     // Get statistics
     const { data: stats } = await supabase
