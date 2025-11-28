@@ -111,7 +111,12 @@ ADD COLUMN IF NOT EXISTS auto_flagged BOOLEAN DEFAULT false;
 ALTER TABLE content_reports 
 ADD COLUMN IF NOT EXISTS requires_legal_review BOOLEAN DEFAULT false;
 
--- Step 4: Make content_id nullable or remove the constraint entirely
+-- Step 4: Drop problematic CHECK constraints that might be too restrictive
+-- Drop the report_reason CHECK constraint if it exists (it might be too restrictive)
+ALTER TABLE content_reports 
+DROP CONSTRAINT IF EXISTS content_reports_report_reason_check;
+
+-- Step 5: Make content_id nullable or remove the constraint entirely
 -- Since content_id can reference different tables (posts, audio_tracks, profiles, etc.),
 -- we'll remove the foreign key constraint. The application logic will handle validation.
 -- Note: If you want to keep referential integrity, you could create separate columns
