@@ -15,8 +15,37 @@ ALTER TABLE content_reports
 ADD CONSTRAINT content_reports_content_type_check 
 CHECK (content_type IN ('track', 'profile', 'comment', 'playlist', 'post'));
 
--- Step 3: Add missing columns if they don't exist
+-- Step 3: Add ALL missing columns if they don't exist
+-- Core columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS report_type VARCHAR(50);
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending';
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS priority VARCHAR(10) DEFAULT 'normal';
+
+-- Reporter Information columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS reporter_id UUID;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS reporter_email VARCHAR(255);
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS reporter_name VARCHAR(255);
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS reporter_type VARCHAR(20) DEFAULT 'user';
+
 -- Content Information columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS content_id UUID;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS content_type VARCHAR(20);
+
 ALTER TABLE content_reports 
 ADD COLUMN IF NOT EXISTS content_title VARCHAR(500);
 
@@ -24,6 +53,9 @@ ALTER TABLE content_reports
 ADD COLUMN IF NOT EXISTS content_url TEXT;
 
 -- Report Details columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS reason TEXT;
+
 ALTER TABLE content_reports 
 ADD COLUMN IF NOT EXISTS description TEXT;
 
@@ -42,6 +74,29 @@ ADD COLUMN IF NOT EXISTS copyrighted_work_owner VARCHAR(255);
 
 ALTER TABLE content_reports 
 ADD COLUMN IF NOT EXISTS copyright_evidence TEXT;
+
+-- Processing Information columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS assigned_to UUID;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS review_notes TEXT;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS resolution_notes TEXT;
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS action_taken VARCHAR(100);
+
+-- Timestamp columns
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+ALTER TABLE content_reports 
+ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP WITH TIME ZONE;
 
 -- Metadata and flags
 ALTER TABLE content_reports 
