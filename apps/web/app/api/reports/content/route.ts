@@ -171,9 +171,17 @@ export async function POST(request: NextRequest) {
     
     if (reportError) {
       console.error('Content report creation error:', reportError);
+      console.error('Error details:', JSON.stringify(reportError, null, 2));
+      console.error('Attempted insert data:', {
+        report_type: data.reportType,
+        content_type: data.contentType,
+        content_id: data.contentId,
+        reason: data.reason
+      });
       return NextResponse.json({
         success: false,
-        error: 'Failed to create content report'
+        error: 'Failed to create content report',
+        details: reportError.message || 'Database constraint violation'
       }, { status: 500 });
     }
     
