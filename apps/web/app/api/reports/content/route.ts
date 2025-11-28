@@ -188,34 +188,61 @@ export async function POST(request: NextRequest) {
     
     // Create entry in admin review queue
     try {
+      const queueInsertData: any = {
+        queue_type: 'content_report',
+        priority: priority,
+        status: 'pending',
+        reference_type: 'content_reports',
+        reference_id: report.id,
+        metadata: {
+          report_id: report.id,
+          report_type: data.reportType,
+          content_id: data.contentId,
+          content_type: data.contentType,
+          content_title: data.contentTitle || contentTitle || content.title || content.content || 'Untitled',
+          reporter_id: reporterId,
+          reporter_name: data.reporterName,
+          reporter_email: data.reporterEmail,
+          reason: data.reason,
+          description: data.description,
+          content_owner_id: contentUserId || content.user_id
+        }
+      };
+      
+      // Some schemas use reference_data instead of metadata
+      // Try with reference_type and reference_id first (copyright_protection_schema)
       const queueInsertResult = await supabase
         .from('admin_review_queue')
-        .insert({
+        .insert(queueInsertData)
+        .select()
+        .single();
+      
+      if (queueInsertResult.error) {
+        // If that fails, try with reference_data (admin_dashboard_schema)
+        console.log('First insert attempt failed, trying with reference_data...');
+        const fallbackData = {
           queue_type: 'content_report',
           priority: priority,
           status: 'pending',
           reference_data: {
             reference_type: 'content_reports',
             reference_id: report.id,
-            report_id: report.id,
-            report_type: data.reportType,
-            content_id: data.contentId,
-            content_type: data.contentType,
-            content_title: data.contentTitle || contentTitle || content.title || content.content || 'Untitled',
-            reporter_id: reporterId,
-            reporter_name: data.reporterName,
-            reporter_email: data.reporterEmail,
-            reason: data.reason,
-            description: data.description,
-            content_owner_id: contentUserId || content.user_id
+            ...queueInsertData.metadata
           }
-        })
-        .select()
-        .single();
-      
-      if (queueInsertResult.error) {
-        console.error('Failed to create review queue entry:', queueInsertResult.error);
-        console.error('Queue insert error details:', JSON.stringify(queueInsertResult.error, null, 2));
+        };
+        
+        const fallbackResult = await supabase
+          .from('admin_review_queue')
+          .insert(fallbackData)
+          .select()
+          .single();
+        
+        if (fallbackResult.error) {
+          console.error('Failed to create review queue entry (both attempts):', fallbackResult.error);
+          console.error('Queue insert error details:', JSON.stringify(fallbackResult.error, null, 2));
+        } else {
+          console.log('✅ Successfully created admin review queue entry (fallback):', fallbackResult.data?.id);
+        }
       } else {
         console.log('✅ Successfully created admin review queue entry:', queueInsertResult.data?.id);
       }
