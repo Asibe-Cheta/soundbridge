@@ -39,24 +39,24 @@ export default function PricingPage() {
       borderColor: 'border-blue-200/50',
       buttonColor: 'bg-blue-600 hover:bg-blue-700',
       features: [
-        '3 uploads total',
-        '10MB file size limit',
-        '100MB total storage',
-        'Standard processing (2-5 min)',
-        'Basic copyright protection',
-        'Basic analytics',
-        'Community features',
-        'Standard audio quality',
-        'SoundBridge branding'
+        '3 track uploads (lifetime)',
+        '5 professional searches/month',
+        '3 direct messages/month (outbound)',
+        '150MB total storage',
+        'Unlimited streaming',
+        'Basic profile & portfolio',
+        'Community support',
+        'Email support (3-5 day response)'
       ],
       limitations: [
-        '10MB max file size',
-        '100MB total storage',
-        '3 uploads total (lifetime)',
-        'Standard processing speed',
-        'Basic copyright protection',
-        'Basic analytics only',
-        'Community support'
+        '3 lifetime uploads',
+        '5 searches per month',
+        '3 outbound messages per month',
+        '150MB total storage',
+        'No advanced filters',
+        'No saved searches',
+        'No read receipts',
+        'Community support only'
       ],
       popular: false
     },
@@ -65,24 +65,25 @@ export default function PricingPage() {
       name: 'Pro',
       description: 'For growing creators',
       icon: <Star className="h-8 w-8 text-purple-500" />,
-      price: { monthly: 9.99, yearly: 99.99 },
+      price: { monthly: 9.99, yearly: 99.00 }, // GBP pricing
       color: 'from-purple-500/20 to-pink-500/20',
       borderColor: 'border-purple-200/50',
       buttonColor: 'bg-purple-600 hover:bg-purple-700',
       features: [
-        'Everything in Free',
-        '50MB file size limit',
-        '2GB total storage',
-        '10 uploads per month',
-        'Priority processing (1-2 min)',
-        'Advanced copyright protection',
-        'Advanced analytics',
-        'Custom branding',
-        'Revenue sharing (95%)',
-        'Priority support',
-        'HD audio quality',
-        'Direct fan messaging',
-        '3 concurrent uploads'
+        'Everything in Free, plus:',
+        '10 track uploads (total)',
+        'Unlimited searches & messages',
+        'Advanced filters & saved searches',
+        '500MB total storage',
+        'Verified badge eligibility',
+        'Custom profile URL',
+        'Payment protection & escrow',
+        'Detailed analytics',
+        'Availability calendar',
+        'Read receipts & message templates',
+        'Group messaging',
+        'Priority support (24-48 hour response)',
+        '🛡️ 7-day money-back guarantee'
       ],
       limitations: [],
       popular: true,
@@ -126,13 +127,11 @@ export default function PricingPage() {
       category: 'Content & Uploads',
       icon: <Music className="h-6 w-6 text-blue-500" />,
       items: [
-        { name: 'Music Tracks', free: '3 total', pro: '10/month', enterprise: 'Unlimited' },
-        { name: 'Podcast Episodes', free: '3 total', pro: '10/month', enterprise: 'Unlimited' },
-        { name: 'Events', free: '3 total', pro: '10/month', enterprise: 'Unlimited' },
-        { name: 'Max File Size', free: '10MB', pro: '50MB', enterprise: '100MB' },
-        { name: 'Processing Speed', free: 'Standard (2-5 min)', pro: 'Priority (1-2 min)', enterprise: 'Instant (< 1 min)' },
-        { name: 'Concurrent Uploads', free: '1', pro: '3', enterprise: '5' },
-        { name: 'Storage Space', free: '100MB', pro: '2GB', enterprise: '10GB' },
+        { name: 'Track Uploads', free: '3 lifetime', pro: '10 total', enterprise: 'Unlimited' },
+        { name: 'Professional Searches', free: '5/month', pro: 'Unlimited', enterprise: 'Unlimited' },
+        { name: 'Direct Messages (sent)', free: '3/month', pro: 'Unlimited', enterprise: 'Unlimited' },
+        { name: 'Storage Space', free: '150MB', pro: '500MB', enterprise: '2GB' },
+        { name: 'Max File Size', free: '50MB', pro: '50MB', enterprise: '100MB' },
         { name: 'Audio Quality', free: 'Standard', pro: 'HD', enterprise: 'Lossless' }
       ]
     },
@@ -252,8 +251,8 @@ export default function PricingPage() {
             </h1>
             
             <p className="text-xl text-white/70 max-w-3xl mx-auto mb-8">
-              Start free, upgrade when you're ready. No hidden fees, no surprises. 
-              Grow your audience and monetize your content with professional tools.
+              Start free, upgrade when you're ready to unlock powerful professional tools and connect with unlimited opportunities. 
+              All Pro plans include a <span className="text-green-400 font-semibold">7-day money-back guarantee</span>.
             </p>
 
             {/* Error Display */}
@@ -335,12 +334,19 @@ export default function PricingPage() {
                         
                         <div className="mb-4">
                           <span className="text-4xl font-bold text-white">
-                            ${price}
+                            £{price.toFixed(2)}
                           </span>
                           <span className="text-white/60 ml-1">
                             /{billingCycle === 'monthly' ? 'month' : 'year'}
                           </span>
                         </div>
+                        {plan.id === 'pro' && (
+                          <div className="mb-4 text-sm text-white/70">
+                            <span className="inline-flex items-center gap-1 bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/30">
+                              🛡️ 7-day money-back guarantee
+                            </span>
+                          </div>
+                        )}
 
                         {plan.savings && billingCycle === 'yearly' && (
                           <div className="text-green-400 text-sm font-medium mb-4">
@@ -589,16 +595,20 @@ export default function PricingPage() {
                   a: "Pro users keep 95% of their earnings, Enterprise users keep 90%. We handle all payment processing and taxes. You can request payouts once you reach $50."
                 },
                 {
-                  q: "Is there a free trial?",
-                  a: "The Free plan is our trial! You can use it indefinitely with unlimited uploads. Upgrade when you need premium features to grow your audience."
+                  q: "Do you offer a free trial?",
+                  a: "We don't offer a traditional free trial because our Free tier IS your trial! You get unlimited time to test SoundBridge with 3 uploads, professional searches, and messaging - no credit card required. When you're ready to upgrade to Pro, you're protected by our 7-day money-back guarantee. If Pro isn't right for you, request a refund within 7 days for a full refund, no questions asked."
                 },
                 {
-                  q: "Do you offer refunds?",
-                  a: "We offer a 30-day money-back guarantee for all paid plans. If you're not satisfied, contact our support team for a full refund."
+                  q: "How does the 7-day money-back guarantee work?",
+                  a: "If you upgrade to Pro and decide it's not for you within 7 days of payment, simply request a refund from your billing settings. You'll receive a full refund within 3-5 business days, no questions asked. Your account will revert to the Free tier. If you have more than 3 tracks, you'll choose which 3 to keep public - the rest become private (not deleted)."
                 },
                 {
-                  q: "What file sizes can I upload?",
-                  a: "Free users can upload files up to 100MB, Pro users up to 500MB, and Enterprise users up to 2GB. All plans support unlimited uploads with our smart validation system."
+                  q: "What happens to my content if I cancel or request a refund?",
+                  a: "Your content is never deleted. If you have more than 3 tracks when you downgrade to Free, you'll choose which 3 to keep public. The rest become private (only visible to you). If you upgrade to Pro again later, all your tracks automatically become public again."
+                },
+                {
+                  q: "What are the upload and storage limits?",
+                  a: "Free tier: 3 lifetime track uploads and 150MB total storage. Pro tier: 10 total track uploads and 500MB total storage. Enterprise tier: Unlimited uploads and 2GB storage. All plans include our smart validation system."
                 },
                 {
                   q: "How does the upload validation work?",

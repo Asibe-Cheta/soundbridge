@@ -99,12 +99,20 @@ export async function POST(request: NextRequest) {
           });
         
         if (!uploadCheck) {
+          // Get upload limit info for better error message
+          const { data: uploadLimitInfo } = await supabase
+            .rpc('check_upload_limit', { user_uuid: user.id });
+          
           return NextResponse.json(
             { 
               error: 'Upload limit exceeded',
               details: userTier === 'free' 
-                ? 'You have reached your limit of 3 uploads. Upgrade to Pro for 10 uploads per month.'
-                : 'You have reached your monthly upload limit. Upgrade to Enterprise for unlimited uploads.'
+                ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 uploads.'
+                : userTier === 'pro'
+                ? 'You have reached your limit of 10 uploads. Upgrade to Enterprise for unlimited uploads.'
+                : 'You have reached your upload limit.',
+              limit: uploadLimitInfo || null,
+              upgrade_required: true
             },
             { status: 429 }
           );

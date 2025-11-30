@@ -66,6 +66,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check search limit for Free tier users
+    const { data: searchLimit, error: limitError } = await supabase
+      .rpc('check_search_limit', { p_user_id: user.id });
+
+    if (limitError) {
+      console.error('Error checking search limit:', limitError);
+      // Continue with search even if limit check fails (graceful degradation)
+    } else if (searchLimit && !searchLimit.is_unlimited && searchLimit.remaining <= 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Search limit reached',
+          limit: {
+            used: searchLimit.used,
+            limit: searchLimit.limit,
+            remaining: searchLimit.remaining,
+            reset_date: searchLimit.reset_date,
+            upgrade_required: true,
+            message: 'You have used all 5 of your monthly professional searches. Upgrade to Pro for unlimited searches.'
+          }
+        },
+        { status: 429, headers: corsHeaders }
+      );
+    }
+
+    // Increment search usage counter (for Free tier)
+    if (searchLimit && !searchLimit.is_unlimited) {
+      await supabase.rpc('increment_usage', {
+        p_user_id: user.id,
+        p_usage_type: 'search',
+        p_amount: 1
+      });
+    }
+
     const searchTerm = `%${query.trim()}%`;
 
     const results: {

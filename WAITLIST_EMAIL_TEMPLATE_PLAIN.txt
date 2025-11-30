@@ -1,0 +1,26 @@
+Welcome to SoundBridge Waitlist! 🎵
+
+Hi {{name}}!
+
+Thanks for joining the SoundBridge waitlist! You're now part of an exclusive group of artists, producers, and music professionals who will get early access.
+
+Here's what happens next:
+✅ We'll email you with exclusive updates as we build
+✅ You'll be first to know when we launch (Q2 2026)
+✅ Early access to all features before public release
+
+In the meantime:
+- Follow our journey on social media: {{social_media_link}}
+- Have questions? Reply to this email
+- Know other artists? Share: {{waitlist_link}}
+
+Building the future of music together 🚀
+
+{{founder_name}}
+Founder, SoundBridge
+{{contact_email}}
+
+---
+You're receiving this email because you signed up for the SoundBridge waitlist.
+SoundBridge - The LinkedIn for Music Creators
+

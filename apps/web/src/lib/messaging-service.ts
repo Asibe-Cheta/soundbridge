@@ -105,6 +105,7 @@ export class MessagingService {
 
   /**
    * Send a message
+   * Note: Message limits apply to outbound messages only (Free: 3/month, Pro: unlimited)
    */
   async sendMessage(
     senderId: string,
@@ -114,6 +115,30 @@ export class MessagingService {
     attachment?: MessageAttachment
   ): Promise<{ data: Message | null; error: unknown }> {
     try {
+      // Check message limit for Free tier users (outbound only)
+      const { data: messageLimit, error: limitError } = await this.supabase
+        .rpc('check_message_limit', { p_user_id: senderId });
+
+      if (limitError) {
+        console.error('Error checking message limit:', limitError);
+        // Continue with message send even if limit check fails (graceful degradation)
+      } else if (messageLimit && !messageLimit.is_unlimited && messageLimit.remaining <= 0) {
+        return { 
+          data: null, 
+          error: {
+            code: 'MESSAGE_LIMIT_REACHED',
+            message: 'You have used all 3 of your monthly direct messages. Upgrade to Pro for unlimited messaging.',
+            limit: {
+              used: messageLimit.used,
+              limit: messageLimit.limit,
+              remaining: messageLimit.remaining,
+              reset_date: messageLimit.reset_date,
+              upgrade_required: true
+            }
+          }
+        };
+      }
+
       const messageData: Record<string, unknown> = {
         sender_id: senderId,
         recipient_id: recipientId,
@@ -153,6 +178,15 @@ export class MessagingService {
       if (error) {
         console.error('Error sending message:', error);
         return { data: null, error };
+      }
+
+      // Increment message usage counter (for Free tier, outbound only)
+      if (messageLimit && !messageLimit.is_unlimited && data) {
+        await this.supabase.rpc('increment_usage', {
+          p_user_id: senderId,
+          p_usage_type: 'message',
+          p_amount: 1
+        });
       }
 
       return { data, error: null };

@@ -57,8 +57,11 @@ export async function GET(request: NextRequest) {
       tier: 'free',
       status: 'active',
       billing_cycle: 'monthly',
-      trial_ends_at: null,
+      subscription_start_date: null,
+      subscription_renewal_date: null,
       subscription_ends_at: null,
+      money_back_guarantee_eligible: false,
+      refund_count: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -81,14 +84,41 @@ export async function GET(request: NextRequest) {
       payout_threshold: 50.00
     };
 
+    // Check if within 7-day money-back guarantee window
+    let withinGuarantee = false;
+    if (subscription && subscription.tier === 'pro' && subscription.subscription_start_date) {
+      const startDate = new Date(subscription.subscription_start_date);
+      const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      withinGuarantee = daysSinceStart <= 7 && subscription.money_back_guarantee_eligible;
+    }
+
+    // Get usage limits
+    const { data: uploadLimit } = await supabase.rpc('check_upload_limit', { p_user_id: user.id });
+    const { data: searchLimit } = await supabase.rpc('check_search_limit', { p_user_id: user.id });
+    const { data: messageLimit } = await supabase.rpc('check_message_limit', { p_user_id: user.id });
+
     return NextResponse.json({
       success: true,
       data: {
         subscription: subscription || defaultSubscription,
         usage: usage || defaultUsage,
         revenue: revenue || defaultRevenue,
+        limits: {
+          uploads: uploadLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false },
+          searches: searchLimit || { used: 0, limit: 5, remaining: 5, is_unlimited: false },
+          messages: messageLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false }
+        },
+        moneyBackGuarantee: {
+          eligible: subscription?.money_back_guarantee_eligible || false,
+          withinWindow: withinGuarantee,
+          daysRemaining: withinGuarantee && subscription?.subscription_start_date
+            ? Math.max(0, 7 - Math.floor((Date.now() - new Date(subscription.subscription_start_date).getTime()) / (1000 * 60 * 60 * 24)))
+            : 0
+        },
         features: {
-          unlimitedUploads: true, // Always true in our model
+          unlimitedUploads: subscription?.tier === 'enterprise',
+          unlimitedSearches: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
+          unlimitedMessages: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
           advancedAnalytics: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
           customBranding: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
           prioritySupport: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',

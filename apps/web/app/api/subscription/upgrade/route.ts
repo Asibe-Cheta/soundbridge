@@ -70,11 +70,11 @@ export async function POST(request: NextRequest) {
         usage_count: 1
       });
 
-    // Calculate pricing
+    // Calculate pricing (GBP - updated per TIER_RESTRUCTURE.md)
     const pricing = {
       pro: {
         monthly: 9.99,
-        yearly: 99.99 // 17% discount
+        yearly: 99.00 // £99/year (17% discount, saves £20.88)
       },
       enterprise: {
         monthly: 49.99,
@@ -84,18 +84,40 @@ export async function POST(request: NextRequest) {
 
     const price = pricing[tier as keyof typeof pricing][billingCycle as keyof typeof pricing['pro']];
 
+    // Set subscription start date for 7-day money-back guarantee
+    const subscriptionStartDate = new Date();
+    const subscriptionRenewalDate = new Date(subscriptionEndsAt);
+
+    // Update subscription with start date and renewal date
+    await supabase
+      .from('user_subscriptions')
+      .update({
+        subscription_start_date: subscriptionStartDate.toISOString(),
+        subscription_renewal_date: subscriptionRenewalDate.toISOString()
+      })
+      .eq('id', subscription.id);
+
     return NextResponse.json({
       success: true,
       data: {
-        subscription,
+        subscription: {
+          ...subscription,
+          subscription_start_date: subscriptionStartDate.toISOString(),
+          subscription_renewal_date: subscriptionRenewalDate.toISOString()
+        },
         pricing: {
           tier,
           billingCycle,
           price,
-          currency: 'USD',
+          currency: 'GBP',
           nextBillingDate: subscriptionEndsAt.toISOString()
         },
-        message: `Successfully upgraded to ${tier} ${billingCycle} plan!`
+        message: `Successfully upgraded to ${tier} ${billingCycle} plan!`,
+        moneyBackGuarantee: {
+          eligible: true,
+          windowDays: 7,
+          message: '7-day money-back guarantee - full refund if not satisfied'
+        }
       }
     });
 

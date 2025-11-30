@@ -126,41 +126,18 @@ export default function DiscoverPage() {
     { id: 'podcasts', label: 'Podcasts', icon: Mic }
   ];
 
-  // Fetch genres from database API
-  const [genres, setGenres] = useState<Array<{ value: string; label: string }>>([
-    { value: 'all', label: 'All Genres' }
-  ]);
-  const [loadingGenres, setLoadingGenres] = useState(true);
-
-  useEffect(() => {
-    const fetchGenres = async () => {
-      try {
-        setLoadingGenres(true);
-        // Fetch music genres for the active tab
-        const category = activeTab === 'podcasts' ? 'podcast' : 'music';
-        const response = await fetch(`/api/genres?category=${category}&active=true`);
-        const data = await response.json();
-        
-        if (data.success && data.genres) {
-          const genreOptions = [
-            { value: 'all', label: 'All Genres' },
-            ...data.genres.map((g: any) => ({
-              value: g.id, // Use genre ID instead of name for proper filtering
-              label: g.name
-            }))
-          ];
-          setGenres(genreOptions);
-        }
-      } catch (error) {
-        console.error('Error fetching genres:', error);
-        // Keep default "All Genres" option on error
-      } finally {
-        setLoadingGenres(false);
-      }
-    };
-
-    fetchGenres();
-  }, [activeTab]); // Refetch when tab changes (music vs podcasts)
+  const genres = [
+    { value: 'all', label: 'All Genres' },
+    { value: 'afrobeats', label: 'Afrobeats' },
+    { value: 'gospel', label: 'Gospel' },
+    { value: 'uk-drill', label: 'UK Drill' },
+    { value: 'highlife', label: 'Highlife' },
+    { value: 'jazz', label: 'Jazz' },
+    { value: 'hip-hop', label: 'Hip Hop' },
+    { value: 'r&b', label: 'R&B' },
+    { value: 'pop', label: 'Pop' },
+    { value: 'electronic', label: 'Electronic' }
+  ];
 
   const locations = [
     { value: 'all', label: 'All Locations' },

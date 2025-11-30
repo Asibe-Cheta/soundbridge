@@ -58,17 +58,9 @@ export async function GET(request: NextRequest) {
     // Get user profile
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('location, country, country_code, professional_headline')
+      .select('location, country, country_code, genres, professional_headline')
       .eq('id', user.id)
       .single();
-
-    // Get user's genre preferences from user_genres junction table
-    const { data: userGenres } = await supabase
-      .from('user_genres')
-      .select('genre_id, genres!inner(id, name, category)')
-      .eq('user_id', user.id);
-    
-    const userGenreIds = userGenres?.map(ug => ug.genre_id) || [];
 
     // Get user's existing connections
     const { data: connections } = await supabase
@@ -138,7 +130,7 @@ export async function GET(request: NextRequest) {
     // Get candidates based on location
     let locationQuery = supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline, location, country')
+      .select('id, username, display_name, avatar_url, professional_headline, location, country, genres')
       .neq('id', user.id)
       .not('id', 'in', `(${Array.from(excludeIds).join(',')})`);
 
@@ -147,24 +139,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: locationCandidates } = await locationQuery.limit(limit * 2);
-
-    // Batch fetch all candidate genre preferences (performance optimization)
-    const candidateIds = locationCandidates?.map(c => c.id) || [];
-    const candidateGenreMap = new Map<string, string[]>(); // user_id -> genre_ids
-    
-    if (candidateIds.length > 0 && userGenreIds.length > 0) {
-      const { data: allCandidateGenres } = await supabase
-        .from('user_genres')
-        .select('user_id, genre_id')
-        .in('user_id', candidateIds);
-      
-      if (allCandidateGenres) {
-        allCandidateGenres.forEach(cg => {
-          const existing = candidateGenreMap.get(cg.user_id) || [];
-          candidateGenreMap.set(cg.user_id, [...existing, cg.genre_id]);
-        });
-      }
-    }
 
     // Score and rank candidates
     const scoredCandidates = new Map<string, {
@@ -201,17 +175,12 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Similar genres/interests (using proper genre system - batch fetched)
-        if (userGenreIds.length > 0) {
-          const candidateGenreIds = candidateGenreMap.get(candidate.id) || [];
-          
-          // Find common genres
-          const commonGenreIds = userGenreIds.filter(gid => candidateGenreIds.includes(gid));
-          
-          if (commonGenreIds.length > 0) {
-            score += commonGenreIds.length * 10;
-            // Get genre names for display (batch fetch)
-            reasons.push(`${commonGenreIds.length} shared interest${commonGenreIds.length > 1 ? 's' : ''}`);
+        // Similar genres/interests
+        if (userProfile?.genres && candidate.genres && Array.isArray(candidate.genres)) {
+          const commonGenres = userProfile.genres.filter((g) => candidate.genres.includes(g));
+          if (commonGenres.length > 0) {
+            score += commonGenres.length * 10;
+            reasons.push(`Shared interests: ${commonGenres.slice(0, 2).join(', ')}`);
           }
         }
 
@@ -235,68 +204,31 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get genre names for common genres (batch fetch for top candidates)
-    const topCandidates = Array.from(scoredCandidates.values())
+    // Sort by score and take top results
+    const suggestions = Array.from(scoredCandidates.values())
       .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
-    
-    // Batch fetch genre names for display
-    const allCommonGenreIds = new Set<string>();
-    topCandidates.forEach(item => {
-      const candidateGenreIds = candidateGenreMap.get(item.profile.id) || [];
-      const commonGenreIds = userGenreIds.filter(gid => candidateGenreIds.includes(gid));
-      commonGenreIds.forEach(gid => allCommonGenreIds.add(gid));
-    });
-    
-    const genreNameMap = new Map<string, string>();
-    if (allCommonGenreIds.size > 0) {
-      const { data: genresData } = await supabase
-        .from('genres')
-        .select('id, name')
-        .in('id', Array.from(allCommonGenreIds));
-      
-      if (genresData) {
-        genresData.forEach(g => genreNameMap.set(g.id, g.name));
-      }
-    }
-
-    // Build suggestions with genre names
-    const suggestions = topCandidates.map((item) => {
-      const mutualCount = mutualConnectionMap.get(item.profile.id) || 0;
-      const candidateGenreIds = candidateGenreMap.get(item.profile.id) || [];
-      const commonGenreIds = userGenreIds.filter(gid => candidateGenreIds.includes(gid));
-      const genreNames = commonGenreIds
-        .map(gid => genreNameMap.get(gid))
-        .filter(Boolean)
-        .slice(0, 2);
-      
-      // Update reasons with actual genre names if available
-      let reasons = [...item.reasons];
-      if (genreNames.length > 0 && reasons.some(r => r.includes('shared interest'))) {
-        const reasonIndex = reasons.findIndex(r => r.includes('shared interest'));
-        if (reasonIndex >= 0) {
-          reasons[reasonIndex] = `Shared interests: ${genreNames.join(', ')}`;
-        }
-      }
-      
-      const reasonText = reasons.length > 0 
-        ? reasons[0] 
-        : 'Suggested for you';
+      .slice(0, limit)
+      .map((item) => {
+        const mutualCount = mutualConnectionMap.get(item.profile.id) || 0;
+        const reasons = item.reasons;
+        const reasonText = reasons.length > 0 
+          ? reasons[0] 
+          : 'Suggested for you';
         
-      return {
-        id: item.profile.id,
-        user: {
+        return {
           id: item.profile.id,
-          name: item.profile.display_name || item.profile.username || 'Unknown',
-          username: item.profile.username,
-          avatar_url: item.profile.avatar_url,
-          role: item.profile.professional_headline,
-          location: item.profile.location,
-        },
-        reason: reasonText,
-        mutual_connections: mutualCount > 0 ? mutualCount : undefined,
-      };
-    });
+          user: {
+            id: item.profile.id,
+            name: item.profile.display_name || item.profile.username || 'Unknown',
+            username: item.profile.username,
+            avatar_url: item.profile.avatar_url,
+            role: item.profile.professional_headline,
+            location: item.profile.location,
+          },
+          reason: reasonText,
+          mutual_connections: mutualCount > 0 ? mutualCount : undefined,
+        };
+      });
 
     console.log(`✅ Generated ${suggestions.length} connection suggestions for user ${user.id}`);
 
