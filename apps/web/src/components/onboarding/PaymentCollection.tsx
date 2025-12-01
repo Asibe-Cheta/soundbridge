@@ -40,7 +40,17 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
     setError(null);
 
     try {
-      // Create payment method from Stripe Elements
+      // IMPORTANT: Must call elements.submit() BEFORE createPaymentMethod()
+      // This validates the form and prepares it for payment method creation
+      const { error: submitError } = await elements.submit();
+      
+      if (submitError) {
+        setError(submitError.message || 'Please check your card details.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Now create payment method from Stripe Elements
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         elements,
       });
