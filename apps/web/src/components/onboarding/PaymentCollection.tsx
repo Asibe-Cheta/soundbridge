@@ -154,9 +154,11 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
   if (!isOpen) return null;
 
   // Stripe Elements options - Use 'setup' mode for subscriptions (collects payment method without charging)
+  // paymentMethodCreation: 'manual' is required when using createPaymentMethod() with Payment Element
   const options: StripeElementsOptions = {
     mode: 'setup',
     currency: 'gbp',
+    paymentMethodCreation: 'manual', // Required for manual payment method creation
     appearance: {
       theme: 'night',
       variables: {
