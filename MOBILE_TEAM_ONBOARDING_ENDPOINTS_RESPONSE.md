@@ -301,14 +301,24 @@ GET /api/onboarding/value-demo?user_type=music_creator&genres=uuid1,uuid2&limit=
 
 **Authentication:** Required (Bearer token or cookie)
 
+**⚠️ IMPORTANT UPDATE (December 2025):** This endpoint now requires a `paymentMethodId` from Stripe's mobile SDK instead of raw card details. See `MOBILE_TEAM_PAYMENT_SECURITY_FIX_UPDATE.md` for complete migration guide.
+
 **Request:**
 ```json
 {
-  "cardNumber": "4242424242424242",
-  "cardExpiry": "12/25",
-  "cardCvv": "123",
-  "cardholderName": "John Smith",
-  "period": "monthly"  // or "annual"
+  "paymentMethodId": "pm_1ABC123...",  // Required - Created using Stripe React Native SDK
+  "period": "monthly"  // or "annual" - Required
+}
+```
+
+**⚠️ DEPRECATED (No Longer Works):**
+```json
+{
+  "cardNumber": "4242424242424242",  // ❌ No longer accepted
+  "cardExpiry": "12/25",             // ❌ No longer accepted
+  "cardCvv": "123",                  // ❌ No longer accepted
+  "cardholderName": "John Smith",    // ❌ No longer accepted
+  "period": "monthly"
 }
 ```
 
@@ -351,7 +361,8 @@ GET /api/onboarding/value-demo?user_type=music_creator&genres=uuid1,uuid2&limit=
    - `stripe_subscription_id: sub_xxx`
 
 **Important Notes:**
-- ⚠️ **Security:** This endpoint accepts raw card details. For production, consider using Stripe Elements on the frontend.
+- ✅ **Security:** This endpoint now uses secure payment method IDs (PCI compliant)
+- ✅ **Mobile:** Use Stripe React Native SDK to create payment methods (see `MOBILE_TEAM_PAYMENT_SECURITY_FIX_UPDATE.md`)
 - ✅ **No Trial:** Subscription charges immediately (no `trial_period_days` in Stripe)
 - ✅ **Money-Back Guarantee:** Tracked in database, not in Stripe
 
@@ -658,22 +669,23 @@ ORDER BY created_at DESC;
 
 3. **Pro Upgrade:**
    ```bash
+   # Note: paymentMethodId must be created using Stripe SDK first
    curl -X POST https://your-domain.com/api/onboarding/upgrade-pro \
      -H "Authorization: Bearer YOUR_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
-       "cardNumber": "4242424242424242",
-       "cardExpiry": "12/25",
-       "cardCvv": "123",
-       "cardholderName": "Test User",
+       "paymentMethodId": "pm_1ABC123...",
        "period": "monthly"
      }'
    ```
+   
+   **For Mobile Apps:** See `MOBILE_TEAM_PAYMENT_SECURITY_FIX_UPDATE.md` for complete implementation guide using Stripe React Native SDK.
 
 ---
 
 ## 📚 **RELATED DOCUMENTS**
 
+- `MOBILE_TEAM_PAYMENT_SECURITY_FIX_UPDATE.md` - **⚠️ CRITICAL:** Payment security fix and migration guide
 - `ONBOARDING_NEW_FLOW.md` - Complete onboarding flow specification
 - `TIER_CORRECTIONS.md` - Tier structure corrections
 - `WEB_TEAM_ONBOARDING_IMPLEMENTATION_COMPLETE.md` - Full implementation details
