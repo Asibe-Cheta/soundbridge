@@ -42,12 +42,12 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { cardNumber, cardExpiry, cardCvv, cardholderName, period = 'monthly' } = body;
+    const { paymentMethodId, period = 'monthly' } = body;
 
-    // Validate required fields
-    if (!cardNumber || !cardExpiry || !cardCvv || !cardholderName) {
+    // Validate required fields - now using payment method ID from Stripe Elements
+    if (!paymentMethodId) {
       return NextResponse.json(
-        { success: false, error: 'All card details are required' },
+        { success: false, error: 'Payment method is required. Please complete the card form.' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -83,11 +83,14 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    // Parse card expiry
-    const [expMonth, expYear] = cardExpiry.split('/').map((s: string) => parseInt(s.trim(), 10));
-    if (!expMonth || !expYear || expMonth < 1 || expMonth > 12) {
+    // Retrieve the payment method (already created by Stripe Elements on frontend)
+    let paymentMethod;
+    try {
+      paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    } catch (error: any) {
+      console.error('❌ Error retrieving payment method:', error);
       return NextResponse.json(
-        { success: false, error: 'Invalid card expiry date' },
+        { success: false, error: 'Invalid payment method. Please try again.' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
     } else {
       const customer = await stripe.customers.create({
         email: user.email || undefined,
-        name: cardholderName,
+        name: paymentMethod.billing_details?.name || profile?.display_name || undefined,
         metadata: {
           userId: user.id,
           source: 'onboarding'
@@ -115,30 +118,17 @@ export async function POST(request: NextRequest) {
       customerId = customer.id;
     }
 
-    // Create payment method
-    const paymentMethod = await stripe.paymentMethods.create({
-      type: 'card',
-      card: {
-        number: cardNumber.replace(/\s/g, ''),
-        exp_month: expMonth,
-        exp_year: expYear > 2000 ? expYear : 2000 + expYear, // Handle 2-digit years
-        cvc: cardCvv,
-      },
-      billing_details: {
-        name: cardholderName,
-        email: user.email || undefined,
-      }
-    });
-
-    // Attach payment method to customer
-    await stripe.paymentMethods.attach(paymentMethod.id, {
-      customer: customerId,
-    });
+    // Attach payment method to customer (if not already attached)
+    if (!paymentMethod.customer) {
+      await stripe.paymentMethods.attach(paymentMethodId, {
+        customer: customerId,
+      });
+    }
 
     // Set as default payment method
     await stripe.customers.update(customerId, {
       invoice_settings: {
-        default_payment_method: paymentMethod.id,
+        default_payment_method: paymentMethodId,
       }
     });
 

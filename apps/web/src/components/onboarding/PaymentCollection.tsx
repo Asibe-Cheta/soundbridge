@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
-import { ArrowRight, ArrowLeft, Shield, Lock, Loader2, AlertCircle, Check } from 'lucide-react';
+import { ArrowRight, Shield, Lock, Loader2, AlertCircle, Check } from 'lucide-react';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
+import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+// Initialize Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface PaymentCollectionProps {
   isOpen: boolean;
@@ -11,68 +16,52 @@ interface PaymentCollectionProps {
   onBack: () => void;
 }
 
-export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollectionProps) {
+// Inner component that uses Stripe hooks
+function PaymentForm({ period, onSuccess, onBack, setError }: {
+  period: 'monthly' | 'annual';
+  onSuccess: () => void;
+  onBack: () => void;
+  setError: (error: string | null) => void;
+}) {
   const { setCurrentStep } = useOnboarding();
-  const [formData, setFormData] = useState({
-    cardNumber: '',
-    cardExpiry: '',
-    cardCvv: '',
-    cardholderName: ''
-  });
-  const [period, setPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const stripe = useStripe();
+  const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  if (!isOpen) return null;
-
-  const formatCardNumber = (value: string) => {
-    const cleaned = value.replace(/\s/g, '');
-    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-    return formatted.slice(0, 19); // Max 16 digits + 3 spaces
-  };
-
-  const formatExpiry = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`;
-    }
-    return cleaned;
-  };
-
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCardNumber(e.target.value);
-    setFormData(prev => ({ ...prev, cardNumber: formatted }));
-  };
-
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatExpiry(e.target.value);
-    setFormData(prev => ({ ...prev, cardExpiry: formatted }));
-  };
-
-  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 3);
-    setFormData(prev => ({ ...prev, cardCvv: value }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    
+    if (!stripe || !elements) {
+      setError('Stripe is not loaded. Please refresh the page.');
+      return;
+    }
+
     setIsSubmitting(true);
+    setError(null);
 
     try {
+      // Create payment method from Stripe Elements
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+        elements,
+      });
+
+      if (pmError || !paymentMethod) {
+        setError(pmError?.message || 'Failed to create payment method. Please check your card details.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Send payment method ID to backend
       const { data, error: apiError } = await fetchJsonWithAuth('/api/onboarding/upgrade-pro', {
         method: 'POST',
         body: JSON.stringify({
-          cardNumber: formData.cardNumber.replace(/\s/g, ''),
-          cardExpiry: formData.cardExpiry,
-          cardCvv: formData.cardCvv,
-          cardholderName: formData.cardholderName,
+          paymentMethodId: paymentMethod.id,
           period: period
         })
       });
 
       if (apiError || !data?.success) {
-        setError(apiError?.message || data?.message || 'Payment processing failed. Please try again.');
+        setError(apiError?.message || data?.error || data?.message || 'Payment processing failed. Please try again.');
         setIsSubmitting(false);
         return;
       }
@@ -84,6 +73,92 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
       setError(err.message || 'An error occurred. Please try again.');
       setIsSubmitting(false);
     }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Stripe Payment Element */}
+      <div className="bg-white/5 rounded-lg p-4">
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+          }}
+        />
+      </div>
+
+      {/* Trust Badges */}
+      <div className="bg-white/5 rounded-lg p-4 space-y-2">
+        <div className="flex items-center gap-2 text-green-400 text-sm">
+          <Shield size={16} />
+          <span>7-day money-back guarantee</span>
+        </div>
+        <div className="flex items-center gap-2 text-white/70 text-sm">
+          <Check size={16} />
+          <span>Cancel anytime</span>
+        </div>
+        <div className="flex items-center gap-2 text-white/70 text-sm">
+          <Lock size={16} />
+          <span>Secure payment via Stripe</span>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={isSubmitting || !stripe || !elements}
+        className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+          isSubmitting || !stripe || !elements
+            ? 'bg-white/10 text-white/50 cursor-not-allowed'
+            : 'bg-purple-600 hover:bg-purple-700 text-white'
+        }`}
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            Upgrade to Pro
+            <ArrowRight size={20} />
+          </>
+        )}
+      </button>
+
+      {/* Back to Free Option */}
+      <button
+        type="button"
+        onClick={onBack}
+        className="w-full text-center text-white/70 hover:text-white text-sm transition-colors"
+      >
+        ← Back to Free plan
+      </button>
+    </form>
+  );
+}
+
+export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollectionProps) {
+  const [period, setPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  // Stripe Elements options
+  const options: StripeElementsOptions = {
+    mode: 'payment',
+    currency: 'gbp',
+    appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#9333ea',
+        colorBackground: 'rgba(255, 255, 255, 0.05)',
+        colorText: '#ffffff',
+        colorDanger: '#ef4444',
+        fontFamily: 'system-ui, sans-serif',
+        spacingUnit: '4px',
+        borderRadius: '8px',
+      },
+    },
   };
 
   return (
@@ -141,129 +216,25 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
             </button>
           </div>
 
-          {/* Payment Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Card Number */}
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                Card Number
-              </label>
-              <input
-                type="text"
-                value={formData.cardNumber}
-                onChange={handleCardNumberChange}
-                placeholder="1234 5678 9012 3456"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-500"
-                maxLength={19}
-                required
-              />
-            </div>
-
-            {/* Expiry and CVV */}
-            <div className="grid grid-cols-2 gap-4">
+          {error && (
+            <div className="mb-4 bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
               <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Expiry Date
-                </label>
-                <input
-                  type="text"
-                  value={formData.cardExpiry}
-                  onChange={handleExpiryChange}
-                  placeholder="MM/YY"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-500"
-                  maxLength={5}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  CVV
-                </label>
-                <input
-                  type="text"
-                  value={formData.cardCvv}
-                  onChange={handleCvvChange}
-                  placeholder="123"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-500"
-                  maxLength={3}
-                  required
-                />
+                <p className="text-red-400 font-semibold mb-1">Payment Error</p>
+                <p className="text-red-300 text-sm">{error}</p>
               </div>
             </div>
+          )}
 
-            {/* Cardholder Name */}
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                Cardholder Name
-              </label>
-              <input
-                type="text"
-                value={formData.cardholderName}
-                onChange={(e) => setFormData(prev => ({ ...prev, cardholderName: e.target.value }))}
-                placeholder="Full Name"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-500"
-                required
-              />
-            </div>
-
-            {/* Trust Badges */}
-            <div className="bg-white/5 rounded-lg p-4 space-y-2">
-              <div className="flex items-center gap-2 text-green-400 text-sm">
-                <Shield size={16} />
-                <span>7-day money-back guarantee</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/70 text-sm">
-                <Check size={16} />
-                <span>Cancel anytime</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/70 text-sm">
-                <Lock size={16} />
-                <span>Secure payment via Stripe</span>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
-                <div>
-                  <p className="text-red-400 font-semibold mb-1">Payment Error</p>
-                  <p className="text-red-300 text-sm">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
-                isSubmitting
-                  ? 'bg-white/10 text-white/50 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Upgrade to Pro
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
-
-            {/* Back to Free Option */}
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-full text-center text-white/70 hover:text-white text-sm transition-colors"
-            >
-              ← Back to Free plan
-            </button>
-          </form>
+          {/* Stripe Elements */}
+          <Elements stripe={stripePromise} options={options}>
+            <PaymentForm 
+              period={period}
+              onSuccess={onSuccess}
+              onBack={onBack}
+              setError={setError}
+            />
+          </Elements>
         </div>
       </div>
     </div>
