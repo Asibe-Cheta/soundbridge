@@ -1,16 +1,24 @@
 -- Fix Event Preferences Table Conflict
 -- There's a naming conflict: user_event_preferences already exists for notifications
 -- This script checks and handles the conflict
--- Date: December 2024
+-- Date: December 2025
 
 -- Step 1: Check if user_event_preferences table exists and what columns it has
 DO $$
 DECLARE
     table_exists BOOLEAN;
+    notification_table_exists BOOLEAN;
     has_event_type_id BOOLEAN;
     has_notification_columns BOOLEAN;
 BEGIN
-    -- Check if table exists
+    -- Check if user_notification_preferences already exists
+    SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_notification_preferences'
+    ) INTO notification_table_exists;
+    
+    -- Check if user_event_preferences exists
     SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
@@ -33,38 +41,45 @@ BEGIN
         
         -- If it's the notification preferences table (has push_notifications_enabled)
         IF has_notification_columns AND NOT has_event_type_id THEN
-            RAISE NOTICE 'Table user_event_preferences exists but is for notifications, not event types';
-            RAISE NOTICE 'Renaming notification table to user_notification_preferences...';
-            
-            -- Rename the existing notification preferences table
-            ALTER TABLE IF EXISTS user_event_preferences RENAME TO user_notification_preferences;
-            
-            -- Rename indexes (handle errors gracefully)
-            BEGIN
-                ALTER INDEX IF EXISTS idx_user_event_prefs_user_id RENAME TO idx_user_notification_prefs_user_id;
-            EXCEPTION WHEN OTHERS THEN
-                RAISE NOTICE 'Index idx_user_event_prefs_user_id does not exist or already renamed';
-            END;
-            
-            BEGIN
-                ALTER INDEX IF EXISTS idx_user_event_prefs_push_enabled RENAME TO idx_user_notification_prefs_push_enabled;
-            EXCEPTION WHEN OTHERS THEN
-                RAISE NOTICE 'Index idx_user_event_prefs_push_enabled does not exist or already renamed';
-            END;
-            
-            BEGIN
-                ALTER INDEX IF EXISTS idx_user_event_prefs_latitude RENAME TO idx_user_notification_prefs_latitude;
-            EXCEPTION WHEN OTHERS THEN
-                RAISE NOTICE 'Index idx_user_event_prefs_latitude does not exist or already renamed';
-            END;
-            
-            BEGIN
-                ALTER INDEX IF EXISTS idx_user_event_prefs_longitude RENAME TO idx_user_notification_prefs_longitude;
-            EXCEPTION WHEN OTHERS THEN
-                RAISE NOTICE 'Index idx_user_event_prefs_longitude does not exist or already renamed';
-            END;
-            
-            RAISE NOTICE 'Notification preferences table renamed successfully';
+            IF notification_table_exists THEN
+                -- Notification table already exists with correct name, so drop the incorrectly named one
+                RAISE NOTICE 'Table user_event_preferences exists but is for notifications';
+                RAISE NOTICE 'user_notification_preferences already exists - dropping duplicate user_event_preferences table...';
+                DROP TABLE IF EXISTS user_event_preferences CASCADE;
+            ELSE
+                -- Rename the existing notification preferences table
+                RAISE NOTICE 'Table user_event_preferences exists but is for notifications, not event types';
+                RAISE NOTICE 'Renaming notification table to user_notification_preferences...';
+                
+                ALTER TABLE user_event_preferences RENAME TO user_notification_preferences;
+                
+                -- Rename indexes (handle errors gracefully)
+                BEGIN
+                    ALTER INDEX IF EXISTS idx_user_event_prefs_user_id RENAME TO idx_user_notification_prefs_user_id;
+                EXCEPTION WHEN OTHERS THEN
+                    RAISE NOTICE 'Index idx_user_event_prefs_user_id does not exist or already renamed';
+                END;
+                
+                BEGIN
+                    ALTER INDEX IF EXISTS idx_user_event_prefs_push_enabled RENAME TO idx_user_notification_prefs_push_enabled;
+                EXCEPTION WHEN OTHERS THEN
+                    RAISE NOTICE 'Index idx_user_event_prefs_push_enabled does not exist or already renamed';
+                END;
+                
+                BEGIN
+                    ALTER INDEX IF EXISTS idx_user_event_prefs_latitude RENAME TO idx_user_notification_prefs_latitude;
+                EXCEPTION WHEN OTHERS THEN
+                    RAISE NOTICE 'Index idx_user_event_prefs_latitude does not exist or already renamed';
+                END;
+                
+                BEGIN
+                    ALTER INDEX IF EXISTS idx_user_event_prefs_longitude RENAME TO idx_user_notification_prefs_longitude;
+                EXCEPTION WHEN OTHERS THEN
+                    RAISE NOTICE 'Index idx_user_event_prefs_longitude does not exist or already renamed';
+                END;
+                
+                RAISE NOTICE 'Notification preferences table renamed successfully';
+            END IF;
         END IF;
     END IF;
 END $$;
@@ -83,17 +98,21 @@ CREATE TABLE IF NOT EXISTS event_types (
 );
 
 -- Step 3: Now create the event preferences table (for event types)
--- Drop existing table if it has wrong structure (notification table)
+-- Drop existing table if it still has wrong structure (notification table)
+-- (This is a safety check in case Step 1 didn't handle it)
 DO $$
 BEGIN
     IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_event_preferences'
+    ) AND EXISTS (
         SELECT 1 FROM information_schema.columns 
         WHERE table_name = 'user_event_preferences' 
         AND column_name = 'push_notifications_enabled'
     ) THEN
-        -- This is the notification table, should have been renamed above
-        -- But if it wasn't, we'll drop it (data will be lost - user should backup first)
-        RAISE WARNING 'Dropping notification preferences table - data will be lost!';
+        -- This is still the notification table, drop it
+        RAISE WARNING 'Dropping notification preferences table (duplicate) - data should already be in user_notification_preferences!';
         DROP TABLE IF EXISTS user_event_preferences CASCADE;
     END IF;
 END $$;
