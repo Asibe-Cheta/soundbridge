@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
         social_links,
         onboarding_completed,
         onboarding_step,
+        onboarding_user_type,  // NEW: User type from new flow
         profile_completed,
         created_at,
         updated_at
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
         profile: null,
         onboarding: {
           completed: false,
-          step: 'role_selection',
+          step: 'welcome',  // NEW: Start with welcome screen
           profileCompleted: false
         }
       }, { headers: corsHeaders });
@@ -82,7 +83,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine if onboarding is needed
-    const needsOnboarding = !profile?.onboarding_completed || !profile?.role;
+    // Check if user is on old flow steps (legacy flow)
+    const isOldFlow = profile?.onboarding_step && ['role_selection', 'profile_setup', 'first_action'].includes(profile.onboarding_step);
+    const isNewFlow = profile?.onboarding_step && ['welcome', 'userType', 'quickSetup', 'valueDemo', 'tierSelection', 'payment', 'welcomeConfirmation'].includes(profile.onboarding_step);
+    
+    // User needs onboarding if:
+    // 1. Onboarding is not completed, OR
+    // 2. They're on the old flow and missing a role (old flow requires role), OR
+    // 3. They're on the new flow and missing both role AND onboarding_user_type (role gets set when QuickSetup completes)
+    // Note: 
+    // - Old flow: requires `role` field (creator/listener)
+    // - New flow: uses `onboarding_user_type` for categorization, but still sets `role` when profile is completed
+    // - The `role` field is ALWAYS used for permissions (creator can upload, listener cannot)
+    const needsOnboarding = !profile?.onboarding_completed || 
+                            (isOldFlow && !profile?.role) ||
+                            (isNewFlow && !profile?.role && !profile?.onboarding_user_type);
     
     console.log('📊 Onboarding status check result:', {
       userId: user.id,
@@ -99,7 +114,7 @@ export async function GET(request: NextRequest) {
       profile: profile || null,
       onboarding: {
         completed: profile?.onboarding_completed || false,
-        step: profile?.onboarding_step || 'role_selection',
+        step: profile?.onboarding_step || 'welcome',  // NEW: Default to welcome screen
         profileCompleted: profile?.profile_completed || false
       }
     }, { headers: corsHeaders });

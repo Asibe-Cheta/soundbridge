@@ -5,13 +5,21 @@ import { useAuth } from './AuthContext';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
 
 export type UserRole = 'musician' | 'podcaster' | 'event_promoter' | 'listener';
-export type OnboardingStep = 'role_selection' | 'profile_setup' | 'first_action' | 'completed';
+export type OnboardingUserType = 'music_creator' | 'podcast_creator' | 'industry_professional' | 'music_lover' | null;
+// Support both old and new flow steps
+export type OnboardingStep = 
+  // Old flow
+  'role_selection' | 'profile_setup' | 'first_action' | 'completed' |
+  // New flow (from ONBOARDING_NEW_FLOW.md)
+  'welcome' | 'userType' | 'quickSetup' | 'valueDemo' | 'tierSelection' | 'payment' | 'welcomeConfirmation';
 
 interface OnboardingState {
   currentStep: OnboardingStep;
   selectedRole: UserRole | null;
+  onboardingUserType: OnboardingUserType; // NEW: User type from new flow
   profileCompleted: boolean;
   firstActionCompleted: boolean;
+  selectedTier: 'free' | 'pro' | null; // NEW: Selected tier during onboarding
   isOnboardingActive: boolean;
   showOnboarding: boolean;
 }
@@ -20,6 +28,8 @@ interface OnboardingContextType {
   onboardingState: OnboardingState;
   setCurrentStep: (step: OnboardingStep) => void;
   setSelectedRole: (role: UserRole) => void;
+  setOnboardingUserType: (userType: OnboardingUserType) => void; // NEW
+  setSelectedTier: (tier: 'free' | 'pro' | null) => void; // NEW
   setProfileCompleted: (completed: boolean) => void;
   setFirstActionCompleted: (completed: boolean) => void;
   completeOnboarding: () => void;
@@ -38,10 +48,12 @@ interface OnboardingProviderProps {
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
-    currentStep: 'role_selection',
+    currentStep: 'welcome', // NEW: Start with welcome screen
     selectedRole: null,
+    onboardingUserType: null, // NEW
     profileCompleted: false,
     firstActionCompleted: false,
+    selectedTier: null, // NEW
     isOnboardingActive: false,
     showOnboarding: false,
   });
@@ -68,7 +80,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             ...prev,
             isOnboardingActive: true,
             showOnboarding: true,
-            currentStep: 'role_selection',
+            currentStep: 'welcome', // NEW: Start with welcome screen
           }));
         }, 1000); // Small delay to ensure user context is ready
       } else {
@@ -81,10 +93,12 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     } else {
       // Reset onboarding state when user logs out or has no valid session
       setOnboardingState({
-        currentStep: 'role_selection',
+        currentStep: 'welcome',
         selectedRole: null,
+        onboardingUserType: null,
         profileCompleted: false,
         firstActionCompleted: false,
+        selectedTier: null,
         isOnboardingActive: false,
         showOnboarding: false,
       });
@@ -118,10 +132,12 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             ...prev,
             isOnboardingActive: true,
             showOnboarding: true,
-            currentStep: data.onboarding?.step || 'role_selection',
+            currentStep: data.onboarding?.step || 'welcome',
             selectedRole: data.profile?.role || null,
+            onboardingUserType: data.profile?.onboarding_user_type || null, // NEW
             profileCompleted: data.onboarding?.profileCompleted || false,
             firstActionCompleted: false,
+            selectedTier: null,
           }));
         } else {
           console.log('✅ User onboarding already completed');
@@ -200,6 +216,15 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     updateOnboardingProgress({ selectedRole: role });
   };
 
+  const setOnboardingUserType = (userType: OnboardingUserType) => {
+    setOnboardingState(prev => ({ ...prev, onboardingUserType: userType }));
+    updateOnboardingProgress({ userType: userType });
+  };
+
+  const setSelectedTier = (tier: 'free' | 'pro' | null) => {
+    setOnboardingState(prev => ({ ...prev, selectedTier: tier }));
+  };
+
   const setProfileCompleted = (completed: boolean) => {
     setOnboardingState(prev => ({ ...prev, profileCompleted: completed }));
     updateOnboardingProgress({ profileCompleted: completed });
@@ -210,20 +235,28 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     updateOnboardingProgress({ firstActionCompleted: completed });
   };
 
-  const updateOnboardingProgress = async (updates: Partial<OnboardingState>) => {
+  const updateOnboardingProgress = async (updates: Partial<OnboardingState> & { userType?: OnboardingUserType; currentStep?: OnboardingStep }) => {
     try {
       if (!user?.id) {
         console.error('❌ No user ID available for updating onboarding progress');
         return;
       }
 
+      // Map onboardingUserType to userType for API
+      const apiUpdates: any = {
+        ...updates,
+        userId: user.id
+      };
+
+      // Map onboardingUserType to userType for API compatibility
+      if (updates.onboardingUserType !== undefined) {
+        apiUpdates.userType = updates.onboardingUserType;
+      }
+
       // Use fetchJsonWithAuth for consistent bearer token auth
       await fetchJsonWithAuth('/api/user/onboarding-progress', {
         method: 'POST',
-        body: JSON.stringify({
-          ...updates,
-          userId: user.id
-        }),
+        body: JSON.stringify(apiUpdates),
       });
     } catch (error) {
       console.error('❌ Error updating onboarding progress:', error);
@@ -303,7 +336,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       ...prev,
       isOnboardingActive: true,
       showOnboarding: true,
-      currentStep: 'role_selection',
+      currentStep: 'welcome', // NEW: Start with welcome screen
     }));
   };
 
@@ -338,6 +371,8 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     onboardingState,
     setCurrentStep,
     setSelectedRole,
+    setOnboardingUserType, // NEW
+    setSelectedTier, // NEW
     setProfileCompleted,
     setFirstActionCompleted,
     completeOnboarding,

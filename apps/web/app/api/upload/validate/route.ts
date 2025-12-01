@@ -138,9 +138,9 @@ export async function POST(request: NextRequest) {
         { 
           error: 'Upload limit exceeded',
           details: userTier === 'free' 
-            ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 uploads.'
+            ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 uploads per month.'
             : userTier === 'pro'
-            ? 'You have reached your limit of 10 uploads. Upgrade to Enterprise for unlimited uploads.'
+            ? 'You have reached your monthly limit of 10 uploads. Your limit resets on the 1st of each month. Upgrade to Enterprise for unlimited uploads.'
             : 'You have reached your upload limit.',
           limit: uploadLimitInfo || null,
           upgrade_required: true

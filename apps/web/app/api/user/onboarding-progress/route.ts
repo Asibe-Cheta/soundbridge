@@ -34,7 +34,15 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { currentStep, selectedRole, profileCompleted, firstActionCompleted, userId } = body;
+    const { 
+      currentStep, 
+      selectedRole, 
+      profileCompleted, 
+      firstActionCompleted, 
+      userId,
+      userType, // NEW: onboarding_user_type from new flow
+      onboarding_user_type // Alternative field name
+    } = body;
 
     // Validate required fields
     if (!userId || userId !== user.id) {
@@ -55,6 +63,18 @@ export async function POST(request: NextRequest) {
     if (selectedRole) updateData.role = selectedRole;
     if (profileCompleted !== undefined) updateData.profile_completed = profileCompleted;
     if (firstActionCompleted !== undefined) updateData.first_action_completed = firstActionCompleted;
+    
+    // NEW: Support onboarding_user_type from new flow
+    // Values: 'music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null
+    const onboardingUserType = userType || onboarding_user_type;
+    if (onboardingUserType !== undefined) {
+      const validUserTypes = ['music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null];
+      if (validUserTypes.includes(onboardingUserType)) {
+        updateData.onboarding_user_type = onboardingUserType;
+      } else {
+        console.warn('⚠️ Invalid onboarding_user_type:', onboardingUserType);
+      }
+    }
 
     console.log('🔄 Updating onboarding progress:', updateData);
 
@@ -87,6 +107,7 @@ export async function POST(request: NextRequest) {
           profile_completed: false,
           first_action_completed: false,
           onboarding_skipped: false,
+          onboarding_user_type: null, // NEW: Initialize onboarding_user_type
           ...updateData, // Apply the update data on top of defaults
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()

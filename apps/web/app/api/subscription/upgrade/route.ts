@@ -87,13 +87,16 @@ export async function POST(request: NextRequest) {
     // Set subscription start date for 7-day money-back guarantee
     const subscriptionStartDate = new Date();
     const subscriptionRenewalDate = new Date(subscriptionEndsAt);
+    const moneyBackGuaranteeEndDate = new Date(subscriptionStartDate);
+    moneyBackGuaranteeEndDate.setDate(moneyBackGuaranteeEndDate.getDate() + 7);
 
-    // Update subscription with start date and renewal date
+    // Update subscription with start date, renewal date, and money-back guarantee end date
     await supabase
       .from('user_subscriptions')
       .update({
         subscription_start_date: subscriptionStartDate.toISOString(),
-        subscription_renewal_date: subscriptionRenewalDate.toISOString()
+        subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+        money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
       })
       .eq('id', subscription.id);
 
@@ -103,7 +106,8 @@ export async function POST(request: NextRequest) {
         subscription: {
           ...subscription,
           subscription_start_date: subscriptionStartDate.toISOString(),
-          subscription_renewal_date: subscriptionRenewalDate.toISOString()
+          subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+          money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
         },
         pricing: {
           tier,
@@ -116,6 +120,7 @@ export async function POST(request: NextRequest) {
         moneyBackGuarantee: {
           eligible: true,
           windowDays: 7,
+          endDate: moneyBackGuaranteeEndDate.toISOString(),
           message: '7-day money-back guarantee - full refund if not satisfied'
         }
       }

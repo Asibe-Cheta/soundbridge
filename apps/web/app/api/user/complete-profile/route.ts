@@ -50,6 +50,16 @@ export async function POST(request: NextRequest) {
     // Frontend: 'listener' -> Database: 'listener'
     const databaseRole = (role === 'listener') ? 'listener' : 'creator';
 
+    // Validate onboarding_user_type if provided
+    // Values: 'music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null
+    const onboardingUserType = body.onboarding_user_type;
+    if (onboardingUserType !== undefined) {
+      const validUserTypes = ['music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null];
+      if (!validUserTypes.includes(onboardingUserType)) {
+        console.warn('⚠️ Invalid onboarding_user_type:', onboardingUserType);
+      }
+    }
+
     // Prepare update data
     const updateData: any = {
       // Basic profile fields
@@ -65,6 +75,9 @@ export async function POST(request: NextRequest) {
       min_notice_days: body.min_notice_days || 7,
       auto_decline_unavailable: body.auto_decline_unavailable !== undefined ? body.auto_decline_unavailable : true,
       social_links: body.social_links || null,
+      
+      // NEW: Support onboarding_user_type from new flow
+      onboarding_user_type: onboardingUserType !== undefined ? onboardingUserType : null,
       
       // Onboarding completion
       onboarding_completed: true,
