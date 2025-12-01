@@ -143,9 +143,9 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
 
   if (!isOpen) return null;
 
-  // Stripe Elements options
+  // Stripe Elements options - Use 'setup' mode for subscriptions (collects payment method without charging)
   const options: StripeElementsOptions = {
-    mode: 'payment',
+    mode: 'setup',
     currency: 'gbp',
     appearance: {
       theme: 'night',
