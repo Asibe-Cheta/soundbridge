@@ -45,64 +45,158 @@ interface OnboardingProviderProps {
   children: ReactNode;
 }
 
+const ONBOARDING_STORAGE_KEY = 'soundbridge_onboarding_state';
+
+// Load onboarding state from localStorage
+const loadOnboardingStateFromStorage = (): Partial<OnboardingState> | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Error loading onboarding state from storage:', error);
+  }
+  return null;
+};
+
+// Save onboarding state to localStorage
+const saveOnboardingStateToStorage = (state: OnboardingState) => {
+  if (typeof window === 'undefined') return;
+  try {
+    // Only save if onboarding is active (don't persist completed state)
+    if (state.isOnboardingActive || state.showOnboarding) {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
+        currentStep: state.currentStep,
+        selectedRole: state.selectedRole,
+        onboardingUserType: state.onboardingUserType,
+        selectedTier: state.selectedTier,
+        profileCompleted: state.profileCompleted,
+        firstActionCompleted: state.firstActionCompleted,
+        isOnboardingActive: state.isOnboardingActive,
+        showOnboarding: state.showOnboarding,
+      }));
+    } else {
+      // Clear storage if onboarding is not active
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error('Error saving onboarding state to storage:', error);
+  }
+};
+
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const { user, session, loading: authLoading, signOut } = useAuth();
+  
+  // Initialize state from localStorage if available
+  const storedState = loadOnboardingStateFromStorage();
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
-    currentStep: 'welcome', // NEW: Start with welcome screen
-    selectedRole: null,
-    onboardingUserType: null, // NEW
-    profileCompleted: false,
-    firstActionCompleted: false,
-    selectedTier: null, // NEW
-    isOnboardingActive: false,
-    showOnboarding: false,
+    currentStep: (storedState?.currentStep as OnboardingStep) || 'welcome',
+    selectedRole: storedState?.selectedRole || null,
+    onboardingUserType: storedState?.onboardingUserType || null,
+    profileCompleted: storedState?.profileCompleted || false,
+    firstActionCompleted: storedState?.firstActionCompleted || false,
+    selectedTier: storedState?.selectedTier || null,
+    isOnboardingActive: storedState?.isOnboardingActive || false,
+    showOnboarding: storedState?.showOnboarding || false,
   });
 
-  // Check if user needs onboarding on mount
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    saveOnboardingStateToStorage(onboardingState);
+  }, [onboardingState]);
+
+  // Check if user needs onboarding on mount and when tab regains focus
   useEffect(() => {
     // Wait for auth to finish loading before checking onboarding
     if (authLoading) return;
     
-    // Only check onboarding if user has a valid session (actually authenticated)
-    // This prevents checking when user exists but session is expired
-    if (user && session) {
-      // Check for onboarding URL parameter (from OAuth callback)
-      const urlParams = new URLSearchParams(window.location.search);
-      const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
-      
-      if (shouldStartOnboarding) {
-        console.log('🎯 Starting onboarding from URL parameter');
-        // Clean up URL
-        window.history.replaceState({}, '', window.location.pathname);
-        // Force start onboarding
-        setTimeout(() => {
-          setOnboardingState(prev => ({
-            ...prev,
-            isOnboardingActive: true,
-            showOnboarding: true,
-            currentStep: 'welcome', // NEW: Start with welcome screen
-          }));
-        }, 1000); // Small delay to ensure user context is ready
+    const checkOnboarding = () => {
+      // Only check onboarding if user has a valid session (actually authenticated)
+      // This prevents checking when user exists but session is expired
+      if (user && session) {
+        // Check for onboarding URL parameter (from OAuth callback)
+        const urlParams = new URLSearchParams(window.location.search);
+        const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
+        
+        if (shouldStartOnboarding) {
+          console.log('🎯 Starting onboarding from URL parameter');
+          // Clean up URL
+          window.history.replaceState({}, '', window.location.pathname);
+          // Force start onboarding
+          setTimeout(() => {
+            setOnboardingState(prev => ({
+              ...prev,
+              isOnboardingActive: true,
+              showOnboarding: true,
+              currentStep: 'welcome', // NEW: Start with welcome screen
+            }));
+          }, 1000); // Small delay to ensure user context is ready
+        } else {
+          // If onboarding is already showing from storage, don't re-check
+          // Only re-check if onboarding is not currently active
+          if (!onboardingState.showOnboarding && !onboardingState.isOnboardingActive) {
+            // Add delay after sign-in to allow cookies to be set before checking onboarding
+            const delay = session ? 1500 : 0; // Give extra time if we just signed in
+            setTimeout(() => {
+              checkOnboardingStatusWithRetry();
+            }, delay);
+          } else {
+            // If onboarding is already showing, verify it's still needed
+            console.log('🔄 Onboarding already showing, verifying status...');
+            checkOnboardingStatusWithRetry();
+          }
+        }
       } else {
-        // Add delay after sign-in to allow cookies to be set before checking onboarding
-        const delay = session ? 1500 : 0; // Give extra time if we just signed in
+        // Reset onboarding state when user logs out or has no valid session
+        // But only if we're not in the middle of onboarding
+        if (!onboardingState.isOnboardingActive) {
+          setOnboardingState({
+            currentStep: 'welcome',
+            selectedRole: null,
+            onboardingUserType: null,
+            profileCompleted: false,
+            firstActionCompleted: false,
+            selectedTier: null,
+            isOnboardingActive: false,
+            showOnboarding: false,
+          });
+        }
+      }
+    };
+
+    // Initial check
+    checkOnboarding();
+
+    // Re-check when tab regains focus (user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && session) {
+        console.log('👁️ Tab regained focus, re-checking onboarding status...');
+        // Small delay to ensure session is still valid
         setTimeout(() => {
           checkOnboardingStatusWithRetry();
-        }, delay);
+        }, 500);
       }
-    } else {
-      // Reset onboarding state when user logs out or has no valid session
-      setOnboardingState({
-        currentStep: 'welcome',
-        selectedRole: null,
-        onboardingUserType: null,
-        profileCompleted: false,
-        firstActionCompleted: false,
-        selectedTier: null,
-        isOnboardingActive: false,
-        showOnboarding: false,
-      });
-    }
+    };
+
+    // Re-check when window regains focus
+    const handleFocus = () => {
+      if (user && session) {
+        console.log('👁️ Window regained focus, re-checking onboarding status...');
+        setTimeout(() => {
+          checkOnboardingStatusWithRetry();
+        }, 500);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user, session, authLoading]);
 
   const checkOnboardingStatus = async (): Promise<{ success: boolean; status: number }> => {
@@ -292,6 +386,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         showOnboarding: false,
         currentStep: 'completed',
       }));
+      // Clear storage when onboarding is completed
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      }
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
     }
@@ -326,6 +424,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         showOnboarding: false,
         currentStep: 'completed',
       }));
+      // Clear storage when onboarding is skipped
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      }
     } catch (error) {
       console.error('❌ Error skipping onboarding:', error);
     }
