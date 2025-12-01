@@ -41,11 +41,22 @@ All database schema, API endpoints, and RLS policies for the event preferences s
 - ✅ Cascading deletes
 - ✅ Unique constraint prevents duplicates
 
+**Important:** There was a table naming conflict with an existing `user_event_preferences` table used for notification preferences. A fix script handles this automatically.
+
 **To Deploy:**
 ```sql
--- Run in Supabase SQL Editor
+-- Step 1: Run the conflict fix script FIRST (handles table renaming)
+\i database/fix_event_preferences_table_conflict.sql
+
+-- Step 2: Then run the main schema
 \i database/event_preferences_schema.sql
 ```
+
+**What the fix script does:**
+- Detects if `user_event_preferences` exists as a notification preferences table
+- Renames it to `user_notification_preferences` (preserves data)
+- Creates the new `user_event_preferences` table for event types
+- Verifies `event_type_id` column exists
 
 ---
 
@@ -305,6 +316,7 @@ All database schema, API endpoints, and RLS policies for the event preferences s
 ## 📝 **FILES CREATED**
 
 ### **Database:**
+- ✅ `database/fix_event_preferences_table_conflict.sql` - Fixes table naming conflict with notification preferences
 - ✅ `database/event_preferences_schema.sql` - Complete schema with all 38 event types
 
 ### **API Endpoints:**
@@ -319,7 +331,22 @@ All database schema, API endpoints, and RLS policies for the event preferences s
 
 ## 🚀 **DEPLOYMENT STEPS**
 
-### **Step 1: Deploy Database Schema**
+### **Step 1: Fix Table Conflict (if needed)**
+
+**Important:** If you have an existing `user_event_preferences` table for notifications, run this first:
+
+```sql
+-- This handles the table naming conflict
+\i database/fix_event_preferences_table_conflict.sql
+```
+
+**What this does:**
+- Checks if `user_event_preferences` exists as a notification table
+- Renames it to `user_notification_preferences` (if not already renamed)
+- Creates the new `user_event_preferences` table structure for event types
+- Verifies the `event_type_id` column exists
+
+### **Step 2: Deploy Database Schema**
 
 Run in Supabase SQL Editor:
 
@@ -330,11 +357,12 @@ Run in Supabase SQL Editor:
 
 **Verify:**
 - Check that `event_types` table exists with 38 rows
-- Check that `user_event_preferences` table exists
+- Check that `user_event_preferences` table exists with `event_type_id` column
 - Check that RLS policies are enabled
 - Check that indexes are created
+- Verify `user_notification_preferences` table exists (if you had notification preferences)
 
-### **Step 2: Verify API Endpoints**
+### **Step 3: Verify API Endpoints**
 
 Test endpoints:
 - ✅ `GET /api/event-types?user_type=music_creator`
@@ -347,9 +375,11 @@ Test endpoints:
 ## 🧪 **TESTING CHECKLIST**
 
 ### **Database:**
+- [ ] Run `fix_event_preferences_table_conflict.sql` first (if needed)
 - [ ] Run `event_preferences_schema.sql` migration
 - [ ] Verify `event_types` table has 38 rows
-- [ ] Verify `user_event_preferences` table exists
+- [ ] Verify `user_event_preferences` table exists with `event_type_id` column
+- [ ] Verify `user_notification_preferences` table exists (if you had notification preferences)
 - [ ] Verify RLS policies are enabled
 - [ ] Test RLS: Try to read another user's preferences (should fail)
 
@@ -417,18 +447,20 @@ LIMIT 20;
 
 ## ⚠️ **IMPORTANT NOTES**
 
-1. **No Maximum Limit:** Unlike genres (max 5), event preferences have no maximum. Users can select all available event types.
+1. **Table Conflict Resolved:** There was a naming conflict with `user_event_preferences` (used for notifications). The fix script automatically renames the notification table to `user_notification_preferences` and creates the new event preferences table. **Always run the fix script before the main schema.**
 
-2. **Minimum 2 Required:** Enforced at API level. Frontend should also enforce this.
+2. **No Maximum Limit:** Unlike genres (max 5), event preferences have no maximum. Users can select all available event types.
 
-3. **Event Matching:** Currently uses category name similarity. For better matching, consider adding `event_type_id` field to `events` table:
+3. **Minimum 2 Required:** Enforced at API level. Frontend should also enforce this.
+
+4. **Event Matching:** Currently uses category name similarity. For better matching, consider adding `event_type_id` field to `events` table:
    ```sql
    ALTER TABLE events ADD COLUMN event_type_id UUID REFERENCES event_types(id);
    ```
 
-4. **Preference Strength:** Stored but not used yet. Reserved for future ML recommendations.
+5. **Preference Strength:** Stored but not used yet. Reserved for future ML recommendations.
 
-5. **Similar to Genres:** This system follows the exact same pattern as `genres` and `user_genres` tables for consistency.
+6. **Similar to Genres:** This system follows the exact same pattern as `genres` and `user_genres` tables for consistency.
 
 ---
 
