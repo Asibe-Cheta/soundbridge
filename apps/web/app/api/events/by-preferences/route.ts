@@ -48,13 +48,7 @@ export async function GET(request: NextRequest) {
     // Get user's event preferences
     const { data: userPreferences, error: prefError } = await supabase
       .from('user_event_preferences')
-      .select(`
-        event_type:event_types!user_event_preferences_event_type_id_fkey(
-          id,
-          name,
-          category
-        )
-      `)
+      .select('event_type_id')
       .eq('user_id', userId);
 
     if (prefError) {
@@ -76,11 +70,19 @@ export async function GET(request: NextRequest) {
       }, { headers: corsHeaders });
     }
 
-    // Extract event type names and categories from preferences
-    const preferredEventTypes = (userPreferences || [])
-      .map((pref: any) => pref.event_type)
-      .filter(Boolean);
+    // Get event type IDs and fetch event types
+    const eventTypeIds = userPreferences.map((p: any) => p.event_type_id);
+    const { data: eventTypes, error: typesError } = await supabase
+      .from('event_types')
+      .select('id, name, category, icon_emoji')
+      .in('id', eventTypeIds);
 
+    if (typesError) {
+      console.error('❌ Error fetching event types:', typesError);
+      // Continue anyway
+    }
+
+    const preferredEventTypes = eventTypes || [];
     const preferredCategories = [...new Set(preferredEventTypes.map((et: any) => et.category))];
     const preferredNames = preferredEventTypes.map((et: any) => et.name.toLowerCase());
 

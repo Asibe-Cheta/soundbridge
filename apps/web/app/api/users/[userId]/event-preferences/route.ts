@@ -45,36 +45,56 @@ export async function GET(
     }
 
     // Fetch user's event preferences with event type details
-    const { data: userEventPreferences, error } = await supabase
+    // First get preferences
+    const { data: userEventPreferences, error: prefError } = await supabase
       .from('user_event_preferences')
-      .select(`
-        id,
-        preference_strength,
-        created_at,
-        updated_at,
-        event_type:event_types!user_event_preferences_event_type_id_fkey(
-          id,
-          name,
-          category,
-          description,
-          icon_emoji,
-          is_active,
-          sort_order
-        )
-      `)
+      .select('id, event_type_id, preference_strength, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('❌ Error fetching user event preferences:', error);
+    if (prefError) {
+      console.error('❌ Error fetching user event preferences:', prefError);
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch event preferences', details: error.message },
+        { success: false, error: 'Failed to fetch event preferences', details: prefError.message },
         { status: 500, headers: corsHeaders }
       );
     }
 
+    if (!userEventPreferences || userEventPreferences.length === 0) {
+      return NextResponse.json({
+        success: true,
+        event_preferences: [],
+        count: 0,
+        timestamp: new Date().toISOString()
+      }, { headers: corsHeaders });
+    }
+
+    // Get event type IDs
+    const eventTypeIds = userEventPreferences.map((pref: any) => pref.event_type_id);
+
+    // Fetch event types
+    const { data: eventTypes, error: typesError } = await supabase
+      .from('event_types')
+      .select('id, name, category, description, icon_emoji, is_active, sort_order')
+      .in('id', eventTypeIds);
+
+    if (typesError) {
+      console.error('❌ Error fetching event types:', typesError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch event types', details: typesError.message },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Map preferences with event types
+    const eventTypesMap = new Map((eventTypes || []).map((et: any) => [et.id, et]));
+    const preferencesWithTypes = userEventPreferences.map((pref: any) => ({
+      ...pref,
+      event_type: eventTypesMap.get(pref.event_type_id) || null
+    }));
+
     // Transform response to match expected format
-    const eventPreferences = (userEventPreferences || []).map((pref: any) => ({
+    const eventPreferences = preferencesWithTypes.map((pref: any) => ({
       id: pref.id,
       event_type: pref.event_type ? {
         id: pref.event_type.id,
@@ -222,18 +242,7 @@ export async function POST(
     const { data: insertedPreferences, error: insertError } = await supabase
       .from('user_event_preferences')
       .insert(eventPreferences)
-      .select(`
-        id,
-        preference_strength,
-        created_at,
-        event_type:event_types!user_event_preferences_event_type_id_fkey(
-          id,
-          name,
-          category,
-          description,
-          icon_emoji
-        )
-      `);
+      .select('id, event_type_id, preference_strength, created_at');
 
     if (insertError) {
       console.error('❌ Error inserting preferences:', insertError);
@@ -243,26 +252,39 @@ export async function POST(
       );
     }
 
-    // Transform response
-    const formattedPreferences = (insertedPreferences || []).map((pref: any) => ({
+    // Fetch event types for inserted preferences
+    const insertedEventTypeIds = (insertedPreferences || []).map((p: any) => p.event_type_id);
+    const { data: insertedEventTypes, error: typesError } = await supabase
+      .from('event_types')
+      .select('id, name, category, description, icon_emoji')
+      .in('id', insertedEventTypeIds);
+
+    if (typesError) {
+      console.error('❌ Error fetching inserted event types:', typesError);
+      // Continue anyway, just without event type details
+    }
+
+    // Map preferences with event types
+    const eventTypesMap = new Map((insertedEventTypes || []).map((et: any) => [et.id, et]));
+    const preferencesWithTypes = (insertedPreferences || []).map((pref: any) => ({
       id: pref.id,
-      event_type: pref.event_type ? {
-        id: pref.event_type.id,
-        name: pref.event_type.name,
-        category: pref.event_type.category,
-        icon_emoji: pref.event_type.icon_emoji
-      } : null,
       preference_strength: pref.preference_strength,
-      created_at: pref.created_at
+      created_at: pref.created_at,
+      event_type: eventTypesMap.get(pref.event_type_id) ? {
+        id: eventTypesMap.get(pref.event_type_id).id,
+        name: eventTypesMap.get(pref.event_type_id).name,
+        category: eventTypesMap.get(pref.event_type_id).category,
+        icon_emoji: eventTypesMap.get(pref.event_type_id).icon_emoji
+      } : null
     }));
 
-    console.log(`✅ Updated ${formattedPreferences.length} event preferences for user ${userId}`);
+    console.log(`✅ Updated ${preferencesWithTypes.length} event preferences for user ${userId}`);
 
     return NextResponse.json({
       success: true,
       message: 'Event preferences saved successfully',
-      event_preferences: formattedPreferences,
-      count: formattedPreferences.length,
+      event_preferences: preferencesWithTypes,
+      count: preferencesWithTypes.length,
       timestamp: new Date().toISOString()
     }, { headers: corsHeaders });
 
