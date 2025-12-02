@@ -235,7 +235,16 @@ CREATE POLICY "Users can update their own subscription"
 
 -- Grant necessary permissions
 GRANT SELECT, INSERT, UPDATE ON public.user_subscriptions TO authenticated;
-GRANT USAGE ON SEQUENCE IF EXISTS user_subscriptions_id_seq TO authenticated;
+
+-- Grant sequence usage if sequence exists (UUID uses gen_random_uuid, so sequence might not exist)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class WHERE relname = 'user_subscriptions_id_seq'
+  ) THEN
+    EXECUTE 'GRANT USAGE ON SEQUENCE user_subscriptions_id_seq TO authenticated';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- Step 10: Verification
