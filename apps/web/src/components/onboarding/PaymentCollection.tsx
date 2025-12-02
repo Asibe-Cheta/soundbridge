@@ -36,6 +36,9 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
     } else {
       setIsReady(false);
     }
+    
+    // Reset submitting state if component remounts or Stripe reloads
+    setIsSubmitting(false);
   }, [stripe, elements]);
 
   const handleSubmit = async (e: React.FormEvent) => {
