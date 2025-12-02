@@ -281,15 +281,36 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dbError) {
-      console.error('❌ Error creating subscription in database:', dbError);
+      console.error('❌ Error creating subscription in database:', {
+        error: dbError,
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        userId: user.id,
+        subscriptionId: subscription.id
+      });
+      
       // Try to cancel Stripe subscription if database update fails
       try {
         await stripe.subscriptions.cancel(subscription.id);
+        console.log('✅ Stripe subscription cancelled due to database error');
       } catch (cancelError) {
         console.error('❌ Error canceling Stripe subscription:', cancelError);
       }
+      
+      // Provide more detailed error message
+      const errorMessage = dbError.message || 'Failed to create subscription';
+      const errorDetails = dbError.details || dbError.hint || '';
+      
       return NextResponse.json(
-        { success: false, error: 'Failed to create subscription' },
+        { 
+          success: false, 
+          error: 'Failed to create subscription',
+          message: errorMessage,
+          details: errorDetails,
+          code: dbError.code
+        },
         { status: 500, headers: corsHeaders }
       );
     }
