@@ -348,40 +348,64 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ All table access tests passed, existing subscription:', testData);
 
-    const { data: dbSubscription, error: dbError } = await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: user.id,
-        tier: 'pro',
-        status: 'active',
-        billing_cycle: billingCycle,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscription.id,
-        subscription_start_date: subscriptionStartDate.toISOString(),
-        subscription_renewal_date: subscriptionRenewalDate.toISOString(),
-        subscription_ends_at: subscriptionRenewalDate.toISOString(),
-        money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
-        money_back_guarantee_eligible: true,
-        refund_count: 0,
-        updated_at: new Date().toISOString()
-      }, {
-        // Supabase onConflict accepts column name(s), not constraint name
-        // Use 'user_id' which is the column with the unique constraint
-        onConflict: 'user_id',
-        ignoreDuplicates: false
-      })
-      .select()
-      .single();
+    // Use explicit UPDATE instead of upsert to avoid PostgREST/Supabase client issues
+    // Since we know the user has a subscription (testData exists), we'll update it
+    const subscriptionData = {
+      tier: 'pro',
+      status: 'active',
+      billing_cycle: billingCycle,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscription.id,
+      subscription_start_date: subscriptionStartDate.toISOString(),
+      subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+      subscription_ends_at: subscriptionRenewalDate.toISOString(),
+      money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
+      money_back_guarantee_eligible: true,
+      refund_count: 0,
+      updated_at: new Date().toISOString()
+    };
+
+    let dbSubscription;
+    let dbError;
+
+    if (testData && testData.length > 0) {
+      // User has existing subscription - UPDATE it
+      console.log('🔄 Updating existing subscription for user:', user.id);
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .update(subscriptionData)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      dbSubscription = data;
+      dbError = error;
+    } else {
+      // User doesn't have subscription - INSERT new one
+      console.log('➕ Inserting new subscription for user:', user.id);
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          ...subscriptionData
+        })
+        .select()
+        .single();
+      
+      dbSubscription = data;
+      dbError = error;
+    }
 
     if (dbError) {
-      console.error('❌ Error creating subscription in database:', {
+      console.error('❌ Error saving subscription in database:', {
         error: dbError,
         code: dbError.code,
         message: dbError.message,
         details: dbError.details,
         hint: dbError.hint,
         userId: user.id,
-        subscriptionId: subscription.id
+        subscriptionId: subscription.id,
+        operation: testData && testData.length > 0 ? 'UPDATE' : 'INSERT'
       });
       
       // Try to cancel Stripe subscription if database update fails
@@ -393,7 +417,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Provide more detailed error message
-      const errorMessage = dbError.message || 'Failed to create subscription';
+      const errorMessage = dbError.message || 'Failed to save subscription';
       const errorDetails = dbError.details || dbError.hint || '';
       
       return NextResponse.json(
