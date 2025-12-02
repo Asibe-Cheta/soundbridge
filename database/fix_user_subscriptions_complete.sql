@@ -141,6 +141,8 @@ CHECK (status IN ('active', 'cancelled', 'expired', 'past_due'));
 
 -- Drop existing unique constraint/index if it exists with different name
 DO $$
+DECLARE
+  r RECORD;
 BEGIN
   -- Drop any existing unique constraints on user_id
   FOR r IN (
