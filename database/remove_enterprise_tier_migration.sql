@@ -353,21 +353,40 @@ DECLARE
   remaining_enterprise INTEGER;
 BEGIN
   -- Check user_subscriptions
-  SELECT COUNT(*) INTO remaining_enterprise
-  FROM user_subscriptions
-  WHERE tier = 'enterprise';
-  
-  IF remaining_enterprise > 0 THEN
-    RAISE WARNING 'Found % Enterprise subscription(s) remaining in user_subscriptions', remaining_enterprise;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_subscriptions') THEN
+    SELECT COUNT(*) INTO remaining_enterprise
+    FROM user_subscriptions
+    WHERE tier = 'enterprise';
+    
+    IF remaining_enterprise > 0 THEN
+      RAISE WARNING 'Found % Enterprise subscription(s) remaining in user_subscriptions', remaining_enterprise;
+    ELSE
+      RAISE NOTICE '✓ No Enterprise subscriptions in user_subscriptions';
+    END IF;
   END IF;
   
   -- Check audio_tracks
-  SELECT COUNT(*) INTO remaining_enterprise
-  FROM audio_tracks
-  WHERE uploaded_during_tier = 'enterprise';
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'audio_tracks') THEN
+    SELECT COUNT(*) INTO remaining_enterprise
+    FROM audio_tracks
+    WHERE uploaded_during_tier = 'enterprise';
+    
+    IF remaining_enterprise > 0 THEN
+      RAISE WARNING 'Found % track(s) with Enterprise tier in audio_tracks', remaining_enterprise;
+    ELSE
+      RAISE NOTICE '✓ No Enterprise tiers in audio_tracks';
+    END IF;
+  END IF;
   
-  IF remaining_enterprise > 0 THEN
-    RAISE WARNING 'Found % track(s) with Enterprise tier in audio_tracks', remaining_enterprise;
+  -- Check downgrade_track_selections
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'downgrade_track_selections') THEN
+    SELECT COUNT(*) INTO remaining_enterprise
+    FROM downgrade_track_selections
+    WHERE from_tier = 'enterprise' OR to_tier = 'enterprise';
+    
+    IF remaining_enterprise > 0 THEN
+      RAISE WARNING 'Found % Enterprise tier(s) in downgrade_track_selections', remaining_enterprise;
+    END IF;
   END IF;
   
   RAISE NOTICE 'Migration verification complete';
