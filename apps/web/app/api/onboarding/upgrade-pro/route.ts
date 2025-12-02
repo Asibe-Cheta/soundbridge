@@ -257,6 +257,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update subscription in database
+    // First, verify the table structure by trying a simple select
+    const { data: testData, error: testError } = await supabase
+      .from('user_subscriptions')
+      .select('user_id, tier, status')
+      .eq('user_id', user.id)
+      .limit(1);
+    
+    if (testError) {
+      console.error('❌ Error testing user_subscriptions table access:', {
+        error: testError,
+        code: testError.code,
+        message: testError.message,
+        details: testError.details,
+        hint: testError.hint
+      });
+    } else {
+      console.log('✅ Table access test successful, existing subscription:', testData);
+    }
+
     const { data: dbSubscription, error: dbError } = await supabase
       .from('user_subscriptions')
       .upsert({
