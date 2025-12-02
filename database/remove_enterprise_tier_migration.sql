@@ -327,19 +327,25 @@ END $$;
 -- ============================================================================
 
 -- Update restore_tracks_on_upgrade trigger (if exists)
+-- Note: The trigger uses auto_restore_tracks_on_upgrade() function which calls restore_tracks_on_upgrade()
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'restore_tracks_on_upgrade_trigger') THEN
-    -- Drop and recreate trigger with updated logic
+  -- Check if the trigger function exists (created by restore_tracks_on_upgrade.sql)
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'auto_restore_tracks_on_upgrade') THEN
+    -- Drop existing trigger if it exists
+    DROP TRIGGER IF EXISTS trigger_restore_tracks_on_upgrade ON user_subscriptions;
     DROP TRIGGER IF EXISTS restore_tracks_on_upgrade_trigger ON user_subscriptions;
     
-    CREATE TRIGGER restore_tracks_on_upgrade_trigger
+    -- Recreate trigger with updated logic (Pro only, no Enterprise)
+    CREATE TRIGGER trigger_restore_tracks_on_upgrade
     AFTER UPDATE OF tier, status ON user_subscriptions
     FOR EACH ROW
     WHEN (OLD.tier = 'free' AND NEW.tier = 'pro' AND NEW.status = 'active')
-    EXECUTE FUNCTION restore_tracks_on_upgrade(NEW.user_id);
+    EXECUTE FUNCTION auto_restore_tracks_on_upgrade();
     
-    RAISE NOTICE 'Updated restore_tracks_on_upgrade_trigger';
+    RAISE NOTICE 'Updated trigger_restore_tracks_on_upgrade trigger';
+  ELSE
+    RAISE NOTICE 'Function auto_restore_tracks_on_upgrade does not exist - trigger not created. Run restore_tracks_on_upgrade.sql first.';
   END IF;
 END $$;
 
