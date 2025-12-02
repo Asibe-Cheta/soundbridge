@@ -70,8 +70,7 @@ export function useUploadValidation(): UseUploadValidationReturn {
         code: 'FILE_SIZE_EXCEEDED',
         message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the ${userTier} tier limit of ${limitMB}MB`,
         severity: 'error',
-        suggestion: userTier === 'free' ? 'Upgrade to Pro for 50MB files or Enterprise for 100MB files' : 
-                   'Upgrade to Enterprise for 100MB files'
+        suggestion: userTier === 'free' ? 'Upgrade to Pro for 50MB files' : ''
       });
     }
     

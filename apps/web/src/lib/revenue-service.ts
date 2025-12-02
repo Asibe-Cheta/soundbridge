@@ -130,7 +130,7 @@ export class RevenueService {
   /**
    * Send a tip to a creator
    */
-  async sendTip(creatorId: string, tipData: TipFormData, userTier: 'free' | 'pro' | 'enterprise' = 'free', paymentMethod: 'card' | 'apple_pay' | 'google_pay' = 'card'): Promise<{ success: boolean; error?: string; paymentIntentId?: string; clientSecret?: string }> {
+  async sendTip(creatorId: string, tipData: TipFormData, userTier: 'free' | 'pro' = 'free', paymentMethod: 'card' | 'apple_pay' | 'google_pay' = 'card'): Promise<{ success: boolean; error?: string; paymentIntentId?: string; clientSecret?: string }> {
     try {
       // Create Stripe payment intent
       const response = await fetch('/api/payments/create-tip', {
@@ -415,7 +415,7 @@ export class RevenueService {
         return 'free';
       }
 
-      return data.current_tier as 'free' | 'pro' | 'enterprise';
+      return data.current_tier as 'free' | 'pro';
     } catch (error) {
       console.error('Error getting user tier:', error);
       return 'free';
@@ -433,7 +433,7 @@ export class RevenueService {
   /**
    * Calculate creator earnings after platform fee
    */
-  calculateCreatorEarnings(amount: number, userTier: 'free' | 'pro' | 'enterprise'): number {
+  calculateCreatorEarnings(amount: number, userTier: 'free' | 'pro'): number {
     const platformFee = this.calculatePlatformFee(amount, userTier);
     return Math.round((amount - platformFee) * 100) / 100; // Round to 2 decimal places
   }

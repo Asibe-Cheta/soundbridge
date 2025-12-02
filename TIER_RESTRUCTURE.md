@@ -1,8 +1,8 @@
 # SoundBridge Pricing Tiers - Year 1 Structure
 
-**Last Updated:** November 29, 2024  
+**Last Updated:** November 29, 2025  
 **Status:** Approved for Implementation  
-**Target Launch:** Q1 2025
+**Target Launch:** Q1 2026
 
 ---
 
@@ -480,7 +480,7 @@ The following features were considered but removed from Year 1 scope:
 - ❌ **White-label Options** - Too complex for initial launch
 - ❌ **API Access** - Not needed until developer ecosystem exists
 - ❌ **Custom Integrations** - Support burden too high
-- ❌ **Advanced Analytics (enterprise-level)** - Need more data first
+- ❌ **Advanced Analytics** - Need more data first
 - ❌ **Team/Agency Accounts** - Add in Year 2
 - ❌ **Multi-user Permissions** - Add in Year 2
 
@@ -1090,12 +1090,14 @@ Go to Account Settings → Billing → Cancel Subscription. If you're within you
 - Bulk operations
 - Priority featured placement
 
-**Enterprise/Label Tier (Custom Pricing):**
+**Future Enterprise/Label Tier (Custom Pricing - Not Currently Available):**
 - White-label options
 - API access
 - Custom integrations
 - Dedicated account manager
 - Volume pricing for roster management
+
+**Note:** Enterprise tier is not currently available. The platform currently supports Free and Pro tiers only.
 
 ### Feature Expansion
 

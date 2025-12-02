@@ -6,7 +6,7 @@ import { Download, FileAudio, FileImage, FileText, Globe, Music, Mic, Calendar, 
 
 interface ExportToolsProps {
   userId: string;
-  userTier: 'free' | 'pro' | 'enterprise';
+  userTier: 'free' | 'pro';
   className?: string;
 }
 
@@ -221,7 +221,7 @@ export function ExportTools({ userId, userTier, className = '' }: ExportToolsPro
               </div>
               {!option.available && (
                 <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                  {userTier === 'free' ? 'Pro+' : 'Enterprise'}
+                  Pro
                 </span>
               )}
             </div>

@@ -3,7 +3,7 @@ import { Crown, Zap, Shield, Clock, Upload as UploadIcon, Check, X, ArrowRight }
 import type { UploadTierRules } from '../../lib/types/upload-validation';
 
 interface TierBasedLimitsProps {
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'pro';
   limits: UploadTierRules;
   showUpgrade?: boolean;
   className?: string;
@@ -31,8 +31,6 @@ export function TierBasedLimits({
         return 'text-gray-600 dark:text-gray-400';
       case 'pro':
         return 'text-blue-600 dark:text-blue-400';
-      case 'enterprise':
-        return 'text-purple-600 dark:text-purple-400';
       default:
         return 'text-gray-600 dark:text-gray-400';
     }
@@ -44,8 +42,6 @@ export function TierBasedLimits({
         return <UploadIcon className="h-5 w-5" />;
       case 'pro':
         return <Zap className="h-5 w-5" />;
-      case 'enterprise':
-        return <Crown className="h-5 w-5" />;
       default:
         return <UploadIcon className="h-5 w-5" />;
     }
@@ -212,11 +208,7 @@ export function TierBasedLimits({
                   </div>
                   <div className="flex items-center gap-2">
                     <Check className="h-3 w-3" />
-                    <span>Enterprise: 2GB files, Instant processing, Lossless quality</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3 w-3" />
-                    <span>Advanced copyright protection and human moderation</span>
+                    <span>Advanced copyright protection and priority moderation</span>
                   </div>
                 </div>
               </div>

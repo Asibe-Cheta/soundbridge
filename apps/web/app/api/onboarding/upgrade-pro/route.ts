@@ -209,10 +209,23 @@ export async function POST(request: NextRequest) {
     // Calculate dates
     const subscriptionStartDate = new Date();
     
-    // Calculate renewal date based on billing cycle (fallback if Stripe doesn't provide it)
+    // Calculate renewal date based on billing cycle
+    // Stripe subscriptions always have current_period_end, but we validate it
     let subscriptionRenewalDate: Date;
-    if (subscription.current_period_end) {
-      subscriptionRenewalDate = new Date(subscription.current_period_end * 1000);
+    if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+      const periodEndTimestamp = subscription.current_period_end * 1000;
+      subscriptionRenewalDate = new Date(periodEndTimestamp);
+      
+      // Validate the date is valid
+      if (isNaN(subscriptionRenewalDate.getTime())) {
+        console.warn('⚠️ Invalid current_period_end from Stripe, calculating fallback');
+        subscriptionRenewalDate = new Date(subscriptionStartDate);
+        if (billingCycle === 'yearly') {
+          subscriptionRenewalDate.setFullYear(subscriptionRenewalDate.getFullYear() + 1);
+        } else {
+          subscriptionRenewalDate.setMonth(subscriptionRenewalDate.getMonth() + 1);
+        }
+      }
     } else {
       // Fallback: calculate based on billing cycle
       subscriptionRenewalDate = new Date(subscriptionStartDate);
@@ -223,8 +236,25 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Validate all dates before using them
+    if (isNaN(subscriptionRenewalDate.getTime())) {
+      console.error('❌ Invalid subscriptionRenewalDate calculated');
+      return NextResponse.json(
+        { success: false, error: 'Payment processing failed', message: 'Invalid time value' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
     const moneyBackGuaranteeEndDate = new Date(subscriptionStartDate);
     moneyBackGuaranteeEndDate.setDate(moneyBackGuaranteeEndDate.getDate() + 7);
+    
+    if (isNaN(moneyBackGuaranteeEndDate.getTime())) {
+      console.error('❌ Invalid moneyBackGuaranteeEndDate calculated');
+      return NextResponse.json(
+        { success: false, error: 'Payment processing failed', message: 'Invalid time value' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     // Create or update subscription in database
     const { data: dbSubscription, error: dbError } = await supabase

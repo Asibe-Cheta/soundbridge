@@ -14,7 +14,7 @@ interface BrandingSettingsProps {
 
 export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
   const [branding, setBranding] = useState<CustomBranding | null>(null);
-  const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
+  const [userTier, setUserTier] = useState<'free' | 'pro'>('free');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

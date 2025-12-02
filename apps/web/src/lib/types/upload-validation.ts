@@ -23,7 +23,6 @@ export interface UploadValidationRules {
   tierBased: {
     free: UploadTierRules;
     pro: UploadTierRules;
-    enterprise: UploadTierRules;
   };
 }
 
@@ -46,7 +45,7 @@ export interface UploadValidationResult {
   errors: UploadValidationError[];
   warnings: UploadValidationWarning[];
   metadata?: Partial<FileValidationMetadata>;
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'pro';
   appliedRules: AppliedValidationRules;
 }
 
@@ -106,7 +105,7 @@ export interface UploadValidationConfig {
   enableCommunityGuidelines: boolean;
   enableMetadataValidation: boolean;
   enableFileIntegrityCheck: boolean;
-  strictMode: boolean; // for enterprise users
+  strictMode: boolean; // Reserved for future use
 }
 
 export interface UploadProgress {
@@ -129,7 +128,7 @@ export interface UploadValidationRequest {
     scheduleDate?: string;
   };
   userId: string;
-  userTier: 'free' | 'pro' | 'enterprise';
+  userTier: 'free' | 'pro';
   config: UploadValidationConfig;
 }
 
@@ -212,7 +211,6 @@ export const VALIDATION_CONSTANTS = {
   CONCURRENT_UPLOADS: {
     FREE: 1,
     PRO: 3,
-    ENTERPRISE: 5,
   },
   
   // Upload limits (undefined = unlimited)
@@ -226,6 +224,5 @@ export const VALIDATION_CONSTANTS = {
   STORAGE_LIMITS: {
     FREE: 100 * 1024 * 1024, // 100MB
     PRO: 2 * 1024 * 1024 * 1024, // 2GB
-    ENTERPRISE: 10 * 1024 * 1024 * 1024, // 10GB
   }
 };

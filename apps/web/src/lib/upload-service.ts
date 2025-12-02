@@ -16,11 +16,9 @@ export class AudioUploadService {
   private supabase = createBrowserClient();
 
   // Validate audio file
-  validateAudioFile(file: File, userTier: 'free' | 'pro' | 'enterprise' = 'free'): { isValid: boolean; errors: string[] } {
+  validateAudioFile(file: File, userTier: 'free' | 'pro' = 'free'): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
-    const maxSize = userTier === 'free' ? 10 * 1024 * 1024 : 
-                   userTier === 'pro' ? 50 * 1024 * 1024 : 
-                   100 * 1024 * 1024; // enterprise
+    const maxSize = userTier === 'free' ? 10 * 1024 * 1024 : 50 * 1024 * 1024; // Pro: 50MB
     const allowedTypes = [
       'audio/mpeg',
       'audio/mp3',

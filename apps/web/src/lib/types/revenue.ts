@@ -162,8 +162,7 @@ export interface PayoutRequest {
 // Platform fee structure
 export const PLATFORM_FEES = {
   free: 0.10,      // 10% for free users
-  pro: 0.05,       // 5% for pro users
-  enterprise: 0.02 // 2% for enterprise users
+  pro: 0.05        // 5% for pro users
 } as const;
 
 // Minimum payout amounts

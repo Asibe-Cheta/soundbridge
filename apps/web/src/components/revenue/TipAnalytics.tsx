@@ -31,7 +31,7 @@ interface TipGoal {
 
 interface TipAnalyticsProps {
   userId: string;
-  userTier: 'free' | 'pro' | 'enterprise';
+  userTier: 'free' | 'pro';
 }
 
 export function TipAnalytics({ userId, userTier }: TipAnalyticsProps) {
