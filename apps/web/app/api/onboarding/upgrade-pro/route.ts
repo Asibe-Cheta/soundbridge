@@ -387,18 +387,22 @@ export async function POST(request: NextRequest) {
       dbSubscription = data && data.length > 0 ? data[0] : null;
       dbError = error;
     } else {
-      // User doesn't have subscription - INSERT new one
+      // User doesn't have subscription - Use RPC function to INSERT (bypasses PostgREST issues)
       console.log('➕ Inserting new subscription for user:', user.id);
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .insert({
-          user_id: user.id,
-          ...subscriptionData
-        })
-        .select()
-        .single();
       
-      dbSubscription = data;
+      const { data, error } = await supabase.rpc('insert_user_subscription_to_pro', {
+        p_user_id: user.id,
+        p_billing_cycle: billingCycle,
+        p_stripe_customer_id: customerId,
+        p_stripe_subscription_id: subscription.id,
+        p_subscription_start_date: subscriptionStartDate.toISOString(),
+        p_subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+        p_subscription_ends_at: subscriptionRenewalDate.toISOString(),
+        p_money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
+      });
+      
+      // RPC returns array, get first element
+      dbSubscription = data && data.length > 0 ? data[0] : null;
       dbError = error;
     }
 
