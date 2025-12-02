@@ -208,7 +208,21 @@ export async function POST(request: NextRequest) {
 
     // Calculate dates
     const subscriptionStartDate = new Date();
-    const subscriptionRenewalDate = new Date(subscription.current_period_end * 1000);
+    
+    // Calculate renewal date based on billing cycle (fallback if Stripe doesn't provide it)
+    let subscriptionRenewalDate: Date;
+    if (subscription.current_period_end) {
+      subscriptionRenewalDate = new Date(subscription.current_period_end * 1000);
+    } else {
+      // Fallback: calculate based on billing cycle
+      subscriptionRenewalDate = new Date(subscriptionStartDate);
+      if (billingCycle === 'yearly') {
+        subscriptionRenewalDate.setFullYear(subscriptionRenewalDate.getFullYear() + 1);
+      } else {
+        subscriptionRenewalDate.setMonth(subscriptionRenewalDate.getMonth() + 1);
+      }
+    }
+    
     const moneyBackGuaranteeEndDate = new Date(subscriptionStartDate);
     moneyBackGuaranteeEndDate.setDate(moneyBackGuaranteeEndDate.getDate() + 7);
 
