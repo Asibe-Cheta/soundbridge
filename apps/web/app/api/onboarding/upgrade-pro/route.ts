@@ -363,7 +363,9 @@ export async function POST(request: NextRequest) {
         refund_count: 0,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id',
+        // Try using constraint name instead of column name
+        // If this doesn't work, Supabase might need the unique constraint name
+        onConflict: 'user_subscriptions_user_id_unique',
         ignoreDuplicates: false
       })
       .select()
