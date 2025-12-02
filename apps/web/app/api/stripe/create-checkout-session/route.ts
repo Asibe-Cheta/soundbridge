@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['pro', 'enterprise'].includes(plan)) {
+    if (plan !== 'pro') {
       console.error('🚨 VALIDATION ERROR: Invalid plan:', plan);
       return NextResponse.json(
-        { error: 'Invalid plan. Must be "pro" or "enterprise"' },
+        { error: 'Invalid plan. Must be "pro"' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     // Get price ID
     console.log('🚨 STEP 11: Getting price ID...');
-    const priceId = getPriceId(plan as 'pro' | 'enterprise', billingCycle as 'monthly' | 'yearly');
+    const priceId = getPriceId('pro', billingCycle as 'monthly' | 'yearly');
     
     console.log('🚨 PRICE DEBUG:', {
       plan,

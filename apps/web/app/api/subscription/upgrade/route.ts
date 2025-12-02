@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const { tier, billingCycle = 'monthly' } = body;
 
     // Validate tier
-    if (!['pro', 'enterprise'].includes(tier)) {
+    if (tier !== 'pro') {
       return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
     }
 
@@ -74,11 +74,7 @@ export async function POST(request: NextRequest) {
     const pricing = {
       pro: {
         monthly: 9.99,
-        yearly: 99.00 // £99/year (17% discount, saves £20.88)
-      },
-      enterprise: {
-        monthly: 49.99,
-        yearly: 499.99 // 17% discount
+        yearly: 99.99 // £99.99/year
       }
     };
 

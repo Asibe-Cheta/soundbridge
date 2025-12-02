@@ -147,7 +147,7 @@ async function handleSubscriptionCreated(
     // Determine tier and billing cycle from price ID
     const isPro = priceId?.includes('pro') || false;
     const isYearly = priceId?.includes('yearly') || false;
-    const tier = isPro ? 'pro' : 'enterprise';
+    const tier = isPro ? 'pro' : 'free'; // Only Pro or Free tiers supported
     const billingCycle = isYearly ? 'yearly' : 'monthly';
 
     const now = new Date();
