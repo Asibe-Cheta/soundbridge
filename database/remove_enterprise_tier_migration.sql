@@ -64,65 +64,95 @@ WHERE tier = 'enterprise';
 -- STEP 3: Update audio_tracks Table
 -- ============================================================================
 
--- Drop existing constraint on uploaded_during_tier
-ALTER TABLE audio_tracks
-DROP CONSTRAINT IF EXISTS audio_tracks_uploaded_during_tier_check;
-
--- Add new constraint without Enterprise
-ALTER TABLE audio_tracks
-ADD CONSTRAINT audio_tracks_uploaded_during_tier_check 
-CHECK (uploaded_during_tier IN ('free', 'pro') OR uploaded_during_tier IS NULL);
-
--- Update any existing Enterprise values to Pro
-UPDATE audio_tracks
-SET uploaded_during_tier = 'pro'
-WHERE uploaded_during_tier = 'enterprise';
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables 
+             WHERE table_name = 'audio_tracks') THEN
+    -- Drop existing constraint on uploaded_during_tier
+    ALTER TABLE audio_tracks
+    DROP CONSTRAINT IF EXISTS audio_tracks_uploaded_during_tier_check;
+    
+    -- Add new constraint without Enterprise
+    ALTER TABLE audio_tracks
+    ADD CONSTRAINT audio_tracks_uploaded_during_tier_check 
+    CHECK (uploaded_during_tier IN ('free', 'pro') OR uploaded_during_tier IS NULL);
+    
+    -- Update any existing Enterprise values to Pro
+    UPDATE audio_tracks
+    SET uploaded_during_tier = 'pro'
+    WHERE uploaded_during_tier = 'enterprise';
+    
+    RAISE NOTICE 'Updated audio_tracks table';
+  ELSE
+    RAISE NOTICE 'Table audio_tracks does not exist - skipping';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- STEP 4: Update downgrade_track_selections Table
 -- ============================================================================
 
--- Drop existing constraints
-ALTER TABLE downgrade_track_selections
-DROP CONSTRAINT IF EXISTS downgrade_track_selections_from_tier_check;
-ALTER TABLE downgrade_track_selections
-DROP CONSTRAINT IF EXISTS downgrade_track_selections_to_tier_check;
-
--- Add new constraints without Enterprise
-ALTER TABLE downgrade_track_selections
-ADD CONSTRAINT downgrade_track_selections_from_tier_check 
-CHECK (from_tier IN ('free', 'pro'));
-
-ALTER TABLE downgrade_track_selections
-ADD CONSTRAINT downgrade_track_selections_to_tier_check 
-CHECK (to_tier IN ('free', 'pro'));
-
--- Update any existing Enterprise values
-UPDATE downgrade_track_selections
-SET from_tier = 'pro'
-WHERE from_tier = 'enterprise';
-
-UPDATE downgrade_track_selections
-SET to_tier = 'pro'
-WHERE to_tier = 'enterprise';
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables 
+             WHERE table_name = 'downgrade_track_selections') THEN
+    -- Drop existing constraints
+    ALTER TABLE downgrade_track_selections
+    DROP CONSTRAINT IF EXISTS downgrade_track_selections_from_tier_check;
+    ALTER TABLE downgrade_track_selections
+    DROP CONSTRAINT IF EXISTS downgrade_track_selections_to_tier_check;
+    
+    -- Add new constraints without Enterprise
+    ALTER TABLE downgrade_track_selections
+    ADD CONSTRAINT downgrade_track_selections_from_tier_check 
+    CHECK (from_tier IN ('free', 'pro'));
+    
+    ALTER TABLE downgrade_track_selections
+    ADD CONSTRAINT downgrade_track_selections_to_tier_check 
+    CHECK (to_tier IN ('free', 'pro'));
+    
+    -- Update any existing Enterprise values
+    UPDATE downgrade_track_selections
+    SET from_tier = 'pro'
+    WHERE from_tier = 'enterprise';
+    
+    UPDATE downgrade_track_selections
+    SET to_tier = 'pro'
+    WHERE to_tier = 'enterprise';
+    
+    RAISE NOTICE 'Updated downgrade_track_selections table';
+  ELSE
+    RAISE NOTICE 'Table downgrade_track_selections does not exist - skipping';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- STEP 5: Update persistent_user_memory Table
 -- ============================================================================
 
--- Drop existing constraint
-ALTER TABLE persistent_user_memory
-DROP CONSTRAINT IF EXISTS persistent_user_memory_subscription_tier_check;
-
--- Add new constraint without Enterprise
-ALTER TABLE persistent_user_memory
-ADD CONSTRAINT persistent_user_memory_subscription_tier_check 
-CHECK (subscription_tier IN ('free', 'pro'));
-
--- Update any existing Enterprise values
-UPDATE persistent_user_memory
-SET subscription_tier = 'pro'
-WHERE subscription_tier = 'enterprise';
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables 
+             WHERE table_name = 'persistent_user_memory') THEN
+    -- Drop existing constraint
+    ALTER TABLE persistent_user_memory
+    DROP CONSTRAINT IF EXISTS persistent_user_memory_subscription_tier_check;
+    
+    -- Add new constraint without Enterprise
+    ALTER TABLE persistent_user_memory
+    ADD CONSTRAINT persistent_user_memory_subscription_tier_check 
+    CHECK (subscription_tier IN ('free', 'pro'));
+    
+    -- Update any existing Enterprise values
+    UPDATE persistent_user_memory
+    SET subscription_tier = 'pro'
+    WHERE subscription_tier = 'enterprise';
+    
+    RAISE NOTICE 'Updated persistent_user_memory table';
+  ELSE
+    RAISE NOTICE 'Table persistent_user_memory does not exist - skipping';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- STEP 6: Update Tipping Tables
