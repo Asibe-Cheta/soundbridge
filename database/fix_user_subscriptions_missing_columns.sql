@@ -8,6 +8,7 @@
 -- 1. Run this in Supabase SQL Editor
 -- 2. This script is idempotent (safe to run multiple times)
 -- 3. Run this BEFORE running remove_enterprise_tier_migration.sql if needed
+-- 4. ALSO RUN: fix_user_subscriptions_unique_constraint.sql (required for upsert)
 -- ============================================================================
 
 BEGIN;
