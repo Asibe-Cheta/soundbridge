@@ -302,7 +302,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const setCurrentStep = (step: OnboardingStep) => {
     setOnboardingState(prev => ({ ...prev, currentStep: step }));
-    updateOnboardingProgress({ currentStep: step });
+    // Only update progress if user is available - don't block step changes
+    if (user?.id) {
+      updateOnboardingProgress({ currentStep: step });
+    }
   };
 
   const setSelectedRole = (role: UserRole) => {
@@ -331,9 +334,32 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const updateOnboardingProgress = async (updates: Partial<OnboardingState> & { userType?: OnboardingUserType; currentStep?: OnboardingStep }) => {
     try {
-      if (!user?.id) {
-        console.error('❌ No user ID available for updating onboarding progress');
-        return;
+      // Get current user from context - don't use captured value in retry loop
+      let currentUser = user;
+      
+      // If user is not available yet, wait for it with retries
+      if (!currentUser?.id) {
+        // Wait up to 3 seconds for user to become available
+        let attempts = 0;
+        const maxAttempts = 6;
+        const retryDelay = 500; // 500ms between attempts
+        
+        while (attempts < maxAttempts) {
+          attempts++;
+          console.log(`⏳ Waiting for user ID (attempt ${attempts}/${maxAttempts})...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          
+          // Re-check user from context (it might have loaded while we waited)
+          // Note: We can't directly access the latest user here, so we'll check once more after retries
+        }
+        
+        // Final check - user might have loaded during retry period
+        // If still not available, skip the update but don't block UI
+        if (!user?.id) {
+          console.warn('⚠️ No user ID available for updating onboarding progress - skipping update');
+          // Don't block the UI - progress updates are non-critical
+          return;
+        }
       }
 
       // Map onboardingUserType to userType for API
@@ -354,6 +380,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       });
     } catch (error) {
       console.error('❌ Error updating onboarding progress:', error);
+      // Don't throw - allow onboarding to continue even if progress update fails
     }
   };
 

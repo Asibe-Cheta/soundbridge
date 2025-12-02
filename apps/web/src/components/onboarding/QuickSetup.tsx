@@ -164,6 +164,13 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // Check if user is available before submitting
+    if (!user?.id) {
+      setErrors({ submit: 'Session expired. Please refresh the page and try again.' });
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Map onboarding_user_type to role for API
@@ -184,16 +191,17 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
 
       if (error || !data?.success) {
         console.error('Error completing profile:', error || data?.error);
-        setErrors({ submit: 'Failed to save profile. Please try again.' });
+        setErrors({ submit: error?.message || data?.error || 'Failed to save profile. Please try again.' });
+        setIsSubmitting(false);
         return;
       }
 
       setProfileCompleted(true);
       setCurrentStep('valueDemo');
       onContinue();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting profile:', error);
-      setErrors({ submit: 'An error occurred. Please try again.' });
+      setErrors({ submit: error?.message || 'An error occurred. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
