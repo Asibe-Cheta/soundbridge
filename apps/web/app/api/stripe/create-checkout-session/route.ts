@@ -162,6 +162,42 @@ export async function POST(request: NextRequest) {
         { status: 500, headers: corsHeaders }
       );
     }
+
+    // Validate that we have a price ID, not a product ID
+    if (priceId.startsWith('prod_')) {
+      console.error('🚨 PRICE ERROR: Product ID provided instead of Price ID', { priceId });
+      return NextResponse.json(
+        { 
+          error: 'Invalid Stripe configuration',
+          error_code: 'invalid_price_id',
+          message: `The ${billingCycle} price ID appears to be a product ID (starts with 'prod_') instead of a price ID (should start with 'price_'). Please check your Vercel environment variable STRIPE_${plan.toUpperCase()}_${billingCycle.toUpperCase()}_PRICE_ID and ensure it contains a price ID from your Stripe dashboard.`,
+          details: {
+            received: priceId,
+            expected_format: 'price_xxxxx',
+            plan,
+            billing_cycle: billingCycle
+          }
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (!priceId.startsWith('price_')) {
+      console.error('🚨 PRICE ERROR: Invalid price ID format', { priceId });
+      return NextResponse.json(
+        { 
+          error: 'Invalid Stripe price ID format',
+          error_code: 'invalid_price_format',
+          message: `The price ID format is invalid. Price IDs must start with 'price_'. Please check your Vercel environment variable STRIPE_${plan.toUpperCase()}_${billingCycle.toUpperCase()}_PRICE_ID.`,
+          details: {
+            received: priceId,
+            expected_format: 'price_xxxxx'
+          }
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     console.log('🚨 STEP 12: Price ID validated');
 
     // Create Stripe Checkout session with aggressive timeout
