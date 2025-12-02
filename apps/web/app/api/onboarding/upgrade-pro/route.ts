@@ -369,16 +369,22 @@ export async function POST(request: NextRequest) {
     let dbError;
 
     if (testData && testData.length > 0) {
-      // User has existing subscription - UPDATE it
+      // User has existing subscription - Use RPC function to UPDATE (bypasses PostgREST issues)
       console.log('🔄 Updating existing subscription for user:', user.id);
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .update(subscriptionData)
-        .eq('user_id', user.id)
-        .select()
-        .single();
       
-      dbSubscription = data;
+      const { data, error } = await supabase.rpc('update_user_subscription_to_pro', {
+        p_user_id: user.id,
+        p_billing_cycle: billingCycle,
+        p_stripe_customer_id: customerId,
+        p_stripe_subscription_id: subscription.id,
+        p_subscription_start_date: subscriptionStartDate.toISOString(),
+        p_subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+        p_subscription_ends_at: subscriptionRenewalDate.toISOString(),
+        p_money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
+      });
+      
+      // RPC returns array, get first element
+      dbSubscription = data && data.length > 0 ? data[0] : null;
       dbError = error;
     } else {
       // User doesn't have subscription - INSERT new one
