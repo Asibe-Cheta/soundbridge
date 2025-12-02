@@ -258,6 +258,7 @@ export async function POST(request: NextRequest) {
 
     // Create or update subscription in database
     // First, verify the table structure by trying a simple select
+    console.log('🔍 Testing user_subscriptions table access for user:', user.id);
     const { data: testData, error: testError } = await supabase
       .from('user_subscriptions')
       .select('user_id, tier, status')
@@ -270,8 +271,22 @@ export async function POST(request: NextRequest) {
         code: testError.code,
         message: testError.message,
         details: testError.details,
-        hint: testError.hint
+        hint: testError.hint,
+        userId: user.id
       });
+      
+      // If the test query fails, the upsert will likely fail too
+      // Return a more helpful error message
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Database access error',
+          message: testError.message || 'Failed to access user_subscriptions table',
+          details: testError.details || testError.hint || '',
+          code: testError.code
+        },
+        { status: 500, headers: corsHeaders }
+      );
     } else {
       console.log('✅ Table access test successful, existing subscription:', testData);
     }
