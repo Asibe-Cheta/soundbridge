@@ -155,8 +155,8 @@ SELECT
   current_database() AS current_database,
   current_schema() AS current_schema;
 
--- Show search path schemas separately (current_schemas returns an array)
-SELECT unnest(current_schemas(true)) AS search_path_schema;
+-- Show search path (as text)
+SHOW search_path;
 
 -- ============================================================================
 -- Step 12: Check for any synonyms or aliases (PostgreSQL doesn't have synonyms, but check anyway)
@@ -204,22 +204,10 @@ ORDER BY schemaname, tablename, a.attnum;
 -- ============================================================================
 -- Step 15: Compare table structures across schemas (if multiple exist)
 -- ============================================================================
-DO $$
-DECLARE
-  schema_rec RECORD;
-  col_count INTEGER;
-BEGIN
-  FOR schema_rec IN (
-    SELECT DISTINCT table_schema
-    FROM information_schema.tables
-    WHERE table_name = 'user_subscriptions'
-  ) LOOP
-    SELECT COUNT(*) INTO col_count
-    FROM information_schema.columns
-    WHERE table_schema = schema_rec.table_schema
-      AND table_name = 'user_subscriptions';
-    
-    RAISE NOTICE 'Schema: %, Table: user_subscriptions, Columns: %', 
-      schema_rec.table_schema, col_count;
-  END LOOP;
-END $$;
+SELECT 
+  table_schema,
+  COUNT(*) AS column_count
+FROM information_schema.columns
+WHERE table_name = 'user_subscriptions'
+GROUP BY table_schema
+ORDER BY table_schema;
