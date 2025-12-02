@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     console.log('💳 Upgrade Pro API called (onboarding)');
 
     // Authentication required
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    const { supabase, user, error: authError, mode } = await getSupabaseRouteClient(request, true);
     
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
