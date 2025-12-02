@@ -20,20 +20,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has active Pro/Enterprise subscription
+    // Check if user has active Pro subscription
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')
       .select('tier, status')
       .eq('user_id', user.id)
       .eq('status', 'active')
-      .in('tier', ['pro', 'enterprise'])
+      .eq('tier', 'pro')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     if (subError || !subscription) {
       return NextResponse.json({ 
-        error: 'Active Pro or Enterprise subscription required to restore tracks' 
+        error: 'Active Pro subscription required to restore tracks' 
       }, { status: 403 });
     }
 

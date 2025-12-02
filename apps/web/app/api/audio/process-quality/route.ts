@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         target_channels: targetQuality.channels,
         target_codec: targetQuality.codec,
         original_file_path: track.file_url,
-        priority: userTier === 'enterprise' ? 3 : userTier === 'pro' ? 2 : 1
+        priority: userTier === 'pro' ? 2 : 1
       })
       .select()
       .single();
@@ -129,8 +129,7 @@ export async function POST(request: NextRequest) {
       queueId: queueItem.id,
       trackId: trackId,
       targetQuality: targetQuality.level,
-      estimatedProcessingTime: userTier === 'enterprise' ? '30 seconds' : 
-                              userTier === 'pro' ? '1 minute' : '2 minutes'
+      estimatedProcessingTime: userTier === 'pro' ? '1 minute' : '2 minutes'
     });
 
   } catch (error) {

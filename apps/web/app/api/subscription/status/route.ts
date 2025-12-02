@@ -116,14 +116,14 @@ export async function GET(request: NextRequest) {
             : 0
         },
         features: {
-          unlimitedUploads: subscription?.tier === 'enterprise',
-          unlimitedSearches: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
-          unlimitedMessages: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
-          advancedAnalytics: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
-          customBranding: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
-          prioritySupport: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
-          revenueSharing: subscription?.tier === 'pro' || subscription?.tier === 'enterprise',
-          whiteLabel: subscription?.tier === 'enterprise'
+          unlimitedUploads: false, // No unlimited uploads - Pro has 10 total
+          unlimitedSearches: subscription?.tier === 'pro',
+          unlimitedMessages: subscription?.tier === 'pro',
+          advancedAnalytics: subscription?.tier === 'pro',
+          customBranding: subscription?.tier === 'pro',
+          prioritySupport: subscription?.tier === 'pro',
+          revenueSharing: subscription?.tier === 'pro',
+          whiteLabel: false // No white label feature
         }
       }
     });

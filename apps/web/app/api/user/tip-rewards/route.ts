@@ -72,9 +72,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     const userTier = subscription?.tier || 'free';
-    if (userTier !== 'enterprise') {
+    // Tip rewards available for Pro users (Enterprise removed)
+    if (userTier !== 'pro') {
       return NextResponse.json(
-        { error: 'Tip rewards are available for Enterprise users only' },
+        { error: 'Tip rewards are available for Pro users only' },
         { status: 403 }
       );
     }

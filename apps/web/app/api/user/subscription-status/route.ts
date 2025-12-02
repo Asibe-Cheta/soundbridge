@@ -122,11 +122,11 @@ export async function GET(request: NextRequest) {
             storage: { used: usage?.storage_used || 0, limit: 2, unit: 'GB' },
             bandwidth: { used: usage?.bandwidth_used || 0, limit: 10000, unit: 'MB' }
           };
-        case 'enterprise':
+        default:
           return {
-            uploads: { used: usage?.uploads_used || 0, limit: -1 }, // -1 means unlimited
-            storage: { used: usage?.storage_used || 0, limit: 10, unit: 'GB' },
-            bandwidth: { used: usage?.bandwidth_used || 0, limit: 50000, unit: 'MB' }
+            uploads: { used: usage?.uploads_used || 0, limit: 3 },
+            storage: { used: usage?.storage_used || 0, limit: 150, unit: 'MB' },
+            bandwidth: { used: usage?.bandwidth_used || 0, limit: 1000, unit: 'MB' }
           };
         default:
           return {

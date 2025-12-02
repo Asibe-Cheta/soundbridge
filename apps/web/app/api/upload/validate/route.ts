@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         enableCommunityGuidelines: true,
         enableMetadataValidation: true,
         enableFileIntegrityCheck: true,
-        strictMode: userTier === 'enterprise'
+        strictMode: false // No strict mode - Enterprise removed
       }
     } = body;
     
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
           details: userTier === 'free' 
             ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 uploads per month.'
             : userTier === 'pro'
-            ? 'You have reached your monthly limit of 10 uploads. Your limit resets on the 1st of each month. Upgrade to Enterprise for unlimited uploads.'
+                ? 'You have reached your limit of 10 total uploads.'
             : 'You have reached your upload limit.',
           limit: uploadLimitInfo || null,
           upgrade_required: true
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
       file,
       metadata,
       userId: user.id,
-      userTier: userTier as 'free' | 'pro' | 'enterprise',
+      userTier: userTier as 'free' | 'pro',
       config
     };
     
@@ -265,7 +265,7 @@ export async function GET(request: NextRequest) {
     const userTier = subscription?.tier || 'free';
     
     // Get tier-specific limits
-    const tierLimits = UploadValidationService.getTierLimits(userTier as 'free' | 'pro' | 'enterprise');
+    const tierLimits = UploadValidationService.getTierLimits(userTier as 'free' | 'pro');
     
     return NextResponse.json({
       success: true,

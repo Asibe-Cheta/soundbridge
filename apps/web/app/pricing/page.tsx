@@ -12,7 +12,7 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
-  const handleUpgrade = async (plan: 'pro' | 'enterprise') => {
+  const handleUpgrade = async (plan: 'pro') => {
     if (!user) {
       // Redirect to signup if not logged in
       window.location.href = '/auth/signup';
@@ -89,37 +89,6 @@ export default function PricingPage() {
       popular: true,
       savings: 'Save 17%'
     },
-    {
-      id: 'enterprise',
-      name: 'Enterprise',
-      description: 'For professional creators',
-      icon: <Star className="h-8 w-8 text-yellow-500" />,
-      price: { monthly: 49.99, yearly: 499.99 },
-      color: 'from-yellow-500/20 to-orange-500/20',
-      borderColor: 'border-yellow-200/50',
-      buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
-      features: [
-        'Everything in Pro',
-        '100MB file size limit',
-        '10GB total storage',
-        'Unlimited uploads',
-        'Instant processing (< 1 min)',
-        'AI-powered copyright protection',
-        'Human + AI content moderation',
-        'White-label platform',
-        'Custom integrations',
-        'Revenue sharing (98%)',
-        'Dedicated support',
-        'API access',
-        'Custom domain',
-        'Advanced collaboration tools',
-        'Priority feature requests',
-        '5 concurrent uploads'
-      ],
-      limitations: [],
-      popular: false,
-      savings: 'Save 17%'
-    }
   ];
 
   const features = [
@@ -127,76 +96,69 @@ export default function PricingPage() {
       category: 'Content & Uploads',
       icon: <Music className="h-6 w-6 text-blue-500" />,
       items: [
-        { name: 'Track Uploads', free: '3 lifetime', pro: '10 total', enterprise: 'Unlimited' },
-        { name: 'Professional Searches', free: '5/month', pro: 'Unlimited', enterprise: 'Unlimited' },
-        { name: 'Direct Messages (sent)', free: '3/month', pro: 'Unlimited', enterprise: 'Unlimited' },
-        { name: 'Storage Space', free: '150MB', pro: '500MB', enterprise: '2GB' },
-        { name: 'Max File Size', free: '50MB', pro: '50MB', enterprise: '100MB' },
-        { name: 'Audio Quality', free: 'Standard', pro: 'HD', enterprise: 'Lossless' }
+        { name: 'Track Uploads', free: '3 lifetime', pro: '10 total' },
+        { name: 'Professional Searches', free: '5/month', pro: 'Unlimited' },
+        { name: 'Direct Messages (sent)', free: '3/month', pro: 'Unlimited' },
+        { name: 'Storage Space', free: '150MB', pro: '500MB' },
+        { name: 'Max File Size', free: '50MB', pro: '50MB' },
+        { name: 'Audio Quality', free: 'Standard', pro: 'HD' }
       ]
     },
     {
       category: 'Analytics & Insights',
       icon: <BarChart3 className="h-6 w-6 text-green-500" />,
       items: [
-        { name: 'Basic Analytics', free: '✓', pro: '✓', enterprise: '✓' },
-        { name: 'Advanced Analytics', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Demographic Data', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Geographic Insights', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Custom Reports', free: '✗', pro: '✗', enterprise: '✓' }
+        { name: 'Basic Analytics', free: '✓', pro: '✓' },
+        { name: 'Advanced Analytics', free: '✗', pro: '✓' },
+        { name: 'Demographic Data', free: '✗', pro: '✓' },
+        { name: 'Geographic Insights', free: '✗', pro: '✓' }
       ]
     },
     {
       category: 'Monetization',
       icon: <DollarSign className="h-6 w-6 text-yellow-500" />,
       items: [
-        { name: 'Revenue Sharing', free: '✗', pro: '95%', enterprise: '90%' },
-        { name: 'Direct Payments', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Subscription Tiers', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Merchandise Sales', free: '✗', pro: '✗', enterprise: '✓' }
+        { name: 'Revenue Sharing', free: '✗', pro: '95%' },
+        { name: 'Direct Payments', free: '✗', pro: '✓' },
+        { name: 'Subscription Tiers', free: '✗', pro: '✓' }
       ]
     },
     {
       category: 'Branding & Customization',
       icon: <PenTool className="h-6 w-6 text-purple-500" />,
       items: [
-        { name: 'Custom Branding', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Custom Domain', free: '✗', pro: '✗', enterprise: '✓' },
-        { name: 'White-label Platform', free: '✗', pro: '✗', enterprise: '✓' },
-        { name: 'Custom Themes', free: '✗', pro: '✓', enterprise: '✓' }
+        { name: 'Custom Branding', free: '✗', pro: '✓' },
+        { name: 'Custom Themes', free: '✗', pro: '✓' }
       ]
     },
     {
       category: 'Security & Protection',
       icon: <Shield className="h-6 w-6 text-red-500" />,
       items: [
-        { name: 'Copyright Protection', free: 'Basic', pro: 'Advanced', enterprise: 'AI-Powered' },
-        { name: 'Content Moderation', free: 'Automated', pro: 'Priority Review', enterprise: 'Human + AI' },
-        { name: 'File Validation', free: 'Basic', pro: 'Enhanced', enterprise: 'AI-Enhanced' },
-        { name: 'Upload Security', free: 'Standard', pro: 'Enhanced', enterprise: 'Enterprise-Grade' },
-        { name: 'Data Encryption', free: '✓', pro: '✓', enterprise: '✓' }
+        { name: 'Copyright Protection', free: 'Basic', pro: 'Advanced' },
+        { name: 'Content Moderation', free: 'Automated', pro: 'Priority Review' },
+        { name: 'File Validation', free: 'Basic', pro: 'Enhanced' },
+        { name: 'Upload Security', free: 'Standard', pro: 'Enhanced' },
+        { name: 'Data Encryption', free: '✓', pro: '✓' }
       ]
     },
     {
       category: 'Distribution & Export',
       icon: <Globe className="h-6 w-6 text-orange-500" />,
       items: [
-        { name: 'Export Tools', free: '✓', pro: '✓', enterprise: '✓' },
-        { name: 'Distribution Guides', free: '✓', pro: '✓', enterprise: '✓' },
-        { name: 'Cross-Platform Distribution', free: 'Coming Soon', pro: 'Coming Soon', enterprise: 'Coming Soon' },
-        { name: 'Bulk Export', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'API Integration', free: '✗', pro: '✗', enterprise: '✓' }
+        { name: 'Export Tools', free: '✓', pro: '✓' },
+        { name: 'Distribution Guides', free: '✓', pro: '✓' },
+        { name: 'Cross-Platform Distribution', free: 'Coming Soon', pro: 'Coming Soon' },
+        { name: 'Bulk Export', free: '✗', pro: '✓' }
       ]
     },
     {
       category: 'Support & Collaboration',
       icon: <Users className="h-6 w-6 text-indigo-500" />,
       items: [
-        { name: 'Community Support', free: '✓', pro: '✓', enterprise: '✓' },
-        { name: 'Priority Support', free: '✗', pro: '✓', enterprise: '✓' },
-        { name: 'Dedicated Support', free: '✗', pro: '✗', enterprise: '✓' },
-        { name: 'Collaboration Tools', free: '✗', pro: 'Basic', enterprise: 'Advanced' },
-        { name: 'API Access', free: '✗', pro: '✗', enterprise: '✓' }
+        { name: 'Community Support', free: '✓', pro: '✓' },
+        { name: 'Priority Support', free: '✗', pro: '✓' },
+        { name: 'Collaboration Tools', free: '✗', pro: 'Basic' }
       ]
     }
   ];
@@ -208,13 +170,6 @@ export default function PricingPage() {
       content: 'The Pro plan helped me grow my audience by 300% in just 3 months. The 500MB upload limit and priority processing are game-changers!',
       avatar: 'SC',
       plan: 'Pro'
-    },
-    {
-      name: 'Mike Rodriguez',
-      role: 'Podcast Host',
-      content: 'Enterprise features let me create a professional platform for my podcast network. Instant processing and AI-powered copyright protection are incredible.',
-      avatar: 'MR',
-      plan: 'Enterprise'
     },
     {
       name: 'Emma Thompson',
@@ -289,7 +244,7 @@ export default function PricingPage() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20 max-w-4xl mx-auto">
             {plans.map((plan) => {
               const isHovered = hoveredPlan === plan.id;
               const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
@@ -376,7 +331,7 @@ export default function PricingPage() {
                           </Link>
                         ) : (
                           <button
-                            onClick={() => handleUpgrade(plan.id as 'pro' | 'enterprise')}
+                            onClick={() => handleUpgrade('pro')}
                             disabled={isLoading}
                             className={`w-full block text-center px-6 py-3 ${plan.buttonColor} text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
@@ -450,10 +405,6 @@ export default function PricingPage() {
                     <span>Pro Tier</span>
                     <span className="text-purple-400 font-semibold">Advanced</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>Enterprise</span>
-                    <span className="text-yellow-400 font-semibold">AI-Powered</span>
-                  </div>
                 </div>
               </div>
 
@@ -471,10 +422,6 @@ export default function PricingPage() {
                   <div className="flex justify-between items-center">
                     <span>Pro Tier</span>
                     <span className="text-purple-400 font-semibold">Priority Review</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Enterprise</span>
-                    <span className="text-yellow-400 font-semibold">Human + AI</span>
                   </div>
                 </div>
               </div>
@@ -500,7 +447,6 @@ export default function PricingPage() {
                       <th className="text-left p-6 text-white/70 font-medium">Features</th>
                       <th className="text-center p-6 text-white/70 font-medium">Free</th>
                       <th className="text-center p-6 text-white/70 font-medium">Pro</th>
-                      <th className="text-center p-6 text-white/70 font-medium">Enterprise</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -519,7 +465,6 @@ export default function PricingPage() {
                             <td className="p-4 text-white/90">{item.name}</td>
                             <td className="p-4 text-center text-white/70">{item.free}</td>
                             <td className="p-4 text-center text-white/70">{item.pro}</td>
-                            <td className="p-4 text-center text-white/70">{item.enterprise}</td>
                           </tr>
                         ))}
                       </React.Fragment>
@@ -559,11 +504,7 @@ export default function PricingPage() {
                   <p className="text-white/80 mb-4">"{testimonial.content}"</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-white/50">Using</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      testimonial.plan === 'Pro' 
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                    }`}>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
                       {testimonial.plan}
                     </span>
                   </div>
@@ -592,7 +533,7 @@ export default function PricingPage() {
                 },
                 {
                   q: "How does revenue sharing work?",
-                  a: "Pro users keep 95% of their earnings, Enterprise users keep 90%. We handle all payment processing and taxes. You can request payouts once you reach $50."
+                  a: "Pro users keep 95% of their earnings. We handle all payment processing and taxes. You can request payouts once you reach $50."
                 },
                 {
                   q: "Do you offer a free trial?",
@@ -608,15 +549,15 @@ export default function PricingPage() {
                 },
                 {
                   q: "What are the upload and storage limits?",
-                  a: "Free tier: 3 lifetime track uploads and 150MB total storage. Pro tier: 10 total track uploads and 500MB total storage. Enterprise tier: Unlimited uploads and 2GB storage. All plans include our smart validation system."
+                  a: "Free tier: 3 lifetime track uploads and 150MB total storage. Pro tier: 10 total track uploads and 500MB total storage. All plans include our smart validation system."
                 },
                 {
                   q: "How does the upload validation work?",
-                  a: "Our system automatically validates your files for size, format, and quality. Free tier gets standard processing (2-5 min), Pro gets priority (1-2 min), and Enterprise gets instant processing (< 1 min)."
+                  a: "Our system automatically validates your files for size, format, and quality. Free tier gets standard processing (2-5 min), Pro gets priority (1-2 min)."
                 },
                 {
                   q: "What copyright protection do you offer?",
-                  a: "Free tier includes basic copyright protection, Pro tier has advanced protection, and Enterprise tier features AI-powered copyright detection to keep your content safe."
+                  a: "Free tier includes basic copyright protection, Pro tier has advanced protection to keep your content safe."
                 }
               ].map((faq, index) => (
                 <div

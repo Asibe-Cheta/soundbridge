@@ -107,9 +107,9 @@ export async function POST(request: NextRequest) {
             { 
               error: 'Upload limit exceeded',
               details: userTier === 'free' 
-                ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 uploads per month.'
+                ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 total uploads.'
                 : userTier === 'pro'
-                ? 'You have reached your monthly limit of 10 uploads. Your limit resets on the 1st of each month. Upgrade to Enterprise for unlimited uploads.'
+                ? 'You have reached your limit of 10 total uploads.'
                 : 'You have reached your upload limit.',
               limit: uploadLimitInfo || null,
               upgrade_required: true
@@ -131,14 +131,14 @@ export async function POST(request: NextRequest) {
             scheduleDate
           },
           userId: user.id,
-          userTier: userTier as 'free' | 'pro' | 'enterprise',
+          userTier: userTier as 'free' | 'pro',
           config: {
             enableCopyrightCheck: false, // Start with basic validation
             enableContentModeration: false,
             enableCommunityGuidelines: true,
             enableMetadataValidation: true,
             enableFileIntegrityCheck: true,
-            strictMode: userTier === 'enterprise'
+            strictMode: false // No strict mode - Enterprise removed
           }
         };
         
