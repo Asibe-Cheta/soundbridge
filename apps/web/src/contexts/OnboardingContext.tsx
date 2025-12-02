@@ -107,6 +107,34 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     saveOnboardingStateToStorage(onboardingState);
   }, [onboardingState]);
 
+  // Restore onboarding state when component mounts or tab regains focus
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      // Only react to our own storage key changes from other tabs
+      if (e.key === ONBOARDING_STORAGE_KEY && e.newValue) {
+        try {
+          const storedState = JSON.parse(e.newValue);
+          if (storedState && (storedState.showOnboarding || storedState.isOnboardingActive)) {
+            console.log('🔄 Onboarding state changed in another tab, syncing...');
+            setOnboardingState(prev => ({
+              ...prev,
+              showOnboarding: storedState.showOnboarding || prev.showOnboarding,
+              isOnboardingActive: storedState.isOnboardingActive || prev.isOnboardingActive,
+              currentStep: (storedState.currentStep as OnboardingStep) || prev.currentStep,
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing storage event:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Check if user needs onboarding on mount and when tab regains focus
   useEffect(() => {
     // Wait for auth to finish loading before checking onboarding
@@ -172,21 +200,64 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     // Re-check when tab regains focus (user switches back to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden && user && session) {
-        console.log('👁️ Tab regained focus, re-checking onboarding status...');
-        // Small delay to ensure session is still valid
-        setTimeout(() => {
-          checkOnboardingStatusWithRetry();
-        }, 500);
+        console.log('👁️ Tab regained focus, restoring onboarding state...');
+        
+        // First, restore state from localStorage if onboarding was active
+        const storedState = loadOnboardingStateFromStorage();
+        if (storedState && (storedState.showOnboarding || storedState.isOnboardingActive)) {
+          console.log('🔄 Restoring onboarding state from localStorage');
+          setOnboardingState(prev => ({
+            ...prev,
+            showOnboarding: storedState.showOnboarding || false,
+            isOnboardingActive: storedState.isOnboardingActive || false,
+            currentStep: (storedState.currentStep as OnboardingStep) || prev.currentStep,
+            onboardingUserType: storedState.onboardingUserType || prev.onboardingUserType,
+            selectedTier: storedState.selectedTier || prev.selectedTier,
+          }));
+          
+          // Only verify with API if we're not sure about the state
+          // Don't immediately re-check as it might hide the modal
+          setTimeout(() => {
+            // Silently verify in background, but don't hide if already showing
+            verifyOnboardingStatusSilently();
+          }, 1000);
+        } else {
+          // If no stored state, check normally
+          setTimeout(() => {
+            checkOnboardingStatusWithRetry();
+          }, 500);
+        }
       }
     };
 
     // Re-check when window regains focus
     const handleFocus = () => {
       if (user && session) {
-        console.log('👁️ Window regained focus, re-checking onboarding status...');
-        setTimeout(() => {
-          checkOnboardingStatusWithRetry();
-        }, 500);
+        console.log('👁️ Window regained focus, restoring onboarding state...');
+        
+        // First, restore state from localStorage if onboarding was active
+        const storedState = loadOnboardingStateFromStorage();
+        if (storedState && (storedState.showOnboarding || storedState.isOnboardingActive)) {
+          console.log('🔄 Restoring onboarding state from localStorage');
+          setOnboardingState(prev => ({
+            ...prev,
+            showOnboarding: storedState.showOnboarding || false,
+            isOnboardingActive: storedState.isOnboardingActive || false,
+            currentStep: (storedState.currentStep as OnboardingStep) || prev.currentStep,
+            onboardingUserType: storedState.onboardingUserType || prev.onboardingUserType,
+            selectedTier: storedState.selectedTier || prev.selectedTier,
+          }));
+          
+          // Only verify with API if we're not sure about the state
+          setTimeout(() => {
+            verifyOnboardingStatusSilently();
+          }, 1000);
+        } else {
+          // If no stored state, check normally
+          setTimeout(() => {
+            checkOnboardingStatusWithRetry();
+          }, 500);
+        }
       }
     };
 
@@ -251,6 +322,48 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     } catch (error) {
       console.error('❌ Error checking onboarding status:', error);
       return { success: false, status: 0 };
+    }
+  };
+
+  // Silent verification that doesn't hide the modal if it's already showing
+  const verifyOnboardingStatusSilently = async () => {
+    try {
+      if (!user || !session) return;
+      
+      const { data, error, response } = await fetchJsonWithAuth('/api/user/onboarding-status');
+      
+      if (error || !response.ok) {
+        // If API check fails, keep the current state (don't hide modal)
+        console.log('⚠️ Onboarding status check failed, keeping current state');
+        return;
+      }
+      
+      if (data) {
+        // Only update if onboarding is actually completed (don't hide if still needed)
+        if (!data.needsOnboarding && onboardingState.showOnboarding) {
+          console.log('✅ Onboarding completed, hiding modal');
+          setOnboardingState(prev => ({
+            ...prev,
+            isOnboardingActive: false,
+            showOnboarding: false,
+            currentStep: 'completed',
+          }));
+          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        } else if (data.needsOnboarding && !onboardingState.showOnboarding) {
+          // If onboarding is needed but not showing, show it
+          console.log('🎯 Onboarding needed, showing modal');
+          setOnboardingState(prev => ({
+            ...prev,
+            isOnboardingActive: true,
+            showOnboarding: true,
+            currentStep: data.onboarding?.step || prev.currentStep,
+          }));
+        }
+        // If state matches, do nothing (don't hide if already showing)
+      }
+    } catch (error) {
+      // Silently fail - keep current state
+      console.log('⚠️ Silent onboarding verification failed, keeping current state');
     }
   };
 
