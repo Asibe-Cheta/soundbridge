@@ -153,8 +153,10 @@ SHOW search_path;
 -- ============================================================================
 SELECT 
   current_database() AS current_database,
-  current_schema() AS current_schema,
-  current_schemas(true) AS search_path_schemas;
+  current_schema() AS current_schema;
+
+-- Show search path schemas separately (current_schemas returns an array)
+SELECT unnest(current_schemas(true)) AS search_path_schema;
 
 -- ============================================================================
 -- Step 12: Check for any synonyms or aliases (PostgreSQL doesn't have synonyms, but check anyway)
