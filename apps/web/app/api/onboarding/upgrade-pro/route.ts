@@ -60,21 +60,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already has an active Pro subscription
+    // Check if user already has ANY subscription (not just Pro)
+    // We'll update it rather than creating a new one
     const { data: existingSubscription } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('tier', 'pro')
-      .eq('status', 'active')
       .maybeSingle();
 
-    if (existingSubscription) {
-      return NextResponse.json(
-        { success: false, error: 'You already have an active Pro subscription' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+    console.log('🔍 Existing subscription check:', {
+      exists: !!existingSubscription,
+      currentTier: existingSubscription?.tier,
+      currentStatus: existingSubscription?.status,
+      userId: user.id
+    });
+
+    // Allow upgrade even if user has existing subscription (upsert will handle it)
+    // The upsert will update the existing record
 
     // Get user profile for email
     const { data: profile } = await supabase
