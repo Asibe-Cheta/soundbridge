@@ -86,14 +86,8 @@ export async function GET(request: NextRequest) {
         case 'pro':
           return {
             uploads: { used: usage?.uploads_used || 0, limit: 10 },
-            storage: { used: usage?.storage_used || 0, limit: 2, unit: 'GB' },
+            storage: { used: usage?.storage_used || 0, limit: 500, unit: 'MB' },
             bandwidth: { used: usage?.bandwidth_used || 0, limit: 10000, unit: 'MB' }
-          };
-        default:
-          return {
-            uploads: { used: usage?.uploads_used || 0, limit: 3 },
-            storage: { used: usage?.storage_used || 0, limit: 10, unit: 'GB' },
-            bandwidth: { used: usage?.bandwidth_used || 0, limit: 50000, unit: 'MB' }
           };
         default:
           return {
