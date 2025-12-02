@@ -12,7 +12,7 @@ BEGIN
   SET visibility = 'public'
   WHERE creator_id = p_user_id
     AND visibility = 'private'
-    AND uploaded_during_tier IN ('pro', 'enterprise')
+    AND uploaded_during_tier = 'pro'
     AND deleted_at IS NULL;
   
   GET DIAGNOSTICS restored_count = ROW_COUNT;
@@ -22,14 +22,14 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION restore_tracks_on_upgrade(UUID) IS 
-  'Restores private tracks to public when user upgrades to Pro/Enterprise tier';
+  'Restores private tracks to public when user upgrades to Pro tier';
 
--- Trigger to automatically restore tracks when subscription tier changes to Pro/Enterprise
+-- Trigger to automatically restore tracks when subscription tier changes to Pro
 CREATE OR REPLACE FUNCTION auto_restore_tracks_on_upgrade()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- If tier changed from free to pro/enterprise, restore tracks
-  IF OLD.tier = 'free' AND NEW.tier IN ('pro', 'enterprise') AND NEW.status = 'active' THEN
+  -- If tier changed from free to pro, restore tracks
+  IF OLD.tier = 'free' AND NEW.tier = 'pro' AND NEW.status = 'active' THEN
     PERFORM restore_tracks_on_upgrade(NEW.user_id);
   END IF;
   
@@ -43,5 +43,5 @@ DROP TRIGGER IF EXISTS trigger_restore_tracks_on_upgrade ON user_subscriptions;
 CREATE TRIGGER trigger_restore_tracks_on_upgrade
   AFTER UPDATE OF tier, status ON user_subscriptions
   FOR EACH ROW
-  WHEN (OLD.tier = 'free' AND NEW.tier IN ('pro', 'enterprise') AND NEW.status = 'active')
+  WHEN (OLD.tier = 'free' AND NEW.tier = 'pro' AND NEW.status = 'active')
   EXECUTE FUNCTION auto_restore_tracks_on_upgrade();
