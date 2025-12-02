@@ -259,37 +259,92 @@ export async function POST(request: NextRequest) {
     // Create or update subscription in database
     // First, verify the table structure by trying a simple select
     console.log('🔍 Testing user_subscriptions table access for user:', user.id);
-    const { data: testData, error: testError } = await supabase
+    console.log('🔍 Supabase client mode:', mode);
+    
+    // Try multiple query approaches to diagnose the issue
+    let testData: any = null;
+    let testError: any = null;
+    
+    // Test 1: Simple select with just user_id
+    const { data: test1, error: error1 } = await supabase
       .from('user_subscriptions')
-      .select('user_id, tier, status')
+      .select('user_id')
       .eq('user_id', user.id)
       .limit(1);
     
-    if (testError) {
-      console.error('❌ Error testing user_subscriptions table access:', {
-        error: testError,
-        code: testError.code,
-        message: testError.message,
-        details: testError.details,
-        hint: testError.hint,
-        userId: user.id
+    if (error1) {
+      console.error('❌ Test 1 failed (select user_id only):', {
+        error: error1,
+        code: error1.code,
+        message: error1.message,
+        details: error1.details,
+        hint: error1.hint
       });
-      
-      // If the test query fails, the upsert will likely fail too
-      // Return a more helpful error message
+      testError = error1;
+    } else {
+      console.log('✅ Test 1 passed (select user_id only):', test1);
+    }
+    
+    // Test 2: Select all columns
+    const { data: test2, error: error2 } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .limit(1);
+    
+    if (error2) {
+      console.error('❌ Test 2 failed (select *):', {
+        error: error2,
+        code: error2.code,
+        message: error2.message,
+        details: error2.details,
+        hint: error2.hint
+      });
+      if (!testError) testError = error2;
+    } else {
+      console.log('✅ Test 2 passed (select *):', test2);
+      testData = test2;
+    }
+    
+    // Test 3: Try without WHERE clause to see table structure
+    const { data: test3, error: error3 } = await supabase
+      .from('user_subscriptions')
+      .select('id, user_id, tier')
+      .limit(1);
+    
+    if (error3) {
+      console.error('❌ Test 3 failed (no WHERE clause):', {
+        error: error3,
+        code: error3.code,
+        message: error3.message,
+        details: error3.details,
+        hint: error3.hint
+      });
+      if (!testError) testError = error3;
+    } else {
+      console.log('✅ Test 3 passed (no WHERE clause):', test3);
+    }
+    
+    if (testError) {
+      // If any test failed, return detailed error
       return NextResponse.json(
         { 
           success: false, 
           error: 'Database access error',
           message: testError.message || 'Failed to access user_subscriptions table',
           details: testError.details || testError.hint || '',
-          code: testError.code
+          code: testError.code,
+          debug: {
+            test1Error: error1?.message,
+            test2Error: error2?.message,
+            test3Error: error3?.message
+          }
         },
         { status: 500, headers: corsHeaders }
       );
-    } else {
-      console.log('✅ Table access test successful, existing subscription:', testData);
     }
+    
+    console.log('✅ All table access tests passed, existing subscription:', testData);
 
     const { data: dbSubscription, error: dbError } = await supabase
       .from('user_subscriptions')
