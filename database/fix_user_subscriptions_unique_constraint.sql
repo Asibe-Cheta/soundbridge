@@ -20,23 +20,34 @@ BEGIN;
 -- Add Unique Constraint on user_id
 -- ============================================================================
 
--- Check if unique constraint already exists
+-- Check if unique constraint already exists and add if needed
 DO $$
+DECLARE
+  constraint_exists BOOLEAN;
+  user_id_attnum SMALLINT;
 BEGIN
+  -- Get the attribute number for user_id
+  SELECT attnum INTO user_id_attnum
+  FROM pg_attribute
+  WHERE attrelid = 'user_subscriptions'::regclass
+    AND attname = 'user_id';
+  
   -- Check if a unique constraint on user_id already exists
-  IF NOT EXISTS (
+  SELECT EXISTS (
     SELECT 1
     FROM pg_constraint
     WHERE conrelid = 'user_subscriptions'::regclass
       AND contype = 'u'
       AND (
-        -- Check if constraint is on user_id column
-        (conkey::int[] = ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid = 'user_subscriptions'::regclass AND attname = 'user_id')])
+        -- Check if constraint is on user_id column (using correct type)
+        (conkey = ARRAY[user_id_attnum]::smallint[])
         OR
         -- Check by constraint name pattern
         conname LIKE '%user_id%' OR conname LIKE '%user_subscriptions_user_id%'
       )
-  ) THEN
+  ) INTO constraint_exists;
+  
+  IF NOT constraint_exists THEN
     -- Add unique constraint on user_id
     -- This allows only one active subscription per user
     ALTER TABLE user_subscriptions
@@ -46,6 +57,11 @@ BEGIN
   ELSE
     RAISE NOTICE 'ℹ️ Unique constraint on user_subscriptions.user_id already exists';
   END IF;
+EXCEPTION
+  WHEN duplicate_object THEN
+    RAISE NOTICE 'ℹ️ Unique constraint on user_subscriptions.user_id already exists (caught exception)';
+  WHEN OTHERS THEN
+    RAISE WARNING '⚠️ Error checking/adding constraint: %', SQLERRM;
 END $$;
 
 -- ============================================================================
@@ -64,14 +80,21 @@ DO $$
 DECLARE
   constraint_exists BOOLEAN;
   index_exists BOOLEAN;
+  user_id_attnum SMALLINT;
 BEGIN
-  -- Check for unique constraint
+  -- Get the attribute number for user_id
+  SELECT attnum INTO user_id_attnum
+  FROM pg_attribute
+  WHERE attrelid = 'user_subscriptions'::regclass
+    AND attname = 'user_id';
+  
+  -- Check for unique constraint (using correct type)
   SELECT EXISTS (
     SELECT 1
     FROM pg_constraint
     WHERE conrelid = 'user_subscriptions'::regclass
       AND contype = 'u'
-      AND conkey::int[] = ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid = 'user_subscriptions'::regclass AND attname = 'user_id')]
+      AND conkey = ARRAY[user_id_attnum]::smallint[]
   ) INTO constraint_exists;
   
   -- Check for unique index
