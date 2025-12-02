@@ -27,12 +27,27 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
   const stripe = useStripe();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  // Wait for Stripe to be ready before allowing submission
+  useEffect(() => {
+    if (stripe && elements) {
+      setIsReady(true);
+    } else {
+      setIsReady(false);
+    }
+  }, [stripe, elements]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!stripe || !elements) {
       setError('Stripe is not loaded. Please refresh the page.');
+      return;
+    }
+
+    if (isSubmitting) {
+      // Prevent double submission
       return;
     }
 
@@ -115,9 +130,9 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={isSubmitting || !stripe || !elements}
+        disabled={isSubmitting || !isReady}
         className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
-          isSubmitting || !stripe || !elements
+          isSubmitting || !isReady
             ? 'bg-white/10 text-white/50 cursor-not-allowed'
             : 'bg-purple-600 hover:bg-purple-700 text-white'
         }`}
@@ -126,6 +141,11 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
             Processing...
+          </>
+        ) : !isReady ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Loading payment form...
           </>
         ) : (
           <>
