@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -8,7 +8,8 @@ import { SubscriptionService } from '../../src/services/SubscriptionService';
 import { getPriceId } from '../../src/lib/stripe';
 import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles } from 'lucide-react';
 
-export default function PricingPage() {
+// Separate component for search params handling (required for Suspense)
+function PricingContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -676,5 +677,21 @@ export default function PricingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main export with Suspense boundary for useSearchParams
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <PricingContent />
+    </Suspense>
   );
 }

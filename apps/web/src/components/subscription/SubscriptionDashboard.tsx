@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -13,7 +13,8 @@ interface SubscriptionDashboardProps {
   className?: string;
 }
 
-const SubscriptionDashboard: React.FC<SubscriptionDashboardProps> = ({ className = '' }) => {
+// Inner component that uses useSearchParams (must be wrapped in Suspense)
+function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardProps) {
   const { data, refresh } = useSubscription();
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
