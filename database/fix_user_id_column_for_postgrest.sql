@@ -83,7 +83,10 @@ END $$;
 -- ============================================================================
 NOTIFY pgrst, 'reload schema';
 
-RAISE NOTICE '✅ Notified PostgREST to reload schema';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Notified PostgREST to reload schema';
+END $$;
 
 COMMIT;
 
