@@ -153,7 +153,7 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
             Revenue Sharing Available
           </h4>
           <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-            Upgrade to Pro or Enterprise to start earning from your content and access revenue sharing features.
+            Upgrade to Pro to start earning from your content and access revenue sharing features.
           </p>
           <Link
             href="/pricing"
@@ -278,7 +278,7 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
                 <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                   {subscription.tier === 'pro' 
                     ? 'Keep 95% of your earnings with Pro features'
-                    : 'Keep 90% of your earnings with Enterprise features'
+                    : 'Keep 90% of your earnings with Pro features'
                   }
                 </p>
               </div>

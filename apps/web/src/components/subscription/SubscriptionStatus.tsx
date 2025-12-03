@@ -62,13 +62,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           color: 'bg-purple-100 text-purple-800',
           description: 'For growing creators'
         };
-      case 'enterprise':
-        return {
-          name: 'Enterprise',
-          icon: <Crown className="h-5 w-5 text-gold-500" />,
-          color: 'bg-yellow-100 text-yellow-800',
-          description: 'For professional creators'
-        };
+      // Enterprise tier removed - only Free and Pro now
       default:
         return {
           name: 'Unknown',
