@@ -1,40 +1,225 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionStatus from './SubscriptionStatus';
 import UsageStatistics from './UsageStatistics';
 import RevenueTracker from './RevenueTracker';
-import { Crown, TrendingUp, BarChart3, DollarSign, CheckCircle, X } from 'lucide-react';
+import { SubscriptionService } from '../../services/SubscriptionService';
+import { getPriceId } from '../../lib/stripe';
+import { SUBSCRIPTION_POLLING_CONFIG } from '../../config/subscription-polling';
+import { Crown, TrendingUp, BarChart3, DollarSign, CheckCircle, X, Loader2 } from 'lucide-react';
 
 interface SubscriptionDashboardProps {
   className?: string;
+}
+
+interface PollingState {
+  isPolling: boolean;
+  attempts: number;
+  maxAttempts: number;
+  intervalMs: number;
 }
 
 // Inner component that uses useSearchParams (must be wrapped in Suspense)
 function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardProps) {
   const { data, refresh } = useSubscription();
   const searchParams = useSearchParams();
-  const [showSuccess, setShowSuccess] = useState(false);
   const currentTier = data?.subscription.tier || 'free';
+  const isPro = currentTier === 'pro' && data?.subscription.status === 'active';
+  const isFree = !isPro;
 
-  // Check for success param and refresh subscription
+  // Success/error message states
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showActivating, setShowActivating] = useState(false);
+  const [showTimeout, setShowTimeout] = useState(false);
+  const [pollingError, setPollingError] = useState<string | null>(null);
+
+  // Polling state
+  const [pollingState, setPollingState] = useState<PollingState>({
+    isPolling: false,
+    attempts: 0,
+    maxAttempts: SUBSCRIPTION_POLLING_CONFIG.MAX_ATTEMPTS,
+    intervalMs: SUBSCRIPTION_POLLING_CONFIG.INTERVAL_MS,
+  });
+
+  // Refs for cleanup
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Stop polling
+   */
+  const stopPolling = useCallback((timedOut: boolean = false) => {
+    console.log('[SubscriptionDashboard] Stopping polling', { timedOut });
+    
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    setPollingState(prev => ({
+      ...prev,
+      isPolling: false,
+    }));
+
+    setShowActivating(false);
+
+    if (timedOut) {
+      setShowTimeout(true);
+      setPollingError('Subscription activation is taking longer than expected. Please refresh the page in a moment.');
+    }
+  }, []);
+
+  /**
+   * Start polling for subscription status
+   */
+  const startPolling = useCallback(() => {
+    console.log('[SubscriptionDashboard] Starting subscription status polling');
+    
+    setShowActivating(true);
+    setShowTimeout(false);
+    setPollingError(null);
+    
+    setPollingState(prev => ({
+      ...prev,
+      isPolling: true,
+      attempts: 0,
+    }));
+
+    // Clear any existing intervals
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    // Initial delay before first poll (give webhook time)
+    setTimeout(() => {
+      // Poll immediately once
+      refresh();
+
+      // Start polling interval
+      pollingIntervalRef.current = setInterval(async () => {
+        setPollingState(prev => {
+          const newAttempts = prev.attempts + 1;
+          
+          console.log(`[SubscriptionDashboard] Polling attempt ${newAttempts}/${prev.maxAttempts}`);
+          
+          // Check if max attempts reached
+          if (newAttempts >= prev.maxAttempts) {
+            console.log('[SubscriptionDashboard] Max polling attempts reached');
+            stopPolling(true); // Stop with timeout
+            return prev;
+          }
+          
+          return {
+            ...prev,
+            attempts: newAttempts,
+          };
+        });
+
+        // Refresh subscription status
+        await refresh();
+        
+      }, pollingState.intervalMs);
+    }, SUBSCRIPTION_POLLING_CONFIG.INITIAL_DELAY);
+
+  }, [refresh, pollingState.intervalMs, stopPolling]);
+
+  /**
+   * Handle manual refresh (if polling times out)
+   */
+  const handleManualRefresh = useCallback(async () => {
+    console.log('[SubscriptionDashboard] Manual refresh triggered');
+    setShowTimeout(false);
+    setPollingError(null);
+    await refresh();
+    
+    // Check if Pro now
+    if (isPro) {
+      setShowSuccess(true);
+      timeoutRef.current = setTimeout(() => setShowSuccess(false), SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
+    } else {
+      // Try polling again
+      startPolling();
+    }
+  }, [refresh, isPro, startPolling]);
+
+  /**
+   * Handle success redirect from payment
+   */
   useEffect(() => {
     const success = searchParams.get('success');
+    
     if (success === 'true') {
+      console.log('[SubscriptionDashboard] Payment success detected, starting polling');
+      
+      // Show initial success message
       setShowSuccess(true);
-      // Refresh subscription status after payment (give webhook time to process)
-      setTimeout(() => {
-        refresh();
-      }, 2000);
-      // Auto-hide success message after 5 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 5000);
+      
+      // Start polling
+      startPolling();
     }
-  }, [searchParams, refresh]);
+  }, [searchParams, startPolling]);
+
+  /**
+   * Monitor subscription changes during polling
+   */
+  useEffect(() => {
+    if (pollingState.isPolling && isPro) {
+      console.log('[SubscriptionDashboard] Pro subscription detected! Stopping polling.');
+      
+      // Stop polling - subscription is now Pro!
+      stopPolling(false);
+      
+      // Show success message
+      setShowSuccess(true);
+      setShowActivating(false);
+      
+      // Auto-hide success message after configured duration
+      timeoutRef.current = setTimeout(() => {
+        setShowSuccess(false);
+      }, SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
+    }
+  }, [pollingState.isPolling, isPro, stopPolling]);
+
+  /**
+   * Cleanup on unmount
+   */
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  /**
+   * Handle upgrade button click
+   */
+  const handleUpgrade = async () => {
+    try {
+      const priceId = getPriceId('pro', 'monthly');
+      await SubscriptionService.createCheckoutSession({
+        name: 'Pro Monthly',
+        priceId,
+        billingCycle: 'monthly',
+        amount: 9.99,
+      });
+    } catch (error: any) {
+      console.error('Error upgrading:', error);
+      setPollingError(error.message || 'Failed to start checkout');
+    }
+  };
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -54,6 +239,49 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+      )}
+
+      {/* Activating Message (While Polling) */}
+      {showActivating && !isPro && (
+        <div className="p-4 bg-blue-100 text-blue-800 rounded-lg border border-blue-300">
+          <div className="flex items-start gap-3">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <div className="flex-1">
+              <h3 className="font-semibold">Activating your Pro subscription...</h3>
+              <p className="text-sm mt-1">
+                This usually takes a few seconds. Please wait while we confirm your payment.
+              </p>
+              <p className="text-xs mt-2 text-blue-600">
+                Attempt {pollingState.attempts} of {pollingState.maxAttempts}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeout Message */}
+      {showTimeout && (
+        <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⏰</span>
+            <div className="flex-1">
+              <h3 className="font-semibold">Taking longer than expected</h3>
+              <p className="text-sm mt-1">
+                Your payment was successful, but activation is taking longer than usual. 
+                This can happen during high traffic. Please try refreshing in a moment.
+              </p>
+              {pollingError && (
+                <p className="text-sm mt-2 text-yellow-900 font-medium">{pollingError}</p>
+              )}
+              <button
+                onClick={handleManualRefresh}
+                className="mt-3 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium"
+              >
+                Refresh Status
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -119,7 +347,7 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
       </div>
 
       {/* Free Tier Upgrade Prompt */}
-      {currentTier === 'free' && (
+      {isFree && !showActivating && (
         <div style={{
           background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
           borderRadius: '1rem',
