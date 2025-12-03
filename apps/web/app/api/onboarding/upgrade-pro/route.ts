@@ -402,6 +402,11 @@ export async function POST(request: NextRequest) {
       };
 
       // Try with authenticated client first
+      // CRITICAL: Try UPDATE without .eq() first to see if WHERE clause is the issue
+      console.log('🔍 Attempting UPDATE with authenticated client...');
+      console.log('🔍 Subscription data keys:', Object.keys(subscriptionData));
+      console.log('🔍 User ID for WHERE clause:', user.id);
+      
       let { data, error } = await supabase
         .from('user_subscriptions')
         .update(subscriptionData)
