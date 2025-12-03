@@ -39,6 +39,7 @@ DECLARE
   new_id UUID;
 BEGIN
   -- Insert new subscription
+  -- Use explicit table qualification to avoid ambiguity
   INSERT INTO public.user_subscriptions (
     user_id,
     tier,
@@ -54,7 +55,7 @@ BEGIN
     refund_count
   )
   VALUES (
-    p_user_id,
+    p_user_id,  -- Function parameter, not ambiguous
     'pro',
     'active',
     p_billing_cycle,
@@ -67,28 +68,28 @@ BEGIN
     true,
     0
   )
-  RETURNING id INTO new_id;
+  RETURNING public.user_subscriptions.id INTO new_id;
   
-  -- Return the inserted row
+  -- Return the inserted row - use fully qualified column names to avoid ambiguity
   RETURN QUERY
   SELECT 
-    us.id,
-    us.user_id,
-    us.tier,
-    us.status,
-    us.billing_cycle,
-    us.stripe_customer_id,
-    us.stripe_subscription_id,
-    us.subscription_start_date,
-    us.subscription_renewal_date,
-    us.subscription_ends_at,
-    us.money_back_guarantee_end_date,
-    us.money_back_guarantee_eligible,
-    us.refund_count,
-    us.created_at,
-    us.updated_at
-  FROM public.user_subscriptions us
-  WHERE us.id = new_id;
+    public.user_subscriptions.id,
+    public.user_subscriptions.user_id,
+    public.user_subscriptions.tier,
+    public.user_subscriptions.status,
+    public.user_subscriptions.billing_cycle,
+    public.user_subscriptions.stripe_customer_id,
+    public.user_subscriptions.stripe_subscription_id,
+    public.user_subscriptions.subscription_start_date,
+    public.user_subscriptions.subscription_renewal_date,
+    public.user_subscriptions.subscription_ends_at,
+    public.user_subscriptions.money_back_guarantee_end_date,
+    public.user_subscriptions.money_back_guarantee_eligible,
+    public.user_subscriptions.refund_count,
+    public.user_subscriptions.created_at,
+    public.user_subscriptions.updated_at
+  FROM public.user_subscriptions
+  WHERE public.user_subscriptions.id = new_id;
 END;
 $$;
 

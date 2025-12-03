@@ -36,7 +36,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- Update existing subscription
+  -- Update existing subscription - use fully qualified table name to avoid ambiguity
   UPDATE public.user_subscriptions
   SET
     tier = 'pro',
@@ -51,28 +51,28 @@ BEGIN
     money_back_guarantee_eligible = true,
     refund_count = 0,
     updated_at = NOW()
-  WHERE user_id = p_user_id;
+  WHERE public.user_subscriptions.user_id = p_user_id;
   
-  -- Return the updated row
+  -- Return the updated row - use fully qualified column names to avoid ambiguity
   RETURN QUERY
   SELECT 
-    us.id,
-    us.user_id,
-    us.tier,
-    us.status,
-    us.billing_cycle,
-    us.stripe_customer_id,
-    us.stripe_subscription_id,
-    us.subscription_start_date,
-    us.subscription_renewal_date,
-    us.subscription_ends_at,
-    us.money_back_guarantee_end_date,
-    us.money_back_guarantee_eligible,
-    us.refund_count,
-    us.created_at,
-    us.updated_at
-  FROM public.user_subscriptions us
-  WHERE us.user_id = p_user_id;
+    public.user_subscriptions.id,
+    public.user_subscriptions.user_id,
+    public.user_subscriptions.tier,
+    public.user_subscriptions.status,
+    public.user_subscriptions.billing_cycle,
+    public.user_subscriptions.stripe_customer_id,
+    public.user_subscriptions.stripe_subscription_id,
+    public.user_subscriptions.subscription_start_date,
+    public.user_subscriptions.subscription_renewal_date,
+    public.user_subscriptions.subscription_ends_at,
+    public.user_subscriptions.money_back_guarantee_end_date,
+    public.user_subscriptions.money_back_guarantee_eligible,
+    public.user_subscriptions.refund_count,
+    public.user_subscriptions.created_at,
+    public.user_subscriptions.updated_at
+  FROM public.user_subscriptions
+  WHERE public.user_subscriptions.user_id = p_user_id;
 END;
 $$;
 
