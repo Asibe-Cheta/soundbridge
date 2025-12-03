@@ -31,6 +31,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // CRITICAL: Verify user.id is a valid UUID before passing to RPC
+    if (!user.id || typeof user.id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)) {
+      console.error('❌ Invalid user ID format:', user.id);
+      return NextResponse.json(
+        { success: false, error: 'Invalid user ID' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    console.log('🔍 User ID being passed to RPC:', user.id);
+
     // Check Stripe is configured
     if (!stripe) {
       console.error('❌ Stripe is not configured');
@@ -371,6 +382,12 @@ export async function POST(request: NextRequest) {
     if (testData && testData.length > 0) {
       // User has existing subscription - Use RPC function to UPDATE (bypasses PostgREST issues)
       console.log('🔄 Updating existing subscription for user:', user.id);
+      console.log('🔍 RPC parameters:', {
+        p_user_id: user.id,
+        p_billing_cycle: billingCycle,
+        p_stripe_customer_id: customerId,
+        p_stripe_subscription_id: subscription.id
+      });
       
       const { data, error } = await supabase.rpc('update_user_subscription_to_pro', {
         p_user_id: user.id,
@@ -389,6 +406,12 @@ export async function POST(request: NextRequest) {
     } else {
       // User doesn't have subscription - Use RPC function to INSERT (bypasses PostgREST issues)
       console.log('➕ Inserting new subscription for user:', user.id);
+      console.log('🔍 RPC parameters:', {
+        p_user_id: user.id,
+        p_billing_cycle: billingCycle,
+        p_stripe_customer_id: customerId,
+        p_stripe_subscription_id: subscription.id
+      });
       
       const { data, error } = await supabase.rpc('insert_user_subscription_to_pro', {
         p_user_id: user.id,
