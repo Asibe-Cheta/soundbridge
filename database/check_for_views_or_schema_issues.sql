@@ -40,8 +40,8 @@ ORDER BY n.nspname, c.relname;
 
 -- 4. Check PostgREST exposed schemas
 SELECT 
-  schemaname,
-  schemaname = 'public' AS is_public
+  nspname AS schemaname,
+  nspname = 'public' AS is_public
 FROM pg_namespace
 WHERE nspname IN ('public', 'api', 'postgrest');
 
