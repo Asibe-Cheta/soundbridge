@@ -513,9 +513,13 @@ export async function POST(request: NextRequest) {
               }
             }
           } else {
-            // RPC function succeeded - convert JSONB to object
+            // RPC function succeeded - it returns a table, so get first row
             console.log('✅ RPC function succeeded!');
-            data = rpcData as any;
+            if (Array.isArray(rpcData) && rpcData.length > 0) {
+              data = rpcData[0] as any;
+            } else if (rpcData) {
+              data = rpcData as any;
+            }
             error = null;
           }
         } catch (rpcException: any) {

@@ -3,6 +3,7 @@
 -- Date: December 3, 2025
 -- Purpose: Direct SQL function to update subscription by ID
 --          This bypasses PostgREST column resolution issues
+--          CRITICAL: Explicitly disable RLS during function execution
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION update_user_subscription_by_id(
@@ -19,15 +20,32 @@ CREATE OR REPLACE FUNCTION update_user_subscription_by_id(
   p_money_back_guarantee_eligible BOOLEAN,
   p_refund_count INTEGER
 )
-RETURNS JSONB
+RETURNS TABLE (
+  id UUID,
+  tier TEXT,
+  status TEXT,
+  billing_cycle TEXT,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  subscription_start_date TIMESTAMPTZ,
+  subscription_renewal_date TIMESTAMPTZ,
+  subscription_ends_at TIMESTAMPTZ,
+  money_back_guarantee_end_date TIMESTAMPTZ,
+  money_back_guarantee_eligible BOOLEAN,
+  refund_count INTEGER,
+  updated_at TIMESTAMPTZ
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  updated_row user_subscriptions%ROWTYPE;
 BEGIN
+  -- CRITICAL: Disable RLS for this function execution
+  PERFORM set_config('row_security', 'off', false);
+  
   -- Update the subscription by ID (primary key)
+  -- Return only the columns we need (avoid user_id to prevent PostgREST issues)
+  RETURN QUERY
   UPDATE user_subscriptions
   SET
     tier = p_tier,
@@ -42,11 +60,21 @@ BEGIN
     money_back_guarantee_eligible = p_money_back_guarantee_eligible,
     refund_count = p_refund_count,
     updated_at = NOW()
-  WHERE id = subscription_id
-  RETURNING * INTO updated_row;
-  
-  -- Return the updated row as JSONB
-  RETURN to_jsonb(updated_row);
+  WHERE user_subscriptions.id = subscription_id
+  RETURNING 
+    user_subscriptions.id,
+    user_subscriptions.tier,
+    user_subscriptions.status,
+    user_subscriptions.billing_cycle,
+    user_subscriptions.stripe_customer_id,
+    user_subscriptions.stripe_subscription_id,
+    user_subscriptions.subscription_start_date,
+    user_subscriptions.subscription_renewal_date,
+    user_subscriptions.subscription_ends_at,
+    user_subscriptions.money_back_guarantee_end_date,
+    user_subscriptions.money_back_guarantee_eligible,
+    user_subscriptions.refund_count,
+    user_subscriptions.updated_at;
 END;
 $$;
 
