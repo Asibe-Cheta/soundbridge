@@ -32,7 +32,10 @@ END $$;
 ALTER TABLE public.user_subscriptions 
 ALTER COLUMN user_id SET NOT NULL;
 
-RAISE NOTICE '✅ user_id column is now NOT NULL';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ user_id column is now NOT NULL';
+END $$;
 
 -- ============================================================================
 -- Step 3: Drop existing RLS policies
