@@ -188,10 +188,10 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
           </div>
           <div>
             <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {data?.subscription.tier === 'pro' ? '10 Uploads Per Month' : '3 Lifetime Uploads'}
+              {data?.subscription?.tier === 'pro' ? '10 Uploads Per Month' : '3 Lifetime Uploads'}
             </h4>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              {data?.subscription.tier === 'pro' 
+              {data?.subscription?.tier === 'pro' 
                 ? 'Pro users can upload up to 10 tracks per month. Limit resets on the 1st of each month.'
                 : 'Free users can upload up to 3 tracks total (lifetime limit). Upgrade to Pro for 10 uploads per month.'
               }
