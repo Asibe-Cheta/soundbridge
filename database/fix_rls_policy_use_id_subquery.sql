@@ -10,16 +10,23 @@
 BEGIN;
 
 -- ============================================================================
--- Step 1: Drop existing problematic policy
+-- Step 1: Drop ALL existing policies (comprehensive cleanup)
 -- ============================================================================
-DROP POLICY IF EXISTS "Users can manage subscriptions" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can SELECT own subscription" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can INSERT own subscription" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can UPDATE own subscription" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can DELETE own subscription" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can view their own subscription" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can insert their own subscription" ON user_subscriptions;
-DROP POLICY IF EXISTS "Users can update their own subscription" ON user_subscriptions;
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  -- Drop all existing policies on user_subscriptions
+  FOR r IN (
+    SELECT policyname
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_subscriptions'
+  ) LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.user_subscriptions';
+    RAISE NOTICE 'Dropped policy: %', r.policyname;
+  END LOOP;
+END $$;
 
 -- ============================================================================
 -- Step 2: Ensure RLS is enabled
