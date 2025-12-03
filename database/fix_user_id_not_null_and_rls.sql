@@ -81,7 +81,8 @@ DECLARE
   policy_count INTEGER;
 BEGIN
   -- Check if user_id is NOT NULL
-  SELECT NOT is_nullable INTO is_not_null
+  -- is_nullable is 'YES' or 'NO' (string), not boolean
+  SELECT (is_nullable = 'NO') INTO is_not_null
   FROM information_schema.columns
   WHERE table_schema = 'public'
     AND table_name = 'user_subscriptions'
