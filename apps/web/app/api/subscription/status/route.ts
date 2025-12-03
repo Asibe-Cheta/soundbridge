@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
     }
 
-    // Calculate usage statistics from actual tables (same approach as Overview tab)
-    // This ensures accurate data showing extension of free tier usage
+    // Calculate usage statistics from actual tables (EXACT same approach as Overview tab/DashboardService)
+    // This ensures accurate data showing extension of free tier usage, not a fresh slate
     const { data: tracks, error: tracksError } = await supabase
       .from('audio_tracks')
       .select('*')
@@ -54,40 +54,36 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching followers for usage:', followersError);
     }
 
-    // Filter out deleted tracks (if deleted_at column exists)
-    const activeTracks = tracks?.filter((t: any) => !t.deleted_at) || tracks || [];
-    const activeEvents = events?.filter((e: any) => !e.deleted_at) || events || [];
+    // Calculate stats EXACTLY like DashboardService.getDashboardStats() does
+    const totalPlays = tracks?.reduce((sum: number, track: any) => sum + (track.play_count || track.plays_count || 0), 0) || 0;
+    const totalLikes = tracks?.reduce((sum: number, track: any) => sum + (track.like_count || track.likes_count || 0), 0) || 0;
+    const totalTracks = tracks?.length || 0;
+    const totalEvents = events?.length || 0;
     
-    // Calculate usage from actual data (matching Overview tab logic exactly)
-    const musicUploads = activeTracks.filter((t: any) => {
-      const type = t.track_type || t.type;
+    // Calculate uploads by type
+    const musicUploads = tracks?.filter((t: any) => {
+      const type = t.track_type;
       return !type || type === 'music' || type === 'song';
     }).length || 0;
     
-    const podcastUploads = activeTracks.filter((t: any) => {
-      const type = t.track_type || t.type;
+    const podcastUploads = tracks?.filter((t: any) => {
+      const type = t.track_type;
       return type === 'podcast';
     }).length || 0;
     
-    const eventUploads = activeEvents.length || 0;
+    const eventUploads = totalEvents;
     
-    // Calculate storage - handle different possible column names (file_size, size)
-    const totalStorageUsed = activeTracks.reduce((sum: number, t: any) => {
+    // Calculate storage (handle different column names)
+    const totalStorageUsed = tracks?.reduce((sum: number, t: any) => {
       const size = t.file_size || t.size || 0;
       return sum + (typeof size === 'number' && size > 0 ? size : 0);
-    }, 0);
-    
-    // Calculate plays - handle different column name variations (play_count, plays_count)
-    const totalPlays = activeTracks.reduce((sum: number, t: any) => {
-      const plays = t.play_count || t.plays_count || 0;
-      return sum + (typeof plays === 'number' ? plays : 0);
-    }, 0);
+    }, 0) || 0;
     
     const totalFollowers = followersCount || 0;
     
     // Get last upload date
-    const lastUploadAt = activeTracks.length > 0 
-      ? activeTracks.sort((a: any, b: any) => {
+    const lastUploadAt = tracks && tracks.length > 0 
+      ? tracks.sort((a: any, b: any) => {
           const dateA = new Date(a.created_at || 0).getTime();
           const dateB = new Date(b.created_at || 0).getTime();
           return dateB - dateA;
