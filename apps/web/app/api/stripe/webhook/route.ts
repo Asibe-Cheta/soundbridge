@@ -198,13 +198,20 @@ async function handleSubscriptionUpdated(
 ) {
   try {
     const subscriptionId = subscription.id;
-    const userId = subscription.metadata?.user_id;
+    
+    // Find user by subscription ID (more reliable than metadata)
+    const { data: existingSub } = await supabase
+      .from('user_subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single();
 
-    if (!userId) {
-      console.error('[webhook] No user_id in subscription metadata');
+    if (!existingSub) {
+      console.error('[webhook] Subscription not found in database:', subscriptionId);
       return;
     }
 
+    const userId = existingSub.user_id;
     const subscriptionEndDate = new Date(subscription.current_period_end * 1000);
     const status = subscription.status === 'active' ? 'active' : 
                    subscription.status === 'canceled' ? 'cancelled' : 
@@ -270,15 +277,19 @@ async function handlePaymentSucceeded(
     const subscriptionId = invoice.subscription as string;
     if (!subscriptionId) return;
 
-    // Get subscription to find user_id
-    if (!stripe) return;
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const userId = subscription.metadata?.user_id;
+    // Find user by subscription ID (more reliable than metadata)
+    const { data: existingSub } = await supabase
+      .from('user_subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single();
 
-    if (!userId) {
-      console.error('[webhook] No user_id in subscription metadata');
+    if (!existingSub) {
+      console.error('[webhook] Subscription not found in database:', subscriptionId);
       return;
     }
+
+    const userId = existingSub.user_id;
 
     if (invoice.period_end) {
       const renewalDate = new Date(invoice.period_end * 1000);
