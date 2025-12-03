@@ -402,17 +402,32 @@ export async function POST(request: NextRequest) {
       };
 
       // Try with authenticated client first
-      // CRITICAL: Try UPDATE without .eq() first to see if WHERE clause is the issue
       console.log('🔍 Attempting UPDATE with authenticated client...');
       console.log('🔍 Subscription data keys:', Object.keys(subscriptionData));
       console.log('🔍 User ID for WHERE clause:', user.id);
+      console.log('🔍 Testing if WHERE clause is the issue...');
       
+      // CRITICAL TEST: Try UPDATE with different WHERE clause syntax
+      // PostgREST might have issues with .eq('user_id', ...) in UPDATE
       let { data, error } = await supabase
         .from('user_subscriptions')
         .update(subscriptionData)
         .eq('user_id', user.id)
         .select()
         .single();
+      
+      // If that fails, try using filter() instead of eq()
+      if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
+        console.log('⚠️ .eq() failed, trying .filter() instead...');
+        const result = await supabase
+          .from('user_subscriptions')
+          .update(subscriptionData)
+          .filter('user_id', 'eq', user.id)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
       
       // If it fails with column error, try service role client (bypasses RLS)
       if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
@@ -474,6 +489,10 @@ export async function POST(request: NextRequest) {
       };
 
       // Try with authenticated client first
+      console.log('🔍 Attempting INSERT with authenticated client...');
+      console.log('🔍 Subscription data keys:', Object.keys(subscriptionData));
+      console.log('🔍 User ID in INSERT data:', subscriptionData.user_id);
+      
       let { data, error } = await supabase
         .from('user_subscriptions')
         .insert(subscriptionData)
