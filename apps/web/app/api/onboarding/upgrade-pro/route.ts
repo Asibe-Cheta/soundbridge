@@ -430,7 +430,7 @@ export async function POST(request: NextRequest) {
         dbSubscription = null;
       } else {
         console.log('✅ Step 1 SUCCESS: Found subscription ID:', existing.id);
-      } else {
+        
         // Step 2: UPDATE using primary key ID (not user_id!)
         // CRITICAL: PostgREST has issues with foreign keys in UPDATE WHERE clauses
         // Solution: Use primary key (id) instead of foreign key (user_id)
