@@ -407,6 +407,7 @@ export async function POST(request: NextRequest) {
 
       // Step 1: Get existing subscription ID (SELECT works fine with .eq('user_id', ...))
       console.log('🔍 Step 1: Getting subscription ID using SELECT...');
+      console.log('🔍 User ID for SELECT:', user.id);
       const { data: existing, error: selectError } = await supabase
         .from('user_subscriptions')
         .select('id')
@@ -414,46 +415,34 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       
       if (selectError) {
-        console.error('❌ Error selecting subscription:', selectError);
+        console.error('❌ Error selecting subscription:', {
+          code: selectError.code,
+          message: selectError.message,
+          details: selectError.details,
+          hint: selectError.hint
+        });
         dbError = selectError;
         dbSubscription = null;
       } else if (!existing || !existing.id) {
         console.error('❌ No existing subscription found for user:', user.id);
+        console.log('🔍 SELECT result:', existing);
         dbError = { code: 'PGRST116', message: 'No existing subscription found' } as any;
         dbSubscription = null;
       } else {
-        // Step 2: UPDATE using .match() - PostgREST has issues with .eq() in UPDATE
-        // Try .match() with id first, then fallback to .match() with user_id
+        console.log('✅ Step 1 SUCCESS: Found subscription ID:', existing.id);
+      } else {
+        // Step 2: UPDATE using primary key ID (not user_id!)
+        // CRITICAL: PostgREST has issues with foreign keys in UPDATE WHERE clauses
+        // Solution: Use primary key (id) instead of foreign key (user_id)
         console.log('🔍 Step 2: Updating subscription by ID:', existing.id);
-        console.log('✅ Using .match() instead of .eq() - trying with id first');
+        console.log('✅ Using .eq("id", ...) with primary key - this should work!');
         
         let { data, error } = await supabase
           .from('user_subscriptions')
           .update(subscriptionData)
-          .match({ id: existing.id })  // ✅ Try .match() with primary key
+          .eq('id', existing.id)  // ✅ Use PRIMARY KEY, not foreign key!
           .select()
           .single();
-        
-        // If that fails, try .match() with user_id (as suggested by user)
-        if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
-          console.log('⚠️ .match({ id: ... }) failed, trying .match({ user_id: ... })...');
-          console.log('Error details:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-            hint: error.hint
-          });
-          
-          const result = await supabase
-            .from('user_subscriptions')
-            .update(subscriptionData)
-            .match({ user_id: user.id })  // ✅ Try .match() with user_id instead
-            .select()
-            .single();
-          
-          data = result.data;
-          error = result.error;
-        }
         
         // If authenticated client fails, try service role client
         if (error) {
@@ -469,11 +458,11 @@ export async function POST(request: NextRequest) {
             const supabaseAdmin = createServiceClient();
             console.log('✅ Service role client created');
             
-            // Try .match() with user_id using service role
+            // Try with service role using primary key
             const result = await supabaseAdmin
               .from('user_subscriptions')
               .update(subscriptionData)
-              .match({ user_id: user.id })  // ✅ Use .match() with user_id
+              .eq('id', existing.id)  // ✅ Still use PRIMARY KEY with service role
               .select()
               .single();
             
