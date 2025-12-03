@@ -383,8 +383,8 @@ export async function POST(request: NextRequest) {
         p_money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
       });
       
-      // RPC returns array, get first element
-      dbSubscription = data && data.length > 0 ? data[0] : null;
+      // RPC now returns JSONB (single object), not an array
+      dbSubscription = data || null;
       dbError = error;
     } else {
       // User doesn't have subscription - Use RPC function to INSERT (bypasses PostgREST issues)
@@ -401,8 +401,8 @@ export async function POST(request: NextRequest) {
         p_money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
       });
       
-      // RPC returns array, get first element
-      dbSubscription = data && data.length > 0 ? data[0] : null;
+      // RPC now returns JSONB (single object), not an array
+      dbSubscription = data || null;
       dbError = error;
     }
 
