@@ -31,14 +31,14 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
 
   // Wait for Stripe to be ready before allowing submission
   useEffect(() => {
+    // Always reset submitting state when Stripe state changes
+    setIsSubmitting(false);
+    
     if (stripe && elements) {
       setIsReady(true);
     } else {
       setIsReady(false);
     }
-    
-    // Reset submitting state if component remounts or Stripe reloads
-    setIsSubmitting(false);
   }, [stripe, elements]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -173,6 +173,13 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
 export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollectionProps) {
   const [period, setPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [error, setError] = useState<string | null>(null);
+
+  // Reset error when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
