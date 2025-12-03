@@ -141,15 +141,9 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
     setPollingError(null);
     await refresh();
     
-    // Check if Pro now
-    if (isPro) {
-      setShowSuccess(true);
-      timeoutRef.current = setTimeout(() => setShowSuccess(false), SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
-    } else {
-      // Try polling again
-      startPolling();
-    }
-  }, [refresh, isPro, startPolling]);
+    // Note: isPro will be updated after refresh completes
+    // We'll check it in the next render cycle
+  }, [refresh]);
 
   /**
    * Handle success redirect from payment
@@ -188,6 +182,20 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
       }, SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
     }
   }, [pollingState.isPolling, isPro, stopPolling]);
+
+  /**
+   * Check if Pro status after manual refresh
+   */
+  useEffect(() => {
+    if (!pollingState.isPolling && showTimeout && isPro) {
+      // Manual refresh worked - subscription is now Pro!
+      setShowTimeout(false);
+      setShowSuccess(true);
+      timeoutRef.current = setTimeout(() => {
+        setShowSuccess(false);
+      }, SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
+    }
+  }, [pollingState.isPolling, showTimeout, isPro]);
 
   /**
    * Cleanup on unmount
