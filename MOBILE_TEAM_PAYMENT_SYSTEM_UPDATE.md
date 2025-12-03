@@ -468,5 +468,299 @@ If you encounter any issues or need clarification:
 
 ---
 
+---
+
+## 📧 **Email Notifications System**
+
+The platform uses **SendGrid** to send automated email notifications for subscription events. All emails are sent automatically when subscription status changes occur.
+
+### **Email Types**
+
+#### **1. Subscription Confirmation Email**
+**Triggered:** When user successfully subscribes/upgrades to Pro (monthly or yearly)
+
+**Template ID Environment Variable:** `SENDGRID_SUBSCRIPTION_CONFIRMATION_TEMPLATE_ID`
+
+**Sent From:** `checkout.session.completed` webhook event
+
+**Email Contents:**
+- Welcome message
+- Plan name (Pro Monthly/Yearly)
+- Amount paid
+- Subscription start date
+- Next billing date
+- 7-day money-back guarantee reminder
+- Dashboard link
+
+**Example Data:**
+```json
+{
+  "user_name": "John Doe",
+  "plan_name": "Pro (Monthly)",
+  "billing_cycle": "Monthly",
+  "amount": "£9.99",
+  "currency": "GBP",
+  "subscription_start_date": "December 3, 2025",
+  "next_billing_date": "January 3, 2026",
+  "invoice_url": "https://dashboard.stripe.com/invoices/...",
+  "dashboard_url": "https://soundbridge.live/dashboard",
+  "money_back_guarantee_text": "7-day money-back guarantee"
+}
+```
+
+---
+
+#### **2. Payment Receipt Email**
+**Triggered:** When subscription payment is successfully processed (monthly/annual renewal)
+
+**Template ID Environment Variable:** `SENDGRID_PAYMENT_RECEIPT_TEMPLATE_ID`
+
+**Sent From:** `invoice.payment_succeeded` webhook event
+
+**Email Contents:**
+- Payment confirmation
+- Amount paid
+- Payment date
+- Invoice number
+- Invoice link (PDF)
+- Next billing date
+- Dashboard link
+
+**Example Data:**
+```json
+{
+  "user_name": "John Doe",
+  "amount": "£9.99",
+  "currency": "GBP",
+  "billing_cycle": "Monthly",
+  "payment_date": "December 3, 2025, 14:30",
+  "invoice_number": "inv_xxx",
+  "invoice_url": "https://dashboard.stripe.com/invoices/...",
+  "next_billing_date": "January 3, 2026"
+}
+```
+
+---
+
+#### **3. Payment Failed Email**
+**Triggered:** When subscription payment is declined or fails
+
+**Template ID Environment Variable:** `SENDGRID_PAYMENT_FAILED_TEMPLATE_ID`
+
+**Sent From:** `invoice.payment_failed` webhook event
+
+**Email Contents:**
+- Payment failure notification
+- Amount attempted
+- Grace period information (7 days)
+- Grace period end date
+- Link to update payment method
+- Warning that account will downgrade if payment not updated
+
+**Example Data:**
+```json
+{
+  "user_name": "John Doe",
+  "amount": "£9.99",
+  "currency": "GBP",
+  "billing_cycle": "Monthly",
+  "payment_date": "December 3, 2025",
+  "grace_period_days": 7,
+  "grace_period_end_date": "December 10, 2025",
+  "update_payment_url": "https://soundbridge.live/dashboard?tab=billing&action=update-payment"
+}
+```
+
+**Important:** Account status changes to `past_due` when payment fails. User has 7 days (grace period) to update payment method before account is downgraded to Free tier.
+
+---
+
+#### **4. Account Downgraded Email**
+**Triggered:** When account is downgraded from Pro to Free tier
+
+**Template ID Environment Variable:** `SENDGRID_ACCOUNT_DOWNGRADED_TEMPLATE_ID`
+
+**Sent From:**
+- `customer.subscription.deleted` webhook event (cancellation)
+- Cron job `/api/cron/downgrade-past-due` (after grace period expires)
+
+**Email Contents:**
+- Downgrade notification
+- Reason for downgrade (payment failed, cancelled, expired)
+- Date of downgrade
+- Information about losing Pro features
+- Link to reactivate subscription
+- Dashboard link
+
+**Example Data:**
+```json
+{
+  "user_name": "John Doe",
+  "downgrade_reason": "Your payment could not be processed and the grace period has ended.",
+  "downgrade_date": "December 10, 2025",
+  "reactivate_url": "https://soundbridge.live/pricing"
+}
+```
+
+**Downgrade Reasons:**
+- `payment_failed` - Payment could not be processed (grace period expired)
+- `cancelled` - User cancelled subscription
+- `expired` - Subscription expired
+
+---
+
+### **Email Service Implementation**
+
+**Service Location:** `apps/web/src/services/SubscriptionEmailService.ts`
+
+**Methods:**
+- `sendSubscriptionConfirmation(data)` - Subscription confirmation
+- `sendPaymentReceipt(data)` - Payment receipt
+- `sendPaymentFailed(data)` - Payment failed notification
+- `sendAccountDowngraded(data)` - Account downgrade notification
+- `getUserInfo(userId)` - Helper to get user email and name
+
+**Integration Points:**
+- `apps/web/app/api/stripe/webhook/route.ts` - Webhook handlers
+- `apps/web/app/api/cron/downgrade-past-due/route.ts` - Grace period cron job
+
+---
+
+### **Grace Period & Downgrade Process**
+
+**Process:**
+1. Payment fails → Status set to `past_due`
+2. Payment failed email sent immediately
+3. 7-day grace period begins
+4. User can update payment method during grace period
+5. If payment updated → Status returns to `active`
+6. If grace period expires → Cron job downgrades account to Free tier
+7. Downgrade email sent to user
+
+**Cron Job:**
+- **Endpoint:** `GET /api/cron/downgrade-past-due?secret={CRON_SECRET}`
+- **Frequency:** Should run daily (recommended: once per day)
+- **Function:** Finds all `past_due` subscriptions older than 7 days and downgrades them
+
+**Setup:**
+- Add `CRON_SECRET` environment variable
+- Configure Vercel Cron or external cron service to call endpoint daily
+- Example Vercel Cron config in `vercel.json`:
+  ```json
+  {
+    "crons": [{
+      "path": "/api/cron/downgrade-past-due?secret=YOUR_SECRET",
+      "schedule": "0 0 * * *"
+    }]
+  }
+  ```
+
+---
+
+### **Environment Variables Required**
+
+**SendGrid Configuration:**
+```
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=contact@soundbridge.live
+SENDGRID_FROM_NAME=SoundBridge Team
+
+# Template IDs (set these after creating templates in SendGrid)
+SENDGRID_SUBSCRIPTION_CONFIRMATION_TEMPLATE_ID=d-xxxxx
+SENDGRID_PAYMENT_RECEIPT_TEMPLATE_ID=d-xxxxx
+SENDGRID_PAYMENT_FAILED_TEMPLATE_ID=d-xxxxx
+SENDGRID_ACCOUNT_DOWNGRADED_TEMPLATE_ID=d-xxxxx
+```
+
+**Cron Job Configuration:**
+```
+CRON_SECRET=your_secure_random_string
+```
+
+**App URLs:**
+```
+NEXT_PUBLIC_APP_URL=https://soundbridge.live
+```
+
+---
+
+### **Pro Feature Access Controls**
+
+**Important:** Pro features are ONLY accessible when subscription status is `'active'`. If status is `'cancelled'`, `'expired'`, or `'past_due'`, user loses Pro privileges immediately.
+
+**Feature Gating:**
+- ✅ Upload limits enforced based on tier AND status
+- ✅ Search limits enforced based on tier AND status
+- ✅ Message limits enforced based on tier AND status
+- ✅ Advanced Analytics only for active Pro users
+- ✅ Custom Branding only for active Pro users
+- ✅ Revenue Sharing only for active Pro users
+
+**Access Check Pattern:**
+```typescript
+// ✅ CORRECT: Check both tier AND status
+const { data: subscription } = await supabase
+  .from('user_subscriptions')
+  .select('tier, status')
+  .eq('user_id', userId)
+  .eq('status', 'active')  // ← CRITICAL: Only 'active' status has Pro features
+  .single();
+
+const hasProAccess = subscription?.tier === 'pro' && subscription?.status === 'active';
+```
+
+**When Downgraded:**
+- Account tier → `'free'`
+- Account status → `'expired'` or `'cancelled'`
+- Pro features immediately unavailable
+- Upload limits revert to Free tier (3 lifetime)
+- Search/message limits revert to Free tier limits
+- User must resubscribe to regain Pro access
+
+---
+
+### **Mobile Team Actions for Email Notifications**
+
+**Note:** Mobile app uses IAP (In-App Purchases) for subscriptions. Email notifications will still be sent when:
+1. Web team processes IAP verification via `/api/subscriptions/verify-iap`
+2. Subscription status is updated in the database
+
+**Recommended:**
+- Display in-app notifications for subscription events (in addition to emails)
+- Show payment status in app settings/billing section
+- Notify users when payment fails (before grace period expires)
+- Show grace period countdown in app
+
+**No Action Required For:**
+- Setting up SendGrid templates (web team handles this)
+- Email delivery (handled automatically by web backend)
+
+---
+
+## 🎯 **Summary**
+
+**Key Changes:**
+1. ✅ Enterprise tier removed - only Free and Pro
+2. ✅ Pro = 10 uploads/month (not unlimited)
+3. ✅ Usage statistics calculated from actual tables
+4. ✅ Money-back guarantee fields added
+5. ✅ Feature flags updated (`unlimitedUploads: false`)
+6. ✅ **Email notifications for all subscription events**
+7. ✅ **Grace period handling (7 days) before downgrade**
+8. ✅ **Pro features gated by subscription status = 'active'**
+
+**Mobile Team Actions:**
+1. Remove Enterprise references
+2. Update upload limits display
+3. Verify IAP integration works with new structure
+4. Test subscription status polling
+5. Ensure usage statistics show actual data
+6. **Display in-app notifications for subscription events**
+7. **Show payment status and grace period countdown**
+
+**Consistency Goal:** Users should have the same experience whether they upgrade via web (Stripe) or mobile (IAP). Both create subscriptions in the same `user_subscriptions` table with the same structure. Email notifications will be sent regardless of upgrade method.
+
+---
+
 **Last Updated:** December 3, 2025  
 **Status:** ✅ Ready for Mobile Team Review

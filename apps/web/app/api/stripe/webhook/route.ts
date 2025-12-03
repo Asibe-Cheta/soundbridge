@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { stripe } from '../../../../src/lib/stripe';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import { SubscriptionEmailService } from '../../../../src/services/SubscriptionEmailService';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -185,6 +186,23 @@ async function handleCheckoutCompleted(
       console.error('[webhook] Error updating subscription:', error);
     } else {
       console.log('[webhook] Successfully updated subscription for user:', userId);
+      
+      // Send subscription confirmation email
+      const userInfo = await SubscriptionEmailService.getUserInfo(userId);
+      if (userInfo && userInfo.email) {
+        const amount = billingCycle === 'monthly' ? '£9.99' : '£99.00';
+        
+        await SubscriptionEmailService.sendSubscriptionConfirmation({
+          userEmail: userInfo.email,
+          userName: userInfo.name,
+          billingCycle,
+          amount,
+          currency: 'GBP',
+          subscriptionStartDate: subscriptionStartDate.toISOString(),
+          nextBillingDate: subscriptionEndDate.toISOString(),
+          invoiceUrl: session.invoice_url || undefined
+        });
+      }
     }
 
   } catch (error) {
@@ -254,16 +272,44 @@ async function handleSubscriptionDeleted(
   try {
     const subscriptionId = subscription.id;
 
-    // Update subscription status
+    // Find user by subscription ID
+    const { data: existingSub } = await supabase
+      .from('user_subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single();
+
+    if (!existingSub) {
+      console.error('[webhook] Subscription not found for deletion:', subscriptionId);
+      return;
+    }
+
+    const userId = existingSub.user_id;
+
+    // Downgrade to free tier
     await supabase
       .from('user_subscriptions')
       .update({
+        tier: 'free',
         status: 'cancelled',
-        subscription_ends_at: new Date().toISOString()
+        subscription_ends_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .eq('stripe_subscription_id', subscriptionId);
 
-    console.log(`✅ Subscription cancelled: ${subscriptionId}`);
+    console.log(`✅ Subscription cancelled and downgraded to free: ${subscriptionId}`);
+
+    // Send downgrade email
+    const userInfo = await SubscriptionEmailService.getUserInfo(userId);
+    if (userInfo && userInfo.email) {
+      await SubscriptionEmailService.sendAccountDowngraded({
+        userEmail: userInfo.email,
+        userName: userInfo.name,
+        downgradeReason: 'cancelled',
+        downgradeDate: new Date().toISOString(),
+        reactivateUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`
+      });
+    }
   } catch (error) {
     console.error('Error handling subscription deleted:', error);
   }
@@ -315,6 +361,33 @@ async function handlePaymentSucceeded(
         console.error('[webhook] Error updating payment succeeded status:', error);
       } else {
         console.log('[webhook] Payment succeeded, subscription renewed:', subscriptionId);
+        
+        // Get subscription details for email
+        const { data: subscriptionData } = await supabase
+          .from('user_subscriptions')
+          .select('billing_cycle, subscription_renewal_date')
+          .eq('user_id', userId)
+          .single();
+
+        // Send payment receipt email
+        const userInfo = await SubscriptionEmailService.getUserInfo(userId);
+        if (userInfo && userInfo.email && invoice) {
+          const amount = (invoice.amount_paid / 100).toFixed(2);
+          const currency = invoice.currency?.toUpperCase() || 'GBP';
+          const billingCycle = subscriptionData?.billing_cycle || 'monthly';
+          
+          await SubscriptionEmailService.sendPaymentReceipt({
+            userEmail: userInfo.email,
+            userName: userInfo.name,
+            amount: `${currency === 'GBP' ? '£' : '$'}${amount}`,
+            currency,
+            billingCycle: billingCycle as 'monthly' | 'yearly',
+            paymentDate: new Date().toISOString(),
+            invoiceNumber: invoice.number || invoice.id,
+            invoiceUrl: invoice.hosted_invoice_url || invoice.invoice_pdf || undefined,
+            nextBillingDate: subscriptionData?.subscription_renewal_date || new Date().toISOString()
+          });
+        }
       }
     }
   } catch (error) {
@@ -330,18 +403,54 @@ async function handlePaymentFailed(
     const subscriptionId = invoice.subscription as string;
     
     if (subscriptionId) {
-      // Mark as past_due and start grace period
+      // Find user by subscription ID
+      const { data: existingSub } = await supabase
+        .from('user_subscriptions')
+        .select('user_id, billing_cycle')
+        .eq('stripe_subscription_id', subscriptionId)
+        .single();
+
+      if (!existingSub) {
+        console.error('[webhook] Subscription not found for payment failed:', subscriptionId);
+        return;
+      }
+
+      const userId = existingSub.user_id;
+      const gracePeriodEndDate = new Date();
+      gracePeriodEndDate.setDate(gracePeriodEndDate.getDate() + 7); // 7-day grace period
+
+      // Mark as past_due and set grace period end date
       await supabase
         .from('user_subscriptions')
         .update({
-          status: 'past_due'
+          status: 'past_due',
+          updated_at: new Date().toISOString()
         })
         .eq('stripe_subscription_id', subscriptionId);
 
       console.log(`⚠️ Payment failed, subscription marked as past_due: ${subscriptionId}`);
       
-      // Note: Grace period handling (7 days) should be done via cron job
-      // that checks past_due subscriptions and downgrades after 7 days
+      // Send payment failed email
+      const userInfo = await SubscriptionEmailService.getUserInfo(userId);
+      if (userInfo && userInfo.email && invoice) {
+        const amount = (invoice.amount_due / 100).toFixed(2);
+        const currency = invoice.currency?.toUpperCase() || 'GBP';
+        const billingCycle = existingSub.billing_cycle || 'monthly';
+        
+        await SubscriptionEmailService.sendPaymentFailed({
+          userEmail: userInfo.email,
+          userName: userInfo.name,
+          amount: `${currency === 'GBP' ? '£' : '$'}${amount}`,
+          currency,
+          billingCycle: billingCycle as 'monthly' | 'yearly',
+          paymentDate: new Date().toISOString(),
+          gracePeriodEndDate: gracePeriodEndDate.toISOString(),
+          updatePaymentUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=billing&action=update-payment`
+        });
+      }
+      
+      // Note: Grace period handling will check past_due subscriptions and downgrade after 7 days
+      // This should be done via a cron job or scheduled task
     }
   } catch (error) {
     console.error('Error handling payment failed:', error);
