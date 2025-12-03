@@ -84,6 +84,7 @@ export function OnboardingManager() {
         
         {currentStep === 'payment' && (
           <PaymentCollection
+            key="payment-modal" // Force remount to reset state
             isOpen={showOnboarding}
             onSuccess={() => {
               // Welcome confirmation will be shown
