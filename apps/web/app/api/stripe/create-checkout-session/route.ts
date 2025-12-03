@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe, getPriceId } from '../../../../src/lib/stripe';
@@ -122,8 +122,33 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.log('🚨 STEP 7: Using cookie auth...');
-      // Use cookie-based auth (web app)
-      const supabase = createServerComponentClient({ cookies });
+      // Use cookie-based auth (web app) - FIX: Use createServerClient, not createServerComponentClient
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: any) {
+              try {
+                cookieStore.set({ name, value, ...options });
+              } catch (error) {
+                // Handle cookie setting errors
+              }
+            },
+            remove(name: string, options: any) {
+              try {
+                cookieStore.set({ name, value: '', ...options });
+              } catch (error) {
+                // Handle cookie removal errors
+              }
+            },
+          },
+        }
+      );
       const { data, error } = await supabase.auth.getUser();
       user = data.user;
       authError = error;
