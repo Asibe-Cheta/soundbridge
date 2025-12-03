@@ -98,16 +98,17 @@ DECLARE
   has_default BOOLEAN;
   is_generated BOOLEAN;
   is_nullable TEXT;
+  col_is_generated TEXT;
 BEGIN
   SELECT 
-    (column_default IS NOT NULL),
-    (is_generated = 'ALWAYS' OR is_generated = 'STORED'),
-    is_nullable
+    (c.column_default IS NOT NULL),
+    (c.is_generated = 'ALWAYS' OR c.is_generated = 'STORED'),
+    c.is_nullable
   INTO has_default, is_generated, is_nullable
-  FROM information_schema.columns
-  WHERE table_schema = 'public'
-    AND table_name = 'user_subscriptions'
-    AND column_name = 'user_id';
+  FROM information_schema.columns c
+  WHERE c.table_schema = 'public'
+    AND c.table_name = 'user_subscriptions'
+    AND c.column_name = 'user_id';
   
   IF NOT has_default AND NOT is_generated AND is_nullable = 'NO' THEN
     RAISE NOTICE '✅ Success: user_id is ready for PostgREST (no DEFAULT, not GENERATED, NOT NULL)';
