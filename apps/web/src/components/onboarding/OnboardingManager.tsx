@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { WelcomeScreen } from './WelcomeScreen';
 import { UserTypeSelection } from './UserTypeSelection';
 import { QuickSetup } from './QuickSetup';
@@ -17,8 +19,32 @@ import { FirstActionGuidance } from './FirstActionGuidance';
 
 export function OnboardingManager() {
   const { onboardingState, setCurrentStep, completeOnboarding } = useOnboarding();
+  const { user, session, loading: authLoading } = useAuth();
+  const pathname = usePathname();
   const { showOnboarding, currentStep } = onboardingState;
   const [welcomeShown, setWelcomeShown] = useState(false);
+
+  // CRITICAL: Never show onboarding if user is not authenticated
+  if (!user || !session) {
+    return null;
+  }
+
+  // CRITICAL: Never show onboarding on login/signup/auth pages
+  const isAuthPage = pathname?.startsWith('/login') || 
+                     pathname?.startsWith('/signup') || 
+                     pathname?.startsWith('/auth') ||
+                     pathname?.startsWith('/(auth)') ||
+                     pathname?.includes('/verify-email') ||
+                     pathname?.includes('/reset-password');
+  
+  if (isAuthPage) {
+    return null;
+  }
+
+  // Wait for auth to finish loading
+  if (authLoading) {
+    return null;
+  }
 
   if (!showOnboarding) return null;
 

@@ -62,9 +62,16 @@ const loadOnboardingStateFromStorage = (): Partial<OnboardingState> | null => {
 };
 
 // Save onboarding state to localStorage
-const saveOnboardingStateToStorage = (state: OnboardingState) => {
+const saveOnboardingStateToStorage = (state: OnboardingState, user: any, session: any) => {
   if (typeof window === 'undefined') return;
   try {
+    // CRITICAL: Only save if user is authenticated
+    // This prevents persisting state for unauthenticated users
+    if (!user || !session) {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      return;
+    }
+
     // Only save if onboarding is active (don't persist completed state)
     if (state.isOnboardingActive || state.showOnboarding) {
       localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
@@ -89,8 +96,9 @@ const saveOnboardingStateToStorage = (state: OnboardingState) => {
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const { user, session, loading: authLoading, signOut } = useAuth();
   
-  // Initialize state from localStorage if available
-  const storedState = loadOnboardingStateFromStorage();
+  // Initialize state - only load from localStorage if user is authenticated
+  // This prevents showing onboarding for unauthenticated users
+  const storedState = (user && session) ? loadOnboardingStateFromStorage() : null;
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
     currentStep: (storedState?.currentStep as OnboardingStep) || 'welcome',
     selectedRole: storedState?.selectedRole || null,
@@ -98,14 +106,15 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     profileCompleted: storedState?.profileCompleted || false,
     firstActionCompleted: storedState?.firstActionCompleted || false,
     selectedTier: storedState?.selectedTier || null,
-    isOnboardingActive: storedState?.isOnboardingActive || false,
-    showOnboarding: storedState?.showOnboarding || false,
+    isOnboardingActive: (user && session && storedState?.isOnboardingActive) || false,
+    showOnboarding: (user && session && storedState?.showOnboarding) || false,
   });
 
   // Save state to localStorage whenever it changes
+  // CRITICAL: Only save if user is authenticated
   useEffect(() => {
-    saveOnboardingStateToStorage(onboardingState);
-  }, [onboardingState]);
+    saveOnboardingStateToStorage(onboardingState, user, session);
+  }, [onboardingState, user, session]);
 
   // Restore onboarding state when component mounts or tab regains focus
   useEffect(() => {
@@ -177,20 +186,21 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
           }
         }
       } else {
-        // Reset onboarding state when user logs out or has no valid session
-        // But only if we're not in the middle of onboarding
-        if (!onboardingState.isOnboardingActive) {
-          setOnboardingState({
-            currentStep: 'welcome',
-            selectedRole: null,
-            onboardingUserType: null,
-            profileCompleted: false,
-            firstActionCompleted: false,
-            selectedTier: null,
-            isOnboardingActive: false,
-            showOnboarding: false,
-          });
+        // User is not authenticated - ALWAYS reset onboarding state
+        // Clear localStorage and reset state completely
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
         }
+        setOnboardingState({
+          currentStep: 'welcome',
+          selectedRole: null,
+          onboardingUserType: null,
+          profileCompleted: false,
+          firstActionCompleted: false,
+          selectedTier: null,
+          isOnboardingActive: false,
+          showOnboarding: false,
+        });
       }
     };
 
@@ -199,6 +209,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
     // Re-check when tab regains focus (user switches back to tab)
     const handleVisibilityChange = () => {
+      // Only restore if user is authenticated
       if (!document.hidden && user && session) {
         console.log('👁️ Tab regained focus, restoring onboarding state...');
         
@@ -227,6 +238,16 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             checkOnboardingStatusWithRetry();
           }, 500);
         }
+      } else if (!document.hidden && (!user || !session)) {
+        // User is not authenticated - clear onboarding state
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        }
+        setOnboardingState(prev => ({
+          ...prev,
+          isOnboardingActive: false,
+          showOnboarding: false,
+        }));
       }
     };
 
@@ -258,6 +279,16 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
             checkOnboardingStatusWithRetry();
           }, 500);
         }
+      } else {
+        // User is not authenticated - clear onboarding state
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        }
+        setOnboardingState(prev => ({
+          ...prev,
+          isOnboardingActive: false,
+          showOnboarding: false,
+        }));
       }
     };
 
