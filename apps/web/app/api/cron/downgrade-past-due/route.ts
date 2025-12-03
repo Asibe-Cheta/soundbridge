@@ -12,8 +12,15 @@ import { SubscriptionEmailService } from '../../../../src/services/SubscriptionE
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret for security
-    const secret = request.nextUrl.searchParams.get('secret');
-    if (secret !== process.env.CRON_SECRET) {
+    // Support both query parameter (external cron services) and header (Vercel Cron)
+    const querySecret = request.nextUrl.searchParams.get('secret');
+    const headerSecret = request.headers.get('authorization')?.replace('Bearer ', '') || 
+                         request.headers.get('x-vercel-cron-secret');
+    
+    const providedSecret = querySecret || headerSecret;
+    
+    if (!providedSecret || providedSecret !== process.env.CRON_SECRET) {
+      console.error('[cron] Unauthorized access attempt - invalid or missing secret');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
