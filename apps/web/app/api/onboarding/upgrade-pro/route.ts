@@ -422,16 +422,38 @@ export async function POST(request: NextRequest) {
         dbError = { code: 'PGRST116', message: 'No existing subscription found' } as any;
         dbSubscription = null;
       } else {
-        // Step 2: UPDATE using primary key ID (not user_id!)
+        // Step 2: UPDATE using .match() - PostgREST has issues with .eq() in UPDATE
+        // Try .match() with id first, then fallback to .match() with user_id
         console.log('🔍 Step 2: Updating subscription by ID:', existing.id);
-        console.log('✅ Using .eq("id", ...) instead of .eq("user_id", ...)');
+        console.log('✅ Using .match() instead of .eq() - trying with id first');
         
         let { data, error } = await supabase
           .from('user_subscriptions')
           .update(subscriptionData)
-          .eq('id', existing.id)  // ✅ Use primary key, not foreign key!
+          .match({ id: existing.id })  // ✅ Try .match() with primary key
           .select()
           .single();
+        
+        // If that fails, try .match() with user_id (as suggested by user)
+        if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
+          console.log('⚠️ .match({ id: ... }) failed, trying .match({ user_id: ... })...');
+          console.log('Error details:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
+          
+          const result = await supabase
+            .from('user_subscriptions')
+            .update(subscriptionData)
+            .match({ user_id: user.id })  // ✅ Try .match() with user_id instead
+            .select()
+            .single();
+          
+          data = result.data;
+          error = result.error;
+        }
         
         // If authenticated client fails, try service role client
         if (error) {
@@ -447,10 +469,11 @@ export async function POST(request: NextRequest) {
             const supabaseAdmin = createServiceClient();
             console.log('✅ Service role client created');
             
+            // Try .match() with user_id using service role
             const result = await supabaseAdmin
               .from('user_subscriptions')
               .update(subscriptionData)
-              .eq('id', existing.id)  // ✅ Still use primary key with service role
+              .match({ user_id: user.id })  // ✅ Use .match() with user_id
               .select()
               .single();
             
