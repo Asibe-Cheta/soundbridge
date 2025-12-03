@@ -25,17 +25,57 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
     }
 
-    // Get user usage statistics
-    const { data: usage, error: usageError } = await supabase
-      .from('user_usage')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    // Calculate usage statistics from actual tables (not user_usage table)
+    // This ensures accurate data regardless of when user upgraded
+    const { data: tracks, error: tracksError } = await supabase
+      .from('audio_tracks')
+      .select('play_count, like_count, file_size, created_at, track_type')
+      .eq('creator_id', user.id)
+      .is('deleted_at', null);
 
-    if (usageError && usageError.code !== 'PGRST116') {
-      console.error('Error fetching usage:', usageError);
-      return NextResponse.json({ error: 'Failed to fetch usage' }, { status: 500 });
-    }
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select('id, created_at')
+      .eq('creator_id', user.id)
+      .is('deleted_at', null);
+
+    const { count: followersCount, error: followersError } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', user.id);
+
+    // Calculate usage from actual data
+    const musicUploads = tracks?.filter(t => t.track_type === 'music' || !t.track_type).length || 0;
+    const podcastUploads = tracks?.filter(t => t.track_type === 'podcast').length || 0;
+    const eventUploads = events?.length || 0;
+    const totalStorageUsed = tracks?.reduce((sum, t) => sum + (t.file_size || 0), 0) || 0;
+    const totalPlays = tracks?.reduce((sum, t) => sum + (t.play_count || 0), 0) || 0;
+    const totalFollowers = followersCount || 0;
+    const lastUploadAt = tracks && tracks.length > 0 
+      ? tracks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
+      : null;
+
+    // Format storage
+    const formatStorage = (bytes: number): string => {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    };
+
+    const usage = {
+      music_uploads: musicUploads,
+      podcast_uploads: podcastUploads,
+      event_uploads: eventUploads,
+      total_storage_used: totalStorageUsed,
+      total_plays: totalPlays,
+      total_followers: totalFollowers,
+      last_upload_at: lastUploadAt,
+      formatted_storage: formatStorage(totalStorageUsed),
+      formatted_plays: totalPlays.toLocaleString(),
+      formatted_followers: totalFollowers.toLocaleString()
+    };
 
     // Get revenue information
     const { data: revenue, error: revenueError } = await supabase
