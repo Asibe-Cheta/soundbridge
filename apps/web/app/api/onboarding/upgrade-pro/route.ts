@@ -410,17 +410,39 @@ export async function POST(request: NextRequest) {
         .single();
       
       // If it fails with column error, try service role client (bypasses RLS)
-      if (error && error.code === '42703' && error.message?.includes('user_id')) {
-        console.log('⚠️ Authenticated client failed, trying service role client...');
-        const supabaseAdmin = createServiceClient();
-        const result = await supabaseAdmin
-          .from('user_subscriptions')
-          .update(subscriptionData)
-          .eq('user_id', user.id)
-          .select()
-          .single();
-        data = result.data;
-        error = result.error;
+      if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
+        console.log('⚠️ Authenticated client failed with error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        console.log('🔄 Trying service role client (bypasses RLS and PostgREST restrictions)...');
+        
+        try {
+          const supabaseAdmin = createServiceClient();
+          console.log('✅ Service role client created');
+          
+          const result = await supabaseAdmin
+            .from('user_subscriptions')
+            .update(subscriptionData)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+          
+          console.log('🔍 Service role client result:', {
+            hasData: !!result.data,
+            hasError: !!result.error,
+            errorCode: result.error?.code,
+            errorMessage: result.error?.message
+          });
+          
+          data = result.data;
+          error = result.error;
+        } catch (adminError: any) {
+          console.error('❌ Service role client also failed:', adminError);
+          error = adminError;
+        }
       }
       
       dbSubscription = data || null;
@@ -454,16 +476,38 @@ export async function POST(request: NextRequest) {
         .single();
       
       // If it fails with column error, try service role client (bypasses RLS)
-      if (error && error.code === '42703' && error.message?.includes('user_id')) {
-        console.log('⚠️ Authenticated client failed, trying service role client...');
-        const supabaseAdmin = createServiceClient();
-        const result = await supabaseAdmin
-          .from('user_subscriptions')
-          .insert(subscriptionData)
-          .select()
-          .single();
-        data = result.data;
-        error = result.error;
+      if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
+        console.log('⚠️ Authenticated client failed with error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        console.log('🔄 Trying service role client (bypasses RLS and PostgREST restrictions)...');
+        
+        try {
+          const supabaseAdmin = createServiceClient();
+          console.log('✅ Service role client created');
+          
+          const result = await supabaseAdmin
+            .from('user_subscriptions')
+            .insert(subscriptionData)
+            .select()
+            .single();
+          
+          console.log('🔍 Service role client result:', {
+            hasData: !!result.data,
+            hasError: !!result.error,
+            errorCode: result.error?.code,
+            errorMessage: result.error?.message
+          });
+          
+          data = result.data;
+          error = result.error;
+        } catch (adminError: any) {
+          console.error('❌ Service role client also failed:', adminError);
+          error = adminError;
+        }
       }
       
       dbSubscription = data || null;
