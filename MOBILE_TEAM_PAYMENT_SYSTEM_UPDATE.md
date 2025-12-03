@@ -308,15 +308,22 @@ const uploadLimitDescription = userTier === 'pro'
 **Check `features` object from `/api/subscription/status`:**
 ```typescript
 // ✅ CORRECT Feature Flags
-{
-  unlimitedUploads: false,      // Pro does NOT have unlimited
-  unlimitedSearches: true,      // Pro has unlimited searches
-  unlimitedMessages: true,      // Pro has unlimited messages
-  advancedAnalytics: true,
-  customBranding: true,
-  prioritySupport: true,
-  revenueSharing: true,
-  whiteLabel: false             // No white label feature
+// Always use optional chaining when accessing subscription data
+const subscription = data?.data?.subscription;
+const features = data?.data?.features;
+
+if (features) {
+  // ✅ CORRECT Feature Flags
+  {
+    unlimitedUploads: false,      // Pro does NOT have unlimited
+    unlimitedSearches: features.unlimitedSearches || false,
+    unlimitedMessages: features.unlimitedMessages || false,
+    advancedAnalytics: features.advancedAnalytics || false,
+    customBranding: features.customBranding || false,
+    prioritySupport: features.prioritySupport || false,
+    revenueSharing: features.revenueSharing || false,
+    whiteLabel: false             // No white label feature
+  }
 }
 ```
 
@@ -372,6 +379,8 @@ const pollSubscriptionStatus = async (maxAttempts = 15) => {
     });
     const data = await response.json();
     
+    // ✅ IMPORTANT: Use optional chaining to safely access subscription data
+    // Subscription might be null for free users or during loading
     if (data.data?.subscription?.tier === 'pro') {
       // Success! Update UI
       updateUserSubscription(data.data.subscription);
@@ -385,6 +394,13 @@ const pollSubscriptionStatus = async (maxAttempts = 15) => {
   showTimeoutMessage();
 };
 ```
+
+**⚠️ Important: Defensive Coding Pattern**
+Always use optional chaining when accessing subscription data:
+- ✅ `data?.subscription?.tier` (safe)
+- ❌ `data.subscription.tier` (will crash if subscription is null/undefined)
+
+**Why:** The API may return `subscription: null` for free users, or subscription data may not be loaded yet. Always check for existence before accessing properties.
 
 ---
 
