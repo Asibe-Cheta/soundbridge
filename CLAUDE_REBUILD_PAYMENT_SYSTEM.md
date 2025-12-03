@@ -198,13 +198,48 @@ This avoids RLS UPDATE policy issues entirely!
    - Fix auth + RLS policies and keep Checkout Sessions?
    - Or rebuild with Payment Intents pattern?
 
+## Additional Issues Discovered (Post-Payment)
+
+After the RLS policy fix, payment now goes through successfully, but:
+
+### Issue 1: UI Not Updating After Payment
+- **Symptom:** Dashboard still shows "Upgrade Now" button after successful payment
+- **Root Cause:** 
+  - Subscription status endpoint (`/api/subscription/status`) uses wrong auth method
+  - Frontend not refreshing subscription status after redirect
+  - Webhook may not be firing or updating database correctly
+
+### Issue 2: No Success Message
+- **Symptom:** User redirected with `?success=true` but no success message displayed
+- **Root Cause:** Frontend not checking URL params or showing success state
+
+### Issue 3: Subscription Status Endpoint Auth Issue
+**File:** `apps/web/app/api/subscription/status/route.ts`
+- Uses `createServerComponentClient` (WRONG for API routes)
+- Should use `getSupabaseRouteClient` or `createServerClient` from `@supabase/ssr`
+
+### Issue 4: Webhook May Not Be Updating
+**File:** `apps/web/app/api/stripe/webhook/route.ts`
+- Webhook handler exists and looks correct
+- But subscription may not be updating in database
+- Need to verify webhook is being called and working
+
 ## Request
 
-Please:
+Please provide your answer as an **ARTIFACT** that can be copied and pasted directly.
+
+In your response, please:
 1. **Review the working tipping system** - understand why it works
 2. **Compare with broken subscription system** - identify all differences
 3. **Recommend the simplest rebuild approach**
 4. **Provide clean, working code** for the chosen approach
 5. **Ensure it works from both onboarding and pricing page**
+6. **Fix the post-payment UI update issues:**
+   - Fix subscription status endpoint authentication
+   - Add success message handling
+   - Ensure webhook properly updates database
+   - Add frontend refresh after payment
 
 The user wants a clean, simple solution that just works. No more complex workarounds.
+
+**CRITICAL:** Please format your complete solution as an artifact that can be copied and pasted.
