@@ -158,6 +158,24 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
       )}
     </div>
   );
+}
+
+// Main export with Suspense boundary for useSearchParams
+const SubscriptionDashboard: React.FC<SubscriptionDashboardProps> = ({ className = '' }) => {
+  return (
+    <Suspense fallback={
+      <div className={`space-y-6 ${className}`}>
+        <div className="bg-white/5 rounded-lg p-6">
+          <div className="flex items-center justify-center">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+            <span className="ml-2 text-gray-600">Loading subscription...</span>
+          </div>
+        </div>
+      </div>
+    }>
+      <SubscriptionDashboardContent className={className} />
+    </Suspense>
+  );
 };
 
 export default SubscriptionDashboard;
