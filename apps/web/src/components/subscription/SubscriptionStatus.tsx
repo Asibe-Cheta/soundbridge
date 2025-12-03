@@ -210,6 +210,30 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           <div className="flex items-center space-x-2">
             <CheckCircle 
               className="h-4 w-4" 
+              style={{ color: features.unlimitedSearches ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.unlimitedSearches ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
+              Unlimited Searches
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <CheckCircle 
+              className="h-4 w-4" 
+              style={{ color: features.unlimitedMessages ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: features.unlimitedMessages ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
+              Unlimited Messages
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <CheckCircle 
+              className="h-4 w-4" 
               style={{ color: features.advancedAnalytics ? '#10b981' : 'var(--text-tertiary)' }}
             />
             <span 
@@ -258,13 +282,13 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           <div className="flex items-center space-x-2">
             <CheckCircle 
               className="h-4 w-4" 
-              style={{ color: features.whiteLabel ? '#10b981' : 'var(--text-tertiary)' }}
+              style={{ color: subscription.tier === 'pro' ? '#10b981' : 'var(--text-tertiary)' }}
             />
             <span 
               className="text-sm"
-              style={{ color: features.whiteLabel ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+              style={{ color: subscription.tier === 'pro' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
-              White Label
+              Verified Badge Eligible
             </span>
           </div>
         </div>

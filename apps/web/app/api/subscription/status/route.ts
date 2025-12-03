@@ -25,34 +25,73 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
     }
 
-    // Calculate usage statistics from actual tables (not user_usage table)
-    // This ensures accurate data regardless of when user upgraded
+    // Calculate usage statistics from actual tables (same approach as Overview tab)
+    // This ensures accurate data showing extension of free tier usage
     const { data: tracks, error: tracksError } = await supabase
       .from('audio_tracks')
-      .select('play_count, like_count, file_size, created_at, track_type')
-      .eq('creator_id', user.id)
-      .is('deleted_at', null);
+      .select('*')
+      .eq('creator_id', user.id);
+
+    if (tracksError) {
+      console.error('Error fetching tracks for usage:', tracksError);
+    }
 
     const { data: events, error: eventsError } = await supabase
       .from('events')
-      .select('id, created_at')
-      .eq('creator_id', user.id)
-      .is('deleted_at', null);
+      .select('*')
+      .eq('creator_id', user.id);
+
+    if (eventsError) {
+      console.error('Error fetching events for usage:', eventsError);
+    }
 
     const { count: followersCount, error: followersError } = await supabase
       .from('follows')
       .select('*', { count: 'exact', head: true })
       .eq('following_id', user.id);
 
-    // Calculate usage from actual data
-    const musicUploads = tracks?.filter(t => t.track_type === 'music' || !t.track_type).length || 0;
-    const podcastUploads = tracks?.filter(t => t.track_type === 'podcast').length || 0;
-    const eventUploads = events?.length || 0;
-    const totalStorageUsed = tracks?.reduce((sum, t) => sum + (t.file_size || 0), 0) || 0;
-    const totalPlays = tracks?.reduce((sum, t) => sum + (t.play_count || 0), 0) || 0;
+    if (followersError) {
+      console.error('Error fetching followers for usage:', followersError);
+    }
+
+    // Filter out deleted tracks (if deleted_at column exists)
+    const activeTracks = tracks?.filter((t: any) => !t.deleted_at) || tracks || [];
+    const activeEvents = events?.filter((e: any) => !e.deleted_at) || events || [];
+    
+    // Calculate usage from actual data (matching Overview tab logic exactly)
+    const musicUploads = activeTracks.filter((t: any) => {
+      const type = t.track_type || t.type;
+      return !type || type === 'music' || type === 'song';
+    }).length || 0;
+    
+    const podcastUploads = activeTracks.filter((t: any) => {
+      const type = t.track_type || t.type;
+      return type === 'podcast';
+    }).length || 0;
+    
+    const eventUploads = activeEvents.length || 0;
+    
+    // Calculate storage - handle different possible column names (file_size, size)
+    const totalStorageUsed = activeTracks.reduce((sum: number, t: any) => {
+      const size = t.file_size || t.size || 0;
+      return sum + (typeof size === 'number' && size > 0 ? size : 0);
+    }, 0);
+    
+    // Calculate plays - handle different column name variations (play_count, plays_count)
+    const totalPlays = activeTracks.reduce((sum: number, t: any) => {
+      const plays = t.play_count || t.plays_count || 0;
+      return sum + (typeof plays === 'number' ? plays : 0);
+    }, 0);
+    
     const totalFollowers = followersCount || 0;
-    const lastUploadAt = tracks && tracks.length > 0 
-      ? tracks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
+    
+    // Get last upload date
+    const lastUploadAt = activeTracks.length > 0 
+      ? activeTracks.sort((a: any, b: any) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        })[0]?.created_at || null
       : null;
 
     // Format storage
