@@ -198,13 +198,13 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           <div className="flex items-center space-x-2">
             <CheckCircle 
               className="h-4 w-4" 
-              style={{ color: features.unlimitedUploads ? '#10b981' : 'var(--text-tertiary)' }}
+              style={{ color: subscription.tier === 'pro' ? '#10b981' : 'var(--text-tertiary)' }}
             />
             <span 
               className="text-sm"
-              style={{ color: features.unlimitedUploads ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+              style={{ color: subscription.tier === 'pro' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
-              Unlimited Uploads
+              {subscription.tier === 'pro' ? '10 Uploads Per Month' : '3 Lifetime Uploads'}
             </span>
           </div>
           <div className="flex items-center space-x-2">
