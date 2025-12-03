@@ -39,42 +39,65 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  result_id UUID;
 BEGIN
   -- CRITICAL: Disable RLS for this function execution
   PERFORM set_config('row_security', 'off', false);
   
-  -- Update the subscription by ID (primary key)
-  -- Return only the columns we need (avoid user_id to prevent PostgREST issues)
+  -- Update the subscription by ID (primary key) using direct SQL
+  -- Use EXECUTE with dynamic SQL to ensure no PostgREST interference
+  EXECUTE format('
+    UPDATE %I.user_subscriptions
+    SET
+      tier = $1,
+      status = $2,
+      billing_cycle = $3,
+      stripe_customer_id = $4,
+      stripe_subscription_id = $5,
+      subscription_start_date = $6,
+      subscription_renewal_date = $7,
+      subscription_ends_at = $8,
+      money_back_guarantee_end_date = $9,
+      money_back_guarantee_eligible = $10,
+      refund_count = $11,
+      updated_at = NOW()
+    WHERE id = $12
+    RETURNING id
+  ', 'public')
+  USING 
+    p_tier,
+    p_status,
+    p_billing_cycle,
+    p_stripe_customer_id,
+    p_stripe_subscription_id,
+    p_subscription_start_date,
+    p_subscription_renewal_date,
+    p_subscription_ends_at,
+    p_money_back_guarantee_end_date,
+    p_money_back_guarantee_eligible,
+    p_refund_count,
+    subscription_id
+  INTO result_id;
+  
+  -- Now select the updated row (RLS is disabled, so this should work)
   RETURN QUERY
-  UPDATE user_subscriptions
-  SET
-    tier = p_tier,
-    status = p_status,
-    billing_cycle = p_billing_cycle,
-    stripe_customer_id = p_stripe_customer_id,
-    stripe_subscription_id = p_stripe_subscription_id,
-    subscription_start_date = p_subscription_start_date,
-    subscription_renewal_date = p_subscription_renewal_date,
-    subscription_ends_at = p_subscription_ends_at,
-    money_back_guarantee_end_date = p_money_back_guarantee_end_date,
-    money_back_guarantee_eligible = p_money_back_guarantee_eligible,
-    refund_count = p_refund_count,
-    updated_at = NOW()
-  WHERE user_subscriptions.id = subscription_id
-  RETURNING 
-    user_subscriptions.id,
-    user_subscriptions.tier,
-    user_subscriptions.status,
-    user_subscriptions.billing_cycle,
-    user_subscriptions.stripe_customer_id,
-    user_subscriptions.stripe_subscription_id,
-    user_subscriptions.subscription_start_date,
-    user_subscriptions.subscription_renewal_date,
-    user_subscriptions.subscription_ends_at,
-    user_subscriptions.money_back_guarantee_end_date,
-    user_subscriptions.money_back_guarantee_eligible,
-    user_subscriptions.refund_count,
-    user_subscriptions.updated_at;
+  SELECT 
+    us.id,
+    us.tier,
+    us.status,
+    us.billing_cycle,
+    us.stripe_customer_id,
+    us.stripe_subscription_id,
+    us.subscription_start_date,
+    us.subscription_renewal_date,
+    us.subscription_ends_at,
+    us.money_back_guarantee_end_date,
+    us.money_back_guarantee_eligible,
+    us.refund_count,
+    us.updated_at
+  FROM user_subscriptions us
+  WHERE us.id = result_id;
 END;
 $$;
 
