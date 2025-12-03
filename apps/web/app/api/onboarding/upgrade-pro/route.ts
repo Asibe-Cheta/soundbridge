@@ -380,51 +380,58 @@ export async function POST(request: NextRequest) {
     let dbError;
 
     if (testData && testData.length > 0) {
-      // User has existing subscription - Use RPC function to UPDATE (bypasses PostgREST issues)
+      // User has existing subscription - Use direct UPDATE instead of RPC
+      // RPC functions are failing with "column user_id does not exist" error
       console.log('🔄 Updating existing subscription for user:', user.id);
-      console.log('🔍 RPC parameters:', {
-        p_user_id: user.id,
-        p_billing_cycle: billingCycle,
-        p_stripe_customer_id: customerId,
-        p_stripe_subscription_id: subscription.id
-      });
+      console.log('🔍 Using direct UPDATE instead of RPC function');
       
-      const { data, error } = await supabase.rpc('update_user_subscription_to_pro', {
-        p_user_id: user.id,
-        p_billing_cycle: billingCycle,
-        p_stripe_customer_id: customerId,
-        p_stripe_subscription_id: subscription.id,
-        p_subscription_start_date: subscriptionStartDate.toISOString(),
-        p_subscription_renewal_date: subscriptionRenewalDate.toISOString(),
-        p_subscription_ends_at: subscriptionRenewalDate.toISOString(),
-        p_money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
-      });
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          tier: 'pro',
+          status: 'active',
+          billing_cycle: billingCycle,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          subscription_start_date: subscriptionStartDate.toISOString(),
+          subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+          subscription_ends_at: subscriptionRenewalDate.toISOString(),
+          money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
+          money_back_guarantee_eligible: true,
+          refund_count: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
       
-      // RPC now returns JSONB (single object), not an array
       dbSubscription = data || null;
       dbError = error;
     } else {
-      // User doesn't have subscription - Use RPC function to INSERT (bypasses PostgREST issues)
+      // User doesn't have subscription - Use direct INSERT instead of RPC
+      // RPC functions are failing with "column user_id does not exist" error
       console.log('➕ Inserting new subscription for user:', user.id);
-      console.log('🔍 RPC parameters:', {
-        p_user_id: user.id,
-        p_billing_cycle: billingCycle,
-        p_stripe_customer_id: customerId,
-        p_stripe_subscription_id: subscription.id
-      });
+      console.log('🔍 Using direct INSERT instead of RPC function');
       
-      const { data, error } = await supabase.rpc('insert_user_subscription_to_pro', {
-        p_user_id: user.id,
-        p_billing_cycle: billingCycle,
-        p_stripe_customer_id: customerId,
-        p_stripe_subscription_id: subscription.id,
-        p_subscription_start_date: subscriptionStartDate.toISOString(),
-        p_subscription_renewal_date: subscriptionRenewalDate.toISOString(),
-        p_subscription_ends_at: subscriptionRenewalDate.toISOString(),
-        p_money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString()
-      });
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          tier: 'pro',
+          status: 'active',
+          billing_cycle: billingCycle,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          subscription_start_date: subscriptionStartDate.toISOString(),
+          subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+          subscription_ends_at: subscriptionRenewalDate.toISOString(),
+          money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
+          money_back_guarantee_eligible: true,
+          refund_count: 0
+        })
+        .select()
+        .single();
       
-      // RPC now returns JSONB (single object), not an array
       dbSubscription = data || null;
       dbError = error;
     }
