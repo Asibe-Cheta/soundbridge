@@ -65,8 +65,10 @@ export async function POST(request: NextRequest) {
       // Basic profile fields
       role: databaseRole,
       display_name: display_name,
+      username: body.username || null, // Handle username from frontend
       bio: body.bio || null,
       country: body.country || null,
+      location: body.location || null, // Handle location from frontend
       genres: body.genres || null,
       avatar_url: body.avatar_url || null,
       
@@ -92,11 +94,20 @@ export async function POST(request: NextRequest) {
     console.log('🔄 Updating profile with data:', Object.keys(updateData));
 
     // Check if profile exists first
-    const { data: existingProfile } = await supabase
+    console.log('🔍 Checking if profile exists for user:', user.id);
+    const { data: existingProfile, error: selectError } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', user.id)
       .maybeSingle();
+
+    if (selectError) {
+      console.error('❌ Error checking profile existence:', selectError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to check profile', details: selectError.message },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     let updatedProfile;
 
@@ -104,18 +115,26 @@ export async function POST(request: NextRequest) {
       // Profile doesn't exist, create it
       console.log('⚠️ Profile does not exist for user, creating it:', user.id);
       
+      // Use username from body if provided, otherwise generate one
+      const username = body.username || `user${user.id.substring(0, 8)}`;
+      
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
         .insert({
           id: user.id,
-          username: `user${user.id.substring(0, 8)}`,
+          username: username,
           ...updateData,
         })
         .select()
         .single();
 
       if (createError) {
-        console.error('❌ Error creating profile:', createError);
+        console.error('❌ Error creating profile:', {
+          code: createError.code,
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint
+        });
         return NextResponse.json(
           { success: false, error: 'Failed to create profile', details: createError.message },
           { status: 500, headers: corsHeaders }
@@ -123,8 +142,11 @@ export async function POST(request: NextRequest) {
       }
       
       updatedProfile = newProfile;
+      console.log('✅ Profile created successfully');
     } else {
       // Profile exists, update it
+      console.log('🔄 Profile exists, updating it:', user.id);
+      
       const { data, error: updateError } = await supabase
         .from('profiles')
         .update(updateData)
@@ -133,7 +155,12 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError) {
-        console.error('❌ Error updating profile:', updateError);
+        console.error('❌ Error updating profile:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint
+        });
         return NextResponse.json(
           { success: false, error: 'Failed to update profile', details: updateError.message },
           { status: 500, headers: corsHeaders }
@@ -141,6 +168,7 @@ export async function POST(request: NextRequest) {
       }
       
       updatedProfile = data;
+      console.log('✅ Profile updated successfully');
     }
 
     console.log('✅ Profile updated successfully for user:', user.id);

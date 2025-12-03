@@ -172,11 +172,22 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
     }
 
     setIsSubmitting(true);
+    setErrors({}); // Clear previous errors
+    
     try {
       // Map onboarding_user_type to role for API
       const role = onboardingState.onboardingUserType === 'music_lover' ? 'listener' : 'creator';
 
-      const { data, error } = await fetchJsonWithAuth('/api/user/complete-profile', {
+      console.log('🚀 Submitting profile data:', {
+        role,
+        display_name: formData.displayName,
+        username: formData.username.toLowerCase(),
+        genresCount: formData.genres.length,
+        country: formData.country,
+        location: formData.location
+      });
+
+      const { data, error, response } = await fetchJsonWithAuth('/api/user/complete-profile', {
         method: 'POST',
         body: JSON.stringify({
           role,
@@ -189,19 +200,26 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
         })
       });
 
+      console.log('📥 API Response:', { 
+        success: data?.success, 
+        error, 
+        status: response?.status,
+        hasData: !!data 
+      });
+
       if (error || !data?.success) {
-        console.error('Error completing profile:', error || data?.error);
-        setErrors({ submit: error?.message || data?.error || 'Failed to save profile. Please try again.' });
-        setIsSubmitting(false);
+        console.error('❌ Error completing profile:', error || data?.error);
+        setErrors({ submit: error || data?.error || 'Failed to save profile. Please try again.' });
         return;
       }
 
+      console.log('✅ Profile completed successfully');
       setProfileCompleted(true);
       setCurrentStep('valueDemo');
       onContinue();
     } catch (error: any) {
-      console.error('Error submitting profile:', error);
-      setErrors({ submit: error?.message || 'An error occurred. Please try again.' });
+      console.error('❌ Exception submitting profile:', error);
+      setErrors({ submit: error?.message || 'An unexpected error occurred. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
