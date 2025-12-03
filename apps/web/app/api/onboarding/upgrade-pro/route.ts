@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { stripe, getPriceId } from '@/src/lib/stripe';
 
 // CORS headers for mobile app
@@ -380,57 +381,90 @@ export async function POST(request: NextRequest) {
     let dbError;
 
     if (testData && testData.length > 0) {
-      // User has existing subscription - Use direct UPDATE instead of RPC
-      // RPC functions are failing with "column user_id does not exist" error
+      // User has existing subscription - Use direct UPDATE
+      // Try with authenticated client first, fallback to service role if needed
       console.log('🔄 Updating existing subscription for user:', user.id);
-      console.log('🔍 Using direct UPDATE instead of RPC function');
+      console.log('🔍 Using direct UPDATE (will try service role if auth client fails)');
       
-      const { data, error } = await supabase
+      const subscriptionData = {
+        tier: 'pro',
+        status: 'active',
+        billing_cycle: billingCycle,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id,
+        subscription_start_date: subscriptionStartDate.toISOString(),
+        subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+        subscription_ends_at: subscriptionRenewalDate.toISOString(),
+        money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
+        money_back_guarantee_eligible: true,
+        refund_count: 0,
+        updated_at: new Date().toISOString()
+      };
+
+      // Try with authenticated client first
+      let { data, error } = await supabase
         .from('user_subscriptions')
-        .update({
-          tier: 'pro',
-          status: 'active',
-          billing_cycle: billingCycle,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscription.id,
-          subscription_start_date: subscriptionStartDate.toISOString(),
-          subscription_renewal_date: subscriptionRenewalDate.toISOString(),
-          subscription_ends_at: subscriptionRenewalDate.toISOString(),
-          money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
-          money_back_guarantee_eligible: true,
-          refund_count: 0,
-          updated_at: new Date().toISOString()
-        })
+        .update(subscriptionData)
         .eq('user_id', user.id)
         .select()
         .single();
       
+      // If it fails with column error, try service role client (bypasses RLS)
+      if (error && error.code === '42703' && error.message?.includes('user_id')) {
+        console.log('⚠️ Authenticated client failed, trying service role client...');
+        const supabaseAdmin = createServiceClient();
+        const result = await supabaseAdmin
+          .from('user_subscriptions')
+          .update(subscriptionData)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
+      
       dbSubscription = data || null;
       dbError = error;
     } else {
-      // User doesn't have subscription - Use direct INSERT instead of RPC
-      // RPC functions are failing with "column user_id does not exist" error
+      // User doesn't have subscription - Use direct INSERT
+      // Try with authenticated client first, fallback to service role if needed
       console.log('➕ Inserting new subscription for user:', user.id);
-      console.log('🔍 Using direct INSERT instead of RPC function');
+      console.log('🔍 Using direct INSERT (will try service role if auth client fails)');
       
-      const { data, error } = await supabase
+      const subscriptionData = {
+        user_id: user.id,
+        tier: 'pro',
+        status: 'active',
+        billing_cycle: billingCycle,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id,
+        subscription_start_date: subscriptionStartDate.toISOString(),
+        subscription_renewal_date: subscriptionRenewalDate.toISOString(),
+        subscription_ends_at: subscriptionRenewalDate.toISOString(),
+        money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
+        money_back_guarantee_eligible: true,
+        refund_count: 0
+      };
+
+      // Try with authenticated client first
+      let { data, error } = await supabase
         .from('user_subscriptions')
-        .insert({
-          user_id: user.id,
-          tier: 'pro',
-          status: 'active',
-          billing_cycle: billingCycle,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscription.id,
-          subscription_start_date: subscriptionStartDate.toISOString(),
-          subscription_renewal_date: subscriptionRenewalDate.toISOString(),
-          subscription_ends_at: subscriptionRenewalDate.toISOString(),
-          money_back_guarantee_end_date: moneyBackGuaranteeEndDate.toISOString(),
-          money_back_guarantee_eligible: true,
-          refund_count: 0
-        })
+        .insert(subscriptionData)
         .select()
         .single();
+      
+      // If it fails with column error, try service role client (bypasses RLS)
+      if (error && error.code === '42703' && error.message?.includes('user_id')) {
+        console.log('⚠️ Authenticated client failed, trying service role client...');
+        const supabaseAdmin = createServiceClient();
+        const result = await supabaseAdmin
+          .from('user_subscriptions')
+          .insert(subscriptionData)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
       
       dbSubscription = data || null;
       dbError = error;
