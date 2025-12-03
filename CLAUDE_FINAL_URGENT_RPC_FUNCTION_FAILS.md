@@ -1,5 +1,13 @@
 # Claude: FINAL URGENT QUESTION - RPC Function Also Fails
 
+## ✅ SOLUTION FOUND!
+
+**Root Cause:** PostgREST validates RLS policy column references BEFORE executing UPDATE operations. The policy `USING (user_id = auth.uid())` causes PostgREST to fail during validation phase, even though the column exists.
+
+**Fix:** Use subquery with `id` instead of direct `user_id` reference in UPDATE/DELETE policies. See `database/fix_rls_policy_use_id_subquery.sql` for the solution.
+
+---
+
 ## CRITICAL ISSUE
 
 **Even a SECURITY DEFINER database function with dynamic SQL is failing with the same error!**
