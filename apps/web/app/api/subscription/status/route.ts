@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerComponentClient({ cookies });
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use correct auth method (like tipping system)
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

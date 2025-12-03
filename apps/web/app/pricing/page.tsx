@@ -1,16 +1,38 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { useStripe } from '../../src/hooks/useStripe';
+import { SubscriptionService } from '../../src/services/SubscriptionService';
+import { getPriceId } from '../../src/lib/stripe';
 import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function PricingPage() {
   const { user } = useAuth();
-  const { checkout, isLoading, error } = useStripe();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Check for success/canceled params
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+
+    if (success === 'true') {
+      setShowSuccess(true);
+      // Redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 3000);
+    } else if (canceled === 'true') {
+      setError('Payment was canceled. Please try again.');
+    }
+  }, [searchParams, router]);
 
   const handleUpgrade = async (plan: 'pro') => {
     if (!user) {
@@ -20,11 +42,27 @@ export default function PricingPage() {
     }
     
     try {
-      await checkout(plan, billingCycle);
-    } catch (err) {
+      setLoading(true);
+      setError(null);
+
+      // Get price ID
+      const priceId = getPriceId(plan, billingCycle);
+      const amount = billingCycle === 'monthly' ? 9.99 : 99.00;
+
+      await SubscriptionService.createCheckoutSession({
+        name: billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly',
+        priceId,
+        billingCycle,
+        amount,
+      });
+
+      // User will be redirected to Stripe Checkout
+      // Don't set loading to false here, keep spinner until redirect
+
+    } catch (err: any) {
       console.error('Upgrade error:', err);
-      // Fallback: redirect to contact page
-      window.location.href = '/contact?reason=subscription';
+      setError(err.message || 'Failed to start checkout. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -580,20 +618,42 @@ export default function PricingPage() {
               <p className="text-white/70 mb-8 max-w-2xl mx-auto">
                 Join thousands of creators who are already growing their audience and monetizing their content with SoundBridge.
               </p>
+              {/* Success Message */}
+              {showSuccess && (
+                <div className="mb-8 p-4 bg-green-100 text-green-800 rounded-lg">
+                  <h3 className="font-semibold">Payment Successful! 🎉</h3>
+                  <p>Your subscription is now active. Redirecting to dashboard...</p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="mb-8 p-4 bg-red-100 text-red-800 rounded-lg">
+                  <h3 className="font-semibold">Error</h3>
+                  <p>{error}</p>
+                  <button
+                    onClick={() => setError(null)}
+                    className="mt-2 text-sm underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {user ? (
                   <button
                     onClick={() => handleUpgrade('pro')}
-                    disabled={isLoading}
+                    disabled={loading}
                     className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? (
+                    {loading ? (
                       <>
                         <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Processing...
                       </>
                     ) : (
-                      'Start Free Today'
+                      'Upgrade to Pro'
                     )}
                   </button>
                 ) : (

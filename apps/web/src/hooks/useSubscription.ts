@@ -86,25 +86,26 @@ export const useSubscription = (): SubscriptionHook => {
 
   const upgradeSubscription = async (tier: 'pro' | 'enterprise', billingCycle: 'monthly' | 'yearly' = 'monthly'): Promise<boolean> => {
     try {
-      const response = await fetch('/api/subscription/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tier, billingCycle }),
+      // Use SubscriptionService to create checkout session (unified flow)
+      const { SubscriptionService } = await import('@/src/services/SubscriptionService');
+      const { getPriceId } = await import('@/src/lib/stripe');
+      
+      const priceId = getPriceId('pro', billingCycle);
+      const amount = billingCycle === 'monthly' ? 9.99 : 99.00;
+
+      await SubscriptionService.createCheckoutSession({
+        name: billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly',
+        priceId,
+        billingCycle,
+        amount,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to upgrade subscription');
-      }
-
-      // Refresh data after successful upgrade
-      await fetchSubscriptionData();
+      // User will be redirected to Stripe Checkout
+      // Success redirect goes to dashboard with ?success=true
+      // Webhook will update subscription
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upgrade subscription');
+      setError(err instanceof Error ? err.message : 'Failed to start checkout');
       console.error('Error upgrading subscription:', err);
       return false;
     }

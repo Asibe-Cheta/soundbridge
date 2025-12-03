@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
       // Subscription events for tier restructure
       case 'checkout.session.completed':
         const session = event.data.object as any;
-        if (session.mode === 'subscription' && session.metadata?.userId) {
-          await handleSubscriptionCreated(session, supabase);
+        if (session.mode === 'subscription' && (session.metadata?.user_id || session.metadata?.userId)) {
+          await handleCheckoutCompleted(session, supabase);
         }
         break;
 
@@ -123,69 +123,72 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Subscription event handlers for tier restructure
+// Subscription event handlers - Updated to use upsert
 
-async function handleSubscriptionCreated(
+async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
   supabase: ReturnType<typeof createClient>
 ) {
   try {
-    const userId = session.metadata?.userId;
+    // Support both user_id (new) and userId (old) for backward compatibility
+    const userId = session.metadata?.user_id || session.metadata?.userId;
+    const billingCycle = session.metadata?.billing_cycle || 'monthly';
     const subscriptionId = session.subscription as string;
     const customerId = session.customer as string;
 
     if (!userId || !subscriptionId) {
-      console.error('Missing userId or subscriptionId in session metadata');
+      console.error('[webhook] Missing user_id or subscription_id in session metadata');
       return;
     }
 
     // Get subscription details from Stripe
-    if (!stripe) return;
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const priceId = subscription.items.data[0]?.price.id;
+    if (!stripe) {
+      console.error('[webhook] Stripe not configured');
+      return;
+    }
     
-    // Determine tier and billing cycle from price ID
-    const isPro = priceId?.includes('pro') || false;
-    const isYearly = priceId?.includes('yearly') || false;
-    const tier = isPro ? 'pro' : 'free'; // Only Pro or Free tiers supported
-    const billingCycle = isYearly ? 'yearly' : 'monthly';
-
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     const now = new Date();
     const subscriptionStartDate = new Date(subscription.current_period_start * 1000);
     const subscriptionEndDate = new Date(subscription.current_period_end * 1000);
-    const renewalDate = new Date(subscriptionEndDate);
+    const guaranteeEndDate = new Date(subscriptionStartDate);
+    guaranteeEndDate.setDate(guaranteeEndDate.getDate() + 7);
 
-    // Cancel any existing active subscription
-    await supabase
+    console.log('[webhook] Updating subscription for user:', userId);
+
+    // Use upsert (INSERT with ON CONFLICT) to avoid UPDATE RLS issues
+    const { error } = await supabase
       .from('user_subscriptions')
-      .update({ status: 'cancelled' })
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .upsert(
+        {
+          user_id: userId,
+          tier: 'pro',
+          status: 'active',
+          billing_cycle: billingCycle,
+          stripe_customer_id: customerId as string,
+          stripe_subscription_id: subscriptionId,
+          subscription_start_date: subscriptionStartDate.toISOString(),
+          subscription_renewal_date: subscriptionEndDate.toISOString(),
+          subscription_ends_at: subscriptionEndDate.toISOString(),
+          money_back_guarantee_end_date: guaranteeEndDate.toISOString(),
+          money_back_guarantee_eligible: true,
+          refund_count: 0,
+          updated_at: now.toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+          ignoreDuplicates: false,
+        }
+      );
 
-    // Create new subscription
-    const { error: subError } = await supabase
-      .from('user_subscriptions')
-      .insert({
-        user_id: userId,
-        tier,
-        status: 'active',
-        billing_cycle: billingCycle,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        subscription_start_date: subscriptionStartDate.toISOString(),
-        subscription_renewal_date: renewalDate.toISOString(),
-        subscription_ends_at: subscriptionEndDate.toISOString(),
-        money_back_guarantee_eligible: true,
-        refund_count: 0
-      });
-
-    if (subError) {
-      console.error('Error creating subscription:', subError);
+    if (error) {
+      console.error('[webhook] Error updating subscription:', error);
     } else {
-      console.log(`✅ Subscription created: ${tier} ${billingCycle} for user ${userId}`);
+      console.log('[webhook] Successfully updated subscription for user:', userId);
     }
+
   } catch (error) {
-    console.error('Error handling subscription created:', error);
+    console.error('[webhook] Error in handleCheckoutCompleted:', error);
   }
 }
 
@@ -195,38 +198,45 @@ async function handleSubscriptionUpdated(
 ) {
   try {
     const subscriptionId = subscription.id;
-    const customerId = subscription.customer as string;
+    const userId = subscription.metadata?.user_id;
 
-    // Find user by Stripe customer ID
-    const { data: existingSub } = await supabase
-      .from('user_subscriptions')
-      .select('user_id')
-      .eq('stripe_subscription_id', subscriptionId)
-      .single();
-
-    if (!existingSub) {
-      console.error('Subscription not found in database:', subscriptionId);
+    if (!userId) {
+      console.error('[webhook] No user_id in subscription metadata');
       return;
     }
 
-    const subscriptionStartDate = new Date(subscription.current_period_start * 1000);
     const subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+    const status = subscription.status === 'active' ? 'active' : 
+                   subscription.status === 'canceled' ? 'cancelled' : 
+                   subscription.status === 'past_due' ? 'past_due' : 'expired';
 
-    // Update subscription
-    await supabase
+    console.log('[webhook] Updating subscription status for user:', userId);
+
+    // Use upsert to avoid UPDATE RLS issues
+    const { error } = await supabase
       .from('user_subscriptions')
-      .update({
-        subscription_renewal_date: subscriptionEndDate.toISOString(),
-        subscription_ends_at: subscriptionEndDate.toISOString(),
-        status: subscription.status === 'active' ? 'active' : 
-                subscription.status === 'canceled' ? 'cancelled' : 
-                subscription.status === 'past_due' ? 'past_due' : 'expired'
-      })
-      .eq('stripe_subscription_id', subscriptionId);
+      .upsert(
+        {
+          user_id: userId,
+          subscription_renewal_date: subscriptionEndDate.toISOString(),
+          subscription_ends_at: subscriptionEndDate.toISOString(),
+          status,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+          ignoreDuplicates: false,
+        }
+      );
 
-    console.log(`✅ Subscription updated: ${subscriptionId}`);
+    if (error) {
+      console.error('[webhook] Error updating subscription:', error);
+    } else {
+      console.log('[webhook] Successfully updated subscription status');
+    }
+
   } catch (error) {
-    console.error('Error handling subscription updated:', error);
+    console.error('[webhook] Error in handleSubscriptionUpdated:', error);
   }
 }
 
@@ -258,24 +268,46 @@ async function handlePaymentSucceeded(
 ) {
   try {
     const subscriptionId = invoice.subscription as string;
-    
-    // Update subscription renewal date
-    if (subscriptionId && invoice.period_end) {
+    if (!subscriptionId) return;
+
+    // Get subscription to find user_id
+    if (!stripe) return;
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const userId = subscription.metadata?.user_id;
+
+    if (!userId) {
+      console.error('[webhook] No user_id in subscription metadata');
+      return;
+    }
+
+    if (invoice.period_end) {
       const renewalDate = new Date(invoice.period_end * 1000);
       
-      await supabase
+      // Use upsert to avoid UPDATE RLS issues
+      const { error } = await supabase
         .from('user_subscriptions')
-        .update({
-          subscription_renewal_date: renewalDate.toISOString(),
-          subscription_ends_at: renewalDate.toISOString(),
-          status: 'active'
-        })
-        .eq('stripe_subscription_id', subscriptionId);
+        .upsert(
+          {
+            user_id: userId,
+            subscription_renewal_date: renewalDate.toISOString(),
+            subscription_ends_at: renewalDate.toISOString(),
+            status: 'active',
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id',
+            ignoreDuplicates: false,
+          }
+        );
 
-      console.log(`✅ Payment succeeded, subscription renewed: ${subscriptionId}`);
+      if (error) {
+        console.error('[webhook] Error updating payment succeeded status:', error);
+      } else {
+        console.log('[webhook] Payment succeeded, subscription renewed:', subscriptionId);
+      }
     }
   } catch (error) {
-    console.error('Error handling payment succeeded:', error);
+    console.error('[webhook] Error in handleInvoicePaymentSucceeded:', error);
   }
 }
 

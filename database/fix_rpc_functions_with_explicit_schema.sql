@@ -45,27 +45,44 @@ SET search_path = public
 AS $$
 DECLARE
   v_user_id UUID;
+  v_table_name TEXT := 'public.user_subscriptions';
 BEGIN
   -- Store parameter in local variable to avoid any ambiguity
   v_user_id := p_user_id;
   
   -- Update existing subscription
   -- Use explicit schema and table qualification
-  UPDATE public.user_subscriptions
-  SET
-    tier = 'pro',
-    status = 'active',
-    billing_cycle = p_billing_cycle,
-    stripe_customer_id = p_stripe_customer_id,
-    stripe_subscription_id = p_stripe_subscription_id,
-    subscription_start_date = p_subscription_start_date,
-    subscription_renewal_date = p_subscription_renewal_date,
-    subscription_ends_at = p_subscription_ends_at,
-    money_back_guarantee_end_date = p_money_back_guarantee_end_date,
-    money_back_guarantee_eligible = true,
-    refund_count = 0,
-    updated_at = NOW()
-  WHERE public.user_subscriptions.user_id = v_user_id;
+  -- Use dynamic SQL to ensure proper column resolution
+  EXECUTE format('
+    UPDATE %I
+    SET
+      tier = $1,
+      status = $2,
+      billing_cycle = $3,
+      stripe_customer_id = $4,
+      stripe_subscription_id = $5,
+      subscription_start_date = $6,
+      subscription_renewal_date = $7,
+      subscription_ends_at = $8,
+      money_back_guarantee_end_date = $9,
+      money_back_guarantee_eligible = $10,
+      refund_count = $11,
+      updated_at = NOW()
+    WHERE user_id = $12',
+    v_table_name
+  ) USING 
+    'pro',
+    'active',
+    p_billing_cycle,
+    p_stripe_customer_id,
+    p_stripe_subscription_id,
+    p_subscription_start_date,
+    p_subscription_renewal_date,
+    p_subscription_ends_at,
+    p_money_back_guarantee_end_date,
+    true,
+    0,
+    v_user_id;
   
   -- Return the updated row using table alias
   RETURN QUERY
@@ -127,26 +144,31 @@ AS $$
 DECLARE
   new_id UUID;
   v_user_id UUID;
+  v_table_name TEXT := 'public.user_subscriptions';
 BEGIN
   -- Store parameter in local variable to avoid any ambiguity
   v_user_id := p_user_id;
   
-  -- Insert new subscription
-  INSERT INTO public.user_subscriptions (
-    user_id,
-    tier,
-    status,
-    billing_cycle,
-    stripe_customer_id,
-    stripe_subscription_id,
-    subscription_start_date,
-    subscription_renewal_date,
-    subscription_ends_at,
-    money_back_guarantee_end_date,
-    money_back_guarantee_eligible,
-    refund_count
-  )
-  VALUES (
+  -- Insert new subscription using dynamic SQL to ensure proper column resolution
+  EXECUTE format('
+    INSERT INTO %I (
+      user_id,
+      tier,
+      status,
+      billing_cycle,
+      stripe_customer_id,
+      stripe_subscription_id,
+      subscription_start_date,
+      subscription_renewal_date,
+      subscription_ends_at,
+      money_back_guarantee_end_date,
+      money_back_guarantee_eligible,
+      refund_count
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    RETURNING id',
+    v_table_name
+  ) USING 
     v_user_id,
     'pro',
     'active',
@@ -159,8 +181,7 @@ BEGIN
     p_money_back_guarantee_end_date,
     true,
     0
-  )
-  RETURNING public.user_subscriptions.id INTO new_id;
+  INTO new_id;
   
   -- Return the inserted row using table alias
   RETURN QUERY
