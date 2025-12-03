@@ -431,54 +431,96 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('✅ Step 1 SUCCESS: Found subscription ID:', existing.id);
         
-        // Step 2: UPDATE using primary key ID (not user_id!)
-        // CRITICAL: PostgREST has issues with foreign keys in UPDATE WHERE clauses
-        // Solution: Use primary key (id) instead of foreign key (user_id)
+        // Step 2: UPDATE using database function (bypasses PostgREST entirely)
+        // CRITICAL: PostgREST has persistent issues with UPDATE operations
+        // Solution: Use SECURITY DEFINER function to bypass PostgREST column resolution
         console.log('🔍 Step 2: Updating subscription by ID:', existing.id);
-        console.log('✅ Using .eq("id", ...) with primary key - this should work!');
+        console.log('✅ Using database function to bypass PostgREST issues');
         
-        let { data, error } = await supabase
-          .from('user_subscriptions')
-          .update(subscriptionData)
-          .eq('id', existing.id)  // ✅ Use PRIMARY KEY, not foreign key!
-          .select()
-          .single();
+        let data = null;
+        let error = null;
         
-        // If authenticated client fails, try service role client
-        if (error) {
-          console.log('⚠️ Authenticated client failed, trying service role client...');
-          console.log('Error details:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-            hint: error.hint
+        try {
+          // Try using RPC function first (bypasses PostgREST UPDATE issues)
+          const { data: rpcData, error: rpcError } = await supabase.rpc('update_user_subscription_by_id', {
+            subscription_id: existing.id,
+            p_tier: subscriptionData.tier,
+            p_status: subscriptionData.status,
+            p_billing_cycle: subscriptionData.billing_cycle,
+            p_stripe_customer_id: subscriptionData.stripe_customer_id,
+            p_stripe_subscription_id: subscriptionData.stripe_subscription_id,
+            p_subscription_start_date: subscriptionData.subscription_start_date,
+            p_subscription_renewal_date: subscriptionData.subscription_renewal_date,
+            p_subscription_ends_at: subscriptionData.subscription_ends_at,
+            p_money_back_guarantee_end_date: subscriptionData.money_back_guarantee_end_date,
+            p_money_back_guarantee_eligible: subscriptionData.money_back_guarantee_eligible,
+            p_refund_count: subscriptionData.refund_count
           });
           
-          try {
-            const supabaseAdmin = createServiceClient();
-            console.log('✅ Service role client created');
+          if (rpcError) {
+            console.log('⚠️ RPC function failed, trying direct UPDATE...');
+            console.log('RPC Error:', {
+              code: rpcError.code,
+              message: rpcError.message,
+              details: rpcError.details,
+              hint: rpcError.hint
+            });
             
-            // Try with service role using primary key
-            const result = await supabaseAdmin
+            // Fallback to direct UPDATE with authenticated client
+            const result = await supabase
               .from('user_subscriptions')
               .update(subscriptionData)
-              .eq('id', existing.id)  // ✅ Still use PRIMARY KEY with service role
+              .eq('id', existing.id)
               .select()
               .single();
             
-            console.log('🔍 Service role client result:', {
-              hasData: !!result.data,
-              hasError: !!result.error,
-              errorCode: result.error?.code,
-              errorMessage: result.error?.message
-            });
-            
             data = result.data;
             error = result.error;
-          } catch (adminError: any) {
-            console.error('❌ Service role client also failed:', adminError);
-            error = adminError;
+            
+            // If that fails, try service role client
+            if (error) {
+              console.log('⚠️ Authenticated client also failed, trying service role client...');
+              console.log('Error details:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+              });
+              
+              try {
+                const supabaseAdmin = createServiceClient();
+                console.log('✅ Service role client created');
+                
+                const adminResult = await supabaseAdmin
+                  .from('user_subscriptions')
+                  .update(subscriptionData)
+                  .eq('id', existing.id)
+                  .select()
+                  .single();
+                
+                console.log('🔍 Service role client result:', {
+                  hasData: !!adminResult.data,
+                  hasError: !!adminResult.error,
+                  errorCode: adminResult.error?.code,
+                  errorMessage: adminResult.error?.message
+                });
+                
+                data = adminResult.data;
+                error = adminResult.error;
+              } catch (adminError: any) {
+                console.error('❌ Service role client also failed:', adminError);
+                error = adminError;
+              }
+            }
+          } else {
+            // RPC function succeeded - convert JSONB to object
+            console.log('✅ RPC function succeeded!');
+            data = rpcData as any;
+            error = null;
           }
+        } catch (rpcException: any) {
+          console.error('❌ Exception calling RPC function:', rpcException);
+          error = rpcException;
         }
         
         dbSubscription = data || null;
