@@ -360,6 +360,9 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ All table access tests passed, existing subscription:', testData);
 
+    // CRITICAL FIX: PostgREST has a known issue where .eq('user_id', ...) fails in UPDATE statements
+    // Solution: SELECT to get the subscription ID first, then UPDATE by primary key (id)
+    // This avoids the PostgREST column resolution bug with foreign keys in WHERE clauses
     // Use explicit UPDATE instead of upsert to avoid PostgREST/Supabase client issues
     // Since we know the user has a subscription (testData exists), we'll update it
     const subscriptionData = {
@@ -382,9 +385,10 @@ export async function POST(request: NextRequest) {
 
     if (testData && testData.length > 0) {
       // User has existing subscription - Use direct UPDATE
-      // Try with authenticated client first, fallback to service role if needed
+      // CRITICAL FIX: PostgREST has issues with .eq('user_id', ...) in UPDATE
+      // Solution: SELECT to get the subscription ID first, then UPDATE by ID
       console.log('🔄 Updating existing subscription for user:', user.id);
-      console.log('🔍 Using direct UPDATE (will try service role if auth client fails)');
+      console.log('🔍 Using primary key approach: SELECT id first, then UPDATE by id');
       
       const subscriptionData = {
         tier: 'pro',
@@ -401,72 +405,73 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       };
 
-      // Try with authenticated client first
-      console.log('🔍 Attempting UPDATE with authenticated client...');
-      console.log('🔍 Subscription data keys:', Object.keys(subscriptionData));
-      console.log('🔍 User ID for WHERE clause:', user.id);
-      console.log('🔍 Testing if WHERE clause is the issue...');
-      
-      // CRITICAL TEST: Try UPDATE with different WHERE clause syntax
-      // PostgREST might have issues with .eq('user_id', ...) in UPDATE
-      let { data, error } = await supabase
+      // Step 1: Get existing subscription ID (SELECT works fine with .eq('user_id', ...))
+      console.log('🔍 Step 1: Getting subscription ID using SELECT...');
+      const { data: existing, error: selectError } = await supabase
         .from('user_subscriptions')
-        .update(subscriptionData)
+        .select('id')
         .eq('user_id', user.id)
-        .select()
-        .single();
+        .maybeSingle();
       
-      // If that fails, try using filter() instead of eq()
-      if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
-        console.log('⚠️ .eq() failed, trying .filter() instead...');
-        const result = await supabase
+      if (selectError) {
+        console.error('❌ Error selecting subscription:', selectError);
+        dbError = selectError;
+        dbSubscription = null;
+      } else if (!existing || !existing.id) {
+        console.error('❌ No existing subscription found for user:', user.id);
+        dbError = { code: 'PGRST116', message: 'No existing subscription found' } as any;
+        dbSubscription = null;
+      } else {
+        // Step 2: UPDATE using primary key ID (not user_id!)
+        console.log('🔍 Step 2: Updating subscription by ID:', existing.id);
+        console.log('✅ Using .eq("id", ...) instead of .eq("user_id", ...)');
+        
+        let { data, error } = await supabase
           .from('user_subscriptions')
           .update(subscriptionData)
-          .filter('user_id', 'eq', user.id)
+          .eq('id', existing.id)  // ✅ Use primary key, not foreign key!
           .select()
           .single();
-        data = result.data;
-        error = result.error;
-      }
-      
-      // If it fails with column error, try service role client (bypasses RLS)
-      if (error && (error.code === '42703' || error.message?.includes('user_id'))) {
-        console.log('⚠️ Authenticated client failed with error:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        console.log('🔄 Trying service role client (bypasses RLS and PostgREST restrictions)...');
         
-        try {
-          const supabaseAdmin = createServiceClient();
-          console.log('✅ Service role client created');
-          
-          const result = await supabaseAdmin
-            .from('user_subscriptions')
-            .update(subscriptionData)
-            .eq('user_id', user.id)
-            .select()
-            .single();
-          
-          console.log('🔍 Service role client result:', {
-            hasData: !!result.data,
-            hasError: !!result.error,
-            errorCode: result.error?.code,
-            errorMessage: result.error?.message
+        // If authenticated client fails, try service role client
+        if (error) {
+          console.log('⚠️ Authenticated client failed, trying service role client...');
+          console.log('Error details:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
           });
           
-          data = result.data;
-          error = result.error;
-        } catch (adminError: any) {
-          console.error('❌ Service role client also failed:', adminError);
-          error = adminError;
+          try {
+            const supabaseAdmin = createServiceClient();
+            console.log('✅ Service role client created');
+            
+            const result = await supabaseAdmin
+              .from('user_subscriptions')
+              .update(subscriptionData)
+              .eq('id', existing.id)  // ✅ Still use primary key with service role
+              .select()
+              .single();
+            
+            console.log('🔍 Service role client result:', {
+              hasData: !!result.data,
+              hasError: !!result.error,
+              errorCode: result.error?.code,
+              errorMessage: result.error?.message
+            });
+            
+            data = result.data;
+            error = result.error;
+          } catch (adminError: any) {
+            console.error('❌ Service role client also failed:', adminError);
+            error = adminError;
+          }
         }
+        
+        dbSubscription = data || null;
+        dbError = error;
       }
-      
-      dbSubscription = data || null;
-      dbError = error;
     } else {
       // User doesn't have subscription - Use direct INSERT
       // Try with authenticated client first, fallback to service role if needed
