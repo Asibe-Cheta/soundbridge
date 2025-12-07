@@ -68,8 +68,6 @@ function PaymentForm({ clientSecret, event, onSuccess, onCancel }: PaymentFormPr
             paymentIntentId: paymentIntent.id,
             eventId: event.id,
             quantity: 1,
-            amount: event.price_gbp || event.price_ngn || 0,
-            currency: event.price_gbp ? 'gbp' : 'ngn',
           }),
         });
 

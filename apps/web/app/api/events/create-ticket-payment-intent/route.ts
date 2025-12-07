@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { eventId, quantity = 1, priceGbp, priceNgn, currency = 'GBP' } = body;
+    const { eventId, quantity = 1, currency } = body;
 
     // Validate required fields
     if (!eventId) {
@@ -43,28 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate currency
-    const validCurrency = currency.toUpperCase();
-    if (!['GBP', 'NGN'].includes(validCurrency)) {
-      return NextResponse.json(
-        { error: 'Invalid currency. Must be GBP or NGN' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Get price based on currency
-    const ticketPrice = validCurrency === 'GBP' 
-      ? (priceGbp || 0) 
-      : (priceNgn || 0);
-
-    if (ticketPrice <= 0) {
-      return NextResponse.json(
-        { error: `Invalid price for ${validCurrency}. priceGbp or priceNgn must be greater than 0` },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Fetch event details
+    // Fetch event details first to get prices
     const { data: event, error: eventError } = await supabase
       .from('events')
       .select(`
@@ -75,7 +54,8 @@ export async function POST(request: NextRequest) {
         price_gbp,
         price_ngn,
         max_attendees,
-        current_attendees
+        current_attendees,
+        country
       `)
       .eq('id', eventId)
       .single();
@@ -84,6 +64,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Event not found' },
         { status: 404, headers: corsHeaders }
+      );
+    }
+
+    // Determine currency based on event's country or user preference
+    // If currency provided in request, use that; otherwise, use event's primary currency
+    let validCurrency: string;
+    if (currency) {
+      validCurrency = currency.toUpperCase();
+      if (!['GBP', 'NGN'].includes(validCurrency)) {
+        return NextResponse.json(
+          { error: 'Invalid currency. Must be GBP or NGN' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+    } else {
+      // Default to GBP if event has GBP price, otherwise NGN
+      validCurrency = event.price_gbp && event.price_gbp > 0 ? 'GBP' : 'NGN';
+    }
+
+    // Get price from event database based on currency
+    const ticketPrice = validCurrency === 'GBP'
+      ? (event.price_gbp || 0)
+      : (event.price_ngn || 0);
+
+    if (ticketPrice <= 0) {
+      return NextResponse.json(
+        { error: `Event does not have a valid price for ${validCurrency}` },
+        { status: 400, headers: corsHeaders }
       );
     }
 

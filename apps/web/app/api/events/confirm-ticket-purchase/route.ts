@@ -27,41 +27,13 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { paymentIntentId, eventId, quantity = 1, amount, currency = 'gbp' } = body;
+    const { paymentIntentId, eventId, quantity = 1 } = body;
 
     // Validate required fields
     if (!paymentIntentId || !eventId) {
       return NextResponse.json(
         { error: 'Missing required fields: paymentIntentId, eventId' },
         { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Check if ticket already exists for this payment intent (idempotency)
-    const { data: existingTicket, error: checkError } = await supabase
-      .from('purchased_event_tickets')
-      .select('id, ticket_code, status')
-      .eq('payment_intent_id', paymentIntentId)
-      .single();
-
-    if (existingTicket && !checkError) {
-      // Ticket already created for this payment intent
-      return NextResponse.json(
-        {
-          id: existingTicket.id,
-          event_id: eventId,
-          user_id: user.id,
-          ticket_code: existingTicket.ticket_code,
-          quantity: quantity,
-          amount_paid: amount,
-          currency: currency.toLowerCase(),
-          payment_intent_id: paymentIntentId,
-          purchase_date: new Date().toISOString(),
-          status: existingTicket.status,
-          platform_fee_amount: Math.round(amount * 0.05),
-          organizer_amount: Math.round(amount * 0.95),
-        },
-        { headers: corsHeaders }
       );
     }
 
@@ -73,8 +45,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify payment intent with Stripe
+    // Verify payment intent with Stripe first to get amount and currency
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    // Get amount and currency from payment intent (source of truth)
+    const amount = paymentIntent.amount; // Amount in smallest currency unit
+    const currency = paymentIntent.currency; // 'gbp' or 'ngn'
+
+    // Check if ticket already exists for this payment intent (idempotency)
+    const { data: existingTicket, error: checkError } = await supabase
+      .from('purchased_event_tickets')
+      .select('id, ticket_code, status, amount_paid')
+      .eq('payment_intent_id', paymentIntentId)
+      .single();
+
+    if (existingTicket && !checkError) {
+      // Ticket already created for this payment intent
+      const platformFeeAmount = Math.round(existingTicket.amount_paid * 0.05);
+      const organizerAmount = existingTicket.amount_paid - platformFeeAmount;
+
+      return NextResponse.json(
+        {
+          id: existingTicket.id,
+          event_id: eventId,
+          user_id: user.id,
+          ticket_code: existingTicket.ticket_code,
+          quantity: quantity,
+          amount_paid: existingTicket.amount_paid,
+          currency: currency.toLowerCase(),
+          payment_intent_id: paymentIntentId,
+          purchase_date: new Date().toISOString(),
+          status: existingTicket.status,
+          platform_fee_amount: platformFeeAmount,
+          organizer_amount: organizerAmount,
+        },
+        { headers: corsHeaders }
+      );
+    }
 
     if (paymentIntent.status !== 'succeeded') {
       return NextResponse.json(
