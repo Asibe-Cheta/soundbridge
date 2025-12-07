@@ -299,29 +299,58 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                {user ? (
-                  <button
-                    className={isRSVPed ? 'btn-secondary' : 'btn-primary'}
-                    onClick={handleRSVP}
-                    disabled={rsvpLoading}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                  >
-                    {rsvpLoading ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : isRSVPed ? (
-                      <CheckCircle size={16} />
-                    ) : (
-                      <Calendar size={16} />
-                    )}
-                    {isRSVPed ? 'Cancel RSVP' : 'RSVP Now'}
-                  </button>
-                ) : (
-                  <Link href="/login" style={{ textDecoration: 'none' }}>
-                    <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Calendar size={16} />
-                      Login to RSVP
+                {/* Buy Ticket button for paid events */}
+                {event && ((event.price_gbp && event.price_gbp > 0) || (event.price_ngn && event.price_ngn > 0)) ? (
+                  user ? (
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        // Navigate to ticket purchase flow
+                        // TODO: Integrate with ticket purchase modal/endpoint
+                        alert('Ticket purchase will be integrated with the new payment endpoints. Use /api/events/create-ticket-payment-intent');
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#EC4899' }}
+                    >
+                      <DollarSign size={16} />
+                      Buy Ticket
                     </button>
-                  </Link>
+                  ) : (
+                    <Link href="/login" style={{ textDecoration: 'none' }}>
+                      <button 
+                        className="btn-primary" 
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#EC4899' }}
+                      >
+                        <DollarSign size={16} />
+                        Login to Buy Ticket
+                      </button>
+                    </Link>
+                  )
+                ) : (
+                  /* RSVP button for free events */
+                  user ? (
+                    <button
+                      className={isRSVPed ? 'btn-secondary' : 'btn-primary'}
+                      onClick={handleRSVP}
+                      disabled={rsvpLoading}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      {rsvpLoading ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : isRSVPed ? (
+                        <CheckCircle size={16} />
+                      ) : (
+                        <Calendar size={16} />
+                      )}
+                      {isRSVPed ? 'Cancel RSVP' : 'RSVP Now'}
+                    </button>
+                  ) : (
+                    <Link href="/login" style={{ textDecoration: 'none' }}>
+                      <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Calendar size={16} />
+                        Login to RSVP
+                      </button>
+                    </Link>
+                  )
                 )}
                 <button
                   className="btn-secondary"

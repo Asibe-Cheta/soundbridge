@@ -51,13 +51,15 @@ export async function POST(
         );
       }
 
-      // Add RSVP
+      // Add RSVP (don't set updated_at - let database default/trigger handle it)
       const { error: insertError } = await supabase
         .from('event_attendees')
         .insert({
           event_id: eventId,
           user_id: userId,
           status: 'confirmed'
+          // Do not include updated_at - let database DEFAULT handle it
+          // Do not include created_at - let database DEFAULT handle it
         });
 
       if (insertError) {

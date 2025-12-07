@@ -113,6 +113,11 @@ export async function POST(request: NextRequest) {
         await handleRefundProcessed(charge, supabase);
         break;
 
+      case 'refund.created':
+        const refund = event.data.object as any;
+        await handleRefundCreated(refund, supabase);
+        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -464,9 +469,9 @@ async function handleRefundProcessed(
   try {
     // Find refund record by payment intent
     const paymentIntentId = charge.payment_intent as string;
-    
+
     if (paymentIntentId) {
-      // Update refund record if exists
+      // Update refund record if exists (legacy)
       const { data: refunds } = await supabase
         .from('refunds')
         .select('*')
@@ -487,5 +492,81 @@ async function handleRefundProcessed(
     }
   } catch (error) {
     console.error('Error handling refund processed:', error);
+  }
+}
+
+async function handleRefundCreated(
+  refund: Stripe.Refund,
+  supabase: ReturnType<typeof createClient>
+) {
+  try {
+    const paymentIntentId = refund.payment_intent as string;
+
+    if (!paymentIntentId) {
+      console.log('⚠️ No payment intent ID in refund');
+      return;
+    }
+
+    console.log(`💳 Processing refund webhook: ${refund.id} for payment intent: ${paymentIntentId}`);
+
+    // Update purchased_event_tickets if this is an event ticket refund
+    const { data: ticket, error: ticketError } = await supabase
+      .from('purchased_event_tickets')
+      .select('id, status')
+      .eq('payment_intent_id', paymentIntentId)
+      .single();
+
+    if (ticket && !ticketError) {
+      // Update ticket status to refunded
+      const { error: updateError } = await supabase
+        .from('purchased_event_tickets')
+        .update({
+          status: 'refunded',
+          refund_id: refund.id,
+          refunded_at: new Date(refund.created * 1000).toISOString(),
+          refund_amount: refund.amount,
+          metadata: {
+            refund_id: refund.id,
+            refunded_at: new Date(refund.created * 1000).toISOString(),
+            refund_amount: refund.amount,
+            refund_status: refund.status,
+            refund_reason: refund.reason
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('payment_intent_id', paymentIntentId);
+
+      if (updateError) {
+        console.error('❌ Failed to update ticket refund status:', updateError);
+      } else {
+        console.log(`✅ Event ticket ${ticket.id} marked as refunded`);
+      }
+    } else {
+      // Check legacy ticket_purchases table
+      const { data: legacyTicket, error: legacyError } = await supabase
+        .from('ticket_purchases')
+        .select('id, status')
+        .eq('stripe_payment_intent_id', paymentIntentId)
+        .single();
+
+      if (legacyTicket && !legacyError) {
+        await supabase
+          .from('ticket_purchases')
+          .update({
+            status: 'refunded',
+            refund_id: refund.id,
+            refunded_at: new Date(refund.created * 1000).toISOString(),
+            refund_amount: refund.amount / 100, // Convert from cents to decimal
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', paymentIntentId);
+
+        console.log(`✅ Legacy ticket purchase ${legacyTicket.id} marked as refunded`);
+      } else {
+        console.log(`ℹ️ No ticket found for payment intent ${paymentIntentId} - may be subscription refund`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error handling refund created:', error);
   }
 }

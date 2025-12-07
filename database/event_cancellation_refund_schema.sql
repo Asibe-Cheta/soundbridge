@@ -8,7 +8,7 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(50) CHEC
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cancelled_by UUID REFERENCES auth.users(id);
 
--- Add refund tracking to ticket_purchases
+-- Add refund tracking to ticket_purchases (legacy)
 ALTER TABLE ticket_purchases ADD COLUMN IF NOT EXISTS refund_id VARCHAR(100);
 ALTER TABLE ticket_purchases ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE ticket_purchases ADD COLUMN IF NOT EXISTS refund_amount DECIMAL(10,2);
@@ -17,16 +17,32 @@ ALTER TABLE ticket_purchases ADD COLUMN IF NOT EXISTS refund_error TEXT;
 
 -- Update ticket_purchases status to include refund states
 ALTER TABLE ticket_purchases DROP CONSTRAINT IF EXISTS ticket_purchases_status_check;
-ALTER TABLE ticket_purchases ADD CONSTRAINT ticket_purchases_status_check 
+ALTER TABLE ticket_purchases ADD CONSTRAINT ticket_purchases_status_check
   CHECK (status IN ('pending', 'completed', 'cancelled', 'refunded', 'refund_failed', 'refund_processing'));
+
+-- Add refund tracking to purchased_event_tickets (new ticket system)
+ALTER TABLE purchased_event_tickets ADD COLUMN IF NOT EXISTS refund_id VARCHAR(100);
+ALTER TABLE purchased_event_tickets ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE purchased_event_tickets ADD COLUMN IF NOT EXISTS refund_amount INTEGER; -- Amount in smallest currency unit
+ALTER TABLE purchased_event_tickets ADD COLUMN IF NOT EXISTS refund_reason TEXT;
+ALTER TABLE purchased_event_tickets ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+
+-- Ensure purchased_event_tickets status includes refunded
+ALTER TABLE purchased_event_tickets DROP CONSTRAINT IF EXISTS purchased_event_tickets_status_check;
+ALTER TABLE purchased_event_tickets ADD CONSTRAINT purchased_event_tickets_status_check
+  CHECK (status IN ('active', 'used', 'refunded', 'cancelled'));
 
 -- Create index for faster queries on event status
 CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_cancelled_at ON events(cancelled_at) WHERE cancelled_at IS NOT NULL;
 
--- Create index for refund tracking
+-- Create index for refund tracking (legacy)
 CREATE INDEX IF NOT EXISTS idx_ticket_purchases_refund_status ON ticket_purchases(status) WHERE status IN ('refunded', 'refund_failed', 'refund_processing');
 CREATE INDEX IF NOT EXISTS idx_ticket_purchases_refund_id ON ticket_purchases(refund_id) WHERE refund_id IS NOT NULL;
+
+-- Create index for refund tracking (new tickets)
+CREATE INDEX IF NOT EXISTS idx_purchased_tickets_refund_id ON purchased_event_tickets(refund_id) WHERE refund_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_purchased_tickets_refunded_at ON purchased_event_tickets(refunded_at) WHERE refunded_at IS NOT NULL;
 
 -- =====================================================
 -- Refund Statistics View

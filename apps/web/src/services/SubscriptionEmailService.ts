@@ -43,6 +43,17 @@ export interface AccountDowngradedData {
   reactivateUrl: string;
 }
 
+export interface EventCancellationData {
+  userEmail: string;
+  userName: string;
+  eventTitle: string;
+  eventDate: string;
+  ticketCodes: string[];
+  refundAmount: string;
+  cancellationReason: string;
+  refundTimeline?: string;
+}
+
 export class SubscriptionEmailService {
   private static supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -267,13 +278,153 @@ export class SubscriptionEmailService {
   }
 
   /**
+   * Send event cancellation email to ticket purchasers
+   */
+  static async sendEventCancellation(
+    data: EventCancellationData
+  ): Promise<boolean> {
+    try {
+      const templateId = process.env.SENDGRID_EVENT_CANCELLATION_TEMPLATE_ID;
+
+      if (!templateId) {
+        console.warn('SENDGRID_EVENT_CANCELLATION_TEMPLATE_ID not configured - using basic email');
+        // Fall back to basic email if template not configured
+        return await this.sendEventCancellationBasic(data);
+      }
+
+      const ticketCodesText = data.ticketCodes.join(', ');
+      const refundTimeline = data.refundTimeline || '5-10 business days';
+
+      const emailData = {
+        to: data.userEmail,
+        templateId,
+        dynamicTemplateData: {
+          user_name: data.userName,
+          event_title: data.eventTitle,
+          event_date: new Date(data.eventDate).toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          ticket_codes: ticketCodesText,
+          refund_amount: data.refundAmount,
+          cancellation_reason: data.cancellationReason,
+          refund_timeline: refundTimeline,
+          support_email: 'support@soundbridge.live',
+          app_name: 'SoundBridge',
+          events_url: `${process.env.NEXT_PUBLIC_APP_URL}/events`
+        },
+        subject: `Event Cancelled: ${data.eventTitle}`
+      };
+
+      await SendGridService.sendTemplatedEmail(emailData);
+      console.log(`✅ Event cancellation email sent to ${data.userEmail}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending event cancellation email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send basic event cancellation email (fallback without template)
+   */
+  private static async sendEventCancellationBasic(
+    data: EventCancellationData
+  ): Promise<boolean> {
+    try {
+      const ticketCodesText = data.ticketCodes.join(', ');
+      const refundTimeline = data.refundTimeline || '5-10 business days';
+
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #333;">Event Cancelled</h1>
+
+          <p>Hi ${data.userName},</p>
+
+          <p>We're sorry to inform you that the following event has been cancelled:</p>
+
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin-top: 0; color: #333;">${data.eventTitle}</h2>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(data.eventDate).toLocaleDateString('en-GB', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}</p>
+            <p style="margin: 5px 0;"><strong>Ticket Code(s):</strong> ${ticketCodesText}</p>
+          </div>
+
+          <h3>Refund Information</h3>
+          <p><strong>Refund Amount:</strong> ${data.refundAmount}</p>
+          <p>Your refund has been processed and should appear in your account within ${refundTimeline}.</p>
+
+          <h3>Cancellation Reason</h3>
+          <p>${data.cancellationReason}</p>
+
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+
+          <p>We apologize for any inconvenience this may cause. You can browse other events on SoundBridge:</p>
+          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/events" style="color: #0066cc;">Browse Events</a></p>
+
+          <p style="margin-top: 30px; color: #666; font-size: 12px;">
+            If you have any questions, please contact us at support@soundbridge.live
+          </p>
+        </div>
+      `;
+
+      const textContent = `
+Event Cancelled
+
+Hi ${data.userName},
+
+We're sorry to inform you that the following event has been cancelled:
+
+Event: ${data.eventTitle}
+Date: ${new Date(data.eventDate).toLocaleDateString('en-GB')}
+Ticket Code(s): ${ticketCodesText}
+
+Refund Information:
+Amount: ${data.refundAmount}
+Timeline: ${refundTimeline}
+
+Cancellation Reason:
+${data.cancellationReason}
+
+We apologize for any inconvenience this may cause.
+
+If you have any questions, please contact us at support@soundbridge.live
+
+SoundBridge Team
+      `.trim();
+
+      await SendGridService.sendEmail({
+        to: data.userEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@soundbridge.live',
+        subject: `Event Cancelled: ${data.eventTitle}`,
+        html: htmlContent,
+        text: textContent
+      });
+
+      console.log(`✅ Basic event cancellation email sent to ${data.userEmail}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending basic event cancellation email:', error);
+      return false;
+    }
+  }
+
+  /**
    * Get user email and name from database
    */
   static async getUserInfo(userId: string): Promise<{ email: string; name: string } | null> {
     try {
       // Get user email from auth
       const { data: { user }, error: authError } = await this.supabase.auth.admin.getUserById(userId);
-      
+
       if (authError || !user) {
         console.error('Error fetching user from auth:', authError);
         return null;

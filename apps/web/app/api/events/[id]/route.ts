@@ -323,7 +323,34 @@ export async function DELETE(
       );
     }
 
-    // Delete event
+    // Check for purchased tickets before allowing deletion
+    const { data: purchasedTickets, error: ticketsError } = await supabase
+      .from('purchased_event_tickets')
+      .select('id, payment_intent_id, amount_paid, currency, status, user_id')
+      .eq('event_id', resolvedParams.id)
+      .in('status', ['active', 'used']);
+
+    if (ticketsError) {
+      console.error('Error checking for purchased tickets:', ticketsError);
+      return NextResponse.json(
+        { error: 'Failed to check for purchased tickets' },
+        { status: 500 }
+      );
+    }
+
+    // If tickets exist, require cancellation flow instead of direct deletion
+    if (purchasedTickets && purchasedTickets.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Cannot delete event with purchased tickets. Use cancellation endpoint instead.',
+          purchasedTicketsCount: purchasedTickets.length,
+          requiresCancellation: true
+        },
+        { status: 400 }
+      );
+    }
+
+    // Proceed with deletion only if no tickets have been purchased
     const { error: deleteError } = await supabase
       .from('events')
       .delete()
