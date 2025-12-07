@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
+import { EventTicketPurchaseModal } from '../../../src/components/events/EventTicketPurchaseModal';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { Event } from '../../../src/lib/types/event';
@@ -21,6 +22,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [isLiked, setIsLiked] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
   const resolvedParams = use(params);
 
   // Note: Navigation and authentication are handled by the layout Header component
@@ -89,6 +91,13 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
 
   const handleLike = () => {
     setIsLiked(!isLiked);
+  };
+
+  const handleTicketPurchaseSuccess = (ticketData: any) => {
+    console.log('Ticket purchased successfully:', ticketData);
+    // Optionally refresh event data or show success message
+    setShowTicketModal(false);
+    // You could also show a success notification here
   };
 
   const tabs = [
@@ -304,11 +313,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                   user ? (
                     <button
                       className="btn-primary"
-                      onClick={() => {
-                        // Navigate to ticket purchase flow
-                        // TODO: Integrate with ticket purchase modal/endpoint
-                        alert('Ticket purchase will be integrated with the new payment endpoints. Use /api/events/create-ticket-payment-intent');
-                      }}
+                      onClick={() => setShowTicketModal(true)}
                       style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#EC4899' }}
                     >
                       <DollarSign size={16} />
@@ -476,6 +481,16 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           <div>Christian Music Festival - London</div>
         </div>
       </FloatingCard>
+
+      {/* Ticket Purchase Modal */}
+      {event && (
+        <EventTicketPurchaseModal
+          isOpen={showTicketModal}
+          onClose={() => setShowTicketModal(false)}
+          event={event}
+          onSuccess={handleTicketPurchaseSuccess}
+        />
+      )}
     </>
   );
 } 
