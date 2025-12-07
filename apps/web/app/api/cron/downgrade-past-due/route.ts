@@ -12,14 +12,24 @@ import { SubscriptionEmailService } from '../../../../src/services/SubscriptionE
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret for security
-    // Support both query parameter (external cron services) and header (Vercel Cron)
+    // Support multiple auth methods:
+    // 1. Authorization header: Bearer {CRON_SECRET} (Vercel Cron or manual)
+    // 2. Query parameter: ?secret={CRON_SECRET} (external cron services)
+    // 3. x-vercel-cron-secret header (alternative header method)
+    
+    const authHeader = request.headers.get('authorization');
     const querySecret = request.nextUrl.searchParams.get('secret');
-    const headerSecret = request.headers.get('authorization')?.replace('Bearer ', '') || 
-                         request.headers.get('x-vercel-cron-secret');
+    const headerSecret = request.headers.get('x-vercel-cron-secret');
     
-    const providedSecret = querySecret || headerSecret;
+    const cronSecret = process.env.CRON_SECRET;
     
-    if (!providedSecret || providedSecret !== process.env.CRON_SECRET) {
+    // Check if any provided secret matches
+    const isAuthorized = 
+      (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+      (querySecret && querySecret === cronSecret) ||
+      (headerSecret && headerSecret === cronSecret);
+    
+    if (!isAuthorized) {
       console.error('[cron] Unauthorized access attempt - invalid or missing secret');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -483,14 +483,19 @@ The platform uses **SendGrid** to send automated email notifications for subscri
 
 **Sent From:** `checkout.session.completed` webhook event
 
-**Email Contents:**
-- Welcome message
-- Plan name (Pro Monthly/Yearly)
-- Amount paid
-- Subscription start date
-- Next billing date
-- 7-day money-back guarantee reminder
-- Dashboard link
+**Email Template Variables (SendGrid Dynamic Fields):**
+- `user_name` (Text) - User's display name
+- `plan_name` (Text) - e.g., "Pro (Monthly)" or "Pro (Yearly)"
+- `billing_cycle` (Text) - "Monthly" or "Yearly"
+- `amount` (Text) - Formatted amount, e.g., "£9.99"
+- `currency` (Text) - Currency code, e.g., "GBP"
+- `subscription_start_date` (Text) - Formatted date, e.g., "December 3, 2025"
+- `next_billing_date` (Text) - Formatted date, e.g., "January 3, 2026"
+- `invoice_url` (Text/URL - optional) - Stripe invoice URL
+- `dashboard_url` (Text/URL) - Link to user dashboard
+- `support_email` (Text) - Support email address
+- `app_name` (Text) - "SoundBridge"
+- `money_back_guarantee_text` (Text) - e.g., "7-day money-back guarantee"
 
 **Example Data:**
 ```json
@@ -504,6 +509,8 @@ The platform uses **SendGrid** to send automated email notifications for subscri
   "next_billing_date": "January 3, 2026",
   "invoice_url": "https://dashboard.stripe.com/invoices/...",
   "dashboard_url": "https://soundbridge.live/dashboard",
+  "support_email": "support@soundbridge.live",
+  "app_name": "SoundBridge",
   "money_back_guarantee_text": "7-day money-back guarantee"
 }
 ```
@@ -517,14 +524,18 @@ The platform uses **SendGrid** to send automated email notifications for subscri
 
 **Sent From:** `invoice.payment_succeeded` webhook event
 
-**Email Contents:**
-- Payment confirmation
-- Amount paid
-- Payment date
-- Invoice number
-- Invoice link (PDF)
-- Next billing date
-- Dashboard link
+**Email Template Variables (SendGrid Dynamic Fields):**
+- `user_name` (Text) - User's display name
+- `amount` (Text) - Formatted amount, e.g., "£9.99"
+- `currency` (Text) - Currency code, e.g., "GBP"
+- `billing_cycle` (Text) - "Monthly" or "Yearly"
+- `payment_date` (Text) - Formatted date/time, e.g., "December 3, 2025, 14:30"
+- `invoice_number` (Text) - Stripe invoice number, e.g., "inv_xxx"
+- `invoice_url` (Text/URL - optional) - Stripe invoice PDF URL
+- `next_billing_date` (Text) - Formatted date, e.g., "January 3, 2026"
+- `dashboard_url` (Text/URL) - Link to user dashboard
+- `support_email` (Text) - Support email address
+- `app_name` (Text) - "SoundBridge"
 
 **Example Data:**
 ```json
@@ -536,7 +547,10 @@ The platform uses **SendGrid** to send automated email notifications for subscri
   "payment_date": "December 3, 2025, 14:30",
   "invoice_number": "inv_xxx",
   "invoice_url": "https://dashboard.stripe.com/invoices/...",
-  "next_billing_date": "January 3, 2026"
+  "next_billing_date": "January 3, 2026",
+  "dashboard_url": "https://soundbridge.live/dashboard",
+  "support_email": "support@soundbridge.live",
+  "app_name": "SoundBridge"
 }
 ```
 
@@ -549,13 +563,18 @@ The platform uses **SendGrid** to send automated email notifications for subscri
 
 **Sent From:** `invoice.payment_failed` webhook event
 
-**Email Contents:**
-- Payment failure notification
-- Amount attempted
-- Grace period information (7 days)
-- Grace period end date
-- Link to update payment method
-- Warning that account will downgrade if payment not updated
+**Email Template Variables (SendGrid Dynamic Fields):**
+- `user_name` (Text) - User's display name
+- `amount` (Text) - Formatted amount attempted, e.g., "£9.99"
+- `currency` (Text) - Currency code, e.g., "GBP"
+- `billing_cycle` (Text) - "Monthly" or "Yearly"
+- `payment_date` (Text) - Formatted date, e.g., "December 3, 2025"
+- `grace_period_days` (Number) - Number of days in grace period, e.g., 7
+- `grace_period_end_date` (Text) - Formatted date, e.g., "December 10, 2025"
+- `update_payment_url` (Text/URL) - Link to update payment method
+- `dashboard_url` (Text/URL) - Link to user dashboard
+- `support_email` (Text) - Support email address
+- `app_name` (Text) - "SoundBridge"
 
 **Example Data:**
 ```json
@@ -567,7 +586,10 @@ The platform uses **SendGrid** to send automated email notifications for subscri
   "payment_date": "December 3, 2025",
   "grace_period_days": 7,
   "grace_period_end_date": "December 10, 2025",
-  "update_payment_url": "https://soundbridge.live/dashboard?tab=billing&action=update-payment"
+  "update_payment_url": "https://soundbridge.live/dashboard?tab=billing&action=update-payment",
+  "dashboard_url": "https://soundbridge.live/dashboard",
+  "support_email": "support@soundbridge.live",
+  "app_name": "SoundBridge"
 }
 ```
 
@@ -584,13 +606,14 @@ The platform uses **SendGrid** to send automated email notifications for subscri
 - `customer.subscription.deleted` webhook event (cancellation)
 - Cron job `/api/cron/downgrade-past-due` (after grace period expires)
 
-**Email Contents:**
-- Downgrade notification
-- Reason for downgrade (payment failed, cancelled, expired)
-- Date of downgrade
-- Information about losing Pro features
-- Link to reactivate subscription
-- Dashboard link
+**Email Template Variables (SendGrid Dynamic Fields):**
+- `user_name` (Text) - User's display name
+- `downgrade_reason` (Text) - Reason for downgrade, e.g., "Your payment could not be processed and the grace period has ended."
+- `downgrade_date` (Text) - Formatted date, e.g., "December 10, 2025"
+- `reactivate_url` (Text/URL) - Link to pricing page to reactivate
+- `dashboard_url` (Text/URL) - Link to user dashboard
+- `support_email` (Text) - Support email address
+- `app_name` (Text) - "SoundBridge"
 
 **Example Data:**
 ```json
@@ -598,7 +621,10 @@ The platform uses **SendGrid** to send automated email notifications for subscri
   "user_name": "John Doe",
   "downgrade_reason": "Your payment could not be processed and the grace period has ended.",
   "downgrade_date": "December 10, 2025",
-  "reactivate_url": "https://soundbridge.live/pricing"
+  "reactivate_url": "https://soundbridge.live/pricing",
+  "dashboard_url": "https://soundbridge.live/dashboard",
+  "support_email": "support@soundbridge.live",
+  "app_name": "SoundBridge"
 }
 ```
 
@@ -639,21 +665,35 @@ The platform uses **SendGrid** to send automated email notifications for subscri
 
 **Cron Job:**
 - **Endpoint:** `GET /api/cron/downgrade-past-due?secret={CRON_SECRET}`
-- **Frequency:** Should run daily (recommended: once per day)
+- **Full URL:** `https://soundbridge.live/api/cron/downgrade-past-due?secret={CRON_SECRET}`
+- **Frequency:** Runs daily at midnight UTC (00:00 UTC)
+- **Schedule:** `0 0 * * *` (cron expression for daily at midnight UTC)
 - **Function:** Finds all `past_due` subscriptions older than 7 days and downgrades them
+- **Authentication:** Requires `CRON_SECRET` as query parameter or in Authorization header
 
-**Setup:**
-- Add `CRON_SECRET` environment variable
-- Configure Vercel Cron or external cron service to call endpoint daily
-- Example Vercel Cron config in `vercel.json`:
-  ```json
-  {
-    "crons": [{
-      "path": "/api/cron/downgrade-past-due?secret=YOUR_SECRET",
-      "schedule": "0 0 * * *"
-    }]
-  }
-  ```
+**Current Setup:**
+- ✅ Configured with external cron service (EasyCron)
+- ✅ Runs daily at 00:01 UTC (01:01 local time)
+- ✅ Endpoint supports multiple authentication methods:
+  - Query parameter: `?secret={CRON_SECRET}`
+  - Authorization header: `Bearer {CRON_SECRET}`
+  - Header: `x-vercel-cron-secret: {CRON_SECRET}`
+
+**Setup Details:**
+- `CRON_SECRET` is stored in environment variables (local and Vercel)
+- External cron service calls the endpoint with the secret in the URL
+- The endpoint verifies the secret before processing downgrades
+- Safe to run multiple times (idempotent - only processes eligible subscriptions)
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "message": "Processed X subscriptions",
+  "downgraded": X,
+  "errors": [] // Optional, only if errors occurred
+}
+```
 
 ---
 
@@ -676,6 +716,8 @@ SENDGRID_ACCOUNT_DOWNGRADED_TEMPLATE_ID=d-xxxxx
 ```
 CRON_SECRET=your_secure_random_string
 ```
+
+**Note:** This secret is used to authenticate cron job requests. It's passed as a query parameter in the URL when using external cron services, or as a header when using Vercel Cron.
 
 **App URLs:**
 ```
@@ -759,6 +801,69 @@ const hasProAccess = subscription?.tier === 'pro' && subscription?.status === 'a
 7. **Show payment status and grace period countdown**
 
 **Consistency Goal:** Users should have the same experience whether they upgrade via web (Stripe) or mobile (IAP). Both create subscriptions in the same `user_subscriptions` table with the same structure. Email notifications will be sent regardless of upgrade method.
+
+---
+
+---
+
+## 📋 **Quick Reference: Email Template Variables**
+
+### **All Email Template Variables (SendGrid Dynamic Fields)**
+
+#### **Common Variables (Used in Multiple Templates):**
+- `user_name` (Text) - User's display name
+- `dashboard_url` (Text/URL) - `https://soundbridge.live/dashboard`
+- `support_email` (Text) - `support@soundbridge.live`
+- `app_name` (Text) - `SoundBridge`
+
+#### **Template-Specific Variables:**
+
+**1. Subscription Confirmation:**
+- `plan_name`, `billing_cycle`, `amount`, `currency`, `subscription_start_date`, `next_billing_date`, `invoice_url` (optional), `money_back_guarantee_text`
+
+**2. Payment Receipt:**
+- `amount`, `currency`, `billing_cycle`, `payment_date`, `invoice_number`, `invoice_url` (optional), `next_billing_date`
+
+**3. Payment Failed:**
+- `amount`, `currency`, `billing_cycle`, `payment_date`, `grace_period_days`, `grace_period_end_date`, `update_payment_url`
+
+**4. Account Downgraded:**
+- `downgrade_reason`, `downgrade_date`, `reactivate_url`
+
+---
+
+## ⏰ **Quick Reference: Cron Job**
+
+**Endpoint URL:**
+```
+https://soundbridge.live/api/cron/downgrade-past-due?secret={CRON_SECRET}
+```
+
+**Schedule:**
+- Frequency: Daily
+- Time: 00:01 UTC (01:01 local time)
+- Cron Expression: `0 0 * * *` (midnight UTC) or `1 9 * * *` (09:01 UTC, depending on service)
+
+**Purpose:**
+- Automatically downgrades accounts from Pro to Free tier
+- Processes subscriptions with `status = 'past_due'` that have been past due for more than 7 days
+- Sends downgrade emails to affected users
+- Safe to run multiple times (only processes eligible subscriptions)
+
+**Authentication:**
+- Requires `CRON_SECRET` environment variable
+- Secret passed as query parameter or in Authorization header
+
+---
+
+---
+
+## 📚 **Related Documentation**
+
+- `WEB_TEAM_MOBILE_SUBSCRIPTION_QUESTIONS_RESPONSE.md` - **Comprehensive answers to all subscription feature questions** including message/search limits, storage, verification, analytics, availability calendar, and API endpoints
+- `MOBILE_IAP_INTEGRATION_GUIDE.md` - IAP setup and integration
+- `TIER_CORRECTIONS.md` - Tier system corrections and limits
+- `CRON_SETUP_QUICK_START.md` - Cron job setup for grace period downgrades
 
 ---
 
