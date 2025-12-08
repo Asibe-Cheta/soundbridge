@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import { LogOut, User, Upload, Search, Bell, Settings, Home, Menu } from 'lucide-react';
+import { LogOut, User, Upload, Search, Bell, Settings, Home, Menu, Calendar } from 'lucide-react';
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -215,6 +215,24 @@ export function Header({
                     >
                       <Home size={16} />
                       Dashboard
+                    </div>
+                  </Link>
+                  <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      color: 'var(--text-primary)',
+                      borderRadius: '8px',
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <Calendar size={16} />
+                      My Events
                     </div>
                   </Link>
                   <Link href="/notifications" style={{ textDecoration: 'none' }}>
@@ -538,6 +556,24 @@ export function Header({
                     >
                       <Home size={16} />
                       Dashboard
+                    </div>
+                  </Link>
+                  <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      color: 'var(--text-primary)',
+                      borderRadius: '8px',
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <Calendar size={16} />
+                      My Events
                     </div>
                   </Link>
                   <Link href="/notifications" style={{ textDecoration: 'none' }}>
