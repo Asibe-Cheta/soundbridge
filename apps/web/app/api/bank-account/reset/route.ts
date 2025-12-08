@@ -59,6 +59,20 @@ export async function POST(request: NextRequest) {
 
     console.log('🔄 RESET BANK ACCOUNT: User authenticated:', user.id);
 
+    // Get the existing bank account to check for Stripe Connect ID
+    const { data: existingAccount } = await supabase
+      .from('creator_bank_accounts')
+      .select('stripe_connect_account_id')
+      .eq('user_id', user.id)
+      .single();
+
+    // If there's a Stripe Connect account, we should note it
+    // (We don't delete it from Stripe as that could cause issues)
+    if (existingAccount?.stripe_connect_account_id) {
+      console.log('🔄 RESET BANK ACCOUNT: Found Stripe Connect account:', existingAccount.stripe_connect_account_id);
+      console.log('⚠️ Note: Stripe Connect account will remain in Stripe but be unlinked from this user');
+    }
+
     // Delete the existing bank account record
     const { error: deleteError } = await supabase
       .from('creator_bank_accounts')
@@ -76,9 +90,12 @@ export async function POST(request: NextRequest) {
     console.log('🔄 RESET BANK ACCOUNT: Successfully deleted bank account for user:', user.id);
 
     return NextResponse.json(
-      { 
-        success: true, 
-        message: 'Bank account reset successfully. You can now set up a new account.' 
+      {
+        success: true,
+        message: 'Bank account reset successfully. You can now set up a new Stripe Connect account.',
+        note: existingAccount?.stripe_connect_account_id ?
+          'Previous Stripe Connect account has been unlinked. You can create a new one.' :
+          'You can now create a new Stripe Connect account.'
       },
       { status: 200, headers: corsHeaders }
     );
