@@ -595,6 +595,74 @@ export default function EventsPage() {
           </div>
         </section>
 
+        {/* My Events Dashboard Button */}
+        {user && (
+          <section className="section" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
+            <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '16px',
+                padding: isMobile ? '1.25rem' : '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(236, 72, 153, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(236, 72, 153, 0.3)';
+              }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderRadius: '12px',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Calendar size={isMobile ? 24 : 28} style={{ color: 'white' }} />
+                  </div>
+                  <div>
+                    <h3 style={{
+                      fontSize: isMobile ? '1rem' : '1.25rem',
+                      fontWeight: '700',
+                      color: 'white',
+                      margin: 0,
+                      marginBottom: '0.25rem'
+                    }}>
+                      My Events Dashboard
+                    </h3>
+                    <p style={{
+                      fontSize: isMobile ? '0.8rem' : '0.9rem',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      margin: 0
+                    }}>
+                      View your created events and manage ticket sales
+                    </p>
+                  </div>
+                </div>
+                <div style={{
+                  color: 'white',
+                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  lineHeight: 1
+                }}>
+                  →
+                </div>
+              </div>
+            </Link>
+          </section>
+        )}
+
         {/* Search and Filters */}
         <section className="section">
           <div className="search-filters" style={{
