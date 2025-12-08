@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
+import { SubscriptionEmailService } from '@/src/services/SubscriptionEmailService';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,10 +107,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch event details
+    // Fetch event details including date, location, and venue for email
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, title, creator_id, max_attendees, current_attendees')
+      .select('id, title, creator_id, max_attendees, current_attendees, event_date, location, venue')
       .eq('id', eventId)
       .single();
 
@@ -176,8 +177,8 @@ export async function POST(request: NextRequest) {
     if (event.max_attendees) {
       const { error: updateError } = await supabaseAdmin
         .from('events')
-        .update({ 
-          current_attendees: (event.current_attendees || 0) + quantity 
+        .update({
+          current_attendees: (event.current_attendees || 0) + quantity
         })
         .eq('id', eventId);
 
@@ -185,6 +186,40 @@ export async function POST(request: NextRequest) {
         console.error('Error updating event attendee count:', updateError);
         // Don't fail the request, just log the error
       }
+    }
+
+    // Fetch organizer profile details for email
+    const { data: organizerProfile } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', event.creator_id)
+      .single();
+
+    // Send ticket confirmation email to buyer
+    try {
+      // Format amount for display (convert from smallest unit)
+      const amountFormatted = (amount / 100).toFixed(2);
+      const currencySymbol = currency.toUpperCase() === 'GBP' ? '£' : '₦';
+
+      await SubscriptionEmailService.sendTicketConfirmation({
+        userEmail: user.email || '',
+        userName: user.user_metadata?.full_name || user.email || 'Ticket Holder',
+        eventTitle: event.title,
+        eventDate: event.event_date,
+        eventLocation: event.location,
+        eventVenue: event.venue,
+        ticketCodes: ticketCodes,
+        quantity: quantity,
+        amountPaid: `${currencySymbol}${amountFormatted}`,
+        currency: currency.toUpperCase(),
+        purchaseDate: new Date().toISOString(),
+        paymentIntentId: paymentIntentId,
+        organizerName: organizerProfile?.full_name,
+        organizerEmail: organizerProfile?.email,
+      });
+    } catch (emailError) {
+      // Log email error but don't fail ticket creation
+      console.error('Error sending ticket confirmation email:', emailError);
     }
 
     // Return first ticket as response (represents the purchase)

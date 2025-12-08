@@ -9,7 +9,7 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { Event } from '../../../src/lib/types/event';
-import { Calendar, MapPin, Clock, Users, Star, Edit, Trash2, Eye, CheckCircle, AlertCircle, ArrowLeft, Plus, Search, Loader2, Music, DollarSign, LogOut, User, Upload, Bell, Settings, Home, Menu } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Star, Edit, Trash2, Eye, CheckCircle, AlertCircle, ArrowLeft, Plus, Search, Loader2, Music, DollarSign, LogOut, User, Upload, Bell, Settings, Home, Menu, Ticket } from 'lucide-react';
 
 export default function EventDashboardPage() {
   const { user, signOut } = useAuth();
@@ -23,6 +23,9 @@ export default function EventDashboardPage() {
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedEventForTickets, setSelectedEventForTickets] = useState<string | null>(null);
+  const [ticketSalesData, setTicketSalesData] = useState<any>(null);
+  const [loadingTickets, setLoadingTickets] = useState(false);
 
   const tabs = [
     { id: 'attending', label: 'Attending', icon: Users },
@@ -151,6 +154,33 @@ export default function EventDashboardPage() {
     } catch (err) {
       console.error('Error canceling RSVP:', err);
     }
+  };
+
+  const handleViewTicketSales = async (eventId: string) => {
+    setSelectedEventForTickets(eventId);
+    setLoadingTickets(true);
+
+    try {
+      const response = await fetch(`/api/events/${eventId}/tickets`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setTicketSalesData(data);
+      } else {
+        console.error('Failed to fetch ticket sales:', data.error);
+        setError(data.error || 'Failed to load ticket sales');
+      }
+    } catch (err) {
+      console.error('Error fetching ticket sales:', err);
+      setError('Failed to load ticket sales');
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const closeTicketSalesModal = () => {
+    setSelectedEventForTickets(null);
+    setTicketSalesData(null);
   };
 
   const getCurrentEvents = () => {
@@ -1445,22 +1475,41 @@ export default function EventDashboardPage() {
                       )}
 
                       {activeTab === 'created' && (
-                        <button
-                          onClick={() => handleDeleteEvent(event.id)}
-                          className="btn-secondary"
-                          style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.25rem',
-                            background: 'rgba(239, 68, 68, 0.2)',
-                            color: '#ef4444'
-                          }}
-                        >
-                          <Trash2 size={14} />
-                          Delete
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleViewTicketSales(event.id)}
+                            className="btn-secondary"
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.25rem',
+                              background: 'rgba(236, 72, 153, 0.2)',
+                              color: '#EC4899',
+                              marginBottom: '0.5rem'
+                            }}
+                          >
+                            <Ticket size={14} />
+                            Ticket Sales
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEvent(event.id)}
+                            className="btn-secondary"
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.25rem',
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              color: '#ef4444'
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1494,6 +1543,226 @@ export default function EventDashboardPage() {
           <div>Notifications</div>
         </div>
       </FloatingCard>
+
+      {/* Ticket Sales Modal */}
+      {selectedEventForTickets && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeTicketSalesModal();
+            }
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1a1a2e',
+              borderRadius: '16px',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '1.5rem',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%)',
+              }}
+            >
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Ticket size={24} />
+                  Ticket Sales
+                </h2>
+                {ticketSalesData && (
+                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.9)' }}>
+                    {ticketSalesData.event.title}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={closeTicketSalesModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <AlertCircle size={24} style={{ transform: 'rotate(45deg)' }} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '1.5rem' }}>
+              {loadingTickets ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <Loader2 size={48} className="animate-spin" style={{ color: '#EC4899', margin: '0 auto' }} />
+                  <p style={{ marginTop: '1rem', color: '#999' }}>Loading ticket sales...</p>
+                </div>
+              ) : ticketSalesData ? (
+                <>
+                  {/* Statistics Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                    <div style={{ background: 'rgba(236, 72, 153, 0.1)', border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <Ticket size={20} style={{ color: '#EC4899' }} />
+                        <span style={{ color: '#999', fontSize: '0.9rem' }}>Tickets Sold</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>
+                        {ticketSalesData.statistics.total_tickets_sold}
+                      </p>
+                      {ticketSalesData.event.max_attendees && (
+                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                          of {ticketSalesData.event.max_attendees} capacity
+                        </p>
+                      )}
+                    </div>
+
+                    <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <DollarSign size={20} style={{ color: '#22C55E' }} />
+                        <span style={{ color: '#999', fontSize: '0.9rem' }}>Total Revenue</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#22C55E' }}>
+                        {ticketSalesData.statistics.currency === 'GBP' ? '£' : '₦'}
+                        {(ticketSalesData.statistics.total_revenue / 100).toFixed(2)}
+                      </p>
+                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                        After 5% platform fee
+                      </p>
+                    </div>
+
+                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <CheckCircle size={20} style={{ color: '#3B82F6' }} />
+                        <span style={{ color: '#999', fontSize: '0.9rem' }}>Active Tickets</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#3B82F6' }}>
+                        {ticketSalesData.statistics.active_tickets}
+                      </p>
+                    </div>
+
+                    {ticketSalesData.statistics.refunded_tickets > 0 && (
+                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <AlertCircle size={20} style={{ color: '#EF4444' }} />
+                          <span style={{ color: '#999', fontSize: '0.9rem' }}>Refunded</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#EF4444' }}>
+                          {ticketSalesData.statistics.refunded_tickets}
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                          {ticketSalesData.statistics.currency === 'GBP' ? '£' : '₦'}
+                          {(ticketSalesData.statistics.total_refunded / 100).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tickets Table */}
+                  <div style={{ marginTop: '2rem' }}>
+                    <h3 style={{ color: '#EC4899', marginBottom: '1rem' }}>Ticket Purchases</h3>
+
+                    {ticketSalesData.tickets.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+                        <Ticket size={48} style={{ marginBottom: '1rem', opacity: '0.3' }} />
+                        <p>No tickets sold yet</p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Ticket Code</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Buyer</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Email</th>
+                              <th style={{ padding: '1rem', textAlign: 'right', color: '#999', fontSize: '0.9rem' }}>Amount</th>
+                              <th style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.9rem' }}>Status</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {ticketSalesData.tickets.map((ticket: any) => (
+                              <tr key={ticket.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                <td style={{ padding: '1rem', color: '#EC4899', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                                  {ticket.ticket_code}
+                                </td>
+                                <td style={{ padding: '1rem', color: '#fff' }}>
+                                  {ticket.buyer_name}
+                                </td>
+                                <td style={{ padding: '1rem', color: '#999', fontSize: '0.9rem' }}>
+                                  {ticket.buyer_email}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'right', color: '#22C55E', fontWeight: '600' }}>
+                                  {ticket.currency === 'GBP' ? '£' : '₦'}
+                                  {(ticket.organizer_amount / 100).toFixed(2)}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                  <span style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '12px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '600',
+                                    background: ticket.status === 'active' ? 'rgba(34, 197, 94, 0.2)' :
+                                              ticket.status === 'refunded' ? 'rgba(239, 68, 68, 0.2)' :
+                                              'rgba(156, 163, 175, 0.2)',
+                                    color: ticket.status === 'active' ? '#22C55E' :
+                                          ticket.status === 'refunded' ? '#EF4444' :
+                                          '#9CA3AF'
+                                  }}>
+                                    {ticket.status}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '1rem', color: '#999', fontSize: '0.85rem' }}>
+                                  {new Date(ticket.purchase_date).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+                  <AlertCircle size={48} style={{ marginBottom: '1rem', opacity: '0.3' }} />
+                  <p>Failed to load ticket sales data</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 } 

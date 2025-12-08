@@ -54,6 +54,23 @@ export interface EventCancellationData {
   refundTimeline?: string;
 }
 
+export interface TicketConfirmationData {
+  userEmail: string;
+  userName: string;
+  eventTitle: string;
+  eventDate: string;
+  eventLocation?: string;
+  eventVenue?: string;
+  ticketCodes: string[];
+  quantity: number;
+  amountPaid: string;
+  currency: string;
+  purchaseDate: string;
+  paymentIntentId: string;
+  organizerName?: string;
+  organizerEmail?: string;
+}
+
 export class SubscriptionEmailService {
   private static supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -413,6 +430,264 @@ SoundBridge Team
       return true;
     } catch (error) {
       console.error('Error sending basic event cancellation email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send ticket purchase confirmation email to buyer
+   */
+  static async sendTicketConfirmation(
+    data: TicketConfirmationData
+  ): Promise<boolean> {
+    try {
+      const templateId = process.env.SENDGRID_TICKET_CONFIRMATION_TEMPLATE_ID;
+
+      if (!templateId) {
+        console.warn('SENDGRID_TICKET_CONFIRMATION_TEMPLATE_ID not configured - using basic email');
+        // Fall back to basic email if template not configured
+        return await this.sendTicketConfirmationBasic(data);
+      }
+
+      const ticketCodesText = data.ticketCodes.join(', ');
+      const currencySymbol = data.currency.toUpperCase() === 'GBP' ? '£' : '₦';
+
+      const emailData = {
+        to: data.userEmail,
+        templateId,
+        dynamicTemplateData: {
+          user_name: data.userName,
+          event_title: data.eventTitle,
+          event_date: new Date(data.eventDate).toLocaleDateString('en-GB', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          event_location: data.eventLocation || 'See event details',
+          event_venue: data.eventVenue || '',
+          ticket_codes: ticketCodesText,
+          ticket_quantity: data.quantity,
+          amount_paid: `${currencySymbol}${data.amountPaid}`,
+          currency: data.currency.toUpperCase(),
+          purchase_date: new Date(data.purchaseDate).toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          payment_intent_id: data.paymentIntentId,
+          organizer_name: data.organizerName || 'Event Organizer',
+          organizer_email: data.organizerEmail || 'support@soundbridge.live',
+          support_email: 'support@soundbridge.live',
+          app_name: 'SoundBridge',
+          app_url: process.env.NEXT_PUBLIC_APP_URL || 'https://soundbridge.live',
+          my_tickets_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/dashboard`,
+        },
+        subject: `Your Ticket for ${data.eventTitle} - Confirmation`
+      };
+
+      await SendGridService.sendTemplatedEmail(emailData);
+      console.log(`✅ Ticket confirmation email sent to ${data.userEmail}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending ticket confirmation email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send basic ticket confirmation email (fallback without template)
+   */
+  private static async sendTicketConfirmationBasic(
+    data: TicketConfirmationData
+  ): Promise<boolean> {
+    try {
+      const ticketCodesText = data.ticketCodes.join(', ');
+      const currencySymbol = data.currency.toUpperCase() === 'GBP' ? '£' : '₦';
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Ticket Confirmation</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%); padding: 40px 20px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🎫 Ticket Confirmed!</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+              <p style="font-size: 16px; color: #333; margin: 0 0 20px 0;">Hi ${data.userName},</p>
+
+              <p style="font-size: 16px; color: #333; line-height: 1.6; margin: 0 0 30px 0;">
+                Great news! Your ticket purchase has been confirmed. You're all set for:
+              </p>
+
+              <!-- Event Details Card -->
+              <div style="background-color: #f9fafb; border-left: 4px solid #EC4899; padding: 20px; margin: 0 0 30px 0; border-radius: 4px;">
+                <h2 style="color: #EC4899; margin: 0 0 15px 0; font-size: 22px;">${data.eventTitle}</h2>
+                <p style="margin: 8px 0; color: #555; font-size: 15px;">
+                  <strong>📅 Date:</strong> ${new Date(data.eventDate).toLocaleDateString('en-GB', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+                ${data.eventLocation ? `
+                  <p style="margin: 8px 0; color: #555; font-size: 15px;">
+                    <strong>📍 Location:</strong> ${data.eventLocation}
+                  </p>
+                ` : ''}
+                ${data.eventVenue ? `
+                  <p style="margin: 8px 0; color: #555; font-size: 15px;">
+                    <strong>🏛️ Venue:</strong> ${data.eventVenue}
+                  </p>
+                ` : ''}
+              </div>
+
+              <!-- Ticket Codes -->
+              <div style="background-color: #FEF3C7; border: 2px dashed #F59E0B; padding: 25px; margin: 0 0 30px 0; border-radius: 8px; text-align: center;">
+                <p style="margin: 0 0 10px 0; color: #92400E; font-size: 14px; font-weight: 600;">YOUR TICKET CODE${data.quantity > 1 ? 'S' : ''}</p>
+                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #EC4899; letter-spacing: 2px; font-family: 'Courier New', monospace;">
+                  ${ticketCodesText}
+                </p>
+                <p style="margin: 15px 0 0 0; color: #92400E; font-size: 12px;">
+                  Please present this code at the event entrance
+                </p>
+              </div>
+
+              <!-- Purchase Details -->
+              <div style="background-color: #f3f4f6; padding: 20px; margin: 0 0 30px 0; border-radius: 6px;">
+                <h3 style="margin: 0 0 15px 0; color: #333; font-size: 18px;">Purchase Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Quantity:</td>
+                    <td style="padding: 8px 0; color: #333; font-size: 14px; text-align: right; font-weight: 600;">${data.quantity} ticket${data.quantity > 1 ? 's' : ''}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Amount Paid:</td>
+                    <td style="padding: 8px 0; color: #EC4899; font-size: 16px; text-align: right; font-weight: 700;">${currencySymbol}${data.amountPaid}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Purchase Date:</td>
+                    <td style="padding: 8px 0; color: #333; font-size: 14px; text-align: right;">${new Date(data.purchaseDate).toLocaleDateString('en-GB')}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Transaction ID:</td>
+                    <td style="padding: 8px 0; color: #666; font-size: 12px; text-align: right; font-family: monospace;">${data.paymentIntentId.substring(0, 20)}...</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Important Information -->
+              <div style="background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 15px 20px; margin: 0 0 30px 0; border-radius: 4px;">
+                <h4 style="margin: 0 0 10px 0; color: #1E40AF; font-size: 16px;">📌 Important Information</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #1E3A8A; font-size: 14px; line-height: 1.8;">
+                  <li>Please arrive 15-30 minutes before the event starts</li>
+                  <li>Have your ticket code ready for scanning</li>
+                  <li>Bring a valid ID for verification</li>
+                  <li>Tickets are non-transferable</li>
+                </ul>
+              </div>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/events/dashboard" style="display: inline-block; background-color: #EC4899; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">View My Tickets</a>
+              </div>
+
+              <!-- Organizer Contact -->
+              ${data.organizerName || data.organizerEmail ? `
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                    <strong>Event Organizer:</strong> ${data.organizerName || 'Event Organizer'}
+                  </p>
+                  ${data.organizerEmail ? `
+                    <p style="margin: 0; color: #666; font-size: 14px;">
+                      <strong>Contact:</strong> <a href="mailto:${data.organizerEmail}" style="color: #EC4899;">${data.organizerEmail}</a>
+                    </p>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #1a1a2e; padding: 30px 20px; text-align: center;">
+              <p style="color: #999; font-size: 14px; margin: 0 0 10px 0;">
+                Questions? Contact us at <a href="mailto:support@soundbridge.live" style="color: #EC4899; text-decoration: none;">support@soundbridge.live</a>
+              </p>
+              <p style="color: #666; font-size: 12px; margin: 10px 0 0 0;">
+                © ${new Date().getFullYear()} SoundBridge. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const textContent = `
+Your Ticket for ${data.eventTitle} - Confirmed!
+
+Hi ${data.userName},
+
+Your ticket purchase has been confirmed! Here are your details:
+
+EVENT DETAILS:
+Event: ${data.eventTitle}
+Date: ${new Date(data.eventDate).toLocaleDateString('en-GB')}
+${data.eventLocation ? `Location: ${data.eventLocation}` : ''}
+${data.eventVenue ? `Venue: ${data.eventVenue}` : ''}
+
+YOUR TICKET CODE${data.quantity > 1 ? 'S' : ''}:
+${ticketCodesText}
+
+Please present this code at the event entrance.
+
+PURCHASE DETAILS:
+Quantity: ${data.quantity} ticket${data.quantity > 1 ? 's' : ''}
+Amount Paid: ${currencySymbol}${data.amountPaid}
+Purchase Date: ${new Date(data.purchaseDate).toLocaleDateString('en-GB')}
+Transaction ID: ${data.paymentIntentId}
+
+IMPORTANT:
+- Arrive 15-30 minutes before the event
+- Have your ticket code ready for scanning
+- Bring a valid ID for verification
+- Tickets are non-transferable
+
+View your tickets: ${process.env.NEXT_PUBLIC_APP_URL}/events/dashboard
+
+${data.organizerName ? `Event Organizer: ${data.organizerName}` : ''}
+${data.organizerEmail ? `Contact: ${data.organizerEmail}` : ''}
+
+Questions? Contact support@soundbridge.live
+
+© ${new Date().getFullYear()} SoundBridge. All rights reserved.
+      `.trim();
+
+      await SendGridService.sendEmail({
+        to: data.userEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@soundbridge.live',
+        subject: `Your Ticket for ${data.eventTitle} - Confirmation`,
+        html: htmlContent,
+        text: textContent
+      });
+
+      console.log(`✅ Basic ticket confirmation email sent to ${data.userEmail}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending basic ticket confirmation email:', error);
       return false;
     }
   }

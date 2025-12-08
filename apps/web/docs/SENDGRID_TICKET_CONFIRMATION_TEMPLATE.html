@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Confirmation - SoundBridge</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f3f4f6; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <!-- Header with Gradient -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 32px; font-weight: bold; color: #ffffff;">
+                🎫 Ticket Confirmed!
+              </h1>
+              <p style="margin: 10px 0 0 0; font-size: 16px; color: rgba(255, 255, 255, 0.9);">
+                Your purchase was successful
+              </p>
+            </td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+
+              <!-- Greeting -->
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                Hi {{userName}},
+              </p>
+
+              <p style="margin: 0 0 30px 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                Great news! Your ticket purchase for <strong>{{eventTitle}}</strong> has been confirmed. We're excited to see you there!
+              </p>
+
+              <!-- Event Details Card -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: rgba(236, 72, 153, 0.05); border: 2px solid #EC4899; border-radius: 12px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #EC4899;">
+                      📅 Event Details
+                    </h2>
+
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <strong style="color: #374151;">Event:</strong>
+                        </td>
+                        <td style="padding: 8px 0; text-align: right; color: #6B7280;">
+                          {{eventTitle}}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <strong style="color: #374151;">Date & Time:</strong>
+                        </td>
+                        <td style="padding: 8px 0; text-align: right; color: #6B7280;">
+                          {{eventDate}}
+                        </td>
+                      </tr>
+                      {{#if eventLocation}}
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <strong style="color: #374151;">Location:</strong>
+                        </td>
+                        <td style="padding: 8px 0; text-align: right; color: #6B7280;">
+                          {{eventLocation}}
+                        </td>
+                      </tr>
+                      {{/if}}
+                      {{#if eventVenue}}
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <strong style="color: #374151;">Venue:</strong>
+                        </td>
+                        <td style="padding: 8px 0; text-align: right; color: #6B7280;">
+                          {{eventVenue}}
+                        </td>
+                      </tr>
+                      {{/if}}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Ticket Code(s) -->
+              <div style="background-color: #FEF3C7; border: 2px dashed #F59E0B; border-radius: 12px; padding: 24px; margin-bottom: 30px; text-align: center;">
+                <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #92400E; text-transform: uppercase; letter-spacing: 1px;">
+                  Your Ticket Code{{#if multipleTickets}}s{{/if}}
+                </p>
+                {{#each ticketCodes}}
+                <p style="margin: 8px 0; font-size: 24px; font-weight: bold; color: #92400E; letter-spacing: 3px; font-family: 'Courier New', monospace;">
+                  {{this}}
+                </p>
+                {{/each}}
+                <p style="margin: 12px 0 0 0; font-size: 12px; color: #92400E;">
+                  Show this code at the event entrance
+                </p>
+              </div>
+
+              <!-- Purchase Details -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 30px;">
+                <tr>
+                  <td colspan="2" style="padding-bottom: 12px;">
+                    <h3 style="margin: 0; font-size: 18px; color: #374151;">
+                      💳 Purchase Details
+                    </h3>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6B7280;">Quantity</td>
+                  <td style="padding: 8px 0; text-align: right; color: #374151; font-weight: 600;">
+                    {{quantity}} ticket{{#if multipleTickets}}s{{/if}}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6B7280;">Amount Paid</td>
+                  <td style="padding: 8px 0; text-align: right; color: #374151; font-weight: 600;">
+                    {{amountPaid}}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6B7280;">Purchase Date</td>
+                  <td style="padding: 8px 0; text-align: right; color: #6B7280;">
+                    {{purchaseDate}}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6B7280;">Transaction ID</td>
+                  <td style="padding: 8px 0; text-align: right; color: #6B7280; font-family: 'Courier New', monospace; font-size: 12px;">
+                    {{paymentIntentId}}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Important Information -->
+              <div style="background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 16px; margin-bottom: 30px;">
+                <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #1E40AF;">
+                  ℹ️ Important Information
+                </h4>
+                <ul style="margin: 0; padding-left: 20px; color: #1E3A8A;">
+                  <li style="margin-bottom: 8px;">Please arrive at least 15 minutes before the event starts</li>
+                  <li style="margin-bottom: 8px;">Bring a valid ID for verification</li>
+                  <li style="margin-bottom: 8px;">This ticket is non-transferable and non-refundable unless the event is cancelled</li>
+                  <li>Save this email or screenshot your ticket code for easy access</li>
+                </ul>
+              </div>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin-bottom: 30px;">
+                <a href="https://soundbridge.app/my-tickets" style="display: inline-block; padding: 14px 32px; background-color: #EC4899; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                  View My Tickets
+                </a>
+              </div>
+
+              <!-- Organizer Contact -->
+              {{#if organizerName}}
+              <div style="border-top: 1px solid #E5E7EB; padding-top: 24px;">
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #6B7280;">
+                  Event organized by:
+                </p>
+                <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #374151;">
+                  {{organizerName}}
+                </p>
+                {{#if organizerEmail}}
+                <p style="margin: 0; font-size: 14px; color: #6B7280;">
+                  Contact: <a href="mailto:{{organizerEmail}}" style="color: #EC4899; text-decoration: none;">{{organizerEmail}}</a>
+                </p>
+                {{/if}}
+              </div>
+              {{/if}}
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #1a1a2e; padding: 30px; text-align: center;">
+              <p style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #ffffff;">
+                SoundBridge
+              </p>
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: rgba(255, 255, 255, 0.7);">
+                Connecting creators with their audience
+              </p>
+              <p style="margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.5);">
+                Questions? Contact us at <a href="mailto:support@soundbridge.app" style="color: #EC4899; text-decoration: none;">support@soundbridge.app</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

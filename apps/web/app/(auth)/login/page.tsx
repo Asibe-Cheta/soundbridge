@@ -175,11 +175,20 @@ function LoginContent() {
           });
 
           console.log('📊 2FA check response status:', check2FAResponse.status);
-          
+
           if (!check2FAResponse.ok) {
             console.error('❌ 2FA check failed with status:', check2FAResponse.status);
             const errorData = await check2FAResponse.json().catch(() => ({ error: 'Unknown error' }));
             console.error('❌ Error response:', errorData);
+
+            // Sign out the user since we can't verify their 2FA status
+            try {
+              await signOut();
+              console.log('🚪 Signed out user due to 2FA check failure');
+            } catch (signOutError) {
+              console.warn('Error signing out after 2FA check failure:', signOutError);
+            }
+
             // Don't proceed with login if 2FA check fails - user might have 2FA enabled
             setError('Failed to verify 2FA status. Please try again.');
             setIsLoading(false);
@@ -235,6 +244,15 @@ function LoginContent() {
           }
         } catch (checkError) {
           console.error('❌ Error checking 2FA:', checkError);
+
+          // Sign out the user since we can't verify their 2FA status
+          try {
+            await signOut();
+            console.log('🚪 Signed out user due to 2FA check error');
+          } catch (signOutError) {
+            console.warn('Error signing out after 2FA check error:', signOutError);
+          }
+
           setError('Failed to check 2FA status. Please try again.');
           setIsLoading(false);
           return;
