@@ -68,30 +68,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Store the Stripe account ID in the database
-    // CRITICAL: Use user-authenticated client for RLS to work properly
-    let dbClient;
-    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-      // For mobile app: Create client with user token for RLS context
-      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-      dbClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        }
-      );
-    } else {
-      // For web app: Use the existing cookie-based client
-      dbClient = supabase;
-    }
-    
-    console.log('🚨 DATABASE CLIENT DEBUG:');
-    console.log('- Using mobile client:', !!(authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))));
-    console.log('- Token provided:', !!authHeader);
+    // Use the authenticated supabase client from getSupabaseRouteClient
+    // It already handles both web (cookie) and mobile (Bearer token) auth correctly
     
     // Get currency based on country
     const getCurrencyForCountry = (countryCode: string): string => {
@@ -106,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     const currency = getCurrencyForCountry(country);
 
-    const { error: updateError } = await dbClient
+    const { error: updateError } = await supabase
       .from('creator_bank_accounts')
       .upsert({
         user_id: user.id,
