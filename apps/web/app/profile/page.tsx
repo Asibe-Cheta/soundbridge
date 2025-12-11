@@ -15,6 +15,9 @@ import { Post } from '@/src/lib/types/post';
 import { useRouter } from 'next/navigation';
 import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign, Flag } from 'lucide-react';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
+import { FollowersListModal } from '@/src/components/profile/FollowersListModal';
+import { FollowingListModal } from '@/src/components/profile/FollowingListModal';
+import { TracksListModal } from '@/src/components/profile/TracksListModal';
 
 interface ProfileStats {
   totalPlays: number;
@@ -256,6 +259,9 @@ export default function ProfilePage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isCheckingBlock, setIsCheckingBlock] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [showTracksModal, setShowTracksModal] = useState(false);
 
   useEffect(() => {
     // Only redirect if we're not loading and there's no user
@@ -669,7 +675,10 @@ export default function ProfilePage() {
                 <div className="stat-label">Total Likes</div>
               </div>
             </div>
-            <div className="stat-card">
+            <button
+              onClick={() => setShowFollowersModal(true)}
+              className="stat-card cursor-pointer hover:bg-gray-800/80 transition-all hover:scale-105"
+            >
               <div className="stat-icon">
                 <Users size={20} />
               </div>
@@ -677,8 +686,11 @@ export default function ProfilePage() {
                 <div className="stat-value">{stats.followers.toLocaleString()}</div>
                 <div className="stat-label">Followers</div>
               </div>
-            </div>
-            <div className="stat-card">
+            </button>
+            <button
+              onClick={() => setShowTracksModal(true)}
+              className="stat-card cursor-pointer hover:bg-gray-800/80 transition-all hover:scale-105"
+            >
               <div className="stat-icon">
                 <Music size={20} />
               </div>
@@ -686,7 +698,7 @@ export default function ProfilePage() {
                 <div className="stat-value">{stats.tracks}</div>
                 <div className="stat-label">Tracks</div>
               </div>
-            </div>
+            </button>
           </div>
         </>
       )}
@@ -1364,6 +1376,32 @@ export default function ProfilePage() {
           }}
         />
       )}
+
+      {/* Followers List Modal */}
+      <FollowersListModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        userId={user?.id || ''}
+        currentUserId={user?.id}
+      />
+
+      {/* Following List Modal */}
+      <FollowingListModal
+        isOpen={showFollowingModal}
+        onClose={() => setShowFollowingModal(false)}
+        userId={user?.id || ''}
+        currentUserId={user?.id}
+        isOwnProfile={true}
+      />
+
+      {/* Tracks List Modal */}
+      <TracksListModal
+        isOpen={showTracksModal}
+        onClose={() => setShowTracksModal(false)}
+        userId={user?.id || ''}
+        currentUserId={user?.id}
+        isOwnProfile={true}
+      />
     </div>
   );
 }

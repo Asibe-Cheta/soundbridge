@@ -42,10 +42,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // OPTION: Get setup mode and country from request (immediate vs deferred)
+    const body = await request.json().catch(() => ({}));
+    const setupMode = body.setupMode || 'deferred';
+    const requestCountry = body.country || country;
+
     // Create Stripe Connect account
     const account = await stripe.accounts.create({
       type: 'express',
-      country: country, // Dynamic country based on user selection
+      country: requestCountry, // Dynamic country based on user selection
       email: user.email,
       capabilities: {
         card_payments: { requested: true },
@@ -60,6 +65,84 @@ export async function POST(request: NextRequest) {
 
     // Create account link for onboarding
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.soundbridge.live';
+
+    // DEFERRED ONBOARDING: Skip verification until payout
+    // User can start earning immediately, completes verification when they want to cash out
+    if (setupMode === 'deferred') {
+      // Just save the account ID and redirect back
+      // No onboarding flow needed right now
+      const getCurrencyForCountry = (countryCode: string): string => {
+        const currencyMap: Record<string, string> = {
+          'US': 'USD', 'GB': 'GBP', 'CA': 'CAD', 'AU': 'AUD',
+          'DE': 'EUR', 'FR': 'EUR', 'ES': 'EUR', 'IT': 'EUR', 'NL': 'EUR',
+          'JP': 'JPY', 'SG': 'SGD', 'HK': 'HKD', 'MY': 'MYR', 'TH': 'THB',
+          'NZ': 'NZD', 'CH': 'CHF', 'SE': 'SEK', 'NO': 'NOK', 'DK': 'DKK'
+        };
+        return currencyMap[countryCode] || 'USD';
+      };
+
+      const currency = getCurrencyForCountry(requestCountry);
+
+      // Check if bank account already exists
+      const { data: existingAccount } = await supabase
+        .from('creator_bank_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      let updateError;
+
+      if (existingAccount) {
+        // Update existing record with Stripe account ID
+        const { error } = await supabase
+          .from('creator_bank_accounts')
+          .update({
+            stripe_account_id: account.id,
+            verification_status: 'pending',
+            is_verified: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        updateError = error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('creator_bank_accounts')
+          .insert({
+            user_id: user.id,
+            stripe_account_id: account.id,
+            verification_status: 'pending',
+            is_verified: false,
+            account_holder_name: user.user_metadata?.display_name || user.email,
+            bank_name: 'Stripe Connect',
+            account_number_encrypted: '',
+            routing_number_encrypted: '',
+            account_type: 'checking',
+            currency: currency
+          });
+
+        updateError = error;
+      }
+
+      if (updateError) {
+        console.error('Error storing Stripe account:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to store account information: ' + updateError.message },
+          { status: 500 }
+        );
+      }
+
+      // Return success without onboarding URL
+      return NextResponse.json({
+        success: true,
+        accountId: account.id,
+        message: 'Stripe Connect account created! You can start earning immediately. Complete verification when you want to withdraw.',
+        skipOnboarding: true
+      }, { headers: corsHeaders });
+    }
+
+    // IMMEDIATE ONBOARDING: Complete verification now (old flow)
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: `${baseUrl}/profile?tab=revenue&refresh=true`,

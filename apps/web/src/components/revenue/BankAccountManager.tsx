@@ -166,13 +166,25 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
           'Content-Type': 'application/json',
         },
         credentials: 'include', // CRITICAL FIX: Include cookies for authentication
-        body: JSON.stringify({ country: userCountry }),
+        body: JSON.stringify({
+          country: userCountry,
+          setupMode: 'deferred' // INSTANT SETUP: User can start earning immediately, verify later when withdrawing
+        }),
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        window.location.href = result.onboardingUrl;
+        if (result.skipOnboarding) {
+          // Deferred mode: Show success message and reload
+          setSuccess(result.message || 'Stripe Connect account created! You can start earning immediately.');
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else {
+          // Immediate mode: Redirect to Stripe onboarding
+          window.location.href = result.onboardingUrl;
+        }
       } else {
         if (result.action === 'setup_platform_profile' && result.url) {
           setError(result.error || 'Additional setup required before completing Stripe onboarding.');
@@ -182,6 +194,52 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       }
     } catch (error) {
       console.error('Error setting up Stripe Connect:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCompleteVerification = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      // Get user's country from browser or default to US
+      let userCountry = 'US';
+      try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        if (ipData.country_code) {
+          userCountry = ipData.country_code;
+        }
+      } catch (error) {
+        console.log('Could not detect country, using US default');
+      }
+
+      const response = await fetch('/api/stripe/connect/create-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          country: userCountry,
+          setupMode: 'immediate' // IMMEDIATE MODE: Complete verification now
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Redirect to Stripe onboarding
+        window.location.href = result.onboardingUrl;
+      } else {
+        setError(result.error || 'Failed to start verification');
+      }
+    } catch (error) {
+      console.error('Error starting verification:', error);
       setError('An unexpected error occurred');
     } finally {
       setSaving(false);
@@ -407,6 +465,38 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                       <>
                         <CreditCard className="h-4 w-4" />
                         <span>Complete Stripe Connect Setup</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Complete Verification Button (for pending Stripe accounts) */}
+          {bankAccount && bankAccount.stripe_account_id && bankAccount.verification_status === 'pending' && (
+            <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-300 mb-1">Complete Verification to Withdraw</h4>
+                  <p className="text-blue-200 text-sm mb-3">
+                    You can start earning immediately! Complete verification now to withdraw funds anytime, or do it later when you're ready to cash out.
+                  </p>
+                  <button
+                    onClick={() => handleCompleteVerification()}
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4" />
+                        <span>Complete Verification Now</span>
                       </>
                     )}
                   </button>
