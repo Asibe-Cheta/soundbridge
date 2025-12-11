@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { SubscriptionService } from '../../src/services/SubscriptionService';
 import { getPriceId } from '../../src/lib/stripe';
-import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles } from 'lucide-react';
+import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles, Crown } from 'lucide-react';
 
 // Separate component for search params handling (required for Suspense)
 function PricingContent() {
@@ -35,7 +35,7 @@ function PricingContent() {
     }
   }, [searchParams, router]);
 
-  const handleUpgrade = async (plan: 'pro') => {
+  const handleUpgrade = async (plan: 'premium' | 'unlimited' | 'pro') => {
     if (!user) {
       // Redirect to signup if not logged in
       window.location.href = '/auth/signup';
@@ -46,12 +46,22 @@ function PricingContent() {
       setLoading(true);
       setError(null);
 
-      // Get price ID
-      const priceId = getPriceId(plan, billingCycle);
-      const amount = billingCycle === 'monthly' ? 9.99 : 99.00;
+      // Get price ID based on plan
+      const priceId = getPriceId(plan === 'premium' ? 'premium' : plan === 'unlimited' ? 'unlimited' : 'pro', billingCycle);
+      const amount = plan === 'premium'
+        ? (billingCycle === 'monthly' ? 6.99 : 69.99)
+        : plan === 'unlimited'
+        ? (billingCycle === 'monthly' ? 12.99 : 129.99)
+        : (billingCycle === 'monthly' ? 9.99 : 99.00);
 
+      const planName = plan === 'premium' 
+        ? (billingCycle === 'monthly' ? 'Premium Monthly' : 'Premium Yearly')
+        : plan === 'unlimited'
+        ? (billingCycle === 'monthly' ? 'Unlimited Monthly' : 'Unlimited Yearly')
+        : (billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly');
+      
       await SubscriptionService.createCheckoutSession({
-        name: billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly',
+        name: planName,
         priceId,
         billingCycle,
         amount,
@@ -80,52 +90,76 @@ function PricingContent() {
       features: [
         '3 track uploads (lifetime)',
         '5 professional searches/month',
-        '3 direct messages/month (outbound)',
-        '150MB total storage',
+        '2 direct messages/month (outbound)',
+        '100MB total storage',
         'Unlimited streaming',
         'Basic profile & portfolio',
+        'Receive tips (keep 95%)',
+        'Create & sell event tickets',
+        'Browse & discover music',
+        'Live audio sessions',
+        'Basic analytics',
+        'Messaging',
         'Community support',
         'Email support (3-5 day response)'
       ],
-      limitations: [
-        '3 lifetime uploads',
-        '5 searches per month',
-        '3 outbound messages per month',
-        '150MB total storage',
-        'No advanced filters',
-        'No saved searches',
-        'No read receipts',
-        'Community support only'
-      ],
+      limitations: [],
       popular: false
     },
     {
-      id: 'pro',
-      name: 'Pro',
+      id: 'premium',
+      name: 'Premium',
       description: 'For growing creators',
       icon: <Star className="h-8 w-8 text-purple-500" />,
-      price: { monthly: 9.99, yearly: 99.00 }, // GBP pricing
+      price: { monthly: 6.99, yearly: 69.99 }, // Updated pricing
       color: 'from-purple-500/20 to-pink-500/20',
       borderColor: 'border-purple-200/50',
       buttonColor: 'bg-purple-600 hover:bg-purple-700',
       features: [
         'Everything in Free, plus:',
-        '10 track uploads (total)',
-        'Unlimited searches & messages',
-        'Advanced filters & saved searches',
-        '500MB total storage',
-        'Verified badge eligibility',
+        '7 tracks per month',
+        'Featured on Discover 1x/month',
+        'Advanced analytics',
+        'Priority in feed',
+        'Pro badge',
         'Custom profile URL',
-        'Payment protection & escrow',
-        'Detailed analytics',
-        'Availability calendar',
-        'Read receipts & message templates',
-        'Group messaging',
+        '60-second audio previews',
+        'AI collaboration matching',
         'Priority support (24-48 hour response)',
+        'Early access to features',
+        'Unlimited events',
         '🛡️ 7-day money-back guarantee'
       ],
       limitations: [],
       popular: true,
+      savings: 'Save 16%'
+    },
+    {
+      id: 'unlimited',
+      name: 'Unlimited',
+      description: 'For professionals',
+      icon: <Crown className="h-8 w-8 text-yellow-500" />,
+      price: { monthly: 12.99, yearly: 129.99 }, // Updated pricing
+      color: 'from-yellow-500/20 to-orange-500/20',
+      borderColor: 'border-yellow-200/50',
+      buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
+      features: [
+        'Everything in Premium, plus:',
+        'UNLIMITED track uploads',
+        'Featured 2x per month',
+        'Top priority in feed',
+        'Advanced promotional tools',
+        'Social media post generator',
+        'Custom promo codes',
+        'Email list export',
+        'API access (Coming Soon)',
+        'White-label profile (Coming Soon)',
+        'Dedicated account manager (Coming Soon)',
+        'Highest priority support (12-24 hour response)',
+        '🛡️ 7-day money-back guarantee'
+      ],
+      limitations: [],
+      popular: false,
       savings: 'Save 17%'
     },
   ];
@@ -135,69 +169,78 @@ function PricingContent() {
       category: 'Content & Uploads',
       icon: <Music className="h-6 w-6 text-blue-500" />,
       items: [
-        { name: 'Track Uploads', free: '3 lifetime', pro: '10 total' },
-        { name: 'Professional Searches', free: '5/month', pro: 'Unlimited' },
-        { name: 'Direct Messages (sent)', free: '3/month', pro: 'Unlimited' },
-        { name: 'Storage Space', free: '150MB', pro: '500MB' },
-        { name: 'Max File Size', free: '50MB', pro: '50MB' },
-        { name: 'Audio Quality', free: 'Standard', pro: 'HD' }
+        { name: 'Track Uploads', free: '3 lifetime', premium: '7/month', unlimited: 'Unlimited' },
+        { name: 'Professional Searches', free: '5/month', premium: 'Unlimited', unlimited: 'Unlimited' },
+        { name: 'Direct Messages (sent)', free: '2/month', premium: 'Unlimited', unlimited: 'Unlimited' },
+        { name: 'Storage Space', free: '100MB', premium: '500MB', unlimited: '2GB+' },
+        { name: 'Audio Previews in Posts', free: '30 seconds', premium: '60 seconds', unlimited: '60 seconds' },
+        { name: 'Max File Size', free: '50MB', premium: '50MB', unlimited: '50MB' }
+      ]
+    },
+    {
+      category: 'Profile & Branding',
+      icon: <PenTool className="h-6 w-6 text-purple-500" />,
+      items: [
+        { name: 'Profile Badge', free: '✗', premium: 'Pro badge', unlimited: 'Unlimited badge' },
+        { name: 'Custom Profile URL', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Featured on Discover', free: '✗', premium: '1x/month', unlimited: '2x/month' },
+        { name: 'Feed Priority', free: 'Standard', premium: 'Priority', unlimited: 'Top Priority' },
+        { name: 'Remove Branding', free: '✗', premium: '✗', unlimited: 'Coming Soon' }
       ]
     },
     {
       category: 'Analytics & Insights',
       icon: <BarChart3 className="h-6 w-6 text-green-500" />,
       items: [
-        { name: 'Basic Analytics', free: '✓', pro: '✓' },
-        { name: 'Advanced Analytics', free: '✗', pro: '✓' },
-        { name: 'Demographic Data', free: '✗', pro: '✓' },
-        { name: 'Geographic Insights', free: '✗', pro: '✓' }
+        { name: 'Basic Analytics', free: '✓', premium: '✓', unlimited: '✓' },
+        { name: 'Advanced Analytics', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Demographic Data', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Geographic Insights', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Listening Behavior', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Export Data (CSV/PDF)', free: '✗', premium: '✓', unlimited: '✓' }
       ]
     },
     {
       category: 'Monetization',
       icon: <DollarSign className="h-6 w-6 text-yellow-500" />,
       items: [
-        { name: 'Revenue Sharing', free: '✗', pro: '95%' },
-        { name: 'Direct Payments', free: '✗', pro: '✓' },
-        { name: 'Subscription Tiers', free: '✗', pro: '✓' }
+        { name: 'Receive Tips', free: '✓ (95%)', premium: '✓ (95%)', unlimited: '✓ (95%)' },
+        { name: 'Sell Event Tickets', free: '✓ (95%)', premium: '✓ (95%)', unlimited: '✓ (95%)' },
+        { name: 'Service Provider', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Payment Escrow', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Promo Codes', free: '✗', premium: '✗', unlimited: '✓' },
+        { name: 'Email List Export', free: '✗', premium: '✗', unlimited: '✓' }
       ]
     },
     {
-      category: 'Branding & Customization',
-      icon: <PenTool className="h-6 w-6 text-purple-500" />,
-      items: [
-        { name: 'Custom Branding', free: '✗', pro: '✓' },
-        { name: 'Custom Themes', free: '✗', pro: '✓' }
-      ]
-    },
-    {
-      category: 'Security & Protection',
-      icon: <Shield className="h-6 w-6 text-red-500" />,
-      items: [
-        { name: 'Copyright Protection', free: 'Basic', pro: 'Advanced' },
-        { name: 'Content Moderation', free: 'Automated', pro: 'Priority Review' },
-        { name: 'File Validation', free: 'Basic', pro: 'Enhanced' },
-        { name: 'Upload Security', free: 'Standard', pro: 'Enhanced' },
-        { name: 'Data Encryption', free: '✓', pro: '✓' }
-      ]
-    },
-    {
-      category: 'Distribution & Export',
-      icon: <Globe className="h-6 w-6 text-orange-500" />,
-      items: [
-        { name: 'Export Tools', free: '✓', pro: '✓' },
-        { name: 'Distribution Guides', free: '✓', pro: '✓' },
-        { name: 'Cross-Platform Distribution', free: 'Coming Soon', pro: 'Coming Soon' },
-        { name: 'Bulk Export', free: '✗', pro: '✓' }
-      ]
-    },
-    {
-      category: 'Support & Collaboration',
+      category: 'Collaboration & Networking',
       icon: <Users className="h-6 w-6 text-indigo-500" />,
       items: [
-        { name: 'Community Support', free: '✓', pro: '✓' },
-        { name: 'Priority Support', free: '✗', pro: '✓' },
-        { name: 'Collaboration Tools', free: '✗', pro: 'Basic' }
+        { name: 'AI Collaboration Matching', free: '✗', premium: '✓ (weekly)', unlimited: '✓ (weekly)' },
+        { name: 'Read Receipts', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Message Templates', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Group Messaging', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'Social Media Post Generator', free: '✗', premium: '✗', unlimited: '✓' }
+      ]
+    },
+    {
+      category: 'Events',
+      icon: <Calendar className="h-6 w-6 text-pink-500" />,
+      items: [
+        { name: 'Create Events', free: '3 active', premium: 'Unlimited', unlimited: 'Unlimited' },
+        { name: 'Sell Tickets', free: '✓', premium: '✓', unlimited: '✓' },
+        { name: 'RSVP to Events', free: '✓', premium: '✓', unlimited: '✓' }
+      ]
+    },
+    {
+      category: 'Support & Features',
+      icon: <Headphones className="h-6 w-6 text-teal-500" />,
+      items: [
+        { name: 'Community Support', free: '✓', premium: '✓', unlimited: '✓' },
+        { name: 'Email Support', free: '3-5 days', premium: '24-48 hours', unlimited: '12-24 hours' },
+        { name: 'Early Access to Features', free: '✗', premium: '✓', unlimited: '✓' },
+        { name: 'API Access', free: '✗', premium: '✗', unlimited: 'Coming Soon' },
+        { name: 'Dedicated Account Manager', free: '✗', premium: '✗', unlimited: 'Coming Soon' }
       ]
     }
   ];
@@ -206,16 +249,23 @@ function PricingContent() {
     {
       name: 'Sarah Chen',
       role: 'Independent Musician',
-      content: 'The Pro plan helped me grow my audience by 300% in just 3 months. The 500MB upload limit and priority processing are game-changers!',
+      content: 'The Premium plan helped me grow my audience by 300% in just 3 months. The 7 uploads per month and featured placement are game-changers!',
       avatar: 'SC',
-      plan: 'Pro'
+      plan: 'Premium'
     },
     {
       name: 'Emma Thompson',
       role: 'Event Organizer',
-      content: 'Free plan got me started, but Pro gave me the tools to turn my passion into a business. The advanced upload validation saves me so much time!',
+      content: 'Free plan got me started, but Premium gave me the tools to turn my passion into a business. The advanced analytics and custom URL make all the difference!',
       avatar: 'ET',
-      plan: 'Pro'
+      plan: 'Premium'
+    },
+    {
+      name: 'Marcus Johnson',
+      role: 'Professional Producer',
+      content: 'Unlimited uploads means I can release music whenever inspiration strikes. The promotional tools and priority support are invaluable for my career.',
+      avatar: 'MJ',
+      plan: 'Unlimited'
     }
   ];
 
@@ -246,7 +296,7 @@ function PricingContent() {
             
             <p className="text-xl text-white/70 max-w-3xl mx-auto mb-8">
               Start free, upgrade when you're ready to unlock powerful professional tools and connect with unlimited opportunities. 
-              All Pro plans include a <span className="text-green-400 font-semibold">7-day money-back guarantee</span>.
+              All Premium and Unlimited plans include a <span className="text-green-400 font-semibold">7-day money-back guarantee</span>.
             </p>
 
             {/* Error Display */}
@@ -276,14 +326,14 @@ function PricingContent() {
               </span>
               {billingCycle === 'yearly' && (
                 <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm border border-green-500/30">
-                  Save 17%
+                  Save up to 17%
                 </span>
               )}
             </div>
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 max-w-6xl mx-auto">
             {plans.map((plan) => {
               const isHovered = hoveredPlan === plan.id;
               const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
@@ -344,7 +394,7 @@ function PricingContent() {
 
                         {plan.savings && billingCycle === 'yearly' && (
                           <div className="text-green-400 text-sm font-medium mb-4">
-                            {plan.savings}
+                            {plan.savings} with annual billing
                           </div>
                         )}
                       </div>
@@ -370,7 +420,7 @@ function PricingContent() {
                           </Link>
                         ) : (
                           <button
-                            onClick={() => handleUpgrade('pro')}
+                            onClick={() => handleUpgrade(plan.id === 'premium' ? 'premium' : plan.id === 'unlimited' ? 'unlimited' : 'pro')}
                             disabled={loading}
                             className={`w-full block text-center px-6 py-3 ${plan.buttonColor} text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
@@ -381,8 +431,8 @@ function PricingContent() {
                               </>
                             ) : (
                               <>
-                                Upgrade to {plan.name}
-                                <ArrowRight className="h-4 w-4 inline ml-2" />
+                                {plan.id === 'free' ? 'Get Started Free' : `Upgrade to ${plan.name}`}
+                                {plan.id !== 'free' && <ArrowRight className="h-4 w-4 inline ml-2" />}
                               </>
                             )}
                           </button>
@@ -419,12 +469,12 @@ function PricingContent() {
                     <span className="text-blue-400 font-semibold">100MB • 2-5 min</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Pro Tier</span>
+                    <span>Premium Tier</span>
                     <span className="text-purple-400 font-semibold">500MB • 1-2 min</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Enterprise</span>
-                    <span className="text-yellow-400 font-semibold">2GB • &lt; 1 min</span>
+                    <span>Unlimited Tier</span>
+                    <span className="text-yellow-400 font-semibold">2GB+ • &lt; 1 min</span>
                   </div>
                 </div>
               </div>
@@ -441,8 +491,12 @@ function PricingContent() {
                     <span className="text-blue-400 font-semibold">Basic</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Pro Tier</span>
+                    <span>Premium Tier</span>
                     <span className="text-purple-400 font-semibold">Advanced</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Unlimited Tier</span>
+                    <span className="text-yellow-400 font-semibold">Advanced</span>
                   </div>
                 </div>
               </div>
@@ -459,8 +513,12 @@ function PricingContent() {
                     <span className="text-blue-400 font-semibold">Automated</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Pro Tier</span>
+                    <span>Premium Tier</span>
                     <span className="text-purple-400 font-semibold">Priority Review</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Unlimited Tier</span>
+                    <span className="text-yellow-400 font-semibold">Priority Review</span>
                   </div>
                 </div>
               </div>
@@ -485,7 +543,8 @@ function PricingContent() {
                     <tr className="border-b border-white/10">
                       <th className="text-left p-6 text-white/70 font-medium">Features</th>
                       <th className="text-center p-6 text-white/70 font-medium">Free</th>
-                      <th className="text-center p-6 text-white/70 font-medium">Pro</th>
+                      <th className="text-center p-6 text-white/70 font-medium">Premium</th>
+                      <th className="text-center p-6 text-white/70 font-medium">Unlimited</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -503,7 +562,8 @@ function PricingContent() {
                           <tr key={itemIndex} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                             <td className="p-4 text-white/90">{item.name}</td>
                             <td className="p-4 text-center text-white/70">{item.free}</td>
-                            <td className="p-4 text-center text-white/70">{item.pro}</td>
+                            <td className="p-4 text-center text-white/70">{item.premium || item.pro || '✗'}</td>
+                            <td className="p-4 text-center text-white/70">{item.unlimited || '✗'}</td>
                           </tr>
                         ))}
                       </React.Fragment>
@@ -643,20 +703,36 @@ function PricingContent() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {user ? (
-                  <button
-                    onClick={() => handleUpgrade('pro')}
-                    disabled={loading}
-                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Processing...
-                      </>
-                    ) : (
-                      'Upgrade to Pro'
-                    )}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleUpgrade('premium')}
+                      disabled={loading}
+                      className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        'Upgrade to Premium'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleUpgrade('unlimited')}
+                      disabled={loading}
+                      className="px-8 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl font-medium hover:from-yellow-700 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        'Upgrade to Unlimited'
+                      )}
+                    </button>
+                  </>
                 ) : (
                   <Link
                     href="/auth/signup"
