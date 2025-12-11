@@ -371,10 +371,10 @@ function PricingContent() {
                         ) : (
                           <button
                             onClick={() => handleUpgrade('pro')}
-                            disabled={isLoading}
+                            disabled={loading}
                             className={`w-full block text-center px-6 py-3 ${plan.buttonColor} text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
-                            {isLoading ? (
+                            {loading ? (
                               <>
                                 <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                 Processing...
