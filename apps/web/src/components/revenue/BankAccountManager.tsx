@@ -107,6 +107,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include', // CRITICAL FIX: Include cookies for authentication
           body: JSON.stringify({ country: userCountry }),
         });
 
@@ -164,6 +165,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // CRITICAL FIX: Include cookies for authentication
         body: JSON.stringify({ country: userCountry }),
       });
 

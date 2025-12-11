@@ -201,6 +201,7 @@ Creating Stripe Connect account after saving bank details...
 - ✅ [apps/web/src/components/revenue/BankAccountManager.tsx](apps/web/src/components/revenue/BankAccountManager.tsx)
   - Lines 69-141: Updated `handleSave()` to create Stripe Connect account
   - Lines 384-414: Added warning banner for existing users without Stripe Connect
+  - Lines 110, 167: **CRITICAL FIX:** Added `credentials: 'include'` to fetch requests to fix authentication error
 
 ### API Endpoints Used:
 1. **`POST /api/user/revenue/bank-account`**
@@ -241,6 +242,20 @@ User fills form → Click Save → Save to DB → Check if Stripe Connect exists
    - Full verification: 1-3 business days (Stripe verifies your identity and bank)
 
 4. **Earnings During Pending Status:** Any tips/earnings go to your **Digital Wallet** until bank account is verified. You can withdraw them after verification is complete.
+
+---
+
+## 🐛 Additional Fix: Authentication Error
+
+**Issue:** When clicking "Complete Stripe Connect Setup" button, got "Authentication required" error even though logged in.
+
+**Root Cause:** The `fetch()` requests to `/api/stripe/connect/create-account` were missing `credentials: 'include'`, which is required to send authentication cookies with the request.
+
+**Fix:** Added `credentials: 'include'` to both fetch calls:
+- Line 167: In `handleSetupStripeConnect()` function
+- Line 110: In `handleSave()` function
+
+**Result:** ✅ Cookies are now included, authentication works correctly.
 
 ---
 
