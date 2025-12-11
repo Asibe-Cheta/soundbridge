@@ -130,7 +130,22 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid scheduled times' }, { status: 400, headers: corsHeaders });
   }
 
-  const { platformFee, providerPayout } = calculateFees(payload.totalAmount, payload.bookingType);
+  // Get service offering category for category-based fee calculation
+  let serviceCategory: string | undefined;
+  if (payload.serviceOfferingId) {
+    const { data: offering } = await supabaseClient
+      .from('service_offerings')
+      .select('category')
+      .eq('id', payload.serviceOfferingId)
+      .single();
+    serviceCategory = offering?.category;
+  }
+  
+  const { platformFee, providerPayout } = calculateFees(
+    payload.totalAmount, 
+    payload.bookingType,
+    serviceCategory
+  );
 
   const { data: insertData, error: insertError } = await supabaseClient
     .from('service_bookings')

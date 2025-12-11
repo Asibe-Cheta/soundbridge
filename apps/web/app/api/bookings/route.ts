@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { calculateFees } from '@/src/lib/stripe-esg';
+import { calculateFees, getServicePlatformFee } from '@/src/lib/stripe-esg';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
 import type { Database } from '@/src/lib/types';
 
@@ -151,6 +151,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let serviceOffering: ServiceOfferingRow | null = null;
+  
   if (payload.serviceOfferingId) {
     const { data: offeringData, error: offeringError } = await supabaseClient
       .from('service_offerings')
@@ -159,16 +161,16 @@ export async function POST(request: NextRequest) {
       .eq('provider_id', payload.providerId)
       .single();
 
-    const offering = (offeringData ?? null) as ServiceOfferingRow | null;
+    serviceOffering = (offeringData ?? null) as ServiceOfferingRow | null;
 
-    if (offeringError || !offering) {
+    if (offeringError || !serviceOffering) {
       return NextResponse.json(
         { error: 'Service offering not found for this provider', details: offeringError?.message },
         { status: 404, headers: corsHeaders },
       );
     }
 
-    if (!offering.is_active) {
+    if (!serviceOffering.is_active) {
       return NextResponse.json(
         { error: 'This service offering is not currently bookable.' },
         { status: 409, headers: corsHeaders },
@@ -236,7 +238,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { platformFee, providerPayout } = calculateFees(payload.totalAmount, payload.bookingType);
+  // Calculate platform fee based on service category (if service offering provided)
+  // This allows 10-15% fees based on service type (per spec)
+  const serviceCategory = serviceOffering?.category;
+  const { platformFee, providerPayout } = calculateFees(
+    payload.totalAmount, 
+    payload.bookingType,
+    serviceCategory || undefined // Pass category for service-type based fees
+  );
 
   const { data: bookingData, error: insertError } = await supabaseClient
     .from('service_bookings')
