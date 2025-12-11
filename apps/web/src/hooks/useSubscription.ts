@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 
 export interface SubscriptionData {
   subscription: {
-    tier: 'free' | 'pro' | 'enterprise';
-    status: 'active' | 'cancelled' | 'expired' | 'trial';
-    billing_cycle: 'monthly' | 'yearly';
+    tier: 'free' | 'premium' | 'unlimited'; // Updated: premium and unlimited instead of pro/enterprise
+    status: 'active' | 'cancelled' | 'expired' | 'trial' | 'past_due';
+    billing_cycle: 'monthly' | 'annual'; // Updated: annual instead of yearly
     trial_ends_at: string | null;
     subscription_ends_at: string | null;
     created_at: string;
@@ -38,11 +38,14 @@ export interface SubscriptionData {
   };
   features: {
     unlimitedUploads: boolean;
+    unlimitedSearches: boolean;
+    unlimitedMessages: boolean;
     advancedAnalytics: boolean;
-    customBranding: boolean;
+    customUsername: boolean; // Premium/Unlimited only
     prioritySupport: boolean;
     revenueSharing: boolean;
-    whiteLabel: boolean;
+    featuredPlacement: boolean; // Premium/Unlimited only
+    verifiedBadge: boolean;
   };
 }
 
@@ -51,7 +54,7 @@ export interface SubscriptionHook {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  upgradeSubscription: (tier: 'pro' | 'enterprise', billingCycle: 'monthly' | 'yearly') => Promise<boolean>;
+  upgradeSubscription: (tier: 'premium' | 'unlimited', billingCycle: 'monthly' | 'annual') => Promise<boolean>;
   cancelSubscription: () => Promise<boolean>;
   updateUsage: (type: 'music' | 'podcast' | 'event' | 'play' | 'follower', amount?: number, storageUsed?: number) => Promise<boolean>;
   addEarnings: (amount: number) => Promise<boolean>;
@@ -84,17 +87,29 @@ export const useSubscription = (): SubscriptionHook => {
     }
   };
 
-  const upgradeSubscription = async (tier: 'pro' | 'enterprise', billingCycle: 'monthly' | 'yearly' = 'monthly'): Promise<boolean> => {
+  const upgradeSubscription = async (tier: 'premium' | 'unlimited', billingCycle: 'monthly' | 'annual' = 'monthly'): Promise<boolean> => {
     try {
       // Use SubscriptionService to create checkout session (unified flow)
       const { SubscriptionService } = await import('@/src/services/SubscriptionService');
       const { getPriceId } = await import('@/src/lib/stripe');
-      
-      const priceId = getPriceId('pro', billingCycle);
-      const amount = billingCycle === 'monthly' ? 9.99 : 99.00;
+
+      const priceId = getPriceId(tier, billingCycle);
+
+      // Premium: £6.99/month or £69.99/year
+      // Unlimited: £12.99/month or £129.99/year
+      const amounts = {
+        premium: { monthly: 6.99, annual: 69.99 },
+        unlimited: { monthly: 12.99, annual: 129.99 }
+      };
+      const amount = amounts[tier][billingCycle];
+
+      const tierNames = {
+        premium: 'Premium',
+        unlimited: 'Unlimited'
+      };
 
       await SubscriptionService.createCheckoutSession({
-        name: billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly',
+        name: `${tierNames[tier]} ${billingCycle === 'monthly' ? 'Monthly' : 'Annual'}`,
         priceId,
         billingCycle,
         amount,

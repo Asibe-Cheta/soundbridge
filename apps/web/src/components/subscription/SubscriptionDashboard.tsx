@@ -28,8 +28,10 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
   const { data, refresh } = useSubscription();
   const searchParams = useSearchParams();
   const currentTier = data?.subscription.tier || 'free';
-  const isPro = currentTier === 'pro' && data?.subscription.status === 'active';
-  const isFree = !isPro;
+  const isPremium = currentTier === 'premium' && data?.subscription.status === 'active';
+  const isUnlimited = currentTier === 'unlimited' && data?.subscription.status === 'active';
+  const isPaid = isPremium || isUnlimited;
+  const isFree = currentTier === 'free';
 
   // Success/error message states
   const [showSuccess, setShowSuccess] = useState(false);
@@ -166,36 +168,36 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
    * Monitor subscription changes during polling
    */
   useEffect(() => {
-    if (pollingState.isPolling && isPro) {
-      console.log('[SubscriptionDashboard] Pro subscription detected! Stopping polling.');
-      
-      // Stop polling - subscription is now Pro!
+    if (pollingState.isPolling && isPaid) {
+      console.log('[SubscriptionDashboard] Paid subscription detected! Stopping polling.');
+
+      // Stop polling - subscription is now Premium/Unlimited!
       stopPolling(false);
-      
+
       // Show success message
       setShowSuccess(true);
       setShowActivating(false);
-      
+
       // Auto-hide success message after configured duration
       timeoutRef.current = setTimeout(() => {
         setShowSuccess(false);
       }, SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
     }
-  }, [pollingState.isPolling, isPro, stopPolling]);
+  }, [pollingState.isPolling, isPaid, stopPolling]);
 
   /**
-   * Check if Pro status after manual refresh
+   * Check if paid subscription status after manual refresh
    */
   useEffect(() => {
-    if (!pollingState.isPolling && showTimeout && isPro) {
-      // Manual refresh worked - subscription is now Pro!
+    if (!pollingState.isPolling && showTimeout && isPaid) {
+      // Manual refresh worked - subscription is now Premium/Unlimited!
       setShowTimeout(false);
       setShowSuccess(true);
       timeoutRef.current = setTimeout(() => {
         setShowSuccess(false);
       }, SUBSCRIPTION_POLLING_CONFIG.SUCCESS_MESSAGE_DURATION);
     }
-  }, [pollingState.isPolling, showTimeout, isPro]);
+  }, [pollingState.isPolling, showTimeout, isPaid]);
 
   /**
    * Cleanup on unmount
@@ -237,8 +239,8 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
           <div className="flex items-center space-x-2">
             <CheckCircle className="h-5 w-5" />
             <div>
-              <h3 className="font-semibold">🎉 Welcome to Pro!</h3>
-              <p className="text-sm">Your subscription is now active. Enjoy unlimited access!</p>
+              <h3 className="font-semibold">🎉 Welcome to {isPremium ? 'Premium' : 'Unlimited'}!</h3>
+              <p className="text-sm">Your subscription is now active. Enjoy your new features!</p>
             </div>
           </div>
           <button
@@ -251,12 +253,12 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
       )}
 
       {/* Activating Message (While Polling) */}
-      {showActivating && !isPro && (
+      {showActivating && !isPaid && (
         <div className="p-4 bg-blue-100 text-blue-800 rounded-lg border border-blue-300">
           <div className="flex items-start gap-3">
             <Loader2 className="h-5 w-5 animate-spin" />
             <div className="flex-1">
-              <h3 className="font-semibold">Activating your Pro subscription...</h3>
+              <h3 className="font-semibold">Activating your subscription...</h3>
               <p className="text-sm mt-1">
                 This usually takes a few seconds. Please wait while we confirm your payment.
               </p>
@@ -364,14 +366,14 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
         }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold mb-2">Ready to Go Pro?</h3>
+              <h3 className="text-xl font-bold mb-2">Ready to Upgrade?</h3>
               <p className="text-white/90 mb-4">
-                Unlock advanced analytics, revenue sharing, and professional tools to grow your audience.
+                Unlock advanced analytics, custom username, featured placement, and professional tools to grow your audience.
               </p>
               <div className="flex items-center space-x-4 text-sm">
                 <div className="flex items-center space-x-1">
                   <Crown className="h-4 w-4" />
-                  <span>Advanced Analytics</span>
+                  <span>Custom Username</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <DollarSign className="h-4 w-4" />
@@ -379,7 +381,7 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
                 </div>
                 <div className="flex items-center space-x-1">
                   <TrendingUp className="h-4 w-4" />
-                  <span>Growth Tools</span>
+                  <span>Featured Placement</span>
                 </div>
               </div>
             </div>
@@ -387,7 +389,7 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
               href="/pricing"
               className="px-6 py-3 bg-white text-red-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
             >
-              Upgrade Now
+              View Plans
             </Link>
           </div>
         </div>

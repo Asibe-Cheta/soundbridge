@@ -124,14 +124,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch revenue' }, { status: 500 });
     }
 
+    // Fallback to profiles table for subscription data (new tier system)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, subscription_status, subscription_period, subscription_start_date, subscription_renewal_date')
+      .eq('id', user.id)
+      .single();
+
     // Default values if no data found
     const defaultSubscription = {
-      tier: 'free',
-      status: 'active',
-      billing_cycle: 'monthly',
-      subscription_start_date: null,
-      subscription_renewal_date: null,
-      subscription_ends_at: null,
+      tier: profile?.subscription_tier || 'free',
+      status: profile?.subscription_status || 'active',
+      billing_cycle: profile?.subscription_period || 'monthly',
+      subscription_start_date: profile?.subscription_start_date || null,
+      subscription_renewal_date: profile?.subscription_renewal_date || null,
+      subscription_ends_at: profile?.subscription_renewal_date || null,
       money_back_guarantee_eligible: false,
       refund_count: 0,
       created_at: new Date().toISOString(),
@@ -158,10 +165,11 @@ export async function GET(request: NextRequest) {
 
     // Check if within 7-day money-back guarantee window
     let withinGuarantee = false;
-    if (subscription && subscription.tier === 'pro' && subscription.subscription_start_date) {
-      const startDate = new Date(subscription.subscription_start_date);
+    const currentSubscription = subscription || defaultSubscription;
+    if (currentSubscription && ['premium', 'unlimited'].includes(currentSubscription.tier) && currentSubscription.subscription_start_date) {
+      const startDate = new Date(currentSubscription.subscription_start_date);
       const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      withinGuarantee = daysSinceStart <= 7 && subscription.money_back_guarantee_eligible;
+      withinGuarantee = daysSinceStart <= 7 && currentSubscription.money_back_guarantee_eligible;
     }
 
     // Get usage limits
@@ -188,14 +196,16 @@ export async function GET(request: NextRequest) {
             : 0
         },
         features: {
-          unlimitedUploads: false, // No unlimited uploads - Pro has 10 total
-          unlimitedSearches: subscription?.tier === 'pro',
-          unlimitedMessages: subscription?.tier === 'pro',
-          advancedAnalytics: subscription?.tier === 'pro',
-          customBranding: subscription?.tier === 'pro',
-          prioritySupport: subscription?.tier === 'pro',
-          revenueSharing: subscription?.tier === 'pro',
-          whiteLabel: false // No white label feature
+          // Upload limits: Free=3 lifetime, Premium=7/month, Unlimited=unlimited
+          unlimitedUploads: currentSubscription.tier === 'unlimited',
+          unlimitedSearches: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          unlimitedMessages: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          advancedAnalytics: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          customUsername: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          prioritySupport: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          revenueSharing: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          featuredPlacement: ['premium', 'unlimited'].includes(currentSubscription.tier),
+          verifiedBadge: ['premium', 'unlimited'].includes(currentSubscription.tier)
         }
       }
     });

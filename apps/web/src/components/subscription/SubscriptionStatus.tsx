@@ -53,21 +53,31 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           name: 'Free',
           icon: <Zap className="h-5 w-5 text-blue-500" />,
           color: 'bg-blue-100 text-blue-800',
+          badgeColor: '#3b82f6',
           description: 'Perfect for getting started'
         };
-      case 'pro':
+      case 'premium':
         return {
-          name: 'Pro',
+          name: 'Premium',
           icon: <Crown className="h-5 w-5 text-purple-500" />,
           color: 'bg-purple-100 text-purple-800',
+          badgeColor: '#8b5cf6',
           description: 'For growing creators'
         };
-      // Enterprise tier removed - only Free and Pro now
+      case 'unlimited':
+        return {
+          name: 'Unlimited',
+          icon: <Crown className="h-5 w-5 text-yellow-500" />,
+          color: 'bg-yellow-100 text-yellow-800',
+          badgeColor: '#eab308',
+          description: 'For professional creators'
+        };
       default:
         return {
           name: 'Unknown',
           icon: <AlertCircle className="h-5 w-5 text-gray-500" />,
           color: 'bg-gray-100 text-gray-800',
+          badgeColor: '#6b7280',
           description: 'Unknown tier'
         };
     }
@@ -137,10 +147,10 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
             </p>
           </div>
         </div>
-        <span 
+        <span
           className="px-3 py-1 rounded-full text-sm font-medium"
           style={{
-            background: tierInfo.name === 'Free' ? '#3b82f6' : tierInfo.name === 'Pro' ? '#8b5cf6' : '#eab308',
+            background: tierInfo.badgeColor,
             color: 'white'
           }}
         >
@@ -195,98 +205,131 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           Plan Features
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {/* Upload Limits */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
-              style={{ color: subscription.tier === 'pro' ? '#10b981' : 'var(--text-tertiary)' }}
+            <CheckCircle
+              className="h-4 w-4"
+              style={{ color: '#10b981' }}
             />
-            <span 
+            <span
               className="text-sm"
-              style={{ color: subscription.tier === 'pro' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+              style={{ color: 'var(--text-primary)' }}
             >
-              {subscription.tier === 'pro' ? '10 Uploads Per Month' : '3 Lifetime Uploads'}
+              {subscription.tier === 'free'
+                ? '3 Lifetime Uploads'
+                : subscription.tier === 'premium'
+                ? '7 Uploads Per Month'
+                : 'Unlimited Uploads'}
             </span>
           </div>
+
+          {/* Unlimited Searches */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
+            <CheckCircle
+              className="h-4 w-4"
               style={{ color: features.unlimitedSearches ? '#10b981' : 'var(--text-tertiary)' }}
             />
-            <span 
+            <span
               className="text-sm"
               style={{ color: features.unlimitedSearches ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
               Unlimited Searches
             </span>
           </div>
+
+          {/* Unlimited Messages */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
+            <CheckCircle
+              className="h-4 w-4"
               style={{ color: features.unlimitedMessages ? '#10b981' : 'var(--text-tertiary)' }}
             />
-            <span 
+            <span
               className="text-sm"
               style={{ color: features.unlimitedMessages ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
               Unlimited Messages
             </span>
           </div>
+
+          {/* Advanced Analytics */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
+            <CheckCircle
+              className="h-4 w-4"
               style={{ color: features.advancedAnalytics ? '#10b981' : 'var(--text-tertiary)' }}
             />
-            <span 
+            <span
               className="text-sm"
               style={{ color: features.advancedAnalytics ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
               Advanced Analytics
             </span>
           </div>
+
+          {/* Custom Username */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
-              style={{ color: features.customBranding ? '#10b981' : 'var(--text-tertiary)' }}
+            <CheckCircle
+              className="h-4 w-4"
+              style={{ color: features.customUsername ? '#10b981' : 'var(--text-tertiary)' }}
             />
-            <span 
+            <span
               className="text-sm"
-              style={{ color: features.customBranding ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+              style={{ color: features.customUsername ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
-              Custom Branding
+              Custom Username
             </span>
           </div>
+
+          {/* Priority Support */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
-              style={{ color: features.revenueSharing ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span 
-              className="text-sm"
-              style={{ color: features.revenueSharing ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Revenue Sharing
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
+            <CheckCircle
+              className="h-4 w-4"
               style={{ color: features.prioritySupport ? '#10b981' : 'var(--text-tertiary)' }}
             />
-            <span 
+            <span
               className="text-sm"
               style={{ color: features.prioritySupport ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
               Priority Support
             </span>
           </div>
+
+          {/* Revenue Sharing */}
           <div className="flex items-center space-x-2">
-            <CheckCircle 
-              className="h-4 w-4" 
-              style={{ color: subscription.tier === 'pro' ? '#10b981' : 'var(--text-tertiary)' }}
+            <CheckCircle
+              className="h-4 w-4"
+              style={{ color: features.revenueSharing ? '#10b981' : 'var(--text-tertiary)' }}
             />
-            <span 
+            <span
               className="text-sm"
-              style={{ color: subscription.tier === 'pro' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+              style={{ color: features.revenueSharing ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
+              Revenue Sharing
+            </span>
+          </div>
+
+          {/* Featured Placement */}
+          <div className="flex items-center space-x-2">
+            <CheckCircle
+              className="h-4 w-4"
+              style={{ color: features.featuredPlacement ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span
+              className="text-sm"
+              style={{ color: features.featuredPlacement ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
+              Featured Placement
+            </span>
+          </div>
+
+          {/* Verified Badge */}
+          <div className="flex items-center space-x-2">
+            <CheckCircle
+              className="h-4 w-4"
+              style={{ color: features.verifiedBadge ? '#10b981' : 'var(--text-tertiary)' }}
+            />
+            <span
+              className="text-sm"
+              style={{ color: features.verifiedBadge ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
               Verified Badge Eligible
             </span>
