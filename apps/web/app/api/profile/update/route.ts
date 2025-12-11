@@ -20,26 +20,35 @@ export async function POST(request: NextRequest) {
     console.log('✅ User ID provided:', userId);
     const supabase = createServiceClient();
     console.log('📝 Profile update data:', body);
-    const { 
-      display_name, 
+    const {
+      display_name,
       username,
-      avatar_url, 
-      location, 
-      bio, 
-      genres, 
-      profile_completed 
+      avatar_url,
+      location,
+      bio,
+      genres,
+      website,
+      phone,
+      experience_level,
+      profile_completed
     } = body;
 
     // Update the user's profile
     const updateData: any = {};
-    
-    if (display_name) updateData.display_name = display_name;
-    if (username) updateData.username = username;
-    if (avatar_url) updateData.avatar_url = avatar_url;
-    if (location) updateData.location = location;
-    if (bio) updateData.bio = bio;
-    if (genres) updateData.genres = genres;
+
+    if (display_name !== undefined) updateData.display_name = display_name;
+    if (username !== undefined) updateData.username = username;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+    if (location !== undefined) updateData.location = location;
+    if (bio !== undefined) updateData.bio = bio;
+    if (genres !== undefined) updateData.genres = genres;
+    if (website !== undefined) updateData.website = website;
+    if (phone !== undefined) updateData.phone = phone;
+    if (experience_level !== undefined) updateData.experience_level = experience_level;
     if (profile_completed !== undefined) updateData.profile_completed = profile_completed;
+
+    // Always update timestamp
+    updateData.updated_at = new Date().toISOString();
 
     console.log('📝 Updating profile with data:', updateData);
     

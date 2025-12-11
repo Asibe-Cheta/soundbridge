@@ -344,21 +344,21 @@ export default function ProfilePage() {
   const loadProfileData = async () => {
     try {
       console.log('🔍 Loading profile data for user:', user?.id);
-      
+
       // First try to get profile from the profiles table
-      const response = await fetch('/api/profile/upload-image', {
+      const response = await fetch('/api/profile', {
         method: 'GET',
       });
-      
+
       console.log('📊 Profile response status:', response.status);
-      
+
       if (response.ok) {
         const result = await response.json();
         console.log('📊 Profile result:', result);
-        
+
         if (result.success && result.profile) {
           console.log('✅ Profile data received:', result.profile);
-          
+
           // Update profile data with actual values from database
           setProfileData(prev => ({
             ...prev,
@@ -367,9 +367,12 @@ export default function ProfilePage() {
             bio: result.profile.bio || 'Tell your story...',
             location: result.profile.location || 'Location not set',
             website: result.profile.website || '',
+            phone: result.profile.phone || '',
+            genre: result.profile.genres?.[0] || '',
+            experience: result.profile.experience_level || 'Beginner',
             avatarUrl: result.profile.avatar_url || ''
           }));
-          
+
           // Fetch professional headline and connection count
           await Promise.all([
             fetchProfessionalHeadline(),
@@ -421,15 +424,23 @@ export default function ProfilePage() {
           display_name: profileData.displayName,
           username: profileData.username,
           bio: profileData.bio,
-          location: profileData.location
+          location: profileData.location,
+          website: profileData.website,
+          phone: profileData.phone,
+          genres: profileData.genre ? [profileData.genre] : [],
+          experience_level: profileData.experience
         }),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          console.log('Profile saved successfully');
+          console.log('✅ Profile saved successfully');
           setIsEditing(false);
+
+          // Show success message
+          alert('Profile updated successfully!');
+
           // Reload profile data to ensure we have the latest
           await loadProfileData();
           // Reload analytics data to reflect any changes
@@ -448,7 +459,7 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('❌ Error saving profile:', error);
-      // Show error message
+      alert('Failed to save profile. Please try again.');
     }
   };
 
