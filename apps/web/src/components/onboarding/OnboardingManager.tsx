@@ -112,6 +112,7 @@ export function OnboardingManager() {
           <PaymentCollection
             key="payment-modal" // Force remount to reset state
             isOpen={showOnboarding}
+            selectedTier={onboardingState.selectedTier as 'premium' | 'unlimited'}
             onSuccess={() => {
               // Welcome confirmation will be shown
             }}

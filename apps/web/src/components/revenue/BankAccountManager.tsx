@@ -72,14 +72,65 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       setError(null);
       setSuccess(null);
 
+      // CRITICAL FIX: First save bank details to database
       const result = await revenueService.setBankAccount(userId, formData);
-      
-      if (result.success) {
+
+      if (!result.success) {
+        setError(result.error || 'Failed to save bank account information');
+        return;
+      }
+
+      // CRITICAL FIX: Then create Stripe Connect account if it doesn't exist
+      // Check if user already has a Stripe Connect account
+      const currentAccount = await revenueService.getBankAccount(userId);
+
+      if (!currentAccount?.stripe_account_id) {
+        // No Stripe Connect account exists, create one
+        console.log('Creating Stripe Connect account after saving bank details...');
+
+        // Get user's country from form or detect it
+        let userCountry = formData.country || 'US';
+        if (!formData.country) {
+          try {
+            const ipResponse = await fetch('https://ipapi.co/json/');
+            const ipData = await ipResponse.json();
+            if (ipData.country_code) {
+              userCountry = ipData.country_code;
+            }
+          } catch (error) {
+            console.log('Could not detect country, using US default');
+          }
+        }
+
+        const stripeResponse = await fetch('/api/stripe/connect/create-account', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ country: userCountry }),
+        });
+
+        const stripeResult = await stripeResponse.json();
+
+        if (stripeResponse.ok && stripeResult.success) {
+          // Successfully created Stripe Connect account
+          setSuccess('Bank account saved and Stripe Connect account created! Redirecting to complete setup...');
+
+          // Redirect to Stripe onboarding
+          setTimeout(() => {
+            window.location.href = stripeResult.onboardingUrl;
+          }, 2000);
+        } else {
+          // Stripe Connect creation failed, but bank details are saved
+          setError(`Bank details saved, but Stripe Connect setup failed: ${stripeResult.error}. You can try the "Set Up with Stripe Connect" button again.`);
+          setIsEditing(false);
+          await loadBankAccount();
+        }
+      } else {
+        // Stripe Connect account already exists, just saved bank details
         setSuccess('Bank account information saved successfully!');
         setIsEditing(false);
-        await loadBankAccount(); // Reload to get updated data
-      } else {
-        setError(result.error || 'Failed to save bank account information');
+        await loadBankAccount();
       }
     } catch (error) {
       console.error('Error saving bank account:', error);
@@ -329,6 +380,39 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       {/* Bank Account Information */}
       {bankAccount ? (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          {/* Stripe Connect Warning if not set up */}
+          {bankAccount && !bankAccount.stripe_account_id && (
+            <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-yellow-300 mb-1">Stripe Connect Not Set Up</h4>
+                  <p className="text-yellow-200 text-sm mb-3">
+                    Your bank details are saved, but you need to complete Stripe Connect setup to receive payouts.
+                    Earnings will be stored in your digital wallet until setup is complete.
+                  </p>
+                  <button
+                    onClick={handleSetupStripeConnect}
+                    disabled={saving}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Setting up...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4" />
+                        <span>Complete Stripe Connect Setup</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {/* Verification Status */}
             <div className="flex items-center justify-between">

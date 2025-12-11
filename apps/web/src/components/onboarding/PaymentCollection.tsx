@@ -9,11 +9,13 @@ interface PaymentCollectionProps {
   isOpen: boolean;
   onSuccess: () => void;
   onBack: () => void;
+  selectedTier?: 'premium' | 'unlimited';  // NEW: Pass selected tier from TierSelection
 }
 
 // Simplified payment handler - uses Checkout Sessions (unified with pricing page)
-function PaymentForm({ period, onSuccess, onBack, setError }: {
+function PaymentForm({ period, selectedTier, onSuccess, onBack, setError }: {
   period: 'monthly' | 'annual';
+  selectedTier: 'premium' | 'unlimited';
   onSuccess: () => void;
   onBack: () => void;
   setError: (error: string | null) => void;
@@ -22,7 +24,7 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) {
       return;
     }
@@ -33,11 +35,19 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
     try {
       // Use SubscriptionService to create checkout session (unified flow)
       const billingCycle = period === 'annual' ? 'yearly' : 'monthly';
-      const priceId = getPriceId('pro', billingCycle);
-      const amount = billingCycle === 'monthly' ? 9.99 : 99.00;
+      const priceId = getPriceId(selectedTier, billingCycle);
+
+      // Calculate amount based on tier
+      const amounts = {
+        premium: billingCycle === 'monthly' ? 6.99 : 69.99,
+        unlimited: billingCycle === 'monthly' ? 12.99 : 129.99,
+      };
+      const amount = amounts[selectedTier];
 
       await SubscriptionService.createCheckoutSession({
-        name: billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly',
+        name: billingCycle === 'monthly'
+          ? `${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Monthly`
+          : `${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)} Yearly`,
         priceId,
         billingCycle,
         amount,
@@ -89,7 +99,7 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
           </>
         ) : (
           <>
-            Upgrade to Pro
+            Upgrade to {selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)}
             <ArrowRight size={20} />
           </>
         )}
@@ -107,7 +117,7 @@ function PaymentForm({ period, onSuccess, onBack, setError }: {
   );
 }
 
-export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollectionProps) {
+export function PaymentCollection({ isOpen, onSuccess, onBack, selectedTier = 'premium' }: PaymentCollectionProps) {
   const [period, setPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [error, setError] = useState<string | null>(null);
 
@@ -120,9 +130,17 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
 
   if (!isOpen) return null;
 
+  // Calculate amounts based on tier
+  const amounts = {
+    monthly: selectedTier === 'premium' ? 6.99 : 12.99,
+    annual: selectedTier === 'premium' ? 69.99 : 129.99,
+  };
+  const savings = selectedTier === 'premium' ? 13.89 : 25.89;
+  const tierName = selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1);
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div 
+      <div
         className="relative w-full max-w-2xl bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden"
         style={{ maxHeight: '90vh', overflowY: 'auto' }}
       >
@@ -142,11 +160,11 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
         {/* Content */}
         <div className="p-6 md:p-8">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 text-center">
-            Upgrade to Pro - Risk Free
+            Upgrade to {tierName} - Risk Free
           </h2>
 
           <p className="text-white/80 text-center mb-6">
-            You'll be charged £{period === 'monthly' ? '9.99' : '99.00'} today to start your Pro subscription.
+            You'll be charged £{amounts[period]} today to start your {tierName} subscription.
             If you're not satisfied within 7 days, simply request a refund from your billing settings for a full refund - no questions asked.
           </p>
 
@@ -160,7 +178,7 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
                   : 'bg-white/10 text-white/70 hover:bg-white/20'
               }`}
             >
-              Monthly - £9.99/mo
+              Monthly - £{amounts.monthly}/mo
             </button>
             <button
               onClick={() => setPeriod('annual')}
@@ -170,8 +188,8 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
                   : 'bg-white/10 text-white/70 hover:bg-white/20'
               }`}
             >
-              Annual - £99/yr
-              <span className="ml-2 text-xs">Save £20</span>
+              Annual - £{amounts.annual}/yr
+              <span className="ml-2 text-xs">Save £{savings.toFixed(2)}</span>
             </button>
           </div>
 
@@ -186,8 +204,9 @@ export function PaymentCollection({ isOpen, onSuccess, onBack }: PaymentCollecti
           )}
 
           {/* Stripe Elements */}
-          <PaymentForm 
+          <PaymentForm
             period={period}
+            selectedTier={selectedTier}
             onSuccess={onSuccess}
             onBack={onBack}
             setError={setError}

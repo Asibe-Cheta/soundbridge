@@ -19,7 +19,7 @@ interface OnboardingState {
   onboardingUserType: OnboardingUserType; // NEW: User type from new flow
   profileCompleted: boolean;
   firstActionCompleted: boolean;
-  selectedTier: 'free' | 'pro' | null; // NEW: Selected tier during onboarding
+  selectedTier: 'free' | 'premium' | 'unlimited' | null; // NEW: Selected tier during onboarding
   isOnboardingActive: boolean;
   showOnboarding: boolean;
 }
@@ -29,7 +29,7 @@ interface OnboardingContextType {
   setCurrentStep: (step: OnboardingStep) => void;
   setSelectedRole: (role: UserRole) => void;
   setOnboardingUserType: (userType: OnboardingUserType) => void; // NEW
-  setSelectedTier: (tier: 'free' | 'pro' | null) => void; // NEW
+  setSelectedTier: (tier: 'free' | 'premium' | 'unlimited' | null) => void; // NEW
   setProfileCompleted: (completed: boolean) => void;
   setFirstActionCompleted: (completed: boolean) => void;
   completeOnboarding: () => void;
@@ -462,7 +462,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     updateOnboardingProgress({ userType: userType });
   };
 
-  const setSelectedTier = (tier: 'free' | 'pro' | null) => {
+  const setSelectedTier = (tier: 'free' | 'premium' | 'unlimited' | null) => {
     setOnboardingState(prev => ({ ...prev, selectedTier: tier }));
   };
 
