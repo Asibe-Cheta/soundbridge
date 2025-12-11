@@ -84,20 +84,47 @@ export async function POST(request: NextRequest) {
 
     const currency = getCurrencyForCountry(country);
 
-    const { error: updateError } = await supabase
+    // Check if bank account already exists
+    const { data: existingAccount } = await supabase
       .from('creator_bank_accounts')
-      .upsert({
-        user_id: user.id,
-        stripe_account_id: account.id,
-        verification_status: 'pending',
-        is_verified: false,
-        account_holder_name: user.user_metadata?.display_name || user.email,
-        bank_name: 'Stripe Connect',
-        account_number_encrypted: '', // Not needed for Stripe Connect
-        routing_number_encrypted: '', // Not needed for Stripe Connect
-        account_type: 'checking',
-        currency: currency // Dynamic currency based on country
-      });
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    let updateError;
+
+    if (existingAccount) {
+      // Update existing record with Stripe account ID
+      const { error } = await supabase
+        .from('creator_bank_accounts')
+        .update({
+          stripe_account_id: account.id,
+          verification_status: 'pending',
+          is_verified: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      updateError = error;
+    } else {
+      // Insert new record
+      const { error } = await supabase
+        .from('creator_bank_accounts')
+        .insert({
+          user_id: user.id,
+          stripe_account_id: account.id,
+          verification_status: 'pending',
+          is_verified: false,
+          account_holder_name: user.user_metadata?.display_name || user.email,
+          bank_name: 'Stripe Connect',
+          account_number_encrypted: '', // Not needed for Stripe Connect
+          routing_number_encrypted: '', // Not needed for Stripe Connect
+          account_type: 'checking',
+          currency: currency // Dynamic currency based on country
+        });
+
+      updateError = error;
+    }
 
     if (updateError) {
       console.error('Error storing Stripe account:', updateError);
