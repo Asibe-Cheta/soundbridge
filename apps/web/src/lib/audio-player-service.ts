@@ -22,17 +22,23 @@ class AudioPlayerService {
   private delayNode: DelayNode | null = null;
   private compressorNode: DynamicsCompressorNode | null = null;
   private distortionNode: WaveShaperNode | null = null;
-  
+
   private state: AudioPlayerState;
   private listeners: Map<string, Function[]> = new Map();
   private analytics: AudioPlayerAnalytics;
   private events: AudioPlayerEvent[] = [];
-  
+
   // Audio analysis
   private analyserNode: AnalyserNode | null = null;
   private dataArray: Uint8Array<ArrayBuffer> | null = null;
   private animationFrame: number | null = null;
-  
+
+  // Stream event tracking
+  private streamStartTime: number | null = null;
+  private totalListenedDuration: number = 0;
+  private sessionId: string = this.generateSessionId();
+  private streamEventLogged: boolean = false;
+
   // Equalizer bands (Hz)
   private readonly equalizerBands = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
   
@@ -222,37 +228,47 @@ class AudioPlayerService {
   // Audio loading and playback
   public async loadTrack(track: AudioTrack): Promise<void> {
     try {
+      // Log stream event for previous track before loading new one
+      if (this.state.currentTrack) {
+        this.logStreamEvent();
+      }
+
       this.state.isBuffering = true;
       this.emit('loading', track);
-      
+
       // Create audio element
       this.audioElement = new Audio();
       this.audioElement.crossOrigin = 'anonymous';
       this.audioElement.preload = 'metadata';
-      
+
       // Set up event listeners
       this.setupAudioElementListeners();
-      
+
       // Load audio
       await this.loadAudioSource(track.url);
-      
+
       // Update state
       this.state.currentTrack = track;
       this.state.duration = this.audioElement.duration || 0;
       this.state.currentTime = 0;
       this.state.isBuffering = false;
-      
+
+      // Reset stream tracking for new track
+      this.totalListenedDuration = 0;
+      this.streamStartTime = null;
+      this.streamEventLogged = false;
+
       // Add to history
       this.addToHistory(track);
-      
+
       // Analyze audio if needed
       if (track.waveform || track.spectralData) {
         await this.analyzeAudio(track);
       }
-      
+
       this.emit('trackLoaded', track);
       this.logEvent('trackChange', { trackId: track.id });
-      
+
     } catch (error) {
       console.error('Failed to load track:', error);
       this.state.isBuffering = false;
@@ -314,13 +330,15 @@ class AudioPlayerService {
       this.state.isPaused = false;
       this.emit('play');
       this.logEvent('play');
+      this.startStreamTracking(); // Start tracking stream event
     });
-    
+
     this.audioElement.addEventListener('pause', () => {
       this.state.isPlaying = false;
       this.state.isPaused = true;
       this.emit('pause');
       this.logEvent('pause');
+      this.updateListenedDuration(); // Update duration when paused
     });
   }
   
@@ -747,6 +765,9 @@ class AudioPlayerService {
   }
   
   private handleTrackEnd(): void {
+    // Log stream event when track ends
+    this.logStreamEvent();
+
     if (this.state.repeatMode === 'one') {
       this.seek(0);
       this.play();
@@ -795,18 +816,227 @@ class AudioPlayerService {
   public destroy(): void {
     this.stop();
     this.stopVisualization();
-    
+
     if (this.audioElement) {
       this.audioElement.src = '';
       this.audioElement = null;
     }
-    
+
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
     }
-    
+
     this.listeners.clear();
+  }
+
+  // =====================================================
+  // Stream Event Tracking (for Premium/Unlimited Analytics)
+  // =====================================================
+
+  /**
+   * Generate a unique session ID for grouping plays
+   */
+  private generateSessionId(): string {
+    return `session-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Start tracking stream event when playback begins
+   */
+  private startStreamTracking(): void {
+    this.streamStartTime = Date.now();
+    this.streamEventLogged = false;
+  }
+
+  /**
+   * Update total listened duration
+   */
+  private updateListenedDuration(): void {
+    if (this.streamStartTime && this.state.isPlaying) {
+      const now = Date.now();
+      const sessionDuration = (now - this.streamStartTime) / 1000; // Convert to seconds
+      this.totalListenedDuration += sessionDuration;
+      this.streamStartTime = now; // Reset for next interval
+    }
+  }
+
+  /**
+   * Log stream event to analytics API
+   * Called when track ends or user navigates away
+   */
+  private async logStreamEvent(engagement?: {
+    likedTrack?: boolean;
+    sharedTrack?: boolean;
+    followedCreator?: boolean;
+    tippedCreator?: boolean;
+    purchasedTicket?: boolean;
+  }): Promise<void> {
+    if (this.streamEventLogged || !this.state.currentTrack) {
+      return; // Already logged or no track playing
+    }
+
+    // Update duration one last time
+    this.updateListenedDuration();
+
+    // Only log if user listened for at least 3 seconds
+    if (this.totalListenedDuration < 3) {
+      return;
+    }
+
+    try {
+      // Detect device type
+      const deviceType = this.detectDeviceType();
+
+      // Detect platform
+      const platform = this.detectPlatform();
+
+      // Get referrer info
+      const referrerInfo = this.getReferrerInfo();
+
+      // Get UTM parameters from URL
+      const utmParams = this.getUTMParams();
+
+      const payload = {
+        trackId: this.state.currentTrack.id,
+        durationListened: Math.floor(this.totalListenedDuration),
+        totalDuration: Math.floor(this.state.duration),
+        deviceType,
+        platform,
+        referrerUrl: referrerInfo.url,
+        referrerType: referrerInfo.type,
+        utmSource: utmParams.source,
+        utmMedium: utmParams.medium,
+        utmCampaign: utmParams.campaign,
+        sessionId: this.sessionId,
+        ...engagement,
+      };
+
+      // Send to analytics API (fire and forget, don't block playback)
+      fetch('/api/analytics/stream-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }).catch(error => {
+        console.error('Failed to log stream event:', error);
+      });
+
+      this.streamEventLogged = true;
+
+    } catch (error) {
+      console.error('Error logging stream event:', error);
+    }
+  }
+
+  /**
+   * Detect device type from user agent
+   */
+  private detectDeviceType(): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    if (/mobile|iphone|ipod|android.*mobile/i.test(userAgent)) {
+      return 'mobile';
+    }
+
+    if (/ipad|android(?!.*mobile)|tablet/i.test(userAgent)) {
+      return 'tablet';
+    }
+
+    if (/windows|mac|linux/i.test(userAgent)) {
+      return 'desktop';
+    }
+
+    return 'unknown';
+  }
+
+  /**
+   * Detect platform
+   */
+  private detectPlatform(): 'ios' | 'android' | 'web' {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    if (/iphone|ipad|ipod/i.test(userAgent)) {
+      return 'ios';
+    }
+
+    if (/android/i.test(userAgent)) {
+      return 'android';
+    }
+
+    return 'web';
+  }
+
+  /**
+   * Get referrer information
+   */
+  private getReferrerInfo(): { url: string | undefined; type: 'direct' | 'social' | 'search' | 'external' | 'internal' } {
+    const referrer = document.referrer;
+
+    if (!referrer) {
+      return { url: undefined, type: 'direct' };
+    }
+
+    try {
+      const referrerUrl = new URL(referrer);
+      const currentUrl = new URL(window.location.href);
+
+      // Internal referrer
+      if (referrerUrl.hostname === currentUrl.hostname) {
+        return { url: referrer, type: 'internal' };
+      }
+
+      // Social media
+      const socialDomains = ['facebook.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'tiktok.com', 'youtube.com', 'reddit.com'];
+      if (socialDomains.some(domain => referrerUrl.hostname.includes(domain))) {
+        return { url: referrer, type: 'social' };
+      }
+
+      // Search engines
+      const searchDomains = ['google.com', 'bing.com', 'yahoo.com', 'duckduckgo.com', 'baidu.com'];
+      if (searchDomains.some(domain => referrerUrl.hostname.includes(domain))) {
+        return { url: referrer, type: 'search' };
+      }
+
+      // External
+      return { url: referrer, type: 'external' };
+
+    } catch (error) {
+      return { url: referrer, type: 'external' };
+    }
+  }
+
+  /**
+   * Get UTM parameters from current URL
+   */
+  private getUTMParams(): { source?: string; medium?: string; campaign?: string } {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        source: urlParams.get('utm_source') || undefined,
+        medium: urlParams.get('utm_medium') || undefined,
+        campaign: urlParams.get('utm_campaign') || undefined,
+      };
+    } catch (error) {
+      return {};
+    }
+  }
+
+  /**
+   * Public method to log engagement events
+   * Call this when user likes, shares, follows, tips, or buys tickets
+   */
+  public logEngagement(type: 'like' | 'share' | 'follow' | 'tip' | 'ticket'): void {
+    const engagement = {
+      likedTrack: type === 'like',
+      sharedTrack: type === 'share',
+      followedCreator: type === 'follow',
+      tippedCreator: type === 'tip',
+      purchasedTicket: type === 'ticket',
+    };
+
+    this.logStreamEvent(engagement);
   }
 }
 
