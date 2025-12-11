@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   // Add CORS headers for mobile app
@@ -13,85 +11,11 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    // URGENT PRODUCTION DEBUG: Log all request details
-    console.log('🚨 PRODUCTION DEBUG - Request received');
-    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
-    console.log('Request method:', request.method);
-    console.log('Request URL:', request.url);
-    
-    let supabase;
-    let user;
-    let authError;
+    // Use the correct auth method (same as tipping system and other working endpoints)
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
-    // Check for Authorization header (mobile app) - try ALL mobile app headers
-    const authHeader = request.headers.get('authorization') || 
-                      request.headers.get('Authorization') ||
-                      request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token') ||
-                      request.headers.get('x-supabase-token');
-    
-    console.log('🚨 MOBILE APP HEADER DEBUG:');
-    console.log('- authorization:', request.headers.get('authorization'));
-    console.log('- Authorization:', request.headers.get('Authorization'));  
-    console.log('- x-authorization:', request.headers.get('x-authorization'));
-    console.log('- x-auth-token:', request.headers.get('x-auth-token'));
-    console.log('- x-supabase-token:', request.headers.get('x-supabase-token'));
-    console.log('- Final authHeader:', authHeader);
-    console.log('🚨 Auth header exists:', !!authHeader);
-    console.log('🚨 Auth header starts with Bearer:', authHeader?.startsWith('Bearer '));
-    
-    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-      // Handle both "Bearer token" format and raw token format
-      const token = authHeader.startsWith('Bearer ') ? 
-                   authHeader.substring(7) : 
-                   authHeader;
-      
-      console.log('🚨 MOBILE TOKEN DEBUG:');
-      console.log('- Token length:', token.length);
-      console.log('- Token preview:', token.substring(0, 50) + '...');
-      console.log('- Token ends with:', '...' + token.substring(token.length - 20));
-      
-      // Check environment variables
-      console.log('🚨 ENVIRONMENT CHECK:');
-      console.log('- SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-      console.log('- SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-      console.log('- SUPABASE_URL value:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-      
-      // Create a fresh Supabase client with the provided token
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      
-      console.log('🚨 Supabase client created, calling getUser...');
-      
-      // Get user with the token - pass token directly to getUser
-      const { data, error } = await supabase.auth.getUser(token);
-      console.log('🚨 SUPABASE AUTH RESULT:');
-      console.log('- User exists:', !!data.user);
-      console.log('- User ID:', data.user?.id);
-      console.log('- User email:', data.user?.email);
-      console.log('- Error exists:', !!error);
-      console.log('- Error message:', error?.message);
-      console.log('- Error details:', JSON.stringify(error, null, 2));
-      
-      user = data.user;
-      authError = error;
-    } else {
-      console.log('🚨 Using cookie-based auth (no Bearer token found)');
-      // Use cookie-based auth (web app)
-      supabase = createRouteHandlerClient({ cookies });
-      const { data, error } = await supabase.auth.getUser();
-      user = data.user;
-      authError = error;
-    }
-    
-    console.log('🚨 FINAL AUTH CHECK:');
-    console.log('- Auth error:', authError?.message || 'None');
-    console.log('- User authenticated:', !!user);
-    console.log('- Will return 401:', !!(authError || !user));
-    
     if (authError || !user) {
+      console.error('Authentication failed:', authError);
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401, headers: corsHeaders }

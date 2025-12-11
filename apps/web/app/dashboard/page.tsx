@@ -735,7 +735,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab !== 'overview' && activeTab !== 'availability' && activeTab !== 'revenue' && activeTab !== 'service-provider' && (
+          {activeTab !== 'overview' && activeTab !== 'availability' && activeTab !== 'revenue' && activeTab !== 'service-provider' && activeTab !== 'subscription' && (
             <div style={{
               background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',

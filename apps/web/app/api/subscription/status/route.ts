@@ -10,7 +10,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user subscription status
+    // CRITICAL: Get subscription data from profiles table FIRST (new tier system)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, subscription_status, subscription_period, subscription_start_date, subscription_renewal_date')
+      .eq('id', user.id)
+      .single();
+
+    // Fallback: Get old subscription data from user_subscriptions table
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')
       .select('*')
@@ -22,7 +29,6 @@ export async function GET(request: NextRequest) {
 
     if (subError && subError.code !== 'PGRST116') {
       console.error('Error fetching subscription:', subError);
-      return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
     }
 
     // Calculate usage statistics from actual tables (EXACT same approach as Overview tab/DashboardService)
@@ -121,29 +127,42 @@ export async function GET(request: NextRequest) {
 
     if (revenueError && revenueError.code !== 'PGRST116') {
       console.error('Error fetching revenue:', revenueError);
-      return NextResponse.json({ error: 'Failed to fetch revenue' }, { status: 500 });
     }
 
-    // Fallback to profiles table for subscription data (new tier system)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier, subscription_status, subscription_period, subscription_start_date, subscription_renewal_date')
-      .eq('id', user.id)
-      .single();
+    // CRITICAL: Build subscription object from profiles table (prioritize over user_subscriptions)
+    // This ensures we use the new Premium/Unlimited tier system
+    console.log('📊 Subscription Data Sources:', {
+      profile_tier: profile?.subscription_tier,
+      profile_status: profile?.subscription_status,
+      profile_period: profile?.subscription_period,
+      old_subscription_tier: subscription?.tier
+    });
 
-    // Default values if no data found
-    const defaultSubscription = {
-      tier: profile?.subscription_tier || 'free',
-      status: profile?.subscription_status || 'active',
-      billing_cycle: profile?.subscription_period || 'monthly',
-      subscription_start_date: profile?.subscription_start_date || null,
-      subscription_renewal_date: profile?.subscription_renewal_date || null,
-      subscription_ends_at: profile?.subscription_renewal_date || null,
+    const finalSubscription = profile?.subscription_tier ? {
+      tier: profile.subscription_tier,
+      status: profile.subscription_status || 'active',
+      billing_cycle: profile.subscription_period || 'monthly',
+      subscription_start_date: profile.subscription_start_date || null,
+      subscription_renewal_date: profile.subscription_renewal_date || null,
+      subscription_ends_at: profile.subscription_renewal_date || null,
+      money_back_guarantee_eligible: subscription?.money_back_guarantee_eligible || false,
+      refund_count: subscription?.refund_count || 0,
+      created_at: profile.subscription_start_date || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } : (subscription || {
+      tier: 'free',
+      status: 'active',
+      billing_cycle: 'monthly',
+      subscription_start_date: null,
+      subscription_renewal_date: null,
+      subscription_ends_at: null,
       money_back_guarantee_eligible: false,
       refund_count: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    };
+    });
+
+    console.log('✅ Final Subscription:', finalSubscription);
 
     const defaultUsage = {
       music_uploads: 0,
@@ -165,11 +184,10 @@ export async function GET(request: NextRequest) {
 
     // Check if within 7-day money-back guarantee window
     let withinGuarantee = false;
-    const currentSubscription = subscription || defaultSubscription;
-    if (currentSubscription && ['premium', 'unlimited'].includes(currentSubscription.tier) && currentSubscription.subscription_start_date) {
-      const startDate = new Date(currentSubscription.subscription_start_date);
+    if (finalSubscription && ['premium', 'unlimited'].includes(finalSubscription.tier) && finalSubscription.subscription_start_date) {
+      const startDate = new Date(finalSubscription.subscription_start_date);
       const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      withinGuarantee = daysSinceStart <= 7 && currentSubscription.money_back_guarantee_eligible;
+      withinGuarantee = daysSinceStart <= 7 && finalSubscription.money_back_guarantee_eligible;
     }
 
     // Get usage limits
@@ -180,7 +198,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        subscription: subscription || defaultSubscription,
+        subscription: finalSubscription,
         usage: usage || defaultUsage,
         revenue: revenue || defaultRevenue,
         limits: {
@@ -189,23 +207,23 @@ export async function GET(request: NextRequest) {
           messages: messageLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false }
         },
         moneyBackGuarantee: {
-          eligible: subscription?.money_back_guarantee_eligible || false,
+          eligible: finalSubscription?.money_back_guarantee_eligible || false,
           withinWindow: withinGuarantee,
-          daysRemaining: withinGuarantee && subscription?.subscription_start_date
-            ? Math.max(0, 7 - Math.floor((Date.now() - new Date(subscription.subscription_start_date).getTime()) / (1000 * 60 * 60 * 24)))
+          daysRemaining: withinGuarantee && finalSubscription?.subscription_start_date
+            ? Math.max(0, 7 - Math.floor((Date.now() - new Date(finalSubscription.subscription_start_date).getTime()) / (1000 * 60 * 60 * 24)))
             : 0
         },
         features: {
           // Upload limits: Free=3 lifetime, Premium=7/month, Unlimited=unlimited
-          unlimitedUploads: currentSubscription.tier === 'unlimited',
-          unlimitedSearches: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          unlimitedMessages: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          advancedAnalytics: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          customUsername: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          prioritySupport: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          revenueSharing: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          featuredPlacement: ['premium', 'unlimited'].includes(currentSubscription.tier),
-          verifiedBadge: ['premium', 'unlimited'].includes(currentSubscription.tier)
+          unlimitedUploads: finalSubscription.tier === 'unlimited',
+          unlimitedSearches: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          unlimitedMessages: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          advancedAnalytics: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          customUsername: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          prioritySupport: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          revenueSharing: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          featuredPlacement: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          verifiedBadge: ['premium', 'unlimited'].includes(finalSubscription.tier)
         }
       }
     });
