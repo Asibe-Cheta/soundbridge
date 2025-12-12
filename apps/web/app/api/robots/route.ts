@@ -28,15 +28,15 @@ Allow: /legal/
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://soundbridge.com/sitemap.xml
+Sitemap: https://soundbridge.live/sitemap.xml
 
 # Additional sitemaps for different content types
-Sitemap: https://soundbridge.com/sitemap-creators.xml
-Sitemap: https://soundbridge.com/sitemap-events.xml
-Sitemap: https://soundbridge.com/sitemap-podcasts.xml
+Sitemap: https://soundbridge.live/sitemap-creators.xml
+Sitemap: https://soundbridge.live/sitemap-events.xml
+Sitemap: https://soundbridge.live/sitemap-podcasts.xml
 
 # Host directive
-Host: https://soundbridge.com`;
+Host: https://soundbridge.live`;
 
   return new NextResponse(robotsTxt, {
     headers: {

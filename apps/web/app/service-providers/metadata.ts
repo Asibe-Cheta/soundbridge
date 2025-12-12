@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Service Providers - Hire Music Professionals | SoundBridge',
     description: 'Find and hire professional music service providers. Sound engineers, music teachers, photographers, videographers, and more.',
-    url: 'https://soundbridge.com/service-providers',
+    url: 'https://soundbridge.live/service-providers',
     type: 'website',
   },
   twitter: {

@@ -155,8 +155,8 @@ export const metadata: Metadata = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "SoundBridge",
-  "url": "https://soundbridge.com",
-  "logo": "https://soundbridge.com/images/logos/logo-white-lockup.png",
+  "url": "https://soundbridge.live",
+  "logo": "https://soundbridge.live/images/logos/logo-white-lockup.png",
   "description": "Connect Through Music",
   "sameAs": [
     "https://twitter.com/soundbridge",
@@ -356,7 +356,7 @@ Crawl-delay: 1`;
 ### Environment Variables
 ```bash
 # Required for production
-NEXT_PUBLIC_SITE_URL=https://soundbridge.com
+NEXT_PUBLIC_SITE_URL=https://soundbridge.live
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key

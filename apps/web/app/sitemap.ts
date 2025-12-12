@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://soundbridge.com';
+  const baseUrl = 'https://soundbridge.live';
   const currentDate = new Date().toISOString();
 
   return [

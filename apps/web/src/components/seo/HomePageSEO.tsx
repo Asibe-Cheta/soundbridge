@@ -7,29 +7,29 @@ export function HomePageSEO() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'SoundBridge',
-    url: 'https://soundbridge.com',
+    url: 'https://soundbridge.live',
     description: 'Connect with music creators, discover amazing events, and be part of a vibrant music community',
     publisher: {
       '@type': 'Organization',
       name: 'SoundBridge',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://soundbridge.com/images/logos/logo-white-lockup.png',
+        url: 'https://soundbridge.live/images/logos/logo-white-lockup.png',
       },
     },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://soundbridge.com/search?q={search_term_string}',
+        urlTemplate: 'https://soundbridge.live/search?q={search_term_string}',
       },
       'query-input': 'required name=search_term_string',
     },
     mainEntity: {
       '@type': 'Organization',
       name: 'SoundBridge',
-      url: 'https://soundbridge.com',
-      logo: 'https://soundbridge.com/images/logos/logo-white-lockup.png',
+      url: 'https://soundbridge.live',
+      logo: 'https://soundbridge.live/images/logos/logo-white-lockup.png',
       description: 'Connect with music creators, discover amazing events, and be part of a vibrant music community',
       sameAs: [
         'https://twitter.com/soundbridge',
@@ -40,7 +40,7 @@ export function HomePageSEO() {
       contactPoint: {
         '@type': 'ContactPoint',
         contactType: 'customer service',
-        email: 'support@soundbridge.com',
+        email: 'support@soundbridge.live',
       },
       founder: {
         '@type': 'Person',
@@ -81,7 +81,7 @@ export function HomePageSEO() {
                 gtag('js', new Date());
                 gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
                   page_title: 'SoundBridge - Connect Through Music',
-                  page_location: 'https://soundbridge.com',
+                  page_location: 'https://soundbridge.live',
                 });
               `,
             }}

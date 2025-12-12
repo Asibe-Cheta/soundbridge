@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Help Center - SoundBridge Support & Guides',
     description: 'Find answers to common questions and learn how to make the most of SoundBridge.',
-    url: 'https://soundbridge.com/help',
+    url: 'https://soundbridge.live/help',
     type: 'website',
   },
   twitter: {

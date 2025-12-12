@@ -198,7 +198,7 @@ export default function UIDemoPage() {
                     </Avatar>
                     <div>
                       <p className="text-white font-medium">SoundBridge User</p>
-                      <p className="text-white/60 text-sm">user@soundbridge.com</p>
+                      <p className="text-white/60 text-sm">user@soundbridge.live</p>
                     </div>
                   </div>
                   <div className="space-y-2">

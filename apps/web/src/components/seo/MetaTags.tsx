@@ -17,8 +17,8 @@ export function MetaTags({
   url,
   type = 'website',
 }: MetaTagsProps) {
-  const currentUrl = url || 'https://soundbridge.com';
-  const fullImageUrl = image.startsWith('http') ? image : `https://soundbridge.com${image}`;
+  const currentUrl = url || 'https://soundbridge.live';
+  const fullImageUrl = image.startsWith('http') ? image : `https://soundbridge.live${image}`;
 
   return (
     <Head>

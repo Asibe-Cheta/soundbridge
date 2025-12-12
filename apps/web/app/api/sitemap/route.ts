@@ -4,7 +4,7 @@ import { createServiceClient } from '@/src/lib/supabase';
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const baseUrl = 'https://soundbridge.com';
+    const baseUrl = 'https://soundbridge.live';
     
     // Get current date for lastmod
     const currentDate = new Date().toISOString();

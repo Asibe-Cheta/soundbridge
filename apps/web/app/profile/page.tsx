@@ -712,6 +712,18 @@ export default function ProfilePage() {
               </div>
             </button>
             <button
+              onClick={() => setShowFollowingModal(true)}
+              className="stat-card cursor-pointer hover:bg-gray-800/80 transition-all hover:scale-105"
+            >
+              <div className="stat-icon">
+                <Users size={20} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.following.toLocaleString()}</div>
+                <div className="stat-label">Following</div>
+              </div>
+            </button>
+            <button
               onClick={() => setShowTracksModal(true)}
               className="stat-card cursor-pointer hover:bg-gray-800/80 transition-all hover:scale-105"
             >

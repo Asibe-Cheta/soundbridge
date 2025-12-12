@@ -69,14 +69,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://soundbridge.com'),
+  metadataBase: new URL('https://soundbridge.live'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'SoundBridge - Connect Through Music',
     description: 'Join SoundBridge to connect with music creators, discover amazing events, hire professional services, and be part of a vibrant music community.',
-    url: 'https://soundbridge.com',
+    url: 'https://soundbridge.live',
     siteName: 'SoundBridge',
     images: [
       {

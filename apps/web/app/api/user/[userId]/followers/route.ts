@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import type { Database } from '@/src/lib/types';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -20,7 +21,32 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              // Handle cookie setting errors
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set({ name, value: '', ...options });
+            } catch (error) {
+              // Handle cookie removal errors
+            }
+          },
+        },
+      }
+    );
 
     // Get current user (optional - for showing follow status)
     const { data: { user } } = await supabase.auth.getUser();
@@ -38,8 +64,7 @@ export async function GET(
           username,
           display_name,
           avatar_url,
-          bio,
-          is_verified
+          bio
         )
       `)
       .eq('following_id', userId)
@@ -71,7 +96,6 @@ export async function GET(
       display_name: f.follower.display_name,
       avatar_url: f.follower.avatar_url,
       bio: f.follower.bio,
-      is_verified: f.follower.is_verified,
       followed_at: f.created_at,
       is_following_back: user ? followingIds.includes(f.follower.id) : false
     })) || [];

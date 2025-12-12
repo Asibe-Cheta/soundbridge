@@ -77,7 +77,7 @@ export default function PressPage() {
               <div>
                 <Mail size={32} style={{ color: '#DC2626', marginBottom: '1rem' }} />
                 <h3 style={{ color: 'white', marginBottom: '0.5rem' }}>Email</h3>
-                <p style={{ color: 'rgba(255, 255, 255, 0.8)' }}>press@soundbridge.com</p>
+                <p style={{ color: 'rgba(255, 255, 255, 0.8)' }}>press@soundbridge.live</p>
               </div>
               
               <div>

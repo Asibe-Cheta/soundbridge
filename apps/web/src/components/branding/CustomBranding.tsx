@@ -101,7 +101,7 @@ export function CustomBranding({ userId, children, className = '' }: CustomBrand
             <p className="text-gray-400 text-sm">
               Powered by{' '}
               <a 
-                href="https://soundbridge.com" 
+                href="https://soundbridge.live" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-white hover:text-gray-300 transition-colors"

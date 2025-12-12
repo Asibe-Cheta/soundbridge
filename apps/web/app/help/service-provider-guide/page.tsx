@@ -82,14 +82,14 @@ export default function ServiceProviderGuidePage() {
                     "name": "SoundBridge",
                     "logo": {
                       "@type": "ImageObject",
-                      "url": "https://soundbridge.com/images/logos/logo-trans.png"
+                      "url": "https://soundbridge.live/images/logos/logo-trans.png"
                     }
                   },
                   "datePublished": "2025-11-12",
                   "dateModified": "2025-11-12",
                   "mainEntityOfPage": {
                     "@type": "WebPage",
-                    "@id": "https://soundbridge.com/help/service-provider-guide"
+                    "@id": "https://soundbridge.live/help/service-provider-guide"
                   },
                   "keywords": "service provider, soundbridge, music services, sound engineering, music lessons, photography, videography, freelance, music professionals, earn money music"
                 })

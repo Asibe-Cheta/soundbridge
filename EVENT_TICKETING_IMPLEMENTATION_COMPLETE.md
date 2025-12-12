@@ -307,7 +307,7 @@ STRIPE_WEBHOOK_SECRET_TICKETS=whsec_xxxxx  # Get from Stripe Dashboard
 
 **Create Webhook:**
 1. Go to Stripe Dashboard → Webhooks
-2. Add endpoint: `https://soundbridge.com/api/webhooks/stripe-tickets`
+2. Add endpoint: `https://soundbridge.live/api/webhooks/stripe-tickets`
 3. Select events:
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -322,13 +322,13 @@ STRIPE_WEBHOOK_SECRET_TICKETS=whsec_xxxxx  # Get from Stripe Dashboard
 **Option A: SendGrid**
 ```env
 SENDGRID_API_KEY=SG.xxxxx
-EMAIL_FROM=tickets@soundbridge.com
+EMAIL_FROM=tickets@soundbridge.live
 ```
 
 **Option B: Resend**
 ```env
 RESEND_API_KEY=re_xxxxx
-EMAIL_FROM=tickets@soundbridge.com
+EMAIL_FROM=tickets@soundbridge.live
 ```
 
 **Option C: Development** (already works!)

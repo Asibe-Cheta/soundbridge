@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Music Events - Find & Create Events | SoundBridge',
     description: 'Discover music events, concerts, and festivals. Create your own event and sell tickets on SoundBridge.',
-    url: 'https://soundbridge.com/events',
+    url: 'https://soundbridge.live/events',
     type: 'website',
   },
   twitter: {

@@ -192,9 +192,9 @@ const cdnConfig = {
 // Nginx load balancer configuration
 upstream soundbridge_backend {
   least_conn;                    // Least connections algorithm
-  server app1.soundbridge.com:3000 weight=1 max_fails=3 fail_timeout=30s;
-  server app2.soundbridge.com:3000 weight=1 max_fails=3 fail_timeout=30s;
-  server app3.soundbridge.com:3000 weight=1 max_fails=3 fail_timeout=30s;
+  server app1.soundbridge.live:3000 weight=1 max_fails=3 fail_timeout=30s;
+  server app2.soundbridge.live:3000 weight=1 max_fails=3 fail_timeout=30s;
+  server app3.soundbridge.live:3000 weight=1 max_fails=3 fail_timeout=30s;
   keepalive 32;                  // Keep connections alive
 }
 ```
@@ -241,7 +241,7 @@ CREATE PUBLICATION soundbridge_pub FOR TABLE
 
 -- On read replica
 CREATE SUBSCRIPTION soundbridge_sub 
-CONNECTION 'host=primary.db.soundbridge.com port=5432 dbname=soundbridge'
+CONNECTION 'host=primary.db.soundbridge.live port=5432 dbname=soundbridge'
 PUBLICATION soundbridge_pub;
 ```
 

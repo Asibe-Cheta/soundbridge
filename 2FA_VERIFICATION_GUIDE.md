@@ -267,7 +267,7 @@ For easier testing, create a dedicated test user:
 
 ```javascript
 // In browser console
-const testEmail = 'test-2fa@soundbridge.com';
+const testEmail = 'test-2fa@soundbridge.live';
 const testPassword = 'TestPassword123!';
 
 // Sign up

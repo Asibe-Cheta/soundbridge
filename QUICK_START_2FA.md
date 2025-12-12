@@ -116,7 +116,7 @@ Expected response (partial):
 Send this email:
 
 ```
-To: mobile-team@soundbridge.com
+To: mobile-team@soundbridge.live
 Subject: 🎉 2FA Backend is LIVE!
 
 Hi Mobile Team,

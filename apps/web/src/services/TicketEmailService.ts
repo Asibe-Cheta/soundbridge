@@ -30,7 +30,7 @@ export class TicketEmailService {
 
   constructor() {
     this.apiKey = process.env.SENDGRID_API_KEY || process.env.RESEND_API_KEY || '';
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@soundbridge.com';
+    this.fromEmail = process.env.EMAIL_FROM || 'noreply@soundbridge.live';
     this.fromName = 'SoundBridge Events';
   }
 
@@ -342,7 +342,7 @@ export class TicketEmailService {
             </div>
 
             <div style="text-align: center;">
-              <a href="https://soundbridge.com/events/${event.id}" class="button">
+              <a href="https://soundbridge.live/events/${event.id}" class="button">
                 View Event Details
               </a>
             </div>
@@ -354,7 +354,7 @@ export class TicketEmailService {
           
           <div class="footer">
             <p><strong>Need Help?</strong></p>
-            <p>Contact us at support@soundbridge.com</p>
+            <p>Contact us at support@soundbridge.live</p>
             <p style="margin-top: 20px;">© ${new Date().getFullYear()} SoundBridge. All rights reserved.</p>
           </div>
         </div>
@@ -400,14 +400,14 @@ IMPORTANT:
 - Present your ticket code at the venue for entry
 - This email serves as your ticket - keep it safe!
 
-View full event details: https://soundbridge.com/events/${event.id}
+View full event details: https://soundbridge.live/events/${event.id}
 
 See you at the event!
 
 Best regards,
 The SoundBridge Team
 
-Need help? Contact us at support@soundbridge.com
+Need help? Contact us at support@soundbridge.live
     `.trim();
   }
 
@@ -426,7 +426,7 @@ Need help? Contact us at support@soundbridge.com
 VERSION:2.0
 PRODID:-//SoundBridge//Event Ticket//EN
 BEGIN:VEVENT
-UID:${event.id}@soundbridge.com
+UID:${event.id}@soundbridge.live
 DTSTAMP:${formatDate(new Date())}
 DTSTART:${formatDate(eventDate)}
 DTEND:${formatDate(endDate)}
@@ -595,12 +595,12 @@ END:VCALENDAR`;
           <p>We understand this is disappointing, and we apologize for any inconvenience. We hope to welcome you at future SoundBridge events!</p>
           
           <div style="text-align: center;">
-            <a href="https://soundbridge.com/events" class="button">Browse Other Events</a>
+            <a href="https://soundbridge.live/events" class="button">Browse Other Events</a>
           </div>
           
           <div class="footer">
             <p><strong>Need Help?</strong></p>
-            <p>If you have any questions about your refund, please contact our support team at support@soundbridge.com</p>
+            <p>If you have any questions about your refund, please contact our support team at support@soundbridge.live</p>
             <p style="margin-top: 20px;">© ${new Date().getFullYear()} SoundBridge. All rights reserved.</p>
           </div>
         </div>
@@ -656,9 +656,9 @@ No action is required on your part.
 
 We understand this is disappointing, and we apologize for any inconvenience. We hope to welcome you at future SoundBridge events!
 
-Browse other events: https://soundbridge.com/events
+Browse other events: https://soundbridge.live/events
 
-Need help? Contact us at support@soundbridge.com
+Need help? Contact us at support@soundbridge.live
 
 © ${new Date().getFullYear()} SoundBridge. All rights reserved.
     `.trim();

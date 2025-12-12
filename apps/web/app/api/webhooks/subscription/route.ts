@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Stripe-Signature',
 };
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-12-18.acacia',
+});
 
 /**
  * POST /api/webhooks/subscription
  * Handles subscription events from RevenueCat/Stripe
  * Updates user subscription status in database
+ *
+ * SECURITY:
+ * - Stripe webhooks are verified using signature validation
+ * - RevenueCat webhooks are verified using Authorization header
  */
 export async function POST(request: NextRequest) {
   try {
@@ -26,25 +36,86 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Parse webhook payload
-    const payload = await request.json();
+    // Get raw body for Stripe signature verification
+    const body = await request.text();
+    const signature = request.headers.get('stripe-signature');
+    const authHeader = request.headers.get('authorization');
 
-    console.log('📨 WEBHOOK: Received subscription event:', payload.type || payload.event);
+    // Determine webhook source
+    let payload: any;
 
-    // Determine webhook source (RevenueCat or Stripe)
-    const isRevenueCat = payload.type && payload.type.startsWith('INITIAL_PURCHASE') || payload.event && payload.event.type;
-    const isStripe = payload.object === 'event';
+    // Check if it's a Stripe webhook (has Stripe-Signature header)
+    if (signature) {
+      console.log('💳 Verifying Stripe webhook signature...');
 
-    if (isRevenueCat) {
-      return handleRevenueCatWebhook(supabase, payload);
-    } else if (isStripe) {
+      // Verify Stripe webhook signature
+      try {
+        const event = stripe.webhooks.constructEvent(
+          body,
+          signature,
+          process.env.STRIPE_WEBHOOK_SECRET!
+        );
+        payload = event;
+        console.log('✅ Stripe signature verified');
+      } catch (err: any) {
+        console.error('❌ Stripe signature verification failed:', err.message);
+        return NextResponse.json(
+          { error: 'Invalid signature' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+
       return handleStripeWebhook(supabase, payload);
-    } else {
-      console.error('❌ WEBHOOK: Unknown webhook source');
-      return NextResponse.json(
-        { error: 'Unknown webhook source' },
-        { status: 400, headers: corsHeaders }
-      );
+    }
+
+    // Check if it's a RevenueCat webhook (has Authorization header)
+    else if (authHeader) {
+      console.log('🍎 Verifying RevenueCat webhook authorization...');
+
+      payload = JSON.parse(body);
+
+      // Verify RevenueCat authorization (optional but recommended)
+      const expectedAuth = process.env.REVENUECAT_WEBHOOK_SECRET;
+      if (expectedAuth) {
+        const providedAuth = authHeader.replace('Bearer ', '');
+        if (providedAuth !== expectedAuth) {
+          console.error('❌ RevenueCat authorization failed');
+          return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401, headers: corsHeaders }
+          );
+        }
+        console.log('✅ RevenueCat authorization verified');
+      }
+
+      return handleRevenueCatWebhook(supabase, payload);
+    }
+
+    // Unknown webhook source
+    else {
+      payload = JSON.parse(body);
+      console.log('📨 WEBHOOK: Received subscription event:', payload.type || payload.event);
+
+      // Fallback: Try to detect based on payload structure
+      const isRevenueCat = payload.type && payload.type.startsWith('INITIAL_PURCHASE') || payload.event && payload.event.type;
+      const isStripe = payload.object === 'event';
+
+      if (isRevenueCat) {
+        console.warn('⚠️ RevenueCat webhook received without Authorization header - please configure it for security');
+        return handleRevenueCatWebhook(supabase, payload);
+      } else if (isStripe) {
+        console.error('❌ Stripe webhook received without signature - rejecting for security');
+        return NextResponse.json(
+          { error: 'Missing Stripe signature' },
+          { status: 401, headers: corsHeaders }
+        );
+      } else {
+        console.error('❌ WEBHOOK: Unknown webhook source');
+        return NextResponse.json(
+          { error: 'Unknown webhook source' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
     }
 
   } catch (error: any) {

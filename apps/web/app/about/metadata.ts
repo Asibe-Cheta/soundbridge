@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'About SoundBridge - Music Community Platform',
     description: 'Learn about SoundBridge, the world\'s first truly level playing field for musicians and creators.',
-    url: 'https://soundbridge.com/about',
+    url: 'https://soundbridge.live/about',
     type: 'website',
   },
   twitter: {
