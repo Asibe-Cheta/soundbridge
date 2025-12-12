@@ -310,8 +310,10 @@ export default function ProfilePage() {
     try {
       setIsLoadingAnalytics(true);
       console.log('🔍 Loading analytics data for user:', user?.id);
-      const response = await fetch('/api/profile/analytics');
-      
+      const response = await fetch('/api/profile/analytics', {
+        credentials: 'include'
+      });
+
       console.log('📊 Analytics response status:', response.status);
       
       if (response.ok) {
