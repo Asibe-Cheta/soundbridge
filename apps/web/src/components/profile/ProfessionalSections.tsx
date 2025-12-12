@@ -35,6 +35,14 @@ export function ProfessionalSections({ userId, isOwner, onHeadlineUpdate, onConn
   const [isAddingInstrument, setIsAddingInstrument] = useState(false);
   const [newSkill, setNewSkill] = useState('');
   const [newInstrument, setNewInstrument] = useState('');
+  const [newExperience, setNewExperience] = useState({
+    title: '',
+    company: '',
+    description: '',
+    start_date: '',
+    end_date: '',
+    is_current: false
+  });
 
   useEffect(() => {
     if (userId) {
@@ -213,6 +221,51 @@ export function ProfessionalSections({ userId, isOwner, onHeadlineUpdate, onConn
     }
   };
 
+  const handleAddExperience = async () => {
+    if (!newExperience.title.trim()) return;
+
+    try {
+      const response = await fetch('/api/profile/experience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newExperience),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setExperience([...experience, data.data.experience]);
+        setNewExperience({
+          title: '',
+          company: '',
+          description: '',
+          start_date: '',
+          end_date: '',
+          is_current: false
+        });
+        setIsAddingExperience(false);
+      }
+    } catch (err) {
+      console.error('Failed to add experience:', err);
+    }
+  };
+
+  const handleDeleteExperience = async (id: string) => {
+    try {
+      const response = await fetch('/api/profile/experience', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setExperience(experience.filter(exp => exp.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete experience:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -302,10 +355,111 @@ export function ProfessionalSections({ userId, isOwner, onHeadlineUpdate, onConn
           )}
         </div>
         <div className="card-content">
-          {experience.length === 0 ? (
+          {isAddingExperience ? (
+            <div className="space-y-4 bg-gray-800/50 p-4 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Job Title *
+                </label>
+                <input
+                  type="text"
+                  value={newExperience.title}
+                  onChange={(e) => setNewExperience({ ...newExperience, title: e.target.value })}
+                  className="w-full form-input"
+                  placeholder="e.g., Worship Leader"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Company/Organization
+                </label>
+                <input
+                  type="text"
+                  value={newExperience.company}
+                  onChange={(e) => setNewExperience({ ...newExperience, company: e.target.value })}
+                  className="w-full form-input"
+                  placeholder="e.g., City Church"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newExperience.description}
+                  onChange={(e) => setNewExperience({ ...newExperience, description: e.target.value })}
+                  className="w-full form-input"
+                  rows={3}
+                  placeholder="Describe your role and responsibilities..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="month"
+                    value={newExperience.start_date}
+                    onChange={(e) => setNewExperience({ ...newExperience, start_date: e.target.value })}
+                    className="w-full form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="month"
+                    value={newExperience.end_date}
+                    onChange={(e) => setNewExperience({ ...newExperience, end_date: e.target.value })}
+                    className="w-full form-input"
+                    disabled={newExperience.is_current}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_current"
+                  checked={newExperience.is_current}
+                  onChange={(e) => setNewExperience({ ...newExperience, is_current: e.target.checked, end_date: e.target.checked ? '' : newExperience.end_date })}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="is_current" className="text-sm text-gray-300">
+                  I currently work here
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleAddExperience} className="btn-primary">
+                  <Save size={16} />
+                  Save Experience
+                </button>
+                <button
+                  onClick={() => {
+                    setNewExperience({
+                      title: '',
+                      company: '',
+                      description: '',
+                      start_date: '',
+                      end_date: '',
+                      is_current: false
+                    });
+                    setIsAddingExperience(false);
+                  }}
+                  className="btn-secondary"
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {experience.length === 0 && !isAddingExperience ? (
             <p className="text-gray-400 text-sm">No experience entries yet</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 mt-4">
               {experience.map((exp) => (
                 <div key={exp.id} className="border-l-2 border-red-500/50 pl-4">
                   <h4 className="font-semibold text-white">{exp.title}</h4>
@@ -322,10 +476,10 @@ export function ProfessionalSections({ userId, isOwner, onHeadlineUpdate, onConn
                   )}
                   {isOwner && (
                     <div className="flex gap-2 mt-2">
-                      <button className="text-red-400 hover:text-red-300 text-xs">
-                        <Edit2 size={12} /> Edit
-                      </button>
-                      <button className="text-red-400 hover:text-red-300 text-xs">
+                      <button
+                        onClick={() => handleDeleteExperience(exp.id)}
+                        className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1"
+                      >
                         <Trash2 size={12} /> Delete
                       </button>
                     </div>

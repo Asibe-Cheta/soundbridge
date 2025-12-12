@@ -262,6 +262,11 @@ export default function ProfilePage() {
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [showTracksModal, setShowTracksModal] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    profileVisibility: 'public',
+    showEmail: false,
+    allowMessages: true
+  });
 
   useEffect(() => {
     // Only redirect if we're not loading and there's no user
@@ -541,9 +546,15 @@ export default function ProfilePage() {
       const data = await response.json();
       if (data.success) {
         setConnectionCount(data.data?.pagination?.total || 0);
+      } else {
+        // Fallback: if connections API fails, use 0
+        console.warn('Connections API failed');
+        setConnectionCount(0);
       }
     } catch (err) {
       console.error('Failed to fetch connection count:', err);
+      // Set to 0 on error
+      setConnectionCount(0);
     }
   };
 
@@ -1077,27 +1088,96 @@ export default function ProfilePage() {
         <div className="card-header">
           <h3 className="card-title">Privacy Settings</h3>
         </div>
-        <div className="space-y-4">
+        <div className="card-content space-y-4 p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium text-white">Profile Visibility</div>
               <div className="text-sm text-gray-400">Make your profile public or private</div>
             </div>
-            <button className="btn-toggle">Public</button>
+            <button
+              onClick={() =>
+                setPrivacySettings({
+                  ...privacySettings,
+                  profileVisibility: privacySettings.profileVisibility === 'public' ? 'private' : 'public'
+                })
+              }
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                privacySettings.profileVisibility === 'public'
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              {privacySettings.profileVisibility === 'public' ? 'Public' : 'Private'}
+            </button>
           </div>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium text-white">Show Email</div>
               <div className="text-sm text-gray-400">Display your email on your profile</div>
             </div>
-            <button className="btn-toggle">Private</button>
+            <button
+              onClick={() =>
+                setPrivacySettings({
+                  ...privacySettings,
+                  showEmail: !privacySettings.showEmail
+                })
+              }
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                privacySettings.showEmail
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              {privacySettings.showEmail ? 'Visible' : 'Hidden'}
+            </button>
           </div>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium text-white">Allow Messages</div>
               <div className="text-sm text-gray-400">Let other users send you messages</div>
             </div>
-            <button className="btn-toggle">Public</button>
+            <button
+              onClick={() =>
+                setPrivacySettings({
+                  ...privacySettings,
+                  allowMessages: !privacySettings.allowMessages
+                })
+              }
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                privacySettings.allowMessages
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              {privacySettings.allowMessages ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+          <div className="pt-4 border-t border-gray-700">
+            <button
+              onClick={async () => {
+                // Save privacy settings to API
+                try {
+                  const response = await fetch('/api/profile/privacy', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(privacySettings),
+                  });
+                  if (response.ok) {
+                    alert('Privacy settings saved successfully!');
+                  } else {
+                    alert('Failed to save privacy settings');
+                  }
+                } catch (error) {
+                  console.error('Error saving privacy settings:', error);
+                  alert('Failed to save privacy settings');
+                }
+              }}
+              className="btn-primary w-full"
+            >
+              <Save size={16} />
+              Save Privacy Settings
+            </button>
           </div>
         </div>
       </div>
