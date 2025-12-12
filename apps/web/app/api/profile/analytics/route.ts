@@ -114,12 +114,11 @@ export async function GET() {
         .order('created_at', { ascending: false })
         .limit(5) as any,
 
-      // Get monthly plays (last 30 days)
+      // Get monthly plays (all tracks - we use total plays as monthly since we don't track play history yet)
       supabase
         .from('audio_tracks')
         .select('play_count')
-        .eq('creator_id', user.id as any)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() as any) as any,
+        .eq('creator_id', user.id as any) as any,
 
       // Get engagement rate (likes / plays)
       supabase
