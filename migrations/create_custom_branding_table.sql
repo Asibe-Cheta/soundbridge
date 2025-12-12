@@ -28,33 +28,40 @@ CREATE INDEX IF NOT EXISTS idx_custom_branding_user_id ON custom_branding(user_i
 -- Enable RLS
 ALTER TABLE custom_branding ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own branding" ON custom_branding;
+DROP POLICY IF EXISTS "Users can insert own branding" ON custom_branding;
+DROP POLICY IF EXISTS "Users can update own branding" ON custom_branding;
+DROP POLICY IF EXISTS "Users can delete own branding" ON custom_branding;
+DROP POLICY IF EXISTS "Public can view branding" ON custom_branding;
+
 -- RLS Policies
 -- Allow users to view their own branding
-CREATE POLICY IF NOT EXISTS "Users can view own branding"
+CREATE POLICY "Users can view own branding"
 ON custom_branding FOR SELECT
 TO authenticated
 USING (user_id = auth.uid());
 
 -- Allow users to insert their own branding
-CREATE POLICY IF NOT EXISTS "Users can insert own branding"
+CREATE POLICY "Users can insert own branding"
 ON custom_branding FOR INSERT
 TO authenticated
 WITH CHECK (user_id = auth.uid());
 
 -- Allow users to update their own branding
-CREATE POLICY IF NOT EXISTS "Users can update own branding"
+CREATE POLICY "Users can update own branding"
 ON custom_branding FOR UPDATE
 TO authenticated
 USING (user_id = auth.uid());
 
 -- Allow users to delete their own branding
-CREATE POLICY IF NOT EXISTS "Users can delete own branding"
+CREATE POLICY "Users can delete own branding"
 ON custom_branding FOR DELETE
 TO authenticated
 USING (user_id = auth.uid());
 
 -- Allow public read access (so others can see custom branding on profiles)
-CREATE POLICY IF NOT EXISTS "Public can view branding"
+CREATE POLICY "Public can view branding"
 ON custom_branding FOR SELECT
 TO public
 USING (true);
