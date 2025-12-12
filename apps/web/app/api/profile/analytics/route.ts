@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClientWithCookies } from '@/src/lib/supabase-api';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import type { Database } from '@/src/lib/types';
 
 export async function GET() {
   try {
     console.log('📊 Fetching user analytics...');
-    
+
     // Create a route handler client that can access cookies
-    const supabase = await createApiClientWithCookies();
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore
+    });
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();

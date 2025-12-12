@@ -26,7 +26,7 @@ export interface CustomBranding {
   // Metadata
   created_at?: string;
   updated_at?: string;
-  user_tier?: 'free' | 'pro' | 'enterprise';
+  user_tier?: 'free' | 'premium' | 'unlimited';
 }
 
 export interface BrandingUpdateRequest {
@@ -83,7 +83,7 @@ export const BRANDING_RESTRICTIONS = {
     canCustomizeLayout: false,
     maxLogoSize: 0, // No custom logo allowed
   },
-  pro: {
+  premium: {
     canHidePoweredBy: true,
     canHideWatermark: true,
     canCustomizeLogo: true,
@@ -91,7 +91,7 @@ export const BRANDING_RESTRICTIONS = {
     canCustomizeLayout: true,
     maxLogoSize: 2 * 1024 * 1024, // 2MB
   },
-  enterprise: {
+  unlimited: {
     canHidePoweredBy: true,
     canHideWatermark: true,
     canCustomizeLogo: true,

@@ -14,7 +14,7 @@ interface BrandingSettingsProps {
 
 export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
   const [branding, setBranding] = useState<CustomBranding | null>(null);
-  const [userTier, setUserTier] = useState<'free' | 'pro'>('free');
+  const [userTier, setUserTier] = useState<'free' | 'premium' | 'unlimited'>('free');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,14 +128,14 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
                 Free Tier
               </span>
             )}
-            {userTier === 'pro' && (
+            {userTier === 'premium' && (
               <span className="px-2 py-1 bg-purple-600 text-xs text-white rounded">
-                Pro Tier
+                Premium Tier
               </span>
             )}
-            {userTier === 'enterprise' && (
+            {userTier === 'unlimited' && (
               <span className="px-2 py-1 bg-yellow-600 text-xs text-white rounded">
-                Enterprise
+                Unlimited
               </span>
             )}
           </div>
@@ -219,7 +219,7 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
               {!restrictions.canCustomizeColors && (
                 <div className="p-4 bg-blue-900/30 border border-blue-500 rounded-lg">
                   <p className="text-blue-300 text-sm">
-                    Custom colors are available with Pro or Enterprise plans.
+                    Custom colors are available with Premium or Unlimited plans.
                   </p>
                 </div>
               )}
@@ -276,7 +276,7 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
                 {!restrictions.canCustomizeLogo && (
                   <div className="mt-4 p-4 bg-blue-900/30 border border-blue-500 rounded-lg">
                     <p className="text-blue-300 text-sm">
-                      Custom logos are available with Pro or Enterprise plans.
+                      Custom logos are available with Premium or Unlimited plans.
                     </p>
                   </div>
                 )}
@@ -311,7 +311,7 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
                 {!restrictions.canCustomizeLayout && (
                   <div className="mt-4 p-4 bg-blue-900/30 border border-blue-500 rounded-lg">
                     <p className="text-blue-300 text-sm">
-                      Custom layouts are available with Pro or Enterprise plans.
+                      Custom layouts are available with Premium or Unlimited plans.
                     </p>
                   </div>
                 )}
@@ -392,7 +392,7 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
                 {(!restrictions.canHidePoweredBy || !restrictions.canHideWatermark) && (
                   <div className="mt-4 p-4 bg-blue-900/30 border border-blue-500 rounded-lg">
                     <p className="text-blue-300 text-sm">
-                      Hide SoundBridge branding with Pro or Enterprise plans.
+                      Hide SoundBridge branding with Premium or Unlimited plans.
                     </p>
                   </div>
                 )}
@@ -404,9 +404,9 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-700">
           <p className="text-gray-400 text-sm">
-            {userTier === 'free' && 'Upgrade to Pro for full customization options'}
-            {userTier === 'pro' && 'You have access to all branding features'}
-            {userTier === 'enterprise' && 'You have access to all branding features'}
+            {userTier === 'free' && 'Upgrade to Premium for full customization options'}
+            {userTier === 'premium' && 'You have access to all branding features'}
+            {userTier === 'unlimited' && 'You have access to all branding features'}
           </p>
           <button
             onClick={onClose}
