@@ -8,10 +8,7 @@ export async function GET() {
     console.log('📊 Fetching user analytics...');
 
     // Create a route handler client that can access cookies
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient<Database>({
-      cookies: () => cookieStore
-    });
+    const supabase = createRouteHandlerClient<Database>({ cookies });
 
     // Get user from request cookies
     const { data: { user }, error: authError } = await supabase.auth.getUser();

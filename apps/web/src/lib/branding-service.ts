@@ -208,19 +208,22 @@ export class BrandingService {
   /**
    * Get user's subscription tier for branding restrictions
    */
-  async getUserTier(userId: string): Promise<'free' | 'pro' | 'enterprise'> {
+  async getUserTier(userId: string): Promise<'free' | 'premium' | 'unlimited'> {
     try {
       const { data, error } = await this.supabase
-        .from('user_upload_stats')
-        .select('current_tier')
-        .eq('user_id', userId)
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', userId)
         .single();
 
       if (error || !data) {
+        console.error('Error getting user tier:', error);
         return 'free';
       }
 
-      return data.current_tier as 'free' | 'pro' | 'enterprise';
+      // Map tier to correct values
+      const tier = data.subscription_tier || 'free';
+      return tier as 'free' | 'premium' | 'unlimited';
     } catch (error) {
       console.error('Error getting user tier:', error);
       return 'free';
