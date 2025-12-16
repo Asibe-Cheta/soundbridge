@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 
-// CORS headers for mobile app
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -15,8 +14,8 @@ export async function OPTIONS() {
 }
 
 /**
- * POST /api/playlists
- * Create a new playlist
+ * POST /api/albums
+ * Create a new album
  */
 export async function POST(request: NextRequest) {
   try {
@@ -52,74 +51,72 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, is_public, cover_image_url } = body;
+    const { title, description, cover_image_url, release_date, status, genre, is_public } = body;
 
-    // Validate required fields
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    // Get user's subscription tier
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+
+    const tier = profile?.subscription_tier || 'free';
+
+    // Check tier limits
+    if (tier === 'free') {
       return NextResponse.json(
-        { error: 'Playlist name is required' },
-        { status: 400, headers: corsHeaders }
+        { error: 'Albums feature is not available on Free tier. Upgrade to Premium or Unlimited.' },
+        { status: 403, headers: corsHeaders }
       );
     }
 
-    // Validate name length (max 255 characters)
-    if (name.trim().length > 255) {
-      return NextResponse.json(
-        { error: 'Playlist name must be 255 characters or less' },
-        { status: 400, headers: corsHeaders }
-      );
+    if (tier === 'premium') {
+      // Check if user already has 2 published albums
+      const { count } = await supabase
+        .from('albums')
+        .select('*', { count: 'exact', head: true })
+        .eq('creator_id', user.id)
+        .eq('status', 'published');
+
+      if (count && count >= 2) {
+        return NextResponse.json(
+          { error: 'Premium users can have maximum 2 published albums. Upgrade to Unlimited for more.' },
+          { status: 403, headers: corsHeaders }
+        );
+      }
     }
 
-    // Validate description length (max 5000 characters)
-    if (description && description.length > 5000) {
-      return NextResponse.json(
-        { error: 'Description must be 5000 characters or less' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Default is_public to true if not provided
-    const isPublic = is_public !== undefined ? Boolean(is_public) : true;
-
-    // Create playlist
-    const { data: playlist, error: createError } = await supabase
-      .from('playlists')
-      .insert([{
+    // Create album
+    const { data: album, error: createError } = await supabase
+      .from('albums')
+      .insert({
         creator_id: user.id,
-        name: name.trim(),
-        description: description?.trim() || null,
-        is_public: isPublic,
-        cover_image_url: cover_image_url || null,
-        tracks_count: 0,
-        total_duration: 0,
-        followers_count: 0
-      }])
-      .select(`
-        *,
-        creator:profiles!playlists_creator_id_fkey(
-          id,
-          username,
-          display_name,
-          avatar_url
-        )
-      `)
+        title,
+        description,
+        cover_image_url,
+        release_date,
+        status: status || 'draft',
+        genre,
+        is_public: is_public !== undefined ? is_public : true,
+      })
+      .select()
       .single();
 
     if (createError) {
-      console.error('Playlist creation error:', createError);
+      console.error('Error creating album:', createError);
       return NextResponse.json(
-        { error: 'Failed to create playlist', details: createError.message },
+        { error: 'Failed to create album', details: createError.message },
         { status: 500, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
-      { data: playlist },
+      { data: album },
       { headers: corsHeaders }
     );
 
   } catch (error: any) {
-    console.error('Error in POST /api/playlists:', error);
+    console.error('Error in POST /api/albums:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500, headers: corsHeaders }
@@ -128,8 +125,8 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/playlists?sort=recent&limit=20
- * Get public playlists (discovery)
+ * GET /api/albums?sort=recent&limit=20
+ * Get public albums (discovery)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -158,54 +155,59 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const sort = searchParams.get('sort') || 'recent';
+    const genre = searchParams.get('genre');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     let query = supabase
-      .from('playlists')
+      .from('albums')
       .select(`
         *,
-        creator:profiles!playlists_creator_id_fkey(
+        creator:profiles!albums_creator_id_fkey(
           id,
           username,
           display_name,
           avatar_url
         )
       `, { count: 'exact' })
-      .eq('is_public', true);
+      .eq('is_public', true)
+      .eq('status', 'published');
+
+    if (genre) {
+      query = query.eq('genre', genre);
+    }
 
     // Apply sorting
     if (sort === 'popular') {
-      query = query.order('followers_count', { ascending: false });
+      query = query.order('total_plays', { ascending: false });
     } else if (sort === 'trending') {
-      query = query.order('tracks_count', { ascending: false });
+      query = query.order('total_likes', { ascending: false });
     } else {
-      query = query.order('created_at', { ascending: false });
+      query = query.order('published_at', { ascending: false });
     }
 
     query = query.range(offset, offset + limit - 1);
 
-    const { data: playlists, error, count } = await query;
+    const { data: albums, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching playlists:', error);
+      console.error('Error fetching albums:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch playlists', details: error.message },
+        { error: 'Failed to fetch albums', details: error.message },
         { status: 500, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
-      { data: playlists || [], count: count || 0 },
+      { data: albums || [], count: count || 0 },
       { headers: corsHeaders }
     );
 
   } catch (error: any) {
-    console.error('Error in GET /api/playlists:', error);
+    console.error('Error in GET /api/albums:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500, headers: corsHeaders }
     );
   }
 }
-
