@@ -487,14 +487,27 @@ export default function EventsPage() {
     }
 
     try {
-      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=5`);
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for suggestions
+
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=5`, {
+        signal: controller.signal,
+        credentials: 'include'
+      });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
         const suggestions = data.data?.events?.map((event: { title: string }) => event.title) || [];
         setSearchSuggestions(suggestions.slice(0, 5));
         setShowSearchSuggestions(true);
+      } else {
+        setSearchSuggestions([]);
+        setShowSearchSuggestions(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching search suggestions:', error);
       setSearchSuggestions([]);
       setShowSearchSuggestions(false);

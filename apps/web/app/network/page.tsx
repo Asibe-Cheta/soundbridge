@@ -123,15 +123,32 @@ export default function NetworkPage() {
   const fetchConnectionRequests = async () => {
     try {
       setLoadingRequests(true);
+
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch('/api/connections/requests?type=received', {
         credentials: 'include',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.success) {
         setRequests(data.data?.requests || []);
+      } else {
+        console.warn('No connection requests data');
+        setRequests([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch requests:', err);
+      setRequests([]); // Set empty array on error
     } finally {
       setLoadingRequests(false);
     }
@@ -140,15 +157,31 @@ export default function NetworkPage() {
   const fetchSuggestions = async () => {
     try {
       setLoadingSuggestions(true);
+
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch('/api/connections/suggestions?limit=20', {
         credentials: 'include',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.success) {
         setSuggestions(data.data?.suggestions || []);
+      } else {
+        setSuggestions([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch suggestions:', err);
+      setSuggestions([]);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -157,15 +190,31 @@ export default function NetworkPage() {
   const fetchOpportunities = async () => {
     try {
       setLoadingOpportunities(true);
+
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch('/api/posts/opportunities?page=1&limit=15', {
         credentials: 'include',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.success) {
         setOpportunities(data.data?.opportunities || []);
+      } else {
+        setOpportunities([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch opportunities:', err);
+      setOpportunities([]); // Set empty array on error
     } finally {
       setLoadingOpportunities(false);
     }
@@ -174,19 +223,38 @@ export default function NetworkPage() {
   const fetchConnections = async () => {
     try {
       setLoadingConnections(true);
+
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const url = searchQuery
         ? `/api/connections?page=1&limit=50&search=${encodeURIComponent(searchQuery)}`
         : '/api/connections?page=1&limit=50';
+
       const response = await fetch(url, {
         credentials: 'include',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.success) {
         setConnections(data.data?.connections || []);
         setConnectionCount(data.data?.pagination?.total || 0);
+      } else {
+        setConnections([]);
+        setConnectionCount(0);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch connections:', err);
+      setConnections([]); // Set empty array on error
+      setConnectionCount(0);
     } finally {
       setLoadingConnections(false);
     }

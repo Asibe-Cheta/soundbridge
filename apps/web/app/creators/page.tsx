@@ -292,19 +292,26 @@ export default function CreatorsPage() {
       }
       setError(null);
 
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       let response;
-      
+
       // Check if we're using the hot creators algorithm
       if (sortBy === 'hot') {
         // Use the hot creators API endpoint
         const params = new URLSearchParams({
           limit: pagination.limit.toString()
         });
-        response = await fetch(`/api/creators/hot?${params.toString()}`);
+        response = await fetch(`/api/creators/hot?${params.toString()}`, {
+          signal: controller.signal,
+          credentials: 'include'
+        });
       } else {
         // Use the regular creators API
         const params = new URLSearchParams();
-        
+
         if (searchQuery.trim()) {
           params.append('search', searchQuery.trim());
         }
@@ -317,20 +324,25 @@ export default function CreatorsPage() {
         params.append('sortBy', sortBy);
         params.append('limit', pagination.limit.toString());
         params.append('offset', loadMore ? pagination.offset.toString() : '0');
-        
+
         if (user?.id) {
           params.append('currentUserId', user.id);
         }
 
-        response = await fetch(`/api/creators?${params.toString()}`);
+        response = await fetch(`/api/creators?${params.toString()}`, {
+          signal: controller.signal,
+          credentials: 'include'
+        });
       }
-      
+
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         throw new Error(`Failed to fetch creators: ${response.status}`);
       }
 
       const result = await response.json();
-      
+
       if (loadMore) {
         // Append new creators to existing list
         setCreators(prev => [...prev, ...(result.data || [])]);
@@ -338,16 +350,16 @@ export default function CreatorsPage() {
         // Replace creators list
         setCreators(result.data || []);
       }
-      
+
       setPagination(result.pagination || { total: 0, limit: 20, offset: 0, hasMore: false });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching creators:', err);
-      setError('Failed to load creators');
+      setError(err.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Failed to load creators');
       if (!loadMore) {
-        setCreators([]);
+        setCreators([]); // Set empty array on error
       }
     } finally {
-      setLoading(false);
+      setLoading(false); // ALWAYS stop loading
     }
   }, [searchQuery, selectedGenre, selectedLocation, sortBy, user?.id, pagination.limit, pagination.offset]);
 
@@ -366,14 +378,27 @@ export default function CreatorsPage() {
     }
 
     try {
-      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=5`);
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for suggestions
+
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(query)}&limit=5`, {
+        signal: controller.signal,
+        credentials: 'include'
+      });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
         const suggestions = data.data?.creators?.map((creator: { display_name?: string; username: string }) => creator.display_name || creator.username) || [];
         setSearchSuggestions(suggestions.slice(0, 5));
         setShowSearchSuggestions(true);
+      } else {
+        setSearchSuggestions([]);
+        setShowSearchSuggestions(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching search suggestions:', error);
       setSearchSuggestions([]);
       setShowSearchSuggestions(false);
@@ -404,13 +429,17 @@ export default function CreatorsPage() {
   const handleFollow = async (creatorId: string) => {
     const creator = creators.find(c => c.id === creatorId);
     if (!creator || !user) return;
-    
+
     // Prevent following yourself
     if (creator.id === user.id) {
       return;
     }
 
     try {
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const isFollowing = creator.isFollowing;
       const endpoint = isFollowing ? `/api/follows/${creatorId}` : '/api/follows';
       const method = isFollowing ? 'DELETE' : 'POST';
@@ -419,8 +448,12 @@ export default function CreatorsPage() {
       const response = await fetch(endpoint, {
         method,
         headers: body ? { 'Content-Type': 'application/json' } : {},
-        body
+        body,
+        signal: controller.signal,
+        credentials: 'include'
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
@@ -433,13 +466,13 @@ export default function CreatorsPage() {
           ? {
               ...c,
               isFollowing: !isFollowing,
-              followers_count: isFollowing 
+              followers_count: isFollowing
                 ? Math.max(0, c.followers_count - 1)
                 : c.followers_count + 1
             }
           : c
       ));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating follow status:', error);
       // Silently fail to avoid UI disruption
     }
