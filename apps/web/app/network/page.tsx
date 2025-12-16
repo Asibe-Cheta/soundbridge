@@ -6,12 +6,13 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { PostCard } from '@/src/components/posts/PostCard';
 import { NetworkSidebar } from '@/src/components/network/NetworkSidebar';
 import { Post } from '@/src/lib/types/post';
-import { 
-  Users2, UserPlus, Loader2, AlertCircle, Check, X, Search, 
+import {
+  Users2, UserPlus, Loader2, AlertCircle, Check, X, Search,
   MapPin, Briefcase, ArrowRight, User
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { dataService } from '@/src/lib/data-service';
 
 interface ConnectionRequest {
   id: string;
@@ -155,29 +156,38 @@ export default function NetworkPage() {
   };
 
   const fetchSuggestions = async () => {
+    if (!user?.id) return;
+
     try {
       setLoadingSuggestions(true);
 
-      // Add timeout protection
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      console.log('🚀 Fetching connection suggestions using direct Supabase query...');
+      const startTime = Date.now();
 
-      const response = await fetch('/api/connections/suggestions?limit=20', {
-        credentials: 'include',
-        signal: controller.signal,
-      });
+      // Use direct Supabase query (NO API route, NO timeout issues)
+      const { data: suggestionsData, error } = await dataService.getConnectionSuggestions(user.id, 20);
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setSuggestions(data.data?.suggestions || []);
-      } else {
+      if (error) {
+        console.error('❌ Error fetching suggestions:', error);
         setSuggestions([]);
+      } else {
+        // Map the data to match the UI format
+        const formattedSuggestions = suggestionsData.map(profile => ({
+          id: profile.id,
+          user: {
+            id: profile.id,
+            name: profile.display_name,
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+            role: 'creator',
+            location: profile.location
+          },
+          reason: profile.location ? `Based on location: ${profile.location}` : 'Suggested for you',
+          mutual_connections: 0
+        }));
+
+        setSuggestions(formattedSuggestions);
+        console.log(`✅ Connection suggestions loaded in ${Date.now() - startTime}ms:`, formattedSuggestions.length);
       }
     } catch (err: any) {
       console.error('Failed to fetch suggestions:', err);

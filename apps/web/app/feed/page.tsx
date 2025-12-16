@@ -10,6 +10,7 @@ import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
 import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
+import { dataService } from '@/src/lib/data-service';
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
@@ -68,62 +69,27 @@ export default function FeedPage() {
       }
       setError(null);
 
-      console.log('🔄 Fetching feed posts...', { pageNum, append, user: user?.id });
+      console.log('🚀 Fetching feed posts using direct Supabase query (like Discover)...', { pageNum, append, user: user?.id });
+      const startTime = Date.now();
 
-      // Add timeout to fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      // Use direct Supabase query (NO API route, NO timeout issues)
+      const { data: newPosts, error: feedError, hasMore: hasMorePosts } = await dataService.getFeedPosts(pageNum, 15);
 
-      try {
-        const response = await fetch(`/api/posts/feed?page=${pageNum}&limit=15`, {
-          credentials: 'include',
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        console.log('📡 Feed API response status:', response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Feed API error response:', errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to load feed'}`);
-        }
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType?.includes('application/json')) {
-          const text = await response.text();
-          console.error('❌ Invalid response type:', contentType, text);
-          throw new Error('Invalid response format from server');
-        }
-
-        const data = await response.json();
-        console.log('📦 Feed API response data:', { success: data.success, postCount: data.data?.posts?.length });
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to load feed');
-        }
-
-        const newPosts = data.data?.posts || [];
-        const pagination = data.data?.pagination || {};
-
-        console.log('✅ Feed posts fetched:', { count: newPosts.length, hasMore: pagination.has_more });
-
-        if (append) {
-          setPosts(prev => [...prev, ...newPosts]);
-        } else {
-          setPosts(newPosts);
-        }
-
-        setHasMore(pagination.has_more || false);
-        setPage(pageNum);
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError') {
-          throw new Error('Request timed out. Please try again.');
-        }
-        throw fetchError;
+      if (feedError) {
+        console.error('❌ Error fetching feed:', feedError);
+        throw new Error('Failed to load feed posts');
       }
+
+      console.log(`✅ Feed posts loaded in ${Date.now() - startTime}ms:`, { count: newPosts.length, hasMore: hasMorePosts });
+
+      if (append) {
+        setPosts(prev => [...prev, ...newPosts]);
+      } else {
+        setPosts(newPosts);
+      }
+
+      setHasMore(hasMorePosts);
+      setPage(pageNum);
     } catch (err: any) {
       console.error('❌ Error fetching feed:', err);
       setError(err.message || 'Failed to load feed');
