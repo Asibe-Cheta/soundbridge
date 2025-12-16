@@ -286,10 +286,8 @@ export default function ProfilePage() {
       } else {
         setIsViewingOtherUser(false);
         setViewingUserId(null);
-        // Load profile data from the API
-        loadProfileData();
-        // Load analytics data
-        loadAnalyticsData();
+        // Load profile data and analytics together (single query)
+        loadProfileAndAnalytics();
         // Load user posts for Activity section
         loadUserPosts();
       }
@@ -307,12 +305,13 @@ export default function ProfilePage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const loadAnalyticsData = async () => {
+  // Consolidated function to load both profile data and analytics in one query
+  const loadProfileAndAnalytics = async () => {
     if (!user?.id) return;
 
     try {
       setIsLoadingAnalytics(true);
-      console.log('🚀 Loading analytics using mobile approach (direct Supabase + client-side calc)...');
+      console.log('🚀 Loading profile + analytics using mobile approach (direct Supabase + client-side calc)...');
       const startTime = Date.now();
 
       // Use mobile team's approach: direct Supabase queries + client-side calculation
@@ -320,95 +319,71 @@ export default function ProfilePage() {
 
       if (error) {
         console.error('❌ Error loading profile stats:', error);
+        // Fallback to user metadata for profile data
+        setProfileData(prev => ({
+          ...prev,
+          displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+          username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
+          email: user?.email || '',
+          avatarUrl: user?.user_metadata?.avatar_url || ''
+        }));
         return;
       }
 
       if (data) {
+        // Set profile data
+        if (data.profile) {
+          setProfileData(prev => ({
+            ...prev,
+            displayName: data.profile.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+            username: data.profile.username || user?.email?.split('@')[0] || 'username',
+            bio: data.profile.bio || 'Tell your story...',
+            location: data.profile.location || 'Location not set',
+            website: data.profile.website || '',
+            phone: data.profile.phone || '',
+            genre: data.profile.genres?.[0] || '',
+            experience: data.profile.experience_level || 'Beginner',
+            avatarUrl: data.profile.avatar_url || ''
+          }));
+
+          // Set professional headline if available
+          if (data.profile.professional_headline) {
+            setProfessionalHeadline(data.profile.professional_headline);
+          }
+        }
+
         // Set stats from calculated data
         setStats(data.stats);
         setRecentTracks(data.tracks);
         setRecentEvents([]); // Events not included in mobile approach
         setAnalyticsData(data.analyticsData);
 
-        console.log(`✅ Analytics loaded in ${Date.now() - startTime}ms using mobile approach`);
+        // Set connection count from stats
+        setConnectionCount(data.stats.following || 0);
+
+        console.log(`✅ Profile + Analytics loaded in ${Date.now() - startTime}ms using mobile approach`);
+        console.log('📊 Profile:', data.profile?.display_name);
         console.log('📊 Stats:', data.stats);
         console.log('📊 Recent tracks:', data.tracks.length);
       }
     } catch (error) {
-      console.error('❌ Error loading analytics data:', error);
+      console.error('❌ Error loading profile and analytics:', error);
+      // Fallback to user metadata
+      setProfileData(prev => ({
+        ...prev,
+        displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+        username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
+        email: user?.email || '',
+        avatarUrl: user?.user_metadata?.avatar_url || ''
+      }));
     } finally {
       setIsLoadingAnalytics(false);
     }
   };
 
-  const loadProfileData = async () => {
-    try {
-      console.log('🔍 Loading profile data for user:', user?.id);
-
-      // First try to get profile from the profiles table
-      const response = await fetch('/api/profile', {
-        method: 'GET',
-      });
-
-      console.log('📊 Profile response status:', response.status);
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('📊 Profile result:', result);
-
-        if (result.success && result.profile) {
-          console.log('✅ Profile data received:', result.profile);
-
-          // Update profile data with actual values from database
-          setProfileData(prev => ({
-            ...prev,
-            displayName: result.profile.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
-            username: result.profile.username || user?.email?.split('@')[0] || 'username',
-            bio: result.profile.bio || 'Tell your story...',
-            location: result.profile.location || 'Location not set',
-            website: result.profile.website || '',
-            phone: result.profile.phone || '',
-            genre: result.profile.genres?.[0] || '',
-            experience: result.profile.experience_level || 'Beginner',
-            avatarUrl: result.profile.avatar_url || ''
-          }));
-
-          // Fetch professional headline and connection count
-          await Promise.all([
-            fetchProfessionalHeadline(),
-            fetchConnectionCount(),
-          ]);
-        } else {
-          // Profile doesn't exist yet, use user metadata
-          console.log('⚠️ Profile not found, using user metadata');
-          setProfileData(prev => ({
-            ...prev,
-            displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
-            username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
-            email: user?.email || '',
-            avatarUrl: user?.user_metadata?.avatar_url || ''
-          }));
-        }
-      } else {
-        console.error('❌ Profile API returned error status:', response.status);
-        // Fallback to user metadata
-        setProfileData(prev => ({
-          ...prev,
-          displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
-          username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
-          email: user?.email || ''
-        }));
-      }
-    } catch (error) {
-      console.error('❌ Error loading profile data:', error);
-      // Fallback to user metadata on error
-      setProfileData(prev => ({
-        ...prev,
-        displayName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
-        username: user?.user_metadata?.username || user?.email?.split('@')[0] || 'username',
-        email: user?.email || ''
-      }));
-    }
+  const loadAnalyticsData = async () => {
+    // Just call the consolidated function
+    await loadProfileAndAnalytics();
   };
 
   const handleSaveProfile = async () => {
@@ -441,10 +416,8 @@ export default function ProfilePage() {
           // Show success message
           alert('Profile updated successfully!');
 
-          // Reload profile data to ensure we have the latest
-          await loadProfileData();
-          // Reload analytics data to reflect any changes
-          await loadAnalyticsData();
+          // Reload profile data and analytics to ensure we have the latest
+          await loadProfileAndAnalytics();
         } else {
           throw new Error(result.error || 'Failed to save profile');
         }

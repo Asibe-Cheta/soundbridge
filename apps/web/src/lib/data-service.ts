@@ -611,7 +611,7 @@ class DataService {
         // 2. User's tracks (with play counts and likes)
         this.supabase
           .from('audio_tracks')
-          .select('id, title, play_count, likes_count, created_at, cover_art_url, duration, file_url, artist')
+          .select('id, title, play_count, likes_count, created_at, cover_art_url, duration, file_url')
           .eq('creator_id', userId)
           .eq('is_public', true)
           .order('created_at', { ascending: false })
@@ -653,7 +653,7 @@ class DataService {
         uploadedAt: new Date(track.created_at).toLocaleDateString(),
         coverArt: track.cover_art_url,
         fileUrl: track.file_url,
-        artist: track.artist
+        artist: profile?.display_name || 'Unknown Artist' // Use profile display_name as artist
       }));
 
       const stats = {
