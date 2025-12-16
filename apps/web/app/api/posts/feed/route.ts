@@ -59,44 +59,53 @@ export async function GET(request: NextRequest) {
     const postType = searchParams.get('type');
     const offset = (page - 1) * limit;
 
-    // ULTRA-FAST: Single query with one join, NO count (avoid full table scan)
+    // EMERGENCY OPTIMIZATION: Minimal query without JOIN
+    // Reduce limit to speed up query
+    const safeLimit = Math.min(limit, 20); // Cap at 20 for performance
+
     let query = supabase
       .from('posts')
-      .select(`
-        id,
-        user_id,
-        content,
-        visibility,
-        post_type,
-        media_urls,
-        likes_count,
-        comments_count,
-        shares_count,
-        created_at,
-        updated_at,
-        author:profiles!posts_user_id_fkey(
-          id,
-          username,
-          display_name,
-          avatar_url,
-          role,
-          location
-        )
-      `)
+      .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at')
       .is('deleted_at', null)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .range(offset, offset + safeLimit - 1);
 
     // Filter by post type if provided
     if (postType) {
       query = query.eq('post_type', postType);
     }
 
-    console.log('🔍 Executing optimized query...');
+    console.log('🔍 Executing minimal query (no JOIN)...');
 
-    // Execute with timeout using helper
-    const { data: posts, error: postsError } = await withQueryTimeout(query, 8000) as any;
+    // Execute with reduced timeout
+    const { data: posts, error: postsError } = await withQueryTimeout(query, 5000) as any;
+
+    // If we got posts, fetch authors separately (faster than JOIN)
+    if (posts && posts.length > 0) {
+      const userIds = [...new Set(posts.map((p: any) => p.user_id))];
+
+      try {
+        const { data: authors } = await withQueryTimeout(
+          supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, role, location')
+            .in('id', userIds),
+          3000
+        ) as any;
+
+        // Map authors to posts
+        if (authors) {
+          const authorsMap = new Map(authors.map((a: any) => [a.id, a]));
+          posts.forEach((post: any) => {
+            post.author = authorsMap.get(post.user_id) || null;
+          });
+        }
+      } catch (authorError) {
+        console.warn('⚠️ Failed to fetch authors, continuing without:', authorError);
+        // Continue without authors - posts will have null author
+      }
+    }
 
     logPerformance('/api/posts/feed (query)', startTime);
 
@@ -115,8 +124,8 @@ export async function GET(request: NextRequest) {
     console.log(`📊 Found ${posts?.length || 0} posts`);
 
     // Estimate pagination without expensive count
-    const hasMore = posts && posts.length === limit;
-    const estimatedTotal = hasMore ? offset + limit + 1 : offset + (posts?.length || 0);
+    const hasMore = posts && posts.length === safeLimit;
+    const estimatedTotal = hasMore ? offset + safeLimit + 1 : offset + (posts?.length || 0);
 
     logPerformance('/api/posts/feed', startTime);
 
@@ -128,7 +137,7 @@ export async function GET(request: NextRequest) {
           posts: posts || [],
           pagination: {
             page,
-            limit,
+            limit: safeLimit,
             total: estimatedTotal,
             has_more: hasMore,
           },
