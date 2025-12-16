@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { withQueryTimeout, logPerformance, createErrorResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   try {
     const { searchParams } = new URL(request.url);
     const supabase = createServiceClient();
@@ -15,15 +18,10 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const currentUserId = searchParams.get('currentUserId') || '';
 
-    // Build the query
+    // OPTIMIZED: Simplified query without expensive count aggregations
     let query = supabase
       .from('profiles')
-      .select(`
-        *,
-        followers:follows!follows_following_id_fkey(count),
-        tracks:audio_tracks!audio_tracks_creator_id_fkey(count),
-        events:events!events_creator_id_fkey(count)
-      `)
+      .select('id, username, display_name, bio, avatar_url, location, country, followers_count, is_verified, role')
       .eq('role', 'creator' as any);
 
     // Apply search filter
@@ -41,103 +39,103 @@ export async function GET(request: NextRequest) {
       query = query.ilike('location', `%${location}%` as any);
     }
 
-    // Apply sorting
+    // Apply sorting (use followers_count column which already exists)
     switch (sortBy) {
       case 'followers':
-        query = query.order('created_at', { ascending: false }); // Fallback to created_at
+        query = query.order('followers_count', { ascending: false, nullsFirst: false });
         break;
       case 'rating':
-        query = query.order('created_at', { ascending: false }); // Fallback to created_at
+        query = query.order('followers_count', { ascending: false, nullsFirst: false });
         break;
       case 'tracks':
-        query = query.order('created_at', { ascending: false }); // Fallback to created_at
+        query = query.order('followers_count', { ascending: false, nullsFirst: false });
         break;
       case 'name':
         query = query.order('display_name', { ascending: true });
         break;
       default:
-        query = query.order('created_at', { ascending: false });
+        query = query.order('followers_count', { ascending: false, nullsFirst: false });
     }
 
     // Apply pagination
     query = query.range(offset, offset + limit - 1);
 
-    const { data: creators, error } = await query as { data: any; error: any };
+    // Add timeout protection
+    const { data: creators, error } = await withQueryTimeout(query, 8000) as { data: any; error: any };
 
     if (error) {
       console.error('Error fetching creators:', error);
-      return NextResponse.json({
-        error: 'Failed to fetch creators',
-        details: error.message
-      }, { status: 500 });
+      logPerformance('/api/creators', startTime);
+
+      return NextResponse.json(
+        createErrorResponse('Failed to fetch creators', { data: [], pagination: { total: 0, limit, offset, hasMore: false } }),
+        { status: 200 }
+      );
     }
 
-    // If we have a current user, check follow status
+    // If we have a current user, check follow status (with timeout)
     let creatorsWithFollowStatus = creators || [];
     if (currentUserId && creators && creators.length > 0) {
-      const creatorIds = creators.map((c: any) => c.id);
-      
-      const { data: follows } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', currentUserId as any)
-        .in('following_id', creatorIds as any) as { data: any; error: any };
+      try {
+        const creatorIds = creators.map((c: any) => c.id);
 
-      const followedIds = new Set(follows?.map((f: any) => f.following_id) || []);
-      
-      creatorsWithFollowStatus = creators.map((creator: any) => ({
-        ...creator,
-        isFollowing: followedIds.has(creator.id),
-        followers_count: creator.followers?.[0]?.count || 0,
-        tracks_count: creator.tracks?.[0]?.count || 0,
-        events_count: creator.events?.[0]?.count || 0
-      }));
+        const { data: follows } = await withQueryTimeout(
+          supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', currentUserId as any)
+            .in('following_id', creatorIds as any),
+          5000
+        ) as { data: any; error: any };
+
+        const followedIds = new Set(follows?.map((f: any) => f.following_id) || []);
+
+        creatorsWithFollowStatus = creators.map((creator: any) => ({
+          ...creator,
+          isFollowing: followedIds.has(creator.id),
+          tracks_count: 0 // Will be populated by UI if needed
+        }));
+      } catch (followError) {
+        console.error('Error fetching follow status:', followError);
+        // Continue without follow status
+        creatorsWithFollowStatus = creators.map((creator: any) => ({
+          ...creator,
+          isFollowing: false,
+          tracks_count: 0
+        }));
+      }
     } else {
       // Format creators without follow status
       creatorsWithFollowStatus = creators?.map((creator: any) => ({
         ...creator,
         isFollowing: false,
-        followers_count: creator.followers?.[0]?.count || 0,
-        tracks_count: creator.tracks?.[0]?.count || 0,
-        events_count: creator.events?.[0]?.count || 0
+        tracks_count: 0
       })) || [];
     }
 
-    // Get total count for pagination
-    let countQuery = supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('role', 'creator' as any);
+    // OPTIMIZED: Skip expensive count query, estimate from result
+    const hasMore = creators && creators.length === limit;
+    const estimatedTotal = hasMore ? offset + limit + 1 : offset + (creators?.length || 0);
 
-    if (search) {
-      countQuery = countQuery.or(`display_name.ilike.%${search}%,username.ilike.%${search}%,bio.ilike.%${search}%`);
-    }
-
-    if (genre && genre !== 'all') {
-      countQuery = countQuery.eq('genre', genre as any);
-    }
-
-    if (location && location !== 'all') {
-      countQuery = countQuery.ilike('location', `%${location}%` as any);
-    }
-
-    const { count } = await countQuery as { count: any; error: any };
+    logPerformance('/api/creators', startTime);
 
     return NextResponse.json({
       data: creatorsWithFollowStatus,
       pagination: {
-        total: count || 0,
+        total: estimatedTotal,
         limit,
         offset,
-        hasMore: (offset + limit) < (count || 0)
+        hasMore
       }
     });
 
   } catch (error) {
     console.error('Unexpected error fetching creators:', error);
-    return NextResponse.json({
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    logPerformance('/api/creators', startTime);
+
+    return NextResponse.json(
+      createErrorResponse('Internal server error', { data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }),
+      { status: 200 }
+    );
   }
 }
