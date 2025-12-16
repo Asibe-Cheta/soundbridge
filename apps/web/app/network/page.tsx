@@ -122,34 +122,42 @@ export default function NetworkPage() {
   }, [user, activeTab, searchQuery]);
 
   const fetchConnectionRequests = async () => {
+    if (!user?.id) return;
+
     try {
       setLoadingRequests(true);
 
-      // Add timeout protection
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      console.log('🚀 Fetching connection requests using direct Supabase query...');
+      const startTime = Date.now();
 
-      const response = await fetch('/api/connections/requests?type=received', {
-        credentials: 'include',
-        signal: controller.signal,
-      });
+      // Use direct Supabase query (NO API route, NO timeout issues)
+      const { data: requestsData, error } = await dataService.getConnectionRequests(user.id, 'received');
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setRequests(data.data?.requests || []);
-      } else {
-        console.warn('No connection requests data');
+      if (error) {
+        console.error('❌ Error fetching connection requests:', error);
         setRequests([]);
+      } else {
+        // Map to match the UI format
+        const formattedRequests = requestsData.map(req => ({
+          id: req.id,
+          requester: {
+            id: req.user.id,
+            name: req.user.name,
+            username: req.user.username,
+            avatar_url: req.user.avatar_url,
+            role: req.user.role,
+            mutual_connections: 0
+          },
+          message: req.message,
+          created_at: req.created_at
+        }));
+
+        setRequests(formattedRequests);
+        console.log(`✅ Connection requests loaded in ${Date.now() - startTime}ms:`, formattedRequests.length);
       }
     } catch (err: any) {
       console.error('Failed to fetch requests:', err);
-      setRequests([]); // Set empty array on error
+      setRequests([]);
     } finally {
       setLoadingRequests(false);
     }
@@ -201,69 +209,70 @@ export default function NetworkPage() {
     try {
       setLoadingOpportunities(true);
 
-      // Add timeout protection
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      console.log('🚀 Fetching opportunities using direct Supabase query...');
+      const startTime = Date.now();
 
-      const response = await fetch('/api/posts/opportunities?page=1&limit=15', {
-        credentials: 'include',
-        signal: controller.signal,
-      });
+      // Use direct Supabase query (NO API route, NO timeout issues)
+      const { data: opportunitiesData, error } = await dataService.getOpportunities(15);
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setOpportunities(data.data?.opportunities || []);
-      } else {
+      if (error) {
+        console.error('❌ Error fetching opportunities:', error);
         setOpportunities([]);
+      } else {
+        setOpportunities(opportunitiesData);
+        console.log(`✅ Opportunities loaded in ${Date.now() - startTime}ms:`, opportunitiesData.length);
       }
     } catch (err: any) {
       console.error('Failed to fetch opportunities:', err);
-      setOpportunities([]); // Set empty array on error
+      setOpportunities([]);
     } finally {
       setLoadingOpportunities(false);
     }
   };
 
   const fetchConnections = async () => {
+    if (!user?.id) return;
+
     try {
       setLoadingConnections(true);
 
-      // Add timeout protection
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      console.log('🚀 Fetching connections using direct Supabase query...');
+      const startTime = Date.now();
 
-      const url = searchQuery
-        ? `/api/connections?page=1&limit=50&search=${encodeURIComponent(searchQuery)}`
-        : '/api/connections?page=1&limit=50';
+      // Use direct Supabase query (NO API route, NO timeout issues)
+      const { data: connectionsData, error } = await dataService.getConnections(user.id, 'following', 50);
 
-      const response = await fetch(url, {
-        credentials: 'include',
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setConnections(data.data?.connections || []);
-        setConnectionCount(data.data?.pagination?.total || 0);
-      } else {
+      if (error) {
+        console.error('❌ Error fetching connections:', error);
         setConnections([]);
         setConnectionCount(0);
+      } else {
+        // Map to match the UI format
+        const formattedConnections = connectionsData.map(conn => ({
+          id: conn.user.id,
+          name: conn.user.name,
+          username: conn.user.username,
+          avatar_url: conn.user.avatar_url,
+          role: conn.user.role,
+          location: conn.user.location,
+          connected_at: conn.created_at
+        }));
+
+        // Filter by search query if present
+        const filteredConnections = searchQuery
+          ? formattedConnections.filter(conn =>
+              conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (conn.username && conn.username.toLowerCase().includes(searchQuery.toLowerCase()))
+            )
+          : formattedConnections;
+
+        setConnections(filteredConnections);
+        setConnectionCount(filteredConnections.length);
+        console.log(`✅ Connections loaded in ${Date.now() - startTime}ms:`, filteredConnections.length);
       }
     } catch (err: any) {
       console.error('Failed to fetch connections:', err);
-      setConnections([]); // Set empty array on error
+      setConnections([]);
       setConnectionCount(0);
     } finally {
       setLoadingConnections(false);

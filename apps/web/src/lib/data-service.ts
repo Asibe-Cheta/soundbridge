@@ -400,6 +400,186 @@ class DataService {
       return { data: null, error };
     }
   }
+
+  /**
+   * Get connection requests for a user
+   * @param userId Current user ID
+   * @param type Request type: 'sent' or 'received'
+   * @returns { data, error }
+   */
+  async getConnectionRequests(userId: string, type: 'sent' | 'received' = 'received') {
+    try {
+      const column = type === 'sent' ? 'requester_id' : 'receiver_id';
+
+      // Get connection requests
+      const { data: requests, error: requestsError } = await this.supabase
+        .from('connection_requests')
+        .select('*')
+        .eq(column, userId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (requestsError) {
+        console.error('Error fetching connection requests:', requestsError);
+        return { data: [], error: requestsError };
+      }
+
+      if (!requests || requests.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Get profiles for requesters/receivers
+      const profileColumn = type === 'sent' ? 'receiver_id' : 'requester_id';
+      const profileIds = [...new Set(requests.map((r: any) => r[profileColumn]))];
+
+      const { data: profiles } = await this.supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, role, location, bio')
+        .in('id', profileIds);
+
+      // Map profiles to requests
+      const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      const formattedRequests = requests.map((request: any) => {
+        const profile = profilesMap.get(request[profileColumn]);
+        return {
+          id: request.id,
+          user: {
+            id: profile?.id || request[profileColumn],
+            name: profile?.display_name || 'Unknown User',
+            username: profile?.username || 'unknown',
+            avatar_url: profile?.avatar_url || null,
+            role: profile?.role || null,
+            location: profile?.location || null
+          },
+          message: request.message || '',
+          created_at: request.created_at,
+          status: request.status
+        };
+      });
+
+      return { data: formattedRequests, error: null };
+    } catch (error) {
+      console.error('Unexpected error fetching connection requests:', error);
+      return { data: [], error };
+    }
+  }
+
+  /**
+   * Get opportunity posts
+   * @param limit Number of opportunities (default: 15)
+   * @returns { data, error }
+   */
+  async getOpportunities(limit = 15) {
+    try {
+      // Get posts tagged as opportunities
+      const { data: posts, error: postsError } = await this.supabase
+        .from('posts')
+        .select('*')
+        .is('deleted_at', null)
+        .eq('visibility', 'public')
+        .contains('tags', ['opportunity'])
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (postsError) {
+        console.error('Error fetching opportunities:', postsError);
+        return { data: [], error: postsError };
+      }
+
+      if (!posts || posts.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Get authors separately
+      const userIds = [...new Set(posts.map((p: any) => p.user_id))];
+      const { data: authors } = await this.supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, role, location')
+        .in('id', userIds);
+
+      // Map authors to posts
+      const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
+      const postsWithAuthors = posts.map((post: any) => ({
+        ...post,
+        author: authorsMap.get(post.user_id) || {
+          id: post.user_id,
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: null,
+          role: null,
+          location: null
+        }
+      }));
+
+      return { data: postsWithAuthors, error: null };
+    } catch (error) {
+      console.error('Unexpected error fetching opportunities:', error);
+      return { data: [], error };
+    }
+  }
+
+  /**
+   * Get user's connections (followers/following)
+   * @param userId Current user ID
+   * @param type Connection type: 'followers' or 'following'
+   * @param limit Number of connections (default: 50)
+   * @returns { data, error }
+   */
+  async getConnections(userId: string, type: 'followers' | 'following' = 'following', limit = 50) {
+    try {
+      const column = type === 'followers' ? 'following_id' : 'follower_id';
+      const targetColumn = type === 'followers' ? 'follower_id' : 'following_id';
+
+      // Get follows
+      const { data: follows, error: followsError } = await this.supabase
+        .from('follows')
+        .select('*')
+        .eq(column, userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (followsError) {
+        console.error('Error fetching connections:', followsError);
+        return { data: [], error: followsError };
+      }
+
+      if (!follows || follows.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Get profiles for connections
+      const profileIds = [...new Set(follows.map((f: any) => f[targetColumn]))];
+      const { data: profiles } = await this.supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, role, location, bio, followers_count')
+        .in('id', profileIds);
+
+      // Map profiles to follows
+      const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      const formattedConnections = follows.map((follow: any) => {
+        const profile = profilesMap.get(follow[targetColumn]);
+        return {
+          id: follow.id,
+          user: {
+            id: profile?.id || follow[targetColumn],
+            name: profile?.display_name || 'Unknown User',
+            username: profile?.username || 'unknown',
+            avatar_url: profile?.avatar_url || null,
+            role: profile?.role || null,
+            location: profile?.location || null,
+            bio: profile?.bio || ''
+          },
+          followers_count: profile?.followers_count || 0,
+          created_at: follow.created_at
+        };
+      });
+
+      return { data: formattedConnections, error: null };
+    } catch (error) {
+      console.error('Unexpected error fetching connections:', error);
+      return { data: [], error };
+    }
+  }
 }
 
 // Export singleton instance
