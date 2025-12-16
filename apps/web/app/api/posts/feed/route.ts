@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { withAuthTimeout, withQueryTimeout, logPerformance, createErrorResponse } from '@/lib/api-helpers';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,19 +31,15 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📰 Optimized Feed API called');
 
-    // Authenticate user with timeout
-    const authPromise = getSupabaseRouteClient(request, true);
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Authentication timeout')), 5000);
-    });
-
-    const { supabase, user, error: authError } = await Promise.race([
-      authPromise,
-      timeoutPromise
-    ]) as any;
+    // Authenticate user with timeout using helper
+    const { supabase, user, error: authError } = await withAuthTimeout(
+      getSupabaseRouteClient(request, true),
+      5000
+    );
 
     if (authError || !user) {
       console.error('❌ Authentication failed');
+      logPerformance('/api/posts/feed', startTime);
       return NextResponse.json(
         {
           success: false,
@@ -62,7 +59,7 @@ export async function GET(request: NextRequest) {
     const postType = searchParams.get('type');
     const offset = (page - 1) * limit;
 
-    // SIMPLE & FAST: Single query with one join
+    // ULTRA-FAST: Single query with one join, NO count (avoid full table scan)
     let query = supabase
       .from('posts')
       .select(`
@@ -85,7 +82,7 @@ export async function GET(request: NextRequest) {
           role,
           location
         )
-      `, { count: 'exact' })
+      `)
       .is('deleted_at', null)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
@@ -98,36 +95,30 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Executing optimized query...');
 
-    // Execute with timeout
-    const queryPromise = query;
-    const queryTimeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), 10000);
-    });
+    // Execute with timeout using helper
+    const { data: posts, error: postsError } = await withQueryTimeout(query, 8000) as any;
 
-    const { data: posts, error: postsError, count } = await Promise.race([
-      queryPromise,
-      queryTimeout
-    ]) as any;
-
-    const elapsed = Date.now() - startTime;
-    console.log(`⏱️ Query completed in ${elapsed}ms`);
+    logPerformance('/api/posts/feed (query)', startTime);
 
     if (postsError) {
       console.error('❌ Error fetching posts:', postsError);
+      logPerformance('/api/posts/feed', startTime);
       return NextResponse.json(
-        {
-          success: true, // Return success with empty data instead of error
-          error: 'Failed to load posts',
-          data: {
-            posts: [],
-            pagination: { page, limit, total: 0, has_more: false }
-          }
-        },
+        createErrorResponse('Failed to load posts', {
+          posts: [],
+          pagination: { page, limit, total: 0, has_more: false }
+        }),
         { status: 200, headers: corsHeaders }
       );
     }
 
     console.log(`📊 Found ${posts?.length || 0} posts`);
+
+    // Estimate pagination without expensive count
+    const hasMore = posts && posts.length === limit;
+    const estimatedTotal = hasMore ? offset + limit + 1 : offset + (posts?.length || 0);
+
+    logPerformance('/api/posts/feed', startTime);
 
     // Return results immediately
     return NextResponse.json(
@@ -138,8 +129,8 @@ export async function GET(request: NextRequest) {
           pagination: {
             page,
             limit,
-            total: count || 0,
-            has_more: count ? (offset + limit) < count : false,
+            total: estimatedTotal,
+            has_more: hasMore,
           },
         },
       },
@@ -147,19 +138,15 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error: any) {
-    const elapsed = Date.now() - startTime;
-    console.error(`❌ Feed API error after ${elapsed}ms:`, error);
+    console.error('❌ Feed API error:', error);
+    logPerformance('/api/posts/feed', startTime);
 
     // Always return success with empty data to prevent client loading states
     return NextResponse.json(
-      {
-        success: true,
-        error: error.message || 'Request timeout',
-        data: {
-          posts: [],
-          pagination: { page: 1, limit: 15, total: 0, has_more: false }
-        }
-      },
+      createErrorResponse(error.message || 'Request timeout', {
+        posts: [],
+        pagination: { page: 1, limit: 15, total: 0, has_more: false }
+      }),
       { status: 200, headers: corsHeaders }
     );
   }
