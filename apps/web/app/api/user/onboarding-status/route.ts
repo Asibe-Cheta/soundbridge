@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { withAuthTimeout, withQueryTimeout, logPerformance, createErrorResponse } from '@/lib/api-helpers';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -16,14 +17,20 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   try {
     console.log('🔍 Onboarding Status API called');
 
-    // Use unified authentication helper (supports both cookies and bearer tokens)
-    const { supabase, user, error: authError, mode } = await getSupabaseRouteClient(request, true);
-    
+    // Use unified authentication helper with timeout (supports both cookies and bearer tokens)
+    const { supabase, user, error: authError, mode } = await withAuthTimeout(
+      getSupabaseRouteClient(request, true),
+      5000
+    );
+
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError, 'Auth mode:', mode);
+      logPerformance('/api/user/onboarding-status', startTime);
       return NextResponse.json(
         { success: false, error: 'Authentication required - no valid session found' },
         { status: 401, headers: corsHeaders }
@@ -32,38 +39,20 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ User authenticated:', user.id);
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        username,
-        display_name,
-        role,
-        bio,
-        location,
-        country,
-        genres,
-        avatar_url,
-        collaboration_enabled,
-        min_notice_days,
-        auto_decline_unavailable,
-        social_links,
-        onboarding_completed,
-        onboarding_step,
-        onboarding_user_type,
-        profile_completed,
-        subscription_tier,
-        subscription_status,
-        created_at,
-        updated_at
-      `)
-      .eq('id', user.id)
-      .maybeSingle();
+    // Get user profile with timeout protection
+    const { data: profile, error: profileError } = await withQueryTimeout(
+      supabase
+        .from('profiles')
+        .select('id, username, display_name, role, bio, location, country, genres, avatar_url, collaboration_enabled, min_notice_days, auto_decline_unavailable, social_links, onboarding_completed, onboarding_step, onboarding_user_type, profile_completed, subscription_tier, subscription_status')
+        .eq('id', user.id)
+        .maybeSingle(),
+      5000
+    ) as any;
 
     // If no profile exists, return needs onboarding
     if (!profile) {
       console.log('⚠️ No profile found for user:', user.id);
+      logPerformance('/api/user/onboarding-status', startTime);
       return NextResponse.json({
         success: true,
         needsOnboarding: true,
@@ -78,9 +67,14 @@ export async function GET(request: NextRequest) {
 
     if (profileError) {
       console.error('❌ Error fetching profile:', profileError);
+      logPerformance('/api/user/onboarding-status', startTime);
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch profile' },
-        { status: 500, headers: corsHeaders }
+        createErrorResponse('Failed to fetch profile', {
+          needsOnboarding: true,
+          profile: null,
+          onboarding: { completed: false, step: 'welcome', profileCompleted: false }
+        }),
+        { status: 200, headers: corsHeaders }
       );
     }
 
@@ -121,6 +115,8 @@ export async function GET(request: NextRequest) {
       currentStep: profile?.onboarding_step
     });
 
+    logPerformance('/api/user/onboarding-status', startTime);
+
     return NextResponse.json({
       success: true,
       needsOnboarding,
@@ -134,9 +130,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Error checking onboarding status:', error);
+    logPerformance('/api/user/onboarding-status', startTime);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500, headers: corsHeaders }
+      createErrorResponse('Internal server error', {
+        needsOnboarding: true,
+        profile: null,
+        onboarding: { completed: false, step: 'welcome', profileCompleted: false }
+      }),
+      { status: 200, headers: corsHeaders }
     );
   }
 }
