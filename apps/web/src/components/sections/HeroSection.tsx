@@ -37,22 +37,50 @@ export function HeroSection() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch trending tracks
-        const tracksResponse = await fetch('/api/audio/trending');
-        if (tracksResponse.ok) {
-          const tracksData = await tracksResponse.json();
-          if (tracksData.success && tracksData.tracks) {
-            setTrendingTracks(tracksData.tracks.slice(0, 4));
+        // Fetch trending tracks with timeout protection
+        const tracksController = new AbortController();
+        const tracksTimeoutId = setTimeout(() => tracksController.abort(), 5000);
+
+        try {
+          const tracksResponse = await fetch('/api/audio/trending', {
+            signal: tracksController.signal,
+            credentials: 'include',
+          });
+          clearTimeout(tracksTimeoutId);
+
+          if (tracksResponse.ok) {
+            const tracksData = await tracksResponse.json();
+            if (tracksData.success && tracksData.tracks) {
+              setTrendingTracks(tracksData.tracks.slice(0, 4));
+            }
           }
+        } catch (tracksError: any) {
+          clearTimeout(tracksTimeoutId);
+          console.warn('Failed to load trending tracks:', tracksError.name === 'AbortError' ? 'Timeout' : tracksError.message);
+          // Continue with empty array
         }
 
-        // Fetch featured creator
-        const creatorResponse = await fetch('/api/creators/featured?limit=1');
-        if (creatorResponse.ok) {
-          const creatorData = await creatorResponse.json();
-          if (creatorData.success && creatorData.data && creatorData.data.length > 0) {
-            setFeaturedCreator(creatorData.data[0]);
+        // Fetch featured creator with timeout protection
+        const creatorController = new AbortController();
+        const creatorTimeoutId = setTimeout(() => creatorController.abort(), 5000);
+
+        try {
+          const creatorResponse = await fetch('/api/creators/featured?limit=1', {
+            signal: creatorController.signal,
+            credentials: 'include',
+          });
+          clearTimeout(creatorTimeoutId);
+
+          if (creatorResponse.ok) {
+            const creatorData = await creatorResponse.json();
+            if (creatorData.success && creatorData.data && creatorData.data.length > 0) {
+              setFeaturedCreator(creatorData.data[0]);
+            }
           }
+        } catch (creatorError: any) {
+          clearTimeout(creatorTimeoutId);
+          console.warn('Failed to load featured creator:', creatorError.name === 'AbortError' ? 'Timeout' : creatorError.message);
+          // Continue with null creator
         }
       } catch (error) {
         console.error('Error loading hero section data:', error);

@@ -1,77 +1,101 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { withQueryTimeout, logPerformance, createErrorResponse } from '@/lib/api-helpers';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
 
 export async function GET() {
+  const startTime = Date.now();
+
   try {
     console.log('🔥 Trending tracks API called');
-    
+
     const supabase = createRouteHandlerClient({ cookies });
 
-    // Get trending tracks ordered by play count
-    const { data: tracks, error } = await supabase
-      .from('audio_tracks')
-      .select(`
-        *,
-        creator:profiles!audio_tracks_creator_id_fkey(
-          id,
-          username,
-          display_name,
-          avatar_url
-        )
-      `)
-      .eq('is_public', true)
-      .not('genre', 'eq', 'podcast')
-      .not('genre', 'eq', 'Podcast')
-      .not('genre', 'eq', 'PODCAST')
-      .order('play_count', { ascending: false })
-      .limit(5);
+    // OPTIMIZED: Split query to avoid slow JOIN
+    // First, get trending track IDs
+    const { data: trackIds, error: idsError } = await withQueryTimeout(
+      supabase
+        .from('audio_tracks')
+        .select('id, title, artist_name, cover_art_url, file_url, duration, play_count, like_count, creator_id')
+        .eq('is_public', true)
+        .not('genre', 'in', '("podcast","Podcast","PODCAST")')
+        .order('play_count', { ascending: false })
+        .limit(5),
+      5000
+    ) as any;
 
-    if (error) {
-      console.error('❌ Error fetching trending tracks:', error);
+    if (idsError || !trackIds || trackIds.length === 0) {
+      console.warn('⚠️ No trending tracks found');
+      logPerformance('/api/audio/trending', startTime);
       return NextResponse.json(
-        { error: 'Failed to fetch trending tracks', details: error.message },
-        { status: 500 }
+        { success: true, tracks: [] },
+        { headers: corsHeaders }
       );
     }
 
-    console.log('✅ Fetched trending tracks:', tracks?.length);
-    if (tracks && tracks.length > 0) {
-      tracks.forEach((track, index) => {
-        console.log(`🔥 Track ${index + 1}: "${track.title}" - Plays: ${track.play_count}`);
-      });
-    }
+    console.log('✅ Fetched trending tracks:', trackIds.length);
+
+    // Then, get creator details separately (faster than JOIN)
+    const creatorIds = [...new Set(trackIds.map((t: any) => t.creator_id))];
+    const { data: creators } = await withQueryTimeout(
+      supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', creatorIds),
+      3000
+    ) as any;
+
+    // Map creators to tracks
+    const creatorsMap = new Map((creators || []).map((c: any) => [c.id, c]));
 
     // Format the tracks for the frontend
-    const formattedTracks = tracks.map(track => ({
-      id: track.id,
-      title: track.title,
-      artist: track.creator?.display_name || track.artist_name || 'Unknown Artist',
-      coverArt: track.cover_art_url,
-      url: track.file_url,
-      duration: track.duration || 0,
-      plays: track.play_count || 0,
-      likes: track.like_count || 0,
-      creator: {
-        id: track.creator_id,
-        name: track.creator?.display_name || track.artist_name || 'Unknown Artist',
-        username: track.creator?.username || 'unknown',
-        avatar: track.creator?.avatar_url || null
-      }
-    }));
+    const formattedTracks = trackIds.map((track: any) => {
+      const creator = creatorsMap.get(track.creator_id);
+      return {
+        id: track.id,
+        title: track.title,
+        artist: creator?.display_name || track.artist_name || 'Unknown Artist',
+        coverArt: track.cover_art_url,
+        url: track.file_url,
+        duration: track.duration || 0,
+        plays: track.play_count || 0,
+        likes: track.like_count || 0,
+        creator: {
+          id: track.creator_id,
+          name: creator?.display_name || track.artist_name || 'Unknown Artist',
+          username: creator?.username || 'unknown',
+          avatar: creator?.avatar_url || null
+        }
+      };
+    });
 
     console.log('✅ Returning formatted trending tracks:', formattedTracks.length);
+    logPerformance('/api/audio/trending', startTime);
 
-    return NextResponse.json({
-      success: true,
-      tracks: formattedTracks
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        tracks: formattedTracks
+      },
+      { headers: corsHeaders }
+    );
 
   } catch (error) {
     console.error('❌ Unexpected error in trending tracks API:', error);
+    logPerformance('/api/audio/trending', startTime);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      createErrorResponse('Failed to fetch trending tracks', { tracks: [] }),
+      { status: 200, headers: corsHeaders }
     );
   }
 }
