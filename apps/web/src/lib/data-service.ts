@@ -117,33 +117,49 @@ class DataService {
     try {
       const offset = (page - 1) * limit;
 
-      const { data, error } = await this.supabase
+      // First get the posts
+      const { data: posts, error: postsError } = await this.supabase
         .from('posts')
-        .select(`
-          *,
-          author:profiles!posts_user_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            role,
-            location
-          )
-        `)
+        .select('*')
         .is('deleted_at', null)
         .eq('visibility', 'public')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      if (error) {
-        console.error('Error fetching feed posts:', error);
-        return { data: [], error, hasMore: false };
+      if (postsError) {
+        console.error('Error fetching posts:', postsError);
+        return { data: [], error: postsError, hasMore: false };
       }
 
+      if (!posts || posts.length === 0) {
+        return { data: [], error: null, hasMore: false };
+      }
+
+      // Then get the authors separately
+      const userIds = [...new Set(posts.map((p: any) => p.user_id))];
+      const { data: authors } = await this.supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, role, location')
+        .in('id', userIds);
+
+      // Map authors to posts
+      const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
+      const postsWithAuthors = posts.map((post: any) => ({
+        ...post,
+        author: authorsMap.get(post.user_id) || {
+          id: post.user_id,
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: null,
+          role: null,
+          location: null
+        }
+      }));
+
       return {
-        data: data || [],
+        data: postsWithAuthors,
         error: null,
-        hasMore: data ? data.length === limit : false,
+        hasMore: posts.length === limit,
       };
     } catch (error) {
       console.error('Unexpected error fetching feed posts:', error);
