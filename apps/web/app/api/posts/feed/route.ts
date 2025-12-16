@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Executing minimal query (no JOIN)...');
 
-    // Execute with reduced timeout
-    const { data: posts, error: postsError } = await withQueryTimeout(query, 5000) as any;
+    // Execute with increased timeout to match client 30s timeout
+    const { data: posts, error: postsError } = await withQueryTimeout(query, 20000) as any;
 
     // If we got posts, fetch authors separately (faster than JOIN)
     if (posts && posts.length > 0) {
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
             .from('profiles')
             .select('id, username, display_name, avatar_url, role, location')
             .in('id', userIds),
-          3000
+          10000 // 10s timeout for author lookup
         ) as any;
 
         // Map authors to posts

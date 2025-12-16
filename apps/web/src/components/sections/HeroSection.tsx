@@ -39,7 +39,7 @@ export function HeroSection() {
       try {
         // Fetch trending tracks with timeout protection
         const tracksController = new AbortController();
-        const tracksTimeoutId = setTimeout(() => tracksController.abort(), 5000);
+        const tracksTimeoutId = setTimeout(() => tracksController.abort(), 15000); // 15s for production
 
         try {
           const tracksResponse = await fetch('/api/audio/trending', {
@@ -62,7 +62,7 @@ export function HeroSection() {
 
         // Fetch featured creator with timeout protection
         const creatorController = new AbortController();
-        const creatorTimeoutId = setTimeout(() => creatorController.abort(), 5000);
+        const creatorTimeoutId = setTimeout(() => creatorController.abort(), 15000); // 15s for production
 
         try {
           const creatorResponse = await fetch('/api/creators/featured?limit=1', {

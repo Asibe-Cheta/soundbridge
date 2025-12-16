@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         .not('bio', 'is', null)
         .order('created_at', { ascending: false })
         .limit(limit * 2), // Get more to shuffle from
-      5000
+      12000 // 12s timeout to match client-side 15s timeout
     ) as any;
 
     logPerformance('/api/creators/featured', startTime);

@@ -31,7 +31,7 @@ export async function GET() {
         .not('genre', 'in', '("podcast","Podcast","PODCAST")')
         .order('play_count', { ascending: false })
         .limit(5),
-      5000
+      12000 // 12s timeout to match client-side 15s timeout
     ) as any;
 
     if (idsError || !trackIds || trackIds.length === 0) {
@@ -52,7 +52,7 @@ export async function GET() {
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .in('id', creatorIds),
-      3000
+      8000 // 8s timeout for creator lookup
     ) as any;
 
     // Map creators to tracks
