@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Post } from '@/src/lib/types/post';
-import { 
-  TrendingUp, Briefcase, Plus, Radio, Music, 
-  ExternalLink, Loader2, ArrowRight 
+import { useAuth } from '@/src/contexts/AuthContext';
+import { dataService } from '@/src/lib/data-service';
+import {
+  TrendingUp, Briefcase, Plus, Radio, Music,
+  ExternalLink, Loader2, ArrowRight
 } from 'lucide-react';
 
 interface ConnectionSuggestion {
@@ -23,6 +25,7 @@ interface ConnectionSuggestion {
 }
 
 export function FeedRightSidebar() {
+  const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<Post[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(true);
@@ -30,16 +33,24 @@ export function FeedRightSidebar() {
 
   useEffect(() => {
     loadOpportunities();
-    loadSuggestions();
-  }, []);
+    if (user?.id) {
+      loadSuggestions();
+    }
+  }, [user?.id]);
 
   const loadOpportunities = async () => {
     try {
       setLoadingOpportunities(true);
-      const response = await fetch('/api/posts/opportunities?limit=3');
-      const data = await response.json();
-      if (data.success && data.data?.opportunities) {
-        setOpportunities(data.data.opportunities.slice(0, 3));
+
+      console.log('🚀 Loading sidebar opportunities using direct Supabase query...');
+      const startTime = Date.now();
+
+      // Use direct Supabase query instead of API route
+      const { data: opportunitiesData, error } = await dataService.getOpportunities(3);
+
+      if (!error && opportunitiesData) {
+        setOpportunities(opportunitiesData.slice(0, 3));
+        console.log(`✅ Sidebar opportunities loaded in ${Date.now() - startTime}ms`);
       }
     } catch (error) {
       console.error('Error loading opportunities:', error);
@@ -49,12 +60,34 @@ export function FeedRightSidebar() {
   };
 
   const loadSuggestions = async () => {
+    if (!user?.id) return;
+
     try {
       setLoadingSuggestions(true);
-      const response = await fetch('/api/connections/suggestions?limit=5');
-      const data = await response.json();
-      if (data.success && data.data?.suggestions) {
-        setSuggestions(data.data.suggestions.slice(0, 5));
+
+      console.log('🚀 Loading sidebar suggestions using direct Supabase query...');
+      const startTime = Date.now();
+
+      // Use direct Supabase query instead of API route
+      const { data: suggestionsData, error } = await dataService.getConnectionSuggestions(user.id, 5);
+
+      if (!error && suggestionsData) {
+        // Map to match the UI format
+        const formattedSuggestions = suggestionsData.map(profile => ({
+          id: profile.id,
+          user: {
+            id: profile.id,
+            name: profile.display_name,
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+            role: 'creator'
+          },
+          reason: profile.location ? `Based on location: ${profile.location}` : 'Suggested for you',
+          mutual_connections: 0
+        }));
+
+        setSuggestions(formattedSuggestions.slice(0, 5));
+        console.log(`✅ Sidebar suggestions loaded in ${Date.now() - startTime}ms`);
       }
     } catch (error) {
       console.error('Error loading suggestions:', error);

@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { 
-  User, Bookmark, Activity, Radio, Calendar, Briefcase, 
-  Users, Eye, TrendingUp, Loader2 
+import { dataService } from '@/src/lib/data-service';
+import { createBrowserClient } from '@/src/lib/supabase';
+import {
+  User, Bookmark, Activity, Radio, Calendar, Briefcase,
+  Users, Eye, TrendingUp, Loader2
 } from 'lucide-react';
 
 interface ProfileData {
@@ -37,17 +39,22 @@ export function FeedLeftSidebar() {
 
   const loadProfileData = async () => {
     try {
-      const response = await fetch(`/api/profile?user_id=${user?.id}`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      console.log('Profile API response:', data);
-      if (data.success && data.profile) {
-        console.log('Setting profile data:', data.profile);
-        setProfile(data.profile);
-      } else {
-        // If profile doesn't exist, still show user info from auth
-        console.log('Profile not found in API response, using auth user data');
+      console.log('🚀 Loading profile data using direct Supabase query...');
+      const startTime = Date.now();
+
+      // Use direct Supabase query instead of API route
+      const supabase = createBrowserClient();
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, professional_headline, avatar_url')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) {
+        console.warn('Profile not found, using auth user data');
+      } else if (profileData) {
+        setProfile(profileData);
+        console.log(`✅ Profile loaded in ${Date.now() - startTime}ms`);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -57,19 +64,24 @@ export function FeedLeftSidebar() {
   };
 
   const loadStats = async () => {
+    if (!user?.id) return;
+
     try {
-      // Get connection count
-      const connectionsRes = await fetch('/api/connections?limit=1');
-      const connectionsData = await connectionsRes.json();
-      
-      // Get pending requests
-      const requestsRes = await fetch('/api/connections/requests?type=received');
-      const requestsData = await requestsRes.json();
+      console.log('🚀 Loading sidebar stats using direct Supabase queries...');
+      const startTime = Date.now();
+
+      // Get connection count using direct query
+      const { data: connections } = await dataService.getConnections(user.id, 'following', 1000);
+
+      // Get pending requests using direct query
+      const { data: requests } = await dataService.getConnectionRequests(user.id, 'received');
 
       setStats({
-        connectionCount: connectionsData.success ? connectionsData.data?.total || 0 : 0,
-        pendingRequests: requestsData.success ? requestsData.data?.requests?.length || 0 : 0,
+        connectionCount: connections?.length || 0,
+        pendingRequests: requests?.length || 0,
       });
+
+      console.log(`✅ Sidebar stats loaded in ${Date.now() - startTime}ms`);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
