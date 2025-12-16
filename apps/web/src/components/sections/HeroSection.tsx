@@ -8,6 +8,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
 import type { AudioTrack } from '@/src/lib/types/audio';
+import { dataService } from '@/src/lib/data-service';
 
 interface TrendingTrack {
   id: string;
@@ -37,51 +38,31 @@ export function HeroSection() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch trending tracks with timeout protection
-        const tracksController = new AbortController();
-        const tracksTimeoutId = setTimeout(() => tracksController.abort(), 15000); // 15s for production
+        console.log('🚀 Loading hero section data using direct Supabase queries (like Discover page)...');
+        const startTime = Date.now();
 
-        try {
-          const tracksResponse = await fetch('/api/audio/trending', {
-            signal: tracksController.signal,
-            credentials: 'include',
-          });
-          clearTimeout(tracksTimeoutId);
+        // Fetch trending tracks using direct Supabase client (NO API route, NO timeout issues)
+        const { data: tracks, error: tracksError } = await dataService.getTrendingTracks(4);
 
-          if (tracksResponse.ok) {
-            const tracksData = await tracksResponse.json();
-            if (tracksData.success && tracksData.tracks) {
-              setTrendingTracks(tracksData.tracks.slice(0, 4));
-            }
-          }
-        } catch (tracksError: any) {
-          clearTimeout(tracksTimeoutId);
-          console.warn('Failed to load trending tracks:', tracksError.name === 'AbortError' ? 'Timeout' : tracksError.message);
-          // Continue with empty array
+        if (tracksError) {
+          console.warn('Failed to load trending tracks:', tracksError.message);
+        } else {
+          setTrendingTracks(tracks);
+          console.log(`✅ Trending tracks loaded in ${Date.now() - startTime}ms`);
         }
 
-        // Fetch featured creator with timeout protection
-        const creatorController = new AbortController();
-        const creatorTimeoutId = setTimeout(() => creatorController.abort(), 15000); // 15s for production
+        // Fetch featured creator using direct Supabase client (NO API route, NO timeout issues)
+        const creatorStartTime = Date.now();
+        const { data: creators, error: creatorError } = await dataService.getFeaturedCreators(1);
 
-        try {
-          const creatorResponse = await fetch('/api/creators/featured?limit=1', {
-            signal: creatorController.signal,
-            credentials: 'include',
-          });
-          clearTimeout(creatorTimeoutId);
-
-          if (creatorResponse.ok) {
-            const creatorData = await creatorResponse.json();
-            if (creatorData.success && creatorData.data && creatorData.data.length > 0) {
-              setFeaturedCreator(creatorData.data[0]);
-            }
-          }
-        } catch (creatorError: any) {
-          clearTimeout(creatorTimeoutId);
-          console.warn('Failed to load featured creator:', creatorError.name === 'AbortError' ? 'Timeout' : creatorError.message);
-          // Continue with null creator
+        if (creatorError) {
+          console.warn('Failed to load featured creator:', creatorError.message);
+        } else if (creators && creators.length > 0) {
+          setFeaturedCreator(creators[0]);
+          console.log(`✅ Featured creator loaded in ${Date.now() - creatorStartTime}ms`);
         }
+
+        console.log(`✅ Total hero section load time: ${Date.now() - startTime}ms (Expected: 1-3s like Discover)`);
       } catch (error) {
         console.error('Error loading hero section data:', error);
       } finally {
