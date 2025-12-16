@@ -155,9 +155,10 @@ function LoginContent() {
       }
 
       if (data?.user && data?.session) {
-        // Give cookies time to be set
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        // CRITICAL: Give cookies more time to sync to browser
+        // Session cookies need proper sync before server-side can read them
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         // Check if 2FA is required
         try {
           console.log('🔍 Checking if 2FA is required for user:', data.user.id);
@@ -259,13 +260,19 @@ function LoginContent() {
         }
 
         // No 2FA required - proceed with normal login
+        // Set loading to false BEFORE redirect to prevent stuck "Signing in..." state
+        setIsLoading(false);
+
+        // Add another delay to ensure cookies are fully synced
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+        console.log('✅ Redirecting to:', redirectTo);
         window.location.href = redirectTo;
       }
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -359,11 +366,15 @@ function LoginContent() {
             sessionStorage.removeItem('2fa_required');
             sessionStorage.removeItem('2fa_session_token');
           }
-          
-          // Give cookies time to be set
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
+          // Set loading to false BEFORE redirect
+          setIsVerifying2FA(false);
+
+          // Give cookies time to be set (longer delay for 2FA flow)
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
           const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+          console.log('✅ Redirecting to:', redirectTo);
           window.location.href = redirectTo;
         } else {
           setTwoFAError('Login failed after verification. Please try again.');

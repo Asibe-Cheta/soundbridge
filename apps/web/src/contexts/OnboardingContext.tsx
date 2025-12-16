@@ -174,8 +174,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
           // If onboarding is already showing from storage, don't re-check
           // Only re-check if onboarding is not currently active
           if (!onboardingState.showOnboarding && !onboardingState.isOnboardingActive) {
-            // Add delay after sign-in to allow cookies to be set before checking onboarding
-            const delay = session ? 1500 : 0; // Give extra time if we just signed in
+            // CRITICAL FIX: Add longer delay after sign-in to allow cookies to be set
+            // Session cookies need time to sync to the browser before server-side APIs can read them
+            const delay = session ? 3000 : 0; // 3 seconds for cookie sync after sign-in
+            console.log(`⏱️ Delaying onboarding check for ${delay}ms to allow cookie sync...`);
             setTimeout(() => {
               checkOnboardingStatusWithRetry();
             }, delay);
