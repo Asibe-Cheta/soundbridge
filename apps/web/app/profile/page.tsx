@@ -12,6 +12,7 @@ import { BankAccountManager } from '@/src/components/revenue/BankAccountManager'
 import { ProfessionalSections } from '@/src/components/profile/ProfessionalSections';
 import { PostCard } from '@/src/components/posts/PostCard';
 import { Post } from '@/src/lib/types/post';
+import { dataService } from '@/src/lib/data-service';
 import { useRouter } from 'next/navigation';
 import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign, Flag } from 'lucide-react';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
@@ -307,39 +308,31 @@ export default function ProfilePage() {
   }, []);
 
   const loadAnalyticsData = async () => {
+    if (!user?.id) return;
+
     try {
       setIsLoadingAnalytics(true);
-      console.log('🔍 Loading analytics data for user:', user?.id);
-      const response = await fetch('/api/profile/analytics', {
-        credentials: 'include'
-      });
+      console.log('🚀 Loading analytics using mobile approach (direct Supabase + client-side calc)...');
+      const startTime = Date.now();
 
-      console.log('📊 Analytics response status:', response.status);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('📊 Analytics result:', result);
-        
-        if (result.success && result.analytics) {
-          console.log('📊 Setting stats:', result.analytics.stats);
-          console.log('📊 Setting recent tracks:', result.analytics.recentTracks);
-          setStats(result.analytics.stats);
-          setRecentTracks(result.analytics.recentTracks);
-          setRecentEvents(result.analytics.recentEvents);
-          setAnalyticsData({
-            monthlyPlays: result.analytics.monthlyPlays,
-            engagementRate: result.analytics.engagementRate,
-            topGenre: result.analytics.topGenre,
-            monthlyPlaysChange: result.analytics.monthlyPlaysChange,
-            engagementRateChange: result.analytics.engagementRateChange
-          });
-        } else {
-          console.error('❌ Analytics API returned success: false or no analytics data');
-        }
-      } else {
-        console.error('❌ Analytics API returned error status:', response.status);
-        const errorText = await response.text();
-        console.error('❌ Error response:', errorText);
+      // Use mobile team's approach: direct Supabase queries + client-side calculation
+      const { data, error } = await dataService.getProfileWithStats(user.id);
+
+      if (error) {
+        console.error('❌ Error loading profile stats:', error);
+        return;
+      }
+
+      if (data) {
+        // Set stats from calculated data
+        setStats(data.stats);
+        setRecentTracks(data.tracks);
+        setRecentEvents([]); // Events not included in mobile approach
+        setAnalyticsData(data.analyticsData);
+
+        console.log(`✅ Analytics loaded in ${Date.now() - startTime}ms using mobile approach`);
+        console.log('📊 Stats:', data.stats);
+        console.log('📊 Recent tracks:', data.tracks.length);
       }
     } catch (error) {
       console.error('❌ Error loading analytics data:', error);

@@ -409,7 +409,8 @@ class DataService {
    */
   async getConnectionRequests(userId: string, type: 'sent' | 'received' = 'received') {
     try {
-      const column = type === 'sent' ? 'requester_id' : 'receiver_id';
+      // FIXED: Column is 'recipient_id' not 'receiver_id'
+      const column = type === 'sent' ? 'requester_id' : 'recipient_id';
 
       // Get connection requests
       const { data: requests, error: requestsError } = await this.supabase
@@ -428,8 +429,9 @@ class DataService {
         return { data: [], error: null };
       }
 
-      // Get profiles for requesters/receivers
-      const profileColumn = type === 'sent' ? 'receiver_id' : 'requester_id';
+      // Get profiles for requesters/recipients
+      // FIXED: Column is 'recipient_id' not 'receiver_id'
+      const profileColumn = type === 'sent' ? 'recipient_id' : 'requester_id';
       const profileIds = [...new Set(requests.map((r: any) => r[profileColumn]))];
 
       const { data: profiles } = await this.supabase
@@ -471,13 +473,13 @@ class DataService {
    */
   async getOpportunities(limit = 15) {
     try {
-      // Get posts tagged as opportunities
+      // FIXED: Use 'post_type' not 'tags' - posts table doesn't have a tags column
       const { data: posts, error: postsError } = await this.supabase
         .from('posts')
         .select('*')
         .is('deleted_at', null)
         .eq('visibility', 'public')
-        .contains('tags', ['opportunity'])
+        .eq('post_type', 'opportunity')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -578,6 +580,118 @@ class DataService {
     } catch (error) {
       console.error('Unexpected error fetching connections:', error);
       return { data: [], error };
+    }
+  }
+
+  /**
+   * Get profile with stats - Mobile team's approach
+   * Loads profile + tracks in parallel, then calculates stats CLIENT-SIDE
+   * @param userId User ID
+   * @returns { data: { profile, stats, tracks, albums, playlists }, error }
+   */
+  async getProfileWithStats(userId: string) {
+    try {
+      console.log('🚀 Loading profile with stats using mobile approach...');
+      const startTime = Date.now();
+
+      // Run all queries in PARALLEL (mobile team's approach)
+      const [
+        profileResult,
+        tracksResult,
+        followersResult,
+        followingResult,
+      ] = await Promise.all([
+        // 1. Profile data
+        this.supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+
+        // 2. User's tracks (with play counts and likes)
+        this.supabase
+          .from('audio_tracks')
+          .select('id, title, play_count, likes_count, created_at, cover_art_url, duration, file_url, artist')
+          .eq('creator_id', userId)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .limit(50), // Limit to recent 50 tracks for performance
+
+        // 3. Followers count
+        this.supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', userId),
+
+        // 4. Following count
+        this.supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('follower_id', userId),
+      ]);
+
+      console.log(`✅ All queries completed in ${Date.now() - startTime}ms`);
+
+      // Extract data
+      const profile = profileResult.data;
+      const tracks = tracksResult.data || [];
+      const followersCount = followersResult.count || 0;
+      const followingCount = followingResult.count || 0;
+
+      // Calculate stats from tracks (CLIENT-SIDE - mobile team's approach)
+      console.log('🔢 Calculating stats from track data...');
+      const totalPlays = tracks.reduce((sum, track) => sum + (track.play_count || 0), 0);
+      const totalLikes = tracks.reduce((sum, track) => sum + (track.likes_count || 0), 0);
+
+      // Format tracks for display
+      const formattedTracks = tracks.slice(0, 10).map((track: any) => ({
+        id: track.id,
+        title: track.title,
+        duration: track.duration ? `${Math.floor(track.duration / 60)}:${String(track.duration % 60).padStart(2, '0')}` : '0:00',
+        plays: track.play_count || 0,
+        likes: track.likes_count || 0,
+        uploadedAt: new Date(track.created_at).toLocaleDateString(),
+        coverArt: track.cover_art_url,
+        fileUrl: track.file_url,
+        artist: track.artist
+      }));
+
+      const stats = {
+        totalPlays,
+        totalLikes,
+        totalShares: 0, // Not tracked in audio_tracks table
+        totalDownloads: 0, // Not tracked in audio_tracks table
+        followers: followersCount,
+        following: followingCount,
+        tracks: tracks.length,
+        events: 0, // Would need separate query if needed
+      };
+
+      // Analytics data (estimates)
+      const monthlyPlays = Math.floor(totalPlays * 0.3); // Estimate ~30% of total
+      const engagementRate = totalPlays > 0 ? Math.round((totalLikes / totalPlays) * 100) : 0;
+
+      console.log(`✅ Profile with stats loaded in ${Date.now() - startTime}ms`);
+      console.log('📊 Stats calculated:', stats);
+
+      return {
+        data: {
+          profile,
+          stats,
+          tracks: formattedTracks,
+          analyticsData: {
+            monthlyPlays,
+            engagementRate,
+            topGenre: profile?.genres?.[0] || 'No tracks yet',
+            monthlyPlaysChange: 0, // Would need historical data
+            engagementRateChange: 0, // Would need historical data
+          }
+        },
+        error: null,
+      };
+    } catch (error) {
+      console.error('Error loading profile with stats:', error);
+      return { data: null, error };
     }
   }
 }
