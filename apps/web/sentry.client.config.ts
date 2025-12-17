@@ -30,6 +30,7 @@ Sentry.init({
     'Loading chunk',
     'ChunkLoadError:',
     /Loading chunk [\d]+ failed/,
+    'Multiple Sentry Session Replay instances are not supported',
   ],
 
   // Enable logs to be sent to Sentry
