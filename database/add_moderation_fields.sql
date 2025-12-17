@@ -282,7 +282,6 @@ SELECT
   -- Existing review queue stats
   (SELECT COUNT(*) FROM admin_review_queue WHERE status IN ('pending', 'assigned', 'in_review')) as pending_reviews,
   (SELECT COUNT(*) FROM admin_review_queue WHERE priority = 'urgent') as urgent_items,
-  (SELECT COUNT(*) FROM dmca_requests WHERE status = 'pending') as dmca_requests,
   (SELECT COUNT(*) FROM admin_review_queue WHERE queue_type = 'content_report' AND status = 'pending') as content_reports,
 
   -- NEW: Moderation stats
@@ -293,11 +292,7 @@ SELECT
   (SELECT COUNT(*) FROM audio_tracks WHERE moderation_status = 'approved') as approved_content,
   (SELECT COUNT(*) FROM audio_tracks WHERE moderation_status = 'rejected') as rejected_content,
   (SELECT COUNT(*) FROM audio_tracks WHERE appeal_status = 'pending') as pending_appeals,
-  (SELECT COUNT(*) FROM admin_review_queue WHERE queue_type = 'content_moderation' AND status = 'pending') as moderation_queue_size,
-
-  -- Existing revenue stats (if present)
-  COALESCE((SELECT SUM(amount) FROM transactions WHERE status = 'completed'), 0) as total_revenue,
-  COALESCE((SELECT SUM(amount) FROM transactions WHERE status = 'completed' AND type = 'subscription'), 0) as subscription_revenue
+  (SELECT COUNT(*) FROM admin_review_queue WHERE queue_type = 'content_moderation' AND status = 'pending') as moderation_queue_size
 
 FROM generate_series(1,1);
 
