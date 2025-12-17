@@ -2,76 +2,126 @@
 
 ---
 
-**Subject:** ✅ Unified Event Categories - Backend Ready for Integration
+**Subject:** 🚨 URGENT: Web API Endpoint Changes - Action Required for Mobile App
 
 ---
 
-**Hi Mobile Team,**
+**To:** Mobile Development Team
+**From:** Web Development Team
+**Priority:** HIGH
+**Date:** December 17, 2025
 
-Thank you for the excellent feedback on the event categories system! You were absolutely right - we needed realistic event types, not music genres.
+---
 
-## ✅ **We've Implemented Everything**
+## Quick Summary
 
-We've completed the backend implementation for the unified event categories using **Option 1 (Separate Fields)** as you recommended:
+We've removed duplicate API routes on the web backend that were causing production errors. **Some mobile app features may break if you're calling the deleted endpoints.**
 
-- ✅ **15 unified event categories** (concerts_live_music, religious_spiritual, etc.)
-- ✅ **14 music genres** (gospel, afrobeat, jazz, etc.) - optional field
-- ✅ **Complete database migration script** with automatic mapping
-- ✅ **New API endpoint** `/api/event-categories` to fetch categories
-- ✅ **Updated push notification matching** to use new categories
-- ✅ **TypeScript types** for both teams
+**Action Required:** Review your code and update API calls (estimated time: 1-2 hours)
 
-## 📋 **Documents for You**
+---
 
-All documentation is in the repo and ready for review:
+## What Happened
 
-1. **`MOBILE_TEAM_UNIFIED_CATEGORIES_RESPONSE.md`**
-   - Complete integration guide
-   - API endpoints with examples
-   - Step-by-step mobile implementation guide
-   - Testing instructions
+Our error monitoring (Sentry) caught a critical routing conflict in production:
 
-2. **`database/unified_event_categories_migration.sql`**
-   - Database migration script (we'll deploy this)
+```
+Error: You cannot use different slug names for the same dynamic path
+('id' !== 'playlistId')
+```
 
-3. **`types/unified-event-categories.ts`**
-   - TypeScript definitions you can use
+We had duplicate route files for playlists, events, creators, and tracks. We've removed the duplicates and kept the correct ones.
 
-4. **`apps/web/app/api/event-categories/route.ts`**
-   - New API endpoint for fetching categories
+---
 
-## 🚀 **Next Steps**
+## Deleted Endpoints (Will Return 404)
 
-**For Web Team (Us):**
-1. Deploy database migration to Supabase (tomorrow, Oct 17)
-2. Deploy updated API to Vercel (tomorrow, Oct 17)
+| Deleted | Use Instead |
+|---------|-------------|
+| ❌ `/api/playlists/[id]` | ✅ `/api/playlists/[playlistId]` |
+| ❌ `/api/events/[eventId]` | ✅ `/api/events/[id]` |
+| ❌ `/creator/[creatorId]` | ✅ `/creator/[username]` |
+| ❌ `/track/[id]` | ✅ `/track/[trackId]` |
 
-**For Mobile Team (You):**
-1. Review the integration guide
-2. Update your app to use new categories
-3. Test with our staging environment
+**Most likely to affect you:** `/creator/[creatorId]` endpoint is completely removed. You must use `/creator/[username]` instead.
 
-**Together:**
-- Joint testing on Oct 18
-- Production deployment on Oct 18
+---
 
-## 📞 **Let's Sync**
+## What You Need to Do
 
-Want to jump on a quick call today to walk through the implementation? Available anytime this afternoon.
+### 1. Search Your Codebase (5 minutes)
 
-**Timeline:** We can have this fully deployed by Oct 18 if we coordinate well.
+```bash
+# In your mobile app directory
+grep -r "/api/playlists/" src/ components/ screens/
+grep -r "/api/events/" src/ components/ screens/
+grep -r "/creator/" src/ components/ screens/
+grep -r "/track/" src/ components/ screens/
+```
 
-Let me know if you have any questions!
+### 2. Review Full Migration Guide (10 minutes)
 
-**Best,**  
+We've created a comprehensive guide with:
+- ✅ Complete list of affected endpoints
+- ✅ Code examples for each fix
+- ✅ Testing checklist
+- ✅ Full API reference
+
+**📄 Read here:** `MOBILE_TEAM_CRITICAL_API_ENDPOINT_CHANGES.md`
+
+Direct link: https://github.com/Asibe-Cheta/soundbridge/blob/main/MOBILE_TEAM_CRITICAL_API_ENDPOINT_CHANGES.md
+
+### 3. Update Code (30-60 minutes)
+
+Main change needed:
+```typescript
+// ❌ BEFORE (will break)
+fetch(`${"${API_BASE_URL}"}/creator/${"${creatorId}"})
+
+// ✅ AFTER (works)
+fetch(`${"${API_BASE_URL}"}/creator/${"${username}"})
+```
+
+### 4. Test Features (30 minutes)
+
+- [ ] Playlist details and tracks
+- [ ] Event details and RSVP
+- [ ] Creator profiles (by username)
+- [ ] Track playback and details
+
+---
+
+## Timeline
+
+- ✅ **Now:** Changes are LIVE in production
+- 🎯 **Target:** Mobile updates completed by Dec 18-19, 2025
+
+---
+
+## Questions?
+
+1. **Check the migration guide first:** `MOBILE_TEAM_CRITICAL_API_ENDPOINT_CHANGES.md`
+2. **Test endpoints directly:** Use Postman with `https://soundbridge.live/api/...`
+3. **Contact web team:** If you need clarification or encounter issues
+
+---
+
+## Bonus: Sentry for Mobile
+
+We now have Sentry error monitoring on the web app - it caught this issue within minutes! We recommend setting up Sentry for React Native too.
+
+Setup guide included in the migration document.
+
+---
+
+**Thanks for your quick attention to this!**
+
 Web Team
 
 ---
 
-**Quick Links:**
-- Documentation: `MOBILE_TEAM_UNIFIED_CATEGORIES_RESPONSE.md`
-- API Endpoint: `https://soundbridge.live/api/event-categories` (will be live tomorrow)
-- GitHub Repo: Latest commit has all changes
+**Attachments:**
+- `MOBILE_TEAM_CRITICAL_API_ENDPOINT_CHANGES.md` (full migration guide)
+- `API_ENDPOINTS_DOCUMENTATION.md` (complete API reference)
 
----
-
+**Commit Reference:** d00b7b88 - "Fix: Remove duplicate dynamic route parameters"
