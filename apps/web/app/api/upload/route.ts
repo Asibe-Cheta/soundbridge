@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { uploadValidationService } from '../../../src/lib/upload-validation';
 import type { UploadValidationRequest } from '../../../src/lib/types/upload-validation';
+import { validateAudioFile, type AudioMetadata } from '../../../src/lib/audio-moderation-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -190,8 +191,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Enhanced audio validation with moderation utilities (Phase 2)
+    let audioValidationResult;
+    let fileHash: string | null = null;
+    let audioMetadata: any = null;
+
+    if (fileData) {
+      try {
+        console.log('🔍 Running enhanced audio validation...');
+
+        // Create File object from base64 data for validation
+        const file = await createFileFromBase64(fileData);
+
+        // Client metadata from request
+        const clientMetadata: Partial<AudioMetadata> = {
+          duration,
+          bitrate,
+          sampleRate,
+          channels,
+          codec,
+        };
+
+        // Run comprehensive audio validation
+        audioValidationResult = await validateAudioFile(
+          file,
+          supabase,
+          user.id,
+          clientMetadata
+        );
+
+        if (!audioValidationResult.isValid) {
+          console.warn('⚠️ Audio validation issues found:', audioValidationResult.qualityIssues);
+          return NextResponse.json(
+            {
+              error: 'Audio validation failed',
+              validationErrors: audioValidationResult.qualityIssues,
+              validationWarnings: audioValidationResult.warnings
+            },
+            { status: 400 }
+          );
+        }
+
+        fileHash = audioValidationResult.fileHash;
+        audioMetadata = audioValidationResult.metadata;
+
+        console.log('✅ Enhanced audio validation passed');
+
+        // Log warnings if any
+        if (audioValidationResult.warnings.length > 0) {
+          console.log('⚠️ Audio quality warnings:', audioValidationResult.warnings);
+        }
+
+      } catch (validationError) {
+        console.error('❌ Enhanced audio validation error:', validationError);
+        // Continue with upload but log the error
+        // Don't block upload if hash calculation fails
+      }
+    }
+
     // Create audio track record
-    const trackData = {
+    const trackData: any = {
       title: title.trim(),
       artist_name: artistName.trim(),
       description: description?.trim() || null,
@@ -212,7 +271,18 @@ export async function POST(request: NextRequest) {
       codec: codec || 'mp3',
       processing_status: 'completed',
       processing_completed_at: new Date().toISOString(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      // NEW: Content moderation fields (Phase 2)
+      moderation_status: 'pending_check', // Will be checked by background job
+      file_hash: fileHash,
+      audio_metadata: audioMetadata ? {
+        bitrate: audioMetadata.bitrate,
+        sampleRate: audioMetadata.sampleRate,
+        channels: audioMetadata.channels,
+        format: audioMetadata.format,
+        codec: audioMetadata.codec,
+        size: audioMetadata.size
+      } : null
     };
 
     const { data: track, error: insertError } = await (supabase
