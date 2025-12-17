@@ -23,6 +23,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@rive-app/react-canvas": "^4.23.3",
     "@sendgrid/mail": "^8.1.5",
+    "@sentry/nextjs": "^10.31.0",
     "@soundbridge/shared": "file:../../packages/shared",
     "@soundbridge/supabase": "file:../../packages/supabase",
     "@soundbridge/types": "file:../../packages/types",
