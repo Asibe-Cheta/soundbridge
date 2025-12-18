@@ -98,8 +98,8 @@ export function FeedRightSidebar() {
   };
 
   return (
-    <aside className="w-80 flex-shrink-0 hidden xl:block">
-      <div className="space-y-4 flex flex-col" style={{ height: 'calc(100vh - 120px)' }}>
+    <aside className="w-80 flex-shrink-0 hidden xl:block sticky top-24" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+      <div className="space-y-4 flex flex-col">
         {/* Quick Actions */}
         <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4">
           <h4 className="text-xs font-semibold text-gray-400 uppercase mb-3">Quick Actions</h4>
@@ -238,7 +238,7 @@ export function FeedRightSidebar() {
         </div>
 
         {/* Messaging Widget - Fixed at bottom */}
-        <div className="mt-auto">
+        <div className="mt-auto pt-4">
           <MessagingWidget />
         </div>
       </div>

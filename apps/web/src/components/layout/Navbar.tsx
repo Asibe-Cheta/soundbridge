@@ -513,23 +513,6 @@ export default function Navbar() {
                 <Radio size={18} color={pathname === '/live' ? '#DC2626' : undefined} />
                 <span>Live</span>
               </Link>
-              <Link href="/about" style={{ 
-                textDecoration: 'none', 
-                color: pathname === '/about' ? '#DC2626' : 'var(--text-primary)',
-                transition: 'all 0.3s ease',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontWeight: pathname === '/about' ? '600' : '400'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/about' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
-              >
-                <Info size={18} color={pathname === '/about' ? '#DC2626' : undefined} />
-                <span>About</span>
-              </Link>
              </nav>
              
              {/* Spacer between navigation and search */}
@@ -1094,29 +1077,6 @@ export default function Navbar() {
             >
               <Radio size={20} style={{ color: '#EF4444' }} />
               Live
-            </Link>
-            <Link 
-              href="/about" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <User size={20} style={{ color: '#8B5CF6' }} />
-              About
             </Link>
           </nav>
         </div>

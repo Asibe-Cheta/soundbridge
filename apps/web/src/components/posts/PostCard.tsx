@@ -59,6 +59,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showRepostMenu, setShowRepostMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
   const [reactions, setReactions] = useState(post.reactions || {
@@ -449,10 +450,13 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             <div
               className="fixed inset-0 z-10"
               onClick={() => setShowReactionPicker(false)}
-              onMouseLeave={() => setShowReactionPicker(false)}
             />
-            <div className="relative mb-3 flex justify-center">
-              <div className="bg-gray-800 border border-white/20 rounded-full px-3 py-2 flex items-center gap-3 shadow-xl z-20">
+            <div className="relative mb-3 flex justify-center z-20">
+              <div 
+                className="bg-gray-800 border border-white/20 rounded-full px-3 py-2 flex items-center gap-3 shadow-xl"
+                onMouseEnter={() => setShowReactionPicker(true)}
+                onMouseLeave={() => setShowReactionPicker(false)}
+              >
                 {(['support', 'love', 'fire', 'congrats'] as const).map((type) => (
                   <button
                     key={type}
@@ -525,10 +529,64 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             </Link>
 
             {/* Repost Button */}
-            <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200">
-              <Repeat2 size={18} />
-              <span className="text-sm font-medium">Repost</span>
-            </button>
+            <div className="relative flex-1">
+              <button
+                onClick={() => setShowRepostMenu(!showRepostMenu)}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full"
+              >
+                <Repeat2 size={18} />
+                <span className="text-sm font-medium">Repost</span>
+              </button>
+
+              {showRepostMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowRepostMenu(false)}
+                  />
+                  <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-20 min-w-[200px]">
+                    <button
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-t-lg transition-colors"
+                      onClick={() => {
+                        setShowRepostMenu(false);
+                        // TODO: Open repost with quote modal
+                        router.push(`/post/${post.id}/repost?withQuote=true`);
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Repeat2 size={16} />
+                        <span>Repost with your thoughts</span>
+                      </div>
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-b-lg transition-colors"
+                      onClick={async () => {
+                        setShowRepostMenu(false);
+                        // TODO: Implement quick repost
+                        try {
+                          const response = await fetch(`/api/posts/${post.id}/repost`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                          });
+                          if (response.ok) {
+                            // TODO: Show success notification
+                            if (onUpdate) onUpdate();
+                          }
+                        } catch (error) {
+                          console.error('Error reposting:', error);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Repeat2 size={16} />
+                        <span>Repost</span>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Share Button */}
             <div className="relative flex-1">
