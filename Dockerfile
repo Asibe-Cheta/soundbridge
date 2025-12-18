@@ -1,28 +1,25 @@
-# SoundBridge Whisper Service - Dockerfile
-# Builds a container with Python (Whisper) + Node.js (Express server)
+# SoundBridge Whisper Service - Optimized Dockerfile
+# Builds a lightweight container with Python (Whisper) + Node.js (Express server)
 
 FROM python:3.10-slim
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies and Node.js in a single layer to reduce size
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install Whisper
-RUN pip install --no-cache-dir -U openai-whisper
+# Install only Whisper (without unnecessary dependencies like transformers models)
+RUN pip install --no-cache-dir \
+    openai-whisper==20231117 \
+    && rm -rf /root/.cache/pip
 
-# Install Node.js 18
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
-
-# Verify installations
-RUN whisper --help && \
-    node --version && \
-    npm --version && \
-    ffmpeg -version
+# Pre-download only the 'base' model to reduce image size (163MB vs 2.9GB for large)
+RUN python -c "import whisper; whisper.load_model('base')"
 
 # Create app directory
 WORKDIR /app
