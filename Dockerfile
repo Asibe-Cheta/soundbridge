@@ -9,12 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     ca-certificates \
+    pkg-config \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Python dependencies
 RUN pip install --no-cache-dir \
-    faster-whisper==1.0.0 \
+    faster-whisper==1.0.3 \
     flask==3.0.0 \
     requests==2.31.0 \
     gunicorn==21.2.0 \
