@@ -98,7 +98,7 @@ export function FeedRightSidebar() {
   };
 
   return (
-    <aside className="w-80 flex-shrink-0 hidden xl:block sticky top-24">
+    <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">
       <div 
         className="flex flex-col" 
         style={{ height: 'calc(100vh - 120px)' }}
