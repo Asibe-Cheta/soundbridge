@@ -1,34 +1,32 @@
-# SoundBridge Whisper Service - Optimized Dockerfile
-# Builds a lightweight container with Python (Whisper) + Node.js (Express server)
+# SoundBridge Whisper Service - Ultra-lightweight using faster-whisper
+# Uses faster-whisper (CTranslate2) which is 4x smaller and faster than openai-whisper
 
 FROM python:3.10-slim
 
-# Install system dependencies and Node.js in a single layer to reduce size
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     ca-certificates \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install only Whisper (without unnecessary dependencies like transformers models)
+# Install Python dependencies
 RUN pip install --no-cache-dir \
-    openai-whisper==20231117 \
+    faster-whisper==1.0.0 \
+    flask==3.0.0 \
+    requests==2.31.0 \
+    gunicorn==21.2.0 \
     && rm -rf /root/.cache/pip
 
-# Pre-download only the 'base' model to reduce image size (163MB vs 2.9GB for large)
-RUN python -c "import whisper; whisper.load_model('base')"
+# Pre-download base model for faster-whisper (smaller model files)
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8')"
 
 # Create app directory
 WORKDIR /app
 
-# Copy entire whisper-service directory
-COPY whisper-service ./
-
-# Install Node dependencies
-RUN npm install --production
+# Copy Python service
+COPY whisper-service/app.py ./
 
 # Create temp directory for transcriptions
 RUN mkdir -p /tmp && chmod 777 /tmp
@@ -36,9 +34,9 @@ RUN mkdir -p /tmp && chmod 777 /tmp
 # Expose port
 EXPOSE 3000
 
-# Health check
+# Health check using curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD curl -f http://localhost:3000/health || exit 1
 
-# Start server
-CMD ["node", "index.js"]
+# Start server with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:3000", "--workers", "2", "--timeout", "120", "app:app"]
