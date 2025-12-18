@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { socialService } from '@/src/lib/social-service';
 
 // CORS headers for mobile app
@@ -20,8 +19,8 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use getSupabaseRouteClient to support both Bearer tokens and cookies
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
@@ -63,8 +62,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use getSupabaseRouteClient to support both Bearer tokens and cookies
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
