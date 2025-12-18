@@ -175,7 +175,7 @@ export default function FeedPage() {
           <FeedLeftSidebar />
 
           {/* Center Feed - Narrower */}
-          <main className="flex-1 max-w-2xl mx-auto">
+          <main className="flex-1 max-w-2xl mx-auto pt-8">
             {/* Create Post Card */}
             <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 mb-4 hover:border-white/20 transition-all">
               <div className="flex items-center gap-3">
