@@ -27,14 +27,11 @@ RUN whisper --help && \
 # Create app directory
 WORKDIR /app
 
-# Copy package files from whisper-service directory
-COPY whisper-service/package*.json ./
+# Copy entire whisper-service directory
+COPY whisper-service ./
 
 # Install Node dependencies
 RUN npm install --production
-
-# Copy application code from whisper-service directory
-COPY whisper-service/index.js ./
 
 # Create temp directory for transcriptions
 RUN mkdir -p /tmp && chmod 777 /tmp
