@@ -36,11 +36,13 @@ export interface Post {
   visibility: 'connections' | 'public';
   post_type: 'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event';
   event_id?: string;
+  reposted_from_id?: string; // ID of the original post if this is a repost
   created_at: string;
   updated_at?: string;
   deleted_at?: string;
   // Joined fields
   author?: PostAuthor;
+  reposted_from?: Post; // Original post data if this is a repost
   attachments?: PostAttachment[];
   reactions?: PostReactions;
   comment_count?: number;

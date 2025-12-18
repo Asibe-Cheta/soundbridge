@@ -97,7 +97,7 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
   const canPost = true; // Can always post (comment is optional)
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-gray-900 border border-white/10 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -167,7 +167,7 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-white text-sm">
-                    {post.author?.name || 'Unknown User'}
+                    {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
                   </span>
                   {post.author?.role && (
                     <span className="text-gray-400 text-xs">• {post.author.role}</span>

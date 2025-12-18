@@ -117,10 +117,10 @@ class DataService {
     try {
       const offset = (page - 1) * limit;
 
-      // First get the posts
+      // First get the posts (including reposted_from_id if it exists)
       const { data: posts, error: postsError } = await this.supabase
         .from('posts')
-        .select('*')
+        .select('id, user_id, content, visibility, post_type, event_id, reposted_from_id, created_at, updated_at, deleted_at')
         .is('deleted_at', null)
         .eq('visibility', 'public')
         .order('created_at', { ascending: false })
@@ -139,22 +139,32 @@ class DataService {
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
       const { data: authors } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, location')
+        .select('id, username, display_name, avatar_url, role, professional_headline, location')
         .in('id', userIds);
 
       // Map authors to posts
       const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
-      const postsWithAuthors = posts.map((post: any) => ({
-        ...post,
-        author: authorsMap.get(post.user_id) || {
-          id: post.user_id,
-          username: 'unknown',
-          display_name: 'Unknown User',
-          avatar_url: null,
-          role: null,
-          location: null
-        }
-      }));
+      const postsWithAuthors = posts.map((post: any) => {
+        const authorData = authorsMap.get(post.user_id);
+        return {
+          ...post,
+          author: authorData ? {
+            id: authorData.id,
+            name: authorData.display_name || authorData.username || 'User',
+            username: authorData.username,
+            display_name: authorData.display_name,
+            avatar_url: authorData.avatar_url,
+            role: authorData.role || authorData.professional_headline
+          } : {
+            id: post.user_id,
+            name: 'User',
+            username: null,
+            display_name: null,
+            avatar_url: null,
+            role: null
+          }
+        };
+      });
 
       return {
         data: postsWithAuthors,

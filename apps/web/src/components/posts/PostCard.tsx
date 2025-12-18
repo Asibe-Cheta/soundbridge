@@ -264,6 +264,19 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 md:p-6 mb-4 hover:border-white/20 transition-all">
+      {/* Repost Indicator */}
+      {post.reposted_from_id && (
+        <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
+          <Repeat2 size={14} className="text-red-400" />
+          <span className="text-xs text-gray-400">
+            <span className="text-white font-medium">
+              {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+            </span>
+            {' '}reposted
+          </span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3 flex-1">
@@ -288,7 +301,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             <div className="flex items-center gap-2 flex-wrap">
               <Link href={`/creator/${post.author?.username || post.author?.id}`}>
                 <span className="font-semibold text-white hover:text-red-400 transition-colors">
-                  {post.author?.name || 'Unknown User'}
+                  {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
                 </span>
               </Link>
               {post.author?.role && (
@@ -534,13 +547,66 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             {/* Repost Button */}
             <div className="relative flex-1">
               <button
-                onClick={() => setShowRepostMenu(!showRepostMenu)}
+                onClick={async () => {
+                  // Quick repost - automatically repost without opening modal
+                  if (!user) {
+                    router.push('/login');
+                    return;
+                  }
+
+                  try {
+                    const response = await fetch(`/api/posts/${post.id}/repost`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({
+                        with_comment: false,
+                      }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                      throw new Error(data.error || 'Failed to repost');
+                    }
+
+                    // Show success toast notification (bottom left)
+                    const { toast: toastFn } = await import('react-hot-toast');
+                    toastFn.success('Repost successful. View post', {
+                      position: 'bottom-left',
+                      duration: 4000,
+                      style: {
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        color: 'white',
+                        borderRadius: '12px',
+                        padding: '16px',
+                      },
+                      iconTheme: {
+                        primary: '#10B981',
+                        secondary: 'white',
+                      },
+                    });
+
+                    if (onUpdate) onUpdate();
+                  } catch (error: any) {
+                    console.error('Error reposting:', error);
+                    toast.error(error.message || 'Failed to repost');
+                  }
+                }}
+                onContextMenu={(e) => {
+                  // Right-click to show menu with "repost with thoughts" option
+                  e.preventDefault();
+                  setShowRepostMenu(!showRepostMenu);
+                }}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full"
               >
                 <Repeat2 size={18} />
                 <span className="text-sm font-medium">Repost</span>
               </button>
 
+              {/* Menu for "Repost with your thoughts" - shown on right-click or via separate button */}
               {showRepostMenu && (
                 <>
                   <div
@@ -549,7 +615,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                   />
                   <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-20 min-w-[200px]">
                     <button
-                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-t-lg transition-colors"
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
                       onClick={() => {
                         setShowRepostMenu(false);
                         setShowRepostModal(true);
@@ -558,62 +624,6 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                       <div className="flex items-center gap-2">
                         <Repeat2 size={16} />
                         <span>Repost with your thoughts</span>
-                      </div>
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-b-lg transition-colors"
-                      onClick={async () => {
-                        setShowRepostMenu(false);
-                        if (!user) {
-                          router.push('/login');
-                          return;
-                        }
-
-                        try {
-                          const response = await fetch(`/api/posts/${post.id}/repost`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                              with_comment: false,
-                            }),
-                          });
-
-                          const data = await response.json();
-
-                          if (!response.ok || !data.success) {
-                            throw new Error(data.error || 'Failed to repost');
-                          }
-
-                          // Show success toast notification (bottom left)
-                          const { toast: toastFn } = await import('react-hot-toast');
-                          toastFn.success('Repost successful. View post', {
-                            position: 'bottom-left',
-                            duration: 4000,
-                            style: {
-                              background: 'rgba(16, 185, 129, 0.1)',
-                              backdropFilter: 'blur(20px)',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                              color: 'white',
-                              borderRadius: '12px',
-                              padding: '16px',
-                            },
-                            iconTheme: {
-                              primary: '#10B981',
-                              secondary: 'white',
-                            },
-                          });
-
-                          if (onUpdate) onUpdate();
-                        } catch (error: any) {
-                          console.error('Error reposting:', error);
-                          toast.error(error.message || 'Failed to repost');
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Repeat2 size={16} />
-                        <span>Repost</span>
                       </div>
                     </button>
                   </div>
