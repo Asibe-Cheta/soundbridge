@@ -1,5 +1,6 @@
 # SoundBridge Whisper Service - Ultra-lightweight using faster-whisper
 # Uses faster-whisper (CTranslate2) which is 4x smaller and faster than openai-whisper
+# Railway deployment
 
 FROM python:3.10-slim
 
