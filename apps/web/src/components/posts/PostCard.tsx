@@ -15,6 +15,8 @@ import {
 import { ImageModal } from './ImageModal';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
 import { ReportPostModal } from './ReportPostModal';
+import { RepostModal } from './RepostModal';
+import { toast } from '@/src/components/ui/Toast';
 
 interface PostCardProps {
   post: Post;
@@ -60,6 +62,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
   const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showRepostMenu, setShowRepostMenu] = useState(false);
+  const [showRepostModal, setShowRepostModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
   const [reactions, setReactions] = useState(post.reactions || {
@@ -549,8 +552,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                       className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-t-lg transition-colors"
                       onClick={() => {
                         setShowRepostMenu(false);
-                        // TODO: Open repost with quote modal
-                        router.push(`/post/${post.id}/repost?withQuote=true`);
+                        setShowRepostModal(true);
                       }}
                     >
                       <div className="flex items-center gap-2">
@@ -562,19 +564,50 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                       className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-b-lg transition-colors"
                       onClick={async () => {
                         setShowRepostMenu(false);
-                        // TODO: Implement quick repost
+                        if (!user) {
+                          router.push('/login');
+                          return;
+                        }
+
                         try {
                           const response = await fetch(`/api/posts/${post.id}/repost`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
+                            body: JSON.stringify({
+                              with_comment: false,
+                            }),
                           });
-                          if (response.ok) {
-                            // TODO: Show success notification
-                            if (onUpdate) onUpdate();
+
+                          const data = await response.json();
+
+                          if (!response.ok || !data.success) {
+                            throw new Error(data.error || 'Failed to repost');
                           }
-                        } catch (error) {
+
+                          // Show success toast notification (bottom left)
+                          const { toast: toastFn } = await import('react-hot-toast');
+                          toastFn.success('Repost successful. View post', {
+                            position: 'bottom-left',
+                            duration: 4000,
+                            style: {
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              backdropFilter: 'blur(20px)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              color: 'white',
+                              borderRadius: '12px',
+                              padding: '16px',
+                            },
+                            iconTheme: {
+                              primary: '#10B981',
+                              secondary: 'white',
+                            },
+                          });
+
+                          if (onUpdate) onUpdate();
+                        } catch (error: any) {
                           console.error('Error reposting:', error);
+                          toast.error(error.message || 'Failed to repost');
                         }
                       }}
                     >
@@ -723,6 +756,16 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
           contentType="post"
         />
       )}
+
+      {/* Repost Modal */}
+      <RepostModal
+        isOpen={showRepostModal}
+        onClose={() => setShowRepostModal(false)}
+        post={post}
+        onRepostSuccess={() => {
+          if (onUpdate) onUpdate();
+        }}
+      />
     </div>
   );
 }

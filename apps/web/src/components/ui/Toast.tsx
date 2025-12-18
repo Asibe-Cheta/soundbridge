@@ -101,9 +101,13 @@ export function Toaster() {
 
 // Custom toast functions with glassmorphism styling
 export const toast = {
-  success: (message: string) => {
-    return import('react-hot-toast').then(({ toast }) =>
-      toast.success(message, toastStyles.success)
+  success: (message: string, options?: { position?: 'top-right' | 'bottom-left'; duration?: number }) => {
+    return import('react-hot-toast').then(({ toast: toastFn }) =>
+      toastFn.success(message, {
+        ...toastStyles.success,
+        position: options?.position || 'top-right',
+        duration: options?.duration || 4000,
+      })
     );
   },
   error: (message: string) => {
