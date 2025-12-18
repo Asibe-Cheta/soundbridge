@@ -9,7 +9,8 @@ import { useSocial } from '@/src/hooks/useSocial';
 import { Post, PostAttachment } from '@/src/lib/types/post';
 import { 
   ThumbsUp, Heart, Flame, PartyPopper, MessageCircle, Share2, Bookmark, 
-  MoreHorizontal, Clock, Globe, Users, Play, Pause, ExternalLink, Shield, Flag
+  MoreHorizontal, Clock, Globe, Users, Play, Pause, ExternalLink, Shield, Flag,
+  Repeat2, Send
 } from 'lucide-react';
 import { ImageModal } from './ImageModal';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
@@ -35,6 +36,20 @@ const reactionColors = {
   congrats: 'text-yellow-500',
 };
 
+const reactionLabels = {
+  support: 'Like',
+  love: 'Love',
+  fire: 'Fire',
+  congrats: 'Applause',
+};
+
+const reactionEmojis = {
+  support: '👍',
+  love: '❤️',
+  fire: '🔥',
+  congrats: '👏',
+};
+
 export function PostCard({ post, onUpdate, showFullContent = false }: PostCardProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -42,8 +57,10 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isExpanded, setIsExpanded] = useState(showFullContent);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
   const [reactions, setReactions] = useState(post.reactions || {
     support: 0,
     love: 0,
@@ -133,21 +150,11 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
 
         if (response.ok) {
           const data = await response.json();
-          if (data.success) {
-            const newReactions = { ...reactions };
-            
-            // Remove old reaction count
-            if (currentReaction) {
-              newReactions[currentReaction] = Math.max(0, newReactions[currentReaction] - 1);
-            }
-
-            // Add new reaction count
-            if (!currentReaction || currentReaction !== reactionType) {
-              newReactions[reactionType] = (newReactions[reactionType] || 0) + 1;
-            }
-
-            newReactions.user_reaction = reactionType;
-            setReactions(newReactions);
+          if (data.success && data.data?.updated_counts) {
+            setReactions({
+              ...data.data.updated_counts,
+              user_reaction: reactionType,
+            });
           }
         }
       }
@@ -157,6 +164,35 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
       setIsReacting(false);
     }
   };
+
+  // Quick like (single click)
+  const handleQuickLike = () => {
+    if (!showReactionPicker) {
+      handleReaction('support');
+    }
+  };
+
+  // Long-press handler for reaction picker
+  const handleLikePressStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      setShowReactionPicker(true);
+    }, 500);
+  };
+
+  const handleLikePressEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+    };
+  }, []);
 
   const handleBookmark = async () => {
     if (!user) {
@@ -405,130 +441,190 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
         </div>
       )}
 
-      {/* Reactions Bar */}
-      <div className="flex items-center justify-between py-3 border-t border-white/10">
-        <div className="flex items-center gap-4">
-          {/* Reaction Picker */}
-          <div className="relative">
-            <button
-              onClick={() => setShowReactionPicker(!showReactionPicker)}
-              disabled={isReacting}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
-            >
-              {reactions.user_reaction ? (
+      {/* LinkedIn-Style Interaction Bar */}
+      <div className="border-t border-white/10 pt-3 mt-3">
+        {/* Reaction Picker (shows on hover/long-press) */}
+        {showReactionPicker && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowReactionPicker(false)}
+              onMouseLeave={() => setShowReactionPicker(false)}
+            />
+            <div className="relative mb-3 flex justify-center">
+              <div className="bg-gray-800 border border-white/20 rounded-full px-3 py-2 flex items-center gap-3 shadow-xl z-20">
+                {(['support', 'love', 'fire', 'congrats'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleReaction(type)}
+                    onMouseEnter={() => setHoveredReaction(type)}
+                    onMouseLeave={() => setHoveredReaction(null)}
+                    className={`flex flex-col items-center justify-center w-11 h-11 rounded-full transition-all duration-150 ${
+                      hoveredReaction === type
+                        ? 'scale-125 bg-white/10'
+                        : 'hover:scale-110'
+                    } ${
+                      reactions.user_reaction === type ? 'bg-white/10' : ''
+                    }`}
+                    title={reactionLabels[type]}
+                  >
+                    <span className="text-2xl leading-none">
+                      {reactionEmojis[type]}
+                    </span>
+                    <span className="text-[10px] text-gray-400 mt-0.5">
+                      {reactionLabels[type]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Interaction Buttons Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center flex-1">
+            {/* Like Button */}
+            <div className="relative flex-1">
+              <button
+                onClick={handleQuickLike}
+                onMouseDown={handleLikePressStart}
+                onMouseUp={handleLikePressEnd}
+                onMouseLeave={handleLikePressEnd}
+                onTouchStart={handleLikePressStart}
+                onTouchEnd={handleLikePressEnd}
+                disabled={isReacting}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 flex-1 ${
+                  reactions.user_reaction
+                    ? `${reactionColors[reactions.user_reaction]} bg-white/5`
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
+                } disabled:opacity-50`}
+              >
+                {reactions.user_reaction ? (
+                  <>
+                    <span className="text-lg">{reactionEmojis[reactions.user_reaction]}</span>
+                    <span className="text-sm font-medium">
+                      {reactionLabels[reactions.user_reaction]}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <ThumbsUp size={18} className="text-current" />
+                    <span className="text-sm font-medium">Like</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Comment Button */}
+            <Link href={`/post/${post.id}`} className="flex-1">
+              <button className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full">
+                <MessageCircle size={18} />
+                <span className="text-sm font-medium">Comment</span>
+              </button>
+            </Link>
+
+            {/* Repost Button */}
+            <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200">
+              <Repeat2 size={18} />
+              <span className="text-sm font-medium">Repost</span>
+            </button>
+
+            {/* Share Button */}
+            <div className="relative flex-1">
+              <button
+                onClick={() => setShowShareMenu(!showShareMenu)}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full"
+              >
+                <Send size={18} />
+                <span className="text-sm font-medium">Share</span>
+              </button>
+
+              {showShareMenu && (
                 <>
-                  {React.createElement(reactionIcons[reactions.user_reaction], {
-                    size: 20,
-                    className: reactionColors[reactions.user_reaction],
-                  })}
-                  <span className="text-sm text-gray-300">{totalReactions}</span>
-                </>
-              ) : (
-                <>
-                  <ThumbsUp size={20} className="text-gray-400" />
-                  <span className="text-sm text-gray-400">React</span>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowShareMenu(false)}
+                  />
+                  <div className="absolute bottom-full right-0 mb-2 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-20 min-w-[180px]">
+                    <button
+                      onClick={() => handleShare()}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-t-lg flex items-center gap-2"
+                    >
+                      <ExternalLink size={16} />
+                      Share...
+                    </button>
+                    <button
+                      onClick={() => handleShare('twitter')}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 flex items-center gap-2"
+                    >
+                      <span className="text-blue-400">𝕏</span> Twitter
+                    </button>
+                    <button
+                      onClick={() => handleShare('facebook')}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 flex items-center gap-2"
+                    >
+                      <span className="text-blue-600">f</span> Facebook
+                    </button>
+                    <button
+                      onClick={() => handleShare('copy')}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-b-lg flex items-center gap-2"
+                    >
+                      📋 Copy Link
+                    </button>
+                  </div>
                 </>
               )}
-            </button>
-
-            {showReactionPicker && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowReactionPicker(false)}
-                />
-                <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-white/10 rounded-full px-2 py-1 flex items-center gap-2 z-20 shadow-xl">
-                  {(['support', 'love', 'fire', 'congrats'] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => handleReaction(type)}
-                      className={`p-2 rounded-full hover:bg-white/10 transition-colors ${
-                        reactions.user_reaction === type ? 'bg-white/10' : ''
-                      }`}
-                      title={type.charAt(0).toUpperCase() + type.slice(1)}
-                    >
-                      {React.createElement(reactionIcons[type], {
-                        size: 20,
-                        className: reactionColors[type],
-                      })}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+            </div>
           </div>
 
-          {/* Comment Button */}
-          <Link href={`/post/${post.id}`}>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
-              <MessageCircle size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-400">
-                {post.comment_count || 0}
-              </span>
-            </button>
-          </Link>
-
-          {/* Share Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowShareMenu(!showShareMenu)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <Share2 size={20} className="text-gray-400" />
-            </button>
-
-            {showShareMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowShareMenu(false)}
-                />
-                <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-20 min-w-[180px]">
-                  <button
-                    onClick={() => handleShare()}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-t-lg flex items-center gap-2"
-                  >
-                    <ExternalLink size={16} />
-                    Share...
-                  </button>
-                  <button
-                    onClick={() => handleShare('twitter')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 flex items-center gap-2"
-                  >
-                    <span className="text-blue-400">𝕏</span> Twitter
-                  </button>
-                  <button
-                    onClick={() => handleShare('facebook')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 flex items-center gap-2"
-                  >
-                    <span className="text-blue-600">f</span> Facebook
-                  </button>
-                  <button
-                    onClick={() => handleShare('copy')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-b-lg flex items-center gap-2"
-                  >
-                    📋 Copy Link
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Bookmark Button (Right side) */}
+          <button
+            onClick={handleBookmark}
+            className={`ml-2 p-2.5 rounded-lg transition-colors ${
+              isBookmarked
+                ? 'text-yellow-400 hover:bg-white/5'
+                : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
+            }`}
+          >
+            <Bookmark
+              size={18}
+              className={isBookmarked ? 'fill-current' : ''}
+            />
+          </button>
         </div>
 
-        {/* Bookmark Button */}
-        <button
-          onClick={handleBookmark}
-          className={`p-2 rounded-lg transition-colors ${
-            isBookmarked
-              ? 'text-yellow-400 hover:bg-white/10'
-              : 'text-gray-400 hover:bg-white/10'
-          }`}
-        >
-          <Bookmark
-            size={20}
-            className={isBookmarked ? 'fill-current' : ''}
-          />
-        </button>
+        {/* Interaction Summary Line */}
+        {(totalReactions > 0 || (post.comment_count && post.comment_count > 0)) && (
+          <div className="mt-2 pt-2 border-t border-white/5">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              {totalReactions > 0 && (
+                <button
+                  onClick={() => setShowReactionPicker(true)}
+                  className="hover:text-gray-300 transition-colors"
+                >
+                  {reactions.user_reaction ? (
+                    <span>
+                      You and {totalReactions - 1} {totalReactions - 1 === 1 ? 'other' : 'others'}
+                    </span>
+                  ) : (
+                    <span>{totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}</span>
+                  )}
+                </button>
+              )}
+              {totalReactions > 0 && post.comment_count && post.comment_count > 0 && (
+                <span>•</span>
+              )}
+              {post.comment_count && post.comment_count > 0 && (
+                <Link href={`/post/${post.id}`}>
+                  <button className="hover:text-gray-300 transition-colors">
+                    {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
+                  </button>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* View Post Link */}
