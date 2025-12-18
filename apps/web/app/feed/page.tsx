@@ -170,12 +170,12 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       <div className="container mx-auto px-4 pt-8 pb-6 max-w-7xl">
-        <div className="flex gap-6">
+        <div className="flex flex-col xl:grid xl:grid-cols-[280px_1fr_320px] gap-6">
           {/* Left Sidebar */}
           <FeedLeftSidebar />
 
           {/* Center Feed - Narrower */}
-          <main className="flex-1 max-w-xl mx-auto pt-4">
+          <main className="flex-1 max-w-lg mx-auto pt-4 xl:max-w-lg">
             {/* Create Post Card */}
             <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 mb-4 hover:border-white/20 transition-all">
               <div className="flex items-center gap-3">
