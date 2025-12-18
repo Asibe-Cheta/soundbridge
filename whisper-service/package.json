@@ -1,0 +1,25 @@
+{
+  "name": "soundbridge-whisper-service",
+  "version": "1.0.0",
+  "description": "Self-hosted Whisper transcription service for SoundBridge",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": [
+    "whisper",
+    "transcription",
+    "audio"
+  ],
+  "author": "SoundBridge",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,16 @@
+# Ignore parent directory files
+../*
+
+# Only include whisper-service files
+!../whisper-service
+
+# Ignore node_modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore temp files
+*.tmp
+*.temp
+/tmp/
