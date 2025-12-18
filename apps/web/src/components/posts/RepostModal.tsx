@@ -94,7 +94,7 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
   };
 
   const remainingChars = MAX_COMMENT_LENGTH - comment.length;
-  const canPost = comment.trim().length > 0 || comment.length === 0;
+  const canPost = true; // Can always post (comment is optional)
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
