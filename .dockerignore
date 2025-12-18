@@ -1,0 +1,9 @@
+# Ignore everything by default
+*
+
+# Allow whisper-service directory
+!whisper-service/
+!whisper-service/**
+
+# Allow Dockerfile
+!Dockerfile
