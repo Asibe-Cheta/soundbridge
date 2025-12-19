@@ -101,37 +101,46 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
     setIsBookmarked(initialBookmarkStatus);
   }, [initialBookmarkStatus]);
 
+  // Track if we've attempted to fetch comments for this post
+  const hasFetchedCommentsRef = React.useRef<string | null>(null);
+
   // Fetch comment preview (1-2 comments) or all comments if expanded
   useEffect(() => {
-    // Always try to fetch comments if comment box is shown, we have a comment count, or we're showing all comments
-    const commentCount = (post as any).comment_count || (post as any).comments_count || 0;
-    if ((commentCount > 0 || showCommentBox || showAllComments) && !showFullContent) {
+    // Always try to fetch comments on mount and when needed
+    if (!showFullContent) {
+      const commentCount = (post as any).comment_count || (post as any).comments_count || 0;
       const limit = showAllComments ? 50 : 2;
-      fetch(`/api/posts/${post.id}/comments?limit=${limit}`, {
-        credentials: 'include',
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.data?.comments) {
-            setCommentPreview(data.data.comments);
-            // Update comment count from API response if available
-            if (data.data.pagination?.total !== undefined) {
-              const total = data.data.pagination.total;
-              if (total > 0 && !(post as any).comment_count && !(post as any).comments_count) {
-                (post as any).comment_count = total;
+      
+      // Always fetch if: we have a count, comment box is open, showing all, OR we haven't fetched for this post yet
+      const shouldFetch = commentCount > 0 || showCommentBox || showAllComments || hasFetchedCommentsRef.current !== post.id;
+      
+      if (shouldFetch) {
+        hasFetchedCommentsRef.current = post.id;
+        fetch(`/api/posts/${post.id}/comments?limit=${limit}`, {
+          credentials: 'include',
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.data?.comments) {
+              setCommentPreview(data.data.comments);
+              // Update comment count from API response if available
+              if (data.data.pagination?.total !== undefined) {
+                const total = data.data.pagination.total;
+                if (total > 0 && !(post as any).comment_count && !(post as any).comments_count) {
+                  (post as any).comment_count = total;
+                }
+              }
+            } else if (data.success && (!data.data?.comments || data.data.comments.length === 0)) {
+              // Only clear if we're explicitly checking and found nothing
+              if (commentCount === 0 && !showCommentBox && !showAllComments) {
+                setCommentPreview([]);
               }
             }
-          } else if (data.success && (!data.data?.comments || data.data.comments.length === 0)) {
-            // No comments found, clear preview
-            setCommentPreview([]);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch comment preview:', err);
-        });
-    } else if (commentCount === 0 && !showCommentBox && !showAllComments) {
-      // Only clear if we're sure there are no comments
-      setCommentPreview([]);
+          })
+          .catch(err => {
+            console.error('Failed to fetch comment preview:', err);
+          });
+      }
     }
   }, [post.id, post.comment_count, showFullContent, showAllComments, showCommentBox]);
 
@@ -873,7 +882,7 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
             )}
             
             {/* Comment Preview - Simple inline view when not expanded */}
-            {commentPreview.length > 0 && !showCommentBox && !showAllComments && (
+            {commentPreview.length > 0 && !showCommentBox && (
               <div className="space-y-2">
                 {commentPreview.slice(0, 2).map((comment) => (
                   <div key={comment.id} className="flex items-start gap-2">
@@ -969,6 +978,11 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                     };
                     setCommentPreview(prev => [newComment, ...prev]);
                     setCommentText('');
+                    
+                    // Ensure comment box stays open and comments are visible
+                    if (!showCommentBox) {
+                      setShowCommentBox(true);
+                    }
                     
                     // Update comment count in post object
                     if (!(post as any).comment_count && !(post as any).comments_count) {
