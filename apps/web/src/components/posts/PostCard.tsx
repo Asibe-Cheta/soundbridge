@@ -90,11 +90,29 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
       avatar_url?: string;
     };
     created_at: string;
+    like_count?: number;
+    user_liked?: boolean;
+    replies?: Array<{
+      id: string;
+      content: string;
+      author: {
+        id: string;
+        name: string;
+        username?: string;
+        avatar_url?: string;
+      };
+      created_at: string;
+      like_count?: number;
+      user_liked?: boolean;
+    }>;
   }>>([]);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
+  const [showReplies, setShowReplies] = useState<Set<string>>(new Set());
 
   // Update bookmark status if prop changes
   useEffect(() => {
@@ -318,6 +336,65 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
       window.open(shareUrl, '_blank', 'width=600,height=400');
     }
     setShowShareMenu(false);
+  };
+
+  // Handle reply to comment
+  const handleReply = async (commentId: string, replyContent: string) => {
+    if (!replyContent.trim() || !user) return;
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}/comments/${commentId}/replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: replyContent.trim() }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.data?.reply) {
+        const newReply = {
+          id: data.data.reply.id,
+          content: data.data.reply.content,
+          author: data.data.reply.author,
+          created_at: data.data.reply.created_at,
+          like_count: 0,
+          user_liked: false,
+        };
+        
+        // Add reply to the comment's replies array
+        setCommentPreview(prev => prev.map(comment => 
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: [...(comment.replies || []), newReply]
+              }
+            : comment
+        ));
+        
+        // Show replies if not already shown
+        if (!showReplies.has(commentId)) {
+          setShowReplies(new Set([...showReplies, commentId]));
+        }
+        
+        // Clear reply text
+        setReplyText({ ...replyText, [commentId]: '' });
+        setReplyingTo(null);
+        
+        // Update comment count
+        if ((post as any).comment_count) {
+          (post as any).comment_count += 1;
+        }
+        
+        if (onUpdate) {
+          onUpdate();
+        }
+      } else {
+        throw new Error(data.error || 'Failed to post reply');
+      }
+    } catch (err: any) {
+      console.error('Failed to post reply:', err);
+      toast.error(err.message || 'Failed to post reply');
+    }
   };
 
   const totalReactions = reactions.support + reactions.love + reactions.fire + reactions.congrats;
@@ -881,9 +958,9 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
               </div>
             )}
             
-            {/* Comment Preview - Simple inline view when not expanded */}
+            {/* Comment Preview - Simple inline view when not expanded (LinkedIn style) */}
             {commentPreview.length > 0 && !showCommentBox && (
-              <div className="space-y-2">
+              <div className="space-y-2 mt-2">
                 {commentPreview.slice(0, 2).map((comment) => (
                   <div key={comment.id} className="flex items-start gap-2">
                     <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
@@ -896,7 +973,7 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                     </span>
                   </div>
                 ))}
-                {((post as any).comment_count || (post as any).comments_count || 0) > commentPreview.length && (
+                {((post as any).comment_count || (post as any).comments_count || 0) > 2 && (
                   <button
                     onClick={() => {
                       setShowCommentBox(true);
@@ -916,7 +993,7 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                     }}
                     className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
                   >
-                    View {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length} more {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length === 1 ? 'comment' : 'comments'}
+                    View {((post as any).comment_count || (post as any).comments_count || 0) - 2} more {((post as any).comment_count || (post as any).comments_count || 0) - 2 === 1 ? 'comment' : 'comments'}
                   </button>
                 )}
               </div>
@@ -975,6 +1052,9 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                       content: data.data.comment.content,
                       author: data.data.comment.author,
                       created_at: data.data.comment.created_at,
+                      like_count: 0,
+                      user_liked: false,
+                      replies: [],
                     };
                     setCommentPreview(prev => [newComment, ...prev]);
                     setCommentText('');
@@ -1052,66 +1132,267 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
           </div>
         )}
 
-        {/* Display Comments Inline */}
-        {commentPreview.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-            {commentPreview.map((comment) => (
-              <div key={comment.id} className="flex items-start gap-3">
-                <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
-                    {comment.author?.avatar_url ? (
-                      <Image
-                        src={comment.author.avatar_url}
-                        alt={comment.author.name || 'User'}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xs">
-                        {comment.author?.name?.charAt(0) || comment.author?.username?.charAt(0) || 'U'}
-                      </div>
-                    )}
-                  </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+        {/* Display Comments Inline - Full View (LinkedIn Style) */}
+        {commentPreview.length > 0 && showCommentBox && (
+          <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+            {commentPreview.map((comment) => {
+              const hasReplies = comment.replies && comment.replies.length > 0;
+              const showRepliesForThis = showReplies.has(comment.id);
+              
+              return (
+                <div key={comment.id} className="space-y-3">
+                  {/* Main Comment */}
+                  <div className="flex items-start gap-3">
                     <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
-                      <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
-                        {comment.author?.name || comment.author?.username || 'User'}
-                      </span>
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                        {comment.author?.avatar_url ? (
+                          <Image
+                            src={comment.author.avatar_url}
+                            alt={comment.author.name || 'User'}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xs">
+                            {comment.author?.name?.charAt(0) || comment.author?.username?.charAt(0) || 'U'}
+                          </div>
+                        )}
+                      </div>
                     </Link>
-                    <span className="text-xs text-gray-400">
-                      {formatTimeAgo(comment.created_at)}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
+                          <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
+                            {comment.author?.name || comment.author?.username || 'User'}
+                          </span>
+                        </Link>
+                        <span className="text-xs text-gray-400">
+                          {formatTimeAgo(comment.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-gray-300 text-sm whitespace-pre-wrap break-words mb-2">
+                        {comment.content}
+                      </p>
+                      
+                      {/* Comment Actions */}
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        <button
+                          onClick={async () => {
+                            if (!user) return;
+                            try {
+                              const response = await fetch(`/api/comments/${comment.id}/like`, {
+                                method: 'POST',
+                                credentials: 'include',
+                              });
+                              const data = await response.json();
+                              if (data.success) {
+                                setCommentPreview(prev => prev.map(c => 
+                                  c.id === comment.id 
+                                    ? { ...c, like_count: data.data.like_count || 0, user_liked: data.data.user_liked }
+                                    : c
+                                ));
+                              }
+                            } catch (err) {
+                              console.error('Failed to like comment:', err);
+                            }
+                          }}
+                          className={`flex items-center gap-1 hover:text-red-400 transition-colors ${comment.user_liked ? 'text-red-400' : ''}`}
+                        >
+                          <Heart size={14} className={comment.user_liked ? 'fill-current' : ''} />
+                          {comment.like_count && comment.like_count > 0 && <span>{comment.like_count}</span>}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                            if (replyingTo !== comment.id) {
+                              setReplyText({ ...replyText, [comment.id]: '' });
+                            }
+                          }}
+                          className="hover:text-red-400 transition-colors"
+                        >
+                          Reply
+                        </button>
+                        {hasReplies && (
+                          <button
+                            onClick={() => {
+                              const newShowReplies = new Set(showReplies);
+                              if (newShowReplies.has(comment.id)) {
+                                newShowReplies.delete(comment.id);
+                              } else {
+                                newShowReplies.add(comment.id);
+                              }
+                              setShowReplies(newShowReplies);
+                            }}
+                            className="hover:text-red-400 transition-colors"
+                          >
+                            {showRepliesForThis ? 'Hide' : 'Show'} {comment.replies?.length} {comment.replies?.length === 1 ? 'reply' : 'replies'}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Reply Input */}
+                      {replyingTo === comment.id && user && (
+                        <div className="mt-3 flex items-start gap-2">
+                          <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                            {user.user_metadata?.avatar_url ? (
+                              <Image
+                                src={user.user_metadata.avatar_url}
+                                alt="Your avatar"
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-[10px]">
+                                {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={replyText[comment.id] || ''}
+                              onChange={(e) => setReplyText({ ...replyText, [comment.id]: e.target.value })}
+                              placeholder="Write a reply..."
+                              className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition-colors"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && replyText[comment.id]?.trim()) {
+                                  e.preventDefault();
+                                  handleReply(comment.id, replyText[comment.id]);
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Replies with LinkedIn-style connecting line */}
+                      {hasReplies && showRepliesForThis && (
+                        <div className="mt-3 ml-11 space-y-3">
+                          {comment.replies?.map((reply) => (
+                            <div key={reply.id} className="flex items-start gap-3 relative">
+                              {/* Connecting line */}
+                              <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-white/10 -ml-3" />
+                              <Link href={`/creator/${reply.author?.username || reply.author?.id}`}>
+                                <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                                  {reply.author?.avatar_url ? (
+                                    <Image
+                                      src={reply.author.avatar_url}
+                                      alt={reply.author.name || 'User'}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-[10px]">
+                                      {reply.author?.name?.charAt(0) || reply.author?.username?.charAt(0) || 'U'}
+                                    </div>
+                                  )}
+                                </div>
+                              </Link>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Link href={`/creator/${reply.author?.username || reply.author?.id}`}>
+                                    <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
+                                      {reply.author?.name || reply.author?.username || 'User'}
+                                    </span>
+                                  </Link>
+                                  <span className="text-xs text-gray-400">
+                                    {formatTimeAgo(reply.created_at)}
+                                  </span>
+                                </div>
+                                <p className="text-gray-300 text-sm whitespace-pre-wrap break-words mb-2">
+                                  {reply.content}
+                                </p>
+                                <div className="flex items-center gap-4 text-xs text-gray-400">
+                                  <button
+                                    onClick={async () => {
+                                      if (!user) return;
+                                      try {
+                                        const response = await fetch(`/api/comments/${reply.id}/like`, {
+                                          method: 'POST',
+                                          credentials: 'include',
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                          setCommentPreview(prev => prev.map(c => 
+                                            c.id === comment.id 
+                                              ? {
+                                                  ...c,
+                                                  replies: c.replies?.map(r =>
+                                                    r.id === reply.id
+                                                      ? { ...r, like_count: data.data.like_count || 0, user_liked: data.data.user_liked }
+                                                      : r
+                                                  )
+                                                }
+                                              : c
+                                          ));
+                                        }
+                                      } catch (err) {
+                                        console.error('Failed to like reply:', err);
+                                      }
+                                    }}
+                                    className={`flex items-center gap-1 hover:text-red-400 transition-colors ${reply.user_liked ? 'text-red-400' : ''}`}
+                                  >
+                                    <Heart size={14} className={reply.user_liked ? 'fill-current' : ''} />
+                                    {reply.like_count && reply.like_count > 0 && <span>{reply.like_count}</span>}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setReplyingTo(replyingTo === reply.id ? null : reply.id);
+                                      if (replyingTo !== reply.id) {
+                                        setReplyText({ ...replyText, [reply.id]: '' });
+                                      }
+                                    }}
+                                    className="hover:text-red-400 transition-colors"
+                                  >
+                                    Reply
+                                  </button>
+                                </div>
+                                
+                                {/* Reply Input for nested replies */}
+                                {replyingTo === reply.id && user && (
+                                  <div className="mt-2 flex items-start gap-2">
+                                    <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                                      {user.user_metadata?.avatar_url ? (
+                                        <Image
+                                          src={user.user_metadata.avatar_url}
+                                          alt="Your avatar"
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-white font-semibold text-[10px]">
+                                          {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <input
+                                        type="text"
+                                        value={replyText[reply.id] || ''}
+                                        onChange={(e) => setReplyText({ ...replyText, [reply.id]: e.target.value })}
+                                        placeholder="Write a reply..."
+                                        className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition-colors"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && !e.shiftKey && replyText[reply.id]?.trim()) {
+                                            e.preventDefault();
+                                            // Replies to replies still go to the parent comment
+                                            handleReply(comment.id, replyText[reply.id]);
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-gray-300 text-sm whitespace-pre-wrap break-words">
-                    {comment.content}
-                  </p>
                 </div>
-              </div>
-            ))}
-            {((post as any).comment_count || (post as any).comments_count || 0) > commentPreview.length && (
-              <button
-                onClick={() => {
-                  setShowAllComments(true);
-                  fetch(`/api/posts/${post.id}/comments?limit=50`, {
-                    credentials: 'include',
-                  })
-                    .then(res => res.json())
-                    .then(data => {
-                      if (data.success && data.data?.comments) {
-                        setCommentPreview(data.data.comments);
-                      }
-                    })
-                    .catch(err => {
-                      console.error('Failed to fetch all comments:', err);
-                    });
-                }}
-                className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
-              >
-                View {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length} more {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length === 1 ? 'comment' : 'comments'}
-              </button>
-            )}
+              );
+            })}
           </div>
         )}
       </div>
