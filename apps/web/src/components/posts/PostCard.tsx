@@ -549,83 +549,13 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             <div className="relative flex-1">
               <button
                 type="button"
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  
-                  // Prevent double-clicks
-                  if (isReposting) {
-                    console.log('⏸️ Repost already in progress');
-                    return;
-                  }
-                  
-                  // Quick repost - automatically repost without opening modal
                   if (!user) {
                     router.push('/login');
                     return;
                   }
-
-                  console.log('🔄 Repost button clicked for post:', post.id);
-                  setIsReposting(true);
-
-                  try {
-                    console.log('📡 Sending repost request to:', `/api/posts/${post.id}/repost`);
-                    const response = await fetch(`/api/posts/${post.id}/repost`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      credentials: 'include',
-                      body: JSON.stringify({
-                        with_comment: false,
-                      }),
-                    });
-
-                    console.log('📥 Response status:', response.status);
-                    const data = await response.json();
-                    console.log('📥 Response data:', data);
-
-                    if (!response.ok || !data.success) {
-                      throw new Error(data.error || 'Failed to repost');
-                    }
-
-                    console.log('✅ Repost successful!');
-
-                    // Show success toast notification (bottom left)
-                    const { toast: toastFn } = await import('react-hot-toast');
-                    toastFn.success('Repost successful!', {
-                      position: 'bottom-left',
-                      duration: 4000,
-                      style: {
-                        background: 'rgba(16, 185, 129, 0.1)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        padding: '16px',
-                      },
-                      iconTheme: {
-                        primary: '#10B981',
-                        secondary: 'white',
-                      },
-                    });
-
-                    if (onUpdate) {
-                      console.log('🔄 Refreshing feed...');
-                      onUpdate();
-                    }
-                  } catch (error: any) {
-                    console.error('❌ Error reposting:', error);
-                    const { toast: toastFn } = await import('react-hot-toast');
-                    toastFn.error(error.message || 'Failed to repost', {
-                      position: 'bottom-left',
-                    });
-                  } finally {
-                    setIsReposting(false);
-                  }
-                }}
-                onContextMenu={(e) => {
-                  // Right-click to show menu with "repost with thoughts" option
-                  e.preventDefault();
-                  e.stopPropagation();
                   setShowRepostMenu(!showRepostMenu);
                 }}
                 disabled={isReposting}
@@ -648,25 +578,112 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                 )}
               </button>
 
-              {/* Menu for "Repost with your thoughts" - shown on right-click or via separate button */}
+              {/* Repost Menu - shown on click */}
               {showRepostMenu && (
                 <>
                   <div
                     className="fixed inset-0 z-10"
                     onClick={() => setShowRepostMenu(false)}
                   />
-                  <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-20 min-w-[200px]">
+                  <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-20 min-w-[220px]">
                     <button
-                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
-                      onClick={() => {
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-t-lg transition-colors flex items-center gap-2"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowRepostMenu(false);
+                        
+                        if (!user) {
+                          router.push('/login');
+                          return;
+                        }
+
+                        if (isReposting) {
+                          return;
+                        }
+
+                        console.log('🔄 Quick repost for post:', post.id);
+                        setIsReposting(true);
+
+                        try {
+                          console.log('📡 Sending repost request to:', `/api/posts/${post.id}/repost`);
+                          const controller = new AbortController();
+                          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+                          const response = await fetch(`/api/posts/${post.id}/repost`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            signal: controller.signal,
+                            body: JSON.stringify({
+                              with_comment: false,
+                            }),
+                          });
+
+                          clearTimeout(timeoutId);
+                          console.log('📥 Response status:', response.status);
+                          const data = await response.json();
+                          console.log('📥 Response data:', data);
+
+                          if (!response.ok || !data.success) {
+                            throw new Error(data.error || 'Failed to repost');
+                          }
+
+                          console.log('✅ Repost successful!');
+
+                          const { toast: toastFn } = await import('react-hot-toast');
+                          toastFn.success('Repost successful!', {
+                            position: 'bottom-left',
+                            duration: 4000,
+                            style: {
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              backdropFilter: 'blur(20px)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              color: 'white',
+                              borderRadius: '12px',
+                              padding: '16px',
+                            },
+                            iconTheme: {
+                              primary: '#10B981',
+                              secondary: 'white',
+                            },
+                          });
+
+                          if (onUpdate) {
+                            console.log('🔄 Refreshing feed...');
+                            onUpdate();
+                          }
+                        } catch (error: any) {
+                          console.error('❌ Error reposting:', error);
+                          const { toast: toastFn } = await import('react-hot-toast');
+                          if (error.name === 'AbortError') {
+                            toastFn.error('Request timed out. Please try again.', {
+                              position: 'bottom-left',
+                            });
+                          } else {
+                            toastFn.error(error.message || 'Failed to repost', {
+                              position: 'bottom-left',
+                            });
+                          }
+                        } finally {
+                          setIsReposting(false);
+                        }
+                      }}
+                    >
+                      <Repeat2 size={16} />
+                      <span>Repost</span>
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 rounded-b-lg transition-colors flex items-center gap-2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setShowRepostMenu(false);
                         setShowRepostModal(true);
                       }}
                     >
-                      <div className="flex items-center gap-2">
-                        <Repeat2 size={16} />
-                        <span>Repost with your thoughts</span>
-                      </div>
+                      <Repeat2 size={16} />
+                      <span>Repost with your thoughts</span>
                     </button>
                   </div>
                 </>
