@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('posts')
-      .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at')
+      .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
       .is('deleted_at', null)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
@@ -128,12 +128,172 @@ export async function GET(request: NextRequest) {
           post.user_reposted = !!repostPostId;
           post.user_repost_id = repostPostId || null;
         });
+
+        // Fetch original posts for reposts (reposted_from object)
+        const repostedFromIds = posts
+          .map((p: any) => p.reposted_from_id)
+          .filter((id: any) => id !== null && id !== undefined);
+        
+        if (repostedFromIds.length > 0) {
+          try {
+            // Fetch original posts
+            const { data: originalPosts } = await withQueryTimeout(
+              supabase
+                .from('posts')
+                .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at')
+                .in('id', repostedFromIds)
+                .is('deleted_at', null),
+              10000 // 10s timeout
+            ) as any;
+
+            if (originalPosts && originalPosts.length > 0) {
+              // Get original post authors
+              const originalAuthorIds = [...new Set(originalPosts.map((p: any) => p.user_id))];
+              const { data: originalAuthors } = await withQueryTimeout(
+                supabase
+                  .from('profiles')
+                  .select('id, username, display_name, avatar_url')
+                  .in('id', originalAuthorIds),
+                5000 // 5s timeout
+              ) as any;
+
+              // Get original post attachments
+              const originalPostIds = originalPosts.map((p: any) => p.id);
+              const { data: originalAttachments } = await withQueryTimeout(
+                supabase
+                  .from('post_attachments')
+                  .select('*')
+                  .in('post_id', originalPostIds),
+                5000 // 5s timeout
+              ) as any;
+
+              // Get original post reactions
+              const { data: originalReactions } = await withQueryTimeout(
+                supabase
+                  .from('post_reactions')
+                  .select('post_id, reaction_type')
+                  .in('post_id', originalPostIds),
+                5000 // 5s timeout
+              ) as any;
+
+              // Build maps for quick lookup
+              const originalPostsMap = new Map(originalPosts.map((p: any) => [p.id, p]));
+              const originalAuthorsMap = new Map((originalAuthors || []).map((a: any) => [a.id, a]));
+              
+              // Group attachments by post_id
+              const originalAttachmentsMap = new Map();
+              (originalAttachments || []).forEach((att: any) => {
+                if (!originalAttachmentsMap.has(att.post_id)) {
+                  originalAttachmentsMap.set(att.post_id, []);
+                }
+                originalAttachmentsMap.get(att.post_id).push(att);
+              });
+
+              // Calculate reaction counts for original posts
+              const originalReactionsMap = new Map();
+              originalPostIds.forEach((postId: string) => {
+                originalReactionsMap.set(postId, {
+                  support: 0,
+                  love: 0,
+                  fire: 0,
+                  congrats: 0,
+                });
+              });
+              
+              if (originalReactions) {
+                originalReactions.forEach((r: any) => {
+                  const counts = originalReactionsMap.get(r.post_id);
+                  if (counts && r.reaction_type in counts) {
+                    counts[r.reaction_type]++;
+                  }
+                });
+              }
+
+              // Map reposted_from object to each repost
+              posts.forEach((post: any) => {
+                if (post.reposted_from_id) {
+                  const originalPost = originalPostsMap.get(post.reposted_from_id);
+                  if (originalPost) {
+                    const originalAuthor = originalAuthorsMap.get(originalPost.user_id);
+                    const attachments = originalAttachmentsMap.get(originalPost.id) || [];
+                    const reactionsCount = originalReactionsMap.get(originalPost.id) || {
+                      support: 0,
+                      love: 0,
+                      fire: 0,
+                      congrats: 0,
+                    };
+
+                    // Extract primary image/audio from attachments
+                    const imageAttachment = attachments.find((a: any) => 
+                      a.attachment_type === 'image' || a.attachment_type === 'photo'
+                    );
+                    const audioAttachment = attachments.find((a: any) => 
+                      a.attachment_type === 'audio' || a.attachment_type === 'track'
+                    );
+
+                    post.reposted_from = {
+                      id: originalPost.id,
+                      content: originalPost.content,
+                      created_at: originalPost.created_at,
+                      visibility: originalPost.visibility,
+                      author: originalAuthor ? {
+                        id: originalAuthor.id,
+                        username: originalAuthor.username || '',
+                        display_name: originalAuthor.display_name || originalAuthor.username || 'User',
+                        avatar_url: originalAuthor.avatar_url || null,
+                      } : {
+                        id: originalPost.user_id,
+                        username: '',
+                        display_name: 'User',
+                        avatar_url: null,
+                      },
+                      media_urls: originalPost.media_urls || [],
+                      image_url: imageAttachment?.file_url || null,
+                      audio_url: audioAttachment?.file_url || null,
+                      attachments: attachments,
+                      reactions_count: reactionsCount,
+                      comments_count: originalPost.comments_count || 0,
+                      shares_count: originalPost.shares_count || 0,
+                    };
+                  } else {
+                    // Original post not found (deleted or inaccessible)
+                    post.reposted_from = null;
+                  }
+                } else {
+                  // Not a repost
+                  post.reposted_from = null;
+                }
+              });
+            } else {
+              // No original posts found - set reposted_from to null
+              posts.forEach((post: any) => {
+                if (post.reposted_from_id) {
+                  post.reposted_from = null;
+                } else {
+                  post.reposted_from = null;
+                }
+              });
+            }
+          } catch (repostError) {
+            console.warn('⚠️ Failed to fetch reposted_from data, continuing without:', repostError);
+            // Set reposted_from to null for all posts if fetch fails
+            posts.forEach((post: any) => {
+              post.reposted_from = null;
+            });
+          }
+        } else {
+          // No reposts in this batch - set reposted_from to null for all
+          posts.forEach((post: any) => {
+            post.reposted_from = null;
+          });
+        }
       } catch (fetchError) {
         console.warn('⚠️ Failed to fetch authors/reposts, continuing without:', fetchError);
         // Continue without authors/reposts - posts will have null author and user_reposted = false
         posts.forEach((post: any) => {
           post.user_reposted = false;
           post.user_repost_id = null;
+          post.reposted_from = null;
         });
       }
     }
