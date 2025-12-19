@@ -117,10 +117,11 @@ class DataService {
     try {
       const offset = (page - 1) * limit;
 
-      // First get the posts (including reposted_from_id if it exists)
+      // First get the posts
+      // Note: reposted_from_id column may not exist in database yet, so we select all columns
       const { data: posts, error: postsError } = await this.supabase
         .from('posts')
-        .select('id, user_id, content, visibility, post_type, event_id, reposted_from_id, created_at, updated_at, deleted_at')
+        .select('*')
         .is('deleted_at', null)
         .eq('visibility', 'public')
         .order('created_at', { ascending: false })
