@@ -96,12 +96,12 @@ export async function POST(
 
     // Build the new post content
     let newPostContent = '';
-    if (with_comment && comment) {
+    if (with_comment && comment && comment.trim().length > 0) {
       // Repost with comment: user's comment
       newPostContent = comment.trim();
     } else {
-      // Quick repost: empty content (just a repost)
-      newPostContent = '';
+      // Quick repost: use original post content (required - content cannot be empty)
+      newPostContent = originalPost.content || 'Reposted';
     }
 
     // Create the repost
