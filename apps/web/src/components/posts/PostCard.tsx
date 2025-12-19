@@ -73,6 +73,7 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
     user_reaction: null,
   });
   const [isReacting, setIsReacting] = useState(false);
+  const [isReposting, setIsReposting] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -545,11 +546,18 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             </Link>
 
             {/* Repost Button */}
-            <div className="relative flex-1 z-10">
+            <div className="relative flex-1">
               <button
+                type="button"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  
+                  // Prevent double-clicks
+                  if (isReposting) {
+                    console.log('⏸️ Repost already in progress');
+                    return;
+                  }
                   
                   // Quick repost - automatically repost without opening modal
                   if (!user) {
@@ -558,9 +566,10 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                   }
 
                   console.log('🔄 Repost button clicked for post:', post.id);
+                  setIsReposting(true);
 
                   try {
-                    console.log('📡 Sending repost request...');
+                    console.log('📡 Sending repost request to:', `/api/posts/${post.id}/repost`);
                     const response = await fetch(`/api/posts/${post.id}/repost`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -609,6 +618,8 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                     toastFn.error(error.message || 'Failed to repost', {
                       position: 'bottom-left',
                     });
+                  } finally {
+                    setIsReposting(false);
                   }
                 }}
                 onContextMenu={(e) => {
@@ -617,11 +628,24 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                   e.stopPropagation();
                   setShowRepostMenu(!showRepostMenu);
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full relative z-10"
-                style={{ position: 'relative', zIndex: 10 }}
+                disabled={isReposting}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 w-full ${
+                  isReposting 
+                    ? 'text-gray-500 cursor-not-allowed opacity-50' 
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
+                }`}
               >
-                <Repeat2 size={18} />
-                <span className="text-sm font-medium">Repost</span>
+                {isReposting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="text-sm font-medium">Reposting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Repeat2 size={18} />
+                    <span className="text-sm font-medium">Repost</span>
+                  </>
+                )}
               </button>
 
               {/* Menu for "Repost with your thoughts" - shown on right-click or via separate button */}
