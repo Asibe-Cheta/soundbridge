@@ -85,22 +85,9 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
       }
 
       // Show success toast notification (bottom left)
-      const { toast: toastFn } = await import('react-hot-toast');
-      toastFn.success('Repost successful. View post', {
+      await toast.success('Repost successful!', {
         position: 'bottom-left',
         duration: 4000,
-        style: {
-          background: 'rgba(16, 185, 129, 0.1)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          color: 'white',
-          borderRadius: '12px',
-          padding: '16px',
-        },
-        iconTheme: {
-          primary: '#10B981',
-          secondary: 'white',
-        },
       });
 
       // Reset form

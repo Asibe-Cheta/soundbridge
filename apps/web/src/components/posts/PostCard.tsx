@@ -807,37 +807,25 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
 
                           console.log('✅ Repost successful!');
 
-                          const { toast: toastFn } = await import('react-hot-toast');
-                          toastFn.success('Repost successful!', {
+                          // Show success toast (await since toast returns a promise)
+                          await toast.success('Repost successful!', {
                             position: 'bottom-left',
                             duration: 4000,
-                            style: {
-                              background: 'rgba(16, 185, 129, 0.1)',
-                              backdropFilter: 'blur(20px)',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                              color: 'white',
-                              borderRadius: '12px',
-                              padding: '16px',
-                            },
-                            iconTheme: {
-                              primary: '#10B981',
-                              secondary: 'white',
-                            },
                           });
 
+                          // Refresh feed to show new repost at top
                           if (onUpdate) {
-                            console.log('🔄 Refreshing feed...');
+                            console.log('🔄 Refreshing feed after repost...');
                             onUpdate();
                           }
                         } catch (error: any) {
                           console.error('❌ Error reposting:', error);
-                          const { toast: toastFn } = await import('react-hot-toast');
                           if (error.name === 'AbortError') {
-                            toastFn.error('Request timed out. Please try again.', {
+                            toast.error('Request timed out. Please try again.', {
                               position: 'bottom-left',
                             });
                           } else {
-                            toastFn.error(error.message || 'Failed to repost', {
+                            toast.error(error.message || 'Failed to repost', {
                               position: 'bottom-left',
                             });
                           }

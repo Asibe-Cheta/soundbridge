@@ -156,7 +156,11 @@ export default function FeedPage() {
     hasTriedFetchRef.current = false; // Reset the flag to allow refresh
     setLoading(false); // Reset loading state
     setLoadingMore(false); // Reset loading more state
+    setPage(1); // Reset to first page
     fetchPosts(1, false, true); // Force refresh
+    
+    // Scroll to top to show new post
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Show loading state - show spinner if auth is loading OR if we're fetching posts
