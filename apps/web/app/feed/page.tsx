@@ -16,6 +16,7 @@ import { useSocial } from '@/src/hooks/useSocial';
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { batchCheckBookmarks } = useSocial();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false); // Start as false, will be set to true when fetch starts
   const [loadingMore, setLoadingMore] = useState(false);
@@ -25,6 +26,7 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [profilePic, setProfilePic] = useState<string | null>(null);
+  const [bookmarksMap, setBookmarksMap] = useState<Map<string, boolean>>(new Map());
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user]); // Remove loading/loadingMore to prevent infinite loop - use ref for tracking instead
+  }, [user, batchCheckBookmarks]); // Add batchCheckBookmarks to dependencies
 
   // Initial load - only run once when user is available
   useEffect(() => {
