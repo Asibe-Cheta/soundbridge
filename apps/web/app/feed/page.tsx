@@ -52,13 +52,13 @@ export default function FeedPage() {
   }, [user?.id]);
 
   // Fetch posts
-  const fetchPosts = useCallback(async (pageNum: number, append: boolean = false) => {
-    // Prevent duplicate calls - block if already loading
-    if (loadingMore) {
+  const fetchPosts = useCallback(async (pageNum: number, append: boolean = false, force: boolean = false) => {
+    // Prevent duplicate calls - block if already loading (unless forced)
+    if (!force && loadingMore) {
       console.log('⏸️ Blocked: Already loading more');
       return;
     }
-    if (!append && loading && hasTriedFetchRef.current) {
+    if (!force && !append && loading && hasTriedFetchRef.current) {
       console.log('⏸️ Blocked: Initial load already in progress');
       return;
     }
@@ -151,8 +151,12 @@ export default function FeedPage() {
   }, [hasMore, loadingMore, loading, page, fetchPosts]);
 
   const handlePostCreated = () => {
-    // Refresh feed
-    fetchPosts(1, false);
+    // Force refresh feed - reset loading state and fetch
+    console.log('🔄 Refreshing feed after post creation/repost...');
+    hasTriedFetchRef.current = false; // Reset the flag to allow refresh
+    setLoading(false); // Reset loading state
+    setLoadingMore(false); // Reset loading more state
+    fetchPosts(1, false, true); // Force refresh
   };
 
   // Show loading state - show spinner if auth is loading OR if we're fetching posts
