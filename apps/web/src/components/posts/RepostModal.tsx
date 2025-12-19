@@ -47,9 +47,9 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
         commentLength: commentText?.length || 0,
       });
 
-      // Add timeout protection
+      // Add timeout protection (30 seconds to match other API endpoints)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch(`/api/posts/${post.id}/repost`, {
         method: 'POST',

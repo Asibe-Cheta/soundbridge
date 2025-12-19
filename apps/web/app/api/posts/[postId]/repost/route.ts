@@ -41,11 +41,21 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { postId: string } }
 ) {
+  const startTime = Date.now();
+  
   try {
     console.log('🔄 Repost API called for post:', params.postId);
 
-    // Authenticate user
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    // Authenticate user with timeout
+    const authPromise = getSupabaseRouteClient(request, true);
+    const authTimeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Authentication timeout')), 5000);
+    });
+
+    const { supabase, user, error: authError } = await Promise.race([
+      authPromise,
+      authTimeoutPromise
+    ]) as any;
 
     if (authError || !user) {
       console.error('❌ Authentication failed:', authError);
@@ -57,13 +67,22 @@ export async function POST(
 
     console.log('✅ User authenticated:', user.id);
 
-    // Get the original post
-    const { data: originalPost, error: postError } = await supabase
+    // Get the original post with timeout
+    const postQueryPromise = supabase
       .from('posts')
       .select('*')
       .eq('id', params.postId)
       .is('deleted_at', null)
       .single();
+
+    const postQueryTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Post query timeout')), 8000);
+    });
+
+    const { data: originalPost, error: postError } = await Promise.race([
+      postQueryPromise,
+      postQueryTimeout
+    ]) as any;
 
     if (postError || !originalPost) {
       console.error('❌ Post not found:', postError);
@@ -120,92 +139,120 @@ export async function POST(
       updated_at: new Date().toISOString(),
     };
 
-    // Try to add reposted_from_id if column exists (won't fail if it doesn't)
-    try {
-      // Check if column exists by attempting to query it
-      const { error: checkError } = await supabase
-        .from('posts')
-        .select('reposted_from_id')
-        .limit(0);
-      
-      // If no error, column exists, so include it
-      if (!checkError) {
-        postData.reposted_from_id = params.postId;
-      }
-    } catch {
-      // Column doesn't exist, continue without it
-    }
+    // Try to add reposted_from_id if column exists
+    // If column doesn't exist, we'll retry without it
+    postData.reposted_from_id = params.postId;
 
-    const { data: newPost, error: createError } = await supabase
+    // Create the repost with timeout
+    const createPostPromise = supabase
       .from('posts')
       .insert(postData)
       .select()
       .single();
 
-    if (createError) {
+    const createPostTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Create post timeout')), 8000);
+    });
+
+    let { data: newPost, error: createError } = await Promise.race([
+      createPostPromise,
+      createPostTimeout
+    ]) as any;
+
+    // If error is about reposted_from_id column not existing, retry without it
+    if (createError && (createError.message?.includes('reposted_from_id') || createError.code === '42703')) {
+      console.log('⚠️ reposted_from_id column not found, retrying without it');
+      delete postData.reposted_from_id;
+      
+      const retryPromise = supabase
+        .from('posts')
+        .insert(postData)
+        .select()
+        .single();
+
+      const retryTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Create post timeout')), 8000);
+      });
+
+      const retryResult = await Promise.race([
+        retryPromise,
+        retryTimeout
+      ]) as any;
+
+      newPost = retryResult.data;
+      createError = retryResult.error;
+    }
+
+    if (createError || !newPost) {
       console.error('❌ Error creating repost:', createError);
       return NextResponse.json(
-        { success: false, error: 'Failed to create repost', details: createError.message },
+        { success: false, error: 'Failed to create repost', details: createError?.message || 'Unknown error' },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    // Copy attachments from original post if any
+    // Copy attachments from original post if any (non-blocking)
     if (originalPost.media_urls && originalPost.media_urls.length > 0) {
-      const { data: originalAttachments } = await supabase
+      // Don't await - do this in background to speed up response
+      supabase
         .from('post_attachments')
         .select('*')
-        .eq('post_id', params.postId);
+        .eq('post_id', params.postId)
+        .then(({ data: originalAttachments }) => {
+          if (originalAttachments && originalAttachments.length > 0) {
+            const newAttachments = originalAttachments.map(att => ({
+              post_id: newPost.id,
+              file_url: att.file_url,
+              file_name: att.file_name,
+              attachment_type: att.attachment_type,
+              file_size: att.file_size,
+              duration: att.duration,
+            }));
 
-      if (originalAttachments && originalAttachments.length > 0) {
-        const newAttachments = originalAttachments.map(att => ({
-          post_id: newPost.id,
-          file_url: att.file_url,
-          file_name: att.file_name,
-          attachment_type: att.attachment_type,
-          file_size: att.file_size,
-          duration: att.duration,
-        }));
-
-        await supabase
-          .from('post_attachments')
-          .insert(newAttachments);
-      }
+            supabase.from('post_attachments').insert(newAttachments).catch(err => {
+              console.warn('Could not copy attachments:', err);
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('Could not fetch attachments:', err);
+        });
     }
 
-    // Increment repost count on original post
-    try {
-      // Try using RPC function first
-      await supabase.rpc('increment_post_shares', {
-        post_id: params.postId,
-      });
-    } catch (error) {
-      // Function might not exist, try manual update using SQL
-      try {
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update({ 
-            shares_count: (originalPost.shares_count || 0) + 1 
-          })
-          .eq('id', params.postId);
-        
+    // Increment repost count on original post (non-blocking)
+    supabase
+      .from('posts')
+      .update({ 
+        shares_count: (originalPost.shares_count || 0) + 1 
+      })
+      .eq('id', params.postId)
+      .then(({ error: updateError }) => {
         if (updateError) {
           console.warn('Could not increment shares_count:', updateError);
         }
-      } catch (updateErr) {
-        console.warn('Could not update shares_count:', updateErr);
-        // Continue anyway - repost is created
-      }
-    }
+      })
+      .catch(err => {
+        console.warn('Could not update shares_count:', err);
+      });
 
-    // Get author profile
-    const { data: profile } = await supabase
+    // Get author profile with timeout
+    const profileQueryPromise = supabase
       .from('profiles')
       .select('id, username, display_name, avatar_url, professional_headline')
       .eq('id', user.id)
       .single();
 
-    console.log('✅ Repost created successfully:', newPost.id);
+    const profileQueryTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Profile query timeout')), 5000);
+    });
+
+    const { data: profile } = await Promise.race([
+      profileQueryPromise,
+      profileQueryTimeout
+    ]) as any;
+
+    const elapsed = Date.now() - startTime;
+    console.log(`✅ Repost created successfully in ${elapsed}ms:`, newPost.id);
 
     return NextResponse.json(
       {
