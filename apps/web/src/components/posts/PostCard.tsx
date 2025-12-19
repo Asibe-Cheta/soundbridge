@@ -10,7 +10,7 @@ import { Post, PostAttachment } from '@/src/lib/types/post';
 import { 
   ThumbsUp, Heart, Flame, PartyPopper, MessageCircle, Share2, Bookmark, 
   MoreHorizontal, Clock, Globe, Users, Play, Pause, ExternalLink, Shield, Flag,
-  Repeat2, Send
+  Repeat2, Send, Loader2
 } from 'lucide-react';
 import { ImageModal } from './ImageModal';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
