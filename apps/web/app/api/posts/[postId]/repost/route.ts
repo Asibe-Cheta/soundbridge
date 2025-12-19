@@ -46,10 +46,24 @@ export async function POST(
   try {
     console.log('🔄 Repost API called for post:', params.postId);
 
+    // Parse request body FIRST (before auth to catch parsing errors early)
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const { with_comment = false, comment } = body;
+
     // Authenticate user with timeout
     const authPromise = getSupabaseRouteClient(request, true);
     const authTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Authentication timeout')), 5000);
+      setTimeout(() => reject(new Error('Authentication timeout')), 3000); // Reduced to 3s
     });
 
     const { supabase, user, error: authError } = await Promise.race([
@@ -67,33 +81,16 @@ export async function POST(
 
     console.log('✅ User authenticated:', user.id, `(${Date.now() - startTime}ms)`);
 
-    // Parse request body FIRST (before any DB queries)
-    let body: any;
-    try {
-      console.log('📥 Parsing request body...');
-      body = await request.json();
-      console.log('✅ Request body parsed:', { with_comment: body.with_comment, commentLength: body.comment?.length || 0 });
-    } catch (parseError) {
-      console.error('❌ Error parsing request body:', parseError);
-      return NextResponse.json(
-        { success: false, error: 'Invalid request body' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    const { with_comment = false, comment } = body;
-
-    // Get the original post with timeout
-    console.log('🔍 Fetching original post...');
+    // Get ONLY the fields we need from original post (minimal query)
     const postQueryPromise = supabase
       .from('posts')
-      .select('*')
+      .select('id, content, visibility')
       .eq('id', params.postId)
       .is('deleted_at', null)
       .single();
 
     const postQueryTimeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Post query timeout')), 8000);
+      setTimeout(() => reject(new Error('Post query timeout')), 5000); // Reduced to 5s
     });
 
     const { data: originalPost, error: postError } = await Promise.race([
@@ -131,41 +128,31 @@ export async function POST(
     }
 
     // Build the new post content
-    let newPostContent = '';
-    if (with_comment && comment && comment.trim().length > 0) {
-      // Repost with comment: user's comment
-      newPostContent = comment.trim();
-    } else {
-      // Quick repost: use original post content (required - content cannot be empty)
-      newPostContent = originalPost.content || 'Reposted';
-    }
+    const newPostContent = (with_comment && comment && comment.trim().length > 0) 
+      ? comment.trim() 
+      : (originalPost.content || 'Reposted');
 
-    // Create the repost
-    // Note: reposted_from_id column may not exist in schema yet, so we'll try to include it
-    // but it will be ignored if the column doesn't exist
+    // Create minimal post data - only required fields
     const postData: any = {
       user_id: user.id,
       content: newPostContent,
-      visibility: originalPost.visibility, // Inherit visibility from original
-      post_type: 'update', // Reposts are always 'update' type
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      visibility: originalPost.visibility,
+      post_type: 'update',
     };
 
-    // Try to add reposted_from_id if column exists
-    // If column doesn't exist, we'll retry without it
+    // Try with reposted_from_id first (column should exist)
     postData.reposted_from_id = params.postId;
 
-    // Create the repost with timeout
+    // Create the repost with SHORT timeout
     console.log('📝 Creating repost...');
     const createPostPromise = supabase
       .from('posts')
       .insert(postData)
-      .select()
+      .select('id, content, user_id, created_at, reposted_from_id')
       .single();
 
     const createPostTimeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Create post timeout')), 8000);
+      setTimeout(() => reject(new Error('Create post timeout')), 5000); // Reduced to 5s
     });
 
     let { data: newPost, error: createError } = await Promise.race([
@@ -173,9 +160,7 @@ export async function POST(
       createPostTimeout
     ]) as any;
 
-    console.log('📝 Create post result:', { hasPost: !!newPost, hasError: !!createError, elapsed: `${Date.now() - startTime}ms` });
-
-    // If error is about reposted_from_id column not existing, retry without it
+    // If error is about reposted_from_id, retry without it (one quick retry)
     if (createError && (createError.message?.includes('reposted_from_id') || createError.code === '42703')) {
       console.log('⚠️ reposted_from_id column not found, retrying without it');
       delete postData.reposted_from_id;
@@ -183,11 +168,11 @@ export async function POST(
       const retryPromise = supabase
         .from('posts')
         .insert(postData)
-        .select()
+        .select('id, content, user_id, created_at')
         .single();
 
       const retryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Create post timeout')), 8000);
+        setTimeout(() => reject(new Error('Create post timeout')), 5000);
       });
 
       const retryResult = await Promise.race([
@@ -207,72 +192,67 @@ export async function POST(
       );
     }
 
-    // Copy attachments from original post if any (non-blocking)
-    if (originalPost.media_urls && originalPost.media_urls.length > 0) {
-      // Don't await - do this in background to speed up response
-      supabase
-        .from('post_attachments')
-        .select('*')
-        .eq('post_id', params.postId)
-        .then(({ data: originalAttachments }) => {
-          if (originalAttachments && originalAttachments.length > 0) {
-            const newAttachments = originalAttachments.map(att => ({
-              post_id: newPost.id,
-              file_url: att.file_url,
-              file_name: att.file_name,
-              attachment_type: att.attachment_type,
-              file_size: att.file_size,
-              duration: att.duration,
-            }));
+    console.log('✅ Repost created:', newPost.id, `(${Date.now() - startTime}ms)`);
 
-            supabase.from('post_attachments').insert(newAttachments).catch(err => {
-              console.warn('Could not copy attachments:', err);
-            });
-          }
-        })
-        .catch(err => {
-          console.warn('Could not fetch attachments:', err);
-        });
-    }
-
-    // Increment repost count on original post (non-blocking)
-    supabase
-      .from('posts')
-      .update({ 
-        shares_count: (originalPost.shares_count || 0) + 1 
-      })
-      .eq('id', params.postId)
-      .then(({ error: updateError }) => {
-        if (updateError) {
-          console.warn('Could not increment shares_count:', updateError);
-        }
-      })
-      .catch(err => {
-        console.warn('Could not update shares_count:', err);
-      });
-
-    // Skip profile query entirely for now - use minimal author data
-    // Profile can be fetched client-side if needed
+    // Return IMMEDIATELY - do everything else in background
     const elapsed = Date.now() - startTime;
     console.log(`✅ Repost created successfully in ${elapsed}ms:`, newPost.id);
 
-    // Return immediately with minimal data - don't wait for profile
+    // Do background operations (don't await)
+    Promise.all([
+      // Copy attachments (if any)
+      originalPost.media_urls && originalPost.media_urls.length > 0
+        ? supabase
+            .from('post_attachments')
+            .select('*')
+            .eq('post_id', params.postId)
+            .then(({ data: originalAttachments }) => {
+              if (originalAttachments?.length > 0) {
+                const newAttachments = originalAttachments.map(att => ({
+                  post_id: newPost.id,
+                  file_url: att.file_url,
+                  file_name: att.file_name,
+                  attachment_type: att.attachment_type,
+                  file_size: att.file_size,
+                  duration: att.duration,
+                }));
+                return supabase.from('post_attachments').insert(newAttachments);
+              }
+            })
+            .catch(() => {}) // Ignore errors
+        : Promise.resolve(),
+      
+      // Increment shares count (fetch current value first, then update)
+      supabase
+        .from('posts')
+        .select('shares_count')
+        .eq('id', params.postId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            return supabase
+              .from('posts')
+              .update({ shares_count: (data.shares_count || 0) + 1 })
+              .eq('id', params.postId);
+          }
+        })
+        .catch(() => {}) // Ignore errors
+    ]).catch(() => {}); // Ignore all background errors
+
+    // Return minimal response immediately
     return NextResponse.json(
       {
         success: true,
         data: {
-          ...newPost,
+          id: newPost.id,
+          content: newPost.content,
+          user_id: newPost.user_id,
+          created_at: newPost.created_at,
+          reposted_from_id: newPost.reposted_from_id,
           author: {
             id: user.id,
             name: user.email?.split('@')[0] || 'User',
             username: user.email?.split('@')[0] || 'user',
-            avatar_url: null,
-            role: null,
-          },
-          reposted_from: {
-            id: originalPost.id,
-            content: originalPost.content,
-            author: originalPost.user_id,
           },
         },
       },
