@@ -81,11 +81,13 @@ export async function GET(request: NextRequest) {
     // Execute with increased timeout to match client 30s timeout
     const { data: posts, error: postsError } = await withQueryTimeout(query, 20000) as any;
 
-    // If we got posts, fetch authors separately (faster than JOIN)
+    // If we got posts, fetch authors and repost status separately (faster than JOIN)
     if (posts && posts.length > 0) {
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
+      const postIds = posts.map((p: any) => p.id);
 
       try {
+        // Fetch authors
         const { data: authors } = await withQueryTimeout(
           supabase
             .from('profiles')
@@ -101,9 +103,38 @@ export async function GET(request: NextRequest) {
             post.author = authorsMap.get(post.user_id) || null;
           });
         }
-      } catch (authorError) {
-        console.warn('⚠️ Failed to fetch authors, continuing without:', authorError);
-        // Continue without authors - posts will have null author
+
+        // Fetch user's reposts to determine user_reposted status
+        const { data: userReposts } = await withQueryTimeout(
+          supabase
+            .from('post_reposts')
+            .select('post_id, repost_post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds),
+          5000 // 5s timeout for repost lookup
+        ) as any;
+
+        // Create map of post_id -> repost_post_id for quick lookup
+        const repostsMap = new Map();
+        if (userReposts) {
+          userReposts.forEach((r: any) => {
+            repostsMap.set(r.post_id, r.repost_post_id);
+          });
+        }
+
+        // Add user_reposted and user_repost_id to each post
+        posts.forEach((post: any) => {
+          const repostPostId = repostsMap.get(post.id);
+          post.user_reposted = !!repostPostId;
+          post.user_repost_id = repostPostId || null;
+        });
+      } catch (fetchError) {
+        console.warn('⚠️ Failed to fetch authors/reposts, continuing without:', fetchError);
+        // Continue without authors/reposts - posts will have null author and user_reposted = false
+        posts.forEach((post: any) => {
+          post.user_reposted = false;
+          post.user_repost_id = null;
+        });
       }
     }
 

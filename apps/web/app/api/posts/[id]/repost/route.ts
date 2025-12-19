@@ -1,28 +1,39 @@
 /**
- * POST /api/posts/[id]/repost
+ * POST /api/posts/[id]/repost - Repost a post (with or without comment)
+ * DELETE /api/posts/[id]/repost - Un-repost (remove repost)
  * 
- * Repost a post (with or without comment)
- * 
- * Request Body:
+ * POST Request Body:
  * {
  *   "with_comment": true, // or false for quick repost
  *   "comment": "Optional comment text" // required if with_comment is true
  * }
  * 
- * Response:
+ * POST Response:
  * {
  *   "success": true,
  *   "data": {
  *     "id": "new-post-uuid",
  *     "content": "...",
  *     "reposted_from_id": "original-post-uuid",
+ *     "user_reposted": true,
  *     ...
+ *   }
+ * }
+ * 
+ * DELETE Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "repost_post_id": "uuid",
+ *     "user_reposted": false,
+ *     "message": "Repost removed successfully"
  *   }
  * }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { notifyPostRepost } from '@/src/lib/post-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,6 +118,26 @@ export async function POST(
     }
 
     console.log('✅ Original post fetched:', originalPost.id, `(${Date.now() - startTime}ms)`);
+
+    // Check if user already reposted this post (prevent duplicates)
+    const { data: existingRepost } = await supabase
+      .from('post_reposts')
+      .select('id, repost_post_id')
+      .eq('post_id', params.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existingRepost) {
+      console.log('⚠️ User already reposted this post');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You have already reposted this post',
+          repost_post_id: existingRepost.repost_post_id,
+        },
+        { status: 409, headers: corsHeaders } // 409 Conflict
+      );
+    }
 
     // Validate comment if required
     if (with_comment) {
@@ -194,6 +225,23 @@ export async function POST(
 
     console.log('✅ Repost created:', newPost.id, `(${Date.now() - startTime}ms)`);
 
+    // Create repost record in post_reposts table
+    const { error: repostRecordError } = await supabase
+      .from('post_reposts')
+      .insert({
+        post_id: params.id,
+        user_id: user.id,
+        repost_post_id: newPost.id,
+      });
+
+    if (repostRecordError) {
+      console.error('❌ Error creating repost record:', repostRecordError);
+      // Don't fail the request - repost post is already created
+      // But log the error for monitoring
+    } else {
+      console.log('✅ Repost record created in post_reposts table');
+    }
+
     // Return IMMEDIATELY - do everything else in background
     const elapsed = Date.now() - startTime;
     console.log(`✅ Repost created successfully in ${elapsed}ms:`, newPost.id);
@@ -239,6 +287,27 @@ export async function POST(
         .catch(() => {}) // Ignore errors
     ]).catch(() => {}); // Ignore all background errors
 
+    // Send notification to original author (if not own post) - non-blocking
+    if (originalPost.user_id !== user.id) {
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', user.id)
+        .single();
+
+      const userName = userProfile?.display_name || userProfile?.username || 'Someone';
+      
+      notifyPostRepost(
+        originalPost.user_id,
+        userName,
+        originalPost.id,
+        newPost.id
+      ).catch((err) => {
+        console.error('Failed to send repost notification:', err);
+        // Don't fail the request if notification fails
+      });
+    }
+
     // Return minimal response immediately
     return NextResponse.json(
       {
@@ -249,6 +318,7 @@ export async function POST(
           user_id: newPost.user_id,
           created_at: newPost.created_at,
           reposted_from_id: newPost.reposted_from_id,
+          user_reposted: true, // User has now reposted
           author: {
             id: user.id,
             name: user.email?.split('@')[0] || 'User',
@@ -270,6 +340,110 @@ export async function POST(
       );
     }
     
+    return NextResponse.json(
+      { success: false, error: 'Internal server error', details: error.message },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+/**
+ * DELETE /api/posts/[id]/repost
+ * 
+ * Remove a repost (un-repost)
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const postId = params.id;
+    console.log('🗑️ Delete Repost API called for post:', postId);
+
+    // Authenticate user
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // Find user's repost record
+    const { data: repostRecord, error: findError } = await supabase
+      .from('post_reposts')
+      .select('id, repost_post_id')
+      .eq('post_id', postId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (findError || !repostRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Repost not found' },
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    const repostPostId = repostRecord.repost_post_id;
+
+    // Delete repost post (CASCADE will handle post_reposts deletion)
+    const { error: deleteRepostError } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', repostPostId)
+      .eq('user_id', user.id); // Ensure user owns the repost
+
+    if (deleteRepostError) {
+      console.error('❌ Error deleting repost post:', deleteRepostError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to delete repost', details: deleteRepostError.message },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Delete repost record explicitly (CASCADE should handle this, but explicit for safety)
+    const { error: deleteRecordError } = await supabase
+      .from('post_reposts')
+      .delete()
+      .eq('id', repostRecord.id);
+
+    if (deleteRecordError) {
+      console.error('⚠️ Error deleting repost record (non-critical):', deleteRecordError);
+      // Don't fail - post is already deleted
+    }
+
+    // Decrement shares_count on original post (background operation)
+    supabase
+      .from('posts')
+      .select('shares_count')
+      .eq('id', postId)
+      .single()
+      .then(({ data }) => {
+        if (data && data.shares_count && data.shares_count > 0) {
+          return supabase
+            .from('posts')
+            .update({ shares_count: Math.max(0, (data.shares_count || 0) - 1) })
+            .eq('id', postId);
+        }
+      })
+      .catch(() => {}); // Ignore errors in background operation
+
+    console.log('✅ Repost deleted successfully');
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          repost_post_id: repostPostId,
+          user_reposted: false, // User has now un-reposted
+          message: 'Repost removed successfully',
+        },
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error: any) {
+    console.error('❌ Unexpected error deleting repost:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error', details: error.message },
       { status: 500, headers: corsHeaders }

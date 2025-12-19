@@ -129,6 +129,13 @@ export async function GET(
       .in('post_id', postIds)
       .is('deleted_at', null);
 
+    // Get user's reposts to determine user_reposted status
+    const { data: userReposts } = await supabase
+      .from('post_reposts')
+      .select('post_id, repost_post_id')
+      .eq('user_id', user.id)
+      .in('post_id', postIds);
+
     // Build maps
     const attachmentsMap = new Map();
     if (attachments) {
@@ -141,6 +148,12 @@ export async function GET(
     }
 
     const reactionsMap = new Map();
+    const repostsMap = new Map();
+    if (userReposts) {
+      userReposts.forEach((r: any) => {
+        repostsMap.set(r.post_id, r.repost_post_id);
+      });
+    }
     if (reactions) {
       reactions.forEach(r => {
         if (!reactionsMap.has(r.post_id)) {
@@ -168,29 +181,34 @@ export async function GET(
     }
 
     // Format posts
-    const formattedPosts = posts.map(post => ({
-      id: post.id,
-      content: post.content,
-      visibility: post.visibility,
-      post_type: post.post_type,
-      created_at: post.created_at,
-      author: {
-        id: post.user_id,
-        name: profile?.display_name || profile?.username || 'Unknown',
-        username: profile?.username,
-        avatar_url: profile?.avatar_url,
-        role: profile?.professional_headline,
-      },
-      attachments: attachmentsMap.get(post.id) || [],
-      reactions: reactionsMap.get(post.id) || {
-        support: 0,
-        love: 0,
-        fire: 0,
-        congrats: 0,
-        user_reaction: null,
-      },
-      comment_count: commentCountsMap.get(post.id) || 0,
-    }));
+    const formattedPosts = posts.map(post => {
+      const repostPostId = repostsMap.get(post.id);
+      return {
+        id: post.id,
+        content: post.content,
+        visibility: post.visibility,
+        post_type: post.post_type,
+        created_at: post.created_at,
+        user_reposted: !!repostPostId,
+        user_repost_id: repostPostId || null,
+        author: {
+          id: post.user_id,
+          name: profile?.display_name || profile?.username || 'Unknown',
+          username: profile?.username,
+          avatar_url: profile?.avatar_url,
+          role: profile?.professional_headline,
+        },
+        attachments: attachmentsMap.get(post.id) || [],
+        reactions: reactionsMap.get(post.id) || {
+          support: 0,
+          love: 0,
+          fire: 0,
+          congrats: 0,
+          user_reaction: null,
+        },
+        comment_count: commentCountsMap.get(post.id) || 0,
+      };
+    });
 
     console.log(`✅ Fetched ${formattedPosts.length} posts for user ${userId}`);
 

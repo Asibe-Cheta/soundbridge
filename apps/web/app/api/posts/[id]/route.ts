@@ -141,11 +141,21 @@ export async function GET(
           })
       : [];
 
+    // Check if user has reposted this post
+    const { data: userRepost } = await supabase
+      .from('post_reposts')
+      .select('repost_post_id')
+      .eq('post_id', postId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     return NextResponse.json(
       {
         success: true,
         data: {
           ...post,
+          user_reposted: !!userRepost,
+          user_repost_id: userRepost?.repost_post_id || null,
           author: {
             id: post.user_id,
             name: profile?.display_name || profile?.username || 'Unknown',
