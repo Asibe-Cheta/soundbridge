@@ -35,19 +35,47 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
     setError(null);
 
     try {
+      // Determine if we're actually reposting with a comment
+      const hasComment = withComment && comment.trim().length > 0;
+      const actualWithComment = hasComment;
+      const commentText = hasComment ? comment.trim() : null;
+
+      console.log('📡 Sending repost request:', {
+        postId: post.id,
+        with_comment: actualWithComment,
+        hasComment: hasComment,
+        commentLength: commentText?.length || 0,
+      });
+
+      // Add timeout protection
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(`/api/posts/${post.id}/repost`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        signal: controller.signal,
         body: JSON.stringify({
-          with_comment: withComment,
-          comment: withComment ? comment.trim() : null,
+          with_comment: actualWithComment,
+          comment: commentText,
         }),
       });
 
+      clearTimeout(timeoutId);
+
+      console.log('📥 Response status:', response.status);
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        throw new Error('Invalid response from server');
+      }
+
       const data = await response.json();
+      console.log('📥 Response data:', data);
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to repost');
@@ -80,8 +108,19 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
       onRepostSuccess?.();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to repost. Please try again.');
-      toast.error(err.message || 'Failed to repost');
+      console.error('❌ Repost error:', err);
+      
+      // Handle different error types
+      let errorMessage = 'Failed to repost. Please try again.';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsReposting(false);
     }

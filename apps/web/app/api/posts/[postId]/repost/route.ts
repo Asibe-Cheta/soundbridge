@@ -77,16 +77,20 @@ export async function POST(
     const body = await request.json();
     const { with_comment = false, comment } = body;
 
+    console.log('📝 Repost request body:', { with_comment, commentLength: comment?.length || 0 });
+
     // Validate comment if required
     if (with_comment) {
-      if (!comment || comment.trim().length === 0) {
+      if (!comment || (typeof comment === 'string' && comment.trim().length === 0)) {
+        console.error('❌ Comment validation failed: comment is required when with_comment is true');
         return NextResponse.json(
           { success: false, error: 'Comment is required when reposting with thoughts' },
           { status: 400, headers: corsHeaders }
         );
       }
 
-      if (comment.length > 500) {
+      if (typeof comment === 'string' && comment.length > 500) {
+        console.error('❌ Comment validation failed: comment exceeds 500 characters');
         return NextResponse.json(
           { success: false, error: 'Comment must be 500 characters or less' },
           { status: 400, headers: corsHeaders }
