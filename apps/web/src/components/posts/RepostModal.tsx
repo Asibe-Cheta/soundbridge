@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Post } from '@/src/lib/types/post';
@@ -96,7 +97,7 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
   const remainingChars = MAX_COMMENT_LENGTH - comment.length;
   const canPost = true; // Can always post (comment is optional)
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
       <div className="bg-gray-900 border border-white/10 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[10000]">
         {/* Header */}
@@ -227,5 +228,9 @@ export function RepostModal({ isOpen, onClose, post, onRepostSuccess }: RepostMo
       </div>
     </div>
   );
+
+  // Use portal to render modal at document root level, ensuring it's always on top
+  if (typeof window === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
 
