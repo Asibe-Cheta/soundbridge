@@ -1,5 +1,5 @@
 /**
- * POST /api/posts/[postId]/repost
+ * POST /api/posts/[id]/repost
  * 
  * Repost a post (with or without comment)
  * 
@@ -39,12 +39,12 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: { id: string } }
 ) {
   const startTime = Date.now();
   
   try {
-    console.log('🔄 Repost API called for post:', params.postId);
+    console.log('🔄 Repost API called for post:', params.id);
 
     // Parse request body FIRST (before auth to catch parsing errors early)
     let body: any;
@@ -85,7 +85,7 @@ export async function POST(
     const postQueryPromise = supabase
       .from('posts')
       .select('id, content, visibility')
-      .eq('id', params.postId)
+      .eq('id', params.id)
       .is('deleted_at', null)
       .single();
 
@@ -141,7 +141,7 @@ export async function POST(
     };
 
     // Try with reposted_from_id first (column should exist)
-    postData.reposted_from_id = params.postId;
+    postData.reposted_from_id = params.id;
 
     // Create the repost with SHORT timeout
     console.log('📝 Creating repost...');
@@ -205,7 +205,7 @@ export async function POST(
         ? supabase
             .from('post_attachments')
             .select('*')
-            .eq('post_id', params.postId)
+            .eq('post_id', params.id)
             .then(({ data: originalAttachments }) => {
               if (originalAttachments?.length > 0) {
                 const newAttachments = originalAttachments.map(att => ({
@@ -226,14 +226,14 @@ export async function POST(
       supabase
         .from('posts')
         .select('shares_count')
-        .eq('id', params.postId)
+        .eq('id', params.id)
         .single()
         .then(({ data }) => {
           if (data) {
             return supabase
               .from('posts')
               .update({ shares_count: (data.shares_count || 0) + 1 })
-              .eq('id', params.postId);
+              .eq('id', params.id);
           }
         })
         .catch(() => {}) // Ignore errors
