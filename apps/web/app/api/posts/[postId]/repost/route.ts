@@ -92,10 +92,19 @@ export async function POST(
       );
     }
 
-    // Parse request body
-    const body = await request.json();
-    const { with_comment = false, comment } = body;
+    // Parse request body (do this early to catch any parsing errors)
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
+    const { with_comment = false, comment } = body;
     console.log('📝 Repost request body:', { with_comment, commentLength: comment?.length || 0 });
 
     // Validate comment if required
@@ -235,21 +244,29 @@ export async function POST(
         console.warn('Could not update shares_count:', err);
       });
 
-    // Get author profile with timeout
-    const profileQueryPromise = supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline')
-      .eq('id', user.id)
-      .single();
+    // Get author profile (non-blocking - fetch in background, use fallback if it fails)
+    let profile: any = null;
+    try {
+      const profileQueryPromise = supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, professional_headline')
+        .eq('id', user.id)
+        .single();
 
-    const profileQueryTimeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Profile query timeout')), 5000);
-    });
+      const profileQueryTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile query timeout')), 3000);
+      });
 
-    const { data: profile } = await Promise.race([
-      profileQueryPromise,
-      profileQueryTimeout
-    ]) as any;
+      const profileResult = await Promise.race([
+        profileQueryPromise,
+        profileQueryTimeout
+      ]) as any;
+
+      profile = profileResult.data;
+    } catch (profileErr) {
+      console.warn('⚠️ Could not fetch profile (using fallback):', profileErr);
+      // Continue without profile - we'll use fallback values
+    }
 
     const elapsed = Date.now() - startTime;
     console.log(`✅ Repost created successfully in ${elapsed}ms:`, newPost.id);
@@ -261,7 +278,7 @@ export async function POST(
           ...newPost,
           author: {
             id: user.id,
-            name: profile?.display_name || profile?.username || 'Unknown',
+            name: profile?.display_name || profile?.username || user.email?.split('@')[0] || 'User',
             username: profile?.username,
             avatar_url: profile?.avatar_url,
             role: profile?.professional_headline,
@@ -269,14 +286,24 @@ export async function POST(
           reposted_from: {
             id: originalPost.id,
             content: originalPost.content,
-            author: originalPost.user_id, // Will need to fetch separately if needed
+            author: originalPost.user_id,
           },
         },
       },
       { headers: corsHeaders }
     );
   } catch (error: any) {
-    console.error('❌ Unexpected error creating repost:', error);
+    const elapsed = Date.now() - startTime;
+    console.error(`❌ Unexpected error creating repost (after ${elapsed}ms):`, error);
+    
+    // Check if it was a timeout
+    if (error.message?.includes('timeout') || error.message?.includes('aborted') || error.message?.includes('Operation timeout')) {
+      return NextResponse.json(
+        { success: false, error: 'Request timed out. Please try again.' },
+        { status: 504, headers: corsHeaders }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Internal server error', details: error.message },
       { status: 500, headers: corsHeaders }
