@@ -143,6 +143,22 @@ class DataService {
         .select('id, username, display_name, avatar_url, role, professional_headline, location')
         .in('id', userIds);
 
+      // Get attachments for all posts
+      const postIds = posts.map((p: any) => p.id);
+      const { data: attachments } = await this.supabase
+        .from('post_attachments')
+        .select('*')
+        .in('post_id', postIds);
+
+      // Group attachments by post_id
+      const attachmentsMap = new Map<string, any[]>();
+      (attachments || []).forEach((att: any) => {
+        if (!attachmentsMap.has(att.post_id)) {
+          attachmentsMap.set(att.post_id, []);
+        }
+        attachmentsMap.get(att.post_id)!.push(att);
+      });
+
       // Map authors to posts
       const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
       const postsWithAuthors = posts.map((post: any) => {
@@ -163,7 +179,8 @@ class DataService {
             display_name: null,
             avatar_url: null,
             role: null
-          }
+          },
+          attachments: attachmentsMap.get(post.id) || []
         };
       });
 

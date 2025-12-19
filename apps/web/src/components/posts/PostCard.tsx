@@ -545,16 +545,22 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
             </Link>
 
             {/* Repost Button */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 z-10">
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
                   // Quick repost - automatically repost without opening modal
                   if (!user) {
                     router.push('/login');
                     return;
                   }
 
+                  console.log('🔄 Repost button clicked for post:', post.id);
+
                   try {
+                    console.log('📡 Sending repost request...');
                     const response = await fetch(`/api/posts/${post.id}/repost`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -564,15 +570,19 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                       }),
                     });
 
+                    console.log('📥 Response status:', response.status);
                     const data = await response.json();
+                    console.log('📥 Response data:', data);
 
                     if (!response.ok || !data.success) {
                       throw new Error(data.error || 'Failed to repost');
                     }
 
+                    console.log('✅ Repost successful!');
+
                     // Show success toast notification (bottom left)
                     const { toast: toastFn } = await import('react-hot-toast');
-                    toastFn.success('Repost successful. View post', {
+                    toastFn.success('Repost successful!', {
                       position: 'bottom-left',
                       duration: 4000,
                       style: {
@@ -589,18 +599,26 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
                       },
                     });
 
-                    if (onUpdate) onUpdate();
+                    if (onUpdate) {
+                      console.log('🔄 Refreshing feed...');
+                      onUpdate();
+                    }
                   } catch (error: any) {
-                    console.error('Error reposting:', error);
-                    toast.error(error.message || 'Failed to repost');
+                    console.error('❌ Error reposting:', error);
+                    const { toast: toastFn } = await import('react-hot-toast');
+                    toastFn.error(error.message || 'Failed to repost', {
+                      position: 'bottom-left',
+                    });
                   }
                 }}
                 onContextMenu={(e) => {
                   // Right-click to show menu with "repost with thoughts" option
                   e.preventDefault();
+                  e.stopPropagation();
                   setShowRepostMenu(!showRepostMenu);
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full relative z-10"
+                style={{ position: 'relative', zIndex: 10 }}
               >
                 <Repeat2 size={18} />
                 <span className="text-sm font-medium">Repost</span>
