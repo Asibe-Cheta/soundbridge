@@ -310,27 +310,27 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                   key={comment.id}
                   className="flex items-start gap-3 pb-4 border-b border-white/10 last:border-0"
                 >
-                  <Link href={`/creator/${comment.user?.username || comment.user_id}`}>
+                  <Link href={`/creator/${comment.author?.username || comment.user_id || comment.author?.id}`}>
                     <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
-                      {comment.user?.avatar_url ? (
+                      {comment.author?.avatar_url ? (
                         <Image
-                          src={comment.user.avatar_url}
-                          alt={comment.user.display_name}
+                          src={comment.author.avatar_url}
+                          alt={comment.author.name || 'User'}
                           fill
                           className="object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
-                          {comment.user?.display_name?.charAt(0) || 'U'}
+                          {comment.author?.name?.charAt(0) || comment.author?.username?.charAt(0) || 'U'}
                         </div>
                       )}
                     </div>
                   </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <Link href={`/creator/${comment.user?.username || comment.user_id}`}>
+                      <Link href={`/creator/${comment.author?.username || comment.user_id || comment.author?.id}`}>
                         <span className="font-semibold text-white hover:text-red-400 transition-colors">
-                          {comment.user?.display_name || 'Unknown User'}
+                          {comment.author?.name || comment.author?.username || 'User'}
                         </span>
                       </Link>
                       <span className="text-xs text-gray-400">

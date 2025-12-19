@@ -80,11 +80,40 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [commentPreview, setCommentPreview] = useState<Array<{
+    id: string;
+    content: string;
+    author: {
+      id: string;
+      name: string;
+      username?: string;
+      avatar_url?: string;
+    };
+    created_at: string;
+  }>>([]);
 
   // Update bookmark status if prop changes
   useEffect(() => {
     setIsBookmarked(initialBookmarkStatus);
   }, [initialBookmarkStatus]);
+
+  // Fetch comment preview (1-2 comments)
+  useEffect(() => {
+    if (post.comment_count && post.comment_count > 0 && !showFullContent) {
+      fetch(`/api/posts/${post.id}/comments?limit=2`, {
+        credentials: 'include',
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data?.comments) {
+            setCommentPreview(data.data.comments.slice(0, 2));
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch comment preview:', err);
+        });
+    }
+  }, [post.id, post.comment_count, showFullContent]);
 
   // Check bookmark status and block status (only if not provided via prop)
   useEffect(() => {
@@ -773,12 +802,20 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
         {/* Interaction Summary Line */}
         {(totalReactions > 0 || (post.comment_count && post.comment_count > 0)) && (
           <div className="mt-2 pt-2 border-t border-white/5">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              {totalReactions > 0 && (
+            {/* Reaction Summary with Emojis */}
+            {totalReactions > 0 && (
+              <div className="mb-2">
                 <button
                   onClick={() => setShowReactionPicker(true)}
-                  className="hover:text-gray-300 transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-300 transition-colors"
                 >
+                  {/* Show emojis for reactions that have counts */}
+                  <div className="flex items-center gap-0.5">
+                    {reactions.love > 0 && <span>{reactionEmojis.love}</span>}
+                    {reactions.fire > 0 && <span>{reactionEmojis.fire}</span>}
+                    {reactions.support > 0 && <span>{reactionEmojis.support}</span>}
+                    {reactions.congrats > 0 && <span>{reactionEmojis.congrats}</span>}
+                  </div>
                   {reactions.user_reaction ? (
                     <span>
                       You and {totalReactions - 1} {totalReactions - 1 === 1 ? 'other' : 'others'}
@@ -787,18 +824,42 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                     <span>{totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}</span>
                   )}
                 </button>
-              )}
-              {totalReactions > 0 && post.comment_count && post.comment_count > 0 && (
-                <span>•</span>
-              )}
-              {post.comment_count && post.comment_count > 0 && (
-                <Link href={`/post/${post.id}`}>
-                  <button className="hover:text-gray-300 transition-colors">
-                    {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
-                  </button>
-                </Link>
-              )}
-            </div>
+              </div>
+            )}
+            
+            {/* Comment Preview */}
+            {commentPreview.length > 0 && (
+              <div className="space-y-2">
+                {commentPreview.map((comment) => (
+                  <div key={comment.id} className="flex items-start gap-2">
+                    <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
+                      <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
+                        {comment.author?.name || comment.author?.username || 'User'}
+                      </span>
+                    </Link>
+                    <span className="text-gray-300 text-sm flex-1 line-clamp-2 break-words">
+                      {comment.content}
+                    </span>
+                  </div>
+                ))}
+                {post.comment_count && post.comment_count > commentPreview.length && (
+                  <Link href={`/post/${post.id}`}>
+                    <button className="text-sm text-gray-400 hover:text-gray-300 transition-colors">
+                      View {post.comment_count - commentPreview.length} more {post.comment_count - commentPreview.length === 1 ? 'comment' : 'comments'}
+                    </button>
+                  </Link>
+                )}
+              </div>
+            )}
+            
+            {/* Comment Count Link (if no preview) */}
+            {commentPreview.length === 0 && post.comment_count && post.comment_count > 0 && (
+              <Link href={`/post/${post.id}`}>
+                <button className="text-sm text-gray-400 hover:text-gray-300 transition-colors">
+                  {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
+                </button>
+              </Link>
+            )}
           </div>
         )}
       </div>

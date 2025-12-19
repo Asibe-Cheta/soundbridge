@@ -59,12 +59,21 @@ export interface PostComment {
   updated_at: string;
   deleted_at?: string;
   // Joined fields
+  author?: {
+    id: string;
+    name: string;
+    username?: string;
+    avatar_url?: string;
+  };
+  // Legacy field for backward compatibility
   user?: {
     id: string;
     username: string;
     display_name: string;
     avatar_url?: string;
   };
+  like_count?: number;
+  user_liked?: boolean;
   likes_count?: number;
   replies?: PostComment[];
   is_liked?: boolean;

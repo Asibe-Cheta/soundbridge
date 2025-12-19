@@ -121,9 +121,9 @@ export async function GET(
               ...comment,
               author: {
                 id: comment.user_id,
-                name: commentProfile?.display_name || commentProfile?.username || 'Unknown',
-                username: commentProfile?.username,
-                avatar_url: commentProfile?.avatar_url,
+                name: commentProfile?.display_name || commentProfile?.username || 'User',
+                username: commentProfile?.username || null,
+                avatar_url: commentProfile?.avatar_url || null,
               },
               replies: replies.map((reply) => {
                 const replyProfile = profileMap.get(reply.user_id);
@@ -131,9 +131,9 @@ export async function GET(
                   ...reply,
                   author: {
                     id: reply.user_id,
-                    name: replyProfile?.display_name || replyProfile?.username || 'Unknown',
-                    username: replyProfile?.username,
-                    avatar_url: replyProfile?.avatar_url,
+                    name: replyProfile?.display_name || replyProfile?.username || 'User',
+                    username: replyProfile?.username || null,
+                    avatar_url: replyProfile?.avatar_url || null,
                   },
                 };
               }),
