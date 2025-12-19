@@ -275,14 +275,22 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
     <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 md:p-6 mb-4 hover:border-white/20 transition-all">
       {/* Repost Indicator */}
       {post.reposted_from_id && (
-        <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
-          <Repeat2 size={14} className="text-red-400" />
-          <span className="text-xs text-gray-400">
-            <span className="text-white font-medium">
-              {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+        <div className="flex items-center justify-between mb-3 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex items-center gap-2">
+            <Repeat2 size={14} className="text-red-400" />
+            <span className="text-xs text-gray-400">
+              <span className="text-white font-medium">
+                {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+              </span>
+              {' '}reposted
             </span>
-            {' '}reposted
-          </span>
+          </div>
+          <Link href={`/post/${post.reposted_from_id}`}>
+            <button className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center gap-1">
+              <ExternalLink size={12} />
+              View original post
+            </button>
+          </Link>
         </div>
       )}
       
