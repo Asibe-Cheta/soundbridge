@@ -65,9 +65,26 @@ export async function POST(
       );
     }
 
-    console.log('✅ User authenticated:', user.id);
+    console.log('✅ User authenticated:', user.id, `(${Date.now() - startTime}ms)`);
+
+    // Parse request body FIRST (before any DB queries)
+    let body: any;
+    try {
+      console.log('📥 Parsing request body...');
+      body = await request.json();
+      console.log('✅ Request body parsed:', { with_comment: body.with_comment, commentLength: body.comment?.length || 0 });
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const { with_comment = false, comment } = body;
 
     // Get the original post with timeout
+    console.log('🔍 Fetching original post...');
     const postQueryPromise = supabase
       .from('posts')
       .select('*')
@@ -92,20 +109,7 @@ export async function POST(
       );
     }
 
-    // Parse request body (do this early to catch any parsing errors)
-    let body: any;
-    try {
-      body = await request.json();
-    } catch (parseError) {
-      console.error('❌ Error parsing request body:', parseError);
-      return NextResponse.json(
-        { success: false, error: 'Invalid request body' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    const { with_comment = false, comment } = body;
-    console.log('📝 Repost request body:', { with_comment, commentLength: comment?.length || 0 });
+    console.log('✅ Original post fetched:', originalPost.id, `(${Date.now() - startTime}ms)`);
 
     // Validate comment if required
     if (with_comment) {
@@ -153,6 +157,7 @@ export async function POST(
     postData.reposted_from_id = params.postId;
 
     // Create the repost with timeout
+    console.log('📝 Creating repost...');
     const createPostPromise = supabase
       .from('posts')
       .insert(postData)
@@ -167,6 +172,8 @@ export async function POST(
       createPostPromise,
       createPostTimeout
     ]) as any;
+
+    console.log('📝 Create post result:', { hasPost: !!newPost, hasError: !!createError, elapsed: `${Date.now() - startTime}ms` });
 
     // If error is about reposted_from_id column not existing, retry without it
     if (createError && (createError.message?.includes('reposted_from_id') || createError.code === '42703')) {
@@ -244,33 +251,12 @@ export async function POST(
         console.warn('Could not update shares_count:', err);
       });
 
-    // Get author profile (non-blocking - fetch in background, use fallback if it fails)
-    let profile: any = null;
-    try {
-      const profileQueryPromise = supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, professional_headline')
-        .eq('id', user.id)
-        .single();
-
-      const profileQueryTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile query timeout')), 3000);
-      });
-
-      const profileResult = await Promise.race([
-        profileQueryPromise,
-        profileQueryTimeout
-      ]) as any;
-
-      profile = profileResult.data;
-    } catch (profileErr) {
-      console.warn('⚠️ Could not fetch profile (using fallback):', profileErr);
-      // Continue without profile - we'll use fallback values
-    }
-
+    // Skip profile query entirely for now - use minimal author data
+    // Profile can be fetched client-side if needed
     const elapsed = Date.now() - startTime;
     console.log(`✅ Repost created successfully in ${elapsed}ms:`, newPost.id);
 
+    // Return immediately with minimal data - don't wait for profile
     return NextResponse.json(
       {
         success: true,
@@ -278,10 +264,10 @@ export async function POST(
           ...newPost,
           author: {
             id: user.id,
-            name: profile?.display_name || profile?.username || user.email?.split('@')[0] || 'User',
-            username: profile?.username,
-            avatar_url: profile?.avatar_url,
-            role: profile?.professional_headline,
+            name: user.email?.split('@')[0] || 'User',
+            username: user.email?.split('@')[0] || 'user',
+            avatar_url: null,
+            role: null,
           },
           reposted_from: {
             id: originalPost.id,
