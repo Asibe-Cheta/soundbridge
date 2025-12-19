@@ -91,29 +91,49 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
     };
     created_at: string;
   }>>([]);
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
 
   // Update bookmark status if prop changes
   useEffect(() => {
     setIsBookmarked(initialBookmarkStatus);
   }, [initialBookmarkStatus]);
 
-  // Fetch comment preview (1-2 comments)
+  // Fetch comment preview (1-2 comments) or all comments if expanded
   useEffect(() => {
-    if (post.comment_count && post.comment_count > 0 && !showFullContent) {
-      fetch(`/api/posts/${post.id}/comments?limit=2`, {
+    // Always try to fetch comments if comment box is shown, we have a comment count, or we're showing all comments
+    const commentCount = (post as any).comment_count || (post as any).comments_count || 0;
+    if ((commentCount > 0 || showCommentBox || showAllComments) && !showFullContent) {
+      const limit = showAllComments ? 50 : 2;
+      fetch(`/api/posts/${post.id}/comments?limit=${limit}`, {
         credentials: 'include',
       })
         .then(res => res.json())
         .then(data => {
           if (data.success && data.data?.comments) {
-            setCommentPreview(data.data.comments.slice(0, 2));
+            setCommentPreview(data.data.comments);
+            // Update comment count from API response if available
+            if (data.data.pagination?.total !== undefined) {
+              const total = data.data.pagination.total;
+              if (total > 0 && !(post as any).comment_count && !(post as any).comments_count) {
+                (post as any).comment_count = total;
+              }
+            }
+          } else if (data.success && (!data.data?.comments || data.data.comments.length === 0)) {
+            // No comments found, clear preview
+            setCommentPreview([]);
           }
         })
         .catch(err => {
           console.error('Failed to fetch comment preview:', err);
         });
+    } else if (commentCount === 0 && !showCommentBox && !showAllComments) {
+      // Only clear if we're sure there are no comments
+      setCommentPreview([]);
     }
-  }, [post.id, post.comment_count, showFullContent]);
+  }, [post.id, post.comment_count, showFullContent, showAllComments, showCommentBox]);
 
   // Check bookmark status and block status (only if not provided via prop)
   useEffect(() => {
@@ -583,12 +603,37 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
             </div>
 
             {/* Comment Button */}
-            <Link href={`/post/${post.id}`} className="flex-1">
-              <button className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full">
-                <MessageCircle size={18} />
-                <span className="text-sm font-medium">Comment</span>
-              </button>
-            </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!user) {
+                  router.push('/login');
+                  return;
+                }
+                setShowCommentBox(!showCommentBox);
+                // If opening comment box, fetch comments if not already loaded
+                if (!showCommentBox && (post.comment_count || 0) > 0 && commentPreview.length === 0) {
+                  fetch(`/api/posts/${post.id}/comments?limit=2`, {
+                    credentials: 'include',
+                  })
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.success && data.data?.comments) {
+                        setCommentPreview(data.data.comments);
+                      }
+                    })
+                    .catch(err => {
+                      console.error('Failed to fetch comments:', err);
+                    });
+                }
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-gray-400 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 w-full flex-1"
+            >
+              <MessageCircle size={18} />
+              <span className="text-sm font-medium">Comment</span>
+            </button>
 
             {/* Repost Button */}
             <div className="relative flex-1">
@@ -800,7 +845,7 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
         </div>
 
         {/* Interaction Summary Line */}
-        {(totalReactions > 0 || (post.comment_count && post.comment_count > 0)) && (
+        {(totalReactions > 0 || ((post as any).comment_count || (post as any).comments_count || 0) > 0) && (
           <div className="mt-2 pt-2 border-t border-white/5">
             {/* Reaction Summary with Emojis */}
             {totalReactions > 0 && (
@@ -827,10 +872,10 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
               </div>
             )}
             
-            {/* Comment Preview */}
-            {commentPreview.length > 0 && (
+            {/* Comment Preview - Simple inline view when not expanded */}
+            {commentPreview.length > 0 && !showCommentBox && !showAllComments && (
               <div className="space-y-2">
-                {commentPreview.map((comment) => (
+                {commentPreview.slice(0, 2).map((comment) => (
                   <div key={comment.id} className="flex items-start gap-2">
                     <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
                       <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
@@ -842,23 +887,216 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                     </span>
                   </div>
                 ))}
-                {post.comment_count && post.comment_count > commentPreview.length && (
-                  <Link href={`/post/${post.id}`}>
-                    <button className="text-sm text-gray-400 hover:text-gray-300 transition-colors">
-                      View {post.comment_count - commentPreview.length} more {post.comment_count - commentPreview.length === 1 ? 'comment' : 'comments'}
-                    </button>
-                  </Link>
+                {((post as any).comment_count || (post as any).comments_count || 0) > commentPreview.length && (
+                  <button
+                    onClick={() => {
+                      setShowCommentBox(true);
+                      setShowAllComments(true);
+                      fetch(`/api/posts/${post.id}/comments?limit=50`, {
+                        credentials: 'include',
+                      })
+                        .then(res => res.json())
+                        .then(data => {
+                          if (data.success && data.data?.comments) {
+                            setCommentPreview(data.data.comments);
+                          }
+                        })
+                        .catch(err => {
+                          console.error('Failed to fetch all comments:', err);
+                        });
+                    }}
+                    className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    View {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length} more {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length === 1 ? 'comment' : 'comments'}
+                  </button>
                 )}
               </div>
             )}
             
             {/* Comment Count Link (if no preview) */}
-            {commentPreview.length === 0 && post.comment_count && post.comment_count > 0 && (
-              <Link href={`/post/${post.id}`}>
-                <button className="text-sm text-gray-400 hover:text-gray-300 transition-colors">
-                  {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
-                </button>
-              </Link>
+            {commentPreview.length === 0 && ((post as any).comment_count || (post as any).comments_count || 0) > 0 && (
+              <button
+                onClick={() => {
+                  setShowCommentBox(true);
+                  setShowAllComments(true);
+                  // Fetch comments
+                  fetch(`/api/posts/${post.id}/comments?limit=10`, {
+                    credentials: 'include',
+                  })
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.success && data.data?.comments) {
+                        setCommentPreview(data.data.comments);
+                      }
+                    })
+                    .catch(err => {
+                      console.error('Failed to fetch comments:', err);
+                    });
+                }}
+                className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                {(post as any).comment_count || (post as any).comments_count || 0} {((post as any).comment_count || (post as any).comments_count || 0) === 1 ? 'comment' : 'comments'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Inline Comment Box */}
+        {showCommentBox && user && (
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!commentText.trim() || isSubmittingComment) return;
+
+                setIsSubmittingComment(true);
+                try {
+                  const response = await fetch(`/api/posts/${post.id}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ content: commentText.trim() }),
+                  });
+
+                  const data = await response.json();
+                  if (data.success && data.data?.comment) {
+                    // Add new comment to preview
+                    const newComment = {
+                      id: data.data.comment.id,
+                      content: data.data.comment.content,
+                      author: data.data.comment.author,
+                      created_at: data.data.comment.created_at,
+                    };
+                    setCommentPreview(prev => [newComment, ...prev]);
+                    setCommentText('');
+                    
+                    // Update comment count in post object
+                    if (!(post as any).comment_count && !(post as any).comments_count) {
+                      (post as any).comment_count = 1;
+                    } else {
+                      (post as any).comment_count = ((post as any).comment_count || (post as any).comments_count || 0) + 1;
+                    }
+                    
+                    // Refresh feed to update counts
+                    if (onUpdate) {
+                      onUpdate();
+                    }
+                  } else {
+                    throw new Error(data.error || 'Failed to post comment');
+                  }
+                } catch (err: any) {
+                  console.error('Failed to post comment:', err);
+                  toast.error(err.message || 'Failed to post comment');
+                } finally {
+                  setIsSubmittingComment(false);
+                }
+              }}
+              className="space-y-3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                  {user.user_metadata?.avatar_url ? (
+                    <Image
+                      src={user.user_metadata.avatar_url}
+                      alt="Your avatar"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xs">
+                      {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="w-full min-h-[60px] bg-gray-800 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:border-red-500/50 transition-colors"
+                    disabled={isSubmittingComment}
+                  />
+                  <div className="flex justify-end mt-2">
+                    <button
+                      type="submit"
+                      disabled={!commentText.trim() || isSubmittingComment}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    >
+                      {isSubmittingComment ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Posting...</span>
+                        </>
+                      ) : (
+                        <span>Comment</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Display Comments Inline */}
+        {commentPreview.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+            {commentPreview.map((comment) => (
+              <div key={comment.id} className="flex items-start gap-3">
+                <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                    {comment.author?.avatar_url ? (
+                      <Image
+                        src={comment.author.avatar_url}
+                        alt={comment.author.name || 'User'}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xs">
+                        {comment.author?.name?.charAt(0) || comment.author?.username?.charAt(0) || 'U'}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
+                      <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
+                        {comment.author?.name || comment.author?.username || 'User'}
+                      </span>
+                    </Link>
+                    <span className="text-xs text-gray-400">
+                      {formatTimeAgo(comment.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-gray-300 text-sm whitespace-pre-wrap break-words">
+                    {comment.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {((post as any).comment_count || (post as any).comments_count || 0) > commentPreview.length && (
+              <button
+                onClick={() => {
+                  setShowAllComments(true);
+                  fetch(`/api/posts/${post.id}/comments?limit=50`, {
+                    credentials: 'include',
+                  })
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.success && data.data?.comments) {
+                        setCommentPreview(data.data.comments);
+                      }
+                    })
+                    .catch(err => {
+                      console.error('Failed to fetch all comments:', err);
+                    });
+                }}
+                className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                View {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length} more {((post as any).comment_count || (post as any).comments_count || 0) - commentPreview.length === 1 ? 'comment' : 'comments'}
+              </button>
             )}
           </div>
         )}
