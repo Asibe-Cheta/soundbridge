@@ -11,6 +11,7 @@ import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { dataService } from '@/src/lib/data-service';
+import { useSocial } from '@/src/hooks/useSocial';
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
@@ -90,6 +91,22 @@ export default function FeedPage() {
 
       setHasMore(hasMorePosts);
       setPage(pageNum);
+
+      // Batch fetch bookmarks for all posts
+      if (user?.id && newPosts.length > 0) {
+        const postIds = newPosts.map(p => p.id);
+        batchCheckBookmarks(postIds, 'post').then(({ data }) => {
+          if (data) {
+            if (append) {
+              setBookmarksMap(prev => new Map([...prev, ...data]));
+            } else {
+              setBookmarksMap(data);
+            }
+          }
+        }).catch(err => {
+          console.warn('Failed to batch fetch bookmarks:', err);
+        });
+      }
     } catch (err: any) {
       console.error('❌ Error fetching feed:', err);
       setError(err.message || 'Failed to load feed');
@@ -240,7 +257,12 @@ export default function FeedPage() {
             ) : (
               <div className="space-y-4">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={post} onUpdate={handlePostCreated} />
+                  <PostCard 
+                    key={post.id} 
+                    post={post} 
+                    onUpdate={handlePostCreated}
+                    initialBookmarkStatus={bookmarksMap.get(post.id) ?? false}
+                  />
                 ))}
 
                 {/* Loading More Indicator */}

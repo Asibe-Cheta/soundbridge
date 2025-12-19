@@ -22,6 +22,7 @@ interface PostCardProps {
   post: Post;
   onUpdate?: () => void;
   showFullContent?: boolean;
+  initialBookmarkStatus?: boolean;
 }
 
 const reactionIcons = {
@@ -52,11 +53,11 @@ const reactionEmojis = {
   congrats: '👏',
 };
 
-export function PostCard({ post, onUpdate, showFullContent = false }: PostCardProps) {
+export function PostCard({ post, onUpdate, showFullContent = false, initialBookmarkStatus = false }: PostCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const { toggleBookmark, isBookmarked: checkBookmark } = useSocial();
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(initialBookmarkStatus);
   const [isExpanded, setIsExpanded] = useState(showFullContent);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
@@ -80,9 +81,16 @@ export function PostCard({ post, onUpdate, showFullContent = false }: PostCardPr
   const [showReportModal, setShowReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
 
-  // Check bookmark status and block status
+  // Update bookmark status if prop changes
   useEffect(() => {
-    if (user?.id && post.id) {
+    setIsBookmarked(initialBookmarkStatus);
+  }, [initialBookmarkStatus]);
+
+  // Check bookmark status and block status (only if not provided via prop)
+  useEffect(() => {
+    if (user?.id && post.id && initialBookmarkStatus === false) {
+      // Only check individually if we don't have initial status
+      // This is a fallback for cases where batch fetch might have failed
       checkBookmark(post.id, 'post').then(({ data }) => {
         setIsBookmarked(data);
       });
