@@ -3,15 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss } from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss, Compass, Music, Info } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
@@ -386,108 +387,131 @@ export default function Navbar() {
                </Link>
              </div>
              {/* Desktop Navigation */}
-             <nav className="nav" style={{ display: 'flex', gap: '0.5rem' }}>
+             <nav className="nav" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                {/* Show Feed and Network for signed-in users, otherwise show For You */}
                {user ? (
                  <>
                    <Link href="/feed" style={{ 
                      textDecoration: 'none', 
-                     color: 'var(--text-primary)',
+                     color: pathname === '/feed' ? '#DC2626' : 'var(--text-primary)',
                      transition: 'all 0.3s ease',
                      padding: '0.5rem 1rem',
-                     borderRadius: '8px'
+                     borderRadius: '8px',
+                     display: 'flex',
+                     alignItems: 'center',
+                     gap: '0.5rem',
+                     fontWeight: pathname === '/feed' ? '600' : '400'
                    }}
                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                   onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/feed' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
                    >
-                     Feed
+                     <Rss size={18} color={pathname === '/feed' ? '#DC2626' : undefined} />
+                     <span>Feed</span>
                    </Link>
                    <Link href="/network" style={{ 
                      textDecoration: 'none', 
-                     color: 'var(--text-primary)',
+                     color: pathname === '/network' ? '#DC2626' : 'var(--text-primary)',
                      transition: 'all 0.3s ease',
                      padding: '0.5rem 1rem',
-                     borderRadius: '8px'
+                     borderRadius: '8px',
+                     display: 'flex',
+                     alignItems: 'center',
+                     gap: '0.5rem',
+                     fontWeight: pathname === '/network' ? '600' : '400'
                    }}
                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                   onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/network' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
                    >
-                     Network
+                     <Users2 size={18} color={pathname === '/network' ? '#DC2626' : undefined} />
+                     <span>Network</span>
                    </Link>
                  </>
                ) : (
                  <Link href="/" style={{ 
                    textDecoration: 'none', 
-                   color: 'var(--text-primary)',
+                   color: pathname === '/' ? '#DC2626' : 'var(--text-primary)',
                    transition: 'all 0.3s ease',
                    padding: '0.5rem 1rem',
-                   borderRadius: '8px'
+                   borderRadius: '8px',
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: '0.5rem',
+                   fontWeight: pathname === '/' ? '600' : '400'
                  }}
                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                 onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
                  >
-                   For You
+                   <Home size={18} color={pathname === '/' ? '#DC2626' : undefined} />
+                   <span>For You</span>
                  </Link>
                )}
                <Link href="/discover" style={{ 
                  textDecoration: 'none', 
-                 color: 'var(--text-primary)',
+                 color: pathname === '/discover' ? '#DC2626' : 'var(--text-primary)',
                  transition: 'all 0.3s ease',
                  padding: '0.5rem 1rem',
-                 borderRadius: '8px'
+                 borderRadius: '8px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '0.5rem',
+                 fontWeight: pathname === '/discover' ? '600' : '400'
                }}
                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/discover' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
                >
-                 Discover
+                 <Compass size={18} color={pathname === '/discover' ? '#DC2626' : undefined} />
+                 <span>Discover</span>
                </Link>
                <Link href="/events" style={{ 
                  textDecoration: 'none', 
-                 color: 'var(--text-primary)',
+                 color: pathname === '/events' ? '#DC2626' : 'var(--text-primary)',
                  transition: 'all 0.3s ease',
                  padding: '0.5rem 1rem',
-                 borderRadius: '8px'
+                 borderRadius: '8px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '0.5rem',
+                 fontWeight: pathname === '/events' ? '600' : '400'
                }}
                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/events' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
                >
-                 Events
+                 <Calendar size={18} color={pathname === '/events' ? '#DC2626' : undefined} />
+                 <span>Events</span>
                </Link>
                <Link href="/creators" style={{ 
                  textDecoration: 'none', 
-                 color: 'var(--text-primary)',
+                 color: pathname === '/creators' ? '#DC2626' : 'var(--text-primary)',
                  transition: 'all 0.3s ease',
                  padding: '0.5rem 1rem',
-                 borderRadius: '8px'
+                 borderRadius: '8px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '0.5rem',
+                 fontWeight: pathname === '/creators' ? '600' : '400'
                }}
                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+               onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/creators' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
                >
-                 Creators
+                 <Music size={18} color={pathname === '/creators' ? '#DC2626' : undefined} />
+                 <span>Creators</span>
                </Link>
               <Link href="/live" style={{ 
                 textDecoration: 'none', 
-                color: 'var(--text-primary)',
+                color: pathname === '/live' ? '#DC2626' : 'var(--text-primary)',
                 transition: 'all 0.3s ease',
                 padding: '0.5rem 1rem',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontWeight: pathname === '/live' ? '600' : '400'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/live' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
               >
-                Live
-              </Link>
-              <Link href="/about" style={{ 
-                textDecoration: 'none', 
-                color: 'var(--text-primary)',
-                transition: 'all 0.3s ease',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                About
+                <Radio size={18} color={pathname === '/live' ? '#DC2626' : undefined} />
+                <span>Live</span>
               </Link>
              </nav>
              
@@ -1053,29 +1077,6 @@ export default function Navbar() {
             >
               <Radio size={20} style={{ color: '#EF4444' }} />
               Live
-            </Link>
-            <Link 
-              href="/about" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
-                color: 'white',
-                padding: '16px 20px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <User size={20} style={{ color: '#8B5CF6' }} />
-              About
             </Link>
           </nav>
         </div>

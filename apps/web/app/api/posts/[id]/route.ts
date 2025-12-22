@@ -121,9 +121,9 @@ export async function GET(
               ...comment,
               author: {
                 id: comment.user_id,
-                name: commentProfile?.display_name || commentProfile?.username || 'Unknown',
-                username: commentProfile?.username,
-                avatar_url: commentProfile?.avatar_url,
+                name: commentProfile?.display_name || commentProfile?.username || 'User',
+                username: commentProfile?.username || null,
+                avatar_url: commentProfile?.avatar_url || null,
               },
               replies: replies.map((reply) => {
                 const replyProfile = profileMap.get(reply.user_id);
@@ -131,9 +131,9 @@ export async function GET(
                   ...reply,
                   author: {
                     id: reply.user_id,
-                    name: replyProfile?.display_name || replyProfile?.username || 'Unknown',
-                    username: replyProfile?.username,
-                    avatar_url: replyProfile?.avatar_url,
+                    name: replyProfile?.display_name || replyProfile?.username || 'User',
+                    username: replyProfile?.username || null,
+                    avatar_url: replyProfile?.avatar_url || null,
                   },
                 };
               }),
@@ -141,11 +141,21 @@ export async function GET(
           })
       : [];
 
+    // Check if user has reposted this post
+    const { data: userRepost } = await supabase
+      .from('post_reposts')
+      .select('repost_post_id')
+      .eq('post_id', postId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     return NextResponse.json(
       {
         success: true,
         data: {
           ...post,
+          user_reposted: !!userRepost,
+          user_repost_id: userRepost?.repost_post_id || null,
           author: {
             id: post.user_id,
             name: profile?.display_name || profile?.username || 'Unknown',

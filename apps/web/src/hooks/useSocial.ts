@@ -318,6 +318,25 @@ export function useSocial() {
     }
   }, [user?.id]);
 
+  const batchCheckBookmarks = useCallback(async (
+    contentIds: string[],
+    contentType: 'track' | 'event' | 'post'
+  ) => {
+    if (!user?.id) return { data: new Map<string, boolean>(), error: 'User not authenticated' };
+
+    try {
+      const result = await socialService.batchCheckBookmarks(user.id, contentIds, contentType);
+      if (result.error) {
+        setError(result.error.message || 'Failed to batch check bookmark status');
+      }
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to batch check bookmark status';
+      setError(errorMessage);
+      return { data: new Map<string, boolean>(), error: errorMessage };
+    }
+  }, [user?.id]);
+
   // ===== PLAYLISTS =====
   const createPlaylist = useCallback(async (request: CreatePlaylistRequest) => {
     if (!user?.id) {
@@ -658,6 +677,7 @@ export function useSocial() {
     toggleBookmark,
     getBookmarks,
     isBookmarked,
+    batchCheckBookmarks,
     
     // Playlists
     createPlaylist,

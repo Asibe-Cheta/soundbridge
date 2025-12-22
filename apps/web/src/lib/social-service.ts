@@ -561,6 +561,51 @@ export class SocialService {
     }
   }
 
+  /**
+   * Batch check bookmark status for multiple content items
+   * Returns a Map of contentId -> boolean (is bookmarked)
+   */
+  async batchCheckBookmarks(
+    userId: string,
+    contentIds: string[],
+    contentType: 'track' | 'event' | 'post'
+  ): Promise<{ data: Map<string, boolean>; error: any }> {
+    try {
+      if (!contentIds || contentIds.length === 0) {
+        return { data: new Map(), error: null };
+      }
+
+      const { data, error } = await this.supabase
+        .from('bookmarks')
+        .select('content_id')
+        .eq('user_id', userId)
+        .in('content_id', contentIds)
+        .eq('content_type', contentType);
+
+      if (error) throw error;
+
+      // Create a Map of contentId -> true for bookmarked items
+      const bookmarkedMap = new Map<string, boolean>();
+      if (data) {
+        data.forEach((bookmark) => {
+          bookmarkedMap.set(bookmark.content_id, true);
+        });
+      }
+
+      // Set false for all contentIds that weren't found
+      contentIds.forEach((id) => {
+        if (!bookmarkedMap.has(id)) {
+          bookmarkedMap.set(id, false);
+        }
+      });
+
+      return { data: bookmarkedMap, error: null };
+    } catch (error) {
+      console.error('Error batch checking bookmarks:', error);
+      return { data: new Map(), error };
+    }
+  }
+
   // ===== PLAYLISTS =====
   async createPlaylist(userId: string, request: CreatePlaylistRequest): Promise<{ data: Playlist | null; error: any }> {
     try {

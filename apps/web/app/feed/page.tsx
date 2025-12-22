@@ -11,10 +11,12 @@ import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { dataService } from '@/src/lib/data-service';
+import { useSocial } from '@/src/hooks/useSocial';
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { batchCheckBookmarks } = useSocial();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false); // Start as false, will be set to true when fetch starts
   const [loadingMore, setLoadingMore] = useState(false);
@@ -24,6 +26,7 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [profilePic, setProfilePic] = useState<string | null>(null);
+  const [bookmarksMap, setBookmarksMap] = useState<Map<string, boolean>>(new Map());
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -49,13 +52,13 @@ export default function FeedPage() {
   }, [user?.id]);
 
   // Fetch posts
-  const fetchPosts = useCallback(async (pageNum: number, append: boolean = false) => {
-    // Prevent duplicate calls - block if already loading
-    if (loadingMore) {
+  const fetchPosts = useCallback(async (pageNum: number, append: boolean = false, force: boolean = false) => {
+    // Prevent duplicate calls - block if already loading (unless forced)
+    if (!force && loadingMore) {
       console.log('⏸️ Blocked: Already loading more');
       return;
     }
-    if (!append && loading && hasTriedFetchRef.current) {
+    if (!force && !append && loading && hasTriedFetchRef.current) {
       console.log('⏸️ Blocked: Initial load already in progress');
       return;
     }
@@ -90,6 +93,22 @@ export default function FeedPage() {
 
       setHasMore(hasMorePosts);
       setPage(pageNum);
+
+      // Batch fetch bookmarks for all posts
+      if (user?.id && newPosts.length > 0) {
+        const postIds = newPosts.map(p => p.id);
+        batchCheckBookmarks(postIds, 'post').then(({ data }) => {
+          if (data) {
+            if (append) {
+              setBookmarksMap(prev => new Map([...prev, ...data]));
+            } else {
+              setBookmarksMap(data);
+            }
+          }
+        }).catch(err => {
+          console.warn('Failed to batch fetch bookmarks:', err);
+        });
+      }
     } catch (err: any) {
       console.error('❌ Error fetching feed:', err);
       setError(err.message || 'Failed to load feed');
@@ -97,7 +116,7 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user]); // Remove loading/loadingMore to prevent infinite loop - use ref for tracking instead
+  }, [user, batchCheckBookmarks]); // Add batchCheckBookmarks to dependencies
 
   // Initial load - only run once when user is available
   useEffect(() => {
@@ -132,8 +151,16 @@ export default function FeedPage() {
   }, [hasMore, loadingMore, loading, page, fetchPosts]);
 
   const handlePostCreated = () => {
-    // Refresh feed
-    fetchPosts(1, false);
+    // Force refresh feed - reset loading state and fetch
+    console.log('🔄 Refreshing feed after post creation/repost...');
+    hasTriedFetchRef.current = false; // Reset the flag to allow refresh
+    setLoading(false); // Reset loading state
+    setLoadingMore(false); // Reset loading more state
+    setPage(1); // Reset to first page
+    fetchPosts(1, false, true); // Force refresh
+    
+    // Scroll to top to show new post
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Show loading state - show spinner if auth is loading OR if we're fetching posts
@@ -169,13 +196,13 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="flex gap-6">
+      <div className="container mx-auto px-4 pt-8 pb-6 max-w-7xl">
+        <div className="flex gap-6 items-start">
           {/* Left Sidebar */}
           <FeedLeftSidebar />
 
           {/* Center Feed - Narrower */}
-          <main className="flex-1 max-w-2xl mx-auto">
+          <main className="flex-1 max-w-lg mx-auto pt-4 min-w-0">
             {/* Create Post Card */}
             <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 mb-4 hover:border-white/20 transition-all">
               <div className="flex items-center gap-3">
@@ -240,7 +267,12 @@ export default function FeedPage() {
             ) : (
               <div className="space-y-4">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={post} onUpdate={handlePostCreated} />
+                  <PostCard 
+                    key={post.id} 
+                    post={post} 
+                    onUpdate={handlePostCreated}
+                    initialBookmarkStatus={bookmarksMap.get(post.id) ?? false}
+                  />
                 ))}
 
                 {/* Loading More Indicator */}

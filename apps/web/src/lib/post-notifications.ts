@@ -9,7 +9,7 @@ import { createServiceClient } from './supabase';
 
 interface CreatePostNotificationParams {
   userId: string;
-  type: 'post_reaction' | 'post_comment' | 'comment_reply' | 'connection_request' | 'connection_accepted';
+  type: 'post_reaction' | 'post_comment' | 'comment_reply' | 'connection_request' | 'connection_accepted' | 'repost';
   title: string;
   message: string;
   relatedId?: string;
@@ -189,6 +189,32 @@ export async function notifyConnectionAccepted(
     actionUrl: '/network',
     metadata: {
       connection_id: connectionId,
+    },
+  });
+}
+
+/**
+ * Notify post author when someone reposts their post
+ */
+export async function notifyPostRepost(
+  postAuthorId: string,
+  reposterName: string,
+  postId: string,
+  repostId: string
+) {
+  // Don't notify if user reposted their own post
+  // (This check should be done in the API endpoint before calling this)
+
+  return createPostNotification({
+    userId: postAuthorId,
+    type: 'repost',
+    title: 'New Repost',
+    message: `${reposterName} reposted your post`,
+    relatedId: postId,
+    actionUrl: `/post/${postId}`,
+    metadata: {
+      post_id: postId,
+      repost_id: repostId,
     },
   });
 }

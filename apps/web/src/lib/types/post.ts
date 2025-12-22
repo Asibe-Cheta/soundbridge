@@ -36,11 +36,13 @@ export interface Post {
   visibility: 'connections' | 'public';
   post_type: 'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event';
   event_id?: string;
+  reposted_from_id?: string; // ID of the original post if this is a repost
   created_at: string;
   updated_at?: string;
   deleted_at?: string;
   // Joined fields
   author?: PostAuthor;
+  reposted_from?: Post; // Original post data if this is a repost
   attachments?: PostAttachment[];
   reactions?: PostReactions;
   comment_count?: number;
@@ -57,12 +59,21 @@ export interface PostComment {
   updated_at: string;
   deleted_at?: string;
   // Joined fields
+  author?: {
+    id: string;
+    name: string;
+    username?: string;
+    avatar_url?: string;
+  };
+  // Legacy field for backward compatibility
   user?: {
     id: string;
     username: string;
     display_name: string;
     avatar_url?: string;
   };
+  like_count?: number;
+  user_liked?: boolean;
   likes_count?: number;
   replies?: PostComment[];
   is_liked?: boolean;

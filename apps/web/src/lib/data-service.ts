@@ -118,6 +118,7 @@ class DataService {
       const offset = (page - 1) * limit;
 
       // First get the posts
+      // Note: reposted_from_id column may not exist in database yet, so we select all columns
       const { data: posts, error: postsError } = await this.supabase
         .from('posts')
         .select('*')
@@ -139,22 +140,49 @@ class DataService {
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
       const { data: authors } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, location')
+        .select('id, username, display_name, avatar_url, role, professional_headline, location')
         .in('id', userIds);
+
+      // Get attachments for all posts
+      const postIds = posts.map((p: any) => p.id);
+      const { data: attachments } = await this.supabase
+        .from('post_attachments')
+        .select('*')
+        .in('post_id', postIds);
+
+      // Group attachments by post_id
+      const attachmentsMap = new Map<string, any[]>();
+      (attachments || []).forEach((att: any) => {
+        if (!attachmentsMap.has(att.post_id)) {
+          attachmentsMap.set(att.post_id, []);
+        }
+        attachmentsMap.get(att.post_id)!.push(att);
+      });
 
       // Map authors to posts
       const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
-      const postsWithAuthors = posts.map((post: any) => ({
-        ...post,
-        author: authorsMap.get(post.user_id) || {
-          id: post.user_id,
-          username: 'unknown',
-          display_name: 'Unknown User',
-          avatar_url: null,
-          role: null,
-          location: null
-        }
-      }));
+      const postsWithAuthors = posts.map((post: any) => {
+        const authorData = authorsMap.get(post.user_id);
+        return {
+          ...post,
+          author: authorData ? {
+            id: authorData.id,
+            name: authorData.display_name || authorData.username || 'User',
+            username: authorData.username,
+            display_name: authorData.display_name,
+            avatar_url: authorData.avatar_url,
+            role: authorData.role || authorData.professional_headline
+          } : {
+            id: post.user_id,
+            name: 'User',
+            username: null,
+            display_name: null,
+            avatar_url: null,
+            role: null
+          },
+          attachments: attachmentsMap.get(post.id) || []
+        };
+      });
 
       return {
         data: postsWithAuthors,
