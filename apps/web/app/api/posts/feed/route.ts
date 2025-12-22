@@ -12,10 +12,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { withAuthTimeout, withQueryTimeout, logPerformance, createErrorResponse } from '@/lib/api-helpers';
 
+// CRITICAL: Force dynamic rendering to prevent Vercel edge caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
 };
 
 export async function OPTIONS(request: NextRequest) {
@@ -52,6 +59,18 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ User authenticated:', user.id);
 
+    // Verify Supabase client has correct user context for RLS
+    const { data: userCheck, error: userCheckError } = await supabase.auth.getUser();
+    if (userCheckError || !userCheck?.user || userCheck.user.id !== user.id) {
+      console.error('⚠️ Supabase client user context mismatch:', {
+        expectedUserId: user.id,
+        actualUserId: userCheck?.user?.id || null,
+        error: userCheckError?.message || null,
+      });
+    } else {
+      console.log('✅ Supabase client user context verified:', userCheck.user.id);
+    }
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -82,9 +101,19 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('🔍 Executing minimal query (no JOIN)...');
+    console.log('📋 Query params:', { page, limit: safeLimit, offset, postType, userId: user.id });
 
     // Execute with increased timeout to match client 30s timeout
     const { data: posts, error: postsError } = await withQueryTimeout(query, 20000) as any;
+
+    // Enhanced logging for debugging
+    console.log('📊 Query result:', {
+      postsCount: posts?.length || 0,
+      hasError: !!postsError,
+      errorMessage: postsError?.message || null,
+      errorCode: postsError?.code || null,
+      errorDetails: postsError?.details || null,
+    });
 
     // If we got posts, fetch authors and repost status separately (faster than JOIN)
     if (posts && posts.length > 0) {
@@ -306,7 +335,13 @@ export async function GET(request: NextRequest) {
     logPerformance('/api/posts/feed (query)', startTime);
 
     if (postsError) {
-      console.error('❌ Error fetching posts:', postsError);
+      console.error('❌ Error fetching posts:', {
+        message: postsError.message,
+        code: postsError.code,
+        details: postsError.details,
+        hint: postsError.hint,
+        userId: user.id,
+      });
       logPerformance('/api/posts/feed', startTime);
       return NextResponse.json(
         createErrorResponse('Failed to load posts', {
@@ -318,6 +353,30 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`📊 Found ${posts?.length || 0} posts`);
+    
+    // Additional debug: Log first post if available
+    if (posts && posts.length > 0) {
+      console.log('✅ Sample post:', {
+        id: posts[0].id,
+        userId: posts[0].user_id,
+        visibility: posts[0].visibility,
+        contentPreview: posts[0].content?.substring(0, 50) || 'N/A',
+      });
+    } else {
+      console.warn('⚠️ No posts returned - checking RLS policy...');
+      // Try a direct count query to verify RLS
+      const { count, error: countError } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null)
+        .eq('visibility', 'public');
+      
+      console.log('🔍 RLS Check - Public posts count:', {
+        count,
+        countError: countError?.message || null,
+        userId: user.id,
+      });
+    }
 
     // Estimate pagination without expensive count
     const hasMore = posts && posts.length === safeLimit;
@@ -325,7 +384,7 @@ export async function GET(request: NextRequest) {
 
     logPerformance('/api/posts/feed', startTime);
 
-    // Return results immediately
+    // Return results immediately with cache-control headers
     return NextResponse.json(
       {
         success: true,
@@ -339,7 +398,13 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      { headers: corsHeaders }
+      { 
+        headers: {
+          ...corsHeaders,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'X-Content-Type-Options': 'nosniff',
+        }
+      }
     );
 
   } catch (error: any) {
@@ -352,7 +417,13 @@ export async function GET(request: NextRequest) {
         posts: [],
         pagination: { page: 1, limit: 15, total: 0, has_more: false }
       }),
-      { status: 200, headers: corsHeaders }
+      { 
+        status: 200, 
+        headers: {
+          ...corsHeaders,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        }
+      }
     );
   }
 }
