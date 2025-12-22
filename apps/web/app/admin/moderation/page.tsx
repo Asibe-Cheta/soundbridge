@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Shield } from 'lucide-react';
 
 interface Track {
   id: string;
