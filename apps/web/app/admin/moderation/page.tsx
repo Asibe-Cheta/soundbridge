@@ -4,7 +4,7 @@
 // View and moderate flagged content
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '../../../src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 interface Track {
@@ -44,6 +44,8 @@ interface ModerationStats {
 }
 
 export default function ModerationDashboard() {
+  const { user } = useAuth(); // Use AuthContext like other admin pages
+  const router = useRouter();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [stats, setStats] = useState<ModerationStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,44 +53,16 @@ export default function ModerationDashboard() {
   const [reviewReason, setReviewReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<'flagged' | 'pending' | 'all'>('flagged');
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-
-  // Check admin access
-  useEffect(() => {
-    async function checkAdminAccess() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      const { data: userRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!userRole || !['admin', 'super_admin', 'moderator'].includes(userRole.role)) {
-        router.push('/');
-        return;
-      }
-
-      setIsAdmin(true);
-    }
-
-    checkAdminAccess();
-  }, [supabase, router]);
 
   // Fetch moderation queue
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!user) return; // Wait for user to load
 
     async function fetchQueue() {
       try {
-        const response = await fetch(`/api/admin/moderation/queue?filter=${filter}`);
+        const response = await fetch(`/api/admin/moderation/queue?filter=${filter}`, {
+          credentials: 'include' // Include session cookies
+        });
         const data = await response.json();
 
         if (data.success) {
@@ -100,15 +74,17 @@ export default function ModerationDashboard() {
     }
 
     fetchQueue();
-  }, [filter, isAdmin]);
+  }, [filter, user]);
 
   // Fetch stats
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!user) return; // Wait for user to load
 
     async function fetchStats() {
       try {
-        const response = await fetch('/api/admin/moderation/stats?days=7');
+        const response = await fetch('/api/admin/moderation/stats?days=7', {
+          credentials: 'include' // Include session cookies
+        });
         const data = await response.json();
 
         if (data.success) {
@@ -122,7 +98,7 @@ export default function ModerationDashboard() {
     }
 
     fetchStats();
-  }, [isAdmin]);
+  }, [user]);
 
   // Handle review (approve/reject)
   async function handleReview(trackId: string, action: 'approve' | 'reject') {
@@ -163,10 +139,14 @@ export default function ModerationDashboard() {
     }
   }
 
-  if (!isAdmin) {
+  // Show loading while checking auth (matches other admin pages pattern)
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">Checking permissions...</p>
+        <div className="text-center">
+          <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-400">Loading admin dashboard...</p>
+        </div>
       </div>
     );
   }
