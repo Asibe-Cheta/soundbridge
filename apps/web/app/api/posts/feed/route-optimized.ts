@@ -63,6 +63,11 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // SIMPLE & FAST: Single query with one join
+    // FIXED: Let RLS policy handle visibility (public + connections)
+    // The RLS policy automatically filters based on:
+    // 1. Public posts (everyone can see)
+    // 2. Connection posts (only connections can see)
+    // 3. User's own posts (always visible)
     let query = supabase
       .from('posts')
       .select(`
@@ -87,7 +92,7 @@ export async function GET(request: NextRequest) {
         )
       `, { count: 'exact' })
       .is('deleted_at', null)
-      .eq('visibility', 'public')
+      // Removed: .eq('visibility', 'public') - RLS handles this now
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

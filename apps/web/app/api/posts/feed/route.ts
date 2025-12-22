@@ -63,11 +63,16 @@ export async function GET(request: NextRequest) {
     // Reduce limit to speed up query
     const safeLimit = Math.min(limit, 20); // Cap at 20 for performance
 
+    // FIXED: Let RLS policy handle visibility (public + connections)
+    // The RLS policy automatically filters based on:
+    // 1. Public posts (everyone can see)
+    // 2. Connection posts (only connections can see)
+    // 3. User's own posts (always visible)
     let query = supabase
       .from('posts')
       .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at')
       .is('deleted_at', null)
-      .eq('visibility', 'public')
+      // Removed: .eq('visibility', 'public') - RLS handles this now
       .order('created_at', { ascending: false })
       .range(offset, offset + safeLimit - 1);
 
