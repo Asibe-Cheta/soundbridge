@@ -40,17 +40,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let timeoutId: NodeJS.Timeout | null = null;
       let completed = false;
 
-      // Detect mobile for shorter timeout
+      // Detect mobile ONLY by user agent (not window width - Mac can have narrow windows)
       const isMobile = typeof window !== 'undefined' && 
-        (window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-      const timeoutDuration = isMobile ? 3000 : 5000; // 3s for mobile, 5s for desktop
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const timeoutDuration = isMobile ? 4000 : 10000; // 4s for mobile, 10s for desktop (increased for slow networks)
 
       const timeoutPromise = new Promise<void>((resolve) => {
         timeoutId = setTimeout(() => {
           if (!completed) {
             console.warn(`AuthProvider: Session check timeout (${timeoutDuration}ms) - setting loading to false (will wait for onAuthStateChange)`);
-            // Don't set user to null on timeout - let onAuthStateChange handle it
-            // This prevents redirect loops when getSession() is just slow
+            // Check cookies before giving up
+            if (typeof window !== 'undefined') {
+              const hasAuthCookie = document.cookie.includes('sb-') || 
+                                    document.cookie.includes('supabase.auth.token');
+              if (hasAuthCookie) {
+                console.log('AuthProvider: Timeout but cookies exist - keeping user state and waiting for onAuthStateChange');
+                // Don't set user to null - let onAuthStateChange handle it
+                // This prevents redirect loops when getSession() is just slow
+              } else {
+                console.log('AuthProvider: Timeout and no cookies - no session');
+              }
+            }
             setLoading(false);
             completed = true;
           }
@@ -73,10 +83,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         const result = await Promise.race([
           sessionPromise,
-          timeoutPromise.then(() => ({ data: { session: null } }))
-        ]) as { data: { session: any } };
+          timeoutPromise.then(() => ({ data: { session: null }, timedOut: true }))
+        ]) as { data: { session: any }; timedOut?: boolean };
         
         if (completed) {
+          // Timeout already handled - but check cookies as fallback
+          if (result.timedOut && typeof window !== 'undefined') {
+            // Check if we have auth cookies as a fallback
+            const hasAuthCookie = document.cookie.includes('sb-') || 
+                                  document.cookie.includes('supabase.auth.token');
+            if (hasAuthCookie) {
+              console.log('AuthProvider: Timeout but cookies exist - waiting for onAuthStateChange');
+              // Don't set user to null - let onAuthStateChange handle it
+              return;
+            }
+          }
           return; // Timeout already handled
         }
 
@@ -94,6 +115,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session);
           setUser(session.user);
         } else {
+          // Check cookies as fallback before setting user to null
+          if (typeof window !== 'undefined') {
+            const hasAuthCookie = document.cookie.includes('sb-') || 
+                                  document.cookie.includes('supabase.auth.token');
+            if (hasAuthCookie) {
+              console.log('AuthProvider: No session but cookies exist - waiting for onAuthStateChange');
+              // Don't set user to null - let onAuthStateChange handle it
+              return;
+            }
+          }
           console.log('AuthProvider: No session found');
           setSession(null);
           setUser(null);
