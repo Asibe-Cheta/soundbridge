@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Shield } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -55,51 +55,42 @@ export default function ModerationDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<'flagged' | 'pending' | 'all'>('flagged');
 
-  // Fetch moderation queue
+  // Fetch moderation data
   useEffect(() => {
-    if (!user) return; // Wait for user to load
-
-    async function fetchQueue() {
-      try {
-        const response = await fetch(`/api/admin/moderation/queue?filter=${filter}`, {
-          credentials: 'include' // Include session cookies
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          setTracks(data.tracks);
-        }
-      } catch (error) {
-        console.error('Error fetching moderation queue:', error);
-      }
+    if (user) {
+      loadModerationData();
     }
-
-    fetchQueue();
   }, [filter, user]);
 
-  // Fetch stats
-  useEffect(() => {
-    if (!user) return; // Wait for user to load
+  async function loadModerationData() {
+    try {
+      setLoading(true);
 
-    async function fetchStats() {
-      try {
-        const response = await fetch('/api/admin/moderation/stats?days=7', {
-          credentials: 'include' // Include session cookies
-        });
-        const data = await response.json();
+      // Fetch moderation queue
+      const queueResponse = await fetch(`/api/admin/moderation/queue?filter=${filter}`, {
+        credentials: 'include'
+      });
+      const queueData = await queueResponse.json();
 
-        if (data.success) {
-          setStats(data.stats);
-        }
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      } finally {
-        setLoading(false);
+      if (queueData.success) {
+        setTracks(queueData.tracks);
       }
-    }
 
-    fetchStats();
-  }, [user]);
+      // Fetch stats
+      const statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
+        credentials: 'include'
+      });
+      const statsData = await statsResponse.json();
+
+      if (statsData.success) {
+        setStats(statsData.stats);
+      }
+    } catch (error) {
+      console.error('Error loading moderation data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Handle review (approve/reject)
   async function handleReview(trackId: string, action: 'approve' | 'reject') {
@@ -108,6 +99,7 @@ export default function ModerationDashboard() {
       const response = await fetch('/api/admin/moderation/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           trackId,
           action,
@@ -123,12 +115,8 @@ export default function ModerationDashboard() {
         setSelectedTrack(null);
         setReviewReason('');
 
-        // Refresh stats
-        const statsResponse = await fetch('/api/admin/moderation/stats?days=7');
-        const statsData = await statsResponse.json();
-        if (statsData.success) {
-          setStats(statsData.stats);
-        }
+        // Refresh data
+        loadModerationData();
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -140,22 +128,13 @@ export default function ModerationDashboard() {
     }
   }
 
-  // Show loading while checking auth (matches other admin pages pattern)
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-400">Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">Loading moderation dashboard...</p>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-16 w-16 text-purple-400 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-400">Loading moderation dashboard...</p>
+        </div>
       </div>
     );
   }
