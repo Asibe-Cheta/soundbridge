@@ -4,19 +4,35 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    // Use service_role key to bypass RLS for admin access
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: 'Supabase configuration missing' },
+        { status: 500 }
+      );
+    }
 
-    // Verify authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Create service role client (bypasses RLS)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Also create regular client for auth check
+    const authSupabase = createRouteHandlerClient({ cookies });
+
+    // Verify authentication using regular client
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify admin/moderator role
+    // Verify admin/moderator role using service role client
     const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
@@ -29,7 +45,8 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const url = new URL(request.url);
-    const filter = url.searchParams.get('filter') || 'flagged';
+    // Support both 'filter' (from frontend) and 'status' (direct API calls)
+    const filter = url.searchParams.get('filter') || url.searchParams.get('status') || 'flagged';
     const priority = url.searchParams.get('priority');
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const offset = parseInt(url.searchParams.get('offset') || '0');
@@ -64,14 +81,20 @@ export async function GET(request: NextRequest) {
     // Filter by status
     if (filter === 'flagged') {
       // Show only tracks that have been flagged by moderation system
-      query = query.eq('moderation_flagged', true).eq('moderation_status', 'flagged');
+      query = query.eq('moderation_flagged', true);
     } else if (filter === 'pending') {
-      // Show tracks pending review (pending_check, checking, or flagged)
-      query = query.in('moderation_status', ['pending_check', 'checking', 'flagged']);
+      // Include all pending statuses (pending_check and checking)
+      query = query.in('moderation_status', ['pending_check', 'checking']);
     } else if (filter === 'all') {
       // Show all tracks that need attention (exclude approved and rejected)
       query = query.not('moderation_status', 'in', '(approved,rejected,clean)');
+    } else {
+      // Specific status
+      query = query.eq('moderation_status', filter);
     }
+    
+    // Always exclude deleted tracks
+    query = query.is('deleted_at', null);
 
     // Filter by priority if specified
     if (priority) {

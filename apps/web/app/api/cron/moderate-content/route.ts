@@ -45,14 +45,61 @@ export async function GET(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get admin settings for moderation configuration
-    const { data: settings } = await supabase
+    const { data: settings, error: settingsError } = await supabase
       .from('admin_settings')
       .select('*')
       .eq('id', 1)
       .single();
 
+    // If settings don't exist, create default settings
+    if (settingsError || !settings) {
+      console.warn('⚠️  Admin settings not found, creating defaults...');
+      const { data: newSettings } = await supabase
+        .from('admin_settings')
+        .insert({
+          id: 1,
+          auto_moderation_enabled: true,
+          moderation_strictness: 'medium',
+          whisper_model: 'base',
+          transcription_enabled: true
+        })
+        .select()
+        .single();
+      
+      if (!newSettings) {
+        console.error('❌ Failed to create admin settings');
+        return NextResponse.json({
+          success: false,
+          error: 'Admin settings not configured'
+        }, { status: 500 });
+      }
+      
+      // Use newly created settings
+      const defaultSettings = { ...newSettings, auto_moderation_enabled: true };
+      console.log('✅ Created default admin settings with auto-moderation enabled');
+      
+      // Continue with default settings
+      const batchSize = parseInt(process.env.MODERATION_BATCH_SIZE || '10');
+      const result = await processPendingModerationBatch(
+        supabase,
+        batchSize,
+        {
+          whisperModel: 'base',
+          sampleOnly: true,
+          maxDuration: 120,
+          strictness: 'medium'
+        }
+      );
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Content moderation job completed (using default settings)',
+        result
+      });
+    }
+
     // Check if auto-moderation is enabled
-    if (!settings?.auto_moderation_enabled) {
+    if (!settings.auto_moderation_enabled) {
       console.log('⏸️  Auto-moderation is disabled in admin settings');
       return NextResponse.json({
         success: true,
