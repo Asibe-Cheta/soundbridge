@@ -77,16 +77,44 @@ export default function ModerationDashboard() {
       const queueResponse = await fetch(`/api/admin/moderation/queue?filter=${filter}`, {
         credentials: 'include'
       });
+      
+      // Check if response is unauthorized or forbidden
+      if (queueResponse.status === 401) {
+        console.error('Unauthorized - redirecting to login');
+        router.push('/login');
+        return;
+      }
+      
+      if (queueResponse.status === 403) {
+        console.error('Forbidden - user is not admin');
+        alert('Access denied. Admin privileges required.');
+        router.push('/');
+        return;
+      }
+
       const queueData = await queueResponse.json();
 
       if (queueData.success) {
         setTracks(queueData.tracks);
+      } else {
+        console.error('API error:', queueData.error);
+        // If error is auth-related, redirect to login
+        if (queueData.error?.includes('Unauthorized') || queueData.error?.includes('Authentication')) {
+          router.push('/login');
+          return;
+        }
       }
 
       // Fetch stats
       const statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
         credentials: 'include'
       });
+      
+      if (statsResponse.status === 401 || statsResponse.status === 403) {
+        // Already handled above, just skip stats
+        return;
+      }
+      
       const statsData = await statsResponse.json();
 
       if (statsData.success) {
@@ -94,6 +122,7 @@ export default function ModerationDashboard() {
       }
     } catch (error) {
       console.error('Error loading moderation data:', error);
+      // Don't redirect on network errors, just log
     } finally {
       setDataLoading(false);
     }
