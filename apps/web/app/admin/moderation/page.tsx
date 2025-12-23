@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Shield } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -55,23 +55,8 @@ export default function ModerationDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<'flagged' | 'pending' | 'all'>('flagged');
 
-  // Redirect to login if not authenticated (but wait a bit for auth to initialize)
-  useEffect(() => {
-    // Don't redirect immediately - give auth time to initialize
-    if (authLoading) {
-      return; // Still loading, wait
-    }
-    
-    // Only redirect if we're sure there's no user (after a small delay)
-    const redirectTimer = setTimeout(() => {
-      if (!user) {
-        console.log('No user found after auth loading complete - redirecting to login');
-        router.push('/login');
-      }
-    }, 1000); // Wait 1 second after loading completes
-    
-    return () => clearTimeout(redirectTimer);
-  }, [authLoading, user, router]);
+  // Note: No redirect logic here - let the API handle auth checks
+  // This matches the behavior of /admin/dashboard and /admin/copyright
 
   // Fetch moderation data
   useEffect(() => {
@@ -188,9 +173,17 @@ export default function ModerationDashboard() {
     );
   }
 
-  // If not authenticated, will be redirected by useEffect
+  // If not authenticated, show message (like /admin/dashboard does)
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-white mb-2">Admin Access Required</h2>
+          <p className="text-gray-400">Please log in with admin privileges to access this dashboard.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
