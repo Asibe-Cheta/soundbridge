@@ -61,11 +61,16 @@ export default function ModerationDashboard() {
   // Fetch moderation data
   useEffect(() => {
     if (user) {
-      loadModerationData();
+      // Wait a bit for cookies to sync (especially on mobile)
+      const timer = setTimeout(() => {
+        loadModerationData();
+      }, 500); // 500ms delay for cookie sync
+      
+      return () => clearTimeout(timer);
     }
   }, [filter, user]);
 
-  async function loadModerationData() {
+  async function loadModerationData(retryCount = 0) {
     try {
       setDataLoading(true);
 
@@ -76,7 +81,13 @@ export default function ModerationDashboard() {
       
       // Check if response is unauthorized or forbidden
       if (queueResponse.status === 401) {
-        console.error('Unauthorized - redirecting to login');
+        // Retry once if this is the first attempt (cookie sync might be delayed)
+        if (retryCount === 0) {
+          console.log('Unauthorized on first attempt - retrying after delay (cookie sync)');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return loadModerationData(1);
+        }
+        console.error('Unauthorized after retry - redirecting to login');
         router.push('/login');
         return;
       }

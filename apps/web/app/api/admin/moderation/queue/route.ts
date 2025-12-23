@@ -3,9 +3,8 @@
 // Returns flagged tracks for admin review
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,11 +22,9 @@ export async function GET(request: NextRequest) {
     // Create service role client (bypasses RLS)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Also create regular client for auth check
-    const authSupabase = createRouteHandlerClient({ cookies });
-
-    // Verify authentication using regular client
-    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+    // Use unified auth helper that supports both Bearer tokens and cookies
+    // This is more resilient to cookie sync delays on mobile
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
