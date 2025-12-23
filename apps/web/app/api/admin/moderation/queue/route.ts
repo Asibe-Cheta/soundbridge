@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const url = new URL(request.url);
-    const status = url.searchParams.get('status') || 'flagged';
+    const filter = url.searchParams.get('filter') || 'flagged';
     const priority = url.searchParams.get('priority');
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const offset = parseInt(url.searchParams.get('offset') || '0');
@@ -62,10 +62,15 @@ export async function GET(request: NextRequest) {
       `, { count: 'exact' });
 
     // Filter by status
-    if (status === 'flagged') {
-      query = query.eq('moderation_flagged', true);
-    } else {
-      query = query.eq('moderation_status', status);
+    if (filter === 'flagged') {
+      // Show only tracks that have been flagged by moderation system
+      query = query.eq('moderation_flagged', true).eq('moderation_status', 'flagged');
+    } else if (filter === 'pending') {
+      // Show tracks pending review (pending_check, checking, or flagged)
+      query = query.in('moderation_status', ['pending_check', 'checking', 'flagged']);
+    } else if (filter === 'all') {
+      // Show all tracks that need attention (exclude approved and rejected)
+      query = query.not('moderation_status', 'in', '(approved,rejected,clean)');
     }
 
     // Filter by priority if specified
