@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         profiles:creator_id (
           id,
           username,
-          email,
+          display_name,
           avatar_url
         )
       `, { count: 'exact' });

@@ -21,7 +21,7 @@ interface Track {
   transcription: string | null;
   profiles: {
     username: string;
-    email: string;
+    display_name: string | null;
     avatar_url: string | null;
   };
 }
