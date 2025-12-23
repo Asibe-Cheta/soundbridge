@@ -131,10 +131,19 @@ export default function ModerationDashboard() {
         }
       }
 
-      // Fetch stats
-      const statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
+      // Fetch stats (with retry on 401)
+      let statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
         credentials: 'include'
       });
+      
+      // Retry once if 401 (cookie sync delay)
+      if (statsResponse.status === 401 && retryCount === 0) {
+        console.log('Stats API 401 on first attempt - retrying after delay');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
+          credentials: 'include'
+        });
+      }
       
       if (statsResponse.status === 401 || statsResponse.status === 403) {
         // Already handled above, just skip stats
