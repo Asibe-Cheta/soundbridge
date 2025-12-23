@@ -65,8 +65,11 @@ export async function GET(request: NextRequest) {
         flag_reasons,
         moderation_confidence,
         moderation_checked_at,
+        reviewed_at,
+        reviewed_by,
         transcription,
         created_at,
+        updated_at,
         profiles:creator_id (
           id,
           username,

@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { RefreshCw, Shield } from 'lucide-react';
+import { RefreshCw, Shield, Calendar, Clock } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -18,7 +18,12 @@ interface Track {
   moderation_flagged: boolean;
   flag_reasons: string[];
   moderation_confidence: number;
+  moderation_checked_at: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   transcription: string | null;
+  created_at: string;
+  updated_at: string;
   profiles: {
     username: string;
     display_name: string | null;
@@ -43,6 +48,20 @@ interface ModerationStats {
     approval_rate: number;
   };
 }
+
+// Helper function to format date and time
+const formatDateTime = (dateString: string | null | undefined) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
 
 export default function ModerationDashboard() {
   const { user, loading: authLoading } = useAuth(); // Use AuthContext like other admin pages
@@ -297,6 +316,46 @@ export default function ModerationDashboard() {
                       <span>Uploaded by @{track.profiles.username}</span>
                       <span>•</span>
                       <span>Confidence: {(track.moderation_confidence * 100).toFixed(0)}%</span>
+                    </div>
+
+                    {/* Date/Time Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 bg-gray-950 rounded-lg border border-gray-800">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-400">Upload Date:</span>
+                        <span className="text-gray-300">{formatDateTime(track.created_at)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-400">Last Updated:</span>
+                        <span className="text-gray-300">{formatDateTime(track.updated_at)}</span>
+                      </div>
+                      {track.moderation_checked_at && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-orange-400" />
+                          <span className="text-gray-400">Checked At:</span>
+                          <span className="text-orange-300">{formatDateTime(track.moderation_checked_at)}</span>
+                        </div>
+                      )}
+                      {track.reviewed_at && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-green-400" />
+                          <span className="text-gray-400">Reviewed At:</span>
+                          <span className="text-green-300">{formatDateTime(track.reviewed_at)}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-400">Status:</span>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          track.moderation_status === 'pending_check' ? 'bg-yellow-500/20 text-yellow-400' :
+                          track.moderation_status === 'checking' ? 'bg-blue-500/20 text-blue-400' :
+                          track.moderation_status === 'flagged' ? 'bg-red-500/20 text-red-400' :
+                          track.moderation_status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {track.moderation_status.toUpperCase().replace('_', ' ')}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Flag Reasons */}
