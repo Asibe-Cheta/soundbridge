@@ -55,11 +55,22 @@ export default function ModerationDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<'flagged' | 'pending' | 'all'>('flagged');
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (but wait a bit for auth to initialize)
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
+    // Don't redirect immediately - give auth time to initialize
+    if (authLoading) {
+      return; // Still loading, wait
     }
+    
+    // Only redirect if we're sure there's no user (after a small delay)
+    const redirectTimer = setTimeout(() => {
+      if (!user) {
+        console.log('No user found after auth loading complete - redirecting to login');
+        router.push('/login');
+      }
+    }, 1000); // Wait 1 second after loading completes
+    
+    return () => clearTimeout(redirectTimer);
   }, [authLoading, user, router]);
 
   // Fetch moderation data

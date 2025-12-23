@@ -48,10 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const timeoutPromise = new Promise<void>((resolve) => {
         timeoutId = setTimeout(() => {
           if (!completed) {
-            console.warn(`AuthProvider: Session check timeout (${timeoutDuration}ms) - setting loading to false`);
+            console.warn(`AuthProvider: Session check timeout (${timeoutDuration}ms) - setting loading to false (will wait for onAuthStateChange)`);
+            // Don't set user to null on timeout - let onAuthStateChange handle it
+            // This prevents redirect loops when getSession() is just slow
             setLoading(false);
-            setSession(null);
-            setUser(null);
             completed = true;
           }
           resolve();
@@ -138,31 +138,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        // For SIGNED_IN events, trust the session immediately
-        if (event === 'SIGNED_IN' && session) {
-          // Set session immediately for sign-in
+        // For INITIAL_SESSION or SIGNED_IN events, trust the session immediately
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+          // Set session immediately - don't validate to avoid delays
+          console.log('AuthProvider: Setting session from', event, 'event');
           setSession(session);
           setUser(session.user);
           setLoading(false);
-          
-          // Don't validate immediately - cookies need time to sync
-          // The session will be validated on the next page load
           return;
         }
         
-        // For other events (like TOKEN_REFRESHED), validate the session
+        // For TOKEN_REFRESHED events, just update the session
+        if (event === 'TOKEN_REFRESHED' && session) {
+          setSession(session);
+          setUser(session.user);
+          setLoading(false);
+          return;
+        }
+        
+        // For other events, validate the session (but with timeout)
         if (session) {
-          const { data: { user }, error } = await supabase.auth.getUser();
-          if (error || !user) {
-            // Session is invalid - clear it
-            console.log('AuthProvider: Session invalid in onAuthStateChange, clearing...');
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-          } else {
-            // Session is valid
+          try {
+            // Use a shorter timeout for getUser() validation
+            const getUserPromise = supabase.auth.getUser();
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('getUser timeout')), 3000)
+            );
+            
+            const { data: { user }, error } = await Promise.race([
+              getUserPromise,
+              timeoutPromise
+            ]) as any;
+            
+            if (error || !user) {
+              // Session is invalid - clear it
+              console.log('AuthProvider: Session invalid in onAuthStateChange, clearing...');
+              setSession(null);
+              setUser(null);
+            } else {
+              // Session is valid
+              setSession(session);
+              setUser(user);
+            }
+          } catch (error) {
+            // Timeout or error - trust the session from onAuthStateChange
+            console.warn('AuthProvider: getUser validation failed, trusting session from event');
             setSession(session);
-            setUser(user);
+            setUser(session.user);
           }
         } else {
           setSession(null);
