@@ -45,15 +45,22 @@ interface ModerationStats {
 }
 
 export default function ModerationDashboard() {
-  const { user } = useAuth(); // Use AuthContext like other admin pages
+  const { user, loading: authLoading } = useAuth(); // Use AuthContext like other admin pages
   const router = useRouter();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [stats, setStats] = useState<ModerationStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [reviewReason, setReviewReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<'flagged' | 'pending' | 'all'>('flagged');
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
 
   // Fetch moderation data
   useEffect(() => {
@@ -64,7 +71,7 @@ export default function ModerationDashboard() {
 
   async function loadModerationData() {
     try {
-      setLoading(true);
+      setDataLoading(true);
 
       // Fetch moderation queue
       const queueResponse = await fetch(`/api/admin/moderation/queue?filter=${filter}`, {
@@ -88,7 +95,7 @@ export default function ModerationDashboard() {
     } catch (error) {
       console.error('Error loading moderation data:', error);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   }
 
@@ -128,15 +135,22 @@ export default function ModerationDashboard() {
     }
   }
 
-  if (loading) {
+  if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="h-16 w-16 text-purple-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-400">Loading moderation dashboard...</p>
+          <p className="text-gray-400">
+            {authLoading ? 'Checking authentication...' : 'Loading moderation dashboard...'}
+          </p>
         </div>
       </div>
     );
+  }
+
+  // If not authenticated, will be redirected by useEffect
+  if (!user) {
+    return null;
   }
 
   return (
