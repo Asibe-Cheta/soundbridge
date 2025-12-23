@@ -3,21 +3,34 @@
 // Approve or reject flagged content
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { sendModerationNotification } from '../../../../../src/lib/moderation-notifications';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    // Use service_role key to bypass RLS for admin access
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: 'Supabase configuration missing' },
+        { status: 500 }
+      );
+    }
 
-    // Verify authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Create service role client (bypasses RLS)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Use unified auth helper that supports both Bearer tokens and cookies
+    // This is more resilient to cookie sync delays on mobile
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify admin/moderator role
+    // Verify admin/moderator role using service role client
     const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
