@@ -280,31 +280,31 @@ export default function WaitlistPage() {
         </div>
 
         {/* Extended Form Toggle */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           <button
             type="button"
             onClick={() => setShowExtendedForm(!showExtendedForm)}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-lg md:text-xl font-semibold transition-all ${
               theme === 'dark'
-                ? 'text-gray-400 hover:text-white hover:bg-white/10'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                ? 'text-white hover:text-purple-300 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-purple-500/50'
+                : 'text-gray-900 hover:text-purple-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 hover:border-purple-500'
             }`}
           >
             {showExtendedForm ? (
               <>
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-5 h-5" />
                 Hide additional details (optional)
               </>
             ) : (
               <>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-5 h-5" />
                 Tell us more about yourself (optional)
               </>
             )}
           </button>
           {!showExtendedForm && (
-            <p className={`text-xs text-center px-4 ${
-              theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+            <p className={`text-xl md:text-2xl text-center px-4 leading-relaxed ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
               💡 Help us personalize your SoundBridge experience and optimize content recommendations by sharing your role, location, and favorite genres.
             </p>
@@ -458,10 +458,10 @@ export default function WaitlistPage() {
           </p>
         )}
         
-        <p className={`text-sm text-center flex items-center justify-center gap-2 ${
-          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        <p className={`text-base md:text-lg text-center flex items-center justify-center gap-2 font-medium ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
         }`}>
-          <Lock className="w-4 h-4" />
+          <Lock className="w-5 h-5" />
           We respect your privacy. Unsubscribe anytime.
         </p>
       </div>
@@ -516,7 +516,7 @@ export default function WaitlistPage() {
           {renderEmailForm('mb-6')}
           
           {signupCount !== null && (
-            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-lg md:text-xl font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
               ✨ {signupCount} people have already joined
             </p>
           )}
