@@ -152,7 +152,7 @@ export default function WaitlistPage() {
   const faqs = [
     {
       question: 'When will SoundBridge launch?',
-      answer: "We're targeting Q2 2026 (April-June). Early access members will be invited first."
+      answer: "We're targeting Q1 2026 (January-March). Early access members will be invited first."
     },
     {
       question: 'How much does it cost?',
