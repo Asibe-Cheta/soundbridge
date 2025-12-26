@@ -24,3 +24,10 @@ CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 CLOUDINARY_URL=cloudinary://your_api_key:your_api_secret@your_cloud_name
 CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
+
+# Beta Access Control (for private testing phase)
+# Set NEXT_PUBLIC_BETA_MODE=true during private beta testing
+# Set NEXT_PUBLIC_BETA_MODE=false when launching publicly
+# BETA_CODE should be kept secret and shared only with test users
+NEXT_PUBLIC_BETA_MODE=false
+NEXT_PUBLIC_BETA_CODE=your-secret-code-here

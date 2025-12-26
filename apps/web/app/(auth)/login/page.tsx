@@ -97,6 +97,21 @@ function LoginContent() {
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
   const [twoFAError, setTwoFAError] = useState<string | null>(null);
 
+  // Beta access check - must run first before any other logic
+  React.useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    const isBetaMode = process.env.NEXT_PUBLIC_BETA_MODE === 'true';
+    const hasBetaAccess = localStorage.getItem('beta_access') === 'granted';
+
+    if (isBetaMode && !hasBetaAccess) {
+      // No beta access - redirect to waitlist
+      router.push('/waitlist');
+      return;
+    }
+  }, [router]);
+
   // Check for URL parameters for confirmation errors
   React.useEffect(() => {
     const urlError = searchParams.get('error');

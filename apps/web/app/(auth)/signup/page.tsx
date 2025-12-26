@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Music, Headphones } from 'lucide-react';
@@ -24,6 +24,21 @@ export default function SignupPage() {
     terms: false,
     marketing: false,
   });
+
+  // Beta access check - must run first before any other logic
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    const isBetaMode = process.env.NEXT_PUBLIC_BETA_MODE === 'true';
+    const hasBetaAccess = localStorage.getItem('beta_access') === 'granted';
+
+    if (isBetaMode && !hasBetaAccess) {
+      // No beta access - redirect to waitlist
+      router.push('/waitlist');
+      return;
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
