@@ -13,7 +13,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers", 
-          "value": "Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token"
+          "value": "Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token, X-Signature-SHA256, X-Delivery-Id"
         }
       ]
     }
@@ -21,6 +21,14 @@
   "crons": [
     {
       "path": "/api/cron/downgrade-past-due",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/moderate-content",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/expire-grace-periods",
       "schedule": "0 0 * * *"
     }
   ]
