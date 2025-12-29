@@ -284,6 +284,7 @@ export async function POST(request: NextRequest) {
     // Handle empty body (test/verification requests)
     // This is likely Wise's initial verification during webhook setup
     // Wise may send an empty POST request to verify the endpoint
+    // IMPORTANT: Accept validation requests even without WISE_WEBHOOK_SECRET configured
     if (!body || body.trim() === '') {
       console.log('📨 Wise webhook: Received test/verification request (empty body)');
       return NextResponse.json(
@@ -304,6 +305,7 @@ export async function POST(request: NextRequest) {
       event = JSON.parse(body);
     } catch (error) {
       // Not JSON - likely a test request, accept it
+      // IMPORTANT: Accept validation requests even without WISE_WEBHOOK_SECRET configured
       console.log('📨 Wise webhook: Received test/verification request (non-JSON)');
       return NextResponse.json(
         { received: true },
@@ -312,6 +314,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this is a test/verification request (no event_type or data)
+    // IMPORTANT: Accept validation requests even without WISE_WEBHOOK_SECRET configured
     if (!event.event_type && !event.type && !event.data) {
       console.log('📨 Wise webhook: Received test/verification request');
       return NextResponse.json(
