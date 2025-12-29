@@ -36,10 +36,14 @@ NEXT_PUBLIC_BETA_CODE=your-secret-code-here
 # Get your API token from: https://wise.com/user/api-tokens
 # Production environment - using live Wise API
 # WISE_API_TOKEN: Your Wise API token (starts with format like: 9e0fac28-5xxxxxxxxxxxxxxxxxxx)
+# WISE_PROFILE_ID: Your Wise profile ID (e.g., 81429203)
 # WISE_ENVIRONMENT: Set to 'live' for production, 'sandbox' for testing
 # WISE_WEBHOOK_SECRET: Random 32+ character string for webhook signature verification (generate securely)
 # WISE_API_URL: API base URL (auto-detected from environment, but can be overridden)
+# WISE_WEBHOOK_SUBSCRIPTION_ID: Webhook subscription ID (created via API, see scripts/create-wise-webhook.js)
 WISE_API_TOKEN=9e0fac28-5fd2-419d-83fe-b647faf7a5c3
+WISE_PROFILE_ID=81429203
 WISE_ENVIRONMENT=live
 WISE_WEBHOOK_SECRET=generate-random-32-char-string-here
 WISE_API_URL=https://api.wise.com
+WISE_WEBHOOK_SUBSCRIPTION_ID=
