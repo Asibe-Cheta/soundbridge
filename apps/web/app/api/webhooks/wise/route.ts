@@ -333,10 +333,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Wise configuration for signature verification
+    // If config is not set up yet, but this is a validation request (no signature),
+    // accept it anyway to allow webhook creation
     let config;
     try {
       config = wiseConfig();
     } catch (error: any) {
+      // If WISE_WEBHOOK_SECRET is not configured and there's no signature,
+      // this is likely a validation request - accept it
+      if (!signature && error.message.includes('WISE_WEBHOOK_SECRET')) {
+        console.log('📨 Wise webhook: Configuration pending, accepting validation request');
+        return NextResponse.json(
+          { received: true },
+          { status: 200, headers: corsHeaders }
+        );
+      }
       console.error('❌ Wise configuration error:', error.message);
       return NextResponse.json(
         { error: 'Wise configuration error', details: error.message },
