@@ -323,15 +323,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For real events, signature is required (per specification)
-    if (!signature) {
-      console.error('❌ Missing webhook signature');
-      return NextResponse.json(
-        { error: 'Missing signature' },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
     // Get Wise configuration for signature verification
     // If config is not set up yet (WISE_WEBHOOK_SECRET missing), accept the request
     // This allows Wise to validate the endpoint during webhook creation setup
@@ -352,6 +343,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Wise configuration error', details: error.message },
         { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // For real events, signature is required (per specification)
+    // Only check signature if config is properly set up
+    if (!signature) {
+      console.error('❌ Missing webhook signature');
+      return NextResponse.json(
+        { error: 'Missing signature' },
+        { status: 401, headers: corsHeaders }
       );
     }
 
