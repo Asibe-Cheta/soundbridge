@@ -24,7 +24,9 @@ const PROFILE_ID = process.env.WISE_PROFILE_ID || '81429203';
 // Webhook URL - can be overridden via environment variable
 // Default: /api/webhooks/wise (as specified in WEB_TEAM_WISE_SETUP_REQUIRED.md)
 // Alternative: /wise-webhook (simpler path, also available)
-const WEBHOOK_URL = process.env.WISE_WEBHOOK_URL || 'https://www.soundbridge.live/api/webhooks/wise';
+// Try simpler path first (more likely to work with Wise validation)
+// Can be overridden via environment variable
+const WEBHOOK_URL = process.env.WISE_WEBHOOK_URL || 'https://www.soundbridge.live/wise-webhook';
 
 if (!API_TOKEN) {
   console.error('❌ Error: WISE_API_TOKEN environment variable is required');
