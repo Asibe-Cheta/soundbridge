@@ -345,22 +345,32 @@ export async function payoutToCreator(
     throw new Error(`Transfer creation failed: ${error.message}`);
   }
 
-  // Step 7: Store payout record in database
-  console.log(`💾 Storing payout record in database...`);
-  let payout: WisePayout;
-  try {
-    payout = await createPayoutRecord({
-      creator_id: params.creatorId,
-      amount: params.amount,
-      currency: params.currency,
-      wise_transfer_id: transfer.id,
-      status: WisePayoutStatus.PENDING,
-      recipient_account_number: params.bankAccountNumber,
-      recipient_account_name: resolvedAccount.accountHolderName,
-      recipient_bank_code: params.bankCode,
-      reference,
-      wise_response: transfer as any,
-    });
+    // Step 7: Store payout record in database
+    console.log(`💾 Storing payout record in database...`);
+    let payout: WisePayout;
+    try {
+      // Get bank name if available
+      const { getBankName } = await import('./transfers');
+      const bankName = getBankName(params.bankCode, params.currency);
+
+      payout = await createPayoutRecord({
+        creator_id: params.creatorId,
+        amount: params.amount,
+        currency: params.currency,
+        wise_transfer_id: transfer.id,
+        wise_recipient_id: recipientId,
+        status: WisePayoutStatus.PENDING,
+        recipient_account_number: params.bankAccountNumber,
+        recipient_account_name: resolvedAccount.accountHolderName,
+        recipient_bank_name: bankName || null,
+        recipient_bank_code: params.bankCode,
+        reference,
+        customer_transaction_id: reference,
+        source_currency: params.sourceCurrency || 'GBP',
+        source_amount: transfer.sourceValue || null,
+        exchange_rate: transfer.rate || null,
+        wise_response: transfer as any,
+      });
 
     console.log(`✅ Payout record created: ${payout.id}`);
   } catch (error: any) {

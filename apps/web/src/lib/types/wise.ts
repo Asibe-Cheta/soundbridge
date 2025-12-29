@@ -19,6 +19,7 @@ export enum WisePayoutStatus {
   COMPLETED = 'completed',
   FAILED = 'failed',
   CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
 }
 
 /**
@@ -28,6 +29,7 @@ export type WiseCurrency = 'NGN' | 'GHS' | 'KES' | 'USD' | 'GBP' | 'EUR';
 
 /**
  * Wise payout record from database
+ * Updated to match mobile team's schema additions
  */
 export interface WisePayout {
   id: string;
@@ -35,16 +37,29 @@ export interface WisePayout {
   amount: number;
   currency: WiseCurrency;
   wise_transfer_id: string | null;
+  wise_recipient_id: string | null;
+  wise_quote_id: string | null;
   status: WisePayoutStatus;
   recipient_account_number: string | null;
   recipient_account_name: string | null;
+  recipient_bank_name: string | null;
   recipient_bank_code: string | null;
   reference: string;
+  customer_transaction_id: string | null;
+  exchange_rate: number | null;
+  source_amount: number | null;
+  source_currency: string | null;
+  wise_fee: number | null;
   error_message: string | null;
+  error_code: string | null;
   wise_response: Json;
+  wise_status_history: Json;
+  metadata: Json;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  failed_at: string | null;
+  deleted_at: string | null;
 }
 
 /**
@@ -57,10 +72,19 @@ export interface CreateWisePayoutParams {
   recipient_account_number: string;
   recipient_account_name: string;
   recipient_bank_code: string;
+  recipient_bank_name?: string;
   reference: string;
+  customer_transaction_id?: string;
   wise_transfer_id?: string;
+  wise_recipient_id?: string;
+  wise_quote_id?: string;
   status?: WisePayoutStatus;
+  source_amount?: number;
+  source_currency?: string;
+  exchange_rate?: number;
+  wise_fee?: number;
   wise_response?: Json;
+  metadata?: Json;
 }
 
 /**
@@ -69,9 +93,18 @@ export interface CreateWisePayoutParams {
 export interface UpdateWisePayoutParams {
   status?: WisePayoutStatus;
   wise_transfer_id?: string;
+  wise_recipient_id?: string;
+  wise_quote_id?: string;
   error_message?: string | null;
+  error_code?: string | null;
   wise_response?: Json;
+  exchange_rate?: number;
+  source_amount?: number;
+  source_currency?: string;
+  wise_fee?: number;
+  metadata?: Json;
   completed_at?: string | null;
+  failed_at?: string | null;
 }
 
 /**

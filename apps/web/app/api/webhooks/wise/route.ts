@@ -231,40 +231,43 @@ async function handleTransferActiveCase(
 /**
  * GET /api/webhooks/wise
  * Health check endpoint for Wise webhook verification
- * Wise may send a GET request to verify the endpoint exists
+ * Wise sends a GET request to verify the endpoint exists and is accessible
+ * 
+ * IMPORTANT: Wise requires:
+ * - HTTPS with valid certificate
+ * - 200 OK response within reasonable time
+ * - No redirects
+ * - Valid domain (not IP address)
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check if Wise configuration is available
-    try {
-      const config = wiseConfig();
-      return NextResponse.json(
-        {
-          status: 'ok',
-          message: 'Wise webhook endpoint is active',
-          environment: config.environment,
-          timestamp: new Date().toISOString(),
-        },
-        { status: 200, headers: corsHeaders }
-      );
-    } catch (error: any) {
-      // Configuration error - still return 200 so Wise knows endpoint exists
-      // But log the error for debugging
-      console.error('⚠️ Wise configuration error (non-blocking):', error.message);
-      return NextResponse.json(
-        {
-          status: 'ok',
-          message: 'Wise webhook endpoint is active (configuration pending)',
-          timestamp: new Date().toISOString(),
-        },
-        { status: 200, headers: corsHeaders }
-      );
-    }
+    // Always return 200 OK for GET requests (Wise verification)
+    // This confirms the endpoint exists and is accessible
+    return NextResponse.json(
+      {
+        status: 'ok',
+        message: 'Wise webhook endpoint is active',
+        timestamp: new Date().toISOString(),
+      },
+      { 
+        status: 200, 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   } catch (error: any) {
+    // Even on error, return 200 to pass Wise's verification
+    // Log the error for debugging
     console.error('❌ Wise webhook GET error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500, headers: corsHeaders }
+      { 
+        status: 'ok',
+        message: 'Wise webhook endpoint is active',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 200, headers: corsHeaders }
     );
   }
 }
@@ -277,11 +280,22 @@ export async function POST(request: NextRequest) {
 
     // Handle empty body (test/verification requests)
     // This is likely Wise's initial verification during webhook setup
+    // Wise may send an empty POST request to verify the endpoint
     if (!body || body.trim() === '') {
       console.log('📨 Wise webhook: Received test/verification request (empty body)');
       return NextResponse.json(
-        { status: 'ok', message: 'Wise webhook endpoint is active' },
-        { status: 200, headers: corsHeaders }
+        { 
+          status: 'ok', 
+          message: 'Wise webhook endpoint is active',
+          timestamp: new Date().toISOString(),
+        },
+        { 
+          status: 200, 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          }
+        }
       );
     }
 
@@ -300,11 +314,22 @@ export async function POST(request: NextRequest) {
         try {
           const testEvent = JSON.parse(body);
           // If it's a simple test payload, accept it
-          if (!testEvent.event_type && !testEvent.type && !testEvent.data) {
+          // Wise may send test payloads like {"test": true} or empty objects
+          if (!testEvent.event_type && !testEvent.type && !testEvent.data && !testEvent.eventType) {
             console.log('📨 Wise webhook: Received test/verification request (config pending)');
             return NextResponse.json(
-              { status: 'ok', message: 'Wise webhook endpoint is active (configuration pending)' },
-              { status: 200, headers: corsHeaders }
+              { 
+                status: 'ok', 
+                message: 'Wise webhook endpoint is active',
+                timestamp: new Date().toISOString(),
+              },
+              { 
+                status: 200, 
+                headers: {
+                  ...corsHeaders,
+                  'Content-Type': 'application/json',
+                }
+              }
             );
           }
         } catch {
@@ -345,15 +370,35 @@ export async function POST(request: NextRequest) {
         // If it's just a test payload, accept it
         console.log('📨 Wise webhook: Received test/verification request (test payload)');
         return NextResponse.json(
-          { status: 'ok', message: 'Wise webhook endpoint is active' },
-          { status: 200, headers: corsHeaders }
+          { 
+            status: 'ok', 
+            message: 'Wise webhook endpoint is active',
+            timestamp: new Date().toISOString(),
+          },
+          { 
+            status: 200, 
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            }
+          }
         );
       } catch {
         // Not JSON, probably a test request
         console.log('📨 Wise webhook: Received test/verification request (non-JSON)');
         return NextResponse.json(
-          { status: 'ok', message: 'Wise webhook endpoint is active' },
-          { status: 200, headers: corsHeaders }
+          { 
+            status: 'ok', 
+            message: 'Wise webhook endpoint is active',
+            timestamp: new Date().toISOString(),
+          },
+          { 
+            status: 200, 
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            }
+          }
         );
       }
     }
@@ -431,13 +476,21 @@ export async function POST(request: NextRequest) {
 
     // Always return 200 OK to acknowledge receipt
     // This is critical - Wise will retry if we return error status codes
+    // Wise expects a 2XX response within 10 seconds
     return NextResponse.json(
       { 
         received: true, 
         eventType,
-        message: 'Webhook processed successfully' 
+        message: 'Webhook processed successfully',
+        timestamp: new Date().toISOString(),
       },
-      { status: 200, headers: corsHeaders }
+      { 
+        status: 200, 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        }
+      }
     );
 
   } catch (error: any) {

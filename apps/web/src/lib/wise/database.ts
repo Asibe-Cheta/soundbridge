@@ -50,12 +50,21 @@ export async function createPayoutRecord(
       amount: params.amount,
       currency: params.currency,
       wise_transfer_id: params.wise_transfer_id || null,
+      wise_recipient_id: params.wise_recipient_id || null,
+      wise_quote_id: params.wise_quote_id || null,
       status: params.status || 'pending',
       recipient_account_number: params.recipient_account_number,
       recipient_account_name: params.recipient_account_name,
+      recipient_bank_name: params.recipient_bank_name || null,
       recipient_bank_code: params.recipient_bank_code,
       reference: params.reference,
+      customer_transaction_id: params.customer_transaction_id || params.reference || null,
+      exchange_rate: params.exchange_rate || null,
+      source_amount: params.source_amount || null,
+      source_currency: params.source_currency || null,
+      wise_fee: params.wise_fee || null,
       wise_response: params.wise_response || {},
+      metadata: params.metadata || {},
     })
     .select()
     .single();
@@ -115,8 +124,44 @@ export async function updatePayoutStatus(
     updateData.wise_response = params.wise_response;
   }
 
+  if (params.wise_recipient_id !== undefined) {
+    updateData.wise_recipient_id = params.wise_recipient_id;
+  }
+
+  if (params.wise_quote_id !== undefined) {
+    updateData.wise_quote_id = params.wise_quote_id;
+  }
+
+  if (params.error_code !== undefined) {
+    updateData.error_code = params.error_code;
+  }
+
+  if (params.exchange_rate !== undefined) {
+    updateData.exchange_rate = params.exchange_rate;
+  }
+
+  if (params.source_amount !== undefined) {
+    updateData.source_amount = params.source_amount;
+  }
+
+  if (params.source_currency !== undefined) {
+    updateData.source_currency = params.source_currency;
+  }
+
+  if (params.wise_fee !== undefined) {
+    updateData.wise_fee = params.wise_fee;
+  }
+
+  if (params.metadata !== undefined) {
+    updateData.metadata = params.metadata;
+  }
+
   if (params.completed_at !== undefined) {
     updateData.completed_at = params.completed_at;
+  }
+
+  if (params.failed_at !== undefined) {
+    updateData.failed_at = params.failed_at;
   }
 
   const { data, error } = await supabase
