@@ -202,6 +202,47 @@ async function handleTransferIssue(
  * - Account deposit events
  * - Transfer issue events
  */
+/**
+ * GET /api/webhooks/wise
+ * Health check endpoint for Wise webhook verification
+ * Wise may send a GET request to verify the endpoint exists
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Check if Wise configuration is available
+    try {
+      const config = wiseConfig();
+      return NextResponse.json(
+        {
+          status: 'ok',
+          message: 'Wise webhook endpoint is active',
+          environment: config.environment,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    } catch (error: any) {
+      // Configuration error - still return 200 so Wise knows endpoint exists
+      // But log the error for debugging
+      console.error('⚠️ Wise configuration error (non-blocking):', error.message);
+      return NextResponse.json(
+        {
+          status: 'ok',
+          message: 'Wise webhook endpoint is active (configuration pending)',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+  } catch (error: any) {
+    console.error('❌ Wise webhook GET error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get Wise configuration
@@ -221,12 +262,40 @@ export async function POST(request: NextRequest) {
     const signature = request.headers.get('x-signature-sha256');
     const authorization = request.headers.get('authorization');
 
-    // Verify webhook authentication
-    if (!signature && !authorization) {
-      console.error('❌ Wise webhook: Missing authentication (X-Signature-SHA256 or Authorization header)');
+    // Handle empty body (test/verification requests)
+    if (!body || body.trim() === '') {
+      console.log('📨 Wise webhook: Received test/verification request');
       return NextResponse.json(
-        { error: 'Missing authentication' },
-        { status: 401, headers: corsHeaders }
+        { status: 'ok', message: 'Wise webhook endpoint is active' },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // Verify webhook authentication (only if body is not empty)
+    if (!signature && !authorization) {
+      // For test requests during webhook setup, be more lenient
+      // Log but don't reject - Wise might send test requests without auth
+      console.warn('⚠️ Wise webhook: Missing authentication (may be test request)');
+      
+      // Try to parse as JSON to see if it's a real event
+      try {
+        const testEvent = JSON.parse(body);
+        // If it looks like a real event but no auth, reject it
+        if (testEvent.type || testEvent.event_type || testEvent.data) {
+          console.error('❌ Wise webhook: Real event received without authentication');
+          return NextResponse.json(
+            { error: 'Missing authentication' },
+            { status: 401, headers: corsHeaders }
+          );
+        }
+      } catch {
+        // Not JSON, probably a test request
+      }
+      
+      // Allow test requests through
+      return NextResponse.json(
+        { status: 'ok', message: 'Test request received' },
+        { status: 200, headers: corsHeaders }
       );
     }
 
