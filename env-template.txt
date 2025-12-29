@@ -31,3 +31,15 @@ CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
 # BETA_CODE should be kept secret and shared only with test users
 NEXT_PUBLIC_BETA_MODE=false
 NEXT_PUBLIC_BETA_CODE=your-secret-code-here
+
+# Wise API Configuration (for international payments and payouts)
+# Get your API token from: https://wise.com/user/api-tokens
+# Production environment - using live Wise API
+# WISE_API_TOKEN: Your Wise API token (starts with format like: 9e0fac28-5xxxxxxxxxxxxxxxxxxx)
+# WISE_ENVIRONMENT: Set to 'live' for production, 'sandbox' for testing
+# WISE_WEBHOOK_SECRET: Random 32+ character string for webhook signature verification (generate securely)
+# WISE_API_URL: API base URL (auto-detected from environment, but can be overridden)
+WISE_API_TOKEN=your_wise_api_token_here
+WISE_ENVIRONMENT=live
+WISE_WEBHOOK_SECRET=generate-random-32-char-string-here
+WISE_API_URL=https://api.wise.com
