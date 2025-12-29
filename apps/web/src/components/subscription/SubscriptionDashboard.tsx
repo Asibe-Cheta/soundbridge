@@ -10,7 +10,8 @@ import RevenueTracker from './RevenueTracker';
 import { SubscriptionService } from '../../services/SubscriptionService';
 import { getPriceId } from '../../lib/stripe';
 import { SUBSCRIPTION_POLLING_CONFIG } from '../../config/subscription-polling';
-import { Crown, TrendingUp, BarChart3, DollarSign, CheckCircle, X, Loader2 } from 'lucide-react';
+import { Crown, TrendingUp, BarChart3, DollarSign, CheckCircle, X, Loader2, AlertTriangle, Clock } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SubscriptionDashboardProps {
   className?: string;
@@ -26,12 +27,38 @@ interface PollingState {
 // Inner component that uses useSearchParams (must be wrapped in Suspense)
 function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardProps) {
   const { data, refresh } = useSubscription();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const currentTier = data?.subscription.tier || 'free';
   const isPremium = currentTier === 'premium' && data?.subscription.status === 'active';
   const isUnlimited = currentTier === 'unlimited' && data?.subscription.status === 'active';
   const isPaid = isPremium || isUnlimited;
   const isFree = currentTier === 'free';
+
+  // Grace period state
+  const [gracePeriodStatus, setGracePeriodStatus] = useState<any>(null);
+  const [loadingGracePeriod, setLoadingGracePeriod] = useState(true);
+
+  // Fetch grace period status
+  useEffect(() => {
+    const fetchGracePeriod = async () => {
+      if (!user) return;
+      try {
+        setLoadingGracePeriod(true);
+        const response = await fetch('/api/user/storage-status');
+        if (response.ok) {
+          const result = await response.json();
+          setGracePeriodStatus(result.storage?.gracePeriod);
+        }
+      } catch (err) {
+        console.error('Error fetching grace period:', err);
+      } finally {
+        setLoadingGracePeriod(false);
+      }
+    };
+
+    fetchGracePeriod();
+  }, [user]);
 
   // Success/error message states
   const [showSuccess, setShowSuccess] = useState(false);
@@ -337,6 +364,145 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
           )}
         </div>
       </div>
+
+      {/* Grace Period Banner */}
+      {!loadingGracePeriod && gracePeriodStatus?.status === 'grace_period' && (
+        <div 
+          className="mb-6 p-4 rounded-lg border"
+          style={{
+            background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)',
+            borderColor: 'rgba(251, 191, 36, 0.4)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)'
+          }}
+        >
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(251, 191, 36, 0.2)' }}>
+                <AlertTriangle className="h-6 w-6" style={{ color: '#f59e0b' }} />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                Grace Period Active
+              </h3>
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                Your subscription has ended, but you have <strong style={{ color: '#f59e0b' }}>{gracePeriodStatus.daysRemaining} days</strong> remaining to manage your content. 
+                All your tracks remain accessible during this time.
+              </p>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center space-x-2" style={{ color: 'var(--text-secondary)' }}>
+                  <Clock className="h-4 w-4" />
+                  <span>Grace period ends: {gracePeriodStatus.gracePeriodEnds ? new Date(gracePeriodStatus.gracePeriodEnds).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                {!gracePeriodStatus.canUpload && (
+                  <div className="flex items-center space-x-2" style={{ color: '#ef4444' }}>
+                    <X className="h-4 w-4" />
+                    <span>Uploads blocked until you delete content or re-subscribe</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 flex items-center space-x-3">
+                <Link
+                  href="/pricing"
+                  className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                    color: 'white',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  Re-subscribe Now
+                </Link>
+                <Link
+                  href="/dashboard?tab=content"
+                  className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 border"
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  Manage Content
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grace Period Expired Banner */}
+      {!loadingGracePeriod && gracePeriodStatus?.status === 'grace_expired' && (
+        <div 
+          className="mb-6 p-4 rounded-lg border"
+          style={{
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%)',
+            borderColor: 'rgba(239, 68, 68, 0.4)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)'
+          }}
+        >
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(239, 68, 68, 0.2)' }}>
+                <X className="h-6 w-6" style={{ color: '#ef4444' }} />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                Grace Period Expired
+              </h3>
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                Your grace period has ended. Only 30MB of your content remains public. The rest is now private (still accessible to you, but not visible to others).
+              </p>
+              <div className="flex items-center space-x-2 text-sm mb-4" style={{ color: '#ef4444' }}>
+                <X className="h-4 w-4" />
+                <span>Uploads are blocked. Delete content or re-subscribe to upload again.</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Link
+                  href="/pricing"
+                  className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                    color: 'white',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+                  }}
+                >
+                  Re-subscribe to Restore Access
+                </Link>
+                <Link
+                  href="/dashboard?tab=content"
+                  className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 border"
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    borderColor: 'var(--border-primary)',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  View Private Content
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

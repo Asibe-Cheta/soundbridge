@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSubscription } from '../../hooks/useSubscription';
-import { Music, Mic, Calendar, HardDrive, Play, Users, Loader2, AlertCircle } from 'lucide-react';
+import { Music, Mic, Calendar, HardDrive, Play, Users, Loader2, AlertCircle, AlertTriangle, Clock } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface UsageStatisticsProps {
   className?: string;
@@ -10,6 +11,29 @@ interface UsageStatisticsProps {
 
 const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => {
   const { data, loading, error } = useSubscription();
+  const { user } = useAuth();
+  const [storageStatus, setStorageStatus] = useState<any>(null);
+  const [loadingStorage, setLoadingStorage] = useState(true);
+
+  useEffect(() => {
+    const fetchStorageStatus = async () => {
+      if (!user) return;
+      try {
+        setLoadingStorage(true);
+        const response = await fetch('/api/user/storage-status');
+        if (response.ok) {
+          const result = await response.json();
+          setStorageStatus(result.storage);
+        }
+      } catch (err) {
+        console.error('Error fetching storage status:', err);
+      } finally {
+        setLoadingStorage(false);
+      }
+    };
+
+    fetchStorageStatus();
+  }, [user]);
 
   if (loading) {
     return (
@@ -79,10 +103,10 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
     },
     {
       title: 'Storage Used',
-      value: usage.formatted_storage || '0 B',
+      value: storageStatus ? `${storageStatus.usedFormatted} / ${storageStatus.limitFormatted}` : (usage.formatted_storage || '0 B'),
       icon: <HardDrive className="h-5 w-5 text-orange-500" />,
       color: 'bg-orange-50 border-orange-200',
-      description: 'Total storage space used'
+      description: storageStatus ? `${storageStatus.percentage}% of ${storageStatus.tier === 'free' ? '30MB' : storageStatus.tier === 'premium' ? '2GB' : '10GB'} limit used` : 'Total storage space used'
     },
     {
       title: 'Total Plays',
@@ -175,6 +199,102 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
         </div>
       </div>
 
+      {/* Storage Limit Display */}
+      {storageStatus && (
+        <div 
+          className="mt-4 p-4 rounded-lg border"
+          style={{
+            background: 'var(--bg-tertiary)',
+            borderColor: 'var(--border-primary)'
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <HardDrive className="h-5 w-5" style={{ color: '#f97316' }} />
+              <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                Storage Limit ({storageStatus.tier === 'free' ? '30MB' : storageStatus.tier === 'premium' ? '2GB' : '10GB'})
+              </h4>
+            </div>
+            <span className="text-xs font-medium" style={{ color: storageStatus.percentage > 90 ? '#ef4444' : storageStatus.percentage > 70 ? '#f59e0b' : 'var(--text-secondary)' }}>
+              {storageStatus.percentage}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-2" style={{ background: 'var(--bg-primary)' }}>
+            <div 
+              className="h-2 rounded-full transition-all duration-300"
+              style={{
+                width: `${Math.min(100, storageStatus.percentage)}%`,
+                background: storageStatus.percentage > 90 
+                  ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                  : storageStatus.percentage > 70
+                  ? 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'
+                  : 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+              }}
+            />
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {storageStatus.usedFormatted} of {storageStatus.limitFormatted} used
+          </p>
+        </div>
+      )}
+
+      {/* Grace Period Banner */}
+      {storageStatus?.gracePeriod?.status === 'grace_period' && (
+        <div 
+          className="mt-4 p-4 rounded-lg border"
+          style={{
+            background: 'rgba(251, 191, 36, 0.1)',
+            borderColor: 'rgba(251, 191, 36, 0.3)'
+          }}
+        >
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: '#f59e0b' }} />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                Grace Period Active
+              </h4>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Your subscription has ended. You have <strong>{storageStatus.gracePeriod.daysRemaining} days</strong> remaining to manage your content.
+              </p>
+              <div className="flex items-center space-x-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <Clock className="h-4 w-4" />
+                <span>All content remains accessible until {storageStatus.gracePeriod.gracePeriodEnds ? new Date(storageStatus.gracePeriod.gracePeriodEnds).toLocaleDateString() : 'grace period ends'}</span>
+              </div>
+              {!storageStatus.gracePeriod.canUpload && (
+                <p className="text-xs mt-2" style={{ color: '#ef4444' }}>
+                  ⚠️ Uploads are blocked until you delete content or re-subscribe
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {storageStatus?.gracePeriod?.status === 'grace_expired' && (
+        <div 
+          className="mt-4 p-4 rounded-lg border"
+          style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            borderColor: 'rgba(239, 68, 68, 0.3)'
+          }}
+        >
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                Grace Period Expired
+              </h4>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Your grace period has ended. Only 30MB of your content remains public. The rest is now private (still accessible to you).
+              </p>
+              <p className="text-xs" style={{ color: '#ef4444' }}>
+                ⚠️ Uploads are blocked. Delete content or re-subscribe to upload again.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="mt-4 p-4 rounded-lg border"
         style={{
@@ -188,12 +308,14 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
           </div>
           <div>
             <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {data?.subscription?.tier === 'pro' ? '10 Uploads Per Month' : '3 Lifetime Uploads'}
+              {data?.subscription?.tier === 'premium' ? '7 Uploads Per Month' : data?.subscription?.tier === 'unlimited' ? 'Unlimited Uploads' : '3 Lifetime Uploads'}
             </h4>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              {data?.subscription?.tier === 'pro' 
-                ? 'Pro users can upload up to 10 tracks per month. Limit resets on the 1st of each month.'
-                : 'Free users can upload up to 3 tracks total (lifetime limit). Upgrade to Pro for 10 uploads per month.'
+              {data?.subscription?.tier === 'premium' 
+                ? 'Premium users can upload up to 7 tracks per month. Limit resets on the 1st of each month.'
+                : data?.subscription?.tier === 'unlimited'
+                ? 'Unlimited users can upload as many tracks as they want, up to 10GB storage.'
+                : 'Free users can upload up to 3 tracks total (lifetime limit). Upgrade to Premium for 7 uploads per month or Unlimited for unlimited uploads.'
               }
             </p>
           </div>

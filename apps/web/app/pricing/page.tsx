@@ -91,7 +91,7 @@ function PricingContent() {
         '3 track uploads (lifetime)',
         '5 professional searches/month',
         '2 direct messages/month (outbound)',
-        '100MB total storage',
+        '30MB total storage',
         'Unlimited streaming',
         'Basic profile & portfolio',
         'Receive tips (keep 95%)',
@@ -172,7 +172,7 @@ function PricingContent() {
         { name: 'Track Uploads', free: '3 lifetime', premium: '7/month', unlimited: 'Unlimited' },
         { name: 'Professional Searches', free: '5/month', premium: 'Unlimited', unlimited: 'Unlimited' },
         { name: 'Direct Messages (sent)', free: '2/month', premium: 'Unlimited', unlimited: 'Unlimited' },
-        { name: 'Storage Space', free: '100MB', premium: '500MB', unlimited: '2GB+' },
+        { name: 'Storage Space', free: '30MB', premium: '2GB', unlimited: '10GB' },
         { name: 'Audio Previews in Posts', free: '30 seconds', premium: '60 seconds', unlimited: '60 seconds' },
         { name: 'Max File Size', free: '50MB', premium: '50MB', unlimited: '50MB' }
       ]
@@ -466,15 +466,15 @@ function PricingContent() {
                 <div className="space-y-3 text-white/70">
                   <div className="flex justify-between items-center">
                     <span>Free Tier</span>
-                    <span className="text-blue-400 font-semibold">100MB • 2-5 min</span>
+                    <span className="text-blue-400 font-semibold">30MB • 2-5 min</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Premium Tier</span>
-                    <span className="text-purple-400 font-semibold">500MB • 1-2 min</span>
+                    <span className="text-purple-400 font-semibold">2GB • 1-2 min</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Unlimited Tier</span>
-                    <span className="text-yellow-400 font-semibold">2GB+ • &lt; 1 min</span>
+                    <span className="text-yellow-400 font-semibold">10GB • &lt; 1 min</span>
                   </div>
                 </div>
               </div>
@@ -648,7 +648,11 @@ function PricingContent() {
                 },
                 {
                   q: "What are the upload and storage limits?",
-                  a: "Free tier: 3 lifetime track uploads and 150MB total storage. Pro tier: 10 total track uploads and 500MB total storage. All plans include our smart validation system."
+                  a: "Free tier: 3 lifetime track uploads and 30MB total storage. Premium tier: 7 tracks per month and 2GB total storage. Unlimited tier: Unlimited track uploads and 10GB total storage. All plans include our smart validation system."
+                },
+                {
+                  q: "What happens to my content if I downgrade from Premium/Unlimited to Free?",
+                  a: "When you downgrade, you'll receive a 90-day grace period where all your content remains accessible. During this time, you cannot upload new content if you're over the 30MB free tier limit. After 90 days, you'll choose which tracks to keep public (within 30MB), and the rest will become private (still accessible to you, but not public). You can re-subscribe anytime to restore public access to all your content."
                 },
                 {
                   q: "How does the upload validation work?",
