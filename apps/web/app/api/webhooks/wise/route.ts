@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { wiseConfig } from '@/src/lib/wise/config';
+import {
+  updatePayoutStatus,
+  getPayoutByWiseTransferId,
+  getPayoutByReference,
+} from '@/src/lib/wise/database';
+import {
+  mapWiseTransferStatusToPayoutStatus,
+  WiseTransferStatus,
+  WisePayoutStatus,
+  type WiseWebhookPayload,
+  type WiseTransferStateChangePayload,
+} from '@/src/lib/types/wise';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,177 +26,191 @@ export async function OPTIONS() {
 }
 
 /**
- * Verify Wise webhook signature/authorization
- * Wise may use HMAC SHA256 signature or Authorization header
+ * Verify Wise webhook signature using constant-time comparison
+ * CRITICAL: Uses timingSafeEqual to prevent timing attacks
  * 
  * @param payload - Raw request body as string
- * @param signature - X-Signature-SHA256 header value (if present)
- * @param authorization - Authorization header value (if present)
+ * @param signature - X-Signature-SHA256 header value
  * @param secret - WISE_WEBHOOK_SECRET from environment
- * @returns true if signature/authorization is valid, false otherwise
+ * @returns true if signature is valid, false otherwise
  */
-function verifyWiseWebhook(
+function verifyWiseSignature(
   payload: string,
-  signature: string | null,
-  authorization: string | null,
+  signature: string,
   secret: string
 ): boolean {
-  // Method 1: HMAC SHA256 signature (X-Signature-SHA256 header)
-  if (signature) {
-    try {
-      const hmac = createHmac('sha256', secret);
-      hmac.update(payload);
-      const expectedSignature = hmac.digest('hex');
-      
-      // Compare signatures securely (case-insensitive for hex)
-      return signature.toLowerCase() === expectedSignature.toLowerCase();
-    } catch (error) {
-      console.error('Error verifying Wise HMAC signature:', error);
+  try {
+    // Compute HMAC-SHA256 of request body
+    const hmac = createHmac('sha256', secret);
+    hmac.update(payload);
+    const expectedSignature = hmac.digest('hex');
+
+    // Convert to buffers for constant-time comparison
+    const providedBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+    // Ensure buffers are same length (timingSafeEqual requires this)
+    if (providedBuffer.length !== expectedBuffer.length) {
       return false;
     }
-  }
 
-  // Method 2: Authorization header (Bearer token or direct secret)
-  if (authorization) {
-    // Remove "Bearer " prefix if present
-    const providedSecret = authorization.replace(/^Bearer\s+/i, '').trim();
-    
-    // Compare with configured secret
-    return providedSecret === secret;
+    // Constant-time comparison to prevent timing attacks
+    return timingSafeEqual(providedBuffer, expectedBuffer);
+  } catch (error) {
+    console.error('Error verifying Wise HMAC signature:', error);
+    return false;
   }
-
-  // No authentication method provided
-  return false;
 }
 
 /**
- * Handle transfer update events
- * Events: funded, sent, canceled, refunded
+ * Handle transfer state change events
+ * Updates payout record based on Wise transfer status
+ * 
+ * @param event - Wise webhook event payload
  */
-async function handleTransferUpdate(
-  supabase: any,
-  event: any
+async function handleTransferStateChange(
+  event: WiseTransferStateChangePayload
 ): Promise<void> {
   const { data } = event;
-  const transferId = data.resourceId;
-  const currentState = data.currentState;
-  const previousState = data.previousState;
+  
+  // Extract transfer ID from resource
+  // Wise sends transfer ID in different formats depending on API version
+  const transferId = data.resource?.id?.toString() || 
+                     data.resourceId?.toString() || 
+                     data.resource?.id;
+  
+  const currentState = data.current_state || data.currentState;
+  const previousState = data.previous_state || data.previousState;
+  const occurredAt = data.occurred_at || event.occurred_at;
 
-  console.log(`🔄 Wise Transfer Update: ${transferId}`, {
-    currentState,
+  if (!transferId) {
+    console.error('❌ Wise webhook: Missing transfer ID in state change event');
+    return;
+  }
+
+  console.log(`🔄 Wise Transfer State Change: ${transferId}`, {
     previousState,
+    currentState,
+    occurredAt,
   });
 
-  // Update transfer status in database
-  // Assuming you have a transfers or payouts table
-  const { error } = await supabase
-    .from('payouts') // Adjust table name based on your schema
-    .update({
-      status: currentState.toLowerCase(),
-      updated_at: new Date().toISOString(),
+  try {
+    // Find payout record by Wise transfer ID
+    let payout = await getPayoutByWiseTransferId(transferId);
+
+    // If not found by transfer ID, try to find by reference if available
+    if (!payout && event.data?.resource?.customerTransactionId) {
+      payout = await getPayoutByReference(event.data.resource.customerTransactionId);
+    }
+
+    if (!payout) {
+      console.warn(`⚠️ Wise webhook: No payout found for transfer ${transferId}`);
+      // Log the event but don't fail - might be a transfer we didn't create
+      return;
+    }
+
+    // Map Wise transfer status to our payout status
+    const wiseStatus = currentState as WiseTransferStatus;
+    const payoutStatus = mapWiseTransferStatusToPayoutStatus(wiseStatus);
+
+    // Update payout record
+    await updatePayoutStatus(payout.id, {
+      status: payoutStatus,
       wise_transfer_id: transferId,
-    })
-    .eq('wise_transfer_id', transferId);
-
-  if (error) {
-    console.error('Error updating transfer status:', error);
-    // Don't throw - log and continue
-  } else {
-    console.log(`✅ Transfer ${transferId} updated to ${currentState}`);
-  }
-
-  // Handle specific state transitions
-  switch (currentState.toLowerCase()) {
-    case 'funded':
-      console.log(`💰 Transfer ${transferId} has been funded`);
-      // Notify user that payment is processing
-      break;
-    case 'outgoing_payment_sent':
-      console.log(`📤 Transfer ${transferId} has been sent to recipient`);
-      // Notify user that payment was sent
-      break;
-    case 'cancelled':
-      console.log(`❌ Transfer ${transferId} was cancelled`);
-      // Notify user of cancellation
-      break;
-    case 'refunded':
-      console.log(`↩️ Transfer ${transferId} was refunded`);
-      // Handle refund logic
-      break;
-  }
-}
-
-/**
- * Handle account deposit events
- * Events: money added to account
- */
-async function handleAccountDeposit(
-  supabase: any,
-  event: any
-): Promise<void> {
-  const { data } = event;
-  const depositId = data.resourceId;
-  const amount = data.amount;
-  const currency = data.currency;
-
-  console.log(`💵 Wise Account Deposit: ${depositId}`, {
-    amount,
-    currency,
-  });
-
-  // Update account balance or create deposit record
-  // Adjust based on your database schema
-  const { error } = await supabase
-    .from('account_deposits') // Adjust table name based on your schema
-    .insert({
-      wise_deposit_id: depositId,
-      amount: amount.value,
-      currency: currency,
-      status: 'completed',
-      created_at: new Date().toISOString(),
+      wise_response: event as any, // Store full webhook payload
+      completed_at: payoutStatus === WisePayoutStatus.COMPLETED 
+        ? occurredAt || new Date().toISOString() 
+        : null,
     });
 
-  if (error) {
-    console.error('Error recording deposit:', error);
-  } else {
-    console.log(`✅ Deposit ${depositId} recorded`);
+    console.log(`✅ Payout ${payout.id} updated: ${previousState} → ${currentState} (${payoutStatus})`);
+
+    // Log specific state transitions for monitoring
+    switch (currentState) {
+      case 'incoming_payment_waiting':
+        console.log(`💰 Transfer ${transferId} waiting for payment`);
+        break;
+      case 'processing':
+        console.log(`⚙️ Transfer ${transferId} is processing`);
+        break;
+      case 'funds_converted':
+        console.log(`💱 Transfer ${transferId} funds converted`);
+        break;
+      case 'outgoing_payment_sent':
+        console.log(`📤 Transfer ${transferId} sent to recipient`);
+        break;
+      case 'bounced_back':
+      case 'funds_refunded':
+      case 'charged_back':
+        console.log(`❌ Transfer ${transferId} failed: ${currentState}`);
+        break;
+      case 'cancelled':
+        console.log(`🚫 Transfer ${transferId} was cancelled`);
+        break;
+    }
+  } catch (error: any) {
+    // Log error but don't throw - we want to return 200 to Wise
+    console.error(`❌ Error processing transfer state change for ${transferId}:`, error);
   }
 }
 
+
 /**
- * Handle transfer issue events
- * Events: problems with transfers that need attention
+ * Handle transfer active cases/issues
+ * Events: transfers#active-cases - when transfer has problems
+ * 
+ * @param event - Wise webhook event payload
  */
-async function handleTransferIssue(
-  supabase: any,
-  event: any
+async function handleTransferActiveCase(
+  event: WiseWebhookPayload
 ): Promise<void> {
   const { data } = event;
-  const transferId = data.resourceId;
-  const issueType = data.type;
-  const issueCode = data.code;
+  
+  // Extract transfer ID
+  const transferId = data.resource?.id?.toString() || 
+                     data.resourceId?.toString() || 
+                     data.resource?.id;
+  
+  const issueType = data.type || data.issue_type;
+  const issueCode = data.code || data.issue_code;
+  const issueMessage = data.message || data.issue_message;
 
-  console.log(`⚠️ Wise Transfer Issue: ${transferId}`, {
+  if (!transferId) {
+    console.error('❌ Wise webhook: Missing transfer ID in active case event');
+    return;
+  }
+
+  console.log(`⚠️ Wise Transfer Active Case: ${transferId}`, {
     issueType,
     issueCode,
+    issueMessage,
   });
 
-  // Update transfer with issue status
-  const { error } = await supabase
-    .from('payouts') // Adjust table name based on your schema
-    .update({
-      status: 'issue',
-      issue_type: issueType,
-      issue_code: issueCode,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('wise_transfer_id', transferId);
+  try {
+    // Find payout record
+    let payout = await getPayoutByWiseTransferId(transferId);
 
-  if (error) {
-    console.error('Error updating transfer issue:', error);
-  } else {
-    console.log(`✅ Transfer ${transferId} marked with issue: ${issueType}`);
-    // Notify admin/user about the issue
+    if (!payout && event.data?.resource?.customerTransactionId) {
+      payout = await getPayoutByReference(event.data.resource.customerTransactionId);
+    }
+
+    if (!payout) {
+      console.warn(`⚠️ Wise webhook: No payout found for transfer ${transferId} with issue`);
+      return;
+    }
+
+    // Update payout with issue details
+    await updatePayoutStatus(payout.id, {
+      status: WisePayoutStatus.FAILED,
+      error_message: issueMessage || `Issue: ${issueType} (${issueCode})`,
+      wise_response: event as any, // Store full webhook payload
+    });
+
+    console.log(`✅ Payout ${payout.id} marked as failed due to issue: ${issueType}`);
+    
+    // TODO: Notify admin/user about the issue
+  } catch (error: any) {
+    console.error(`❌ Error processing transfer active case for ${transferId}:`, error);
   }
 }
 
@@ -245,75 +271,117 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Wise configuration
-    let config;
-    try {
-      config = wiseConfig();
-    } catch (error: any) {
-      console.error('❌ Wise configuration error:', error.message);
-      return NextResponse.json(
-        { error: 'Wise configuration error', details: error.message },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    // Get raw body for signature verification
+    // Get raw body for signature verification (CRITICAL: must be raw text, not parsed)
     const body = await request.text();
     const signature = request.headers.get('x-signature-sha256');
-    const authorization = request.headers.get('authorization');
 
     // Handle empty body (test/verification requests)
+    // This is likely Wise's initial verification during webhook setup
     if (!body || body.trim() === '') {
-      console.log('📨 Wise webhook: Received test/verification request');
+      console.log('📨 Wise webhook: Received test/verification request (empty body)');
       return NextResponse.json(
         { status: 'ok', message: 'Wise webhook endpoint is active' },
         { status: 200, headers: corsHeaders }
       );
     }
 
-    // Verify webhook authentication (only if body is not empty)
-    if (!signature && !authorization) {
-      // For test requests during webhook setup, be more lenient
-      // Log but don't reject - Wise might send test requests without auth
-      console.warn('⚠️ Wise webhook: Missing authentication (may be test request)');
+    // Try to get Wise configuration (may fail if env vars not set yet)
+    let config;
+    let configError = false;
+    try {
+      config = wiseConfig();
+    } catch (error: any) {
+      configError = true;
+      console.warn('⚠️ Wise configuration not fully set up yet:', error.message);
       
-      // Try to parse as JSON to see if it's a real event
+      // If this is a test/verification request without signature, accept it
+      // This allows Wise to verify the endpoint during initial setup
+      if (!signature) {
+        try {
+          const testEvent = JSON.parse(body);
+          // If it's a simple test payload, accept it
+          if (!testEvent.event_type && !testEvent.type && !testEvent.data) {
+            console.log('📨 Wise webhook: Received test/verification request (config pending)');
+            return NextResponse.json(
+              { status: 'ok', message: 'Wise webhook endpoint is active (configuration pending)' },
+              { status: 200, headers: corsHeaders }
+            );
+          }
+        } catch {
+          // Not JSON, accept as test request
+          console.log('📨 Wise webhook: Received test/verification request (non-JSON, config pending)');
+          return NextResponse.json(
+            { status: 'ok', message: 'Wise webhook endpoint is active (configuration pending)' },
+            { status: 200, headers: corsHeaders }
+          );
+        }
+      }
+      
+      // If we have a signature but no config, we can't verify - but this shouldn't happen
+      // during initial setup. Return error only if it looks like a real event.
+      if (signature) {
+        console.error('❌ Wise webhook: Configuration error - cannot verify signature');
+        return NextResponse.json(
+          { error: 'Wise configuration error', details: error.message },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+    }
+
+    // CRITICAL: Verify webhook signature using constant-time comparison
+    // Only verify if we have both signature and config
+    if (!signature) {
+      // No signature - this is likely a test/verification request
       try {
         const testEvent = JSON.parse(body);
-        // If it looks like a real event but no auth, reject it
-        if (testEvent.type || testEvent.event_type || testEvent.data) {
-          console.error('❌ Wise webhook: Real event received without authentication');
+        // If it looks like a real event but has no signature, reject it
+        if (testEvent.event_type || testEvent.type || testEvent.data) {
+          console.error('❌ Wise webhook: Real event received without signature');
           return NextResponse.json(
-            { error: 'Missing authentication' },
+            { error: 'Missing signature' },
             { status: 401, headers: corsHeaders }
           );
         }
+        // If it's just a test payload, accept it
+        console.log('📨 Wise webhook: Received test/verification request (test payload)');
+        return NextResponse.json(
+          { status: 'ok', message: 'Wise webhook endpoint is active' },
+          { status: 200, headers: corsHeaders }
+        );
       } catch {
         // Not JSON, probably a test request
+        console.log('📨 Wise webhook: Received test/verification request (non-JSON)');
+        return NextResponse.json(
+          { status: 'ok', message: 'Wise webhook endpoint is active' },
+          { status: 200, headers: corsHeaders }
+        );
       }
-      
-      // Allow test requests through
+    }
+
+    // If we have a signature, we must have config to verify it
+    if (!config || configError) {
+      console.error('❌ Wise webhook: Cannot verify signature - configuration missing');
       return NextResponse.json(
-        { status: 'ok', message: 'Test request received' },
-        { status: 200, headers: corsHeaders }
+        { error: 'Webhook configuration incomplete' },
+        { status: 500, headers: corsHeaders }
       );
     }
 
-    const isValid = verifyWiseWebhook(body, signature, authorization, config.webhookSecret);
+    const isValid = verifyWiseSignature(body, signature, config.webhookSecret);
     if (!isValid) {
-      console.error('❌ Wise webhook: Invalid authentication');
+      console.error('❌ Wise webhook: Invalid signature - potential security threat');
       return NextResponse.json(
-        { error: 'Invalid authentication' },
+        { error: 'Invalid signature' },
         { status: 401, headers: corsHeaders }
       );
     }
 
-    console.log('✅ Wise webhook authentication verified');
+    console.log('✅ Wise webhook signature verified (constant-time comparison)');
 
     // Parse webhook payload
-    let event;
+    let event: WiseWebhookPayload;
     try {
-      event = JSON.parse(body);
+      event = JSON.parse(body) as WiseWebhookPayload;
     } catch (error) {
       console.error('❌ Wise webhook: Invalid JSON payload');
       return NextResponse.json(
@@ -322,54 +390,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase client with service role (bypasses RLS)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const eventType = event.event_type || event.type;
 
-    // Handle different event types
-    const eventType = event.type || event.event_type;
+    // Log webhook event (for debugging and audit trail)
     console.log(`📨 Wise webhook received: ${eventType}`, {
-      resourceId: event.data?.resourceId,
-      timestamp: event.occurred_at || event.timestamp,
+      resourceId: event.data?.resource?.id || event.data?.resourceId,
+      timestamp: event.occurred_at || event.sent_at,
+      subscriptionId: event.subscription_id,
     });
 
-    switch (eventType) {
-      case 'transfers#state-change':
-      case 'transfer_state_change':
-        await handleTransferUpdate(supabase, event);
-        break;
+    // Handle different event types
+    try {
+      switch (eventType) {
+        case 'transfers#state-change':
+          // Transfer status changed (pending → processing → completed, etc.)
+          await handleTransferStateChange(event as WiseTransferStateChangePayload);
+          break;
 
-      case 'balances#credit':
-      case 'account_deposit':
-        await handleAccountDeposit(supabase, event);
-        break;
+        case 'transfers#active-cases':
+          // Transfer has issues/problems
+          await handleTransferActiveCase(event);
+          break;
 
-      case 'transfers#processing-failed':
-      case 'transfers#funds-refunded':
-      case 'transfer_issue':
-        await handleTransferIssue(supabase, event);
-        break;
+        case 'balances#credit':
+        case 'account_deposit':
+          // Account deposit (not directly related to payouts, but log it)
+          console.log(`💵 Wise account deposit event received (not processing)`);
+          break;
 
-      default:
-        console.warn(`⚠️ Wise webhook: Unhandled event type: ${eventType}`);
-        // Return 200 to acknowledge receipt even if we don't handle it
-        return NextResponse.json(
-          { received: true, message: `Event type ${eventType} received but not handled` },
-          { status: 200, headers: corsHeaders }
-        );
+        default:
+          console.warn(`⚠️ Wise webhook: Unhandled event type: ${eventType}`);
+          // Return 200 to acknowledge receipt even if we don't handle it
+          // This prevents Wise from retrying
+      }
+    } catch (error: any) {
+      // Log error but don't throw - we want to return 200 to Wise
+      // This prevents webhook retries and ensures Wise knows we received it
+      console.error(`❌ Error processing Wise webhook event ${eventType}:`, error);
     }
 
-    // Return success response
+    // Always return 200 OK to acknowledge receipt
+    // This is critical - Wise will retry if we return error status codes
     return NextResponse.json(
-      { received: true, eventType },
+      { 
+        received: true, 
+        eventType,
+        message: 'Webhook processed successfully' 
+      },
       { status: 200, headers: corsHeaders }
     );
 

@@ -125,4 +125,26 @@ export type ServiceReviewTable = Database['public']['Tables']['service_reviews']
 export type ServiceReviewInsert = Database['public']['Tables']['service_reviews']['Insert'];
 export type ServiceReviewUpdate = Database['public']['Tables']['service_reviews']['Update'];
 
+// Wise Payouts Types
+export type {
+  WisePayout,
+  CreateWisePayoutParams,
+  UpdateWisePayoutParams,
+  WisePayoutFilters,
+  WiseCurrency,
+  WiseTransfer,
+  WiseWebhookPayload,
+  WiseTransferStateChangePayload,
+  WiseTransferIssuePayload,
+  WiseAccountDepositPayload,
+} from './types/wise';
+
+export {
+  WisePayoutStatus,
+  WiseTransferStatus,
+  WiseWebhookEventType,
+  mapWiseTransferStatusToPayoutStatus,
+  isTerminalPayoutStatus,
+} from './types/wise';
+
 
