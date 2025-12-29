@@ -177,7 +177,7 @@ export default function TermsOfService() {
                 <strong>File Validation:</strong> All uploaded content undergoes automated validation to ensure compliance with our technical requirements, copyright policies, and community guidelines.
               </p>
               <p>
-                <strong>Tier-Based Limits:</strong> File upload limits vary by subscription tier: Free (100MB), Pro (500MB), and Enterprise (2GB). Processing times also vary by tier.
+                <strong>Tier-Based Limits:</strong> Storage limits vary by subscription tier: Free (30MB), Premium (2GB), and Unlimited (10GB). Upload limits are: Free (3 lifetime tracks), Premium (7 tracks per month), and Unlimited (unlimited tracks). Processing times also vary by tier.
               </p>
               <p>
                 <strong>Content Analysis:</strong> We may analyze your content using automated systems to detect copyright violations, inappropriate content, or technical issues.
@@ -244,10 +244,10 @@ export default function TermsOfService() {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               <p>
-                <strong>Subscription Plans:</strong> We offer Free, Pro, and Enterprise subscription plans with different features, upload limits, and processing capabilities.
+                <strong>Subscription Plans:</strong> We offer Free, Premium (£6.99/month or £69.99/year), and Unlimited (£12.99/month or £129.99/year) subscription plans with different features, upload limits, storage capacity, and processing capabilities.
               </p>
               <p>
-                <strong>Billing and Payments:</strong> Paid subscriptions are billed monthly or annually. All fees are non-refundable except as required by law or as specified in our refund policy.
+                <strong>Billing and Payments:</strong> Paid subscriptions are billed monthly or annually. All Premium and Unlimited plans include a 7-day money-back guarantee. You can request a full refund within 7 days of payment if you're not satisfied.
               </p>
               <p>
                 <strong>Automatic Renewal:</strong> Subscriptions automatically renew unless cancelled before the next billing cycle. You can cancel your subscription at any time through your account settings.
@@ -256,7 +256,7 @@ export default function TermsOfService() {
                 <strong>Feature Changes:</strong> We reserve the right to modify subscription features, limits, and pricing with 30 days' notice. Continued use constitutes acceptance of changes.
               </p>
               <p>
-                <strong>Downgrades:</strong> Downgrading your subscription may result in loss of access to premium features and increased upload limits. Your content remains accessible.
+                <strong>Downgrades and Grace Period:</strong> When you downgrade from Premium or Unlimited to Free, you'll receive a 90-day grace period where all your content remains accessible. During this time, you cannot upload new content if you're over the 30MB free tier limit. After 90 days, you'll choose which tracks to keep public (within 30MB), and the rest will become private (still accessible to you, but not public). You can re-subscribe anytime to restore public access to all your content. Grace periods are limited to once per year to prevent abuse.
               </p>
             </div>
           </section>

@@ -223,6 +223,24 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
             </span>
           </div>
 
+          {/* Storage Limits */}
+          <div className="flex items-center space-x-2">
+            <CheckCircle
+              className="h-4 w-4"
+              style={{ color: '#10b981' }}
+            />
+            <span
+              className="text-sm"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {subscription.tier === 'free'
+                ? '30MB Storage'
+                : subscription.tier === 'premium'
+                ? '2GB Storage'
+                : '10GB Storage'}
+            </span>
+          </div>
+
           {/* Unlimited Searches */}
           <div className="flex items-center space-x-2">
             <CheckCircle
