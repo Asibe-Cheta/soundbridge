@@ -18,6 +18,19 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path((?!api).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "soundbridge.live"
+        }
+      ],
+      "destination": "https://www.soundbridge.live/:path*",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/downgrade-past-due",

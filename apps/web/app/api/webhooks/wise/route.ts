@@ -9,8 +9,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Signature-SHA256, X-Delivery-Id',
 };
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+/**
+ * OPTIONS /api/webhooks/wise
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(request: NextRequest) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Signature-SHA256',
+    },
+  });
 }
 
 /**
@@ -240,21 +251,20 @@ async function handleActiveCases(payload: any): Promise<void> {
  * - No redirects
  * - Valid domain (not IP address)
  * 
- * Per specification: Always return 200 OK for GET requests
+ * CRITICAL: Returns plain text "OK" - some webhook validators expect plain text, not JSON
  */
 export async function GET(request: NextRequest) {
-  // Always return 200 OK for GET requests (Wise verification)
-  // This confirms the endpoint exists and is accessible
-  return NextResponse.json(
-    { received: true },
-    { 
-      status: 200, 
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      }
-    }
-  );
+  console.log('Wise webhook validation GET request received');
+  
+  // Wise expects a simple 200 OK response with plain text
+  // Some webhook validators expect plain text, not JSON
+  return new Response('OK', {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain',
+      ...corsHeaders,
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {
