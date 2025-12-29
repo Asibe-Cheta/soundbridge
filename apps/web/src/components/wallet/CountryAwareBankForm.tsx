@@ -177,6 +177,21 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       sort_code: /^\d{2}-\d{2}-\d{2}$/
     }
   },
+  GH: {
+    country: 'Ghana',
+    currency: 'GHS',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890' },
+      swift_code: { required: true, label: 'SWIFT/BIC Code', placeholder: 'GTBIGHAC' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{10,15}$/,
+      swift_code: /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}$/
+    }
+  },
   IN: {
     country: 'India',
     currency: 'INR',
@@ -190,6 +205,21 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
     validation: {
       account_number: /^\d{9,18}$/,
       ifsc_code: /^[A-Z]{4}0[A-Z0-9]{6}$/
+    }
+  },
+  KE: {
+    country: 'Kenya',
+    currency: 'KES',
+    fields: {
+      account_holder_name: { required: true, label: 'Account Holder Name' },
+      bank_name: { required: true, label: 'Bank Name' },
+      account_number: { required: true, label: 'Account Number', placeholder: '1234567890' },
+      swift_code: { required: true, label: 'SWIFT/BIC Code', placeholder: 'KCBKENX' },
+      account_type: { required: true, label: 'Account Type' }
+    },
+    validation: {
+      account_number: /^\d{10,15}$/,
+      swift_code: /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}$/
     }
   },
   IT: {
@@ -402,7 +432,13 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
         'America/Mexico_City': 'MX',
         'America/Argentina/Buenos_Aires': 'AR',
         'Africa/Lagos': 'NG',
-        'Africa/Johannesburg': 'ZA'
+        'Africa/Johannesburg': 'ZA',
+        'Africa/Accra': 'GH',
+        'Africa/Nairobi': 'KE',
+        'Africa/Cairo': 'EG',
+        'Africa/Casablanca': 'MA',
+        'Africa/Dar_es_Salaam': 'TZ',
+        'Africa/Kampala': 'UG'
       };
       
       const detectedCountry = timezoneToCountry[timezone];
@@ -619,9 +655,11 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
               {selectedCountry === 'ES' && 'Spanish banks use IBAN for international transfers'}
               {selectedCountry === 'FR' && 'French banks use IBAN for international transfers'}
               {selectedCountry === 'GB' && 'UK banks use Sort Code instead of Routing Number'}
+              {selectedCountry === 'GH' && 'Ghanaian banks use SWIFT/BIC Code for international transfers'}
               {selectedCountry === 'IN' && 'Indian banks use IFSC Code for transfers'}
               {selectedCountry === 'IT' && 'Italian banks use IBAN for international transfers'}
               {selectedCountry === 'JP' && 'Japanese banks use Branch Code for transfers'}
+              {selectedCountry === 'KE' && 'Kenyan banks use SWIFT/BIC Code for international transfers'}
               {selectedCountry === 'MX' && 'Mexican banks use CLABE for transfers'}
               {selectedCountry === 'NL' && 'Dutch banks use IBAN for international transfers'}
               {selectedCountry === 'NG' && 'Nigerian banks use Bank Code for transfers'}
