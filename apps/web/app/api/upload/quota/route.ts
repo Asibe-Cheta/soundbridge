@@ -47,11 +47,21 @@ export async function GET(request: NextRequest) {
       is_unlimited: boolean;
     };
 
+    // Normalize tier names: convert legacy names to current names
+    // Database may return 'pro' or 'enterprise', but mobile app expects 'premium' or 'unlimited'
+    function normalizeTierName(tier: string): string {
+      if (tier === 'pro') return 'premium';
+      if (tier === 'enterprise') return 'unlimited';
+      return tier; // 'free', 'premium', 'unlimited' pass through unchanged
+    }
+
+    const normalizedTier = normalizeTierName(quota.tier);
+
     return NextResponse.json(
       {
         success: true,
         quota: {
-          tier: quota.tier,
+          tier: normalizedTier, // Use normalized tier name
           upload_limit: quota.upload_limit,
           uploads_this_month: quota.uploads_this_month,
           remaining: quota.remaining,

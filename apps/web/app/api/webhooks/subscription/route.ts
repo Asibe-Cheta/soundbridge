@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { grantGracePeriod } from '@/src/lib/grace-period-service';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -415,6 +416,28 @@ async function handleSubscriptionExpired(supabase: any, data: {
   userId: string;
 }) {
   console.log('⏰ EXPIRING SUBSCRIPTION:', data.userId);
+
+  // Get current tier before downgrading
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', data.userId)
+    .single();
+
+  const currentTier = profile?.subscription_tier || 'free';
+
+  // Grant grace period if downgrading from paid tier to free
+  if (currentTier !== 'free') {
+    const normalizedTier = currentTier === 'pro' ? 'premium' : currentTier === 'enterprise' ? 'unlimited' : currentTier;
+    if (normalizedTier === 'premium' || normalizedTier === 'unlimited') {
+      const graceResult = await grantGracePeriod(data.userId, normalizedTier as 'premium' | 'unlimited', 'free');
+      if (graceResult.success) {
+        console.log(`✅ Grace period granted to user ${data.userId} until ${graceResult.gracePeriodEnds}`);
+      } else {
+        console.log(`⚠️ Grace period not granted to user ${data.userId}: ${graceResult.error}`);
+      }
+    }
+  }
 
   const { error } = await supabase
     .from('profiles')

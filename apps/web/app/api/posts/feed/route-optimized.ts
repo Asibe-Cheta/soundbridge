@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
     // 1. Public posts (everyone can see)
     // 2. Connection posts (only connections can see)
     // 3. User's own posts (always visible)
+    // Also filter out private posts (is_private = true) from grace period system
     let query = supabase
       .from('posts')
       .select(`
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest) {
         )
       `, { count: 'exact' })
       .is('deleted_at', null)
+      .eq('is_private', false) // Exclude private posts (grace period excess content)
       // Removed: .eq('visibility', 'public') - RLS handles this now
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

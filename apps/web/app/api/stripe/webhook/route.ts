@@ -280,7 +280,7 @@ async function handleSubscriptionDeleted(
     // Find user by subscription ID
     const { data: existingSub } = await supabase
       .from('user_subscriptions')
-      .select('user_id')
+      .select('user_id, tier')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
@@ -290,6 +290,21 @@ async function handleSubscriptionDeleted(
     }
 
     const userId = existingSub.user_id;
+    const currentTier = existingSub.tier || 'free';
+
+    // Grant grace period if downgrading from paid tier to free
+    if (currentTier !== 'free') {
+      const { grantGracePeriod } = await import('@/src/lib/grace-period-service');
+      const normalizedTier = currentTier === 'pro' ? 'premium' : currentTier === 'enterprise' ? 'unlimited' : currentTier;
+      if (normalizedTier === 'premium' || normalizedTier === 'unlimited') {
+        const graceResult = await grantGracePeriod(userId, normalizedTier as 'premium' | 'unlimited', 'free');
+        if (graceResult.success) {
+          console.log(`✅ Grace period granted to user ${userId} until ${graceResult.gracePeriodEnds}`);
+        } else {
+          console.log(`⚠️ Grace period not granted to user ${userId}: ${graceResult.error}`);
+        }
+      }
+    }
 
     // Downgrade to free tier
     await supabase
@@ -301,6 +316,15 @@ async function handleSubscriptionDeleted(
         updated_at: new Date().toISOString()
       })
       .eq('stripe_subscription_id', subscriptionId);
+
+    // Also update profiles table
+    await supabase
+      .from('profiles')
+      .update({
+        subscription_tier: 'free',
+        subscription_status: 'expired',
+      })
+      .eq('id', userId);
 
     console.log(`✅ Subscription cancelled and downgraded to free: ${subscriptionId}`);
 
