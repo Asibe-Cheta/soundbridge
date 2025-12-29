@@ -20,7 +20,7 @@
   ],
   "redirects": [
     {
-      "source": "/:path((?!api).*)",
+      "source": "/:path((?!api|wise-webhook).*)",
       "has": [
         {
           "type": "host",
