@@ -93,8 +93,10 @@ const [tracksStats, eventsCount, revenue] = await Promise.all([
 ### Step 1: Run Database Migrations (5 minutes)
 
 1. Open Supabase SQL Editor
-2. Run `database/add_user_tracks_stats_function.sql`
-3. Run `database/add_performance_indexes.sql`
+2. Run `database/add_user_tracks_stats_function.sql` ✅ **Ready - All column checks fixed**
+3. Run `database/add_performance_indexes.sql` ✅ **Ready - All column checks fixed**
+
+**Note:** Both SQL files now include conditional checks for columns that may not exist (like `deleted_at` and `transaction_type`), so they will run successfully even if some columns are missing.
 
 ### Step 2: Update API Endpoints (30 minutes)
 
@@ -169,5 +171,6 @@ If you need clarification on any of the fixes:
 
 ---
 
-**Last Updated:** December 30, 2025
+**Last Updated:** December 30, 2025  
+**Database Files Status:** ✅ **FIXED** - All SQL files tested and ready to run (column existence checks added)
 
