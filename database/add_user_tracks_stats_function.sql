@@ -24,7 +24,10 @@ BEGIN
     MAX(created_at) as last_upload_at
   FROM audio_tracks
   WHERE creator_id = p_user_id
-  AND deleted_at IS NULL;
+  AND (deleted_at IS NULL OR NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'audio_tracks' AND column_name = 'deleted_at'
+  ));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

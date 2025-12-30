@@ -16,12 +16,30 @@ CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_status_created ON user_su
 
 -- Audio tracks table (usage statistics)
 CREATE INDEX IF NOT EXISTS idx_audio_tracks_creator_id ON audio_tracks(creator_id);
-CREATE INDEX IF NOT EXISTS idx_audio_tracks_creator_deleted ON audio_tracks(creator_id, deleted_at);
+-- Only create deleted_at index if column exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'audio_tracks' AND column_name = 'deleted_at'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_audio_tracks_creator_deleted ON audio_tracks(creator_id, deleted_at);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_audio_tracks_creator_created ON audio_tracks(creator_id, created_at DESC);
 
 -- Events table
 CREATE INDEX IF NOT EXISTS idx_events_creator_id ON events(creator_id);
-CREATE INDEX IF NOT EXISTS idx_events_creator_deleted ON events(creator_id, deleted_at);
+-- Only create deleted_at index if column exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'events' AND column_name = 'deleted_at'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_events_creator_deleted ON events(creator_id, deleted_at);
+  END IF;
+END $$;
 
 -- Follows table (followers count)
 CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
@@ -61,8 +79,17 @@ CREATE INDEX IF NOT EXISTS idx_user_usage_user_id ON user_usage(user_id);
 -- Comments
 -- ============================================
 
-COMMENT ON INDEX idx_audio_tracks_creator_deleted IS 
-  'Composite index for filtering tracks by creator and deleted status. Critical for /api/subscription/status performance.';
+-- Comment only if index exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_indexes 
+    WHERE indexname = 'idx_audio_tracks_creator_deleted'
+  ) THEN
+    COMMENT ON INDEX idx_audio_tracks_creator_deleted IS 
+      'Composite index for filtering tracks by creator and deleted status. Critical for /api/subscription/status performance.';
+  END IF;
+END $$;
 
 COMMENT ON INDEX idx_tip_analytics_creator_status_date IS 
   'Composite index for revenue summary calculations. Enables fast filtering by creator, status, and date range.';
