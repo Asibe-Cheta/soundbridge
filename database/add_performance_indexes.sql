@@ -65,7 +65,16 @@ CREATE INDEX IF NOT EXISTS idx_tip_analytics_creator_status_date ON tip_analytic
 -- Wallet transactions table
 CREATE INDEX IF NOT EXISTS idx_wallet_transactions_user_id ON wallet_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_wallet_transactions_user_created ON wallet_transactions(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_wallet_transactions_user_type ON wallet_transactions(user_id, type);
+-- Only create transaction_type index if column exists (it's transaction_type, not type)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'wallet_transactions' AND column_name = 'transaction_type'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_wallet_transactions_user_type ON wallet_transactions(user_id, transaction_type);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_wallet_transactions_user_status ON wallet_transactions(user_id, status);
 
 -- ============================================
