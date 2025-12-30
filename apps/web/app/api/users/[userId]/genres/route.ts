@@ -23,22 +23,9 @@ export async function GET(
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Fetch user's genre preferences with genre details
+    // ✅ Use helper function instead of direct query
     const { data: userGenres, error } = await supabase
-      .from('user_genres')
-      .select(`
-        id,
-        preference_strength,
-        created_at,
-        genre:genres!user_genres_genre_id_fkey(
-          id,
-          name,
-          category,
-          description
-        )
-      `)
-      .eq('user_id', userId as any)
-      .order('created_at', { ascending: false }) as { data: any; error: any };
+      .rpc('get_user_preferred_genres', { user_uuid: userId });
 
     if (error) {
       console.error('Error fetching user genres:', error);
@@ -50,9 +37,10 @@ export async function GET(
 
     console.log(`✅ Fetched ${userGenres?.length || 0} genre preferences for user ${userId}`);
 
+    // Return genre names as array (matching mobile app expectations)
     return NextResponse.json({
       success: true,
-      genres: userGenres || [],
+      genres: userGenres?.map((g: any) => g.genre_name) || [],
       count: userGenres?.length || 0,
       timestamp: new Date().toISOString()
     }, { headers: corsHeaders });
@@ -98,53 +86,32 @@ export async function POST(
       );
     }
 
-    // Create Supabase client with service role for writes
+    // Create Supabase client (helper function handles auth via SECURITY DEFINER)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Start transaction by deleting existing preferences
-    const { error: deleteError } = await (supabase
-      .from('user_genres') as any)
-      .delete()
-      .eq('user_id', userId);
+    // ✅ Use helper function instead of manual delete + insert (atomic operation)
+    const { error } = await supabase.rpc('set_user_preferred_genres', {
+      user_uuid: userId,
+      genre_ids: genre_ids
+    });
 
-    if (deleteError) {
-      console.error('Error deleting existing genres:', deleteError);
+    if (error) {
+      console.error('Error setting user genres:', error);
       return NextResponse.json(
-        { error: 'Failed to update genres', details: deleteError.message },
+        { error: 'Failed to save genre preferences', details: error.message },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    // Insert new preferences
-    const genrePreferences = genre_ids.map((genre_id: any, index: number) => ({
-      user_id: userId,
-      genre_id: genre_id,
-      preference_strength: index < 3 ? 5 : 3 // Top 3 get higher strength
-    }));
-
-    const { data: insertedGenres, error: insertError } = await (supabase
-      .from('user_genres') as any)
-      .insert(genrePreferences)
-      .select();
-
-    if (insertError) {
-      console.error('Error inserting genres:', insertError);
-      return NextResponse.json(
-        { error: 'Failed to save genres', details: insertError.message },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    console.log(`✅ Updated ${insertedGenres?.length || 0} genre preferences for user ${userId}`);
+    console.log(`✅ Updated ${genre_ids.length} genre preferences for user ${userId}`);
 
     return NextResponse.json({
       success: true,
-      message: 'Genre preferences updated successfully',
-      genres: insertedGenres,
-      count: insertedGenres?.length || 0,
+      message: 'Preferences saved successfully',
+      count: genre_ids.length,
       timestamp: new Date().toISOString()
     }, { headers: corsHeaders });
 
