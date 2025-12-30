@@ -12,22 +12,42 @@ RETURNS TABLE (
   total_storage_bytes BIGINT,
   last_upload_at TIMESTAMP
 ) AS $$
+DECLARE
+  has_deleted_at BOOLEAN;
 BEGIN
-  RETURN QUERY
-  SELECT
-    COUNT(*)::BIGINT as total_tracks,
-    COALESCE(SUM(play_count), 0)::BIGINT as total_plays,
-    COALESCE(SUM(like_count), 0)::BIGINT as total_likes,
-    COUNT(*) FILTER (WHERE track_type IS NULL OR track_type = 'music' OR track_type = 'song')::BIGINT as music_uploads,
-    COUNT(*) FILTER (WHERE track_type = 'podcast')::BIGINT as podcast_uploads,
-    COALESCE(SUM(file_size), 0)::BIGINT as total_storage_bytes,
-    MAX(created_at) as last_upload_at
-  FROM audio_tracks
-  WHERE creator_id = p_user_id
-  AND (deleted_at IS NULL OR NOT EXISTS (
+  -- Check if deleted_at column exists
+  SELECT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'audio_tracks' AND column_name = 'deleted_at'
-  ));
+  ) INTO has_deleted_at;
+
+  -- Return query with conditional deleted_at filter
+  IF has_deleted_at THEN
+    RETURN QUERY
+    SELECT
+      COUNT(*)::BIGINT as total_tracks,
+      COALESCE(SUM(play_count), 0)::BIGINT as total_plays,
+      COALESCE(SUM(like_count), 0)::BIGINT as total_likes,
+      COUNT(*) FILTER (WHERE track_type IS NULL OR track_type = 'music' OR track_type = 'song')::BIGINT as music_uploads,
+      COUNT(*) FILTER (WHERE track_type = 'podcast')::BIGINT as podcast_uploads,
+      COALESCE(SUM(file_size), 0)::BIGINT as total_storage_bytes,
+      MAX(created_at) as last_upload_at
+    FROM audio_tracks
+    WHERE creator_id = p_user_id
+    AND deleted_at IS NULL;
+  ELSE
+    RETURN QUERY
+    SELECT
+      COUNT(*)::BIGINT as total_tracks,
+      COALESCE(SUM(play_count), 0)::BIGINT as total_plays,
+      COALESCE(SUM(like_count), 0)::BIGINT as total_likes,
+      COUNT(*) FILTER (WHERE track_type IS NULL OR track_type = 'music' OR track_type = 'song')::BIGINT as music_uploads,
+      COUNT(*) FILTER (WHERE track_type = 'podcast')::BIGINT as podcast_uploads,
+      COALESCE(SUM(file_size), 0)::BIGINT as total_storage_bytes,
+      MAX(created_at) as last_upload_at
+    FROM audio_tracks
+    WHERE creator_id = p_user_id;
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
