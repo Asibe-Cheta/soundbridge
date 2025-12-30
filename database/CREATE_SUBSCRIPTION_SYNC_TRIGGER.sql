@@ -57,15 +57,9 @@ BEGIN
     END,
 
     -- Map subscription dates
-    -- Use subscription_period_start/end if they exist, otherwise use subscription_start_date/renewal_date
-    subscription_period_start = COALESCE(
-      NEW.subscription_start_date,
-      NEW.subscription_period_start
-    ),
-    subscription_period_end = COALESCE(
-      NEW.subscription_renewal_date,
-      NEW.subscription_period_end
-    ),
+    -- user_subscriptions has subscription_start_date and subscription_renewal_date
+    subscription_period_start = NEW.subscription_start_date,
+    subscription_period_end = NEW.subscription_renewal_date,
     
     -- Also update subscription_start_date and subscription_renewal_date if they exist
     subscription_start_date = NEW.subscription_start_date,
@@ -131,8 +125,8 @@ SET
     WHEN us.billing_cycle = 'monthly' THEN 'monthly'
     ELSE us.billing_cycle
   END,
-  subscription_period_start = COALESCE(us.subscription_start_date, us.subscription_period_start),
-  subscription_period_end = COALESCE(us.subscription_renewal_date, us.subscription_period_end),
+  subscription_period_start = us.subscription_start_date,
+  subscription_period_end = us.subscription_renewal_date,
   subscription_start_date = us.subscription_start_date,
   subscription_renewal_date = us.subscription_renewal_date,
   stripe_subscription_id = us.stripe_subscription_id,
