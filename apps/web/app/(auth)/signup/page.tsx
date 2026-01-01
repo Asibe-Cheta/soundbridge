@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Music, Headphones } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
 import Image from 'next/image';
@@ -36,7 +36,6 @@ function SignupContent() {
   const { signUp, signInWithProvider } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<'creator' | 'listener'>('creator');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -95,22 +94,14 @@ function SignupContent() {
       return;
     }
 
-    // Validate role selection
-    if (!selectedRole) {
-      setError('Please select whether you are a Creator or Listener');
-      setIsLoading(false);
-      return;
-    }
-
     try {
       // Generate username from email and name
       const username = generateUsername(formData.email, formData.firstName, formData.lastName);
       
-      // Sign up with Supabase
+      // Sign up with Supabase (role will be collected during onboarding)
       const { data, error: signUpError } = await signUp(formData.email, formData.password, {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        role: selectedRole,
       });
 
       if (signUpError) {
@@ -127,7 +118,6 @@ function SignupContent() {
             userId: data.user.id,
             username,
             display_name: `${formData.firstName} ${formData.lastName}`,
-            role: selectedRole,
             bio: '',
           }));
         }
@@ -320,55 +310,6 @@ function SignupContent() {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            {/* Role Selection */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>
-                I want to join as a:
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div
-                  style={{
-                    background: selectedRole === 'creator' ? 'rgba(220, 38, 38, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                    border: selectedRole === 'creator' ? '2px solid #DC2626' : '2px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '15px',
-                    padding: '1.5rem',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onClick={() => setSelectedRole('creator')}
-                  onMouseEnter={(e) => selectedRole !== 'creator' && (e.currentTarget.style.borderColor = 'rgba(220, 38, 38, 0.5)', e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)')}
-                  onMouseLeave={(e) => selectedRole !== 'creator' && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                    <Music size={32} color={selectedRole === 'creator' ? '#DC2626' : '#EC4899'} />
-                  </div>
-                  <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Creator</div>
-                  <div style={{ fontSize: '0.9rem', color: '#999' }}>Share music, podcasts & host events</div>
-                </div>
-                <div
-                  style={{
-                    background: selectedRole === 'listener' ? 'rgba(220, 38, 38, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                    border: selectedRole === 'listener' ? '2px solid #DC2626' : '2px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '15px',
-                    padding: '1.5rem',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onClick={() => setSelectedRole('listener')}
-                  onMouseEnter={(e) => selectedRole !== 'listener' && (e.currentTarget.style.borderColor = 'rgba(220, 38, 38, 0.5)', e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)')}
-                  onMouseLeave={(e) => selectedRole !== 'listener' && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)', e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-                    <Headphones size={32} color={selectedRole === 'listener' ? '#DC2626' : '#EC4899'} />
-                  </div>
-                  <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Listener</div>
-                  <div style={{ fontSize: '0.9rem', color: '#999' }}>Discover content & attend events</div>
-                </div>
-              </div>
-            </div>
-
             {/* Personal Information */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
