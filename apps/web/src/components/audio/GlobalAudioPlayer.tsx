@@ -41,6 +41,7 @@ export function GlobalAudioPlayer() {
     pause,
     resume,
     stop,
+    clearTrack,
     seek,
     setVolume,
     clearError,
@@ -1194,6 +1195,37 @@ export function GlobalAudioPlayer() {
               >
                 {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
               </button>
+
+              {/* Close Button */}
+              <button
+                onClick={clearTrack}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#9CA3AF', 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '50%',
+                  transition: 'all 0.2s ease',
+                  minWidth: '36px',
+                  minHeight: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#DC2626';
+                  e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9CA3AF';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Close Player"
+                aria-label="Close Player"
+              >
+                <X size={18} />
+              </button>
             </div>
           </div>
           </div>
@@ -1203,6 +1235,37 @@ export function GlobalAudioPlayer() {
           __html: `
             @keyframes spin {
               to { transform: rotate(360deg); }
+            }
+            
+            /* Mobile responsive styles for mini player */
+            @media (max-width: 768px) {
+              /* Ensure buttons have adequate touch targets on mobile */
+              button[aria-label="Close Player"],
+              button[title*="Expand"],
+              button[title*="Minimize"] {
+                min-width: 44px !important;
+                min-height: 44px !important;
+                padding: 10px !important;
+              }
+              
+              /* Reduce gap between controls on mobile */
+              [style*="display: flex"][style*="gap: 16px"] {
+                gap: 8px !important;
+              }
+              
+              /* Hide volume slider on mobile, keep mute button */
+              input[type="range"] {
+                display: none !important;
+              }
+              
+              /* Optionally hide some less essential controls on very small screens */
+              @media (max-width: 480px) {
+                /* Hide share and lyrics buttons on very small screens, keep essential ones */
+                button:has(svg[data-lucide="share-2"]),
+                button:has(svg[data-lucide="type"]) {
+                  display: none !important;
+                }
+              }
             }
           `
         }} />

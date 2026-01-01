@@ -23,6 +23,7 @@ interface AudioPlayerContextType {
   pauseTrack: () => void;
   resumeTrack: () => void;
   stop: () => void;
+  clearTrack: () => void;
   seek: (time: number) => void;
   setVolume: (volume: number) => void;
   clearError: () => void;
@@ -302,6 +303,17 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     }
   }, []);
 
+  const clearTrack = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setError(null);
+  }, []);
+
   const seek = useCallback((time: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
@@ -345,6 +357,7 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     pauseTrack: pause,
     resumeTrack: resume,
     stop,
+    clearTrack,
     seek,
     setVolume,
     clearError,
