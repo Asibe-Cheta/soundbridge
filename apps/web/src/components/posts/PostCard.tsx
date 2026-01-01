@@ -17,6 +17,7 @@ import { BlockUserModal } from '@/src/components/users/BlockUserModal';
 import { ReportPostModal } from './ReportPostModal';
 import { RepostModal } from './RepostModal';
 import { toast } from '@/src/components/ui/Toast';
+import { LinkText } from './LinkText';
 
 interface PostCardProps {
   post: Post;
@@ -538,9 +539,9 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
       {/* Content */}
       {hasContent && (
         <div className="mb-4">
-          <p className="text-gray-200 whitespace-pre-wrap break-words">
-            {contentPreview}
-          </p>
+          <div className="text-gray-200 whitespace-pre-wrap break-words">
+            <LinkText text={contentPreview || ''} />
+          </div>
           {post.content.length > 300 && !isExpanded && (
             <button
               onClick={() => setIsExpanded(true)}

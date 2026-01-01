@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { X, Image as ImageIcon, Music, Globe, Users, Loader2, AlertCircle } from 'lucide-react';
+import { X, Image as ImageIcon, Music, Globe, Users, Loader2, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { hasUrls, extractUrls } from '@/src/lib/link-utils';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -282,6 +283,14 @@ export function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostMo
   };
 
   const remainingChars = MAX_CONTENT_LENGTH - content.length;
+  
+  // Detect URLs in content
+  const detectedUrls = useMemo(() => {
+    if (!content) return [];
+    return extractUrls(content);
+  }, [content]);
+  
+  const hasLinks = detectedUrls.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -327,13 +336,23 @@ export function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostMo
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="What do you want to share?"
+            placeholder="What do you want to share? You can paste links and they'll be clickable."
             className="w-full min-h-[120px] bg-gray-800 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:border-red-500/50 transition-colors"
             maxLength={MAX_CONTENT_LENGTH}
             disabled={isUploading}
           />
-          <div className="flex justify-end text-xs text-gray-400">
-            {remainingChars} characters remaining
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              {hasLinks && (
+                <div className="flex items-center gap-1 text-red-400">
+                  <LinkIcon size={14} />
+                  <span>{detectedUrls.length} link{detectedUrls.length > 1 ? 's' : ''} detected</span>
+                </div>
+              )}
+            </div>
+            <span className="text-gray-400">
+              {remainingChars} characters remaining
+            </span>
           </div>
 
           {/* Image Preview */}
