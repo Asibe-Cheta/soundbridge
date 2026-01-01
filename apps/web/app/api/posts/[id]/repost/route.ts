@@ -119,25 +119,8 @@ export async function POST(
 
     console.log('✅ Original post fetched:', originalPost.id, `(${Date.now() - startTime}ms)`);
 
-    // Check if user already reposted this post (prevent duplicates)
-    const { data: existingRepost } = await supabase
-      .from('post_reposts')
-      .select('id, repost_post_id')
-      .eq('post_id', params.id)
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (existingRepost) {
-      console.log('⚠️ User already reposted this post');
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'You have already reposted this post',
-          repost_post_id: existingRepost.repost_post_id,
-        },
-        { status: 409, headers: corsHeaders } // 409 Conflict
-      );
-    }
+    // Note: Multiple reposts are now allowed (users can repost the same post multiple times)
+    // Removed duplicate check to allow multiple reposts, matching standard social media behavior
 
     // Validate comment if required
     if (with_comment) {
@@ -370,13 +353,16 @@ export async function DELETE(
       );
     }
 
-    // Find user's repost record
+    // Find user's most recent repost record (LIFO - Last In First Out)
+    // With multiple reposts allowed, we delete the most recent one
     const { data: repostRecord, error: findError } = await supabase
       .from('post_reposts')
-      .select('id, repost_post_id')
+      .select('id, repost_post_id, created_at')
       .eq('post_id', postId)
       .eq('user_id', user.id)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (findError || !repostRecord) {
       return NextResponse.json(
