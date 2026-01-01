@@ -1,15 +1,38 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Music, Headphones } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
 import Image from 'next/image';
 
-export default function SignupPage() {
+// Loading component for Suspense
+function SignupLoading() {
+  return (
+    <div 
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-gradient)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem'
+      }}
+    >
+      <div className="text-center text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+        <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+      </div>
+    </div>
+  );
+}
+
+// Main signup content component that uses useSearchParams
+function SignupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signUp, signInWithProvider } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,13 +55,27 @@ export default function SignupPage() {
 
     const isBetaMode = process.env.NEXT_PUBLIC_BETA_MODE === 'true';
     const hasBetaAccess = localStorage.getItem('beta_access') === 'granted';
+    const code = searchParams.get('code');
+    const validBetaCode = process.env.NEXT_PUBLIC_BETA_CODE;
 
+    // If beta code is provided in URL, validate and grant access
+    if (code && validBetaCode && code === validBetaCode) {
+      localStorage.setItem('beta_access', 'granted');
+      localStorage.setItem('beta_access_granted_at', new Date().toISOString());
+      // Remove code from URL for cleaner URL (optional)
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('code');
+      window.history.replaceState({}, '', newUrl.pathname + newUrl.search);
+      return; // Allow signup to proceed
+    }
+
+    // Check if beta mode is active and user doesn't have access
     if (isBetaMode && !hasBetaAccess) {
       // No beta access - redirect to waitlist
       router.push('/waitlist');
       return;
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
