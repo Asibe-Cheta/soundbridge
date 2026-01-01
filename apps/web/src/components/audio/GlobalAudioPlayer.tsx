@@ -1007,7 +1007,7 @@ export function GlobalAudioPlayer() {
           </div>
 
           {/* Right Section - Volume & Additional Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+          <div className="audio-player-right-section" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
             {/* Volume Control */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
@@ -1236,35 +1236,24 @@ export function GlobalAudioPlayer() {
             @keyframes spin {
               to { transform: rotate(360deg); }
             }
-            
-            /* Mobile responsive styles for mini player */
+          `
+        }} />
+        
+        {/* Mobile responsive styles */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
             @media (max-width: 768px) {
-              /* Ensure buttons have adequate touch targets on mobile */
-              button[aria-label="Close Player"],
-              button[title*="Expand"],
-              button[title*="Minimize"] {
+              /* Ensure close button and other control buttons have adequate touch targets on mobile */
+              button[aria-label="Close Player"] {
                 min-width: 44px !important;
                 min-height: 44px !important;
                 padding: 10px !important;
               }
               
-              /* Reduce gap between controls on mobile */
-              [style*="display: flex"][style*="gap: 16px"] {
-                gap: 8px !important;
-              }
-              
-              /* Hide volume slider on mobile, keep mute button */
-              input[type="range"] {
-                display: none !important;
-              }
-              
-              /* Optionally hide some less essential controls on very small screens */
-              @media (max-width: 480px) {
-                /* Hide share and lyrics buttons on very small screens, keep essential ones */
-                button:has(svg[data-lucide="share-2"]),
-                button:has(svg[data-lucide="type"]) {
-                  display: none !important;
-                }
+              /* Ensure all control buttons in the right section are properly sized */
+              .audio-player-right-section button {
+                min-width: 36px !important;
+                min-height: 36px !important;
               }
             }
           `
