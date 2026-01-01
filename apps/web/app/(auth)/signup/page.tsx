@@ -43,7 +43,6 @@ function SignupContent() {
     email: '',
     password: '',
     confirmPassword: '',
-    location: '',
     terms: false,
     marketing: false,
   });
@@ -112,7 +111,6 @@ function SignupContent() {
         first_name: formData.firstName,
         last_name: formData.lastName,
         role: selectedRole,
-        location: formData.location,
       });
 
       if (signUpError) {
@@ -130,8 +128,6 @@ function SignupContent() {
             username,
             display_name: `${formData.firstName} ${formData.lastName}`,
             role: selectedRole,
-            location: formData.location,
-            country: formData.location.includes('Nigeria') ? 'Nigeria' : 'UK',
             bio: '',
           }));
         }
@@ -508,40 +504,6 @@ function SignupContent() {
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 placeholder="Confirm your password"
               />
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#ccc' }}>
-                Location
-              </label>
-              <select
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                required
-                style={{
-                  width: '100%',
-                  background: '#ffffff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  color: '#374151',
-                  fontSize: '1rem',
-                  transition: 'all 0.3s ease',
-                  outline: 'none'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#DC2626'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              >
-                <option value="" style={{ background: '#1a1a1a', color: 'white' }}>Select your location</option>
-                <option value="london" style={{ background: '#1a1a1a', color: 'white' }}>London, UK</option>
-                <option value="manchester" style={{ background: '#1a1a1a', color: 'white' }}>Manchester, UK</option>
-                <option value="birmingham" style={{ background: '#1a1a1a', color: 'white' }}>Birmingham, UK</option>
-                <option value="lagos" style={{ background: '#1a1a1a', color: 'white' }}>Lagos, Nigeria</option>
-                <option value="abuja" style={{ background: '#1a1a1a', color: 'white' }}>Abuja, Nigeria</option>
-                <option value="other-uk" style={{ background: '#1a1a1a', color: 'white' }}>Other UK</option>
-                <option value="other-nigeria" style={{ background: '#1a1a1a', color: 'white' }}>Other Nigeria</option>
-              </select>
             </div>
 
             {/* Terms and Conditions */}
