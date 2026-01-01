@@ -743,4 +743,13 @@ function SignupContent() {
       }} />
     </div>
   );
+}
+
+// Main page component with Suspense boundary
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupLoading />}>
+      <SignupContent />
+    </Suspense>
+  );
 } 
