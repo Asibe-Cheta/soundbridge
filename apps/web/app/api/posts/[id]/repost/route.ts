@@ -142,11 +142,11 @@ export async function POST(
     }
 
     // Build the new post content
-    // Normal repost (without comment) should have null content
+    // Normal repost (without comment) should have empty string (NOT NULL constraint)
     // Repost with comment should have the user's comment as content
     const newPostContent = (with_comment && comment && comment.trim().length > 0) 
       ? comment.trim() 
-      : null;
+      : '';
 
     // Create minimal post data - only required fields
     const postData: any = {
