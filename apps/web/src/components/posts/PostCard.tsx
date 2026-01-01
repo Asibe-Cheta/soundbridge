@@ -957,9 +957,9 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                         {comment.author?.name || comment.author?.username || 'User'}
                       </span>
                     </Link>
-                    <span className="text-gray-300 text-sm flex-1 line-clamp-2 break-words">
-                      {comment.content}
-                    </span>
+                    <div className="text-gray-300 text-sm flex-1 line-clamp-2 break-words">
+                      <LinkText text={comment.content} />
+                    </div>
                   </div>
                 ))}
                 {((post as any).comment_count || (post as any).comments_count || 0) > 2 && (
@@ -1159,9 +1159,9 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                           {formatTimeAgo(comment.created_at)}
                         </span>
                       </div>
-                      <p className="text-gray-300 text-sm whitespace-pre-wrap break-words mb-2">
-                        {comment.content}
-                      </p>
+                      <div className="text-gray-300 text-sm whitespace-pre-wrap break-words mb-2">
+                        <LinkText text={comment.content} />
+                      </div>
                       
                       {/* Comment Actions */}
                       <div className="flex items-center gap-4 text-xs text-gray-400">
@@ -1288,9 +1288,9 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
                                     {formatTimeAgo(reply.created_at)}
                                   </span>
                                 </div>
-                                <p className="text-gray-300 text-sm whitespace-pre-wrap break-words mb-2">
-                                  {reply.content}
-                                </p>
+                                <div className="text-gray-300 text-sm whitespace-pre-wrap break-words mb-2">
+                                  <LinkText text={reply.content} />
+                                </div>
                                 <div className="flex items-center gap-4 text-xs text-gray-400">
                                   <button
                                     onClick={async () => {
