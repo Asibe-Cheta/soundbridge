@@ -95,7 +95,7 @@ export async function POST(
     // Get ONLY the fields we need from original post (minimal query)
     const postQueryPromise = supabase
       .from('posts')
-      .select('id, content, visibility')
+      .select('id, content, visibility, user_id')
       .eq('id', params.id)
       .is('deleted_at', null)
       .single();
@@ -142,9 +142,11 @@ export async function POST(
     }
 
     // Build the new post content
+    // Normal repost (without comment) should have null content
+    // Repost with comment should have the user's comment as content
     const newPostContent = (with_comment && comment && comment.trim().length > 0) 
       ? comment.trim() 
-      : (originalPost.content || 'Reposted');
+      : null;
 
     // Create minimal post data - only required fields
     const postData: any = {
