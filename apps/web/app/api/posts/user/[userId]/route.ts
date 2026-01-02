@@ -60,10 +60,10 @@ export async function GET(
     // Check if viewing own posts or others
     const isOwnPosts = user.id === userId;
 
-    // Build query - explicitly include reposted_from_id
+    // Build query - select all fields including reposted_from_id
     let query = supabase
       .from('posts')
-      .select('*, reposted_from_id', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .is('deleted_at', null);
 
