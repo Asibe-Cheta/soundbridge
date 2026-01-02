@@ -34,6 +34,32 @@ export async function POST(request: NextRequest) {
       profile_completed
     } = body;
 
+    // Validate professional_headline length (must be <= 120 characters)
+    if (professional_headline !== undefined && professional_headline !== null) {
+      if (typeof professional_headline !== 'string') {
+        return NextResponse.json(
+          { success: false, error: 'Professional headline must be a string' },
+          { status: 400 }
+        );
+      }
+      const trimmedHeadline = professional_headline.trim();
+      if (trimmedHeadline.length > 120) {
+        return NextResponse.json(
+          { success: false, error: 'Professional headline must be 120 characters or less' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate that bio and professional_headline are not swapped
+    // If both are provided and they're identical, that's suspicious
+    if (bio !== undefined && professional_headline !== undefined) {
+      if (bio === professional_headline && bio && bio.trim().length > 0) {
+        console.warn('⚠️ Warning: bio and professional_headline are identical - possible data issue');
+        // Don't block, but log the warning
+      }
+    }
+
     // Update the user's profile
     const updateData: any = {};
 
@@ -42,7 +68,12 @@ export async function POST(request: NextRequest) {
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     if (location !== undefined) updateData.location = location;
     if (bio !== undefined) updateData.bio = bio;
-    if (professional_headline !== undefined) updateData.professional_headline = professional_headline;
+    if (professional_headline !== undefined) {
+      // Trim and validate professional_headline
+      updateData.professional_headline = professional_headline 
+        ? professional_headline.trim().substring(0, 120) // Enforce 120 char limit
+        : null;
+    }
     if (genres !== undefined) updateData.genres = genres;
     if (website !== undefined) updateData.website = website;
     if (phone !== undefined) updateData.phone = phone;
