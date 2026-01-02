@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       avatar_url,
       location,
       bio,
+      professional_headline,
       genres,
       website,
       phone,
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     if (location !== undefined) updateData.location = location;
     if (bio !== undefined) updateData.bio = bio;
+    if (professional_headline !== undefined) updateData.professional_headline = professional_headline;
     if (genres !== undefined) updateData.genres = genres;
     if (website !== undefined) updateData.website = website;
     if (phone !== undefined) updateData.phone = phone;
