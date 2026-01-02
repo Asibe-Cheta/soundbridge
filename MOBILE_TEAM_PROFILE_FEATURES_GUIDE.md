@@ -683,56 +683,107 @@ The revenue tab integrates the `RevenueDashboard` and `BankAccountManager` compo
 CREATE TABLE profiles (
   -- Core Identity
   id UUID PRIMARY KEY REFERENCES auth.users(id),
-  username TEXT UNIQUE NOT NULL,
-  display_name TEXT,
-  avatar_url TEXT,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
   bio TEXT,
-  email TEXT,
+  avatar_url TEXT,
+  banner_url TEXT,
+  role user_role NOT NULL DEFAULT 'listener',
 
   -- Contact & Location
-  location TEXT,
+  location VARCHAR(255),
+  country VARCHAR(100),
+  country_code VARCHAR(2),
   website TEXT,
   phone TEXT,
+  social_links JSONB DEFAULT '{}',
 
   -- Professional Info
-  professional_headline TEXT CHECK (LENGTH(professional_headline) <= 120),
+  professional_headline TEXT,
   years_active_start INTEGER,
   years_active_end INTEGER,
-  genres TEXT[],
+  genres JSONB DEFAULT '[]',
+  genre VARCHAR(100),
   experience_level TEXT,
 
   -- Subscription
   subscription_tier VARCHAR(20) DEFAULT 'free',
   subscription_status VARCHAR(20),
   subscription_period VARCHAR(20),
-  subscription_start_date TIMESTAMP,
-  subscription_renewal_date TIMESTAMP,
+  subscription_start_date TIMESTAMPTZ,
+  subscription_renewal_date TIMESTAMPTZ,
+  subscription_cancel_date TIMESTAMPTZ,
+  subscription_amount NUMERIC,
+  subscription_currency VARCHAR(3) DEFAULT 'GBP',
+  subscription_period_start TIMESTAMP WITHOUT TIME ZONE,
+  subscription_period_end TIMESTAMP WITHOUT TIME ZONE,
+  stripe_customer_id VARCHAR(255),
+  stripe_subscription_id TEXT,
+  revenuecat_customer_id VARCHAR(255),
 
   -- Upload Tracking
   uploads_this_period INTEGER DEFAULT 0,
+  upload_period_start TIMESTAMPTZ,
   total_uploads_lifetime INTEGER DEFAULT 0,
+  total_uploads INTEGER DEFAULT 0,
+
+  -- Grace Period (Subscription Downgrade)
+  downgraded_at TIMESTAMPTZ,
+  grace_period_ends TIMESTAMPTZ,
+  storage_at_downgrade BIGINT,
+  grace_periods_used INTEGER DEFAULT 0,
+  last_grace_period_used TIMESTAMPTZ,
 
   -- Verification & Status
-  is_verified BOOLEAN DEFAULT FALSE,
-  is_active BOOLEAN DEFAULT TRUE,
-  profile_completed BOOLEAN DEFAULT FALSE,
+  is_active BOOLEAN DEFAULT true,
+  profile_completed BOOLEAN DEFAULT false,
+  deleted_at TIMESTAMPTZ,
+  is_public BOOLEAN DEFAULT true,
+  banned BOOLEAN DEFAULT false,
+  ban_reason TEXT,
+  banned_at TIMESTAMP WITHOUT TIME ZONE,
+  banned_by UUID,
+  trusted_flagger BOOLEAN DEFAULT false,
+  moderator BOOLEAN DEFAULT false,
+  copyright_strikes INTEGER DEFAULT 0,
 
   -- Onboarding
-  onboarding_completed BOOLEAN DEFAULT FALSE,
-  onboarding_step TEXT,
+  onboarding_completed BOOLEAN DEFAULT false,
+  onboarding_step TEXT DEFAULT 'role_selection',
   onboarding_user_type VARCHAR(50),
+  selected_role TEXT,
+  first_action_completed BOOLEAN DEFAULT false,
+  onboarding_skipped BOOLEAN DEFAULT false,
+  onboarding_completed_at TIMESTAMPTZ,
 
   -- Preferences
   preferred_event_distance INTEGER DEFAULT 25,
+  timezone VARCHAR(50),
+  currency VARCHAR(3) DEFAULT 'USD',
+  language VARCHAR(5) DEFAULT 'en',
 
-  -- Privacy
-  profile_visibility TEXT DEFAULT 'public',
-  show_email BOOLEAN DEFAULT FALSE,
-  allow_messages BOOLEAN DEFAULT TRUE,
+  -- Stats (cached counts)
+  followers_count INTEGER DEFAULT 0,
+  following_count INTEGER DEFAULT 0,
+  total_plays INTEGER DEFAULT 0,
+  total_likes INTEGER DEFAULT 0,
+  total_events INTEGER DEFAULT 0,
+
+  -- Featured Content
+  featured_count_this_month INTEGER DEFAULT 0,
+  last_featured_date TIMESTAMPTZ,
+  next_featured_date TIMESTAMPTZ,
+
+  -- Custom Username
+  custom_username VARCHAR(30),
+  custom_username_last_changed TIMESTAMPTZ,
+
+  -- Activity Tracking
+  last_login_at TIMESTAMPTZ,
 
   -- Timestamps
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Indexes

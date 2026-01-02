@@ -62,25 +62,104 @@ This section maps every piece of data collected during onboarding to its databas
 
 **SQL Schema:**
 ```sql
--- Profiles table (relevant columns)
+-- Profiles table (complete schema as of January 2026)
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id),
   username VARCHAR(50) UNIQUE NOT NULL,
   display_name VARCHAR(100) NOT NULL,
   bio TEXT,
-  role user_role NOT NULL DEFAULT 'listener',  -- 'creator' or 'listener'
-  genres TEXT[],  -- Array of genre IDs
-  country VARCHAR(100),
-  location VARCHAR(255),
   avatar_url TEXT,
+  banner_url TEXT,
+  role user_role NOT NULL DEFAULT 'listener',  -- 'creator' or 'listener'
+  genres JSONB DEFAULT '[]',  -- Array of genre IDs (JSONB)
+  genre VARCHAR(100),  -- Legacy genre field
+  country VARCHAR(100),
+  country_code VARCHAR(2),
+  location VARCHAR(255),
+  website TEXT,
+  phone TEXT,
+  social_links JSONB DEFAULT '{}',
+  professional_headline TEXT,
+  years_active_start INTEGER,
+  years_active_end INTEGER,
+  experience_level TEXT,
   
   -- Onboarding fields
   onboarding_completed BOOLEAN DEFAULT FALSE,
   onboarding_completed_at TIMESTAMPTZ,
-  onboarding_step VARCHAR(50) DEFAULT 'welcome',
+  onboarding_step TEXT DEFAULT 'role_selection',
   onboarding_user_type VARCHAR(50),  -- 'music_creator', 'podcast_creator', 'industry_professional', 'music_lover'
+  selected_role TEXT,
   profile_completed BOOLEAN DEFAULT FALSE,
+  first_action_completed BOOLEAN DEFAULT FALSE,
+  onboarding_skipped BOOLEAN DEFAULT FALSE,
   
+  -- Subscription fields
+  subscription_tier VARCHAR(20) DEFAULT 'free',
+  subscription_status VARCHAR(20),
+  subscription_period VARCHAR(20),
+  subscription_start_date TIMESTAMPTZ,
+  subscription_renewal_date TIMESTAMPTZ,
+  subscription_cancel_date TIMESTAMPTZ,
+  subscription_amount NUMERIC,
+  subscription_currency VARCHAR(3) DEFAULT 'GBP',
+  subscription_period_start TIMESTAMP WITHOUT TIME ZONE,
+  subscription_period_end TIMESTAMP WITHOUT TIME ZONE,
+  stripe_customer_id VARCHAR(255),
+  stripe_subscription_id TEXT,
+  revenuecat_customer_id VARCHAR(255),
+  
+  -- Upload tracking
+  uploads_this_period INTEGER DEFAULT 0,
+  upload_period_start TIMESTAMPTZ,
+  total_uploads_lifetime INTEGER DEFAULT 0,
+  total_uploads INTEGER DEFAULT 0,
+  
+  -- Grace period (subscription downgrade)
+  downgraded_at TIMESTAMPTZ,
+  grace_period_ends TIMESTAMPTZ,
+  storage_at_downgrade BIGINT,
+  grace_periods_used INTEGER DEFAULT 0,
+  last_grace_period_used TIMESTAMPTZ,
+  
+  -- Status & moderation
+  is_active BOOLEAN DEFAULT true,
+  deleted_at TIMESTAMPTZ,
+  is_public BOOLEAN DEFAULT true,
+  banned BOOLEAN DEFAULT false,
+  ban_reason TEXT,
+  banned_at TIMESTAMP WITHOUT TIME ZONE,
+  banned_by UUID,
+  trusted_flagger BOOLEAN DEFAULT false,
+  moderator BOOLEAN DEFAULT false,
+  copyright_strikes INTEGER DEFAULT 0,
+  
+  -- Stats (cached counts)
+  followers_count INTEGER DEFAULT 0,
+  following_count INTEGER DEFAULT 0,
+  total_plays INTEGER DEFAULT 0,
+  total_likes INTEGER DEFAULT 0,
+  total_events INTEGER DEFAULT 0,
+  
+  -- Preferences
+  preferred_event_distance INTEGER DEFAULT 25,
+  timezone VARCHAR(50),
+  currency VARCHAR(3) DEFAULT 'USD',
+  language VARCHAR(5) DEFAULT 'en',
+  
+  -- Featured content
+  featured_count_this_month INTEGER DEFAULT 0,
+  last_featured_date TIMESTAMPTZ,
+  next_featured_date TIMESTAMPTZ,
+  
+  -- Custom username
+  custom_username VARCHAR(30),
+  custom_username_last_changed TIMESTAMPTZ,
+  
+  -- Activity tracking
+  last_login_at TIMESTAMPTZ,
+  
+  -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
