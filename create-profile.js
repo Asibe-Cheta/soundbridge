@@ -64,7 +64,8 @@ async function createProfile() {
       display_name: `${firstName} ${lastName}`.trim() || email.split('@')[0],
       role: role,
       location: location,
-      country: location.includes('Nigeria') ? 'Nigeria' : 'UK',
+      country: null, // Will be set by user during onboarding
+      country_code: null,
       bio: '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
