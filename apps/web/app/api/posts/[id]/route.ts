@@ -149,6 +149,92 @@ export async function GET(
       .eq('user_id', user.id)
       .maybeSingle();
 
+    // Fetch original post data if this is a repost
+    let repostedFromData = null;
+    if (post.reposted_from_id) {
+      try {
+        // Fetch original post
+        const { data: originalPost } = await supabase
+          .from('posts')
+          .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at')
+          .eq('id', post.reposted_from_id)
+          .is('deleted_at', null)
+          .single();
+
+        if (originalPost) {
+          // Get original post author
+          const { data: originalAuthor } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .eq('id', originalPost.user_id)
+            .single();
+
+          // Get original post attachments
+          const { data: originalAttachments } = await supabase
+            .from('post_attachments')
+            .select('*')
+            .eq('post_id', originalPost.id);
+
+          // Get original post reactions
+          const { data: originalReactions } = await supabase
+            .from('post_reactions')
+            .select('post_id, reaction_type')
+            .eq('post_id', originalPost.id);
+
+          // Calculate reaction counts
+          const originalReactionCounts = {
+            support: 0,
+            love: 0,
+            fire: 0,
+            congrats: 0,
+          };
+          if (originalReactions) {
+            originalReactions.forEach((r) => {
+              if (r.reaction_type in originalReactionCounts) {
+                originalReactionCounts[r.reaction_type as keyof typeof originalReactionCounts]++;
+              }
+            });
+          }
+
+          // Extract primary image/audio from attachments
+          const imageAttachment = originalAttachments?.find((a) => 
+            a.attachment_type === 'image' || a.attachment_type === 'photo'
+          );
+          const audioAttachment = originalAttachments?.find((a) => 
+            a.attachment_type === 'audio' || a.attachment_type === 'track'
+          );
+
+          repostedFromData = {
+            id: originalPost.id,
+            content: originalPost.content,
+            created_at: originalPost.created_at,
+            visibility: originalPost.visibility,
+            author: originalAuthor ? {
+              id: originalAuthor.id,
+              username: originalAuthor.username || '',
+              display_name: originalAuthor.display_name || originalAuthor.username || 'User',
+              avatar_url: originalAuthor.avatar_url || null,
+            } : {
+              id: originalPost.user_id,
+              username: '',
+              display_name: 'User',
+              avatar_url: null,
+            },
+            media_urls: originalPost.media_urls || [],
+            image_url: imageAttachment?.file_url || null,
+            audio_url: audioAttachment?.file_url || null,
+            attachments: originalAttachments || [],
+            reactions_count: originalReactionCounts,
+            comments_count: originalPost.comments_count || 0,
+            shares_count: originalPost.shares_count || 0,
+          };
+        }
+      } catch (repostError) {
+        console.warn('⚠️ Failed to fetch reposted_from data:', repostError);
+        // Continue without reposted_from data
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -166,6 +252,7 @@ export async function GET(
           attachments: attachments || [],
           reactions: reactionCounts,
           comments: formattedComments,
+          reposted_from: repostedFromData,
         },
       },
       { headers: corsHeaders }

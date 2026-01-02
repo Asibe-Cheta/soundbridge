@@ -553,6 +553,92 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
         </div>
       )}
 
+      {/* Embedded Original Post Card (clickable) */}
+      {(post.reposted_from as any) && (post.reposted_from as any).id && (
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            router.push(`/post/${(post.reposted_from as any).id}`);
+          }}
+          className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all group"
+          role="button"
+          tabIndex={0}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              router.push(`/post/${(post.reposted_from as any).id}`);
+            }
+          }}
+          aria-label={`View original post by ${(post.reposted_from as any).author?.display_name || (post.reposted_from as any).author?.username || 'User'}`}
+        >
+          {/* Original Post Author */}
+          <div className="flex items-center gap-3 mb-3">
+            <Link
+              href={`/creator/${(post.reposted_from as any).author?.username || (post.reposted_from as any).author?.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0"
+            >
+              {(post.reposted_from as any).author?.avatar_url ? (
+                <Image
+                  src={(post.reposted_from as any).author.avatar_url}
+                  alt={(post.reposted_from as any).author.display_name || (post.reposted_from as any).author.username || 'User'}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
+                  {((post.reposted_from as any).author?.display_name || (post.reposted_from as any).author?.username || 'U').charAt(0)}
+                </div>
+              )}
+            </Link>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href={`/creator/${(post.reposted_from as any).author?.username || (post.reposted_from as any).author?.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-semibold text-white text-sm hover:text-red-400 transition-colors"
+                >
+                  {(post.reposted_from as any).author?.display_name || (post.reposted_from as any).author?.username || 'User'}
+                </Link>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Clock size={10} />
+                <span>{formatTimeAgo((post.reposted_from as any).created_at)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Original Post Content */}
+          {(post.reposted_from as any).content && (post.reposted_from as any).content.trim().length > 0 && (
+            <div className="mb-3">
+              <div className="text-gray-300 text-sm whitespace-pre-wrap break-words line-clamp-4">
+                <LinkText text={(post.reposted_from as any).content} />
+              </div>
+            </div>
+          )}
+
+          {/* Original Post Image Preview */}
+          {(post.reposted_from as any).image_url && (
+            <div className="mb-3 rounded-lg overflow-hidden">
+              <Image
+                src={(post.reposted_from as any).image_url}
+                alt="Original post attachment"
+                width={600}
+                height={400}
+                className="w-full h-auto max-h-64 object-cover"
+              />
+            </div>
+          )}
+
+          {/* Visual indicator that it's clickable */}
+          <div className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-red-400 transition-colors">
+            <ExternalLink size={12} />
+            <span>Click to view original post</span>
+          </div>
+        </div>
+      )}
+
       {/* Image Attachment */}
       {imageAttachment && (
         <>
