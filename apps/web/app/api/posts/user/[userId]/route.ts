@@ -105,7 +105,7 @@ export async function GET(
     // Get author profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline')
+      .select('id, username, display_name, avatar_url, professional_headline, bio')
       .eq('id', userId)
       .single();
 
@@ -197,6 +197,8 @@ export async function GET(
           username: profile?.username,
           avatar_url: profile?.avatar_url,
           role: profile?.professional_headline,
+          headline: profile?.professional_headline || null,
+          bio: profile?.bio || null,
         },
         attachments: attachmentsMap.get(post.id) || [],
         reactions: reactionsMap.get(post.id) || {

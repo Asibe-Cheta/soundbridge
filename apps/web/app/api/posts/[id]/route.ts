@@ -56,7 +56,7 @@ export async function GET(
     // Get author profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline')
+      .select('id, username, display_name, avatar_url, professional_headline, bio')
       .eq('id', post.user_id)
       .single();
 
@@ -165,7 +165,7 @@ export async function GET(
           // Get original post author
           const { data: originalAuthor } = await supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url')
+            .select('id, username, display_name, avatar_url, professional_headline, bio')
             .eq('id', originalPost.user_id)
             .single();
 
@@ -214,11 +214,15 @@ export async function GET(
               username: originalAuthor.username || '',
               display_name: originalAuthor.display_name || originalAuthor.username || 'User',
               avatar_url: originalAuthor.avatar_url || null,
+              headline: originalAuthor.professional_headline || null,
+              bio: originalAuthor.bio || null,
             } : {
               id: originalPost.user_id,
               username: '',
               display_name: 'User',
               avatar_url: null,
+              headline: null,
+              bio: null,
             },
             media_urls: originalPost.media_urls || [],
             image_url: imageAttachment?.file_url || null,
@@ -248,6 +252,8 @@ export async function GET(
             username: profile?.username,
             avatar_url: profile?.avatar_url,
             role: profile?.professional_headline,
+            headline: profile?.professional_headline || null,
+            bio: profile?.bio || null,
           },
           attachments: attachments || [],
           reactions: reactionCounts,
