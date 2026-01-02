@@ -60,10 +60,10 @@ export async function GET(
     // Check if viewing own posts or others
     const isOwnPosts = user.id === userId;
 
-    // Build query
+    // Build query - explicitly include reposted_from_id
     let query = supabase
       .from('posts')
-      .select('*', { count: 'exact' })
+      .select('*, reposted_from_id', { count: 'exact' })
       .eq('user_id', userId)
       .is('deleted_at', null);
 
@@ -180,15 +180,150 @@ export async function GET(
       });
     }
 
+    // Fetch original posts for reposts (reposted_from object)
+    const repostedFromIds = posts
+      .map(p => p.reposted_from_id)
+      .filter(id => id !== null && id !== undefined);
+
+    let repostedFromMap = new Map();
+    if (repostedFromIds.length > 0) {
+      try {
+        // Fetch original posts
+        const { data: originalPosts } = await supabase
+          .from('posts')
+          .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at')
+          .in('id', repostedFromIds)
+          .is('deleted_at', null);
+
+        if (originalPosts && originalPosts.length > 0) {
+          // Get original post authors
+          const originalAuthorIds = [...new Set(originalPosts.map(p => p.user_id))];
+          const { data: originalAuthors } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, professional_headline, bio')
+            .in('id', originalAuthorIds);
+
+          // Get original post attachments
+          const originalPostIds = originalPosts.map(p => p.id);
+          const { data: originalAttachments } = await supabase
+            .from('post_attachments')
+            .select('*')
+            .in('post_id', originalPostIds);
+
+          // Get original post reactions
+          const { data: originalReactions } = await supabase
+            .from('post_reactions')
+            .select('post_id, reaction_type')
+            .in('post_id', originalPostIds);
+
+          // Build maps for quick lookup
+          const originalPostsMap = new Map(originalPosts.map(p => [p.id, p]));
+          const originalAuthorsMap = new Map((originalAuthors || []).map(a => [a.id, a]));
+          
+          // Group attachments by post_id
+          const originalAttachmentsMap = new Map();
+          (originalAttachments || []).forEach(att => {
+            if (!originalAttachmentsMap.has(att.post_id)) {
+              originalAttachmentsMap.set(att.post_id, []);
+            }
+            originalAttachmentsMap.get(att.post_id).push(att);
+          });
+
+          // Calculate reaction counts for original posts
+          const originalReactionsMap = new Map();
+          originalPostIds.forEach(postId => {
+            originalReactionsMap.set(postId, {
+              support: 0,
+              love: 0,
+              fire: 0,
+              congrats: 0,
+            });
+          });
+          
+          if (originalReactions) {
+            originalReactions.forEach(r => {
+              const counts = originalReactionsMap.get(r.post_id);
+              if (counts && r.reaction_type in counts) {
+                counts[r.reaction_type]++;
+              }
+            });
+          }
+
+          // Build reposted_from objects
+          repostedFromIds.forEach(repostedFromId => {
+            const originalPost = originalPostsMap.get(repostedFromId);
+            if (originalPost) {
+              const originalAuthor = originalAuthorsMap.get(originalPost.user_id);
+              const attachments = originalAttachmentsMap.get(originalPost.id) || [];
+              const reactionsCount = originalReactionsMap.get(originalPost.id) || {
+                support: 0,
+                love: 0,
+                fire: 0,
+                congrats: 0,
+              };
+
+              // Extract primary image/audio from attachments
+              const imageAttachment = attachments.find(a => 
+                a.attachment_type === 'image' || a.attachment_type === 'photo'
+              );
+              const audioAttachment = attachments.find(a => 
+                a.attachment_type === 'audio' || a.attachment_type === 'track'
+              );
+
+              repostedFromMap.set(repostedFromId, {
+                id: originalPost.id,
+                content: originalPost.content,
+                created_at: originalPost.created_at,
+                visibility: originalPost.visibility,
+                author: originalAuthor ? {
+                  id: originalAuthor.id,
+                  username: originalAuthor.username || '',
+                  display_name: originalAuthor.display_name || originalAuthor.username || 'User',
+                  avatar_url: originalAuthor.avatar_url || null,
+                  headline: originalAuthor.professional_headline || null,
+                  bio: originalAuthor.bio || null,
+                } : {
+                  id: originalPost.user_id,
+                  username: '',
+                  display_name: 'Unknown User',
+                  avatar_url: null,
+                  headline: null,
+                  bio: null,
+                },
+                attachments: attachments,
+                reactions: reactionsCount,
+                image_preview: imageAttachment ? {
+                  url: imageAttachment.url || imageAttachment.file_url,
+                  thumbnail_url: imageAttachment.thumbnail_url,
+                } : null,
+                audio_preview: audioAttachment ? {
+                  url: audioAttachment.url || audioAttachment.file_url,
+                  title: audioAttachment.title,
+                  duration: audioAttachment.duration,
+                } : null,
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error fetching reposted_from data:', error);
+        // Continue without reposted_from data rather than failing the entire request
+      }
+    }
+
     // Format posts
     const formattedPosts = posts.map(post => {
       const repostPostId = repostsMap.get(post.id);
+      const repostedFromData = post.reposted_from_id ? repostedFromMap.get(post.reposted_from_id) : null;
+
       return {
         id: post.id,
         content: post.content,
         visibility: post.visibility,
         post_type: post.post_type,
         created_at: post.created_at,
+        reposted_from_id: post.reposted_from_id || null,
+        reposted_from: repostedFromData || null,
         user_reposted: !!repostPostId,
         user_repost_id: repostPostId || null,
         author: {
