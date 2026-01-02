@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
         return 'listener';
       })(),
         location: location || 'london',
-        country: country || (location?.includes('Nigeria') ? 'Nigeria' : 'UK'),
+        country: country || null,
+        country_code: null, // Will be set by frontend if country is provided
         bio: bio || '',
         onboarding_completed: false,
         onboarding_step: 'role_selection',
@@ -122,7 +123,8 @@ export async function POST(request: NextRequest) {
         return 'listener';
       })(),
       location: location || authUser.user.user_metadata?.location || 'london',
-      country: country || (location?.includes('Nigeria') ? 'Nigeria' : 'UK'),
+      country: country || null,
+      country_code: null, // Will be set by frontend if country is provided
       bio: bio || '',
       onboarding_completed: false,
       onboarding_step: 'role_selection',

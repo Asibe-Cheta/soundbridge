@@ -7,7 +7,8 @@ export interface CreatorProfile {
   banner_url: string | null;
   role: 'creator' | 'listener';
   location: string | null;
-  country: 'UK' | 'Nigeria' | null;
+  country: string | null;
+  country_code: string | null;
   social_links: Record<string, string>;
   created_at: string;
   updated_at: string;
@@ -96,7 +97,8 @@ export interface CreatorStats {
 export interface CreatorSearchFilters {
   genre?: string;
   location?: string;
-  country?: 'UK' | 'Nigeria';
+  country?: string;
+  country_code?: string;
   role?: 'creator' | 'listener';
   min_followers?: number;
   max_followers?: number;

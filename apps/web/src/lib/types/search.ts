@@ -17,7 +17,8 @@ export interface SearchFilters {
   genre?: string;
   category?: string;
   location?: string;
-  country?: 'UK' | 'Nigeria';
+  country?: string;
+  country_code?: string;
   date_range?: 'all' | 'today' | 'week' | 'month' | 'next-month';
   price_range?: 'all' | 'free' | 'low' | 'medium' | 'high';
   sort_by?: 'relevance' | 'trending' | 'latest' | 'popular' | 'nearest';
@@ -109,7 +110,8 @@ export interface Profile {
   banner_url?: string;
   role: 'creator' | 'listener';
   location?: string;
-  country?: 'UK' | 'Nigeria';
+  country?: string;
+  country_code?: string;
   social_links?: Record<string, string>;
   created_at: string;
   updated_at: string;
@@ -221,7 +223,8 @@ export interface GenreFilter extends FilterOption {
 }
 
 export interface LocationFilter extends FilterOption {
-  country?: 'UK' | 'Nigeria';
+  country?: string;
+  country_code?: string;
   coordinates?: {
     latitude: number;
     longitude: number;

@@ -68,9 +68,19 @@ export async function POST(request: NextRequest) {
       username: body.username || null, // Handle username from frontend
       bio: body.bio || null,
       country: body.country || null,
+      country_code: body.country_code || null, // ISO country code (e.g., 'US', 'GB', 'NG')
       location: body.location || null, // Handle location from frontend
+      website: body.website || null,
+      phone: body.phone || null,
       genres: body.genres || null,
       avatar_url: body.avatar_url || null,
+      professional_headline: body.professional_headline || null,
+      experience_level: body.experience_level || null,
+      
+      // Global preferences
+      timezone: body.timezone || null,
+      currency: body.currency || null,
+      language: body.language || null,
       
       // Creator-specific fields
       collaboration_enabled: body.collaboration_enabled || false,
