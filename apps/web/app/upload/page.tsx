@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
@@ -300,7 +300,7 @@ export default function UnifiedUploadPage() {
   };
 
   // Cleanup timeout on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (isrcVerificationTimeoutRef.current) {
         clearTimeout(isrcVerificationTimeoutRef.current);
@@ -309,7 +309,7 @@ export default function UnifiedUploadPage() {
   }, []);
 
   // Reset ISRC when cover checkbox is unchecked
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isCover) {
       setIsrcCode('');
       setIsrcVerificationStatus('idle');
