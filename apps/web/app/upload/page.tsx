@@ -41,6 +41,14 @@ export default function UnifiedUploadPage() {
   const [genre, setGenre] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [lyricsLanguage, setLyricsLanguage] = useState('en');
+  
+  // Cover song verification states
+  const [isCover, setIsCover] = useState(false);
+  const [isrcCode, setIsrcCode] = useState('');
+  const [isrcVerificationStatus, setIsrcVerificationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [isrcVerificationError, setIsrcVerificationError] = useState<string | null>(null);
+  const [isrcVerificationData, setIsrcVerificationData] = useState<any>(null);
+  const isrcVerificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Podcast-specific states
   const [episodeNumber, setEpisodeNumber] = useState('');
@@ -204,6 +212,11 @@ export default function UnifiedUploadPage() {
     setLyricsLanguage('en');
     setEpisodeNumber('');
     setPodcastCategory('');
+    setIsCover(false);
+    setIsrcCode('');
+    setIsrcVerificationStatus('idle');
+    setIsrcVerificationError(null);
+    setIsrcVerificationData(null);
   };
 
   // Simple validation function
@@ -215,8 +228,98 @@ export default function UnifiedUploadPage() {
     if (contentType === 'podcast' && !podcastCategory.trim()) return 'Category selection is required for podcast episodes';
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
+    
+    // Cover song validation
+    if (isCover && !isrcCode.trim()) {
+      return 'ISRC code is required for cover songs';
+    }
+    if (isCover && isrcVerificationStatus !== 'success') {
+      return 'ISRC code must be verified before uploading a cover song';
+    }
+    
     return null;
   };
+  
+  // Verify ISRC code with debouncing
+  const verifyISRCCode = async (isrc: string) => {
+    if (!isrc || !isrc.trim()) {
+      setIsrcVerificationStatus('idle');
+      setIsrcVerificationError(null);
+      setIsrcVerificationData(null);
+      return;
+    }
+
+    setIsrcVerificationStatus('loading');
+    setIsrcVerificationError(null);
+
+    try {
+      const response = await fetch('/api/upload/verify-isrc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isrc: isrc.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.verified) {
+        setIsrcVerificationStatus('success');
+        setIsrcVerificationError(null);
+        setIsrcVerificationData(data.recording);
+      } else {
+        setIsrcVerificationStatus('error');
+        setIsrcVerificationError(data.error || 'ISRC verification failed');
+        setIsrcVerificationData(null);
+      }
+    } catch (error: any) {
+      setIsrcVerificationStatus('error');
+      setIsrcVerificationError(error.message || 'Failed to verify ISRC. Please try again.');
+      setIsrcVerificationData(null);
+    }
+  };
+
+  // Handle ISRC input change with debouncing
+  const handleISRCChange = (value: string) => {
+    setIsrcCode(value);
+    setIsrcVerificationStatus('idle');
+    setIsrcVerificationError(null);
+    setIsrcVerificationData(null);
+
+    // Clear existing timeout
+    if (isrcVerificationTimeoutRef.current) {
+      clearTimeout(isrcVerificationTimeoutRef.current);
+    }
+
+    // Debounce verification (500ms delay)
+    if (value.trim()) {
+      isrcVerificationTimeoutRef.current = setTimeout(() => {
+        verifyISRCCode(value);
+      }, 500);
+    }
+  };
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (isrcVerificationTimeoutRef.current) {
+        clearTimeout(isrcVerificationTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Reset ISRC when cover checkbox is unchecked
+  React.useEffect(() => {
+    if (!isCover) {
+      setIsrcCode('');
+      setIsrcVerificationStatus('idle');
+      setIsrcVerificationError(null);
+      setIsrcVerificationData(null);
+      if (isrcVerificationTimeoutRef.current) {
+        clearTimeout(isrcVerificationTimeoutRef.current);
+      }
+    }
+  }, [isCover]);
 
   // Simple validation modal
   const ValidationModal = () => {
@@ -371,6 +474,8 @@ export default function UnifiedUploadPage() {
           genre: genre.trim(),
           lyrics: lyrics.trim(),
           lyricsLanguage: lyricsLanguage,
+          isCover: isCover,
+          isrcCode: isCover ? isrcCode.trim() : undefined,
           // Audio quality fields with defaults
           audioQuality: 'standard',
           bitrate: 128,
@@ -675,6 +780,89 @@ export default function UnifiedUploadPage() {
                       <option value="es">Spanish</option>
                     </select>
                   </div>
+
+                  {/* Cover Song Verification */}
+                  <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isCover}
+                        onChange={(e) => setIsCover(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        This is a cover song
+                      </span>
+                    </label>
+
+                    {isCover && (
+                      <div className="mt-3 space-y-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          ISRC Code *
+                        </label>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={isrcCode}
+                            onChange={(e) => handleISRCChange(e.target.value)}
+                            placeholder="GBUM71502800 or GB-UM7-15-02800"
+                            maxLength={14}
+                            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                              isrcVerificationStatus === 'error'
+                                ? 'border-red-500 dark:border-red-500'
+                                : isrcVerificationStatus === 'success'
+                                ? 'border-green-500 dark:border-green-500'
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Format: XX-XXX-YY-NNNNN (12 characters, hyphens optional)
+                          </p>
+
+                          {/* Verification Status */}
+                          {isrcVerificationStatus === 'loading' && (
+                            <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span className="text-sm">Verifying ISRC code...</span>
+                            </div>
+                          )}
+
+                          {isrcVerificationStatus === 'success' && isrcVerificationData && (
+                            <div className="flex items-start space-x-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                  Verified
+                                </p>
+                                <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                                  <span className="font-semibold">{isrcVerificationData.title}</span>
+                                  {isrcVerificationData['artist-credit'] && 
+                                    isrcVerificationData['artist-credit'].length > 0 && (
+                                      <> by {isrcVerificationData['artist-credit'].map((a: any) => a.name || a.artist?.name).join(', ')}</>
+                                    )
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {isrcVerificationStatus === 'error' && isrcVerificationError && (
+                            <div className="flex items-start space-x-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                                  Verification Failed
+                                </p>
+                                <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                                  {isrcVerificationError}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
@@ -896,7 +1084,12 @@ export default function UnifiedUploadPage() {
 
             <button
               onClick={handlePublish}
-              disabled={uploadState.isUploading || isValidating || !agreedToCopyright}
+              disabled={
+                uploadState.isUploading || 
+                isValidating || 
+                !agreedToCopyright ||
+                (isCover && isrcVerificationStatus !== 'success')
+              }
               className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {uploadState.isUploading ? (

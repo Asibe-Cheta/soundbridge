@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
       duration,
       lyrics,
       lyricsLanguage,
+      // Cover song fields
+      isCover,
+      isrcCode,
       // New validation fields
       fileData,
       validationPassed,
@@ -66,6 +69,25 @@ export async function POST(request: NextRequest) {
         { error: 'Title, artist name, and audio file are required' },
         { status: 400 }
       );
+    }
+
+    // Validate cover song ISRC requirements
+    if (isCover) {
+      if (!isrcCode || !isrcCode.trim()) {
+        return NextResponse.json(
+          { error: 'ISRC code is required for cover songs' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate ISRC format (basic check - full validation done in frontend)
+      const normalizedISRC = isrcCode.replace(/[-\s]/g, '').toUpperCase();
+      if (normalizedISRC.length !== 12) {
+        return NextResponse.json(
+          { error: 'Invalid ISRC format. Should be 12 characters (XX-XXX-YY-NNNNN)' },
+          { status: 400 }
+        );
+      }
     }
 
     // Enhanced validation check if validation data is provided
@@ -263,6 +285,11 @@ export async function POST(request: NextRequest) {
       lyrics: lyrics?.trim() || null,
       lyrics_language: lyricsLanguage || 'en',
       is_public: privacy === 'public',
+      // Cover song fields
+      is_cover: isCover || false,
+      isrc_code: isCover && isrcCode ? isrcCode.replace(/[-\s]/g, '').toUpperCase().substring(0, 12) : null,
+      isrc_verified: isCover && isrcCode ? true : false, // Assume verified if passed validation
+      isrc_verified_at: isCover && isrcCode ? new Date().toISOString() : null,
       // Audio quality fields
       audio_quality: audioQuality || 'standard',
       bitrate: bitrate || 128,
