@@ -31,6 +31,12 @@
       "permanent": true
     }
   ],
+  "functions": {
+    "apps/web/app/api/upload/fingerprint/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/downgrade-past-due",

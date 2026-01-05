@@ -4,9 +4,16 @@
  * Fingerprint audio file via ACRCloud and return identification results
  * This endpoint is called automatically during upload to check if the audio
  * matches known released tracks.
+ * 
+ * NOTE: Vercel has a 10MB payload limit. For files > 10MB, use audioFileUrl
+ * parameter instead of sending the file directly (upload to Supabase Storage first).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+
+// Vercel function configuration
+export const maxDuration = 60; // 60 seconds for audio processing
+export const dynamic = 'force-dynamic';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { identifyAudio } from '@/src/lib/acrcloud-api';
 import { matchArtistNames } from '@/src/lib/artist-name-matcher';
