@@ -60,7 +60,9 @@ export async function POST(request: NextRequest) {
       bitrate,
       sampleRate,
       channels,
-      codec
+      codec,
+      // ACRCloud fields
+      acrcloudData
     } = body;
 
     // Validate required fields
@@ -271,6 +273,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Determine release status based on ACRCloud and cover song data
+    function determineReleaseStatus(acrData: any, isCoverSong: boolean): string {
+      if (isCoverSong) {
+        return 'cover';
+      }
+      if (acrData?.matchFound) {
+        if (acrData?.artistMatch?.match && acrData?.detectedISRCVerified) {
+          return 'released_verified';
+        }
+        return 'pending_review'; // Match found but needs verification
+      }
+      if (acrData?.isUnreleased) {
+        return 'unreleased_original';
+      }
+      return 'pending_review'; // Default fallback
+    }
+
     // Create audio track record
     const trackData: any = {
       title: title.trim(),
@@ -287,9 +306,26 @@ export async function POST(request: NextRequest) {
       is_public: privacy === 'public',
       // Cover song fields
       is_cover: isCover || false,
-      isrc_code: isCover && isrcCode ? isrcCode.replace(/[-\s]/g, '').toUpperCase().substring(0, 12) : null,
-      isrc_verified: isCover && isrcCode ? true : false, // Assume verified if passed validation
-      isrc_verified_at: isCover && isrcCode ? new Date().toISOString() : null,
+      isrc_code: isCover && isrcCode ? isrcCode.replace(/[-\s]/g, '').toUpperCase().substring(0, 12) : (acrcloudData?.detectedISRC || null),
+      isrc_verified: isCover && isrcCode ? true : (acrcloudData?.detectedISRCVerified || false),
+      isrc_verified_at: (isCover && isrcCode) || acrcloudData?.detectedISRCVerified ? new Date().toISOString() : null,
+      // ACRCloud fields
+      acrcloud_checked: acrcloudData ? true : false,
+      acrcloud_match_found: acrcloudData?.matchFound || false,
+      acrcloud_detected_artist: acrcloudData?.detectedArtist || null,
+      acrcloud_detected_title: acrcloudData?.detectedTitle || null,
+      acrcloud_detected_isrc: acrcloudData?.detectedISRC || null,
+      acrcloud_detected_album: acrcloudData?.detectedAlbum || null,
+      acrcloud_detected_label: acrcloudData?.detectedLabel || null,
+      acrcloud_checked_at: acrcloudData ? new Date().toISOString() : null,
+      acrcloud_response_data: acrcloudData?.rawResponse || null,
+      // Ownership verification fields
+      is_released: acrcloudData?.matchFound || false,
+      release_status: determineReleaseStatus(acrcloudData, isCover || false),
+      ownership_verified: (acrcloudData?.artistMatch?.match && (isCover ? (isrcCode ? true : false) : acrcloudData?.detectedISRCVerified)) || false,
+      ownership_verified_at: (acrcloudData?.artistMatch?.match && (isCover ? (isrcCode ? true : false) : acrcloudData?.detectedISRCVerified)) ? new Date().toISOString() : null,
+      artist_name_match: acrcloudData?.artistMatch?.match || null,
+      artist_name_match_confidence: acrcloudData?.artistMatchConfidence || null,
       // Audio quality fields
       audio_quality: audioQuality || 'standard',
       bitrate: bitrate || 128,

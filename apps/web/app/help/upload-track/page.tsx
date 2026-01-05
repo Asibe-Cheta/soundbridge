@@ -107,7 +107,27 @@ export default function UploadTrackPage() {
             </section>
 
             <section>
-              <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Step 5: Choose Privacy Settings</h2>
+              <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Step 5: Cover Songs and ISRC Codes</h2>
+              <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                If you're uploading a cover song (a song originally written and recorded by another artist), you must provide an ISRC (International Standard Recording Code) for copyright compliance.
+              </p>
+              <div className={`p-6 rounded-lg border mb-6 ${theme === 'dark' ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-yellow-50 border-yellow-200'}`}>
+                <p className={`font-semibold mb-2 ${theme === 'dark' ? 'text-yellow-300' : 'text-yellow-900'}`}>⚠️ Important:</p>
+                <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <li>• Cover songs require a valid ISRC code before they can be uploaded</li>
+                  <li>• The ISRC format is: <code className="px-2 py-1 rounded bg-gray-200 dark:bg-gray-800">XX-XXX-YY-NNNNN</code> (12 characters)</li>
+                  <li>• We verify ISRC codes through the MusicBrainz database</li>
+                  <li>• If you don't have an ISRC code, obtain one from your music distributor (DistroKid, CD Baby, TuneCore, etc.) or a music industry organization</li>
+                  <li>• Original compositions do NOT require ISRC codes</li>
+                </ul>
+              </div>
+              <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                When uploading a cover song, check the "This is a cover song" checkbox and enter your ISRC code. Our system will verify it automatically before allowing the upload to proceed.
+              </p>
+            </section>
+
+            <section>
+              <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Step 6: Choose Privacy Settings</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 Decide who can see your track:
               </p>
@@ -128,7 +148,7 @@ export default function UploadTrackPage() {
             </section>
 
             <section>
-              <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Step 6: Publish Your Track</h2>
+              <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Step 7: Publish Your Track</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 Once everything is filled in and your file has finished uploading, click <strong>"Publish"</strong> or <strong>"Save as Draft"</strong> if you want to finish later. Your track will be live on SoundBridge!
               </p>

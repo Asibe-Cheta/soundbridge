@@ -153,6 +153,7 @@ export default function PrivacyPolicy() {
               <li>Copyright detection analysis data</li>
               <li>Content moderation flags and decisions</li>
               <li>Tier-based usage statistics</li>
+              <li><strong>Cover Song Information:</strong> For cover songs, we collect and verify ISRC (International Standard Recording Code) codes through the MusicBrainz API to ensure proper licensing and copyright compliance. This includes storing the ISRC code, verification status, and verification timestamp.</li>
             </ul>
 
             <h3 style={{
@@ -220,6 +221,7 @@ export default function PrivacyPolicy() {
               marginBottom: '1rem' 
             }}>
               <li><strong>Copyright Detection:</strong> We scan content for potential copyright violations using audio fingerprinting and content matching technologies.</li>
+              <li><strong>ISRC Verification for Cover Songs:</strong> For cover songs, we automatically verify ISRC codes through the MusicBrainz API to ensure proper licensing and copyright compliance. This verification is required before cover songs can be uploaded and published on our platform.</li>
               <li><strong>Content Moderation:</strong> Automated systems check for inappropriate content, spam, or violations of community guidelines.</li>
               <li><strong>Technical Validation:</strong> Files are analyzed for format compatibility, quality standards, and technical specifications.</li>
               <li><strong>Metadata Extraction:</strong> We extract and analyze audio metadata for cataloging and recommendation purposes.</li>

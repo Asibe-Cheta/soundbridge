@@ -286,6 +286,28 @@ export class AudioUploadService {
     codec?: string;
     lyrics?: string | null;
     lyrics_language?: string | null;
+    // ACRCloud fields
+    acrcloud_checked?: boolean;
+    acrcloud_match_found?: boolean;
+    acrcloud_detected_artist?: string | null;
+    acrcloud_detected_title?: string | null;
+    acrcloud_detected_isrc?: string | null;
+    acrcloud_detected_album?: string | null;
+    acrcloud_detected_label?: string | null;
+    acrcloud_checked_at?: string | null;
+    acrcloud_response_data?: any;
+    // Ownership verification fields
+    is_released?: boolean;
+    release_status?: string;
+    ownership_verified?: boolean;
+    ownership_verified_at?: string | null;
+    artist_name_match?: boolean | null;
+    artist_name_match_confidence?: number | null;
+    // Cover song fields
+    is_cover?: boolean;
+    isrc_code?: string | null;
+    isrc_verified?: boolean;
+    isrc_verified_at?: string | null;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const insertData = {
@@ -541,7 +563,32 @@ export class AudioUploadService {
         bitrate: qualitySettings?.bitrate || 128,
         sample_rate: qualitySettings?.sampleRate || 44100,
         channels: qualitySettings?.channels || 2,
-        codec: qualitySettings?.codec || 'mp3'
+        codec: qualitySettings?.codec || 'mp3',
+        // ACRCloud fields (from trackData if provided)
+        ...((trackData as any).acrcloudData ? {
+          acrcloud_checked: (trackData as any).acrcloudData ? true : false,
+          acrcloud_match_found: (trackData as any).acrcloudData?.matchFound || false,
+          acrcloud_detected_artist: (trackData as any).acrcloudData?.detectedArtist || null,
+          acrcloud_detected_title: (trackData as any).acrcloudData?.detectedTitle || null,
+          acrcloud_detected_isrc: (trackData as any).acrcloudData?.detectedISRC || null,
+          acrcloud_detected_album: (trackData as any).acrcloudData?.detectedAlbum || null,
+          acrcloud_detected_label: (trackData as any).acrcloudData?.detectedLabel || null,
+          acrcloud_checked_at: (trackData as any).acrcloudData ? new Date().toISOString() : null,
+          acrcloud_response_data: (trackData as any).acrcloudData?.rawResponse || null,
+          is_released: (trackData as any).acrcloudData?.matchFound || false,
+          release_status: (trackData as any).acrcloudData?.matchFound 
+            ? ((trackData as any).acrcloudData?.artistMatch?.match && (trackData as any).isCover ? 'released_verified' : 'pending_review')
+            : ((trackData as any).acrcloudData?.isUnreleased ? 'unreleased_original' : 'pending_review'),
+          ownership_verified: (trackData as any).acrcloudData?.artistMatch?.match && (trackData as any).isCover ? true : false,
+          ownership_verified_at: (trackData as any).acrcloudData?.artistMatch?.match && (trackData as any).isCover ? new Date().toISOString() : null,
+          artist_name_match: (trackData as any).acrcloudData?.artistMatch?.match || null,
+          artist_name_match_confidence: (trackData as any).acrcloudData?.artistMatchConfidence || null
+        } : {}),
+        // Cover song fields
+        is_cover: (trackData as any).isCover || false,
+        isrc_code: (trackData as any).isrcCode || null,
+        isrc_verified: (trackData as any).isCover && (trackData as any).isrcCode ? true : false,
+        isrc_verified_at: (trackData as any).isCover && (trackData as any).isrcCode ? new Date().toISOString() : null
       });
 
       if (!dbResult.success) {

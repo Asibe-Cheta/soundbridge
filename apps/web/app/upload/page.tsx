@@ -50,6 +50,12 @@ export default function UnifiedUploadPage() {
   const [isrcVerificationData, setIsrcVerificationData] = useState<any>(null);
   const isrcVerificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ACRCloud fingerprinting states
+  const [acrcloudStatus, setAcrcloudStatus] = useState<'idle' | 'checking' | 'match' | 'no_match' | 'error'>('idle');
+  const [acrcloudData, setAcrcloudData] = useState<any>(null);
+  const [acrcloudError, setAcrcloudError] = useState<string | null>(null);
+  const [isOriginalConfirmed, setIsOriginalConfirmed] = useState(false);
+
   // Podcast-specific states
   const [episodeNumber, setEpisodeNumber] = useState('');
   const [podcastCategory, setPodcastCategory] = useState('');
@@ -179,6 +185,12 @@ export default function UnifiedUploadPage() {
     const fileName = file.name.replace(/\.[^/.]+$/, '');
     setTitle(fileName);
     
+    // Reset ACRCloud state
+    setAcrcloudStatus('idle');
+    setAcrcloudData(null);
+    setAcrcloudError(null);
+    setIsOriginalConfirmed(false);
+    
     console.log('✅ File set in upload state, title auto-filled:', fileName);
   };
 
@@ -217,6 +229,10 @@ export default function UnifiedUploadPage() {
     setIsrcVerificationStatus('idle');
     setIsrcVerificationError(null);
     setIsrcVerificationData(null);
+    setAcrcloudStatus('idle');
+    setAcrcloudData(null);
+    setAcrcloudError(null);
+    setIsOriginalConfirmed(false);
   };
 
   // Simple validation function
@@ -229,7 +245,30 @@ export default function UnifiedUploadPage() {
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
     
-    // Cover song validation
+    // ACRCloud validation
+    if (contentType === 'music' && acrcloudStatus === 'checking') {
+      return 'Please wait for audio verification to complete';
+    }
+    
+    if (contentType === 'music' && acrcloudStatus === 'match') {
+      // Match found - require ISRC verification
+      if (!isrcCode.trim()) {
+        return 'ISRC code is required. This track appears to be a released song.';
+      }
+      if (isrcVerificationStatus !== 'success') {
+        return 'ISRC code must be verified before uploading';
+      }
+      // Check artist name match
+      if (acrcloudData?.artistMatch && !acrcloudData.artistMatch.match) {
+        return `This track belongs to "${acrcloudData.detectedArtist}". If this is you, ensure your profile name matches.`;
+      }
+    }
+    
+    if (contentType === 'music' && acrcloudStatus === 'no_match' && !isOriginalConfirmed) {
+      return 'Please confirm this is your original/unreleased music';
+    }
+    
+    // Cover song validation (legacy - for manually marked covers)
     if (isCover && !isrcCode.trim()) {
       return 'ISRC code is required for cover songs';
     }
@@ -320,6 +359,108 @@ export default function UnifiedUploadPage() {
       }
     }
   }, [isCover]);
+
+  // ACRCloud fingerprinting function
+  const fingerprintAudio = async (file: File) => {
+    if (contentType !== 'music') {
+      // Only fingerprint music tracks
+      return;
+    }
+
+    setAcrcloudStatus('checking');
+    setAcrcloudError(null);
+    setAcrcloudData(null);
+
+    try {
+      // Convert file to base64 for API
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string;
+        
+        try {
+          const response = await fetch('/api/upload/fingerprint', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fileData: base64Data,
+              artistName: artistName.trim() || undefined
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!data.success) {
+            // API error or timeout - fallback to manual flow
+            setAcrcloudStatus('error');
+            setAcrcloudError(data.error || 'Fingerprinting failed. You can still proceed with upload.');
+            setAcrcloudData({ requiresManualReview: true });
+            console.warn('⚠️ ACRCloud fingerprinting error:', data.error);
+            return;
+          }
+
+          if (data.matchFound) {
+            // Match found - require ISRC verification
+            setAcrcloudStatus('match');
+            setAcrcloudData(data);
+            
+            // Pre-fill ISRC if detected
+            if (data.detectedISRC && !isrcCode) {
+              setIsrcCode(data.detectedISRC);
+              // Auto-verify if ISRC was verified by API
+              if (data.detectedISRCVerified) {
+                setIsrcVerificationStatus('success');
+                setIsrcVerificationData(data.detectedISRCRecording);
+              }
+            }
+            
+            // Auto-check cover song if match found
+            if (!isCover) {
+              setIsCover(true);
+            }
+
+            console.log('🎵 ACRCloud match found:', {
+              detectedArtist: data.detectedArtist,
+              detectedTitle: data.detectedTitle,
+              artistMatch: data.artistMatch?.match
+            });
+          } else {
+            // No match - appears to be unreleased/original
+            setAcrcloudStatus('no_match');
+            setAcrcloudData(data);
+            console.log('✅ ACRCloud: No match found - appears to be original/unreleased');
+          }
+        } catch (error: any) {
+          console.error('❌ ACRCloud fingerprinting error:', error);
+          setAcrcloudStatus('error');
+          setAcrcloudError(error.message || 'Fingerprinting failed. You can still proceed with upload.');
+          setAcrcloudData({ requiresManualReview: true });
+        }
+      };
+
+      reader.onerror = () => {
+        setAcrcloudStatus('error');
+        setAcrcloudError('Failed to read file. You can still proceed with upload.');
+        setAcrcloudData({ requiresManualReview: true });
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error: any) {
+      console.error('❌ ACRCloud fingerprinting error:', error);
+      setAcrcloudStatus('error');
+      setAcrcloudError(error.message || 'Fingerprinting failed. You can still proceed with upload.');
+      setAcrcloudData({ requiresManualReview: true });
+    }
+  };
+
+  // Trigger ACRCloud fingerprinting when file is uploaded (for music tracks only)
+  useEffect(() => {
+    if (uploadState.audioFile && contentType === 'music' && acrcloudStatus === 'idle') {
+      fingerprintAudio(uploadState.audioFile.file);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadState.audioFile?.id, contentType]); // Only re-run when file ID changes
 
   // Simple validation modal
   const ValidationModal = () => {
@@ -474,14 +615,16 @@ export default function UnifiedUploadPage() {
           genre: genre.trim(),
           lyrics: lyrics.trim(),
           lyricsLanguage: lyricsLanguage,
-          isCover: isCover,
-          isrcCode: isCover ? isrcCode.trim() : undefined,
+          isCover: isCover || (acrcloudStatus === 'match'),
+          isrcCode: (isCover || acrcloudStatus === 'match') ? isrcCode.trim() : undefined,
           // Audio quality fields with defaults
           audioQuality: 'standard',
           bitrate: 128,
           sampleRate: 44100,
           channels: 2,
-          codec: 'mp3'
+          codec: 'mp3',
+          // ACRCloud data
+          acrcloudData: acrcloudData || null
         } : {
           episodeNumber: episodeNumber.trim(),
           category: podcastCategory.trim()
@@ -780,6 +923,109 @@ export default function UnifiedUploadPage() {
                       <option value="es">Spanish</option>
                     </select>
                   </div>
+
+                  {/* ACRCloud Audio Verification */}
+                  {uploadState.audioFile && (
+                    <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      {acrcloudStatus === 'checking' && (
+                        <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <Loader2 className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                              Verifying audio content...
+                            </p>
+                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                              Checking if this track exists on streaming platforms
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {acrcloudStatus === 'match' && acrcloudData && (
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                          <div className="flex items-start space-x-3">
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                                This song appears to be a released track
+                              </p>
+                              <div className="space-y-2 text-xs text-yellow-700 dark:text-yellow-300">
+                                {acrcloudData.detectedTitle && (
+                                  <p>
+                                    <span className="font-semibold">Title:</span> {acrcloudData.detectedTitle}
+                                  </p>
+                                )}
+                                {acrcloudData.detectedArtist && (
+                                  <p>
+                                    <span className="font-semibold">Artist:</span> {acrcloudData.detectedArtist}
+                                  </p>
+                                )}
+                                {acrcloudData.detectedAlbum && (
+                                  <p>
+                                    <span className="font-semibold">Album:</span> {acrcloudData.detectedAlbum}
+                                  </p>
+                                )}
+                                {acrcloudData.artistMatch && !acrcloudData.artistMatch.match && (
+                                  <p className="text-red-700 dark:text-red-300 font-medium mt-2">
+                                    ⚠️ Artist name mismatch. This track belongs to "{acrcloudData.detectedArtist}". Please verify ownership with ISRC.
+                                  </p>
+                                )}
+                              </div>
+                              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-3 font-medium">
+                                To upload this track, please provide a valid ISRC code for verification.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {acrcloudStatus === 'no_match' && (
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <div className="flex items-start space-x-3">
+                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
+                                This appears to be original/unreleased music
+                              </p>
+                              <p className="text-xs text-green-700 dark:text-green-300 mb-3">
+                                No match found in music databases. You can proceed with upload.
+                              </p>
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isOriginalConfirmed}
+                                  onChange={(e) => setIsOriginalConfirmed(e.target.checked)}
+                                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                />
+                                <span className="text-xs text-green-800 dark:text-green-200 font-medium">
+                                  I confirm this is my original/unreleased music and I own all rights
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {acrcloudStatus === 'error' && acrcloudError && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-start space-x-3">
+                            <AlertCircle className="h-5 w-5 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+                                Audio verification unavailable
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {acrcloudError}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                You can still proceed with upload. Your track will be flagged for manual review.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Cover Song Verification */}
                   <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">

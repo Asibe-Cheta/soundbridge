@@ -661,6 +661,14 @@ function PricingContent() {
                 {
                   q: "What copyright protection do you offer?",
                   a: "Free tier includes basic copyright protection, Pro tier has advanced protection to keep your content safe."
+                },
+                {
+                  q: "Can I upload cover songs?",
+                  a: "Yes! Cover songs are allowed, but they require a valid ISRC (International Standard Recording Code) for copyright compliance. When uploading a cover song, you must provide the ISRC code (format: XX-XXX-YY-NNNNN, 12 characters), which we verify through MusicBrainz before the upload can proceed. If you don't have an ISRC code, you'll need to obtain one from your music distributor or a music industry organization. Original compositions do not require ISRC codes."
+                },
+                {
+                  q: "What is an ISRC code and why do I need it for cover songs?",
+                  a: "An ISRC (International Standard Recording Code) is a unique identifier for sound recordings. For cover songs, ISRC codes are required to ensure proper licensing and copyright compliance. The code format is XX-XXX-YY-NNNNN (12 characters). You can obtain an ISRC code from your music distributor (like DistroKid, CD Baby, or TuneCore) or through music industry organizations. We verify ISRC codes through the MusicBrainz database before allowing cover song uploads."
                 }
               ].map((faq, index) => (
                 <div

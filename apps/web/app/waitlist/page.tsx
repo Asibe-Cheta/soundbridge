@@ -171,6 +171,10 @@ export default function WaitlistPage() {
       answer: 'Spotify is for listening. SoundBridge is for building your career - networking, earning directly from fans, finding gigs, and collaborating.'
     },
     {
+      question: 'Can I upload cover songs?',
+      answer: 'Yes! You can upload cover songs, but they require a valid ISRC (International Standard Recording Code) for copyright compliance. When uploading a cover song, you\'ll need to provide the ISRC code, which we verify through MusicBrainz. The ISRC format is XX-XXX-YY-NNNNN (12 characters). If you don\'t have an ISRC code, you\'ll need to obtain one from your distributor or a music industry organization before uploading cover songs.'
+    },
+    {
       question: 'Will my email be shared?',
       answer: 'Never. We respect your privacy and will only send updates about SoundBridge.'
     }
