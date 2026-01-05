@@ -292,6 +292,41 @@ export default function UnifiedUploadPage() {
     setIsrcVerificationError(null);
 
     try {
+      // Normalize ISRC (remove hyphens, uppercase)
+      const normalizedInput = isrc.trim().replace(/-/g, '').toUpperCase();
+
+      // 🔒 CRITICAL SECURITY CHECK
+      // If ACRCloud detected a match, verify the typed ISRC matches the detected one
+      if (acrcloudStatus === 'match' && acrcloudData?.detectedISRC) {
+        const normalizedDetected = acrcloudData.detectedISRC
+          .replace(/-/g, '')
+          .toUpperCase();
+
+        if (normalizedInput !== normalizedDetected) {
+          setIsrcVerificationStatus('error');
+          setIsrcVerificationError(
+            'ISRC code does not match the detected track. ' +
+            'Please enter the correct ISRC for this song.'
+          );
+          setIsrcVerificationData(null);
+          return;
+        }
+
+        // ✅ ISRC matches ACRCloud detection - verification complete!
+        // No need to check MusicBrainz since ACRCloud already confirmed it's valid
+        console.log('✅ ISRC verified via ACRCloud match');
+        setIsrcVerificationStatus('success');
+        setIsrcVerificationError(null);
+        setIsrcVerificationData({
+          title: acrcloudData.detectedTitle || 'Verified Track',
+          'artist-credit': acrcloudData.detectedArtist
+            ? [{ name: acrcloudData.detectedArtist }]
+            : []
+        });
+        return; // ← EXIT HERE - Don't check MusicBrainz
+      }
+
+      // For manual cover songs (no ACRCloud match), verify ISRC via MusicBrainz API
       const response = await fetch('/api/upload/verify-isrc', {
         method: 'POST',
         headers: {
@@ -431,20 +466,9 @@ export default function UnifiedUploadPage() {
         setAcrcloudStatus('match');
         setAcrcloudData(data);
         
-        // Pre-fill ISRC if detected
-        if (data.detectedISRC && !isrcCode) {
-          setIsrcCode(data.detectedISRC);
-          // Auto-verify if ISRC was verified by API
-          if (data.detectedISRCVerified) {
-            setIsrcVerificationStatus('success');
-            setIsrcVerificationData(data.detectedISRCRecording);
-          }
-        }
-        
-        // Auto-check cover song if match found
-        if (!isCover) {
-          setIsCover(true);
-        }
+        // SECURITY: DO NOT auto-fill ISRC - user must manually input it to prove ownership
+        // SECURITY: DO NOT auto-check "cover song" - user must consciously decide
+        // The detected ISRC is stored in acrcloudData but NOT shown to user
 
         console.log('🎵 ACRCloud match found:', {
           detectedArtist: data.detectedArtist,
@@ -982,8 +1006,24 @@ export default function UnifiedUploadPage() {
                                   </p>
                                 )}
                               </div>
-                              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-3 font-medium">
-                                To upload this track, please provide a valid ISRC code for verification.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SECURITY: Ownership Verification Warning - NO ISRC SHOWN */}
+                      {acrcloudStatus === 'match' && (
+                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                          <div className="flex items-start space-x-3">
+                            <div className="text-2xl">🛡️</div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-2">
+                                Ownership Verification Required
+                              </h4>
+                              <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
+                                To upload this track, please enter the ISRC code from your music
+                                distributor (DistroKid, TuneCore, CD Baby, etc.). The ISRC must
+                                match the detected track.
                               </p>
                             </div>
                           </div>
@@ -1038,21 +1078,42 @@ export default function UnifiedUploadPage() {
                     </div>
                   )}
 
-                  {/* Cover Song Verification */}
+                  {/* ISRC Verification Section */}
                   <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isCover}
-                        onChange={(e) => setIsCover(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        This is a cover song
-                      </span>
-                    </label>
+                    {/* Show different title based on ACRCloud status */}
+                    {acrcloudStatus === 'match' ? (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                          ISRC Verification Required *
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          This track was detected as a released song. Please provide
+                          the ISRC code to verify ownership.
+                        </p>
+                      </div>
+                    ) : (
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Cover Song Verification
+                      </h3>
+                    )}
 
-                    {isCover && (
+                    {/* Only show "cover song" checkbox if ACRCloud DIDN'T detect a match */}
+                    {acrcloudStatus !== 'match' && (
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isCover}
+                          onChange={(e) => setIsCover(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          This is a cover song
+                        </span>
+                      </label>
+                    )}
+
+                    {/* Show ISRC input if ACRCloud match OR user checked "cover song" */}
+                    {(acrcloudStatus === 'match' || isCover) && (
                       <div className="mt-3 space-y-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           ISRC Code *
@@ -1062,7 +1123,7 @@ export default function UnifiedUploadPage() {
                             type="text"
                             value={isrcCode}
                             onChange={(e) => handleISRCChange(e.target.value)}
-                            placeholder="GBUM71502800 or GB-UM7-15-02800"
+                            placeholder="Type the ISRC code (e.g., GBUM71502800)"
                             maxLength={14}
                             className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                               isrcVerificationStatus === 'error'
@@ -1088,7 +1149,7 @@ export default function UnifiedUploadPage() {
                             <div className="flex items-start space-x-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                               <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
                                   Verified
                                 </p>
                                 <p className="text-xs text-green-700 dark:text-green-300 mt-1">
@@ -1107,7 +1168,7 @@ export default function UnifiedUploadPage() {
                             <div className="flex items-start space-x-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                               <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                                <p className="text-sm font-semibold text-red-800 dark:text-red-200">
                                   Verification Failed
                                 </p>
                                 <p className="text-xs text-red-700 dark:text-red-300 mt-1">
@@ -1345,7 +1406,8 @@ export default function UnifiedUploadPage() {
                 uploadState.isUploading || 
                 isValidating || 
                 !agreedToCopyright ||
-                (isCover && isrcVerificationStatus !== 'success')
+                (isCover && isrcVerificationStatus !== 'success') ||
+                (acrcloudStatus === 'match' && isrcVerificationStatus !== 'success')
               }
               className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
