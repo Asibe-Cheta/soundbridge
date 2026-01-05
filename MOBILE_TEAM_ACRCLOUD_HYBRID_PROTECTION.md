@@ -137,7 +137,7 @@ This system **extends** the existing cover song ISRC verification:
   "matchFound": false,
   "requiresISRC": false,
   "isUnreleased": true
-}
+}                                                                                      
 ```
 
 **Real-World Example - No Match (Original Music):**

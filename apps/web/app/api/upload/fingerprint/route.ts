@@ -48,42 +48,137 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ ACRCloud fingerprinting: User authenticated', { userId: user.id });
 
-    // Parse request body with error handling
-    let body: any;
-    try {
-      body = await request.json();
-      console.log('✅ ACRCloud fingerprinting: Request body parsed', {
-        hasFileData: !!body.fileData,
-        hasAudioFileUrl: !!body.audioFileUrl,
-        hasArtistName: !!body.artistName,
-        fileDataLength: body.fileData ? (typeof body.fileData === 'string' ? body.fileData.length : 'buffer') : 0
-      });
-    } catch (parseError: any) {
-      console.error('❌ ACRCloud fingerprinting: Failed to parse request body', {
-        error: parseError.message,
-        errorType: parseError.constructor.name
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          matchFound: false,
-          error: 'Invalid request body. Please ensure the audio file is properly encoded.',
-          errorCode: 'INVALID_REQUEST',
-          requiresManualReview: true
-        },
-        { status: 400, headers: corsHeaders }
-      );
+    // Check Content-Type to determine request format
+    const contentType = request.headers.get('content-type') || '';
+    const isMultipart = contentType.includes('multipart/form-data');
+    
+    console.log('📦 ACRCloud fingerprinting: Request format detected', {
+      contentType,
+      isMultipart,
+      contentLength: request.headers.get('content-length')
+    });
+
+    let audioFileUrl: string | undefined;
+    let artistName: string | undefined;
+    let fileData: string | undefined;
+    let audioFile: File | undefined;
+
+    // Parse request based on Content-Type
+    if (isMultipart) {
+      // Multipart form-data (preferred - no base64 overhead)
+      try {
+        const formData = await request.formData();
+        
+        // Get audio file from form data
+        audioFile = formData.get('audioFile') as File;
+        if (!audioFile) {
+          // Try alternative field names for backward compatibility
+          audioFile = formData.get('file') as File || formData.get('audio') as File;
+        }
+        
+        // Get artist name (optional)
+        const artistNameField = formData.get('artistName');
+        artistName = artistNameField ? String(artistNameField) : undefined;
+
+        console.log('✅ ACRCloud fingerprinting: Multipart form data parsed', {
+          hasAudioFile: !!audioFile,
+          audioFileName: audioFile?.name,
+          audioFileSize: audioFile?.size,
+          audioFileType: audioFile?.type,
+          hasArtistName: !!artistName
+        });
+
+        if (!audioFile) {
+          return NextResponse.json(
+            {
+              success: false,
+              matchFound: false,
+              error: 'Audio file is required. Please provide "audioFile" field in form data.',
+              errorCode: 'MISSING_FILE',
+              requiresManualReview: true
+            },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        // Validate file size (20 MB limit for raw binary)
+        const maxSize = 20 * 1024 * 1024; // 20 MB
+        if (audioFile.size > maxSize) {
+          console.warn('⚠️ ACRCloud fingerprinting: File too large', {
+            fileSize: audioFile.size,
+            maxSize
+          });
+          return NextResponse.json(
+            {
+              success: false,
+              matchFound: false,
+              error: `Audio file too large. Maximum size is ${maxSize / 1024 / 1024}MB.`,
+              errorCode: 'FILE_TOO_LARGE',
+              requiresManualReview: true
+            },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+      } catch (formDataError: any) {
+        console.error('❌ ACRCloud fingerprinting: Failed to parse form data', {
+          error: formDataError.message,
+          errorType: formDataError.constructor.name
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            matchFound: false,
+            error: 'Failed to parse form data. Please ensure the request uses multipart/form-data format.',
+            errorCode: 'INVALID_REQUEST',
+            requiresManualReview: true
+          },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+    } else {
+      // JSON with base64 (backward compatibility - deprecated)
+      console.warn('⚠️ ACRCloud fingerprinting: Using deprecated base64 JSON format. Please migrate to multipart/form-data.');
+      
+      let body: any;
+      try {
+        body = await request.json();
+        console.log('✅ ACRCloud fingerprinting: Request body parsed (base64 format)', {
+          hasFileData: !!body.fileData,
+          hasAudioFileUrl: !!body.audioFileUrl,
+          hasArtistName: !!body.artistName,
+          fileDataLength: body.fileData ? (typeof body.fileData === 'string' ? body.fileData.length : 'buffer') : 0
+        });
+      } catch (parseError: any) {
+        console.error('❌ ACRCloud fingerprinting: Failed to parse request body', {
+          error: parseError.message,
+          errorType: parseError.constructor.name
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            matchFound: false,
+            error: 'Invalid request body. Please use multipart/form-data format or ensure the audio file is properly encoded.',
+            errorCode: 'INVALID_REQUEST',
+            requiresManualReview: true
+          },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      audioFileUrl = body.audioFileUrl;
+      artistName = body.artistName;
+      fileData = body.fileData;
     }
 
-    const { audioFileUrl, artistName, fileData } = body;
-
-    if (!audioFileUrl && !fileData) {
-      console.error('❌ ACRCloud fingerprinting: No file data or URL provided');
+    // Validate that we have a file source
+    if (!audioFile && !audioFileUrl && !fileData) {
+      console.error('❌ ACRCloud fingerprinting: No file data, URL, or file provided');
       return NextResponse.json(
         {
           success: false,
           matchFound: false,
-          error: 'Audio file URL or file data is required',
+          error: 'Audio file is required. Please provide "audioFile" in form data, or "fileData"/"audioFileUrl" in JSON.',
           errorCode: 'MISSING_FILE',
           requiresManualReview: true
         },
@@ -95,7 +190,22 @@ export async function POST(request: NextRequest) {
     let audioBuffer: Buffer;
     
     try {
-      if (fileData) {
+      if (audioFile) {
+        // Multipart form-data: Convert File to Buffer
+        console.log('📥 ACRCloud fingerprinting: Converting File to Buffer', {
+          fileName: audioFile.name,
+          fileSize: audioFile.size,
+          fileType: audioFile.type
+        });
+        
+        const arrayBuffer = await audioFile.arrayBuffer();
+        audioBuffer = Buffer.from(arrayBuffer);
+        
+        console.log('✅ ACRCloud fingerprinting: File converted to buffer', {
+          bufferSize: audioBuffer.length,
+          sizeMB: (audioBuffer.length / (1024 * 1024)).toFixed(2)
+        });
+      } else if (fileData) {
         // File data is provided (base64 or buffer)
         if (typeof fileData === 'string') {
           // Base64 encoded

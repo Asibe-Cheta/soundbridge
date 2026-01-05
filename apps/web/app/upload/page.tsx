@@ -372,80 +372,91 @@ export default function UnifiedUploadPage() {
     setAcrcloudData(null);
 
     try {
-      // Convert file to base64 for API
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Data = reader.result as string;
+      // Use multipart/form-data (no base64 overhead - file stays at original size)
+      const formData = new FormData();
+      formData.append('audioFile', file);
+      
+      if (artistName && artistName.trim()) {
+        formData.append('artistName', artistName.trim());
+      }
+
+      console.log('🎵 Sending audio file for fingerprinting (multipart)', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileSizeMB: (file.size / (1024 * 1024)).toFixed(2),
+        hasArtistName: !!artistName
+      });
+
+      const response = await fetch('/api/upload/fingerprint', {
+        method: 'POST',
+        // Don't set Content-Type - browser will set it automatically with boundary for FormData
+        body: formData,
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('❌ ACRCloud fingerprinting: HTTP error', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
         
-        try {
-          const response = await fetch('/api/upload/fingerprint', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              fileData: base64Data,
-              artistName: artistName.trim() || undefined
-            }),
-          });
-
-          const data = await response.json();
-
-          if (!data.success) {
-            // API error or timeout - fallback to manual flow
-            setAcrcloudStatus('error');
-            setAcrcloudError(data.error || 'Fingerprinting failed. You can still proceed with upload.');
-            setAcrcloudData({ requiresManualReview: true });
-            console.warn('⚠️ ACRCloud fingerprinting error:', data.error);
-            return;
-          }
-
-          if (data.matchFound) {
-            // Match found - require ISRC verification
-            setAcrcloudStatus('match');
-            setAcrcloudData(data);
-            
-            // Pre-fill ISRC if detected
-            if (data.detectedISRC && !isrcCode) {
-              setIsrcCode(data.detectedISRC);
-              // Auto-verify if ISRC was verified by API
-              if (data.detectedISRCVerified) {
-                setIsrcVerificationStatus('success');
-                setIsrcVerificationData(data.detectedISRCRecording);
-              }
-            }
-            
-            // Auto-check cover song if match found
-            if (!isCover) {
-              setIsCover(true);
-            }
-
-            console.log('🎵 ACRCloud match found:', {
-              detectedArtist: data.detectedArtist,
-              detectedTitle: data.detectedTitle,
-              artistMatch: data.artistMatch?.match
-            });
-          } else {
-            // No match - appears to be unreleased/original
-            setAcrcloudStatus('no_match');
-            setAcrcloudData(data);
-            console.log('✅ ACRCloud: No match found - appears to be original/unreleased');
-          }
-        } catch (error: any) {
-          console.error('❌ ACRCloud fingerprinting error:', error);
+        if (response.status === 413) {
           setAcrcloudStatus('error');
-          setAcrcloudError(error.message || 'Fingerprinting failed. You can still proceed with upload.');
+          setAcrcloudError('File too large for fingerprinting. Maximum size is 20MB.');
           setAcrcloudData({ requiresManualReview: true });
+          return;
         }
-      };
-
-      reader.onerror = () => {
+        
         setAcrcloudStatus('error');
-        setAcrcloudError('Failed to read file. You can still proceed with upload.');
+        setAcrcloudError(`Fingerprinting failed (${response.status}). You can still proceed with upload.`);
         setAcrcloudData({ requiresManualReview: true });
-      };
+        return;
+      }
 
-      reader.readAsDataURL(file);
+      const data = await response.json();
+
+      if (!data.success) {
+        // API error or timeout - fallback to manual flow
+        setAcrcloudStatus('error');
+        setAcrcloudError(data.error || 'Fingerprinting failed. You can still proceed with upload.');
+        setAcrcloudData({ requiresManualReview: true });
+        console.warn('⚠️ ACRCloud fingerprinting error:', data.error);
+        return;
+      }
+
+      if (data.matchFound) {
+        // Match found - require ISRC verification
+        setAcrcloudStatus('match');
+        setAcrcloudData(data);
+        
+        // Pre-fill ISRC if detected
+        if (data.detectedISRC && !isrcCode) {
+          setIsrcCode(data.detectedISRC);
+          // Auto-verify if ISRC was verified by API
+          if (data.detectedISRCVerified) {
+            setIsrcVerificationStatus('success');
+            setIsrcVerificationData(data.detectedISRCRecording);
+          }
+        }
+        
+        // Auto-check cover song if match found
+        if (!isCover) {
+          setIsCover(true);
+        }
+
+        console.log('🎵 ACRCloud match found:', {
+          detectedArtist: data.detectedArtist,
+          detectedTitle: data.detectedTitle,
+          artistMatch: data.artistMatch?.match
+        });
+      } else {
+        // No match - appears to be unreleased/original
+        setAcrcloudStatus('no_match');
+        setAcrcloudData(data);
+        console.log('✅ ACRCloud: No match found - appears to be original/unreleased');
+      }
     } catch (error: any) {
       console.error('❌ ACRCloud fingerprinting error:', error);
       setAcrcloudStatus('error');
