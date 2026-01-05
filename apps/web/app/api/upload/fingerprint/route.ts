@@ -11,6 +11,9 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { identifyAudio } from '@/src/lib/acrcloud-api';
 import { matchArtistNames } from '@/src/lib/artist-name-matcher';
 import { verifyISRC } from '@/src/lib/musicbrainz-api';
+import { writeFile, readFile, unlink } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,6 +106,8 @@ export async function POST(request: NextRequest) {
 
         // Validate file size (20 MB limit for raw binary)
         const maxSize = 20 * 1024 * 1024; // 20 MB
+        const infrastructureLimit = 10 * 1024 * 1024; // 10 MB - actual Vercel limit
+        
         if (audioFile.size > maxSize) {
           console.warn('⚠️ ACRCloud fingerprinting: File too large', {
             fileSize: audioFile.size,
@@ -119,6 +124,9 @@ export async function POST(request: NextRequest) {
             { status: 400, headers: corsHeaders }
           );
         }
+
+        // Note: Files > 10MB will be sampled (see below)
+        const needsSampling = audioFile.size > infrastructureLimit;
 
       } catch (formDataError: any) {
         console.error('❌ ACRCloud fingerprinting: Failed to parse form data', {
@@ -192,19 +200,58 @@ export async function POST(request: NextRequest) {
     try {
       if (audioFile) {
         // Multipart form-data: Convert File to Buffer
-        console.log('📥 ACRCloud fingerprinting: Converting File to Buffer', {
+        const fileSize = audioFile.size;
+        const MAX_DIRECT_SIZE = 10 * 1024 * 1024; // 10 MB - Vercel infrastructure limit
+        
+        console.log('📥 ACRCloud fingerprinting: Processing audio file', {
           fileName: audioFile.name,
-          fileSize: audioFile.size,
-          fileType: audioFile.type
+          fileSize: fileSize,
+          fileSizeMB: (fileSize / (1024 * 1024)).toFixed(2),
+          fileType: audioFile.type,
+          needsSampling: fileSize > MAX_DIRECT_SIZE
         });
         
-        const arrayBuffer = await audioFile.arrayBuffer();
-        audioBuffer = Buffer.from(arrayBuffer);
-        
-        console.log('✅ ACRCloud fingerprinting: File converted to buffer', {
-          bufferSize: audioBuffer.length,
-          sizeMB: (audioBuffer.length / (1024 * 1024)).toFixed(2)
-        });
+        if (fileSize > MAX_DIRECT_SIZE) {
+          // Large file: Extract 30-second audio sample using ffmpeg
+          console.log('📦 ACRCloud fingerprinting: Large file detected, extracting 30-second audio sample', {
+            originalSize: fileSize,
+            originalSizeMB: (fileSize / (1024 * 1024)).toFixed(2)
+          });
+          
+          try {
+            audioBuffer = await extractAudioSample(audioFile, 30);
+            console.log('✅ ACRCloud fingerprinting: Audio sample extracted successfully', {
+              originalSize: fileSize,
+              sampleSize: audioBuffer.length,
+              sampleSizeMB: (audioBuffer.length / (1024 * 1024)).toFixed(2),
+              note: 'ACRCloud only needs 10-15 seconds to fingerprint'
+            });
+          } catch (samplingError: any) {
+            console.error('❌ ACRCloud fingerprinting: Audio sampling failed, falling back to simple slice', {
+              error: samplingError.message,
+              errorType: samplingError.constructor.name
+            });
+            
+            // Fallback: Use first 2MB if ffmpeg fails (not ideal but better than nothing)
+            const arrayBuffer = await audioFile.arrayBuffer();
+            const fullBuffer = Buffer.from(arrayBuffer);
+            const sampleSize = Math.min(2 * 1024 * 1024, fullBuffer.length);
+            audioBuffer = fullBuffer.slice(0, sampleSize);
+            
+            console.warn('⚠️ ACRCloud fingerprinting: Using fallback slice method (may not work for all formats)', {
+              sampleSize: audioBuffer.length,
+              sampleSizeMB: (audioBuffer.length / (1024 * 1024)).toFixed(2)
+            });
+          }
+        } else {
+          // Small file: Use entire file
+          const arrayBuffer = await audioFile.arrayBuffer();
+          audioBuffer = Buffer.from(arrayBuffer);
+          console.log('✅ ACRCloud fingerprinting: File converted to buffer (full file)', {
+            bufferSize: audioBuffer.length,
+            sizeMB: (audioBuffer.length / (1024 * 1024)).toFixed(2)
+          });
+        }
       } else if (fileData) {
         // File data is provided (base64 or buffer)
         if (typeof fileData === 'string') {
@@ -443,6 +490,92 @@ export async function POST(request: NextRequest) {
         }
       }
     );
+  }
+}
+
+/**
+ * Extract audio sample from uploaded file using ffmpeg
+ * Extracts the first N seconds of audio for ACRCloud fingerprinting
+ * 
+ * @param file - Uploaded audio file
+ * @param durationSeconds - Sample duration in seconds (default: 30)
+ * @returns Buffer containing audio sample
+ */
+async function extractAudioSample(
+  file: File,
+  durationSeconds: number = 30
+): Promise<Buffer> {
+  // Check if ffmpeg is available
+  let ffmpeg: any;
+  try {
+    ffmpeg = require('fluent-ffmpeg');
+  } catch (error) {
+    throw new Error('ffmpeg not available. Please install fluent-ffmpeg: npm install fluent-ffmpeg');
+  }
+
+  const tempInputPath = join(tmpdir(), `acrcloud_upload_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+  const tempOutputPath = join(tmpdir(), `acrcloud_sample_${Date.now()}.mp3`);
+
+  try {
+    // Save uploaded file to temp location
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    await writeFile(tempInputPath, buffer);
+
+    console.log('🎬 Extracting audio sample using ffmpeg...', {
+      inputPath: tempInputPath,
+      outputPath: tempOutputPath,
+      durationSeconds
+    });
+
+    // Extract sample using ffmpeg
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(tempInputPath)
+        .setStartTime(0) // Start from beginning
+        .duration(durationSeconds) // Extract X seconds
+        .audioCodec('libmp3lame') // MP3 codec
+        .audioBitrate('128k') // 128kbps (ACRCloud doesn't need high quality)
+        .outputOptions('-y') // Overwrite output file
+        .output(tempOutputPath)
+        .on('start', (commandLine: string) => {
+          console.log('🎬 ffmpeg command:', commandLine);
+        })
+        .on('end', () => {
+          console.log('✅ Audio sample extraction complete');
+          resolve();
+        })
+        .on('error', (err: any) => {
+          console.error('❌ ffmpeg error:', err);
+          reject(new Error(`Audio sampling failed: ${err.message || 'Unknown error'}`));
+        })
+        .on('stderr', (stderrLine: string) => {
+          // Log ffmpeg stderr for debugging (non-fatal warnings)
+          if (stderrLine.includes('error') || stderrLine.includes('Error')) {
+            console.warn('⚠️ ffmpeg stderr:', stderrLine);
+          }
+        })
+        .run();
+    });
+
+    // Read the sample
+    const sampleBuffer = await readFile(tempOutputPath);
+
+    // Cleanup temp files
+    await unlink(tempInputPath).catch((err) => {
+      console.warn('⚠️ Failed to cleanup temp input file:', err);
+    });
+    await unlink(tempOutputPath).catch((err) => {
+      console.warn('⚠️ Failed to cleanup temp output file:', err);
+    });
+
+    return sampleBuffer;
+
+  } catch (error: any) {
+    // Cleanup on error
+    await unlink(tempInputPath).catch(() => {});
+    await unlink(tempOutputPath).catch(() => {});
+
+    throw error;
   }
 }
 
