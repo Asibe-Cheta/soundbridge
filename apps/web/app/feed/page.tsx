@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { PostCard } from '@/src/components/posts/PostCard';
@@ -127,30 +127,67 @@ export default function FeedPage() {
   // Load bookmarks separately when posts change (mobile team recommendation - Solution 4)
   // Use a ref to track post IDs to prevent unnecessary re-runs
   const postIdsRef = useRef<string>('');
+  const isLoadingBookmarksRef = useRef(false);
+  const bookmarksMapRef = useRef<Map<string, boolean>>(new Map());
+  
+  // Sync ref with state (one-way: ref -> state, not state -> ref to avoid loops)
   useEffect(() => {
-    if (user?.id && posts.length > 0) {
+    bookmarksMapRef.current = bookmarksMap;
+  }, [bookmarksMap]);
+  
+  useEffect(() => {
+    if (user?.id && posts.length > 0 && !isLoadingBookmarksRef.current) {
       // Create a stable string representation of post IDs
       const currentPostIds = posts.map(p => p.id).sort().join(',');
       
       // Only load if post IDs actually changed
       if (postIdsRef.current !== currentPostIds) {
         postIdsRef.current = currentPostIds;
+        isLoadingBookmarksRef.current = true;
         
-        const loadBookmarks = async () => {
-          try {
-            const postIds = posts.map(p => p.id);
-            // Use ref to avoid dependency on function reference
-            const { data } = await batchCheckBookmarksRef.current(postIds, 'post');
-            if (data) {
-              setBookmarksMap(data);
+        // Use setTimeout to defer bookmark loading and break any potential render loops
+        const timeoutId = setTimeout(() => {
+          const loadBookmarks = async () => {
+            try {
+              const postIds = posts.map(p => p.id);
+              // Use ref to avoid dependency on function reference
+              const { data } = await batchCheckBookmarksRef.current(postIds, 'post');
+              if (data) {
+                // Only update if data actually changed (prevent unnecessary re-renders)
+                setBookmarksMap(prev => {
+                  // Check if the new data is different from current
+                  const prevIds = Array.from(prev.keys()).sort().join(',');
+                  const newIds = Array.from(data.keys()).sort().join(',');
+                  if (prevIds === newIds) {
+                    // Check if values are the same
+                    let valuesMatch = true;
+                    for (const [id, value] of data.entries()) {
+                      if (prev.get(id) !== value) {
+                        valuesMatch = false;
+                        break;
+                      }
+                    }
+                    if (valuesMatch) {
+                      return prev; // Return same reference to prevent re-render
+                    }
+                  }
+                  return data; // New data, update
+                });
+              }
+            } catch (err) {
+              console.warn('Failed to load bookmark status:', err);
+              // Don't show error to user - bookmarks are optional
+            } finally {
+              isLoadingBookmarksRef.current = false;
             }
-          } catch (err) {
-            console.warn('Failed to load bookmark status:', err);
-            // Don't show error to user - bookmarks are optional
-          }
-        };
+          };
 
-        loadBookmarks();
+          loadBookmarks();
+        }, 100); // Defer by 100ms to break render loop
+        
+        return () => clearTimeout(timeoutId);
+      } else {
+        isLoadingBookmarksRef.current = false;
       }
     }
   }, [posts.length, user?.id]); // ✅ Only reload when post count or user ID changes
