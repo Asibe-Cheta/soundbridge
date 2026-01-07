@@ -32,6 +32,15 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
+  // Detect URLs in content (MUST be before early return to maintain consistent hook order)
+  const detectedUrls = useMemo(() => {
+    if (!content) return [];
+    return extractUrls(content);
+  }, [content]);
+
+  const hasLinks = detectedUrls.length > 0;
+
+  // Early return AFTER all hooks to prevent React Error #310
   if (!isOpen) return null;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,14 +292,6 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
   };
 
   const remainingChars = MAX_CONTENT_LENGTH - content.length;
-  
-  // Detect URLs in content
-  const detectedUrls = useMemo(() => {
-    if (!content) return [];
-    return extractUrls(content);
-  }, [content]);
-  
-  const hasLinks = detectedUrls.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
