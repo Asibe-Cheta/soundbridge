@@ -56,7 +56,9 @@ export default function FeedPage() {
   const loadingRef = useRef(false);
   const loadingMoreRef = useRef(false);
   
-  const fetchPosts = useCallback(async (pageNum: number, append: boolean = false, force: boolean = false) => {
+  // CRITICAL: Use ref with .current for stable function reference (Claude's Solution 1)
+  // This creates a function ONCE that never changes reference
+  const fetchPosts = useRef(async (pageNum: number, append: boolean = false, force: boolean = false) => {
     // Prevent duplicate calls - block if already loading (unless forced)
     if (!force && loadingMoreRef.current) {
       console.log('⏸️ Blocked: Already loading more');
@@ -78,7 +80,9 @@ export default function FeedPage() {
       }
       setError(null);
 
-      console.log('🚀 Fetching feed posts using direct Supabase query (like Discover)...', { pageNum, append, user: user?.id });
+      // Get current user ID - function closure will capture it
+      const currentUserId = user?.id;
+      console.log('🚀 Fetching feed posts using direct Supabase query (like Discover)...', { pageNum, append, user: currentUserId });
       const startTime = Date.now();
 
       // Use direct Supabase query (NO API route, NO timeout issues)
@@ -109,10 +113,7 @@ export default function FeedPage() {
       loadingRef.current = false;
       loadingMoreRef.current = false;
     }
-  });
-  
-  // CRITICAL: .current makes this a stable function reference
-  const fetchPosts = fetchPostsRef.current;
+  }).current; // CRITICAL: .current makes this a stable function reference
   
   // Initial load - only run once when user is available
   useEffect(() => {
