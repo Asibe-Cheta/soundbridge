@@ -27,6 +27,12 @@ export default function FeedPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [bookmarksMap, setBookmarksMap] = useState<Map<string, boolean>>(new Map());
+  
+  // CRITICAL: Use ref for user ID to avoid stale closures (Claude's Solution 1)
+  const userIdRef = useRef<string | undefined>(user?.id);
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -80,8 +86,8 @@ export default function FeedPage() {
       }
       setError(null);
 
-      // Get current user ID - function closure will capture it
-      const currentUserId = user?.id;
+      // Get current user ID from ref (always current, no stale closure)
+      const currentUserId = userIdRef.current;
       console.log('🚀 Fetching feed posts using direct Supabase query (like Discover)...', { pageNum, append, user: currentUserId });
       const startTime = Date.now();
 
