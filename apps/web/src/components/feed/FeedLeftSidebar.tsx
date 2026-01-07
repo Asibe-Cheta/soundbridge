@@ -88,7 +88,8 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
       loadProfileData();
       loadStats();
     }
-  }, [user?.id, loadProfileData, loadStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only depend on user?.id, not the functions
 
   if (loading) {
     return (

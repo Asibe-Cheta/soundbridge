@@ -100,7 +100,8 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
         loadSuggestions();
       }
     }
-  }, [user?.id, loadOpportunities, loadSuggestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only depend on user?.id, not the functions
 
   return (
     <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">
