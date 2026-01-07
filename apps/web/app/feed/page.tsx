@@ -30,10 +30,10 @@ export default function FeedPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user?.id) {
       router.push('/login?redirect=/feed');
     }
-  }, [user, authLoading, router]);
+  }, [user?.id, authLoading, router]); // ✅ Use user?.id instead of user object
 
   // Fetch user profile pic
   useEffect(() => {
