@@ -163,32 +163,29 @@ export function PostCard({ post, onUpdate, showFullContent = false, initialBookm
     }
   }, [post.id, post.comment_count, showFullContent, showAllComments, showCommentBox]);
 
-  // Check bookmark status and block status (only if not provided via prop)
+  // Sync bookmark status from prop (batch-loaded)
   useEffect(() => {
-    if (user?.id && post.id && initialBookmarkStatus === false) {
-      // Only check individually if we don't have initial status
-      // This is a fallback for cases where batch fetch might have failed
-      checkBookmark(post.id, 'post').then(({ data }) => {
-        setIsBookmarked(data);
-      });
-      
+    setIsBookmarked(initialBookmarkStatus);
+  }, [initialBookmarkStatus]);
+
+  // Check block status (separate from bookmark check)
+  useEffect(() => {
+    if (user?.id && post.user_id && post.user_id !== user.id) {
       // Check if user is blocked
-      if (post.user_id && post.user_id !== user.id) {
-        fetch(`/api/users/block?checkUserId=${post.user_id}`, {
-          credentials: 'include'
+      fetch(`/api/users/block?checkUserId=${post.user_id}`, {
+        credentials: 'include'
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setIsBlocked(data.isBlocked || data.isBlockedBy);
+          }
         })
-          .then(res => res.json())
-          .then(data => {
-            if (data.success) {
-              setIsBlocked(data.isBlocked || data.isBlockedBy);
-            }
-          })
-          .catch(() => {
-            // Silently fail - block check is optional
-          });
-      }
+        .catch(() => {
+          // Silently fail - block check is optional
+        });
     }
-  }, [user?.id, post.id, post.user_id]);
+  }, [user?.id, post.user_id]);
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);

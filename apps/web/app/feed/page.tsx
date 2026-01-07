@@ -118,13 +118,20 @@ export default function FeedPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]); // Only depend on user and authLoading, not fetchPosts
 
+  // Store batchCheckBookmarks in ref to avoid dependency issues (mobile team pattern)
+  const batchCheckBookmarksRef = useRef(batchCheckBookmarks);
+  useEffect(() => {
+    batchCheckBookmarksRef.current = batchCheckBookmarks;
+  }, [batchCheckBookmarks]);
+
   // Load bookmarks separately when posts change (mobile team recommendation - Solution 4)
   useEffect(() => {
     if (user?.id && posts.length > 0) {
       const loadBookmarks = async () => {
         try {
           const postIds = posts.map(p => p.id);
-          const { data } = await batchCheckBookmarks(postIds, 'post');
+          // Use ref to avoid dependency on function reference
+          const { data } = await batchCheckBookmarksRef.current(postIds, 'post');
           if (data) {
             setBookmarksMap(data);
           }
@@ -136,7 +143,7 @@ export default function FeedPage() {
 
       loadBookmarks();
     }
-  }, [posts.length, user?.id, batchCheckBookmarks]); // ✅ Only reload when post count or user ID changes
+  }, [posts.length, user?.id]); // ✅ Only reload when post count or user ID changes - removed batchCheckBookmarks
 
   // Infinite scroll - use ref to avoid dependency on fetchPosts
   const fetchPostsRef = useRef(fetchPosts);
