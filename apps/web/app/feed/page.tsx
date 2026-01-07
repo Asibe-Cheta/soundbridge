@@ -105,18 +105,18 @@ export default function FeedPage() {
 
   // Initial load - only run once when user is available
   useEffect(() => {
-    console.log('🔍 Feed page useEffect triggered:', { user: !!user, authLoading, hasTriedFetch: hasTriedFetchRef.current });
+    console.log('🔍 Feed page useEffect triggered:', { userId: user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     
     // Only fetch if user is available, auth is done, and we haven't tried fetching yet
-    if (user && !authLoading && !hasTriedFetchRef.current) {
+    if (user?.id && !authLoading && !hasTriedFetchRef.current) {
       console.log('✅ Conditions met, calling fetchPosts...');
       hasTriedFetchRef.current = true; // Set flag BEFORE calling to prevent double calls
       fetchPosts(1, false);
     } else {
-      console.log('⏸️ Conditions not met - waiting:', { hasUser: !!user, authLoading, hasTriedFetch: hasTriedFetchRef.current });
+      console.log('⏸️ Conditions not met - waiting:', { hasUserId: !!user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]); // Only depend on user and authLoading, not fetchPosts
+  }, [user?.id, authLoading]); // ✅ Use user?.id instead of user object to prevent infinite loops
 
   // Store batchCheckBookmarks in ref to avoid dependency issues (mobile team pattern)
   const batchCheckBookmarksRef = useRef(batchCheckBookmarks);
@@ -125,25 +125,35 @@ export default function FeedPage() {
   }, [batchCheckBookmarks]);
 
   // Load bookmarks separately when posts change (mobile team recommendation - Solution 4)
+  // Use a ref to track post IDs to prevent unnecessary re-runs
+  const postIdsRef = useRef<string>('');
   useEffect(() => {
     if (user?.id && posts.length > 0) {
-      const loadBookmarks = async () => {
-        try {
-          const postIds = posts.map(p => p.id);
-          // Use ref to avoid dependency on function reference
-          const { data } = await batchCheckBookmarksRef.current(postIds, 'post');
-          if (data) {
-            setBookmarksMap(data);
+      // Create a stable string representation of post IDs
+      const currentPostIds = posts.map(p => p.id).sort().join(',');
+      
+      // Only load if post IDs actually changed
+      if (postIdsRef.current !== currentPostIds) {
+        postIdsRef.current = currentPostIds;
+        
+        const loadBookmarks = async () => {
+          try {
+            const postIds = posts.map(p => p.id);
+            // Use ref to avoid dependency on function reference
+            const { data } = await batchCheckBookmarksRef.current(postIds, 'post');
+            if (data) {
+              setBookmarksMap(data);
+            }
+          } catch (err) {
+            console.warn('Failed to load bookmark status:', err);
+            // Don't show error to user - bookmarks are optional
           }
-        } catch (err) {
-          console.warn('Failed to load bookmark status:', err);
-          // Don't show error to user - bookmarks are optional
-        }
-      };
+        };
 
-      loadBookmarks();
+        loadBookmarks();
+      }
     }
-  }, [posts.length, user?.id]); // ✅ Only reload when post count or user ID changes - removed batchCheckBookmarks
+  }, [posts.length, user?.id]); // ✅ Only reload when post count or user ID changes
 
   // Infinite scroll - use ref to avoid dependency on fetchPosts
   const fetchPostsRef = useRef(fetchPosts);
