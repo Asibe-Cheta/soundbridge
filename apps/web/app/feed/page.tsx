@@ -51,13 +51,7 @@ export default function FeedPage() {
     }
   }, [user?.id]);
 
-  // Store batchCheckBookmarks in a ref to avoid dependency issues
-  const batchCheckBookmarksRef = useRef(batchCheckBookmarks);
-  useEffect(() => {
-    batchCheckBookmarksRef.current = batchCheckBookmarks;
-  }, [batchCheckBookmarks]);
-
-  // Fetch posts
+  // Fetch posts - REMOVED bookmark check from here (mobile team recommendation)
   const fetchPosts = useCallback(async (pageNum: number, append: boolean = false, force: boolean = false) => {
     // Prevent duplicate calls - block if already loading (unless forced)
     if (!force && loadingMore) {
@@ -99,22 +93,7 @@ export default function FeedPage() {
 
       setHasMore(hasMorePosts);
       setPage(pageNum);
-
-      // Batch fetch bookmarks for all posts (use ref to avoid dependency issues)
-      if (user?.id && newPosts.length > 0) {
-        const postIds = newPosts.map(p => p.id);
-        batchCheckBookmarksRef.current(postIds, 'post').then(({ data }) => {
-          if (data) {
-            if (append) {
-              setBookmarksMap(prev => new Map([...prev, ...data]));
-            } else {
-              setBookmarksMap(data);
-            }
-          }
-        }).catch(err => {
-          console.warn('Failed to batch fetch bookmarks:', err);
-        });
-      }
+      // ✅ REMOVED: Bookmark check moved to separate useEffect (mobile team recommendation)
     } catch (err: any) {
       console.error('❌ Error fetching feed:', err);
       setError(err.message || 'Failed to load feed');
@@ -122,7 +101,7 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id]); // Only depend on user.id, not the entire user object or batchCheckBookmarks
+  }, [user?.id]); // ✅ Stable dependency - only user ID, not user object
 
   // Initial load - only run once when user is available
   useEffect(() => {
@@ -138,6 +117,26 @@ export default function FeedPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]); // Only depend on user and authLoading, not fetchPosts
+
+  // Load bookmarks separately when posts change (mobile team recommendation - Solution 4)
+  useEffect(() => {
+    if (user?.id && posts.length > 0) {
+      const loadBookmarks = async () => {
+        try {
+          const postIds = posts.map(p => p.id);
+          const { data } = await batchCheckBookmarks(postIds, 'post');
+          if (data) {
+            setBookmarksMap(data);
+          }
+        } catch (err) {
+          console.warn('Failed to load bookmark status:', err);
+          // Don't show error to user - bookmarks are optional
+        }
+      };
+
+      loadBookmarks();
+    }
+  }, [posts.length, user?.id, batchCheckBookmarks]); // ✅ Only reload when post count or user ID changes
 
   // Infinite scroll - use ref to avoid dependency on fetchPosts
   const fetchPostsRef = useRef(fetchPosts);

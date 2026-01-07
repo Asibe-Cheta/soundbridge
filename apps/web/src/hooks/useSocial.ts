@@ -335,7 +335,7 @@ export function useSocial() {
       setError(errorMessage);
       return { data: new Map<string, boolean>(), error: errorMessage };
     }
-  }, [user?.id]);
+  }, [user?.id]); // ✅ Stable dependency - only user ID, not user object
 
   // ===== PLAYLISTS =====
   const createPlaylist = useCallback(async (request: CreatePlaylistRequest) => {
