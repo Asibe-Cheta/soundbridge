@@ -6,7 +6,8 @@ import { socialService } from '@/src/lib/social-service';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+  'Content-Type': 'application/json',
 };
 
 export async function OPTIONS() {

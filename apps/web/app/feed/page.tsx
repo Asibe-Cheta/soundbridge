@@ -51,6 +51,12 @@ export default function FeedPage() {
     }
   }, [user?.id]);
 
+  // Store batchCheckBookmarks in a ref to avoid dependency issues
+  const batchCheckBookmarksRef = useRef(batchCheckBookmarks);
+  useEffect(() => {
+    batchCheckBookmarksRef.current = batchCheckBookmarks;
+  }, [batchCheckBookmarks]);
+
   // Fetch posts
   const fetchPosts = useCallback(async (pageNum: number, append: boolean = false, force: boolean = false) => {
     // Prevent duplicate calls - block if already loading (unless forced)
@@ -94,10 +100,10 @@ export default function FeedPage() {
       setHasMore(hasMorePosts);
       setPage(pageNum);
 
-      // Batch fetch bookmarks for all posts
+      // Batch fetch bookmarks for all posts (use ref to avoid dependency issues)
       if (user?.id && newPosts.length > 0) {
         const postIds = newPosts.map(p => p.id);
-        batchCheckBookmarks(postIds, 'post').then(({ data }) => {
+        batchCheckBookmarksRef.current(postIds, 'post').then(({ data }) => {
           if (data) {
             if (append) {
               setBookmarksMap(prev => new Map([...prev, ...data]));
@@ -116,7 +122,7 @@ export default function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user, batchCheckBookmarks]); // Add batchCheckBookmarks to dependencies
+  }, [user?.id]); // Only depend on user.id, not the entire user object or batchCheckBookmarks
 
   // Initial load - only run once when user is available
   useEffect(() => {
@@ -133,7 +139,12 @@ export default function FeedPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]); // Only depend on user and authLoading, not fetchPosts
 
-  // Infinite scroll
+  // Infinite scroll - use ref to avoid dependency on fetchPosts
+  const fetchPostsRef = useRef(fetchPosts);
+  useEffect(() => {
+    fetchPostsRef.current = fetchPosts;
+  }, [fetchPosts]);
+
   useEffect(() => {
     const handleScroll = () => {
       if (
@@ -142,13 +153,13 @@ export default function FeedPage() {
         !loading &&
         window.innerHeight + window.scrollY >= document.documentElement.offsetHeight - 1000
       ) {
-        fetchPosts(page + 1, true);
+        fetchPostsRef.current(page + 1, true);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasMore, loadingMore, loading, page, fetchPosts]);
+  }, [hasMore, loadingMore, loading, page]); // Removed fetchPosts from dependencies
 
   const handlePostCreated = () => {
     // Force refresh feed - reset loading state and fetch
