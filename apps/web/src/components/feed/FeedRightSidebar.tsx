@@ -25,13 +25,20 @@ interface ConnectionSuggestion {
   mutual_connections?: number;
 }
 
-export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
+interface FeedRightSidebarProps {
+  userId?: string;
+}
+
+export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }: FeedRightSidebarProps) {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<Post[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(true);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   const hasLoadedRef = useRef(false);
+  
+  // Use prop userId if provided, otherwise fall back to auth user
+  const effectiveUserId = userId || user?.id;
 
   const loadOpportunitiesRef = useRef<() => Promise<void>>();
   const loadSuggestionsRef = useRef<() => Promise<void>>();
@@ -58,7 +65,7 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
   };
 
   loadSuggestionsRef.current = async () => {
-    if (!user?.id) return;
+    if (!effectiveUserId) return;
 
     try {
       setLoadingSuggestions(true);
@@ -67,7 +74,7 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
       const startTime = Date.now();
 
       // Use direct Supabase query instead of API route
-      const { data: suggestionsData, error } = await dataService.getConnectionSuggestions(user.id, 5);
+      const { data: suggestionsData, error } = await dataService.getConnectionSuggestions(effectiveUserId, 5);
 
       if (!error && suggestionsData) {
         // Map to match the UI format
@@ -95,15 +102,15 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
   };
 
   useEffect(() => {
-    // Only load once when component mounts or user?.id becomes available
+    // Only load once when component mounts or effectiveUserId becomes available
     if (!hasLoadedRef.current) {
       hasLoadedRef.current = true;
       loadOpportunitiesRef.current?.();
-      if (user?.id) {
+      if (effectiveUserId) {
         loadSuggestionsRef.current?.();
       }
     }
-  }, [user?.id]); // Only depend on user?.id
+  }, [effectiveUserId]); // Only depend on effectiveUserId (primitive, stable)
 
   return (
     <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">

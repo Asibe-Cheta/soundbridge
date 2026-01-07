@@ -24,17 +24,26 @@ interface ConnectionStats {
   pendingRequests: number;
 }
 
-export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
+interface FeedLeftSidebarProps {
+  userId?: string;
+}
+
+export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: FeedLeftSidebarProps) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<ConnectionStats>({ connectionCount: 0, pendingRequests: 0 });
   const [loading, setLoading] = useState(true);
   const hasLoadedRef = useRef(false);
+  
+  // Use prop userId if provided, otherwise fall back to auth user
+  const effectiveUserId = userId || user?.id;
 
   const loadProfileDataRef = useRef<() => Promise<void>>();
   const loadStatsRef = useRef<() => Promise<void>>();
 
   loadProfileDataRef.current = async () => {
+    if (!effectiveUserId) return;
+    
     try {
       console.log('🚀 Loading profile data using direct Supabase query...');
       const startTime = Date.now();
@@ -44,7 +53,7 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, professional_headline, avatar_url')
-        .eq('id', user?.id)
+        .eq('id', effectiveUserId)
         .single();
 
       if (error) {
@@ -61,17 +70,17 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
   };
 
   loadStatsRef.current = async () => {
-    if (!user?.id) return;
+    if (!effectiveUserId) return;
 
     try {
       console.log('🚀 Loading sidebar stats using direct Supabase queries...');
       const startTime = Date.now();
 
       // Get connection count using direct query
-      const { data: connections } = await dataService.getConnections(user.id, 'following', 1000);
+      const { data: connections } = await dataService.getConnections(effectiveUserId, 'following', 1000);
 
       // Get pending requests using direct query
-      const { data: requests } = await dataService.getConnectionRequests(user.id, 'received');
+      const { data: requests } = await dataService.getConnectionRequests(effectiveUserId, 'received');
 
       setStats({
         connectionCount: connections?.length || 0,
@@ -85,13 +94,13 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
   };
 
   useEffect(() => {
-    // Only load once when user?.id is available
-    if (user?.id && !hasLoadedRef.current) {
+    // Only load once when effectiveUserId is available
+    if (effectiveUserId && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
       loadProfileDataRef.current?.();
       loadStatsRef.current?.();
     }
-  }, [user?.id]); // Only depend on user?.id
+  }, [effectiveUserId]); // Only depend on effectiveUserId (primitive, stable)
 
   if (loading) {
     return (

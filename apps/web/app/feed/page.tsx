@@ -109,13 +109,12 @@ export default function FeedPage() {
       loadingRef.current = false;
       loadingMoreRef.current = false;
     }
-  }, [user?.id]); // ✅ Stable dependency - only user ID, not user object
-
-  // Initial load - only run once when user is available
-  // Use ref for fetchPosts to avoid dependency issues
-  const fetchPostsInitialRef = useRef(fetchPosts);
-  fetchPostsInitialRef.current = fetchPosts;
+  });
   
+  // CRITICAL: .current makes this a stable function reference
+  const fetchPosts = fetchPostsRef.current;
+  
+  // Initial load - only run once when user is available
   useEffect(() => {
     console.log('🔍 Feed page useEffect triggered:', { userId: user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     
@@ -123,11 +122,11 @@ export default function FeedPage() {
     if (user?.id && !authLoading && !hasTriedFetchRef.current) {
       console.log('✅ Conditions met, calling fetchPosts...');
       hasTriedFetchRef.current = true; // Set flag BEFORE calling to prevent double calls
-      fetchPostsInitialRef.current(1, false);
+      fetchPosts(1, false);
     } else {
       console.log('⏸️ Conditions not met - waiting:', { hasUserId: !!user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     }
-  }, [user?.id, authLoading]); // ✅ Use user?.id instead of user object to prevent infinite loops
+  }, [user?.id, authLoading, fetchPosts]); // ✅ fetchPosts is now stable (.current)
 
   // Store batchCheckBookmarks in ref to avoid dependency issues (mobile team pattern)
   const batchCheckBookmarksRef = useRef(batchCheckBookmarks);
@@ -171,11 +170,7 @@ export default function FeedPage() {
   }, [posts.length, user?.id]);
   */
 
-  // Infinite scroll - use ref to avoid dependency on fetchPosts
-  const fetchPostsRef = useRef(fetchPosts);
-  // Update ref on every render (refs don't cause re-renders)
-  fetchPostsRef.current = fetchPosts;
-
+  // Infinite scroll - use stable fetchPosts function
   useEffect(() => {
     const handleScroll = () => {
       if (
@@ -184,7 +179,7 @@ export default function FeedPage() {
         !loading &&
         window.innerHeight + window.scrollY >= document.documentElement.offsetHeight - 1000
       ) {
-        fetchPostsRef.current(page + 1, true);
+        fetchPosts(page + 1, true);
       }
     };
 
@@ -241,7 +236,7 @@ export default function FeedPage() {
       <div className="container mx-auto px-4 pt-8 pb-6 max-w-7xl">
         <div className="flex gap-6 items-start">
           {/* Left Sidebar */}
-          <FeedLeftSidebar />
+          <FeedLeftSidebar userId={user?.id} />
 
           {/* Center Feed - Narrower */}
           <main className="flex-1 max-w-lg mx-auto pt-4 min-w-0">
@@ -354,7 +349,7 @@ export default function FeedPage() {
           </main>
 
           {/* Right Sidebar */}
-          <FeedRightSidebar />
+          <FeedRightSidebar userId={user?.id} />
         </div>
       </div>
 
