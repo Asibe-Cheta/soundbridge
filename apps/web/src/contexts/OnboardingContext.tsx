@@ -392,7 +392,13 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   }, [user, session]);
 
   // Silent verification that doesn't hide the modal if it's already showing
-  const verifyOnboardingStatusSilently = async () => {
+  const verifyOnboardingStatusSilently = useCallback(async () => {
+    // Guard: Don't run if already checking
+    if (isCheckingRef.current) {
+      console.log('⏭️ Onboarding check already in progress, skipping silent verification...');
+      return;
+    }
+    
     try {
       if (!user || !session) return;
       
@@ -405,33 +411,60 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       }
       
       if (data) {
-        // Only update if onboarding is actually completed (don't hide if still needed)
-        if (!data.needsOnboarding && onboardingState.showOnboarding) {
-          console.log('✅ Onboarding completed, hiding modal');
-          setOnboardingState(prev => ({
-            ...prev,
-            isOnboardingActive: false,
-            showOnboarding: false,
-            currentStep: 'completed',
-          }));
-          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        } else if (data.needsOnboarding && !onboardingState.showOnboarding) {
-          // If onboarding is needed but not showing, show it
-          console.log('🎯 Onboarding needed, showing modal');
-          setOnboardingState(prev => ({
-            ...prev,
-            isOnboardingActive: true,
-            showOnboarding: true,
-            currentStep: data.onboarding?.step || prev.currentStep,
-          }));
-        }
-        // If state matches, do nothing (don't hide if already showing)
+        // CRITICAL: Only update if state actually changed
+        setOnboardingState(prev => {
+          // Only update if onboarding is actually completed (don't hide if still needed)
+          if (!data.needsOnboarding && prev.showOnboarding) {
+            const newState = {
+              ...prev,
+              isOnboardingActive: false,
+              showOnboarding: false,
+              currentStep: 'completed',
+            };
+            
+            // Don't update if nothing changed
+            if (
+              prev.isOnboardingActive === newState.isOnboardingActive &&
+              prev.showOnboarding === newState.showOnboarding &&
+              prev.currentStep === newState.currentStep
+            ) {
+              return prev;
+            }
+            
+            console.log('✅ Onboarding completed, hiding modal');
+            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+            return newState;
+          } else if (data.needsOnboarding && !prev.showOnboarding) {
+            // If onboarding is needed but not showing, show it
+            const newState = {
+              ...prev,
+              isOnboardingActive: true,
+              showOnboarding: true,
+              currentStep: data.onboarding?.step || prev.currentStep,
+            };
+            
+            // Don't update if nothing changed
+            if (
+              prev.isOnboardingActive === newState.isOnboardingActive &&
+              prev.showOnboarding === newState.showOnboarding &&
+              prev.currentStep === newState.currentStep
+            ) {
+              return prev;
+            }
+            
+            console.log('🎯 Onboarding needed, showing modal');
+            return newState;
+          }
+          
+          // If state matches, do nothing (don't hide if already showing)
+          return prev;
+        });
       }
     } catch (error) {
       // Silently fail - keep current state
       console.log('⚠️ Silent onboarding verification failed, keeping current state');
     }
-  };
+  }, [user, session]);
 
   // Retry logic for onboarding status check - CRITICAL: Stable function
   const checkOnboardingStatusWithRetry = useCallback(async () => {
