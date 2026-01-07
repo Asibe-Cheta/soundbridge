@@ -52,13 +52,17 @@ export default function FeedPage() {
   }, [user?.id]);
 
   // Fetch posts - REMOVED bookmark check from here (mobile team recommendation)
+  // Use refs for loading states to avoid dependency issues
+  const loadingRef = useRef(false);
+  const loadingMoreRef = useRef(false);
+  
   const fetchPosts = useCallback(async (pageNum: number, append: boolean = false, force: boolean = false) => {
     // Prevent duplicate calls - block if already loading (unless forced)
-    if (!force && loadingMore) {
+    if (!force && loadingMoreRef.current) {
       console.log('⏸️ Blocked: Already loading more');
       return;
     }
-    if (!force && !append && loading && hasTriedFetchRef.current) {
+    if (!force && !append && loadingRef.current && hasTriedFetchRef.current) {
       console.log('⏸️ Blocked: Initial load already in progress');
       return;
     }
@@ -66,9 +70,11 @@ export default function FeedPage() {
     try {
       if (!append) {
         setLoading(true);
+        loadingRef.current = true;
         hasTriedFetchRef.current = true; // Use ref instead of state
       } else {
         setLoadingMore(true);
+        loadingMoreRef.current = true;
       }
       setError(null);
 
@@ -100,10 +106,16 @@ export default function FeedPage() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      loadingRef.current = false;
+      loadingMoreRef.current = false;
     }
   }, [user?.id]); // ✅ Stable dependency - only user ID, not user object
 
   // Initial load - only run once when user is available
+  // Use ref for fetchPosts to avoid dependency issues
+  const fetchPostsInitialRef = useRef(fetchPosts);
+  fetchPostsInitialRef.current = fetchPosts;
+  
   useEffect(() => {
     console.log('🔍 Feed page useEffect triggered:', { userId: user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     
@@ -111,11 +123,10 @@ export default function FeedPage() {
     if (user?.id && !authLoading && !hasTriedFetchRef.current) {
       console.log('✅ Conditions met, calling fetchPosts...');
       hasTriedFetchRef.current = true; // Set flag BEFORE calling to prevent double calls
-      fetchPosts(1, false);
+      fetchPostsInitialRef.current(1, false);
     } else {
       console.log('⏸️ Conditions not met - waiting:', { hasUserId: !!user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, authLoading]); // ✅ Use user?.id instead of user object to prevent infinite loops
 
   // Store batchCheckBookmarks in ref to avoid dependency issues (mobile team pattern)
@@ -162,9 +173,8 @@ export default function FeedPage() {
 
   // Infinite scroll - use ref to avoid dependency on fetchPosts
   const fetchPostsRef = useRef(fetchPosts);
-  useEffect(() => {
-    fetchPostsRef.current = fetchPosts;
-  }, [fetchPosts]);
+  // Update ref on every render (refs don't cause re-renders)
+  fetchPostsRef.current = fetchPosts;
 
   useEffect(() => {
     const handleScroll = () => {
