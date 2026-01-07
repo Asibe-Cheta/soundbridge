@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
 
@@ -96,6 +96,11 @@ const saveOnboardingStateToStorage = (state: OnboardingState, user: any, session
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const { user, session, loading: authLoading, signOut } = useAuth();
   
+  // CRITICAL: Prevent infinite loops - guards
+  const isCheckingRef = useRef(false);
+  const lastCheckTimeRef = useRef(0);
+  const hasInitialCheckRef = useRef(false);
+  
   // Initialize state - only load from localStorage if user is authenticated
   // This prevents showing onboarding for unauthenticated users
   const storedState = (user && session) ? loadOnboardingStateFromStorage() : null;
@@ -144,166 +149,163 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Check if user needs onboarding on mount and when tab regains focus
+  // CRITICAL: Stable visibility handler with guards
+  const handleVisibilityChange = useCallback(() => {
+    // Guard 1: Don't run if already checking
+    if (isCheckingRef.current) {
+      console.log('⏭️ Onboarding check already in progress, skipping visibility change...');
+      return;
+    }
+    
+    // Guard 2: Debounce - don't check more than once per 5 seconds
+    const now = Date.now();
+    if (now - lastCheckTimeRef.current < 5000) {
+      console.log('⏭️ Onboarding check too soon, skipping visibility change...');
+      return;
+    }
+    
+    // Guard 3: Must have user and session, and document must be visible
+    if (document.hidden || !user || !session) {
+      return;
+    }
+    
+    console.log('👁️ Window regained focus, checking onboarding state...');
+    
+    // Restore state from localStorage if onboarding was active
+    const storedState = loadOnboardingStateFromStorage();
+    if (storedState && (storedState.showOnboarding || storedState.isOnboardingActive)) {
+      console.log('🔄 Restoring onboarding state from localStorage');
+      
+      // CRITICAL: Only update if state actually changed
+      setOnboardingState(prev => {
+        const newState = {
+          ...prev,
+          showOnboarding: storedState.showOnboarding || false,
+          isOnboardingActive: storedState.isOnboardingActive || false,
+          currentStep: (storedState.currentStep as OnboardingStep) || prev.currentStep,
+          onboardingUserType: storedState.onboardingUserType || prev.onboardingUserType,
+          selectedTier: storedState.selectedTier || prev.selectedTier,
+        };
+        
+        // Don't update if nothing changed
+        if (
+          prev.showOnboarding === newState.showOnboarding &&
+          prev.isOnboardingActive === newState.isOnboardingActive &&
+          prev.currentStep === newState.currentStep &&
+          prev.onboardingUserType === newState.onboardingUserType &&
+          prev.selectedTier === newState.selectedTier
+        ) {
+          console.log('⏭️ Onboarding state unchanged, skipping update');
+          return prev;
+        }
+        
+        return newState;
+      });
+      
+      // Only verify with API if we're not sure about the state
+      setTimeout(() => {
+        verifyOnboardingStatusSilently();
+      }, 1000);
+    } else {
+      // If no stored state, check normally (with debounce)
+      setTimeout(() => {
+        checkOnboardingStatusWithRetry();
+      }, 500);
+    }
+  }, [user, session]);
+
+  // Initial check - only run once when user is available
   useEffect(() => {
     // Wait for auth to finish loading before checking onboarding
     if (authLoading) return;
     
-    const checkOnboarding = () => {
-      // Only check onboarding if user has a valid session (actually authenticated)
-      // This prevents checking when user exists but session is expired
-      if (user && session) {
-        // Check for onboarding URL parameter (from OAuth callback)
-        const urlParams = new URLSearchParams(window.location.search);
-        const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
-        
-        if (shouldStartOnboarding) {
-          console.log('🎯 Starting onboarding from URL parameter');
-          // Clean up URL
-          window.history.replaceState({}, '', window.location.pathname);
-          // Force start onboarding
-          setTimeout(() => {
-            setOnboardingState(prev => ({
-              ...prev,
-              isOnboardingActive: true,
-              showOnboarding: true,
-              currentStep: 'welcome', // NEW: Start with welcome screen
-            }));
-          }, 1000); // Small delay to ensure user context is ready
-        } else {
-          // If onboarding is already showing from storage, don't re-check
-          // Only re-check if onboarding is not currently active
-          if (!onboardingState.showOnboarding && !onboardingState.isOnboardingActive) {
-            // CRITICAL FIX: Add longer delay after sign-in to allow cookies to be set
-            // Session cookies need time to sync to the browser before server-side APIs can read them
-            const delay = session ? 3000 : 0; // 3 seconds for cookie sync after sign-in
-            console.log(`⏱️ Delaying onboarding check for ${delay}ms to allow cookie sync...`);
-            setTimeout(() => {
-              checkOnboardingStatusWithRetry();
-            }, delay);
-          } else {
-            // If onboarding is already showing, verify it's still needed
-            console.log('🔄 Onboarding already showing, verifying status...');
-            checkOnboardingStatusWithRetry();
-          }
-        }
-      } else {
-        // User is not authenticated - ALWAYS reset onboarding state
-        // Clear localStorage and reset state completely
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        }
-        setOnboardingState({
-          currentStep: 'welcome',
-          selectedRole: null,
-          onboardingUserType: null,
-          profileCompleted: false,
-          firstActionCompleted: false,
-          selectedTier: null,
-          isOnboardingActive: false,
-          showOnboarding: false,
-        });
-      }
-    };
-
-    // Initial check
-    checkOnboarding();
-
-    // Re-check when tab regains focus (user switches back to tab)
-    const handleVisibilityChange = () => {
-      // Only restore if user is authenticated
-      if (!document.hidden && user && session) {
-        console.log('👁️ Tab regained focus, restoring onboarding state...');
-        
-        // First, restore state from localStorage if onboarding was active
-        const storedState = loadOnboardingStateFromStorage();
-        if (storedState && (storedState.showOnboarding || storedState.isOnboardingActive)) {
-          console.log('🔄 Restoring onboarding state from localStorage');
+    // Guard: Only check once
+    if (hasInitialCheckRef.current) return;
+    
+    // Only check onboarding if user has a valid session (actually authenticated)
+    if (user && session) {
+      hasInitialCheckRef.current = true;
+      
+      // Check for onboarding URL parameter (from OAuth callback)
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
+      
+      if (shouldStartOnboarding) {
+        console.log('🎯 Starting onboarding from URL parameter');
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+        // Force start onboarding
+        setTimeout(() => {
           setOnboardingState(prev => ({
             ...prev,
-            showOnboarding: storedState.showOnboarding || false,
-            isOnboardingActive: storedState.isOnboardingActive || false,
-            currentStep: (storedState.currentStep as OnboardingStep) || prev.currentStep,
-            onboardingUserType: storedState.onboardingUserType || prev.onboardingUserType,
-            selectedTier: storedState.selectedTier || prev.selectedTier,
+            isOnboardingActive: true,
+            showOnboarding: true,
+            currentStep: 'welcome',
           }));
-          
-          // Only verify with API if we're not sure about the state
-          // Don't immediately re-check as it might hide the modal
-          setTimeout(() => {
-            // Silently verify in background, but don't hide if already showing
-            verifyOnboardingStatusSilently();
-          }, 1000);
-        } else {
-          // If no stored state, check normally
-          setTimeout(() => {
-            checkOnboardingStatusWithRetry();
-          }, 500);
-        }
-      } else if (!document.hidden && (!user || !session)) {
-        // User is not authenticated - clear onboarding state
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        }
-        setOnboardingState(prev => ({
-          ...prev,
-          isOnboardingActive: false,
-          showOnboarding: false,
-        }));
-      }
-    };
-
-    // Re-check when window regains focus
-    const handleFocus = () => {
-      if (user && session) {
-        console.log('👁️ Window regained focus, restoring onboarding state...');
-        
-        // First, restore state from localStorage if onboarding was active
-        const storedState = loadOnboardingStateFromStorage();
-        if (storedState && (storedState.showOnboarding || storedState.isOnboardingActive)) {
-          console.log('🔄 Restoring onboarding state from localStorage');
-          setOnboardingState(prev => ({
-            ...prev,
-            showOnboarding: storedState.showOnboarding || false,
-            isOnboardingActive: storedState.isOnboardingActive || false,
-            currentStep: (storedState.currentStep as OnboardingStep) || prev.currentStep,
-            onboardingUserType: storedState.onboardingUserType || prev.onboardingUserType,
-            selectedTier: storedState.selectedTier || prev.selectedTier,
-          }));
-          
-          // Only verify with API if we're not sure about the state
-          setTimeout(() => {
-            verifyOnboardingStatusSilently();
-          }, 1000);
-        } else {
-          // If no stored state, check normally
-          setTimeout(() => {
-            checkOnboardingStatusWithRetry();
-          }, 500);
-        }
+        }, 1000);
       } else {
-        // User is not authenticated - clear onboarding state
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        // If onboarding is already showing from storage, don't re-check
+        // Only re-check if onboarding is not currently active
+        if (!onboardingState.showOnboarding && !onboardingState.isOnboardingActive) {
+          // CRITICAL FIX: Add longer delay after sign-in to allow cookies to be set
+          const delay = session ? 3000 : 0;
+          console.log(`⏱️ Delaying onboarding check for ${delay}ms to allow cookie sync...`);
+          setTimeout(() => {
+            checkOnboardingStatusWithRetry();
+          }, delay);
+        } else {
+          // If onboarding is already showing, verify it's still needed
+          console.log('🔄 Onboarding already showing, verifying status...');
+          checkOnboardingStatusWithRetry();
         }
-        setOnboardingState(prev => ({
-          ...prev,
-          isOnboardingActive: false,
-          showOnboarding: false,
-        }));
       }
-    };
+    } else {
+      // User is not authenticated - ALWAYS reset onboarding state
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      }
+      setOnboardingState({
+        currentStep: 'welcome',
+        selectedRole: null,
+        onboardingUserType: null,
+        profileCompleted: false,
+        firstActionCompleted: false,
+        selectedTier: null,
+        isOnboardingActive: false,
+        showOnboarding: false,
+      });
+    }
+  }, [user, session, authLoading, onboardingState.showOnboarding, onboardingState.isOnboardingActive]);
 
+  // Effect 2: Visibility change listener
+  useEffect(() => {
+    // Only add listener if user is authenticated
+    if (!user || !session) return;
+    
+    console.log('👂 Adding visibility change listener');
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
+    
     return () => {
+      console.log('🧹 Removing visibility change listener');
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
     };
-  }, [user, session, authLoading]);
+  }, [user, session, handleVisibilityChange]);
 
-  const checkOnboardingStatus = async (): Promise<{ success: boolean; status: number }> => {
+  const checkOnboardingStatus = useCallback(async (): Promise<{ success: boolean; status: number }> => {
+    // Guard: Don't run if already checking
+    if (isCheckingRef.current) {
+      console.log('⏭️ Onboarding check already in progress, skipping...');
+      return { success: false, status: 0 };
+    }
+    
+    // Guard: Must have user and session
+    if (!user || !session) {
+      console.log('⏭️ No user/session, skipping onboarding check');
+      return { success: false, status: 0 };
+    }
+    
+    isCheckingRef.current = true;
+    
     try {
       console.log('🔍 Checking onboarding status for user:', user?.id);
       
@@ -312,8 +314,6 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
       if (error || !response.ok) {
         if (response?.status === 401) {
-          // Authentication failed - but don't clear session immediately
-          // It might be a temporary issue, especially right after sign-in
           console.error('❌ Authentication failed for onboarding status check (401)');
           return { success: false, status: 401 };
         }
@@ -324,29 +324,59 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       if (data) {
         console.log('📊 Onboarding status response:', data);
         
-        if (data.needsOnboarding) {
-          console.log('🎯 User needs onboarding, showing modal');
-          setOnboardingState(prev => ({
-            ...prev,
-            isOnboardingActive: true,
-            showOnboarding: true,
-            currentStep: data.onboarding?.step || 'welcome',
-            selectedRole: data.profile?.role || null,
-            onboardingUserType: data.profile?.onboarding_user_type || null, // NEW
-            profileCompleted: data.onboarding?.profileCompleted || false,
-            firstActionCompleted: false,
-            selectedTier: null,
-          }));
-        } else {
-          console.log('✅ User onboarding already completed');
-          // Ensure onboarding is hidden if already completed
-          setOnboardingState(prev => ({
-            ...prev,
-            isOnboardingActive: false,
-            showOnboarding: false,
-            currentStep: 'completed',
-          }));
-        }
+        // CRITICAL: Only update if state actually changed
+        setOnboardingState(prev => {
+          if (data.needsOnboarding) {
+            const newState = {
+              ...prev,
+              isOnboardingActive: true,
+              showOnboarding: true,
+              currentStep: data.onboarding?.step || 'welcome',
+              selectedRole: data.profile?.role || null,
+              onboardingUserType: data.profile?.onboarding_user_type || null,
+              profileCompleted: data.onboarding?.profileCompleted || false,
+              firstActionCompleted: false,
+              selectedTier: null,
+            };
+            
+            // Don't update if nothing changed
+            if (
+              prev.isOnboardingActive === newState.isOnboardingActive &&
+              prev.showOnboarding === newState.showOnboarding &&
+              prev.currentStep === newState.currentStep &&
+              prev.selectedRole === newState.selectedRole &&
+              prev.onboardingUserType === newState.onboardingUserType &&
+              prev.profileCompleted === newState.profileCompleted
+            ) {
+              console.log('⏭️ Onboarding state unchanged, skipping update');
+              return prev;
+            }
+            
+            console.log('✅ User needs onboarding, showing modal');
+            return newState;
+          } else {
+            const newState = {
+              ...prev,
+              isOnboardingActive: false,
+              showOnboarding: false,
+              currentStep: 'completed',
+            };
+            
+            // Don't update if nothing changed
+            if (
+              prev.isOnboardingActive === newState.isOnboardingActive &&
+              prev.showOnboarding === newState.showOnboarding &&
+              prev.currentStep === newState.currentStep
+            ) {
+              console.log('⏭️ Onboarding state unchanged, skipping update');
+              return prev;
+            }
+            
+            console.log('✅ User onboarding already completed');
+            return newState;
+          }
+        });
+        
         return { success: true, status: response.status };
       } else {
         console.error('❌ Failed to check onboarding status:', response.status);
@@ -355,8 +385,11 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     } catch (error) {
       console.error('❌ Error checking onboarding status:', error);
       return { success: false, status: 0 };
+    } finally {
+      isCheckingRef.current = false;
+      lastCheckTimeRef.current = Date.now();
     }
-  };
+  }, [user, session]);
 
   // Silent verification that doesn't hide the modal if it's already showing
   const verifyOnboardingStatusSilently = async () => {
@@ -400,8 +433,21 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     }
   };
 
-  // Retry logic for onboarding status check
-  const checkOnboardingStatusWithRetry = async () => {
+  // Retry logic for onboarding status check - CRITICAL: Stable function
+  const checkOnboardingStatusWithRetry = useCallback(async () => {
+    // Guard: Don't run if already checking
+    if (isCheckingRef.current) {
+      console.log('⏭️ Onboarding check already in progress, skipping retry...');
+      return;
+    }
+    
+    // Guard: Debounce - don't check more than once per 5 seconds
+    const now = Date.now();
+    if (now - lastCheckTimeRef.current < 5000) {
+      console.log('⏭️ Onboarding check too soon, skipping retry...');
+      return;
+    }
+    
     // Double-check we have valid session before even starting
     if (!user || !session) {
       console.log('🔒 No valid session - skipping onboarding check');
@@ -444,7 +490,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     console.error('❌ Failed to check onboarding status after all retries');
     // Don't show onboarding modal if authentication fails - let user try to log in again
     console.log('🔒 Authentication failed - not showing onboarding modal');
-  };
+  }, [user, session, checkOnboardingStatus]);
 
   const setCurrentStep = (step: OnboardingStep) => {
     setOnboardingState(prev => ({ ...prev, currentStep: step }));
@@ -642,12 +688,13 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     return progress;
   };
 
-  const value: OnboardingContextType = {
+  // CRITICAL: Memoize context value to prevent unnecessary re-renders
+  const value: OnboardingContextType = useMemo(() => ({
     onboardingState,
     setCurrentStep,
     setSelectedRole,
-    setOnboardingUserType, // NEW
-    setSelectedTier, // NEW
+    setOnboardingUserType,
+    setSelectedTier,
     setProfileCompleted,
     setFirstActionCompleted,
     completeOnboarding,
@@ -655,7 +702,20 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     startOnboarding,
     getNextStep,
     getProgressPercentage,
-  };
+  }), [
+    onboardingState,
+    setCurrentStep,
+    setSelectedRole,
+    setOnboardingUserType,
+    setSelectedTier,
+    setProfileCompleted,
+    setFirstActionCompleted,
+    completeOnboarding,
+    skipOnboarding,
+    startOnboarding,
+    getNextStep,
+    getProgressPercentage,
+  ]);
 
   return (
     <OnboardingContext.Provider value={value}>
