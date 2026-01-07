@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -24,20 +24,14 @@ interface ConnectionStats {
   pendingRequests: number;
 }
 
-export function FeedLeftSidebar() {
+export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<ConnectionStats>({ connectionCount: 0, pendingRequests: 0 });
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadProfileData();
-      loadStats();
-    }
-  }, [user?.id]);
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     try {
       console.log('🚀 Loading profile data using direct Supabase query...');
       const startTime = Date.now();
@@ -61,9 +55,9 @@ export function FeedLeftSidebar() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!user?.id) return;
 
     try {
@@ -85,7 +79,16 @@ export function FeedLeftSidebar() {
     } catch (error) {
       console.error('Error loading stats:', error);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    // Only load once when user?.id is available
+    if (user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadProfileData();
+      loadStats();
+    }
+  }, [user?.id, loadProfileData, loadStats]);
 
   if (loading) {
     return (
@@ -210,5 +213,5 @@ export function FeedLeftSidebar() {
       </div>
     </aside>
   );
-}
+});
 

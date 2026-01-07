@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Post } from '@/src/lib/types/post';
@@ -25,21 +25,15 @@ interface ConnectionSuggestion {
   mutual_connections?: number;
 }
 
-export function FeedRightSidebar() {
+export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<Post[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(true);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const hasLoadedRef = useRef(false);
 
-  useEffect(() => {
-    loadOpportunities();
-    if (user?.id) {
-      loadSuggestions();
-    }
-  }, [user?.id]);
-
-  const loadOpportunities = async () => {
+  const loadOpportunities = useCallback(async () => {
     try {
       setLoadingOpportunities(true);
 
@@ -58,9 +52,9 @@ export function FeedRightSidebar() {
     } finally {
       setLoadingOpportunities(false);
     }
-  };
+  }, []);
 
-  const loadSuggestions = async () => {
+  const loadSuggestions = useCallback(async () => {
     if (!user?.id) return;
 
     try {
@@ -95,7 +89,18 @@ export function FeedRightSidebar() {
     } finally {
       setLoadingSuggestions(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    // Only load once when component mounts or user?.id becomes available
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadOpportunities();
+      if (user?.id) {
+        loadSuggestions();
+      }
+    }
+  }, [user?.id, loadOpportunities, loadSuggestions]);
 
   return (
     <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">
@@ -250,5 +255,5 @@ export function FeedRightSidebar() {
       </div>
     </aside>
   );
-}
+});
 
