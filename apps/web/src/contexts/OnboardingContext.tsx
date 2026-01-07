@@ -212,70 +212,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         checkOnboardingStatusWithRetry();
       }, 500);
     }
-  }, [user, session]);
-
-  // Initial check - only run once when user is available
-  useEffect(() => {
-    // Wait for auth to finish loading before checking onboarding
-    if (authLoading) return;
-    
-    // Guard: Only check once
-    if (hasInitialCheckRef.current) return;
-    
-    // Only check onboarding if user has a valid session (actually authenticated)
-    if (user && session) {
-      hasInitialCheckRef.current = true;
-      
-      // Check for onboarding URL parameter (from OAuth callback)
-      const urlParams = new URLSearchParams(window.location.search);
-      const shouldStartOnboarding = urlParams.get('onboarding') === 'true';
-      
-      if (shouldStartOnboarding) {
-        console.log('🎯 Starting onboarding from URL parameter');
-        // Clean up URL
-        window.history.replaceState({}, '', window.location.pathname);
-        // Force start onboarding
-        setTimeout(() => {
-          setOnboardingState(prev => ({
-            ...prev,
-            isOnboardingActive: true,
-            showOnboarding: true,
-            currentStep: 'welcome',
-          }));
-        }, 1000);
-      } else {
-        // If onboarding is already showing from storage, don't re-check
-        // Only re-check if onboarding is not currently active
-        if (!onboardingState.showOnboarding && !onboardingState.isOnboardingActive) {
-          // CRITICAL FIX: Add longer delay after sign-in to allow cookies to be set
-          const delay = session ? 3000 : 0;
-          console.log(`⏱️ Delaying onboarding check for ${delay}ms to allow cookie sync...`);
-          setTimeout(() => {
-            checkOnboardingStatusWithRetry();
-          }, delay);
-        } else {
-          // If onboarding is already showing, verify it's still needed
-          console.log('🔄 Onboarding already showing, verifying status...');
-          checkOnboardingStatusWithRetry();
-        }
-      }
-    } else {
-      // User is not authenticated - ALWAYS reset onboarding state
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-      }
-      setOnboardingState({
-        currentStep: 'welcome',
-        selectedRole: null,
-        onboardingUserType: null,
-        profileCompleted: false,
-        firstActionCompleted: false,
-        selectedTier: null,
-        isOnboardingActive: false,
-        showOnboarding: false,
-      });
-    }
-  }, [user, session, authLoading, onboardingState.showOnboarding, onboardingState.isOnboardingActive]);
+  }, [user, session, verifyOnboardingStatusSilently, checkOnboardingStatusWithRetry]);
 
   // Effect 2: Visibility change listener
   useEffect(() => {
