@@ -1519,5 +1519,5 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
       />
     </div>
   );
-}
+});
 

@@ -17,7 +17,7 @@ const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
 const MAX_AUDIO_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_AUDIO_DURATION = 60; // seconds
 
-export function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostModalProps) {
+export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostModalProps) {
   const { user } = useAuth();
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState<'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event'>('update');
