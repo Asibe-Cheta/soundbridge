@@ -33,7 +33,10 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   const hasLoadedRef = useRef(false);
 
-  const loadOpportunities = useCallback(async () => {
+  const loadOpportunitiesRef = useRef<() => Promise<void>>();
+  const loadSuggestionsRef = useRef<() => Promise<void>>();
+
+  loadOpportunitiesRef.current = async () => {
     try {
       setLoadingOpportunities(true);
 
@@ -52,9 +55,9 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
     } finally {
       setLoadingOpportunities(false);
     }
-  }, []);
+  };
 
-  const loadSuggestions = useCallback(async () => {
+  loadSuggestionsRef.current = async () => {
     if (!user?.id) return;
 
     try {
@@ -89,19 +92,18 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar() {
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [user?.id]);
+  };
 
   useEffect(() => {
     // Only load once when component mounts or user?.id becomes available
     if (!hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      loadOpportunities();
+      loadOpportunitiesRef.current?.();
       if (user?.id) {
-        loadSuggestions();
+        loadSuggestionsRef.current?.();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Only depend on user?.id, not the functions
+  }, [user?.id]); // Only depend on user?.id
 
   return (
     <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">

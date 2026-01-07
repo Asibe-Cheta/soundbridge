@@ -31,7 +31,10 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
   const [loading, setLoading] = useState(true);
   const hasLoadedRef = useRef(false);
 
-  const loadProfileData = useCallback(async () => {
+  const loadProfileDataRef = useRef<() => Promise<void>>();
+  const loadStatsRef = useRef<() => Promise<void>>();
+
+  loadProfileDataRef.current = async () => {
     try {
       console.log('🚀 Loading profile data using direct Supabase query...');
       const startTime = Date.now();
@@ -55,9 +58,9 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  };
 
-  const loadStats = useCallback(async () => {
+  loadStatsRef.current = async () => {
     if (!user?.id) return;
 
     try {
@@ -79,17 +82,16 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar() {
     } catch (error) {
       console.error('Error loading stats:', error);
     }
-  }, [user?.id]);
+  };
 
   useEffect(() => {
     // Only load once when user?.id is available
     if (user?.id && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      loadProfileData();
-      loadStats();
+      loadProfileDataRef.current?.();
+      loadStatsRef.current?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Only depend on user?.id, not the functions
+  }, [user?.id]); // Only depend on user?.id
 
   if (loading) {
     return (
