@@ -122,6 +122,10 @@ export default function FeedPage() {
   }).current; // CRITICAL: .current makes this a stable function reference
   
   // Initial load - only run once when user is available
+  // Use ref for fetchPosts to avoid dependency issues
+  const fetchPostsInitialRef = useRef(fetchPosts);
+  fetchPostsInitialRef.current = fetchPosts;
+  
   useEffect(() => {
     console.log('🔍 Feed page useEffect triggered:', { userId: user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     
@@ -129,11 +133,11 @@ export default function FeedPage() {
     if (user?.id && !authLoading && !hasTriedFetchRef.current) {
       console.log('✅ Conditions met, calling fetchPosts...');
       hasTriedFetchRef.current = true; // Set flag BEFORE calling to prevent double calls
-      fetchPosts(1, false);
+      fetchPostsInitialRef.current(1, false);
     } else {
       console.log('⏸️ Conditions not met - waiting:', { hasUserId: !!user?.id, authLoading, hasTriedFetch: hasTriedFetchRef.current });
     }
-  }, [user?.id, authLoading, fetchPosts]); // ✅ fetchPosts is now stable (.current)
+  }, [user?.id, authLoading]); // ✅ Only depend on primitives, not fetchPosts
 
   // Store batchCheckBookmarks in ref to avoid dependency issues (mobile team pattern)
   const batchCheckBookmarksRef = useRef(batchCheckBookmarks);

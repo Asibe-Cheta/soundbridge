@@ -54,7 +54,7 @@ const reactionEmojis = {
   congrats: '👏',
 };
 
-export function PostCard({ post, onUpdate, showFullContent = false, initialBookmarkStatus = false }: PostCardProps) {
+export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullContent = false, initialBookmarkStatus = false }: PostCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const { toggleBookmark, isBookmarked: checkBookmark } = useSocial();

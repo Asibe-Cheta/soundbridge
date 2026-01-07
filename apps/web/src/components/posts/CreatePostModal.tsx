@@ -528,5 +528,5 @@ export function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostMo
       </div>
     </div>
   );
-}
+});
 
