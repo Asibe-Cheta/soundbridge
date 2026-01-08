@@ -6,14 +6,19 @@ export interface Event {
   event_date: string;
   location: string;
   venue: string | null;
+  city: string | null; // REQUIRED for notifications
+  country: string | null; // Country code (e.g., 'GB', 'US', 'NG')
   latitude: number | null;
   longitude: number | null;
   category: EventCategory;
   price_gbp: number | null;
   price_ngn: number | null;
+  price_usd: number | null;
+  price_eur: number | null;
   max_attendees: number | null;
   current_attendees: number;
   image_url: string | null;
+  address_data: { country: string; fields: Record<string, string> } | null; // Structured address
   created_at: string;
 
   // Computed fields
@@ -62,13 +67,21 @@ export interface EventCreateData {
   event_date: string;
   location: string;
   venue?: string;
+  city?: string; // REQUIRED for notifications
+  country?: string; // Country code (e.g., 'GB', 'US', 'NG')
   latitude?: number;
   longitude?: number;
   category: EventCategory;
   price_gbp?: number;
   price_ngn?: number;
+  price_usd?: number;
+  price_eur?: number;
   max_attendees?: number;
   image_url?: string;
+  address_data?: { // Structured address data
+    country: string;
+    fields: Record<string, string>;
+  };
 }
 
 export interface EventUpdateData extends Partial<EventCreateData> {

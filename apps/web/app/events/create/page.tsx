@@ -12,6 +12,8 @@ import { useLocation } from '../../../src/hooks/useLocation';
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
+import { COUNTRY_ADDRESS_CONFIGS, DEFAULT_CONFIG, getCountryConfig, extractCityFromAddressFields } from '../../../src/config/countryAddressConfigs';
+import { geocodeAddress, buildAddressString } from '../../../src/lib/geocoding';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
@@ -27,13 +29,19 @@ export default function CreateEventPage() {
   const [genre, setGenre] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [eventLocation, setEventLocation] = useState('');
-  const [address, setAddress] = useState('');
   const [price, setPrice] = useState('');
   const [maxAttendees, setMaxAttendees] = useState('');
   const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
+
+  // Location states (country-based address fields)
+  const [selectedCountry, setSelectedCountry] = useState<string>('GB'); // Default to UK
+  const [addressFields, setAddressFields] = useState<Record<string, string>>({});
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
   // Type adapter for ImageUpload component
   const adaptUploadFile = (file: any) => {
@@ -49,22 +57,38 @@ export default function CreateEventPage() {
     'Rock', 'Pop', 'Carnival', 'Secular', 'Other'
   ];
 
-  const locations = [
-    'London, UK', 'Lagos, Nigeria', 'Abuja, Nigeria', 'Manchester, UK',
-    'Birmingham, UK', 'Liverpool, UK', 'Port Harcourt, Nigeria', 'Kano, Nigeria'
-  ];
+  // Get selected country config
+  const selectedCountryConfig = getCountryConfig(selectedCountry) || DEFAULT_CONFIG;
 
-  // Auto-set location based on detected location
+  // Auto-set country based on detected location
   useEffect(() => {
     if (location && location.isDetected) {
-      // Auto-select the closest location based on detected country
+      // Auto-select country based on detected country code
       if (location.countryCode === 'GB' || location.countryCode === 'UK') {
-        setEventLocation('London, UK');
+        setSelectedCountry('GB');
       } else if (location.countryCode === 'NG') {
-        setEventLocation('Lagos, Nigeria');
+        setSelectedCountry('NG');
+      } else if (location.countryCode === 'US') {
+        setSelectedCountry('US');
+      } else if (location.countryCode === 'CA') {
+        setSelectedCountry('CA');
+      } else if (location.countryCode === 'AU') {
+        setSelectedCountry('AU');
       }
+      // Reset address fields when country changes
+      setAddressFields({});
+      setLatitude(null);
+      setLongitude(null);
     }
   }, [location]);
+
+  // Reset address fields when country changes
+  useEffect(() => {
+    setAddressFields({});
+    setLatitude(null);
+    setLongitude(null);
+    setGeocodeError(null);
+  }, [selectedCountry]);
 
   // Auto-upload image when imageFile is set
   useEffect(() => {
@@ -84,6 +108,54 @@ export default function CreateEventPage() {
   }, [imageState.imageFile, imageState.uploadedUrl, imageState.isUploading, imageActions]);
 
 
+
+  const handleAddressFieldChange = (fieldName: string, value: string) => {
+    setAddressFields(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+    // Clear coordinates when address changes
+    if (latitude !== null || longitude !== null) {
+      setLatitude(null);
+      setLongitude(null);
+    }
+    setGeocodeError(null);
+  };
+
+  const handleGeocode = async () => {
+    const addressParts = Object.entries(addressFields)
+      .filter(([_, value]) => value && value.trim())
+      .map(([_, value]) => value.trim());
+
+    if (addressParts.length === 0) {
+      setGeocodeError('Please enter address details first');
+      return;
+    }
+
+    const fullAddress = buildAddressString(addressFields, selectedCountryConfig.countryName);
+
+    setIsGeocoding(true);
+    setGeocodeError(null);
+
+    try {
+      const result = await geocodeAddress(fullAddress);
+      
+      if (result.success) {
+        setLatitude(result.latitude);
+        setLongitude(result.longitude);
+        setGeocodeError(null);
+      } else {
+        setGeocodeError(result.error || 'Failed to get coordinates');
+        setLatitude(null);
+        setLongitude(null);
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setGeocodeError('Failed to geocode address. You can still create the event.');
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
 
   const validateForm = () => {
     if (!title.trim()) {
@@ -106,10 +178,23 @@ export default function CreateEventPage() {
       setError('Event time is required');
       return false;
     }
-    if (!eventLocation) {
-      setError('Event location is required');
+    
+    // Validate address fields - check required fields
+    const requiredFields = selectedCountryConfig.fields.filter(f => f.required);
+    for (const field of requiredFields) {
+      if (!addressFields[field.name] || !addressFields[field.name].trim()) {
+        setError(`${field.label} is required`);
+        return false;
+      }
+    }
+
+    // Validate that we have either city or coordinates
+    const city = extractCityFromAddressFields(addressFields);
+    if (!city && !latitude) {
+      setError('Either city or coordinates are required for notifications. Please fill in address fields and click "Get Coordinates".');
       return false;
     }
+
     return true;
   };
 
@@ -130,17 +215,32 @@ export default function CreateEventPage() {
       // Combine date and time
       const eventDateTime = new Date(`${date}T${time}`);
 
-      // Parse price based on detected currency
+      // Extract city from address fields (REQUIRED for notifications)
+      const city = extractCityFromAddressFields(addressFields);
+      
+      // Build location string from address fields
+      const locationParts = Object.entries(addressFields)
+        .filter(([_, value]) => value && value.trim())
+        .map(([_, value]) => value.trim());
+      const locationString = locationParts.join(', ');
+
+      // Parse price based on selected country currency
       let priceGbp = null;
       let priceNgn = null;
+      let priceUsd = null;
+      let priceEur = null;
       
       if (price && price !== '0') {
-        const numericPrice = parseFloat(price.replace(/[£₦$€]/g, ''));
+        const numericPrice = parseFloat(price.replace(/[£₦$€₹¥R$]/g, ''));
         
-        if (location?.currency === 'GBP') {
+        if (selectedCountryConfig.currency === 'GBP') {
           priceGbp = numericPrice;
-        } else if (location?.currency === 'NGN') {
+        } else if (selectedCountryConfig.currency === 'NGN') {
           priceNgn = numericPrice;
+        } else if (selectedCountryConfig.currency === 'USD') {
+          priceUsd = numericPrice;
+        } else if (selectedCountryConfig.currency === 'EUR') {
+          priceEur = numericPrice;
         }
       }
 
@@ -148,26 +248,44 @@ export default function CreateEventPage() {
         title: title.trim(),
         description: description.trim(),
         event_date: eventDateTime.toISOString(),
-        location: eventLocation,
-        venue: address || undefined,
+        location: locationString,
+        city: city.trim(),
+        country: selectedCountry,
+        latitude,
+        longitude,
         category: genre as EventCategory,
         price_gbp: priceGbp || undefined,
         price_ngn: priceNgn || undefined,
+        price_usd: priceUsd || undefined,
+        price_eur: priceEur || undefined,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
-        image_url: imageState.uploadedUrl || undefined
+        image_url: imageState.uploadedUrl || undefined,
+        address_data: {
+          country: selectedCountry,
+          fields: addressFields
+        }
       });
 
       const eventData: EventCreateData = {
         title: title.trim(),
         description: description.trim(),
         event_date: eventDateTime.toISOString(),
-        location: eventLocation,
-        venue: address || undefined,
+        location: locationString,
+        city: city.trim(), // REQUIRED for notifications
+        country: selectedCountry,
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
         category: genre as EventCategory,
         price_gbp: priceGbp || undefined,
         price_ngn: priceNgn || undefined,
+        price_usd: priceUsd || undefined,
+        price_eur: priceEur || undefined,
         max_attendees: maxAttendees ? parseInt(maxAttendees) : undefined,
-        image_url: imageState.uploadedUrl || undefined
+        image_url: imageState.uploadedUrl || undefined,
+        address_data: {
+          country: selectedCountry,
+          fields: addressFields
+        }
       };
 
       const result = await eventService.createEvent(eventData);
@@ -183,10 +301,13 @@ export default function CreateEventPage() {
         setGenre('');
         setDate('');
         setTime('');
-        setEventLocation('');
-        setAddress('');
+        setSelectedCountry('GB');
+        setAddressFields({});
+        setLatitude(null);
+        setLongitude(null);
         setPrice('');
         setMaxAttendees('');
+        setGeocodeError(null);
         imageActions.resetUpload();
       }
     } catch (error) {
@@ -477,20 +598,21 @@ export default function CreateEventPage() {
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location - Country-based Address Fields */}
             <div className="card">
               <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
-                Location
+                Event Location
               </h3>
               
               <div style={{ display: 'grid', gap: '1.5rem' }}>
+                {/* Country Selector */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
-                    Location *
+                    Country *
                   </label>
                   <select
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
                     style={{
                       width: '100%',
                       background: 'rgba(255, 255, 255, 0.1)',
@@ -501,32 +623,107 @@ export default function CreateEventPage() {
                       fontSize: '1rem'
                     }}
                   >
-                    <option value="">Select location</option>
-                    {locations.map((loc) => (
-                      <option key={loc} value={loc}>{loc}</option>
+                    {COUNTRY_ADDRESS_CONFIGS.map((config) => (
+                      <option key={config.countryCode} value={config.countryCode}>
+                        {config.countryName} ({config.currency})
+                      </option>
                     ))}
                   </select>
                 </div>
 
+                {/* Dynamic Address Fields */}
+                {selectedCountryConfig.fields.map((field) => (
+                  <div key={field.name}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                      {field.label} {field.required && '*'}
+                    </label>
+                    <input
+                      type="text"
+                      value={addressFields[field.name] || ''}
+                      onChange={(e) => handleAddressFieldChange(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                      required={field.required}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        color: 'white',
+                        fontSize: '1rem'
+                      }}
+                    />
+                  </div>
+                ))}
+
+                {/* Geocode Button */}
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
-                    Venue Address
-                  </label>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter venue address"
+                  <button
+                    type="button"
+                    onClick={handleGeocode}
+                    disabled={isGeocoding || Object.keys(addressFields).length === 0}
                     style={{
                       width: '100%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      background: isGeocoding || Object.keys(addressFields).length === 0
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(236, 72, 153, 0.2)',
+                      border: '1px solid rgba(236, 72, 153, 0.3)',
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
+                      fontSize: '1rem',
+                      cursor: isGeocoding || Object.keys(addressFields).length === 0 ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      opacity: isGeocoding || Object.keys(addressFields).length === 0 ? 0.5 : 1
                     }}
-                  />
+                  >
+                    {isGeocoding ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Getting Coordinates...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin size={16} />
+                        Get Coordinates
+                      </>
+                    )}
+                  </button>
+                  
+                  {geocodeError && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      color: '#FCA5A5',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <AlertCircle size={14} />
+                      {geocodeError}
+                    </div>
+                  )}
+
+                  {latitude && longitude && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      color: '#86EFAC',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <CheckCircle size={14} />
+                      Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    </div>
+                  )}
+
+                  <div style={{ color: '#ccc', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                    Optional: Get coordinates for better location matching. You can still create the event without coordinates.
+                  </div>
                 </div>
               </div>
             </div>
@@ -570,7 +767,7 @@ export default function CreateEventPage() {
                     )}
                   </div>
                   <div style={{ color: '#ccc', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                    Leave empty for free events
+                    Leave empty for free events. Currency: {selectedCountryConfig.currencySymbol} ({selectedCountryConfig.currency})
                   </div>
                 </div>
 

@@ -36,6 +36,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate location data for notifications
+    if (!eventData.city && !eventData.latitude) {
+      return NextResponse.json(
+        { error: 'Either city or coordinates (latitude/longitude) are required for notifications' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Validate category - Support both web and mobile app categories
     const validCategories = [
       // Mobile app categories
@@ -93,14 +101,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prepare event data with all location fields
+    const insertData: any = {
+      title: eventData.title,
+      description: eventData.description || null,
+      event_date: eventData.event_date,
+      location: eventData.location,
+      venue: eventData.venue || null,
+      category: eventData.category,
+      creator_id: user.id,
+      current_attendees: 0,
+      // Location fields for notifications
+      city: eventData.city || null,
+      country: eventData.country || null,
+      latitude: eventData.latitude || null,
+      longitude: eventData.longitude || null,
+      // Pricing
+      price_gbp: eventData.price_gbp || null,
+      price_ngn: eventData.price_ngn || null,
+      price_usd: eventData.price_usd || null,
+      price_eur: eventData.price_eur || null,
+      // Other fields
+      max_attendees: eventData.max_attendees || null,
+      image_url: eventData.image_url || null,
+      // Structured address data (stored as JSONB)
+      address_data: eventData.address_data || null
+    };
+
     // Create event
     const { data: event, error: createError } = await supabase
       .from('events')
-      .insert([{
-        ...eventData,
-        creator_id: user.id,
-        current_attendees: 0
-      }])
+      .insert([insertData])
       .select(`
         *,
         creator:profiles!events_creator_id_fkey(
