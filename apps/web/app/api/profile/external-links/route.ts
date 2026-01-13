@@ -13,7 +13,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createBrowserClient } from '@/src/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { validateExternalLink, canAddMoreLinks } from '@/src/lib/external-links-validation';
 import type { PlatformType } from '@/src/lib/types/external-links';
 
@@ -30,7 +31,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createBrowserClient();
+    // Create server-side Supabase client with cookie support
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              // Handle cookie setting errors in middleware
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set({ name, value: '', ...options });
+            } catch (error) {
+              // Handle cookie removal errors in middleware
+            }
+          },
+        },
+      }
+    );
 
     const { data: links, error } = await supabase
       .from('external_links')
@@ -56,7 +83,33 @@ export async function GET(request: NextRequest) {
 // POST - Add new external link
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createBrowserClient();
+    // Create server-side Supabase client with cookie support
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              // Handle cookie setting errors in middleware
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set({ name, value: '', ...options });
+            } catch (error) {
+              // Handle cookie removal errors in middleware
+            }
+          },
+        },
+      }
+    );
 
     // Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
