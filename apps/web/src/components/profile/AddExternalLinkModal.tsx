@@ -95,8 +95,8 @@ export function AddExternalLinkModal({ isOpen, onClose, onSuccess, editingLink }
   const selectedMetadata = PLATFORM_METADATA[platformType];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-white/10 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-gray-900 border border-white/10 rounded-xl max-w-lg w-full my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <h2 className="text-xl font-semibold text-white">

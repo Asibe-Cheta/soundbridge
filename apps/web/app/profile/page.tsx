@@ -1124,6 +1124,19 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Portfolio Links */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Portfolio Links</h3>
+        </div>
+        <div className="card-content p-4">
+          <p className="text-sm text-gray-400 mb-4">
+            Add up to 2 external platform links to showcase your work on other platforms. These will be displayed on your public profile.
+          </p>
+          <ExternalLinksManager userId={user?.id} />
+        </div>
+      </div>
+
       {/* Privacy Settings */}
       <div className="card">
         <div className="card-header">
@@ -1220,19 +1233,6 @@ export default function ProfilePage() {
               Save Privacy Settings
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Portfolio Links */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Portfolio Links</h3>
-        </div>
-        <div className="card-content p-4">
-          <p className="text-sm text-gray-400 mb-4">
-            Add up to 2 external platform links to showcase your work on other platforms. These will be displayed on your public profile.
-          </p>
-          <ExternalLinksManager userId={user?.id} />
         </div>
       </div>
     </div>
