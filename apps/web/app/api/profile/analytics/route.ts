@@ -58,7 +58,9 @@ export async function GET() {
       recentTracksDataResult,
       recentEventsDataResult,
       monthlyPlaysDataResult,
-      engagementDataResult
+      engagementDataResult,
+      externalLinksDataResult,
+      externalLinkClicksDataResult
     ] = await Promise.allSettled([
       // Get user's tracks
       supabase
@@ -124,7 +126,21 @@ export async function GET() {
       supabase
         .from('audio_tracks')
         .select('play_count, like_count')
-        .eq('creator_id', user.id as any) as any
+        .eq('creator_id', user.id as any) as any,
+
+      // Get external links
+      supabase
+        .from('external_links')
+        .select('id, platform_type, url, click_count')
+        .eq('creator_id', user.id as any)
+        .order('click_count', { ascending: false }) as any,
+
+      // Get external link clicks (this month)
+      supabase
+        .from('external_link_clicks')
+        .select('id, clicked_at')
+        .eq('creator_id', user.id as any)
+        .gte('clicked_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()) as any
     ]);
 
     // Handle Promise.allSettled results
@@ -138,6 +154,8 @@ export async function GET() {
     const recentEventsData = recentEventsDataResult.status === 'fulfilled' ? recentEventsDataResult.value : { data: [], error: null };
     const monthlyPlaysData = monthlyPlaysDataResult.status === 'fulfilled' ? monthlyPlaysDataResult.value : { data: [], error: null };
     const engagementData = engagementDataResult.status === 'fulfilled' ? engagementDataResult.value : { data: [], error: null };
+    const externalLinksData = externalLinksDataResult.status === 'fulfilled' ? externalLinksDataResult.value : { data: [], error: null };
+    const externalLinkClicksData = externalLinkClicksDataResult.status === 'fulfilled' ? externalLinkClicksDataResult.value : { data: [], error: null };
 
     console.log('📊 Analytics data results:');
     console.log('📊 Tracks data:', { count: tracksData.data?.length || 0, error: tracksData.error });
@@ -197,9 +215,14 @@ export async function GET() {
         genreCounts[track.genre] = (genreCounts[track.genre] || 0) + 1;
       }
     });
-    const topGenre = Object.keys(genreCounts).length > 0 
+    const topGenre = Object.keys(genreCounts).length > 0
       ? Object.entries(genreCounts).sort(([,a]: [any, any], [,b]: [any, any]) => b - a)[0][0]
       : 'No tracks yet';
+
+    // Calculate external link stats
+    const totalLinkClicks = externalLinksData.data?.reduce((sum: number, link: any) => sum + (link.click_count || 0), 0) || 0;
+    const clicksThisMonth = externalLinkClicksData.data?.length || 0;
+    const topLinks = externalLinksData.data?.slice(0, 3) || [];
 
     const analytics = {
       stats: {
@@ -218,7 +241,12 @@ export async function GET() {
       engagementRate: Math.round(engagementRate * 100) / 100,
       topGenre,
       monthlyPlaysChange: 15, // Mock for now - would need historical data
-      engagementRateChange: 2.3 // Mock for now - would need historical data
+      engagementRateChange: 2.3, // Mock for now - would need historical data
+      external_links: {
+        total_clicks: totalLinkClicks,
+        clicks_this_month: clicksThisMonth,
+        top_links: topLinks
+      }
     };
 
     console.log('✅ Analytics data retrieved:', analytics);

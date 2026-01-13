@@ -14,11 +14,14 @@ import { PostCard } from '@/src/components/posts/PostCard';
 import { Post } from '@/src/lib/types/post';
 import { dataService } from '@/src/lib/data-service';
 import { useRouter } from 'next/navigation';
-import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign, Flag } from 'lucide-react';
+import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign, Flag, Instagram, Youtube, Cloud } from 'lucide-react';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
 import { FollowersListModal } from '@/src/components/profile/FollowersListModal';
 import { FollowingListModal } from '@/src/components/profile/FollowingListModal';
 import { TracksListModal } from '@/src/components/profile/TracksListModal';
+import { ExternalLinksManager } from '@/src/components/profile/ExternalLinksManager';
+import type { ExternalLink } from '@/src/lib/types/external-links';
+import { PLATFORM_METADATA } from '@/src/lib/external-links-validation';
 
 interface ProfileStats {
   totalPlays: number;
@@ -268,6 +271,7 @@ export default function ProfilePage() {
     showEmail: false,
     allowMessages: true
   });
+  const [externalLinks, setExternalLinks] = useState<any[]>([]);
 
   useEffect(() => {
     // Only redirect if we're not loading and there's no user
@@ -299,11 +303,25 @@ export default function ProfilePage() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Load external links
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`/api/profile/external-links?userId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setExternalLinks(data.data.links || []);
+          }
+        })
+        .catch(err => console.error('Failed to load external links:', err));
+    }
+  }, [user?.id]);
 
   // Consolidated function to load both profile data and analytics in one query
   const loadProfileAndAnalytics = async () => {
@@ -598,12 +616,55 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* Professional Sections */}
       {user?.id && (
-        <ProfessionalSections 
-          userId={user.id} 
+        <ProfessionalSections
+          userId={user.id}
           isOwner={true}
           onHeadlineUpdate={fetchProfessionalHeadline}
           onConnectionUpdate={fetchConnectionCount}
         />
+      )}
+
+      {/* Portfolio Links */}
+      {externalLinks.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Portfolio</h3>
+          </div>
+          <div className="card-content p-4">
+            <div className="flex items-center gap-3">
+              {externalLinks.map((link: ExternalLink) => {
+                const metadata = PLATFORM_METADATA[link.platform_type];
+                const IconComponent = link.platform_type === 'instagram' ? Instagram :
+                                     link.platform_type === 'youtube' ? Youtube :
+                                     link.platform_type === 'soundcloud' ? Cloud :
+                                     link.platform_type === 'website' ? Globe :
+                                     Music;
+
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg hover:scale-105 transition-all"
+                    style={{
+                      backgroundColor: metadata.color + '20',
+                      color: metadata.color,
+                      border: `1px solid ${metadata.color}40`
+                    }}
+                    title={`${metadata.name} - ${link.click_count} clicks`}
+                  >
+                    <IconComponent size={20} />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{metadata.name}</span>
+                      <span className="text-xs opacity-70">{link.click_count} clicks</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Activity Section - User Posts */}
@@ -1159,6 +1220,19 @@ export default function ProfilePage() {
               Save Privacy Settings
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Portfolio Links */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Portfolio Links</h3>
+        </div>
+        <div className="card-content p-4">
+          <p className="text-sm text-gray-400 mb-4">
+            Add up to 2 external platform links to showcase your work on other platforms. These will be displayed on your public profile.
+          </p>
+          <ExternalLinksManager userId={user?.id} />
         </div>
       </div>
     </div>

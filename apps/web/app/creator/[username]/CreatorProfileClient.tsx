@@ -20,7 +20,9 @@ import {
 } from '../../../src/lib/creator';
 import type { CreatorProfile, AudioTrack, Event, Message } from '../../../src/lib/types/creator';
 import type { AvailabilitySlot, CreateCollaborationRequestData } from '../../../src/lib/types/availability';
-import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, CheckCircle, Loader2, Mic, Play, Pause } from 'lucide-react';
+import type { ExternalLink } from '../../../src/lib/types/external-links';
+import { PLATFORM_METADATA } from '../../../src/lib/external-links-validation';
+import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, CheckCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe } from 'lucide-react';
 
 interface CreatorProfileClientProps {
   username: string;
@@ -46,6 +48,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [isLoadingTopContent, setIsLoadingTopContent] = useState(false);
   const [isLoadingFollow, setIsLoadingFollow] = useState(false);
   const [isLoadingMessage, setIsLoadingMessage] = useState(false);
+  const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([]);
 
   
   // Availability states
@@ -163,11 +166,25 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Load external links
+  useEffect(() => {
+    if (creator?.id) {
+      fetch(`/api/profile/external-links?userId=${creator.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setExternalLinks(data.data.links || []);
+          }
+        })
+        .catch(err => console.error('Failed to load external links:', err));
+    }
+  }, [creator?.id]);
 
   // Fetch top content (songs and events)
   useEffect(() => {
@@ -267,6 +284,25 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
       console.error('Error sending message:', err);
     } finally {
       setIsLoadingMessage(false);
+    }
+  };
+
+  // Handle external link click tracking
+  const handleLinkClick = async (linkId: string) => {
+    try {
+      await fetch('/api/analytics/external-link-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          linkId,
+          sessionId: crypto.randomUUID(),
+          deviceType: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+          platform: 'web'
+        })
+      });
+    } catch (err) {
+      console.error('Failed to track click:', err);
+      // Don't block the user from opening the link
     }
   };
 
@@ -432,6 +468,42 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                   )}
                   {creator.bio && (
                     <p className="mb-4 max-w-2xl text-gray-300">{creator.bio}</p>
+                  )}
+
+                  {/* Portfolio Links - External Platform Links */}
+                  {externalLinks.length > 0 && (
+                    <div className="flex items-center gap-3 mt-4">
+                      <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>Portfolio:</span>
+                      {externalLinks.map((link) => {
+                        const metadata = PLATFORM_METADATA[link.platform_type];
+                        const IconComponent = link.platform_type === 'instagram' ? Instagram :
+                                             link.platform_type === 'youtube' ? Youtube :
+                                             link.platform_type === 'soundcloud' ? Cloud :
+                                             link.platform_type === 'website' ? Globe :
+                                             null;
+
+                        return (
+                          <a
+                            key={link.id}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => handleLinkClick(link.id)}
+                            className={`rounded-full flex items-center justify-center hover:scale-110 transition-all duration-200 hover:shadow-lg ${
+                              isMobile ? 'w-8 h-8' : 'w-9 h-9'
+                            }`}
+                            style={{
+                              backgroundColor: metadata.color + '20',
+                              color: metadata.color,
+                              border: `1px solid ${metadata.color}40`
+                            }}
+                            title={`Visit ${metadata.name}`}
+                          >
+                            {IconComponent && <IconComponent size={isMobile ? 16 : 18} />}
+                          </a>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
 

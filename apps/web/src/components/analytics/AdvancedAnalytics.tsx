@@ -150,7 +150,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
     return null;
   }
 
-  const { overview, geographic, listeningBehavior, referrers, demographics, topTracks, engagement } = analytics;
+  const { overview, geographic, listeningBehavior, referrers, demographics, topTracks, engagement, externalLinks } = analytics;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -396,6 +396,113 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                   color: '#10b981'
                 }}>
                   {track.avgCompletion}%
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* External Links Analytics */}
+      {externalLinks && externalLinks.topLinks && externalLinks.topLinks.length > 0 && (
+        <div style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: '1rem',
+          padding: '1.5rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginBottom: '1.5rem'
+          }}>
+            <div style={{
+              width: '2.5rem',
+              height: '2.5rem',
+              background: '#3b82f620',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Globe size={20} style={{ color: '#3b82f6' }} />
+            </div>
+            <div>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: 'var(--text-primary)',
+                margin: 0
+              }}>
+                Portfolio Link Performance
+              </h3>
+              <p style={{
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary)',
+                margin: '0.25rem 0 0 0'
+              }}>
+                Total: {externalLinks.totalClicks || 0} clicks • This month: {externalLinks.clicksThisMonth || 0}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {externalLinks.topLinks.map((link: any, index: number) => (
+              <div key={link.id || index} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                padding: '1rem',
+                background: 'var(--bg-primary)',
+                borderRadius: '0.5rem'
+              }}>
+                <div style={{
+                  width: '2rem',
+                  height: '2rem',
+                  background: '#3b82f620',
+                  borderRadius: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#3b82f6'
+                }}>
+                  #{index + 1}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    color: 'var(--text-primary)',
+                    marginBottom: '0.25rem',
+                    textTransform: 'capitalize'
+                  }}>
+                    {link.platform_type?.replace('_', ' ') || 'Link'}
+                  </div>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    color: 'var(--text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '300px'
+                  }}>
+                    {link.url}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 'bold',
+                  color: '#10b981'
+                }}>
+                  {link.click_count || 0}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)'
+                }}>
+                  clicks
                 </div>
               </div>
             ))}
