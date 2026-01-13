@@ -14,6 +14,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertCircle, Loader2 } from 'lucide-react';
 import { PLATFORM_METADATA, validateExternalLink, type PlatformType } from '@/src/lib/external-links-validation';
 import type { ExternalLink } from '@/src/lib/types/external-links';
@@ -94,7 +95,7 @@ export function AddExternalLinkModal({ isOpen, onClose, onSuccess, editingLink }
 
   const selectedMetadata = PLATFORM_METADATA[platformType];
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-gray-900 border border-white/10 rounded-xl max-w-lg w-full my-8">
         {/* Header */}
@@ -206,4 +207,9 @@ export function AddExternalLinkModal({ isOpen, onClose, onSuccess, editingLink }
       </div>
     </div>
   );
+
+  // Use portal to render modal at document body level
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : null;
 }
