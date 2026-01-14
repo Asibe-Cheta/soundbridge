@@ -76,60 +76,104 @@ export function useAudioUpload(): [UploadState, UploadActions] {
 
     extractMetadata();
 
-    // Validate audio file - but be more lenient with file types
-    const validation = audioUploadService.validateAudioFile(file);
+    // Get user tier for validation (async, but we'll validate after)
+    const validateFile = async () => {
+      let userTier: 'free' | 'premium' | 'unlimited' = 'free';
+      if (user) {
+        try {
+          const supabase = (await import('../lib/supabase')).createBrowserClient();
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('subscription_tier')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.subscription_tier && ['premium', 'unlimited'].includes(profile.subscription_tier)) {
+            userTier = profile.subscription_tier as 'premium' | 'unlimited';
+          }
+        } catch (error) {
+          console.warn('Could not fetch user tier, defaulting to free:', error);
+        }
+      }
+
+      // Validate audio file with user tier
+      const validation = audioUploadService.validateAudioFile(file, userTier);
     
     // Check file extension as fallback if MIME type validation fails
     const fileExtension = file.name.toLowerCase().split('.').pop();
     const validExtensions = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm', 'flac', 'mp4'];
     const hasValidExtension = fileExtension && validExtensions.includes(fileExtension);
     
-    // If validation fails but has valid extension, allow it (some browsers don't set MIME types correctly)
-    if (!validation.isValid && !hasValidExtension) {
+      // Check file extension as fallback if MIME type validation fails
+      const fileExtension = file.name.toLowerCase().split('.').pop();
+      const validExtensions = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm', 'flac', 'mp4'];
+      const hasValidExtension = fileExtension && validExtensions.includes(fileExtension);
+      
+      // Check if error is file size related - block upload if file size exceeds limit
+      const fileSizeError = validation.errors.find(err => err.includes('exceeds your') || err.includes('File size'));
+      
+      if (fileSizeError) {
+        // File size exceeds limit - block upload and show clear error
+        setState(prev => ({
+          ...prev,
+          error: fileSizeError,
+          uploadStatus: 'error',
+          audioFile: null
+        }));
+        console.error('❌ File validation failed - file size exceeds limit:', fileSizeError);
+        return;
+      }
+
+      // If validation fails but has valid extension, allow it (some browsers don't set MIME types correctly)
+      if (!validation.isValid && !hasValidExtension) {
+        setState(prev => ({
+          ...prev,
+          error: validation.errors.join(', '),
+          uploadStatus: 'error',
+          audioFile: null
+        }));
+        console.error('❌ File validation failed:', validation.errors);
+        return;
+      }
+
+      // If validation failed but has valid extension, log a warning but proceed
+      if (!validation.isValid && hasValidExtension) {
+        console.warn('⚠️ MIME type validation failed but file extension is valid. Proceeding with upload:', {
+          fileName: file.name,
+          fileType: file.type,
+          extension: fileExtension,
+          validationErrors: validation.errors
+        });
+      }
+
+      const uploadFile: UploadFile = {
+        id: `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+        file,
+        name: file.name,
+        size: file.size,
+        type: file.type || `audio/${fileExtension}`, // Fallback to extension-based type
+        progress: 0,
+        status: 'pending'
+      };
+
       setState(prev => ({
         ...prev,
-        error: validation.errors.join(', '),
-        uploadStatus: 'error',
-        audioFile: null
+        audioFile: uploadFile,
+        error: validation.isValid ? null : validation.errors.length > 0 ? validation.errors.join(', ') : null,
+        uploadStatus: 'idle'
       }));
-      console.error('❌ File validation failed:', validation.errors);
-      return;
-    }
-
-    // If validation failed but has valid extension, log a warning but proceed
-    if (!validation.isValid && hasValidExtension) {
-      console.warn('⚠️ MIME type validation failed but file extension is valid. Proceeding with upload:', {
+      
+      console.log('✅ Audio file set successfully:', {
         fileName: file.name,
-        fileType: file.type,
-        extension: fileExtension,
-        validationErrors: validation.errors
+        fileSize: file.size,
+        fileType: file.type || `audio/${fileExtension}`,
+        fileId: uploadFile.id
       });
-    }
-
-    const uploadFile: UploadFile = {
-      id: `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
-      file,
-      name: file.name,
-      size: file.size,
-      type: file.type || `audio/${fileExtension}`, // Fallback to extension-based type
-      progress: 0,
-      status: 'pending'
     };
 
-    setState(prev => ({
-      ...prev,
-      audioFile: uploadFile,
-      error: validation.isValid ? null : `Warning: ${validation.errors.join(', ')}. File will be uploaded anyway.`,
-      uploadStatus: 'idle'
-    }));
-    
-    console.log('✅ Audio file set successfully:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type || `audio/${fileExtension}`,
-      fileId: uploadFile.id
-    });
-  }, []);
+    // Execute validation asynchronously
+    validateFile();
+  }, [user]);
 
   const setCoverArtFile = useCallback((file: File | null) => {
     if (!file) {

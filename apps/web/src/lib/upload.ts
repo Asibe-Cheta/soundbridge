@@ -77,7 +77,7 @@ export const STORAGE_BUCKETS: Record<string, StorageBucket> = {
 };
 
 // File validation functions
-export function validateAudioFile(file: File, userTier: 'free' | 'pro' | 'enterprise' = 'free'): AudioValidationResult {
+export function validateAudioFile(file: File, userTier: 'free' | 'premium' | 'unlimited' = 'free'): AudioValidationResult {
   const result: AudioValidationResult = {
     isValid: true,
     errors: [],
@@ -86,16 +86,21 @@ export function validateAudioFile(file: File, userTier: 'free' | 'pro' | 'enterp
 
   const bucket = STORAGE_BUCKETS['audio-tracks'];
   
-  // Get tier-specific file size limit
-  const tierLimit = userTier === 'free' ? 10 * 1024 * 1024 : 
-                   userTier === 'pro' ? 50 * 1024 * 1024 : 
-                   100 * 1024 * 1024; // enterprise
+  // File size limits by subscription tier (matching mobile app)
+  const FILE_SIZE_LIMITS = {
+    free: 50 * 1024 * 1024,      // 50MB
+    premium: 200 * 1024 * 1024,   // 200MB
+    unlimited: 500 * 1024 * 1024, // 500MB
+  };
+  
+  const tierLimit = FILE_SIZE_LIMITS[userTier] || FILE_SIZE_LIMITS.free;
 
   // Check file size against tier limit
   if (file.size > tierLimit) {
     result.isValid = false;
     const limitMB = (tierLimit / (1024 * 1024)).toFixed(0);
-    result.errors.push(`File size must be less than ${limitMB}MB for ${userTier} tier (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    result.errors.push(`File size (${fileSizeMB}MB) exceeds your ${userTier} plan limit (${limitMB}MB). Upgrade your plan to upload larger files.`);
   }
 
   // Check file type

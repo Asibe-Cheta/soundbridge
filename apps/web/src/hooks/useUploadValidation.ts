@@ -60,17 +60,27 @@ export function useUploadValidation(): UseUploadValidationReturn {
     
     // Step 1: Basic file validation - get user tier and limits
     const userTier = (user as any)?.subscription_tier || 'free';
-    const maxSize = userTier === 'free' ? 10 * 1024 * 1024 : 
-                   userTier === 'pro' ? 50 * 1024 * 1024 : 
-                   100 * 1024 * 1024; // enterprise
+    
+    // File size limits by subscription tier (matching mobile app)
+    const FILE_SIZE_LIMITS = {
+      free: 50 * 1024 * 1024,      // 50MB
+      premium: 200 * 1024 * 1024,   // 200MB
+      unlimited: 500 * 1024 * 1024, // 500MB
+    };
+    
+    const maxSize = FILE_SIZE_LIMITS[userTier as keyof typeof FILE_SIZE_LIMITS] || FILE_SIZE_LIMITS.free;
     
     if (file.size > maxSize) {
       const limitMB = (maxSize / (1024 * 1024)).toFixed(0);
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      const upgradeTier = userTier === 'free' ? 'Premium' : userTier === 'premium' ? 'Unlimited' : null;
+      const upgradeLimit = userTier === 'free' ? '200MB' : userTier === 'premium' ? '500MB' : null;
+      
       errors.push({
         code: 'FILE_SIZE_EXCEEDED',
-        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the ${userTier} tier limit of ${limitMB}MB`,
+        message: `File size (${fileSizeMB}MB) exceeds your ${userTier} plan limit (${limitMB}MB).`,
         severity: 'error',
-        suggestion: userTier === 'free' ? 'Upgrade to Pro for 50MB files' : ''
+        suggestion: upgradeTier ? `Upgrade to ${upgradeTier} to upload files up to ${upgradeLimit}` : 'Please reduce file size or upgrade your plan'
       });
     }
     

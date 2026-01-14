@@ -16,9 +16,18 @@ export class AudioUploadService {
   private supabase = createBrowserClient();
 
   // Validate audio file
-  validateAudioFile(file: File, userTier: 'free' | 'pro' = 'free'): { isValid: boolean; errors: string[] } {
+  validateAudioFile(file: File, userTier: 'free' | 'premium' | 'unlimited' = 'free'): { isValid: boolean; errors: string[]; warnings?: string[] } {
     const errors: string[] = [];
-    const maxSize = userTier === 'free' ? 10 * 1024 * 1024 : 50 * 1024 * 1024; // Pro: 50MB
+    const warnings: string[] = [];
+    
+    // File size limits by subscription tier (matching mobile app)
+    const FILE_SIZE_LIMITS = {
+      free: 50 * 1024 * 1024,      // 50MB
+      premium: 200 * 1024 * 1024,   // 200MB
+      unlimited: 500 * 1024 * 1024, // 500MB
+    };
+    
+    const maxSize = FILE_SIZE_LIMITS[userTier] || FILE_SIZE_LIMITS.free;
     const allowedTypes = [
       'audio/mpeg',
       'audio/mp3',
@@ -42,7 +51,8 @@ export class AudioUploadService {
 
     if (file.size > maxSize) {
       const limitMB = (maxSize / (1024 * 1024)).toFixed(0);
-      errors.push(`File size must be less than ${limitMB}MB for ${userTier} tier (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      errors.push(`File size (${fileSizeMB}MB) exceeds your ${userTier} plan limit (${limitMB}MB). Upgrade your plan to upload larger files.`);
     }
 
     // Only validate MIME type if it's set and not empty
@@ -58,7 +68,8 @@ export class AudioUploadService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
+      warnings: warnings.length > 0 ? warnings : undefined
     };
   }
 

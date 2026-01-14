@@ -169,11 +169,11 @@ export type ValidationErrorCode = typeof VALIDATION_ERROR_CODES[keyof typeof VAL
 
 // Validation constants
 export const VALIDATION_CONSTANTS = {
-  // File size limits (in bytes)
+  // File size limits (in bytes) - matching mobile app
   FILE_SIZES: {
-    FREE_MAX: 10 * 1024 * 1024, // 10MB
-    PRO_MAX: 50 * 1024 * 1024, // 50MB
-    ENTERPRISE_MAX: 100 * 1024 * 1024, // 100MB
+    FREE_MAX: 50 * 1024 * 1024, // 50MB
+    PREMIUM_MAX: 200 * 1024 * 1024, // 200MB
+    UNLIMITED_MAX: 500 * 1024 * 1024, // 500MB
     MIN: 1024 * 1024, // 1MB
   },
   
