@@ -201,6 +201,11 @@ export class SendGridService {
         return false;
       }
 
+      // Ensure subject is set if provided in dynamic template data
+      if (!emailData.subject && emailData.dynamicTemplateData?.subject) {
+        emailData.subject = String(emailData.dynamicTemplateData.subject);
+      }
+
       console.log('📧 Attempting to send templated email via SendGrid');
       console.log('📧 Template ID:', emailData.templateId);
       console.log('📧 Recipient:', emailData.to);

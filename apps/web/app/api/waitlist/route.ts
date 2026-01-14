@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
           to: email.toLowerCase().trim(),
           from: CONTACT_EMAIL,
           templateId: SENDGRID_WAITLIST_TEMPLATE_ID,
+          subject: 'Welcome to SoundBridge Waitlist! 🎵',
           dynamicTemplateData: {
             subject: 'Welcome to SoundBridge Waitlist! 🎵',
             name: email.split('@')[0], // Basic name from email
