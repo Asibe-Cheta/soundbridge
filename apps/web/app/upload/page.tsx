@@ -447,25 +447,95 @@ export default function UnifiedUploadPage() {
     setAcrcloudData(null);
 
     try {
-      // Use multipart/form-data (no base64 overhead - file stays at original size)
-      const formData = new FormData();
-      formData.append('audioFile', file);
-      
-      if (artistName && artistName.trim()) {
-        formData.append('artistName', artistName.trim());
+      const fileSizeMB = file.size / (1024 * 1024);
+      const MAX_DIRECT_SIZE = 10 * 1024 * 1024; // 10 MB - Vercel infrastructure limit
+      let audioFileUrl: string | undefined;
+
+      // For large files (> 10MB), upload to storage first, then send URL
+      // This bypasses Vercel's payload limit and allows backend to extract a 30-second sample
+      if (file.size > MAX_DIRECT_SIZE) {
+        console.log('📦 Large file detected, uploading to storage first', {
+          fileName: file.name,
+          fileSize: file.size,
+          fileSizeMB: fileSizeMB.toFixed(2)
+        });
+
+        try {
+          const supabase = (await import('../../src/lib/supabase')).createBrowserClient();
+          if (!user) {
+            throw new Error('User not authenticated');
+          }
+
+          // Generate unique filename
+          const timestamp = Date.now();
+          const randomString = Math.random().toString(36).substring(2, 15);
+          const fileExtension = file.name.split('.').pop() || 'mp3';
+          const fileName = `fingerprint-temp/${user.id}/${timestamp}_${randomString}.${fileExtension}`;
+
+          // Upload to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('audio-tracks')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) {
+            throw new Error(`Storage upload failed: ${uploadError.message}`);
+          }
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('audio-tracks')
+            .getPublicUrl(fileName);
+
+          audioFileUrl = urlData.publicUrl;
+          console.log('✅ File uploaded to storage, using URL for fingerprinting', {
+            url: audioFileUrl,
+            originalSize: file.size
+          });
+        } catch (storageError: any) {
+          console.error('❌ Storage upload failed, falling back to direct upload', storageError);
+          // Fallback: try direct upload anyway (might work if file is just slightly over limit)
+        }
       }
 
-      console.log('🎵 Sending audio file for fingerprinting (multipart)', {
+      // Prepare request body
+      let requestBody: FormData | string;
+      let requestContentType: string;
+
+      if (audioFileUrl) {
+        // Use JSON with URL for large files
+        requestBody = JSON.stringify({
+          audioFileUrl,
+          artistName: artistName?.trim() || undefined
+        });
+        requestContentType = 'application/json';
+      } else {
+        // Use multipart/form-data for small files (no base64 overhead)
+        const formData = new FormData();
+        formData.append('audioFile', file);
+        
+        if (artistName && artistName.trim()) {
+          formData.append('artistName', artistName.trim());
+        }
+
+        requestBody = formData;
+        requestContentType = ''; // Browser will set it automatically with boundary for FormData
+      }
+
+      console.log('🎵 Sending audio file for fingerprinting', {
         fileName: file.name,
         fileSize: file.size,
-        fileSizeMB: (file.size / (1024 * 1024)).toFixed(2),
+        fileSizeMB: fileSizeMB.toFixed(2),
+        method: audioFileUrl ? 'URL' : 'multipart',
         hasArtistName: !!artistName
       });
 
       const response = await fetch('/api/upload/fingerprint', {
         method: 'POST',
-        // Don't set Content-Type - browser will set it automatically with boundary for FormData
-        body: formData,
+        headers: requestContentType ? { 'Content-Type': requestContentType } : {},
+        body: requestBody,
       });
 
       // Check if response is ok
@@ -477,9 +547,11 @@ export default function UnifiedUploadPage() {
           error: errorText
         });
         
+        // For 413 errors, the backend should handle it by sampling, but if it still fails,
+        // it means the request itself was too large (shouldn't happen with URL method)
         if (response.status === 413) {
           setAcrcloudStatus('error');
-          setAcrcloudError('File too large for fingerprinting. Maximum size is 20MB.');
+          setAcrcloudError('Request too large. The backend will attempt to process this file, but verification may be unavailable.');
           setAcrcloudData({ requiresManualReview: true });
           return;
         }
