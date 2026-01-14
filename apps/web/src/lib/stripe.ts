@@ -22,34 +22,40 @@ export const getStripe = async () => {
 };
 
 // Map plan names to Stripe Price IDs
-// Uses environment variables as per WEB_TEAM_STRIPE_SUBSCRIPTION_SETUP.md
+// Uses actual environment variable names deployed in Vercel
 const PRICE_IDS: Record<string, Record<string, string | undefined>> = {
   premium: {
-    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY,
-    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY,
+    monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_MONTHLY,
+    yearly: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_YEARLY,
   },
   unlimited: {
-    monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
-    yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY,
+    monthly: process.env.STRIPE_UNLIMITED_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+    yearly: process.env.STRIPE_UNLIMITED_ANNUAL_PRICE_ID || process.env.STRIPE_PRICE_UNLIMITED_YEARLY,
   },
   // Legacy Pro tier (for backward compatibility)
   pro: {
-    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY,
-    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY || process.env.STRIPE_PRICE_PRO_YEARLY,
+    monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY,
+    yearly: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_YEARLY || process.env.STRIPE_PRICE_PRO_YEARLY,
   },
 };
 
 // Helper function to get price ID based on plan and billing cycle
 export const getPriceId = (plan: 'pro' | 'premium' | 'unlimited', billingCycle: 'monthly' | 'yearly'): string | undefined => {
   const planKey = plan.toLowerCase();
+  // Map 'yearly' to 'yearly' for lookup (PRICE_IDS uses 'yearly' key)
   const billingKey = billingCycle.toLowerCase();
   
   const priceId = PRICE_IDS[planKey]?.[billingKey];
   
-  // Debug logging (only in development)
-  if (process.env.NODE_ENV === 'development' && !priceId) {
+  // Debug logging
+  if (!priceId) {
     console.warn(`[getPriceId] Price ID not found for plan: ${planKey}, billing: ${billingKey}`);
-    console.warn('[getPriceId] Available price IDs:', PRICE_IDS);
+    console.warn('[getPriceId] Available env vars:', {
+      STRIPE_PREMIUM_MONTHLY_PRICE_ID: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID ? 'set' : 'missing',
+      STRIPE_PREMIUM_ANNUAL_PRICE_ID: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID ? 'set' : 'missing',
+      STRIPE_UNLIMITED_MONTHLY_PRICE_ID: process.env.STRIPE_UNLIMITED_MONTHLY_PRICE_ID ? 'set' : 'missing',
+      STRIPE_UNLIMITED_ANNUAL_PRICE_ID: process.env.STRIPE_UNLIMITED_ANNUAL_PRICE_ID ? 'set' : 'missing',
+    });
   }
   
   return priceId;

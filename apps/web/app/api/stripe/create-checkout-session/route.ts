@@ -5,20 +5,21 @@ import { stripe, getPriceId } from '@/src/lib/stripe';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30; // 30 second Vercel function timeout
 
-// Map plan names to Stripe Price IDs (matches WEB_TEAM_STRIPE_SUBSCRIPTION_SETUP.md)
+// Map plan names to Stripe Price IDs
+// Uses actual environment variable names deployed in Vercel
 const PRICE_IDS: Record<string, Record<string, string | undefined>> = {
   premium: {
-    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY,
-    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY,
+    monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_MONTHLY,
+    yearly: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_YEARLY,
   },
   unlimited: {
-    monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
-    yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY,
+    monthly: process.env.STRIPE_UNLIMITED_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+    yearly: process.env.STRIPE_UNLIMITED_ANNUAL_PRICE_ID || process.env.STRIPE_PRICE_UNLIMITED_YEARLY,
   },
   // Legacy Pro tier (maps to Premium for backward compatibility)
   pro: {
-    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY,
-    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY || process.env.STRIPE_PRICE_PRO_YEARLY,
+    monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY,
+    yearly: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID || process.env.STRIPE_PRICE_PREMIUM_YEARLY || process.env.STRIPE_PRICE_PRO_YEARLY,
   },
 };
 
