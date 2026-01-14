@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      customer: customerId,
+      customer: customerId, // Use customer ID (we always have one since we create it if missing)
       line_items: [
         {
           price: finalPriceId,
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       ],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/pricing?canceled=true`,
-      customer_email: user.email,
+      // Note: Do NOT set customer_email when customer is set - Stripe only allows one
       metadata: {
         userId: user.id,
         plan: plan?.toLowerCase() || 'unknown',
