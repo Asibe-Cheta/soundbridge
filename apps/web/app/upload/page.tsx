@@ -1065,6 +1065,21 @@ export default function UnifiedUploadPage() {
                   {/* ACRCloud Audio Verification */}
                   {uploadState.audioFile && (
                     <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                        Audio Verification
+                      </h3>
+                      {acrcloudStatus === 'idle' && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center space-x-3">
+                            <Loader2 className="h-5 w-5 text-gray-500 dark:text-gray-400 animate-spin flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                Starting audio verification...
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {acrcloudStatus === 'checking' && (
                         <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                           <Loader2 className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin flex-shrink-0" />
