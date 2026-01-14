@@ -5,6 +5,23 @@ import { stripe, getPriceId } from '@/src/lib/stripe';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30; // 30 second Vercel function timeout
 
+// Map plan names to Stripe Price IDs (matches WEB_TEAM_STRIPE_SUBSCRIPTION_SETUP.md)
+const PRICE_IDS: Record<string, Record<string, string | undefined>> = {
+  premium: {
+    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY,
+    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY,
+  },
+  unlimited: {
+    monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+    yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY,
+  },
+  // Legacy Pro tier (maps to Premium for backward compatibility)
+  pro: {
+    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY,
+    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY || process.env.STRIPE_PRICE_PRO_YEARLY,
+  },
+};
+
 export async function POST(request: NextRequest) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -23,29 +40,27 @@ export async function POST(request: NextRequest) {
 
     // Parse request body - support both formats
     const body = await request.json();
-    const { priceId, plan, billingCycle = 'monthly' } = body;
+    const { priceId, plan, billing, billingCycle } = body;
 
-    // Get priceId from body or derive from plan + billingCycle
-    let finalPriceId = priceId;
-    if (!finalPriceId && plan) {
-      finalPriceId = getPriceId(plan as 'pro', billingCycle as 'monthly' | 'yearly');
-    }
+    // Determine billing cycle (support both 'billing' and 'billingCycle' for compatibility)
+    const finalBillingCycle = (billing || billingCycle || 'monthly').toLowerCase() as 'monthly' | 'yearly';
 
-    if (!finalPriceId) {
+    // Validate inputs
+    if (!plan && !priceId) {
       return NextResponse.json(
-        { error: 'Price ID or plan is required' },
+        { error: 'Plan or price ID is required' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    if (!['monthly', 'yearly'].includes(billingCycle)) {
+    if (!['monthly', 'yearly'].includes(finalBillingCycle)) {
       return NextResponse.json(
         { error: 'Invalid billing cycle. Must be "monthly" or "yearly"' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // Use unified auth helper (like tipping system)
+    // Authenticate user
     console.log('[create-checkout-session] Authenticating user...');
     const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     
@@ -59,9 +74,33 @@ export async function POST(request: NextRequest) {
     
     console.log('[create-checkout-session] User authenticated:', user.id);
 
+    // Get price ID from body or derive from plan + billing cycle
+    let finalPriceId = priceId;
+    if (!finalPriceId && plan) {
+      const planKey = plan.toLowerCase();
+      finalPriceId = PRICE_IDS[planKey]?.[finalBillingCycle];
+      
+      // Fallback to getPriceId helper for backward compatibility
+      if (!finalPriceId) {
+        finalPriceId = getPriceId(planKey as 'pro' | 'premium' | 'unlimited', finalBillingCycle);
+      }
+    }
+
+    // Debug logging
+    console.log('[create-checkout-session] Creating checkout session:', { 
+      plan: plan?.toLowerCase(), 
+      billing: finalBillingCycle, 
+      userId: user.id 
+    });
+    console.log('[create-checkout-session] Available price IDs:', PRICE_IDS);
+
     // Validate price ID
-    if (!finalPriceId || finalPriceId.includes('placeholder')) {
-      console.error('[create-checkout-session] Invalid price ID:', finalPriceId);
+    if (!finalPriceId) {
+      console.error('[create-checkout-session] Price ID not found:', { 
+        plan: plan?.toLowerCase(), 
+        billing: finalBillingCycle, 
+        availablePrices: PRICE_IDS 
+      });
       return NextResponse.json(
         { error: 'Stripe pricing not configured. Please set up Stripe price IDs.' },
         { status: 500, headers: corsHeaders }
@@ -102,25 +141,27 @@ export async function POST(request: NextRequest) {
     // Create Checkout Session
     console.log('[create-checkout-session] Creating session for user:', user.id);
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
+      mode: 'subscription',
       payment_method_types: ['card'],
+      customer: customerId,
       line_items: [
         {
           price: finalPriceId,
           quantity: 1,
         },
       ],
-      mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/pricing?canceled=true`,
+      customer_email: user.email,
       metadata: {
-        user_id: user.id,
-        billing_cycle: billingCycle,
+        userId: user.id,
+        plan: plan?.toLowerCase() || 'unknown',
+        billing: finalBillingCycle,
       },
       subscription_data: {
         metadata: {
-          user_id: user.id,
-          billing_cycle: billingCycle,
+          userId: user.id,
+          plan: plan?.toLowerCase() || 'unknown',
         },
       },
     });

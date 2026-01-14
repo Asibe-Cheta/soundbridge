@@ -47,7 +47,16 @@ function PricingContent() {
       setError(null);
 
       // Get price ID based on plan
-      const priceId = getPriceId(plan === 'premium' ? 'premium' : plan === 'unlimited' ? 'unlimited' : 'pro', billingCycle);
+      const planKey = plan === 'premium' ? 'premium' : plan === 'unlimited' ? 'unlimited' : 'pro';
+      const priceId = getPriceId(planKey, billingCycle);
+      
+      // Check if price ID is configured
+      if (!priceId) {
+        setError('Stripe pricing not configured. Please contact support.');
+        setLoading(false);
+        return;
+      }
+
       const amount = plan === 'premium'
         ? (billingCycle === 'monthly' ? 6.99 : 69.99)
         : plan === 'unlimited'
@@ -60,9 +69,11 @@ function PricingContent() {
         ? (billingCycle === 'monthly' ? 'Unlimited Monthly' : 'Unlimited Yearly')
         : (billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly');
       
+      // Pass both plan and priceId for maximum compatibility
       await SubscriptionService.createCheckoutSession({
         name: planName,
         priceId,
+        plan: planKey,
         billingCycle,
         amount,
       });

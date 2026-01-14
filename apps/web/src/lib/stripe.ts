@@ -21,28 +21,36 @@ export const getStripe = async () => {
   return loadStripe(publishableKey);
 };
 
-// Stripe product and price IDs (you'll need to create these in your Stripe dashboard)
-export const STRIPE_CONFIG = {
-  products: {
-    pro: process.env.STRIPE_PRO_PRODUCT_ID || 'prod_pro_placeholder',
-    premium: process.env.STRIPE_PREMIUM_PRODUCT_ID || 'prod_premium_placeholder',
-    unlimited: process.env.STRIPE_UNLIMITED_PRODUCT_ID || 'prod_unlimited_placeholder',
+// Map plan names to Stripe Price IDs
+// Uses environment variables as per WEB_TEAM_STRIPE_SUBSCRIPTION_SETUP.md
+const PRICE_IDS: Record<string, Record<string, string | undefined>> = {
+  premium: {
+    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY,
+    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY,
   },
-  prices: {
-    // Legacy Pro tier (for backward compatibility)
-    pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || 'price_pro_monthly_placeholder',
-    pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || 'price_pro_yearly_placeholder',
-    // Premium tier (£6.99/month, £69.99/year)
-    premium_monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || process.env.STRIPE_PRO_MONTHLY_PRICE_ID || 'price_premium_monthly_placeholder',
-    premium_yearly: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID || process.env.STRIPE_PRO_YEARLY_PRICE_ID || 'price_premium_yearly_placeholder',
-    // Unlimited tier (£12.99/month, £129.99/year)
-    unlimited_monthly: process.env.STRIPE_UNLIMITED_MONTHLY_PRICE_ID || 'price_unlimited_monthly_placeholder',
-    unlimited_yearly: process.env.STRIPE_UNLIMITED_YEARLY_PRICE_ID || 'price_unlimited_yearly_placeholder',
-  }
+  unlimited: {
+    monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+    yearly: process.env.STRIPE_PRICE_UNLIMITED_YEARLY,
+  },
+  // Legacy Pro tier (for backward compatibility)
+  pro: {
+    monthly: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY,
+    yearly: process.env.STRIPE_PRICE_PREMIUM_YEARLY || process.env.STRIPE_PRICE_PRO_YEARLY,
+  },
 };
 
 // Helper function to get price ID based on plan and billing cycle
-export const getPriceId = (plan: 'pro' | 'premium' | 'unlimited', billingCycle: 'monthly' | 'yearly'): string => {
-  const key = `${plan}_${billingCycle}` as keyof typeof STRIPE_CONFIG.prices;
-  return STRIPE_CONFIG.prices[key];
+export const getPriceId = (plan: 'pro' | 'premium' | 'unlimited', billingCycle: 'monthly' | 'yearly'): string | undefined => {
+  const planKey = plan.toLowerCase();
+  const billingKey = billingCycle.toLowerCase();
+  
+  const priceId = PRICE_IDS[planKey]?.[billingKey];
+  
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development' && !priceId) {
+    console.warn(`[getPriceId] Price ID not found for plan: ${planKey}, billing: ${billingKey}`);
+    console.warn('[getPriceId] Available price IDs:', PRICE_IDS);
+  }
+  
+  return priceId;
 };
