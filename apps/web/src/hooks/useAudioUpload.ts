@@ -99,11 +99,6 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       // Validate audio file with user tier
       const validation = audioUploadService.validateAudioFile(file, userTier);
     
-    // Check file extension as fallback if MIME type validation fails
-    const fileExtension = file.name.toLowerCase().split('.').pop();
-    const validExtensions = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm', 'flac', 'mp4'];
-    const hasValidExtension = fileExtension && validExtensions.includes(fileExtension);
-    
       // Check file extension as fallback if MIME type validation fails
       const fileExtension = file.name.toLowerCase().split('.').pop();
       const validExtensions = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm', 'flac', 'mp4'];
