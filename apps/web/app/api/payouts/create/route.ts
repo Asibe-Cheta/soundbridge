@@ -232,7 +232,5 @@ export async function POST(request: NextRequest) {
       { error: error.message || 'Internal server error' },
       { status: 500, headers: corsHeaders }
     );
-</think>
-Checking if the payouts table exists and creating it if needed:
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-grep
+  }
+}
