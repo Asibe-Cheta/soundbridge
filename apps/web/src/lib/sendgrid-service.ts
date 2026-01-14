@@ -24,6 +24,28 @@ export interface SignupConfirmationData {
   confirmationUrl?: string;
 }
 
+export interface PurchaseConfirmationData {
+  to: string;
+  userName: string;
+  contentTitle: string;
+  creatorName: string;
+  pricePaid: number;
+  currency: string;
+  transactionId: string;
+  purchaseDate: string;
+  libraryUrl: string;
+}
+
+export interface SaleNotificationData {
+  to: string;
+  creatorName: string;
+  contentTitle: string;
+  buyerUsername: string;
+  amountEarned: number;
+  currency: string;
+  analyticsUrl: string;
+}
+
 export class SendGridService {
   private static fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live';
   private static fromName = process.env.SENDGRID_FROM_NAME || 'SoundBridge Team';
@@ -234,6 +256,182 @@ export class SendGridService {
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Send purchase confirmation email to buyer
+   */
+  static async sendPurchaseConfirmationEmail(data: PurchaseConfirmationData): Promise<boolean> {
+    try {
+      const templateId = process.env.SENDGRID_PURCHASE_CONFIRMATION_TEMPLATE_ID;
+      
+      if (!templateId) {
+        // Fallback to plain text email if template not configured
+        console.warn('SENDGRID_PURCHASE_CONFIRMATION_TEMPLATE_ID not configured - using plain text fallback');
+        return await this.sendPlainTextPurchaseConfirmation(data);
+      }
+
+      const emailData: EmailData = {
+        to: data.to,
+        from: this.fromEmail,
+        fromName: this.fromName,
+        templateId,
+        subject: `Your SoundBridge Purchase: ${data.contentTitle}`,
+        dynamicTemplateData: {
+          user_name: data.userName,
+          content_title: data.contentTitle,
+          creator_name: data.creatorName,
+          price_paid: data.pricePaid,
+          currency: data.currency,
+          currency_symbol: data.currency === 'USD' ? '$' : data.currency === 'GBP' ? '£' : '€',
+          transaction_id: data.transactionId,
+          purchase_date: data.purchaseDate,
+          library_url: data.libraryUrl,
+          app_name: 'SoundBridge',
+          support_email: 'contact@soundbridge.live'
+        }
+      };
+
+      await this.sendEmail(emailData);
+      console.log(`Purchase confirmation email sent to ${data.to}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending purchase confirmation email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send sale notification email to creator
+   */
+  static async sendSaleNotificationEmail(data: SaleNotificationData): Promise<boolean> {
+    try {
+      const templateId = process.env.SENDGRID_SALE_NOTIFICATION_TEMPLATE_ID;
+      
+      if (!templateId) {
+        // Fallback to plain text email if template not configured
+        console.warn('SENDGRID_SALE_NOTIFICATION_TEMPLATE_ID not configured - using plain text fallback');
+        return await this.sendPlainTextSaleNotification(data);
+      }
+
+      const emailData: EmailData = {
+        to: data.to,
+        from: this.fromEmail,
+        fromName: this.fromName,
+        templateId,
+        subject: `🎉 New Sale: ${data.contentTitle}`,
+        dynamicTemplateData: {
+          creator_name: data.creatorName,
+          content_title: data.contentTitle,
+          buyer_username: data.buyerUsername,
+          amount_earned: data.amountEarned,
+          currency: data.currency,
+          currency_symbol: data.currency === 'USD' ? '$' : data.currency === 'GBP' ? '£' : '€',
+          analytics_url: data.analyticsUrl,
+          app_name: 'SoundBridge',
+          support_email: 'contact@soundbridge.live'
+        }
+      };
+
+      await this.sendEmail(emailData);
+      console.log(`Sale notification email sent to ${data.to}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending sale notification email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Fallback: Plain text purchase confirmation
+   */
+  private static async sendPlainTextPurchaseConfirmation(data: PurchaseConfirmationData): Promise<boolean> {
+    try {
+      const currencySymbol = data.currency === 'USD' ? '$' : data.currency === 'GBP' ? '£' : '€';
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1>Purchase Confirmed!</h1>
+          <p>Thank you for your purchase on SoundBridge, ${data.userName}!</p>
+          
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2>${data.contentTitle}</h2>
+            <p>by ${data.creatorName}</p>
+            <p style="font-size: 24px; font-weight: bold; color: #2563eb;">${currencySymbol}${data.pricePaid.toFixed(2)}</p>
+          </div>
+          
+          <p>You can now download and listen to this content anytime.</p>
+          
+          <a href="${data.libraryUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0;">
+            View in Library
+          </a>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+            <p>Transaction ID: ${data.transactionId}</p>
+            <p>Date: ${data.purchaseDate}</p>
+          </div>
+        </div>
+      `;
+
+      const msg: any = {
+        to: data.to,
+        from: {
+          email: this.fromEmail,
+          name: this.fromName
+        },
+        subject: `Your SoundBridge Purchase: ${data.contentTitle}`,
+        html
+      };
+
+      await sgMail.send(msg);
+      return true;
+    } catch (error) {
+      console.error('Error sending plain text purchase confirmation:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Fallback: Plain text sale notification
+   */
+  private static async sendPlainTextSaleNotification(data: SaleNotificationData): Promise<boolean> {
+    try {
+      const currencySymbol = data.currency === 'USD' ? '$' : data.currency === 'GBP' ? '£' : '€';
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1>You Made a Sale!</h1>
+          <p>Great news, ${data.creatorName}! Someone just purchased your content.</p>
+          
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2>${data.contentTitle}</h2>
+            <p>Buyer: @${data.buyerUsername}</p>
+            <p style="font-size: 24px; font-weight: bold; color: #10b981;">You earned: ${currencySymbol}${data.amountEarned.toFixed(2)}</p>
+            <p style="font-size: 12px; color: #666;">(90% of sale price)</p>
+          </div>
+          
+          <p>The earnings have been added to your digital wallet.</p>
+          
+          <a href="${data.analyticsUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0;">
+            View Sales Dashboard
+          </a>
+        </div>
+      `;
+
+      const msg: any = {
+        to: data.to,
+        from: {
+          email: this.fromEmail,
+          name: this.fromName
+        },
+        subject: `🎉 New Sale: ${data.contentTitle}`,
+        html
+      };
+
+      await sgMail.send(msg);
+      return true;
+    } catch (error) {
+      console.error('Error sending plain text sale notification:', error);
+      return false;
     }
   }
 }

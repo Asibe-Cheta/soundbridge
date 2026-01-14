@@ -21,7 +21,8 @@
       "Bash(railway service:*)",
       "Bash(railway logs:*)",
       "Bash(vercel env ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

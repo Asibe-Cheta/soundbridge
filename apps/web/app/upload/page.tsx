@@ -64,6 +64,12 @@ export default function UnifiedUploadPage() {
   const [selectedQuality, setSelectedQuality] = useState<AudioQualitySettings | null>(null);
   const [userTier, setUserTier] = useState<AudioQualityTier>('free');
 
+  // Pricing states
+  const [isPaid, setIsPaid] = useState(false);
+  const [price, setPrice] = useState<number>(2.99);
+  const [currency, setCurrency] = useState<'USD' | 'GBP' | 'EUR'>('USD');
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+
   // Validation modal states
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -110,6 +116,32 @@ export default function UnifiedUploadPage() {
       setUserTier('free');
     }
   };
+
+  // Check subscription status for paid content
+  React.useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user) return;
+      try {
+        const supabase = (await import('../../src/lib/supabase')).createBrowserClient();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_tier, subscription_end_date, subscription_status')
+          .eq('id', user.id)
+          .single();
+        
+        const hasActive = profile?.subscription_tier && 
+                          ['premium', 'unlimited'].includes(profile.subscription_tier) &&
+                          profile.subscription_status === 'active' &&
+                          (!profile.subscription_end_date || new Date(profile.subscription_end_date) > new Date());
+        
+        setHasActiveSubscription(!!hasActive);
+      } catch (error) {
+        console.error('Failed to check subscription:', error);
+        setHasActiveSubscription(false);
+      }
+    };
+    checkSubscription();
+  }, [user]);
 
   // Load genres from API to match onboarding
   const loadGenres = async () => {
@@ -196,12 +228,20 @@ export default function UnifiedUploadPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       console.log('🎵 File selected:', {
-        name: e.target.files[0].name,
-        size: e.target.files[0].size,
-        type: e.target.files[0].type
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
       });
-      handleFileUpload(e.target.files[0]);
+      handleFileUpload(file);
+      
+      // Reset the input so the same file can be selected again if needed
+      // This is important for re-selecting after an error
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -669,6 +709,43 @@ export default function UnifiedUploadPage() {
       const success = await uploadActions.uploadTrack(trackData, selectedQuality);
       
       if (success) {
+        // Update pricing if track was set as paid
+        if (isPaid && contentType === 'music') {
+          try {
+            // Get the uploaded track ID from the response or state
+            // For now, we'll need to fetch the most recent track by this user
+            const supabase = (await import('../../src/lib/supabase')).createBrowserClient();
+            const { data: tracks } = await supabase
+              .from('audio_tracks')
+              .select('id')
+              .eq('creator_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            if (tracks?.id) {
+              const pricingResponse = await fetch(`/api/audio-tracks/${tracks.id}/pricing`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  is_paid: true,
+                  price: price,
+                  currency: currency,
+                }),
+              });
+
+              if (!pricingResponse.ok) {
+                console.error('Failed to update pricing');
+              }
+            }
+          } catch (error) {
+            console.error('Error updating pricing:', error);
+            // Don't block the upload success
+          }
+        }
+
         // Reset form
         setTitle('');
         setDescription('');
@@ -679,6 +756,9 @@ export default function UnifiedUploadPage() {
         setLyricsLanguage('en');
         setEpisodeNumber('');
         setPodcastCategory('');
+        setIsPaid(false);
+        setPrice(2.99);
+        setCurrency('USD');
         uploadActions.resetUpload();
         
         // Redirect to success page
@@ -794,6 +874,29 @@ export default function UnifiedUploadPage() {
               Audio File
             </h3>
             
+            {/* Error Display */}
+            {uploadState.error && (
+              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
+                      File Validation Error
+                    </p>
+                    <p className="text-xs text-red-700 dark:text-red-300">
+                      {uploadState.error}
+                    </p>
+                    <button
+                      onClick={() => uploadActions.setAudioFile(null)}
+                      className="mt-2 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
+                    >
+                      Clear and try again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {!uploadState.audioFile ? (
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -827,7 +930,7 @@ export default function UnifiedUploadPage() {
                   className="hidden"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Supports MP3, WAV, M4A, AAC, OGG, FLAC (Max 100MB)
+                  Supports MP3, WAV, M4A, AAC, OGG, WEBM, FLAC, MP4 (Max 100MB)
                 </p>
               </div>
             ) : (
@@ -1249,6 +1352,107 @@ export default function UnifiedUploadPage() {
                 audioFile={uploadState.audioFile.file}
                 duration={uploadState.audioMetadata?.duration}
               />
+            </div>
+          )}
+
+          {/* Pricing Section */}
+          {uploadState.audioFile && contentType === 'music' && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Pricing
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Only available for subscribed creators (Premium & Unlimited tiers)
+              </p>
+
+              {/* Toggle for Paid Content */}
+              <div className="flex items-center space-x-3 mb-4">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPaid}
+                    onChange={(e) => setIsPaid(e.target.checked)}
+                    disabled={!hasActiveSubscription}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Make this available for purchase
+                </label>
+              </div>
+
+              {/* Price Input (shown when isPaid = true) */}
+              {isPaid && (
+                <>
+                  <div className="space-y-3 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Price
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={currency}
+                          onChange={(e) => setCurrency(e.target.value as 'USD' | 'GBP' | 'EUR')}
+                          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="USD">$ USD</option>
+                          <option value="GBP">£ GBP</option>
+                          <option value="EUR">€ EUR</option>
+                        </select>
+                        <input
+                          type="number"
+                          min="0.99"
+                          max="50.00"
+                          step="0.01"
+                          value={price}
+                          onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                          placeholder="2.99"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Price must be between {currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€'}0.99 and {currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€'}50.00
+                      </p>
+                    </div>
+
+                    {/* Earnings Preview */}
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-2xl">💰</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            You'll keep 90% of sales
+                          </p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">
+                            You'll earn {currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€'}{(price * 0.9).toFixed(2)} per sale
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            SoundBridge takes 10% platform fee
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Non-Subscribed Warning */}
+              {!hasActiveSubscription && (
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-4 border-yellow-500">
+                  <div className="flex items-start space-x-3">
+                    <span className="text-xl">⚠️</span>
+                    <div>
+                      <p className="text-sm text-gray-900 dark:text-gray-100">
+                        Upgrade to Premium or Unlimited to sell your content.{' '}
+                        <Link href="/pricing" className="text-blue-600 dark:text-blue-400 hover:underline">
+                          View Plans
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

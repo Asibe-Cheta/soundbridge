@@ -29,16 +29,31 @@ export class AudioUploadService {
       'audio/aac',
       'audio/ogg',
       'audio/webm',
-      'audio/flac'
+      'audio/flac',
+      'audio/mp4', // Some MP4 files contain audio
+      'video/mp4', // Some MP4 files are audio-only
+      '' // Empty string for files without MIME type
     ];
+
+    // Check file extension as fallback
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    const validExtensions = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm', 'flac', 'mp4'];
+    const hasValidExtension = fileExtension && validExtensions.includes(fileExtension);
 
     if (file.size > maxSize) {
       const limitMB = (maxSize / (1024 * 1024)).toFixed(0);
       errors.push(`File size must be less than ${limitMB}MB for ${userTier} tier (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     }
 
-    if (!allowedTypes.includes(file.type)) {
-      errors.push('Invalid file type. Please upload MP3, WAV, M4A, AAC, or FLAC files.');
+    // Only validate MIME type if it's set and not empty
+    // If MIME type is empty or invalid but extension is valid, allow it
+    if (file.type && !allowedTypes.includes(file.type) && !hasValidExtension) {
+      errors.push(`Invalid file type (${file.type}). Please upload MP3, WAV, M4A, AAC, OGG, WEBM, FLAC, or MP4 files.`);
+    }
+
+    // If file has no MIME type but has valid extension, that's okay
+    if (!file.type && !hasValidExtension) {
+      errors.push('Could not determine file type. Please ensure you are uploading an audio file (MP3, WAV, M4A, AAC, OGG, WEBM, FLAC, or MP4).');
     }
 
     return {

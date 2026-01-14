@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, Music, Play, Pause, Heart, Trash2, Loader2, Clock } from 'lucide-react';
 import { useAudioPlayer } from '@/src/contexts/AudioPlayerContext';
+import { TrackPriceBadge } from '@/src/components/content/TrackPriceBadge';
+import { PurchaseModal } from '@/src/components/content/PurchaseModal';
 
 interface Track {
   id: string;
@@ -18,6 +20,15 @@ interface Track {
   created_at: string;
   is_liked: boolean;
   is_owner: boolean;
+  is_paid?: boolean;
+  price?: number;
+  currency?: string;
+  creator?: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url?: string;
+  };
 }
 
 interface TracksListModalProps {
@@ -35,6 +46,8 @@ export function TracksListModal({ isOpen, onClose, userId, currentUserId, isOwnP
   const [likingInProgress, setLikingInProgress] = useState<Set<string>>(new Set());
   const [deletingTrack, setDeletingTrack] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selectedTrackForPurchase, setSelectedTrackForPurchase] = useState<Track | null>(null);
+  const [trackOwnership, setTrackOwnership] = useState<Map<string, boolean>>(new Map());
   const { playTrack, currentTrack, isPlaying, pauseTrack } = useAudioPlayer();
 
   useEffect(() => {
@@ -64,7 +77,58 @@ export function TracksListModal({ isOpen, onClose, userId, currentUserId, isOwnP
     }
   };
 
+  // Check ownership for paid tracks
+  useEffect(() => {
+    if (!isOpen || !currentUserId) return;
+
+    const checkOwnership = async () => {
+      const paidTracks = tracks.filter(t => t.is_paid && !t.is_owner);
+      const ownershipMap = new Map<string, boolean>();
+
+      for (const track of paidTracks) {
+        try {
+          const supabase = (await import('@/src/lib/supabase')).createBrowserClient();
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (!session) continue;
+
+          const response = await fetch(
+            `/api/content/ownership?content_id=${track.id}&content_type=track`,
+            {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+            }
+          );
+
+          const data = await response.json();
+          if (data.success) {
+            ownershipMap.set(track.id, data.data.owns);
+          }
+        } catch (err) {
+          console.error('Error checking ownership:', err);
+        }
+      }
+
+      setTrackOwnership(ownershipMap);
+    };
+
+    if (tracks.length > 0) {
+      checkOwnership();
+    }
+  }, [tracks, isOpen, currentUserId]);
+
   const handlePlayPause = async (track: Track) => {
+    // Check if track is paid and user doesn't own it
+    if (track.is_paid && !track.is_owner && currentUserId) {
+      const owns = trackOwnership.get(track.id);
+      if (!owns) {
+        // Show purchase modal
+        setSelectedTrackForPurchase(track);
+        return;
+      }
+    }
+
     if (currentTrack?.id === track.id && isPlaying) {
       pauseTrack();
     } else {
@@ -260,12 +324,28 @@ export function TracksListModal({ isOpen, onClose, userId, currentUserId, isOwnP
 
                     {/* Track Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-white truncate">
-                        {track.title}
-                      </h3>
-                      <p className="text-sm text-gray-400 truncate">
-                        {track.artist_name}
-                      </p>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-white truncate">
+                            {track.title}
+                          </h3>
+                          <p className="text-sm text-gray-400 truncate">
+                            {track.artist_name}
+                          </p>
+                        </div>
+                        {/* Price Badge */}
+                        {track.is_paid && !track.is_owner && (
+                          <div className="ml-2 flex-shrink-0">
+                            <TrackPriceBadge
+                              isPaid={true}
+                              price={track.price}
+                              currency={track.currency}
+                              userOwnsTrack={trackOwnership.get(track.id) || false}
+                              onPurchaseClick={() => setSelectedTrackForPurchase(track)}
+                            />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
                         <span className="flex items-center space-x-1">
                           <Play className="h-3 w-3" />
@@ -345,6 +425,35 @@ export function TracksListModal({ isOpen, onClose, userId, currentUserId, isOwnP
           )}
         </div>
       </div>
+
+      {/* Purchase Modal */}
+      {selectedTrackForPurchase && (
+        <PurchaseModal
+          isOpen={!!selectedTrackForPurchase}
+          onClose={() => setSelectedTrackForPurchase(null)}
+          track={{
+            id: selectedTrackForPurchase.id,
+            title: selectedTrackForPurchase.title,
+            cover_art_url: selectedTrackForPurchase.cover_image_url || undefined,
+            price: selectedTrackForPurchase.price || 0,
+            currency: selectedTrackForPurchase.currency || 'USD',
+            creator: selectedTrackForPurchase.creator || {
+              id: userId,
+              username: '',
+              display_name: selectedTrackForPurchase.artist_name,
+            },
+          }}
+          onPurchaseSuccess={() => {
+            // Refresh ownership check
+            setTrackOwnership(prev => {
+              const updated = new Map(prev);
+              updated.set(selectedTrackForPurchase.id, true);
+              return updated;
+            });
+            setSelectedTrackForPurchase(null);
+          }}
+        />
+      )}
     </div>
   );
 }

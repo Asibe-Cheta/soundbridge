@@ -76,15 +76,34 @@ export function useAudioUpload(): [UploadState, UploadActions] {
 
     extractMetadata();
 
-    // Validate audio file
+    // Validate audio file - but be more lenient with file types
     const validation = audioUploadService.validateAudioFile(file);
-    if (!validation.isValid) {
+    
+    // Check file extension as fallback if MIME type validation fails
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    const validExtensions = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'webm', 'flac', 'mp4'];
+    const hasValidExtension = fileExtension && validExtensions.includes(fileExtension);
+    
+    // If validation fails but has valid extension, allow it (some browsers don't set MIME types correctly)
+    if (!validation.isValid && !hasValidExtension) {
       setState(prev => ({
         ...prev,
         error: validation.errors.join(', '),
-        uploadStatus: 'error'
+        uploadStatus: 'error',
+        audioFile: null
       }));
+      console.error('❌ File validation failed:', validation.errors);
       return;
+    }
+
+    // If validation failed but has valid extension, log a warning but proceed
+    if (!validation.isValid && hasValidExtension) {
+      console.warn('⚠️ MIME type validation failed but file extension is valid. Proceeding with upload:', {
+        fileName: file.name,
+        fileType: file.type,
+        extension: fileExtension,
+        validationErrors: validation.errors
+      });
     }
 
     const uploadFile: UploadFile = {
@@ -92,7 +111,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       file,
       name: file.name,
       size: file.size,
-      type: file.type,
+      type: file.type || `audio/${fileExtension}`, // Fallback to extension-based type
       progress: 0,
       status: 'pending'
     };
@@ -100,9 +119,16 @@ export function useAudioUpload(): [UploadState, UploadActions] {
     setState(prev => ({
       ...prev,
       audioFile: uploadFile,
-      error: null,
+      error: validation.isValid ? null : `Warning: ${validation.errors.join(', ')}. File will be uploaded anyway.`,
       uploadStatus: 'idle'
     }));
+    
+    console.log('✅ Audio file set successfully:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type || `audio/${fileExtension}`,
+      fileId: uploadFile.id
+    });
   }, []);
 
   const setCoverArtFile = useCallback((file: File | null) => {

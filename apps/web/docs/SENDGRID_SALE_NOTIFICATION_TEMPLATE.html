@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Sale - SoundBridge</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .email-container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #333333;
+    }
+    .sale-details {
+      background: #f0fdf4;
+      border-radius: 8px;
+      padding: 30px;
+      margin: 30px 0;
+      text-align: center;
+      border: 2px solid #10b981;
+    }
+    .sale-details h2 {
+      margin: 0 0 15px 0;
+      font-size: 24px;
+      color: #111827;
+    }
+    .sale-details .buyer {
+      color: #6b7280;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .sale-details .buyer strong {
+      color: #111827;
+    }
+    .earnings {
+      font-size: 36px;
+      font-weight: 700;
+      color: #10b981;
+      margin: 20px 0;
+    }
+    .earnings-note {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 10px;
+    }
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 15px 20px;
+      margin: 25px 0;
+      border-radius: 4px;
+    }
+    .info-box p {
+      margin: 0;
+      color: #1e40af;
+      font-size: 14px;
+    }
+    .button {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #2563eb;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin: 20px 0;
+      transition: background-color 0.2s;
+    }
+    .button:hover {
+      background: #1d4ed8;
+    }
+    .stats-box {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 30px 0;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+    .stat-item {
+      flex: 1;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+    }
+    .footer {
+      background: #f9fafb;
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer p {
+      margin: 5px 0;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .celebration {
+      font-size: 48px;
+      margin: 20px 0;
+    }
+    @media only screen and (max-width: 600px) {
+      .content {
+        padding: 20px;
+      }
+      .header {
+        padding: 30px 20px;
+      }
+      .sale-details {
+        padding: 20px;
+      }
+      .stats-box {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="celebration">🎉</div>
+      <h1>You Made a Sale!</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <p class="greeting">Congratulations, {{creator_name}}!</p>
+      <p>Great news! Someone just purchased your content on SoundBridge.</p>
+
+      <!-- Sale Details -->
+      <div class="sale-details">
+        <h2>{{content_title}}</h2>
+        <p class="buyer">
+          <strong>Buyer:</strong> @{{buyer_username}}
+        </p>
+        <div class="earnings">
+          You earned: {{currency_symbol}}{{amount_earned}}
+        </div>
+        <p class="earnings-note">
+          (90% of the sale price - SoundBridge takes 10% platform fee)
+        </p>
+      </div>
+
+      <!-- Info Box -->
+      <div class="info-box">
+        <p>💰 The earnings have been automatically added to your digital wallet. You can withdraw them anytime!</p>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align: center;">
+        <a href="{{analytics_url}}" class="button">View Sales Dashboard</a>
+      </div>
+
+      <!-- Stats Box (Optional - can show total sales/revenue) -->
+      <div class="stats-box">
+        <div class="stat-item">
+          <div class="stat-label">Your Earnings</div>
+          <div class="stat-value" style="color: #10b981;">{{currency_symbol}}{{amount_earned}}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Platform Fee</div>
+          <div class="stat-value" style="color: #6b7280;">10%</div>
+        </div>
+      </div>
+
+      <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+        Keep creating amazing content! Your fans love what you're doing. 🎵
+      </p>
+
+      <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">
+        Questions about your earnings? Contact us at 
+        <a href="mailto:{{support_email}}" style="color: #2563eb;">{{support_email}}</a>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><strong>{{app_name}}</strong></p>
+      <p>Empowering creators, one sale at a time.</p>
+      <p style="margin-top: 20px;">
+        <a href="{{analytics_url}}">Sales Dashboard</a> | 
+        <a href="https://www.soundbridge.live">Visit Website</a> | 
+        <a href="mailto:{{support_email}}">Support</a>
+      </p>
+      <p style="margin-top: 20px; font-size: 11px; color: #9ca3af;">
+        © {{current_year}} SoundBridge. All rights reserved.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
