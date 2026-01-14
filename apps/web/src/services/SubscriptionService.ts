@@ -4,8 +4,8 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 export interface SubscriptionPlan {
   name: string;
-  priceId: string;
-  plan?: 'premium' | 'unlimited' | 'pro'; // Optional plan name for API compatibility
+  priceId?: string; // Optional - server will look up from plan name if not provided
+  plan: 'premium' | 'unlimited' | 'pro'; // Required - used to look up price ID on server
   billingCycle: 'monthly' | 'yearly';
   amount: number;
 }
@@ -36,9 +36,9 @@ export class SubscriptionService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          priceId: plan.priceId,
-          plan: plan.plan, // Pass plan name if provided
+          plan: plan.plan, // Required - server uses this to look up price ID
           billingCycle: plan.billingCycle,
+          priceId: plan.priceId, // Optional - if provided, will be used directly
         }),
       });
 

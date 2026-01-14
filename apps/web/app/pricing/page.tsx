@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { SubscriptionService } from '../../src/services/SubscriptionService';
-import { getPriceId } from '../../src/lib/stripe';
 import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles, Crown } from 'lucide-react';
 
 // Separate component for search params handling (required for Suspense)
@@ -46,16 +45,8 @@ function PricingContent() {
       setLoading(true);
       setError(null);
 
-      // Get price ID based on plan
+      // Determine plan key
       const planKey = plan === 'premium' ? 'premium' : plan === 'unlimited' ? 'unlimited' : 'pro';
-      const priceId = getPriceId(planKey, billingCycle);
-      
-      // Check if price ID is configured
-      if (!priceId) {
-        setError('Stripe pricing not configured. Please contact support.');
-        setLoading(false);
-        return;
-      }
 
       const amount = plan === 'premium'
         ? (billingCycle === 'monthly' ? 6.99 : 69.99)
@@ -69,10 +60,9 @@ function PricingContent() {
         ? (billingCycle === 'monthly' ? 'Unlimited Monthly' : 'Unlimited Yearly')
         : (billingCycle === 'monthly' ? 'Pro Monthly' : 'Pro Yearly');
       
-      // Pass both plan and priceId for maximum compatibility
+      // Pass plan name to API - server will look up price ID from environment variables
       await SubscriptionService.createCheckoutSession({
         name: planName,
-        priceId,
         plan: planKey,
         billingCycle,
         amount,
