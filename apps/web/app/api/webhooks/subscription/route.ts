@@ -217,19 +217,28 @@ async function handleStripeWebhook(supabase: any, payload: any) {
   const customerId = subscription.customer;
   const priceId = subscription.items?.data[0]?.price?.id || subscription.plan?.id;
 
-  // Get user ID from Stripe customer ID
+  // Get user ID from Stripe customer ID or metadata
+  const metadataUserId =
+    subscription?.metadata?.userId ||
+    subscription?.metadata?.user_id ||
+    subscription?.metadata?.userid;
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
     .eq('stripe_customer_id', customerId)
     .single();
 
-  if (!profile) {
-    console.error('❌ STRIPE: No user found for customer:', customerId);
-    return NextResponse.json({ error: 'User not found' }, { status: 404, headers: corsHeaders });
-  }
+  const userId = profile?.id || metadataUserId;
 
-  const userId = profile.id;
+  if (!userId) {
+    console.warn('⚠️ STRIPE: No user found for customer:', customerId);
+    // Return 2xx so Stripe stops retrying old/unknown customers
+    return NextResponse.json(
+      { received: true, skipped: true, reason: 'User not found' },
+      { status: 200, headers: corsHeaders }
+    );
+  }
 
   // Determine tier and period from price ID
   const { tier, period } = parsePriceId(priceId);
