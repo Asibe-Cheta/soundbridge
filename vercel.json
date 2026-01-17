@@ -47,6 +47,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/process-pending-notifications",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/expire-grace-periods",
       "schedule": "0 0 * * *"
     }
