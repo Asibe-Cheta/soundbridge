@@ -82,6 +82,9 @@ export async function GET(request: NextRequest) {
         user_id,
         event_id,
         notification_type,
+        title,
+        body,
+        data,
         scheduled_for,
         events (
           id,
@@ -157,10 +160,20 @@ export async function GET(request: NextRequest) {
     for (const notification of pendingNotifications) {
       const pushToken = tokenMap.get(notification.user_id);
       const eventTitle = (notification as any).events?.title;
-      const { title, body } = buildNotificationContent(
+      const isMessageNotification = notification.notification_type === 'message';
+      const fallbackContent = buildNotificationContent(
         notification.notification_type,
         eventTitle
       );
+      const title = notification.title || fallbackContent.title;
+      const body = notification.body || fallbackContent.body;
+      const payloadData = isMessageNotification
+        ? (notification.data || {})
+        : {
+            type: 'event_reminder',
+            eventId: notification.event_id,
+            notificationType: notification.notification_type,
+          };
 
       if (!pushToken || !Expo.isExpoPushToken(pushToken)) {
         await supabase
@@ -184,12 +197,8 @@ export async function GET(request: NextRequest) {
           sound: 'default',
           title,
           body,
-          data: {
-            type: 'event_reminder',
-            eventId: notification.event_id,
-            notificationType: notification.notification_type,
-          },
-          channelId: 'events',
+          data: payloadData,
+          channelId: isMessageNotification ? 'messages' : 'events',
         },
       });
     }
