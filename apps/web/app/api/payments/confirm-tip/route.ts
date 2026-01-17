@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     if (!paymentIntentId) {
       return NextResponse.json(
         { error: 'Payment intent ID is required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -80,11 +80,20 @@ export async function POST(request: NextRequest) {
     if (paymentIntent.status !== 'succeeded') {
       return NextResponse.json(
         { error: 'Payment not completed' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    // Update tip status to completed
+    const { data: tipAnalytics, error: tipAnalyticsError } = await supabase
+      .from('tip_analytics')
+      .select('*')
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .single();
+
+    if (tipAnalyticsError) {
+      console.error('Error fetching tip analytics:', tipAnalyticsError);
+    }
+
     const { data: tipData, error: tipError } = await supabase
       .from('creator_tips')
       .select('*')
@@ -98,7 +107,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update tip status
     const { error: updateError } = await supabase
       .from('creator_tips')
       .update({ status: 'completed' })
@@ -112,13 +120,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (tipAnalytics?.id) {
+      const { error: updateAnalyticsError } = await supabase
+        .from('tip_analytics')
+        .update({ status: 'completed' })
+        .eq('id', tipAnalytics.id);
+
+      if (updateAnalyticsError) {
+        console.error('Error updating tip analytics status:', updateAnalyticsError);
+      }
+    }
+
+    const amount = Number(
+        tipAnalytics?.tip_amount ??
+          tipData.amount ??
+          (paymentIntent.amount ? paymentIntent.amount / 100 : 0)
+      );
+    const platformFee =
+      Number(tipAnalytics?.platform_fee) ||
+      Number(paymentIntent.metadata?.platformFee || 0);
+    const creatorEarnings =
+      Number(tipAnalytics?.creator_earnings) ||
+      Number(paymentIntent.metadata?.creatorEarnings || Math.max(0, amount - platformFee));
+
     // 🚨 CRITICAL FIX: Add tip to creator's wallet
     try {
-      // Calculate creator earnings (amount - platform fee)
-      const platformFeeRate = tipData.userTier === 'free' ? 0.10 : tipData.userTier === 'pro' ? 0.08 : 0.05;
-      const platformFee = Math.round(tipData.amount * platformFeeRate * 100) / 100;
-      const creatorEarnings = Math.round((tipData.amount - platformFee) * 100) / 100;
-
       // Add tip to creator's wallet using the database function
       const { data: walletTransactionId, error: walletError } = await supabase
         .rpc('add_wallet_transaction', {
@@ -129,7 +155,7 @@ export async function POST(request: NextRequest) {
           reference_id: paymentIntentId,
           metadata: {
             tipper_id: tipData.tipper_id,
-            original_amount: tipData.amount,
+            original_amount: amount,
             platform_fee: platformFee,
             tip_message: tipData.message,
             is_anonymous: tipData.is_anonymous
@@ -152,7 +178,7 @@ export async function POST(request: NextRequest) {
       .rpc('record_revenue_transaction', {
         user_uuid: tipData.creator_id,
         transaction_type_param: 'tip',
-        amount_param: tipData.amount,
+        amount_param: amount,
         customer_email_param: user.email,
         customer_name_param: user.user_metadata?.display_name || user.email,
         stripe_payment_intent_id_param: paymentIntentId

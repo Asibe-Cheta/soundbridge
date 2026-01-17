@@ -64,14 +64,29 @@ export async function POST(request: NextRequest) {
     if (!creatorId || !amount || amount <= 0) {
       return NextResponse.json(
         { error: 'Creator ID and valid amount are required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const { data: creatorProfile, error: creatorError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', creatorId)
+      .single();
+
+    if (creatorError || !creatorProfile) {
+      return NextResponse.json(
+        { error: 'Creator not found' },
+        { status: 404, headers: corsHeaders }
       );
     }
 
     // Calculate platform fee based on tipper's tier (userTier)
-    const platformFeeRate = userTier === 'free' ? 0.10 : userTier === 'pro' ? 0.08 : 0.05;
-    const platformFee = Math.round(amount * platformFeeRate * 100) / 100;
-    const creatorEarnings = Math.round((amount - platformFee) * 100) / 100;
+    const normalizedTier = String(userTier || 'free').toLowerCase();
+    const platformFeeRate = normalizedTier === 'free' ? 0.10 : 0.08;
+    const tipAmount = Number(amount);
+    const platformFee = Math.round(tipAmount * platformFeeRate * 100) / 100;
+    const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
 
     // Create real Stripe payment intent
     if (!stripe) {
@@ -83,12 +98,12 @@ export async function POST(request: NextRequest) {
 
     // Configure payment methods based on selection
     const paymentIntentConfig: any = {
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: Math.round(tipAmount * 100), // Convert to cents
       currency: currency || 'USD',
       metadata: {
         creatorId,
         tipperId: user.id,
-        userTier,
+        userTier: normalizedTier,
         paymentMethod,
         platformFee: platformFee.toString(),
         creatorEarnings: creatorEarnings.toString(),
@@ -121,7 +136,7 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId,
         tipper_id: user.id,
         tipper_tier: userTier,
-        tip_amount: amount,
+        tip_amount: tipAmount,
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
         fee_percentage: platformFeeRate * 100,
@@ -139,7 +154,7 @@ export async function POST(request: NextRequest) {
       .insert({
         creator_id: creatorId,
         tipper_id: user.id,
-        amount: amount,
+        amount: tipAmount,
         currency: currency || 'USD',
         message: message,
         is_anonymous: isAnonymous || false,
@@ -151,7 +166,7 @@ export async function POST(request: NextRequest) {
       console.error('Error creating tip record:', tipError);
       return NextResponse.json(
         { error: 'Failed to create tip record' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -161,7 +176,8 @@ export async function POST(request: NextRequest) {
       clientSecret: paymentIntent.client_secret,
       tipId: tipData.id,
       platformFee,
-      creatorEarnings
+      creatorEarnings,
+      message: 'Payment intent created'
     }, { headers: corsHeaders });
     
   } catch (error) {
