@@ -101,6 +101,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Map mobile categories to database enum values
+    const categoryMap: Record<string, string> = {
+      'Music Concert': 'Secular',
+      'Birthday Party': 'Other',
+      'Carnival': 'Carnival',
+      'Get Together': 'Other',
+      'Music Karaoke': 'Secular',
+      'Comedy Night': 'Other',
+      'Gospel Concert': 'Gospel',
+      'Instrumental': 'Classical',
+      'Jazz Room': 'Jazz',
+      'Workshop': 'Other',
+      'Conference': 'Other',
+      'Festival': 'Carnival',
+      'Other': 'Other',
+    };
+
+    const normalizedCategory = categoryMap[eventData.category] || eventData.category;
+
     // Prepare event data with all location fields
     const insertData: any = {
       title: eventData.title,
@@ -108,7 +127,7 @@ export async function POST(request: NextRequest) {
       event_date: eventData.event_date,
       location: eventData.location,
       venue: eventData.venue || null,
-      category: eventData.category,
+      category: normalizedCategory,
       creator_id: user.id,
       current_attendees: 0,
       // Location fields for notifications
