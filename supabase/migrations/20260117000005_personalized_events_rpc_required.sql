@@ -30,16 +30,13 @@ RETURNS TABLE(
   event_date TIMESTAMPTZ,
   location TEXT,
   venue TEXT,
-  city TEXT,
   category TEXT,
-  price_gbp DECIMAL,
-  price_ngn DECIMAL,
+  price_gbp NUMERIC,
+  price_ngn NUMERIC,
   max_attendees INTEGER,
   current_attendees INTEGER,
   image_url TEXT,
-  created_at TIMESTAMPTZ,
-  distance_km DECIMAL,
-  relevance_score INTEGER
+  created_at TIMESTAMPTZ
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -72,89 +69,13 @@ BEGIN
     e.event_date,
     e.location::text,
     e.venue::text,
-    e.city::text,
     e.category::text,
     e.price_gbp,
     e.price_ngn,
     e.max_attendees,
     e.current_attendees,
     e.image_url::text,
-    e.created_at,
-    CASE
-      WHEN v_user_latitude IS NOT NULL AND v_user_longitude IS NOT NULL
-           AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL THEN
-        ROUND((
-          6371 * acos(
-            cos(radians(v_user_latitude)) * cos(radians(e.latitude)) *
-            cos(radians(e.longitude) - radians(v_user_longitude)) +
-            sin(radians(v_user_latitude)) * sin(radians(e.latitude))
-          )
-        )::numeric, 1)
-      ELSE NULL
-    END as distance_km,
-    (
-      10 +
-      CASE
-        WHEN v_preferred_genres IS NOT NULL
-             AND array_length(v_preferred_genres, 1) > 0
-             AND (
-               CASE e.category::text
-                 WHEN 'Gospel' THEN 'Gospel Concert'
-                 WHEN 'Jazz' THEN 'Jazz Room'
-                 WHEN 'Classical' THEN 'Instrumental'
-                 WHEN 'Carnival' THEN 'Carnival'
-                 WHEN 'Christian' THEN 'Gospel Concert'
-                 WHEN 'Hip-Hop' THEN 'Music Concert'
-                 WHEN 'Afrobeat' THEN 'Music Concert'
-                 WHEN 'Rock' THEN 'Music Concert'
-                 WHEN 'Pop' THEN 'Music Concert'
-                 WHEN 'Secular' THEN 'Music Concert'
-                 WHEN 'Other' THEN 'Other'
-                 ELSE e.category::text
-               END
-             ) = ANY(v_preferred_genres) THEN 50
-        ELSE 0
-      END +
-      CASE
-        WHEN v_user_latitude IS NOT NULL AND e.latitude IS NOT NULL THEN
-          GREATEST(0, 30 - ROUND((
-            6371 * acos(
-              cos(radians(v_user_latitude)) * cos(radians(e.latitude)) *
-              cos(radians(e.longitude) - radians(v_user_longitude)) +
-              sin(radians(v_user_latitude)) * sin(radians(e.latitude))
-            )
-          )::numeric))
-        ELSE 0
-      END +
-      GREATEST(0, 20 - EXTRACT(DAY FROM (e.event_date - NOW())))::INTEGER +
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM user_genre_behavior ugb
-          WHERE ugb.user_id = p_user_id
-          AND ugb.genre = e.category::text
-          AND ugb.play_count >= 10
-        ) THEN 40
-        ELSE 0
-      END +
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM ticket_purchases tp
-          WHERE tp.user_id = p_user_id
-          AND tp.payment_status = 'succeeded'
-        ) THEN 25
-        ELSE 0
-      END +
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM ticket_purchases tp
-          JOIN events prev_e ON prev_e.id = tp.event_id
-          WHERE tp.user_id = p_user_id
-          AND tp.payment_status = 'succeeded'
-          AND prev_e.category = e.category
-        ) THEN 35
-        ELSE 0
-      END
-    ) as relevance_score
+    e.created_at
   FROM events e
   WHERE
     e.event_date >= NOW()
@@ -171,8 +92,27 @@ BEGIN
         )
       ) <= v_max_radius_km
     )
+    AND (
+      v_preferred_genres IS NULL
+      OR array_length(v_preferred_genres, 1) = 0
+      OR (
+        CASE e.category::text
+          WHEN 'Gospel' THEN 'Gospel Concert'
+          WHEN 'Jazz' THEN 'Jazz Room'
+          WHEN 'Classical' THEN 'Instrumental'
+          WHEN 'Carnival' THEN 'Carnival'
+          WHEN 'Christian' THEN 'Gospel Concert'
+          WHEN 'Hip-Hop' THEN 'Music Concert'
+          WHEN 'Afrobeat' THEN 'Music Concert'
+          WHEN 'Rock' THEN 'Music Concert'
+          WHEN 'Pop' THEN 'Music Concert'
+          WHEN 'Secular' THEN 'Music Concert'
+          WHEN 'Other' THEN 'Other'
+          ELSE e.category::text
+        END
+      ) = ANY(v_preferred_genres)
+    )
   ORDER BY
-    relevance_score DESC,
     e.event_date ASC
   LIMIT p_limit
   OFFSET p_offset;
