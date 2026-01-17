@@ -4,6 +4,41 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { Expo, ExpoPushMessage } from 'expo-server-sdk';
+
+const expo = new Expo();
+
+function buildNotificationContent(notificationType: string, eventTitle?: string) {
+  const safeTitle = eventTitle || 'Upcoming Event';
+
+  switch (notificationType) {
+    case 'two_weeks':
+      return {
+        title: 'Event in 2 weeks',
+        body: `${safeTitle} is happening in 2 weeks.`,
+      };
+    case 'one_week':
+      return {
+        title: 'Event in 1 week',
+        body: `${safeTitle} is happening in 1 week.`,
+      };
+    case '24_hours':
+      return {
+        title: 'Event tomorrow',
+        body: `${safeTitle} is happening in 24 hours.`,
+      };
+    case 'event_day':
+      return {
+        title: 'Event today',
+        body: `${safeTitle} is today.`,
+      };
+    default:
+      return {
+        title: `Event: ${safeTitle}`,
+        body: `${safeTitle} is coming up.`,
+      };
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,24 +75,183 @@ export async function GET(request: NextRequest) {
       .select('id')
       .single();
 
-    const { data, error } = await supabase.rpc('process_pending_notifications');
+    const { data: pendingNotifications, error: pendingError } = await supabase
+      .from('scheduled_notifications')
+      .select(`
+        id,
+        user_id,
+        event_id,
+        notification_type,
+        scheduled_for,
+        events (
+          id,
+          title,
+          event_date,
+          location
+        )
+      `)
+      .eq('status', 'pending')
+      .lte('scheduled_for', new Date().toISOString())
+      .limit(100);
 
-    if (error) {
-      console.error('❌ process_pending_notifications failed:', error);
+    if (pendingError) {
+      console.error('❌ Failed to fetch pending notifications:', pendingError);
       if (runLog?.id) {
         await supabase
           .from('cron_job_runs')
           .update({
             status: 'failed',
-            error_message: error.message,
+            error_message: pendingError.message,
             finished_at: new Date().toISOString(),
           })
           .eq('id', runLog.id);
       }
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: pendingError.message },
         { status: 500 }
       );
+    }
+
+    if (!pendingNotifications?.length) {
+      if (runLog?.id) {
+        await supabase
+          .from('cron_job_runs')
+          .update({
+            status: 'success',
+            processed_count: 0,
+            finished_at: new Date().toISOString(),
+          })
+          .eq('id', runLog.id);
+      }
+      return NextResponse.json({ success: true, processed: 0 });
+    }
+
+    const notificationIds = pendingNotifications.map((n) => n.id);
+    await supabase
+      .from('scheduled_notifications')
+      .update({ status: 'processing' })
+      .in('id', notificationIds);
+
+    const userIds = Array.from(new Set(pendingNotifications.map((n) => n.user_id)));
+    const { data: tokens } = await supabase
+      .from('user_push_tokens')
+      .select('user_id, push_token, last_used_at')
+      .eq('active', true)
+      .in('user_id', userIds)
+      .order('last_used_at', { ascending: false });
+
+    const tokenMap = new Map<string, string>();
+    for (const token of tokens || []) {
+      if (!tokenMap.has(token.user_id)) {
+        tokenMap.set(token.user_id, token.push_token);
+      }
+    }
+
+    const sendQueue: Array<{
+      notificationId: string;
+      message: ExpoPushMessage;
+      title: string;
+      body: string;
+    }> = [];
+
+    for (const notification of pendingNotifications) {
+      const pushToken = tokenMap.get(notification.user_id);
+      const eventTitle = (notification as any).events?.title;
+      const { title, body } = buildNotificationContent(
+        notification.notification_type,
+        eventTitle
+      );
+
+      if (!pushToken || !Expo.isExpoPushToken(pushToken)) {
+        await supabase
+          .from('scheduled_notifications')
+          .update({
+            status: 'failed',
+            error: 'No valid push token',
+            title,
+            body,
+          })
+          .eq('id', notification.id);
+        continue;
+      }
+
+      sendQueue.push({
+        notificationId: notification.id,
+        title,
+        body,
+        message: {
+          to: pushToken,
+          sound: 'default',
+          title,
+          body,
+          data: {
+            type: 'event_reminder',
+            eventId: notification.event_id,
+            notificationType: notification.notification_type,
+          },
+          channelId: 'events',
+        },
+      });
+    }
+
+    const messages = sendQueue.map((item) => item.message);
+    const chunks = expo.chunkPushNotifications(messages);
+    let successCount = 0;
+    let failCount = 0;
+    let offset = 0;
+
+    for (const chunk of chunks) {
+      const chunkItems = sendQueue.slice(offset, offset + chunk.length);
+      offset += chunk.length;
+
+      try {
+        const tickets = await expo.sendPushNotificationsAsync(chunk);
+
+        for (let i = 0; i < tickets.length; i++) {
+          const ticket = tickets[i];
+          const { notificationId, title, body } = chunkItems[i];
+
+          if (ticket.status === 'ok') {
+            await supabase
+              .from('scheduled_notifications')
+              .update({
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                expo_receipt_id: ticket.id,
+                title,
+                body,
+                error: null,
+              })
+              .eq('id', notificationId);
+            successCount++;
+          } else {
+            await supabase
+              .from('scheduled_notifications')
+              .update({
+                status: 'failed',
+                error: ticket.message || 'Expo push failed',
+                title,
+                body,
+              })
+              .eq('id', notificationId);
+            failCount++;
+          }
+        }
+      } catch (chunkError: any) {
+        console.error('Expo push error:', chunkError);
+        for (const item of chunkItems) {
+          await supabase
+            .from('scheduled_notifications')
+            .update({
+              status: 'failed',
+              error: chunkError?.message || 'Expo push failed',
+              title: item.title,
+              body: item.body,
+            })
+            .eq('id', item.notificationId);
+        }
+        failCount += chunkItems.length;
+      }
     }
 
     if (runLog?.id) {
@@ -65,7 +259,7 @@ export async function GET(request: NextRequest) {
         .from('cron_job_runs')
         .update({
           status: 'success',
-          processed_count: data ?? 0,
+          processed_count: successCount,
           finished_at: new Date().toISOString(),
         })
         .eq('id', runLog.id);
@@ -75,7 +269,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      processed: data ?? 0,
+      processed: successCount + failCount,
+      sent: successCount,
+      failed: failCount,
     });
   } catch (error) {
     console.error('❌ process pending notifications cron job failed:', error);
