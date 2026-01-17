@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     const { data: creatorProfile, error: creatorError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, role')
       .eq('id', creatorId)
       .single();
 
@@ -78,6 +78,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Creator not found' },
         { status: 404, headers: corsHeaders }
+      );
+    }
+
+    if (creatorProfile.role !== 'creator') {
+      return NextResponse.json(
+        { error: 'Tips can only be sent to creator accounts' },
+        { status: 400, headers: corsHeaders }
       );
     }
 
