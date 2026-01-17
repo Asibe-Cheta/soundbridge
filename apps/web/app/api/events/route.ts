@@ -123,9 +123,7 @@ export async function POST(request: NextRequest) {
       price_eur: eventData.price_eur || null,
       // Other fields
       max_attendees: eventData.max_attendees || null,
-      image_url: eventData.image_url || null,
-      // Structured address data (stored as JSONB)
-      address_data: eventData.address_data || null
+      image_url: eventData.image_url || null
     };
 
     // Create event
