@@ -105,6 +105,7 @@ export async function PUT(request: NextRequest) {
     
     // Build update object (only include provided fields)
     const updateData: any = {};
+
     
     if (updates.notificationsEnabled !== undefined) {
       updateData.notifications_enabled = updates.notificationsEnabled;

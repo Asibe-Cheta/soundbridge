@@ -25,31 +25,69 @@ export async function PUT(request: NextRequest) {
     }
     
     // Parse request body
-    const { locationState, locationCountry, source } = await request.json();
-    
+    const { latitude, longitude, locationState, locationCountry, source } = await request.json();
+
     // Validate inputs
-    if (!locationState || !locationCountry) {
+    const hasCoordinates = latitude !== undefined && longitude !== undefined;
+    const hasLocationText = locationState || locationCountry;
+
+    if (!hasCoordinates && !hasLocationText) {
       return NextResponse.json(
-        { error: 'locationState and locationCountry are required' },
+        { error: 'latitude/longitude or locationState/locationCountry is required' },
         { status: 400 }
       );
     }
-    
+
+    if (hasCoordinates && (isNaN(Number(latitude)) || isNaN(Number(longitude)))) {
+      return NextResponse.json(
+        { error: 'latitude and longitude must be numbers' },
+        { status: 400 }
+      );
+    }
+
     if (source && !['gps', 'manual'].includes(source)) {
       return NextResponse.json(
         { error: 'source must be gps or manual' },
         { status: 400 }
       );
     }
-    
-    // Update location
-    const { error } = await supabase
-      .from('user_notification_preferences')
-      .update({
-        location_state: locationState,
-        location_country: locationCountry,
-      })
-      .eq('user_id', user.id);
+
+    if (hasCoordinates) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          latitude,
+          longitude,
+          location_updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error updating profile location:', profileError);
+        return NextResponse.json(
+          { error: 'Failed to update profile location' },
+          { status: 500 }
+        );
+      }
+    }
+
+    if (hasLocationText) {
+      const { error: prefsError } = await supabase
+        .from('user_notification_preferences')
+        .update({
+          location_state: locationState,
+          location_country: locationCountry,
+        })
+        .eq('user_id', user.id);
+
+      if (prefsError) {
+        console.error('Error updating notification location:', prefsError);
+        return NextResponse.json(
+          { error: 'Failed to update notification location' },
+          { status: 500 }
+        );
+      }
+    }
     
     if (error) {
       console.error('Error updating location:', error);
@@ -59,7 +97,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    console.log(`✅ Location updated for user ${user.id}: ${locationState}, ${locationCountry}`);
+    console.log(`✅ Location updated for user ${user.id}`);
     
     return NextResponse.json({
       success: true,
