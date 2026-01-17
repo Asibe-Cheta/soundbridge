@@ -116,11 +116,9 @@ export async function POST(request: NextRequest) {
       country: eventData.country || null,
       latitude: eventData.latitude || null,
       longitude: eventData.longitude || null,
-      // Pricing
+      // Pricing (only fields that exist in the events table)
       price_gbp: eventData.price_gbp || null,
       price_ngn: eventData.price_ngn || null,
-      price_usd: eventData.price_usd || null,
-      price_eur: eventData.price_eur || null,
       // Other fields
       max_attendees: eventData.max_attendees || null,
       image_url: eventData.image_url || null
