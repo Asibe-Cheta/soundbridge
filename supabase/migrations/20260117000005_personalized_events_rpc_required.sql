@@ -18,6 +18,8 @@ ADD COLUMN IF NOT EXISTS event_notifications_enabled BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS notification_start_hour INTEGER DEFAULT 8,
 ADD COLUMN IF NOT EXISTS notification_end_hour INTEGER DEFAULT 22;
 
+DROP FUNCTION IF EXISTS get_personalized_events(UUID, INTEGER, INTEGER);
+
 CREATE OR REPLACE FUNCTION get_personalized_events(
   p_user_id UUID,
   p_limit INTEGER DEFAULT 20,
