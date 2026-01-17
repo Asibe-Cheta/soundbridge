@@ -300,48 +300,53 @@ DECLARE
   v_user RECORD;
   v_scheduled_count INTEGER := 0;
 BEGIN
-  SELECT * INTO v_event FROM events WHERE id = p_event_id;
+  BEGIN
+    SELECT * INTO v_event FROM events WHERE id = p_event_id;
 
-  IF v_event IS NULL THEN
-    RETURN 0;
-  END IF;
-
-  FOR v_user IN
-    SELECT user_id, distance_km
-    FROM notify_users_for_new_event(
-      p_event_id,
-      v_event.category::text,
-      v_event.latitude,
-      v_event.longitude,
-      50
-    )
-  LOOP
-    IF v_event.event_date > NOW() + INTERVAL '14 days' THEN
-      INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
-      VALUES (v_user.user_id, p_event_id, 'two_weeks', v_event.event_date - INTERVAL '14 days')
-      ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
-      v_scheduled_count := v_scheduled_count + 1;
+    IF v_event IS NULL THEN
+      RETURN 0;
     END IF;
 
-    IF v_event.event_date > NOW() + INTERVAL '7 days' THEN
+    FOR v_user IN
+      SELECT user_id, distance_km
+      FROM notify_users_for_new_event(
+        p_event_id,
+        v_event.category::text,
+        v_event.latitude,
+        v_event.longitude,
+        50
+      )
+    LOOP
+      IF v_event.event_date > NOW() + INTERVAL '14 days' THEN
+        INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
+        VALUES (v_user.user_id, p_event_id, 'two_weeks', v_event.event_date - INTERVAL '14 days')
+        ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
+        v_scheduled_count := v_scheduled_count + 1;
+      END IF;
+
+      IF v_event.event_date > NOW() + INTERVAL '7 days' THEN
+        INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
+        VALUES (v_user.user_id, p_event_id, 'one_week', v_event.event_date - INTERVAL '7 days')
+        ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
+        v_scheduled_count := v_scheduled_count + 1;
+      END IF;
+
+      IF v_event.event_date > NOW() + INTERVAL '1 day' THEN
+        INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
+        VALUES (v_user.user_id, p_event_id, '24_hours', v_event.event_date - INTERVAL '1 day')
+        ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
+        v_scheduled_count := v_scheduled_count + 1;
+      END IF;
+
       INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
-      VALUES (v_user.user_id, p_event_id, 'one_week', v_event.event_date - INTERVAL '7 days')
+      VALUES (v_user.user_id, p_event_id, 'event_day', DATE_TRUNC('day', v_event.event_date) + INTERVAL '9 hours')
       ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
       v_scheduled_count := v_scheduled_count + 1;
-    END IF;
-
-    IF v_event.event_date > NOW() + INTERVAL '1 day' THEN
-      INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
-      VALUES (v_user.user_id, p_event_id, '24_hours', v_event.event_date - INTERVAL '1 day')
-      ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
-      v_scheduled_count := v_scheduled_count + 1;
-    END IF;
-
-    INSERT INTO scheduled_notifications (user_id, event_id, notification_type, scheduled_for)
-    VALUES (v_user.user_id, p_event_id, 'event_day', DATE_TRUNC('day', v_event.event_date) + INTERVAL '9 hours')
-    ON CONFLICT (user_id, event_id, notification_type) DO NOTHING;
-    v_scheduled_count := v_scheduled_count + 1;
-  END LOOP;
+    END LOOP;
+  EXCEPTION WHEN OTHERS THEN
+    -- Never block event creation due to scheduling errors
+    RETURN v_scheduled_count;
+  END;
 
   RETURN v_scheduled_count;
 END;
@@ -350,7 +355,12 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION trigger_schedule_event_notifications()
 RETURNS TRIGGER AS $$
 BEGIN
-  PERFORM schedule_event_notifications(NEW.id);
+  BEGIN
+    PERFORM schedule_event_notifications(NEW.id);
+  EXCEPTION WHEN OTHERS THEN
+    -- Do not fail event creation if scheduling fails
+    NULL;
+  END;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
