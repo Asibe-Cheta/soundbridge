@@ -31,14 +31,44 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const { data: runLog } = await supabase
+      .from('cron_job_runs')
+      .insert({
+        job_name: 'process_pending_notifications',
+        status: 'running',
+      })
+      .select('id')
+      .single();
+
     const { data, error } = await supabase.rpc('process_pending_notifications');
 
     if (error) {
       console.error('❌ process_pending_notifications failed:', error);
+      if (runLog?.id) {
+        await supabase
+          .from('cron_job_runs')
+          .update({
+            status: 'failed',
+            error_message: error.message,
+            finished_at: new Date().toISOString(),
+          })
+          .eq('id', runLog.id);
+      }
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       );
+    }
+
+    if (runLog?.id) {
+      await supabase
+        .from('cron_job_runs')
+        .update({
+          status: 'success',
+          processed_count: data ?? 0,
+          finished_at: new Date().toISOString(),
+        })
+        .eq('id', runLog.id);
     }
 
     console.log('✅ Process pending notifications completed');
