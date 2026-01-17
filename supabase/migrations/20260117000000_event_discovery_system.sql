@@ -104,7 +104,7 @@ BEGIN
         cos(radians(p.longitude) - radians(p_event_longitude)) +
         sin(radians(p_event_latitude)) * sin(radians(p.latitude))
       )
-    ) as distance_km
+    )::numeric as distance_km
   FROM profiles p
   JOIN user_notification_preferences np ON np.user_id = p.id
   WHERE
@@ -122,7 +122,7 @@ BEGIN
         cos(radians(p.longitude) - radians(p_event_longitude)) +
         sin(radians(p_event_latitude)) * sin(radians(p.latitude))
       )
-    ) <= p_notification_radius_km
+    )::numeric <= p_notification_radius_km
   ORDER BY distance_km ASC;
 END;
 $$ LANGUAGE plpgsql;
