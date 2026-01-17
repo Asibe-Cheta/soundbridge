@@ -148,6 +148,24 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
+    // Record in the tips table for mobile flow compatibility
+    const { data: tipsRow, error: tipsError } = await supabase
+      .from('tips')
+      .insert({
+        sender_id: user.id,
+        recipient_id: creatorId,
+        amount: tipAmount,
+        currency: currency || 'USD',
+        message: message,
+        is_anonymous: isAnonymous || false,
+        status: 'pending',
+        payment_intent_id: paymentIntent.id,
+        platform_fee: platformFee,
+        creator_earnings: creatorEarnings,
+      })
+      .select()
+      .single();
+
     // Also record in the original creator_tips table for backward compatibility
     const { error: legacyTipError } = await supabase
       .from('creator_tips')
@@ -162,8 +180,8 @@ export async function POST(request: NextRequest) {
         status: 'pending'
       });
 
-    if (tipError) {
-      console.error('Error creating tip record:', tipError);
+    if (tipError || tipsError) {
+      console.error('Error creating tip record:', tipError || tipsError);
       return NextResponse.json(
         { error: 'Failed to create tip record' },
         { status: 500, headers: corsHeaders }
@@ -175,6 +193,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       clientSecret: paymentIntent.client_secret,
       tipId: tipData.id,
+      tipRecordId: tipsRow?.id || null,
       platformFee,
       creatorEarnings,
       message: 'Payment intent created'

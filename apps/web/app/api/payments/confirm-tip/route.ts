@@ -120,6 +120,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { error: tipsUpdateError } = await supabase
+      .from('tips')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('payment_intent_id', paymentIntentId);
+
+    if (tipsUpdateError) {
+      console.error('Error updating tips table status:', tipsUpdateError);
+    }
+
     if (tipAnalytics?.id) {
       const { error: updateAnalyticsError } = await supabase
         .from('tip_analytics')
