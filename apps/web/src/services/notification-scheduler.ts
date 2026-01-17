@@ -118,8 +118,8 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
   try {
     // Get creator details
     const { data: creator, error: creatorError } = await supabaseAdmin
-      .from('users')
-      .select('id, username')
+      .from('profiles')
+      .select('id, username, display_name')
       .eq('id', event.creator_id)
       .single();
     
@@ -137,16 +137,24 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
     const creatorData: CreatorData = {
       id: creator.id,
       username: creator.username,
+      display_name: creator.display_name,
       follower_count: followerCount || 0,
     };
     
     const eventData: EventData = {
       id: event.id,
       title: event.title,
+      description: event.description,
       category: event.category,
-      state: event.state,
-      country: event.country,
-      location: event.location,
+      state: event.state || '',
+      country: event.country || '',
+      location: event.location || '',
+      venue: event.venue,
+      city: event.city,
+      price_gbp: event.price_gbp,
+      price_ngn: event.price_ngn,
+      max_attendees: event.max_attendees,
+      current_attendees: event.current_attendees,
       event_date: event.event_date,
       creator_id: event.creator_id,
     };

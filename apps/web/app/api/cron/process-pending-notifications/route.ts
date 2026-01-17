@@ -5,37 +5,75 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Expo, ExpoPushMessage } from 'expo-server-sdk';
+import { formatNaturalNotificationDate } from '@/src/lib/notification-utils';
 
 const expo = new Expo();
 
-function buildNotificationContent(notificationType: string, eventTitle?: string) {
-  const safeTitle = eventTitle || 'Upcoming Event';
+function getCTA(event: any): string {
+  const isPaid = (event?.price_gbp || 0) > 0 || (event?.price_ngn || 0) > 0;
+  const maxAttendees = event?.max_attendees ?? 0;
+  const currentAttendees = event?.current_attendees ?? 0;
+  const hasLimitedSpots = maxAttendees > 0 && currentAttendees >= maxAttendees * 0.8;
+
+  if (hasLimitedSpots && isPaid) {
+    return 'Limited spots - get your ticket!';
+  }
+  if (hasLimitedSpots && !isPaid) {
+    return 'Limited spots - check in now!';
+  }
+  if (isPaid) {
+    const paidCTAs = ['Book your place!', 'Get your ticket!', 'Reserve your spot!', 'Grab your ticket now!'];
+    return paidCTAs[Math.floor(Math.random() * paidCTAs.length)];
+  }
+  const freeCTAs = ['Check in to attend!', 'RSVP now!', 'Save your spot!', 'Join the event!'];
+  return freeCTAs[Math.floor(Math.random() * freeCTAs.length)];
+}
+
+function getEventCity(event: any): string {
+  if (event?.city) return event.city;
+  if (event?.location) {
+    const parts = event.location.split(',').map((part: string) => part.trim()).filter(Boolean);
+    if (parts.length > 1) return parts[1];
+    return parts[0];
+  }
+  return 'your area';
+}
+
+function buildEventReminderContent(notificationType: string, event: any, creatorName?: string) {
+  const safeTitle = event?.title || 'Upcoming Event';
+  const safeCreator = creatorName || 'This creator';
+  const city = getEventCity(event);
+  const venueOrCity = event?.venue || city;
+  const naturalDate = event?.event_date
+    ? formatNaturalNotificationDate(event.event_date, 'UTC')
+    : 'soon';
+  const cta = getCTA(event);
 
   switch (notificationType) {
     case 'two_weeks':
       return {
-        title: 'Event in 2 weeks',
-        body: `${safeTitle} is happening in 2 weeks.`,
+        title: `Reminder: ${safeCreator} is hosting a ${event?.category || 'event'} ${naturalDate}!`,
+        body: `${safeTitle} at ${venueOrCity}. ${cta}`,
       };
     case 'one_week':
       return {
-        title: 'Event in 1 week',
-        body: `${safeTitle} is happening in 1 week.`,
+        title: `Reminder: ${safeCreator} is hosting a ${event?.category || 'event'} ${naturalDate}!`,
+        body: `${safeTitle} at ${venueOrCity}. ${cta}`,
       };
     case '24_hours':
       return {
-        title: 'Event tomorrow',
-        body: `${safeTitle} is happening in 24 hours.`,
+        title: `Reminder: ${safeCreator}'s ${event?.category || 'event'} is tomorrow!`,
+        body: `${safeTitle} at ${venueOrCity}. ${cta}`,
       };
     case 'event_day':
       return {
-        title: 'Event today',
-        body: `${safeTitle} is today.`,
+        title: `${safeTitle} starts today!`,
+        body: `${safeCreator}'s ${event?.category || 'event'} at ${venueOrCity}. See you there!`,
       };
     default:
       return {
-        title: `Event: ${safeTitle}`,
-        body: `${safeTitle} is coming up.`,
+        title: `Reminder: ${safeCreator} is hosting a ${event?.category || 'event'} ${naturalDate}!`,
+        body: `${safeTitle} at ${venueOrCity}. ${cta}`,
       };
   }
 }
@@ -90,7 +128,15 @@ export async function GET(request: NextRequest) {
           id,
           title,
           event_date,
-          location
+          location,
+          venue,
+          city,
+          category,
+          price_gbp,
+          price_ngn,
+          max_attendees,
+          current_attendees,
+          creator_id
         )
       `)
       .eq('status', 'pending')
@@ -150,6 +196,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const creatorIds = Array.from(
+      new Set(
+        pendingNotifications
+          .map((notification: any) => notification?.events?.creator_id)
+          .filter(Boolean)
+      )
+    );
+    const { data: creators } = await supabase
+      .from('profiles')
+      .select('id, username, display_name')
+      .in('id', creatorIds);
+    const creatorMap = new Map<string, string>();
+    for (const creator of creators || []) {
+      creatorMap.set(creator.id, creator.display_name || creator.username);
+    }
+
     const sendQueue: Array<{
       notificationId: string;
       message: ExpoPushMessage;
@@ -159,12 +221,14 @@ export async function GET(request: NextRequest) {
 
     for (const notification of pendingNotifications) {
       const pushToken = tokenMap.get(notification.user_id);
-      const eventTitle = (notification as any).events?.title;
+      const eventRecord = (notification as any).events;
       const isMessageNotification = notification.notification_type === 'message';
-      const fallbackContent = buildNotificationContent(
-        notification.notification_type,
-        eventTitle
-      );
+      const creatorName = eventRecord?.creator_id
+        ? creatorMap.get(eventRecord.creator_id)
+        : undefined;
+      const fallbackContent = isMessageNotification
+        ? { title: 'New message', body: 'You have a new message.' }
+        : buildEventReminderContent(notification.notification_type, eventRecord, creatorName);
       const title = notification.title || fallbackContent.title;
       const body = notification.body || fallbackContent.body;
       const payloadData = isMessageNotification
