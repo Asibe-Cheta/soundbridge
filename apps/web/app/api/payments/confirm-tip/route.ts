@@ -225,13 +225,22 @@ export async function POST(request: NextRequest) {
         .eq('id', creatorId)
         .single();
 
+      const { data: creatorTokenRow } = await supabase
+        .from('user_push_tokens')
+        .select('push_token')
+        .eq('user_id', creatorId)
+        .eq('active', true)
+        .order('last_used_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       const { data: senderProfile } = await supabase
         .from('profiles')
         .select('username')
         .eq('id', senderId)
         .single();
 
-      const pushToken = creatorProfile?.expo_push_token;
+      const pushToken = creatorProfile?.expo_push_token || creatorTokenRow?.push_token;
       const senderUsername =
         senderProfile?.username ||
         user.user_metadata?.username ||
