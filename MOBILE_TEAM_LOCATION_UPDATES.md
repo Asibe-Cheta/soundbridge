@@ -14,10 +14,10 @@ Ensure every user who grants location permission sends location updates to the b
 ### Payload
 ```json
 {
-  "latitude": 4.9267,
-  "longitude": 6.2676,
-  "locationState": "Bayelsa",
-  "locationCountry": "Nigeria",
+  "latitude": 0.0,
+  "longitude": 0.0,
+  "locationState": "State",
+  "locationCountry": "Country",
   "source": "foreground"
 }
 ```
