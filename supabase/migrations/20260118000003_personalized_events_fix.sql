@@ -1,6 +1,6 @@
--- Personalized Events - Fix empty results for location-based users
+-- Personalized Events - Strict location-only logic
 -- Date: January 18, 2026
--- Purpose: Make get_personalized_events more lenient (city/location/country fallback)
+-- Purpose: Avoid fallback results; only show truly nearby events
 
 CREATE OR REPLACE FUNCTION get_personalized_events(
   p_user_id UUID,
@@ -28,26 +28,25 @@ RETURNS TABLE(
 DECLARE
   v_user_latitude DECIMAL;
   v_user_longitude DECIMAL;
-  v_user_city TEXT;
-  v_user_country TEXT;
   v_preferred_genres TEXT[];
   v_max_radius_km INTEGER := 100;
 BEGIN
   SELECT
     p.latitude,
     p.longitude,
-    p.city,
-    np.location_country,
     np.preferred_event_genres
   INTO
     v_user_latitude,
     v_user_longitude,
-    v_user_city,
-    v_user_country,
     v_preferred_genres
   FROM profiles p
   LEFT JOIN user_notification_preferences np ON np.user_id = p.id
   WHERE p.id = p_user_id;
+
+  -- Strict: no location, no results
+  IF v_user_latitude IS NULL OR v_user_longitude IS NULL THEN
+    RETURN;
+  END IF;
 
   RETURN QUERY
   SELECT
@@ -115,23 +114,15 @@ BEGIN
     ) AS relevance_score
   FROM events e
   WHERE e.event_date >= NOW()
+    AND e.latitude IS NOT NULL
+    AND e.longitude IS NOT NULL
     AND (
-      (
-        v_user_latitude IS NOT NULL AND v_user_longitude IS NOT NULL
-        AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
-        AND (
-          6371 * acos(
-            cos(radians(v_user_latitude)) * cos(radians(e.latitude)) *
-            cos(radians(e.longitude) - radians(v_user_longitude)) +
-            sin(radians(v_user_latitude)) * sin(radians(e.latitude))
-          )
-        ) <= v_max_radius_km
+      6371 * acos(
+        cos(radians(v_user_latitude)) * cos(radians(e.latitude)) *
+        cos(radians(e.longitude) - radians(v_user_longitude)) +
+        sin(radians(v_user_latitude)) * sin(radians(e.latitude))
       )
-      OR (v_user_city IS NOT NULL AND e.city ILIKE '%' || v_user_city || '%')
-      OR (v_user_city IS NOT NULL AND e.location ILIKE '%' || v_user_city || '%')
-      OR (v_user_country IS NOT NULL AND e.country ILIKE '%' || v_user_country || '%')
-      OR (v_user_latitude IS NULL AND v_user_longitude IS NULL AND v_user_city IS NULL AND v_user_country IS NULL)
-    )
+    ) <= v_max_radius_km
     AND (
       v_preferred_genres IS NULL
       OR array_length(v_preferred_genres, 1) IS NULL
