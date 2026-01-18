@@ -120,13 +120,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error: tipsUpdateError } = await supabase
+    const { data: tipsRow, error: tipsUpdateError } = await supabase
       .from('tips')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
       })
-      .eq('payment_intent_id', paymentIntentId);
+      .eq('payment_intent_id', paymentIntentId)
+      .select()
+      .single();
 
     if (tipsUpdateError) {
       console.error('Error updating tips table status:', tipsUpdateError);
@@ -145,9 +147,16 @@ export async function POST(request: NextRequest) {
 
     const amount = Number(
         tipAnalytics?.tip_amount ??
+          tipsRow?.amount ??
           tipData.amount ??
           (paymentIntent.amount ? paymentIntent.amount / 100 : 0)
       );
+    const currency = String(
+      tipsRow?.currency ||
+        tipData.currency ||
+        paymentIntent.currency ||
+        'USD'
+    ).toUpperCase();
     const platformFee =
       Number(tipAnalytics?.platform_fee) ||
       Number(paymentIntent.metadata?.platformFee || 0);
@@ -155,22 +164,29 @@ export async function POST(request: NextRequest) {
       Number(tipAnalytics?.creator_earnings) ||
       Number(paymentIntent.metadata?.creatorEarnings || Math.max(0, amount - platformFee));
 
+    const creatorId = tipsRow?.recipient_id || tipData.creator_id;
+    const senderId = tipsRow?.sender_id || tipData.tipper_id || user.id;
+    const tipMessage = tipsRow?.message || tipData.message || '';
+    const isAnonymous = Boolean(
+      tipsRow?.is_anonymous ?? tipData.is_anonymous ?? false
+    );
+
     // 🚨 CRITICAL FIX: Add tip to creator's wallet
     try {
       // Add tip to creator's wallet using the database function
       const { data: walletTransactionId, error: walletError } = await supabase
         .rpc('add_wallet_transaction', {
-          user_uuid: tipData.creator_id,
+          user_uuid: creatorId,
           transaction_type: 'tip_received',
           amount: creatorEarnings,
-          description: `Tip received${tipData.message ? `: ${tipData.message}` : ''}`,
+          description: `Tip received${tipMessage ? `: ${tipMessage}` : ''}`,
           reference_id: paymentIntentId,
           metadata: {
-            tipper_id: tipData.tipper_id,
+            tipper_id: senderId,
             original_amount: amount,
             platform_fee: platformFee,
-            tip_message: tipData.message,
-            is_anonymous: tipData.is_anonymous
+            tip_message: tipMessage,
+            is_anonymous: isAnonymous
           }
         });
 
@@ -188,7 +204,7 @@ export async function POST(request: NextRequest) {
     // Record revenue transaction
     const { error: transactionError } = await supabase
       .rpc('record_revenue_transaction', {
-        user_uuid: tipData.creator_id,
+        user_uuid: creatorId,
         transaction_type_param: 'tip',
         amount_param: amount,
         customer_email_param: user.email,
@@ -199,6 +215,59 @@ export async function POST(request: NextRequest) {
     if (transactionError) {
       console.error('Error recording revenue transaction:', transactionError);
       // Don't fail the request, just log the error
+    }
+
+    // Instant push notification for creator (non-blocking)
+    try {
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('username, expo_push_token')
+        .eq('id', creatorId)
+        .single();
+
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', senderId)
+        .single();
+
+      const pushToken = creatorProfile?.expo_push_token;
+      const senderUsername =
+        senderProfile?.username ||
+        user.user_metadata?.username ||
+        user.user_metadata?.display_name ||
+        (user.email ? user.email.split('@')[0] : 'someone');
+      const senderLabel = isAnonymous ? 'Someone' : `@${senderUsername}`;
+      const formattedAmount =
+        currency === 'USD' ? `$${amount.toFixed(2)}` : `${currency} ${amount.toFixed(2)}`;
+      const amountInCents = Math.round(amount * 100);
+
+      if (pushToken && (pushToken.startsWith('ExponentPushToken[') || pushToken.startsWith('ExpoPushToken['))) {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: pushToken,
+            title: 'You received a tip! 🎉',
+            body: `${senderLabel} sent you a ${formattedAmount} tip`,
+            data: {
+              type: 'tip',
+              tipId: tipsRow?.id || tipAnalytics?.id || tipData.id,
+              amount: amountInCents,
+              currency,
+              senderId,
+              senderUsername: isAnonymous ? null : senderUsername,
+              message: tipMessage || null,
+              deepLink: 'soundbridge://wallet/tips'
+            },
+            sound: 'default',
+            priority: 'high',
+            channelId: 'tips'
+          }),
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending tip notification:', notificationError);
     }
 
     return NextResponse.json({
