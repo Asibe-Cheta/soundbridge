@@ -78,15 +78,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const priceGbp = Number(eventData.price_gbp ?? 0);
+    const priceNgn = Number(eventData.price_ngn ?? 0);
+
     // Validate price if provided
-    if (eventData.price_gbp && (isNaN(eventData.price_gbp) || eventData.price_gbp < 0)) {
+    if (eventData.price_gbp && (isNaN(priceGbp) || priceGbp < 0)) {
       return NextResponse.json(
         { error: 'Invalid GBP price' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    if (eventData.price_ngn && (isNaN(eventData.price_ngn) || eventData.price_ngn < 0)) {
+    if (eventData.price_ngn && (isNaN(priceNgn) || priceNgn < 0)) {
       return NextResponse.json(
         { error: 'Invalid NGN price' },
         { status: 400, headers: corsHeaders }
@@ -99,6 +102,43 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid max attendees' },
         { status: 400, headers: corsHeaders }
       );
+    }
+
+    const isPaidEvent = eventData.is_free === false || priceGbp > 0 || priceNgn > 0;
+    if (isPaidEvent) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        return NextResponse.json(
+          { error: 'Failed to verify creator status' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      if (profile.role !== 'creator') {
+        return NextResponse.json(
+          {
+            error: 'CREATOR_REQUIRED',
+            message: 'You must be a creator to host paid events. Switch to a creator account first.',
+          },
+          { status: 403, headers: corsHeaders }
+        );
+      }
+
+      const subscriptionTier = String(profile.subscription_tier || 'free').toLowerCase();
+      if (!['premium', 'unlimited'].includes(subscriptionTier)) {
+        return NextResponse.json(
+          {
+            error: 'SUBSCRIPTION_REQUIRED',
+            message: 'You need a Premium or Unlimited subscription to host paid events.',
+          },
+          { status: 403, headers: corsHeaders }
+        );
+      }
     }
 
     // Map mobile categories to database enum values
