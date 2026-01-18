@@ -24,6 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_notification_history_event
   ON notification_history(event_id);
 
 -- Function: Find nearby users for event notifications
+DROP FUNCTION IF EXISTS find_nearby_users_for_event(UUID, DECIMAL);
 CREATE OR REPLACE FUNCTION find_nearby_users_for_event(
   p_event_id UUID,
   p_max_distance_km DECIMAL DEFAULT 20
@@ -93,13 +94,15 @@ BEGIN
     CASE
       WHEN v_event_latitude IS NOT NULL AND v_event_longitude IS NOT NULL
            AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL THEN
-        6371 * acos(
-          cos(radians(v_event_latitude)) *
-          cos(radians(p.latitude)) *
-          cos(radians(p.longitude) - radians(v_event_longitude)) +
-          sin(radians(v_event_latitude)) *
-          sin(radians(p.latitude))
-        )
+        (
+          6371 * acos(
+            cos(radians(v_event_latitude)) *
+            cos(radians(p.latitude)) *
+            cos(radians(p.longitude) - radians(v_event_longitude)) +
+            sin(radians(v_event_latitude)) *
+            sin(radians(p.latitude))
+          )
+        )::numeric
       ELSE NULL
     END AS distance_km,
     COALESCE(np.preferred_event_genres, ARRAY[]::TEXT[]) AS preferred_categories,
