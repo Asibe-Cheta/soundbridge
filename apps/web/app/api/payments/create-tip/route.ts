@@ -91,6 +91,11 @@ export async function POST(request: NextRequest) {
     // Calculate platform fee based on tipper's tier (userTier)
     const normalizedTier = String(userTier || 'free').toLowerCase();
     const platformFeeRate = normalizedTier === 'free' ? 0.10 : 0.08;
+    const analyticsTier = ['free', 'pro', 'enterprise'].includes(normalizedTier)
+      ? normalizedTier
+      : ['premium', 'unlimited'].includes(normalizedTier)
+        ? 'pro'
+        : 'free';
     const tipAmount = Number(amount);
     const platformFee = Math.round(tipAmount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
@@ -142,7 +147,7 @@ export async function POST(request: NextRequest) {
       .insert({
         creator_id: creatorId,
         tipper_id: user.id,
-        tipper_tier: userTier,
+        tipper_tier: analyticsTier,
         tip_amount: tipAmount,
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
@@ -187,8 +192,12 @@ export async function POST(request: NextRequest) {
         status: 'pending'
       });
 
-    if (tipError || tipsError) {
-      console.error('Error creating tip record:', tipError || tipsError);
+    if (tipError) {
+      console.warn('Tip analytics insert failed (non-blocking):', tipError);
+    }
+
+    if (tipsError) {
+      console.error('Error creating tip record:', tipsError);
       return NextResponse.json(
         { error: 'Failed to create tip record' },
         { status: 500, headers: corsHeaders }
