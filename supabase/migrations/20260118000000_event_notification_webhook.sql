@@ -109,8 +109,8 @@ BEGIN
   LEFT JOIN user_notification_preferences np ON np.user_id = p.id
   LEFT JOIN LATERAL (
     SELECT push_token
-    FROM user_push_tokens
-    WHERE user_id = p.id
+    FROM user_push_tokens upt_src
+    WHERE upt_src.user_id = p.id
     ORDER BY last_used_at DESC
     LIMIT 1
   ) upt ON TRUE
