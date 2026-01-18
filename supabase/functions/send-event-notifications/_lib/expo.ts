@@ -13,6 +13,7 @@ interface PushMessage {
   body: string;
   data?: any;
   channelId?: string;
+  url?: string;
 }
 
 interface PushReceipt {

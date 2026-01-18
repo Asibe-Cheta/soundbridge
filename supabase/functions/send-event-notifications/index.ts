@@ -38,6 +38,100 @@ interface EligibleUser {
 const MAX_DISTANCE_KM = 20;
 const DAILY_NOTIFICATION_LIMIT = 3;
 
+function formatNaturalDate(eventDate: string): string {
+  const event = new Date(eventDate);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfEventDay = new Date(event.getFullYear(), event.getMonth(), event.getDate());
+  const diffDays = Math.round(
+    (startOfEventDay.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'tomorrow';
+  if (diffDays > 1 && diffDays <= 7) return `in ${diffDays} days`;
+
+  return event.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function getEventCity(event: Event): string {
+  if (event?.city) return event.city;
+  if (event?.location) {
+    const parts = event.location.split(',').map((part) => part.trim()).filter(Boolean);
+    if (parts.length > 1) return parts[1];
+    if (parts.length > 0) return parts[0];
+  }
+  return 'your area';
+}
+
+function getCTA(event: Event): string {
+  const isPaid = (event as any)?.price_gbp > 0 || (event as any)?.price_ngn > 0;
+  const maxAttendees = (event as any)?.max_attendees ?? 0;
+  const currentAttendees = (event as any)?.current_attendees ?? 0;
+  const hasLimitedSpots = maxAttendees > 0 && currentAttendees >= maxAttendees * 0.8;
+
+  if (hasLimitedSpots && isPaid) return 'Limited spots - get your ticket!';
+  if (hasLimitedSpots && !isPaid) return 'Limited spots - check in now!';
+  if (isPaid) {
+    const paidCTAs = ['Get your ticket!', 'Reserve your spot!', 'Grab your ticket now!'];
+    return paidCTAs[Math.floor(Math.random() * paidCTAs.length)];
+  }
+  const freeCTAs = ['RSVP now!', 'Join the event!', 'Save your spot!'];
+  return freeCTAs[Math.floor(Math.random() * freeCTAs.length)];
+}
+
+function buildEventNotification(event: Event, creatorName: string) {
+  const city = getEventCity(event);
+  const naturalDate = formatNaturalDate(event.event_date);
+  const cta = getCTA(event);
+
+  const eventDate = new Date(event.event_date);
+  const daysUntil =
+    (eventDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  const isUrgent = daysUntil >= 0 && daysUntil <= 3;
+
+  if (isUrgent) {
+    return {
+      title: `Don't miss out! ${creatorName}'s ${event.category} is ${naturalDate}`,
+      body: `${event.title} in ${city}. Limited spots available!`,
+    };
+  }
+
+  const templateType = Math.floor(Math.random() * 5);
+  switch (templateType) {
+    case 0:
+      return {
+        title: `${creatorName} is hosting a ${event.category} ${naturalDate}!`,
+        body: `${event.title} in ${city}. ${cta}`,
+      };
+    case 1:
+      return {
+        title: `${creatorName} has a ${event.category} coming up!`,
+        body: `${event.title} in ${city} ${naturalDate}. ${cta}`,
+      };
+    case 2:
+      return {
+        title: `Hey! ${creatorName} has something for you`,
+        body: `${event.category}: ${event.title} in ${city} ${naturalDate}`,
+      };
+    case 3:
+      return {
+        title: `${event.category} happening in ${city} ${naturalDate}!`,
+        body: `${creatorName} presents: ${event.title}. ${cta}`,
+      };
+    case 4:
+    default:
+      return {
+        title: `${event.title} - ${naturalDate}`,
+        body: `${creatorName}'s ${event.category} in ${city}. ${cta}`,
+      };
+  }
+}
+
 serve(async (req) => {
   try {
     // Parse request body
@@ -143,19 +237,14 @@ serve(async (req) => {
 
     // Build notification messages
     const creatorName = event.creator.display_name || event.creator.username;
-    const eventDate = new Date(event.event_date).toLocaleDateString('en-GB', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const deepLink = `soundbridge://event/${event.id}`;
+    const { title, body } = buildEventNotification(event, creatorName);
 
     const messages = eligibleUsers.map(user => ({
       to: user.expo_push_token,
       sound: 'default',
-      title: `New ${event.category} in ${event.city}!`,
-      body: `${event.title} on ${eventDate}`,
+      title,
+      body,
       data: {
         type: 'event',
         eventId: event.id,
@@ -165,8 +254,10 @@ serve(async (req) => {
         city: event.city,
         creatorName: creatorName,
         distance: user.distance_km,
-        deepLink: `soundbridge://event/${event.id}`
+        deepLink,
+        url: deepLink
       },
+      url: deepLink,
       channelId: 'events'
     }));
 
