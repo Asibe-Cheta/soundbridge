@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Globe, Lock, Users, Send, Clock, Save, MapPin, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useSubscription } from '../../../src/hooks/useSubscription';
 import { eventService } from '../../../src/lib/event-service';
 import type { EventCreateData, EventCategory } from '../../../src/lib/types/event';
 import { useImageUpload } from '../../../src/hooks/useImageUpload';
@@ -17,6 +18,7 @@ import { geocodeAddress, buildAddressString } from '../../../src/lib/geocoding';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
+  const { data: subscriptionData, refresh: refreshSubscription } = useSubscription();
   const [imageState, imageActions] = useImageUpload();
   const { location, isLoading: locationLoading, error: locationError, detectLocation } = useLocation();
   const [isPublishing, setIsPublishing] = useState(false);
@@ -42,6 +44,13 @@ export default function CreateEventPage() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
+
+  const subscriptionTier = subscriptionData?.subscription?.tier || 'free';
+  const subscriptionStatus = subscriptionData?.subscription?.status || 'active';
+  const canHostPaidEvents =
+    ['premium', 'unlimited'].includes(subscriptionTier) && subscriptionStatus === 'active';
+  const paidPriceValue = parseFloat(price.replace(/[£₦$€₹¥R$]/g, ''));
+  const isPaidEvent = Number.isFinite(paidPriceValue) && paidPriceValue > 0;
 
   // Type adapter for ImageUpload component
   const adaptUploadFile = (file: any) => {
@@ -89,6 +98,28 @@ export default function CreateEventPage() {
     setLongitude(null);
     setGeocodeError(null);
   }, [selectedCountry]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const handleFocus = () => {
+      refreshSubscription();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshSubscription();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id, refreshSubscription]);
 
   // Auto-upload image when imageFile is set
   useEffect(() => {
@@ -211,6 +242,13 @@ export default function CreateEventPage() {
     try {
       setIsPublishing(true);
       setError(null);
+
+      if (isPaidEvent && !canHostPaidEvents) {
+        setError('Premium or Unlimited subscription required for paid events.');
+        setPublishStatus('error');
+        setIsPublishing(false);
+        return;
+      }
 
       // Combine date and time
       const eventDateTime = new Date(`${date}T${time}`);
@@ -769,6 +807,34 @@ export default function CreateEventPage() {
                   <div style={{ color: '#ccc', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                     Leave empty for free events. Currency: {selectedCountryConfig.currencySymbol} ({selectedCountryConfig.currency})
                   </div>
+                  {isPaidEvent && !canHostPaidEvents && (
+                    <div
+                      style={{
+                        marginTop: '1rem',
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(236, 72, 153, 0.4)',
+                        background: 'rgba(236, 72, 153, 0.08)',
+                        color: '#FDE2E2'
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                        Premium or Unlimited required
+                      </div>
+                      <div style={{ fontSize: '0.9rem', marginBottom: '0.75rem', color: '#FECACA' }}>
+                        Paid events are available only to Premium or Unlimited subscribers with an active plan.
+                      </div>
+                      <ul style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: '#FECACA', paddingLeft: '1.25rem' }}>
+                        <li>Host paid events</li>
+                        <li>Sell audio downloads</li>
+                        <li>Advanced analytics</li>
+                        <li>Priority support</li>
+                      </ul>
+                      <Link href="/pricing" className="btn-primary">
+                        Upgrade to Premium
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 <div>

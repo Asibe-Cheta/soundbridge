@@ -108,33 +108,44 @@ export async function POST(request: NextRequest) {
     if (isPaidEvent) {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, subscription_tier')
+        .select('subscription_tier, subscription_status')
         .eq('id', user.id)
         .single();
 
       if (profileError || !profile) {
         return NextResponse.json(
-          { error: 'Failed to verify creator status' },
+          { error: 'Failed to verify subscription status' },
           { status: 500, headers: corsHeaders }
         );
       }
 
-      if (profile.role !== 'creator') {
+      const { data: legacySubscription } = await supabase
+        .from('user_subscriptions')
+        .select('tier, status')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const rawTier = String(profile.subscription_tier || legacySubscription?.tier || 'free').toLowerCase();
+      const normalizedTier = rawTier === 'pro' ? 'premium' : rawTier;
+      const subscriptionStatus = String(profile.subscription_status || legacySubscription?.status || 'active').toLowerCase();
+
+      if (!['premium', 'unlimited'].includes(normalizedTier)) {
         return NextResponse.json(
           {
-            error: 'CREATOR_REQUIRED',
-            message: 'You must be a creator to host paid events. Switch to a creator account first.',
+            error: 'SUBSCRIPTION_REQUIRED',
+            message: 'You need a Premium or Unlimited subscription to host paid events.',
           },
           { status: 403, headers: corsHeaders }
         );
       }
 
-      const subscriptionTier = String(profile.subscription_tier || 'free').toLowerCase();
-      if (!['premium', 'unlimited'].includes(subscriptionTier)) {
+      if (subscriptionStatus !== 'active') {
         return NextResponse.json(
           {
-            error: 'SUBSCRIPTION_REQUIRED',
-            message: 'You need a Premium or Unlimited subscription to host paid events.',
+            error: 'SUBSCRIPTION_INACTIVE',
+            message: 'Your subscription is not active. Please update your plan to host paid events.',
           },
           { status: 403, headers: corsHeaders }
         );
