@@ -93,14 +93,16 @@ export async function GET(request: NextRequest) {
         {
           success: true,
           data: {
+            primary_currency: 'USD',
             total_revenue: 0,
             revenue_this_month: 0,
+            total_sales: 0,
             total_sales_count: 0,
-            sales_by_type: {
-              tracks: 0,
-              albums: 0,
-              podcasts: 0,
-            },
+            sales_by_type: [
+              { content_type: 'track', count: 0 },
+              { content_type: 'album', count: 0 },
+              { content_type: 'podcast', count: 0 },
+            ],
             top_selling_content: [],
             recent_sales: [],
           },
@@ -131,11 +133,11 @@ export async function GET(request: NextRequest) {
     const totalSalesCount = purchases?.length || 0;
 
     // Sales by type (currently only tracks)
-    const salesByType = {
-      tracks: purchases?.filter(p => p.content_type === 'track').length || 0,
-      albums: 0, // TODO: When albums are implemented
-      podcasts: 0, // TODO: When podcasts are implemented
-    };
+    const salesByType = [
+      { content_type: 'track', count: purchases?.filter(p => p.content_type === 'track').length || 0 },
+      { content_type: 'album', count: 0 },
+      { content_type: 'podcast', count: 0 },
+    ];
 
     // Top selling content
     const salesByContent: Record<string, { count: number; revenue: number; title: string }> = {};
@@ -166,11 +168,11 @@ export async function GET(request: NextRequest) {
       .map(([content_id, data]) => ({
         content_id,
         content_type: 'track' as const,
-        title: data.title,
+        content_title: data.title,
         sales_count: data.count,
-        revenue: Math.round(data.revenue * 100) / 100,
+        total_revenue: Math.round(data.revenue * 100) / 100,
       }))
-      .sort((a, b) => b.revenue - a.revenue)
+      .sort((a, b) => b.total_revenue - a.total_revenue)
       .slice(0, 10);
 
     // Recent sales (last 50)
@@ -197,19 +199,32 @@ export async function GET(request: NextRequest) {
           purchase_id: purchase.id,
           buyer_username: buyerMap.get(purchase.user_id) || 'Unknown User',
           content_title: track?.title || 'Unknown Track',
-          price_paid: purchase.price_paid,
+          amount: purchase.price_paid,
           currency: purchase.currency,
           purchased_at: purchase.purchased_at,
         };
       })
     );
 
+    const currencyCounts = new Map<string, number>();
+    (purchases || []).forEach((purchase) => {
+      const currency = purchase.currency || 'USD';
+      currencyCounts.set(currency, (currencyCounts.get(currency) || 0) + 1);
+    });
+
+    const primaryCurrency =
+      currencyCounts.size > 0
+        ? [...currencyCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+        : 'USD';
+
     return NextResponse.json(
       {
         success: true,
         data: {
+          primary_currency: primaryCurrency,
           total_revenue: Math.round(totalRevenue * 100) / 100,
           revenue_this_month: Math.round(revenueThisMonth * 100) / 100,
+          total_sales: totalSalesCount,
           total_sales_count: totalSalesCount,
           sales_by_type: salesByType,
           top_selling_content: topSellingContent,

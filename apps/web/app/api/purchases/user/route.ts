@@ -151,15 +151,13 @@ export async function GET(request: NextRequest) {
         // TODO: Handle albums and podcasts
 
         return {
-          purchase: {
-            id: purchase.id,
-            content_id: purchase.content_id,
-            content_type: purchase.content_type,
-            price_paid: purchase.price_paid,
-            currency: purchase.currency,
-            purchased_at: purchase.purchased_at,
-            download_count: purchase.download_count,
-          },
+          id: purchase.id,
+          content_id: purchase.content_id,
+          content_type: purchase.content_type,
+          price_paid: purchase.price_paid,
+          currency: purchase.currency,
+          purchased_at: purchase.purchased_at,
+          download_count: purchase.download_count,
           content: content ? {
             ...content,
             creator: creator || null,
