@@ -219,6 +219,7 @@ export async function POST(request: NextRequest) {
     let audioValidationResult;
     let fileHash: string | null = null;
     let audioMetadata: any = null;
+    let fileSizeBytes: number | null = null;
 
     if (fileData) {
       try {
@@ -226,6 +227,7 @@ export async function POST(request: NextRequest) {
 
         // Create File object from base64 data for validation
         const file = await createFileFromBase64(fileData);
+        fileSizeBytes = file.size;
 
         // Client metadata from request
         const clientMetadata: Partial<AudioMetadata> = {
@@ -258,6 +260,9 @@ export async function POST(request: NextRequest) {
 
         fileHash = audioValidationResult.fileHash;
         audioMetadata = audioValidationResult.metadata;
+        if (audioMetadata?.size) {
+          fileSizeBytes = audioMetadata.size;
+        }
 
         console.log('✅ Enhanced audio validation passed');
 
@@ -291,6 +296,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create audio track record
+    if (!fileSizeBytes && fileData) {
+      fileSizeBytes = getBase64Size(fileData);
+    }
+
     const trackData: any = {
       title: title.trim(),
       artist_name: artistName.trim(),
@@ -332,6 +341,7 @@ export async function POST(request: NextRequest) {
       sample_rate: sampleRate || 44100,
       channels: channels || 2,
       codec: codec || 'mp3',
+      file_size: fileSizeBytes,
       processing_status: 'completed',
       processing_completed_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
@@ -366,7 +376,7 @@ export async function POST(request: NextRequest) {
     await supabase.rpc('update_user_upload_stats', {
       user_uuid: user.id,
       upload_success: true,
-      file_size: track.file_url ? 0 : 0, // We'll need to get actual file size
+      file_size: fileSizeBytes || 0,
       user_tier: userTier
     });
 
@@ -417,6 +427,22 @@ async function createFileFromBase64(base64Data: string): Promise<File> {
     return file;
   } catch (error) {
     throw new Error('Invalid file data format');
+  }
+}
+
+function getBase64Size(base64Data: string): number | null {
+  try {
+    const commaIndex = base64Data.indexOf(',');
+    const base64String = commaIndex >= 0 ? base64Data.slice(commaIndex + 1) : base64Data;
+    if (!base64String) {
+      return null;
+    }
+    const paddingMatch = base64String.match(/=+$/);
+    const padding = paddingMatch ? paddingMatch[0].length : 0;
+    const size = Math.floor((base64String.length * 3) / 4) - padding;
+    return Math.max(0, size);
+  } catch {
+    return null;
   }
 }
 
