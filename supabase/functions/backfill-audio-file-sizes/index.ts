@@ -34,6 +34,14 @@ function extractStoragePath(fileUrl: string | null): string | null {
   return null
 }
 
+function decodeStoragePath(path: string): string {
+  try {
+    return decodeURIComponent(path)
+  } catch {
+    return path
+  }
+}
+
 function splitPath(path: string): { folder: string; fileName: string } {
   const lastSlash = path.lastIndexOf('/')
   if (lastSlash === -1) {
@@ -65,12 +73,20 @@ serve(async (req) => {
     const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '100', 10), 500)
     const offset = Math.max(parseInt(url.searchParams.get('offset') ?? '0', 10), 0)
     const dryRun = url.searchParams.get('dry_run') === 'true'
+    const targetId = url.searchParams.get('id')
 
-    const { data: tracks, error } = await supabase
+    let query = supabase
       .from('audio_tracks')
       .select('id,file_url,audio_metadata')
       .or('file_size.is.null,file_size.eq.0')
-      .range(offset, offset + limit - 1)
+
+    if (targetId) {
+      query = query.eq('id', targetId)
+    } else {
+      query = query.range(offset, offset + limit - 1)
+    }
+
+    const { data: tracks, error } = await query
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
@@ -94,16 +110,24 @@ serve(async (req) => {
       } else {
         const storagePath = extractStoragePath(track.file_url)
         if (storagePath) {
-          const { folder, fileName } = splitPath(storagePath)
-          const { data: objects } = await supabase.storage
-            .from(BUCKET_NAME)
-            .list(folder, { limit: 1, search: fileName })
+          const decodedPath = decodeStoragePath(storagePath)
+          const candidates = [decodedPath, storagePath].filter(
+            (value, index, self) => self.indexOf(value) === index,
+          )
 
-          const matched = objects?.find((obj) => obj.name === fileName)
-          const listSize = matched?.metadata?.size
-          if (typeof listSize === 'number' && listSize > 0) {
-            size = listSize
-            source = 'storage_list'
+          for (const candidatePath of candidates) {
+            const { folder, fileName } = splitPath(candidatePath)
+            const { data: objects } = await supabase.storage
+              .from(BUCKET_NAME)
+              .list(folder, { limit: 1, search: fileName })
+
+            const matched = objects?.find((obj) => obj.name === fileName)
+            const listSize = matched?.metadata?.size
+            if (typeof listSize === 'number' && listSize > 0) {
+              size = listSize
+              source = 'storage_list'
+              break
+            }
           }
         }
       }
