@@ -55,6 +55,18 @@ interface RecentEvent {
   status: 'upcoming' | 'past' | 'cancelled';
 }
 
+interface RecentAlbum {
+  id: string;
+  title: string;
+  created_at: string;
+}
+
+interface RecentPlaylist {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 // Track Dropdown Menu Component
 function TrackDropdownMenu({ track }: { track: RecentTrack }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -245,6 +257,8 @@ export default function ProfilePage() {
 
   const [recentTracks, setRecentTracks] = useState<RecentTrack[]>([]);
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  const [recentAlbums, setRecentAlbums] = useState<RecentAlbum[]>([]);
+  const [recentPlaylists, setRecentPlaylists] = useState<RecentPlaylist[]>([]);
   const [analyticsData, setAnalyticsData] = useState({
     monthlyPlays: 0,
     engagementRate: 0,
@@ -374,6 +388,8 @@ export default function ProfilePage() {
         setStats(data.stats);
         setRecentTracks(data.tracks);
         setRecentEvents([]); // Events not included in mobile approach
+        setRecentAlbums(data.albums || []);
+        setRecentPlaylists(data.playlists || []);
         setAnalyticsData(data.analyticsData);
 
         // Set connection count from stats
@@ -883,6 +899,77 @@ export default function ProfilePage() {
                </div>
              )}
            </div>
+        </div>
+      </div>
+
+      {/* Albums & Playlists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Albums */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Albums</h3>
+            <Link href="/profile/albums" className="btn-secondary">
+              <Eye size={16} />
+              View All
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {recentAlbums.length > 0 ? (
+              recentAlbums.map((album) => (
+                <div key={album.id} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-white">{album.title}</div>
+                    <div className="text-sm text-gray-400">
+                      {new Date(album.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <Link href={`/album/${album.id}`} className="btn-icon">
+                    <Eye size={16} />
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Music size={48} className="mx-auto mb-4 opacity-50" />
+                <p>No albums yet</p>
+                <p className="text-sm">Your albums will appear here.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Playlists */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Playlists</h3>
+            <Link href="/profile/playlists" className="btn-secondary">
+              <Eye size={16} />
+              View All
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {recentPlaylists.length > 0 ? (
+              recentPlaylists.map((playlist) => (
+                <div key={playlist.id} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-white">{playlist.name}</div>
+                    <div className="text-sm text-gray-400">
+                      {new Date(playlist.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <Link href={`/playlist/${playlist.id}`} className="btn-icon">
+                    <Eye size={16} />
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Music size={48} className="mx-auto mb-4 opacity-50" />
+                <p>No playlists yet</p>
+                <p className="text-sm">Create playlists to share your picks.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

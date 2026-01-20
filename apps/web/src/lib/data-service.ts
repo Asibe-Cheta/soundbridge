@@ -626,6 +626,8 @@ class DataService {
       const [
         profileResult,
         tracksResult,
+        albumsResult,
+        playlistsResult,
         followersResult,
         followingResult,
       ] = await Promise.all([
@@ -645,13 +647,29 @@ class DataService {
           .order('created_at', { ascending: false })
           .limit(50), // Limit to recent 50 tracks for performance
 
-        // 3. Followers count
+        // 3. User's albums (profile view)
+        this.supabase
+          .from('albums')
+          .select('id, title, created_at')
+          .eq('creator_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+
+        // 4. User's playlists (profile view)
+        this.supabase
+          .from('playlists')
+          .select('id, name, created_at')
+          .eq('creator_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+
+        // 5. Followers count
         this.supabase
           .from('follows')
           .select('*', { count: 'exact', head: true })
           .eq('following_id', userId),
 
-        // 4. Following count
+        // 6. Following count
         this.supabase
           .from('follows')
           .select('*', { count: 'exact', head: true })
@@ -663,6 +681,8 @@ class DataService {
       // Extract data
       const profile = profileResult.data;
       const tracks = tracksResult.data || [];
+      const albums = albumsResult.data || [];
+      const playlists = playlistsResult.data || [];
       const followersCount = followersResult.count || 0;
       const followingCount = followingResult.count || 0;
 
@@ -707,6 +727,8 @@ class DataService {
           profile,
           stats,
           tracks: formattedTracks,
+          albums,
+          playlists,
           analyticsData: {
             monthlyPlays,
             engagementRate,
