@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     const body = await request.json();
     const { email, password } = body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : email;
     
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
@@ -111,22 +112,85 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('✅ Request validated for email:', email);
+    console.log('✅ Request validated for email:', normalizedEmail);
     
     // ================================================
     // 2. Validate credentials using Supabase Auth
     // ================================================
     // Create fresh admin client for this request
     const supabaseAdmin = getSupabaseAdmin();
+
+    // ================================================
+    // 2a. Look up auth user for account state checks
+    // ================================================
+    const { data: authUser, error: authUserError } = await supabaseAdmin
+      .schema('auth')
+      .from('users')
+      .select('id, email, email_confirmed_at, raw_app_meta_data, encrypted_password')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (authUserError) {
+      console.error('❌ Error fetching auth user:', authUserError);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to validate account state',
+          code: 'AUTH_LOOKUP_FAILED'
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!authUser) {
+      console.warn('⚠️ No auth user found for email:', normalizedEmail);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Invalid email or password',
+          code: 'INVALID_CREDENTIALS'
+        },
+        { status: 401 }
+      );
+    }
+
+    const providers = Array.isArray(authUser.raw_app_meta_data?.providers)
+      ? authUser.raw_app_meta_data.providers
+      : [];
+
+    if (!authUser.email_confirmed_at) {
+      console.warn('⚠️ Email not confirmed for user:', authUser.id);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Email not confirmed',
+          code: 'EMAIL_UNCONFIRMED'
+        },
+        { status: 401 }
+      );
+    }
+
+    if (!authUser.encrypted_password) {
+      const hasOAuthProvider = providers.some((provider: string) => provider !== 'email');
+      console.warn('⚠️ Password not set for user:', authUser.id, 'providers:', providers);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: hasOAuthProvider ? 'OAuth-only account' : 'Password not set for this account',
+          code: hasOAuthProvider ? 'OAUTH_ONLY' : 'PASSWORD_NOT_SET'
+        },
+        { status: 401 }
+      );
+    }
     
     // Sign in to validate credentials (this creates a session, but we'll sign out immediately)
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password,
     });
     
     if (signInError || !signInData.user) {
-      console.error('❌ Invalid credentials:', signInError?.message);
+      console.error('❌ Invalid credentials:', signInError?.message, 'userId:', authUser.id);
       return NextResponse.json(
         { 
           success: false,
@@ -182,7 +246,7 @@ export async function POST(request: NextRequest) {
       
       // Re-authenticate to get session tokens
       const { data: authData, error: authError } = await supabaseAnon.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
       
@@ -251,7 +315,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         session_token: sessionToken,
-        email: email,
+        email: normalizedEmail,
         password_hash: encryptedPassword,
         verified: false,
         failed_attempts: 0,
@@ -309,7 +373,7 @@ export async function POST(request: NextRequest) {
       requires2FA: true,
       data: {
         userId: userId,
-        email: email,
+        email: normalizedEmail,
         verificationSessionId: session.id, // UUID, not session_token
       },
     });
