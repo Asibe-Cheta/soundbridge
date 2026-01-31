@@ -353,25 +353,6 @@ export function useDashboard() {
     }
   }, [user]);
 
-  // Delete user account
-  const deleteUserAccount = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const { error } = await dashboardService.deleteUserAccount(user.id);
-
-      if (error) {
-        setError('Failed to delete account');
-        return { success: false };
-      }
-
-      return { success: true };
-    } catch {
-      setError('Failed to delete account');
-      return { success: false };
-    }
-  }, [user]);
-
   // Load all dashboard data
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
@@ -450,8 +431,6 @@ export function useDashboard() {
     deleteTrack,
     deleteEvent,
     exportUserData,
-    deleteUserAccount,
-
     // Error setters
     setError,
     setStatsError,

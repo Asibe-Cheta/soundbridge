@@ -746,30 +746,36 @@ export class DashboardService {
   }
 
   /**
-   * Delete user account
+   * Request account deletion (soft delete + retention window)
    */
-  async deleteUserAccount(userId: string): Promise<{ error: unknown }> {
+  async deleteUserAccount(
+    userId: string,
+    reason: string,
+    detail?: string
+  ): Promise<{ error: unknown }> {
     try {
-      console.log('🗑️ Deleting user account:', userId);
-      
-      const response = await fetch('/api/user/delete-account', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      console.log('🗑️ Requesting account deletion for user:', userId);
+
+      const response = await fetch('/api/account-deletion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason,
+          detail: detail || null,
+        }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('Error deleting user account:', result.error);
+        console.error('Error requesting account deletion:', result.error);
         return { error: result.error };
       }
 
-      console.log('✅ Account deleted successfully');
+      console.log('✅ Account deletion request submitted');
       return { error: null };
     } catch (error) {
-      console.error('Unexpected error deleting user account:', error);
+      console.error('Unexpected error requesting account deletion:', error);
       return { error };
     }
   }

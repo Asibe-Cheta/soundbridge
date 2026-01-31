@@ -77,6 +77,11 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletionReasons, setDeletionReasons] = useState<Array<{ key: string; label: string }>>([]);
+  const [deletionReason, setDeletionReason] = useState('');
+  const [deletionDetail, setDeletionDetail] = useState('');
+  const [deletionError, setDeletionError] = useState<string | null>(null);
+  const [deletionSuccess, setDeletionSuccess] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
@@ -233,6 +238,29 @@ export default function SettingsPage() {
       router.push('/login');
     }
   }, [user, router]);
+
+  useEffect(() => {
+    const loadDeletionReasons = async () => {
+      try {
+        const response = await fetch('/api/account-deletion/reasons');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error || 'Failed to load reasons');
+        }
+        setDeletionReasons(Array.isArray(data.reasons) ? data.reasons : []);
+      } catch (error) {
+        console.error('Error loading deletion reasons:', error);
+        setDeletionReasons([
+          { key: 'privacy_concerns', label: 'Privacy concerns' },
+          { key: 'not_useful', label: 'Not useful' },
+          { key: 'found_alternative', label: 'Found alternative' },
+          { key: 'other', label: 'Other' },
+        ]);
+      }
+    };
+
+    loadDeletionReasons();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -610,30 +638,41 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!isDeletingAccount) {
-      setIsDeletingAccount(true);
-      return;
-    }
-
     try {
       if (!user) {
         console.error('No user found');
-        setIsDeletingAccount(false);
+        setDeletionError('Authentication required');
         return;
       }
 
-      console.log('🗑️ Deleting account for user:', user.id);
+      if (!deletionReason) {
+        setDeletionError('Please select a reason for deletion.');
+        return;
+      }
+
+      if (!isDeletingAccount) {
+        setIsDeletingAccount(true);
+        setDeletionError(null);
+        return;
+      }
+
+      console.log('🗑️ Requesting account deletion for user:', user.id);
       
-      const { error } = await dashboardService.deleteUserAccount(user.id);
+      const { error } = await dashboardService.deleteUserAccount(
+        user.id,
+        deletionReason,
+        deletionDetail
+      );
       
       if (error) {
-        console.error('Error deleting account:', error);
-        alert(`Failed to delete account: ${error}`);
+        console.error('Error requesting account deletion:', error);
+        setDeletionError(typeof error === 'string' ? error : 'Failed to request deletion');
         setIsDeletingAccount(false);
         return;
       }
 
-      console.log('✅ Account deleted successfully');
+      console.log('✅ Account deletion requested successfully');
+      setDeletionSuccess(true);
       
       // Sign out and redirect
       await signOut();
@@ -641,7 +680,7 @@ export default function SettingsPage() {
       
     } catch (error) {
       console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again.');
+      setDeletionError('Failed to request deletion. Please try again.');
       setIsDeletingAccount(false);
     }
   };
@@ -1156,11 +1195,54 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-white">Delete Account</div>
+              <div className="font-medium text-white">Request Account Deletion</div>
               <div className="text-sm text-gray-400">
-                Permanently delete your account and all associated data
+                Starts a 14-day retention window before anonymization
               </div>
             </div>
+          </div>
+          <div className="grid gap-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-2">Reason</label>
+              <select
+                value={deletionReason}
+                onChange={(event) => {
+                  setDeletionReason(event.target.value);
+                  setDeletionError(null);
+                  setIsDeletingAccount(false);
+                }}
+                className="w-full rounded border border-gray-700 bg-gray-900 text-white px-3 py-2 text-sm"
+              >
+                <option value="">Select a reason</option>
+                {deletionReasons.map((reason) => (
+                  <option key={reason.key} value={reason.key}>
+                    {reason.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-2">Details (optional)</label>
+              <textarea
+                value={deletionDetail}
+                onChange={(event) => {
+                  setDeletionDetail(event.target.value);
+                  setDeletionError(null);
+                }}
+                className="w-full rounded border border-gray-700 bg-gray-900 text-white px-3 py-2 text-sm"
+                rows={3}
+                placeholder="Share more context (optional)"
+              />
+            </div>
+            <div className="text-xs text-gray-400">
+              You can recover your account within 14 days. After that, we anonymize your data by default.
+            </div>
+            {deletionError && (
+              <div className="text-xs text-red-400">{deletionError}</div>
+            )}
+            {deletionSuccess && (
+              <div className="text-xs text-green-400">Deletion request submitted. Signing out...</div>
+            )}
             <button
               onClick={handleDeleteAccount}
               className={`btn-danger ${isDeletingAccount ? 'confirming' : ''}`}
@@ -1173,7 +1255,7 @@ export default function SettingsPage() {
               ) : (
                 <>
                   <Trash2 size={16} />
-                  Delete Account
+                  Request Deletion
                 </>
               )}
             </button>

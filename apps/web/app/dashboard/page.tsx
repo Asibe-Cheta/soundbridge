@@ -22,14 +22,12 @@ export default function DashboardPage() {
     stats,
     profile,
     error,
-    deleteUserAccount,
     setError
   } = useDashboard();
 
   const [activeTab, setActiveTab] = useState<
     'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'revenue' | 'service-provider' | 'availability' | 'settings'
   >('overview');
-  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [isLoadingCreatorTypes, setIsLoadingCreatorTypes] = useState(true);
@@ -75,22 +73,6 @@ export default function DashboardPage() {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    try {
-      const result = await deleteUserAccount();
-      if (result?.success) {
-        await signOut();
-        router.push('/');
-      } else {
-        // Show error message if deletion failed
-        alert('Failed to delete account. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again.');
     }
   };
 
@@ -556,7 +538,7 @@ export default function DashboardPage() {
                         color: 'var(--text-primary)',
                         margin: '0 0 0.5rem 0'
                       }}>
-                        Delete Account
+                        Account Deletion
                       </h4>
                       <p style={{
                         fontSize: '0.875rem',
@@ -564,31 +546,32 @@ export default function DashboardPage() {
                         margin: '0 0 1rem 0',
                         lineHeight: '1.5'
                       }}>
-                        Permanently delete your account and all associated data. This action cannot be undone.
+                        Request account deletion from Settings to choose a reason and start the 14-day retention window.
                       </p>
                     </div>
-                    <button
-                      onClick={() => setShowDeleteAccount(true)}
-                      style={{
-                        background: 'var(--error)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#b91c1c'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'var(--error)'}
-                    >
-                      <AlertTriangle size={16} />
-                      Delete Account
-                    </button>
+                    <Link href="/settings" style={{ textDecoration: 'none' }}>
+                      <button
+                        style={{
+                          background: 'var(--error)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#b91c1c'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'var(--error)'}
+                      >
+                        <AlertTriangle size={16} />
+                        Go to Settings
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -764,95 +747,6 @@ export default function DashboardPage() {
           )}
         </main>
 
-        {/* Delete Account Confirmation */}
-        {showDeleteAccount && (
-          <div style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-            padding: '1rem'
-          }}>
-            <div style={{
-              background: 'var(--bg-secondary)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid var(--border-primary)',
-              borderRadius: '1rem',
-              padding: '2rem',
-              maxWidth: '28rem',
-              width: '100%'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{
-                  width: '3rem',
-                  height: '3rem',
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  borderRadius: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <AlertTriangle size={24} style={{ color: 'var(--error)' }} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Delete Account</h3>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>This action cannot be undone</p>
-                </div>
-              </div>
-              
-              <p style={{ color: 'var(--text-secondary)', margin: '0 0 2rem 0', lineHeight: '1.6' }}>
-                Are you sure you want to permanently delete your account? This action cannot be undone and will remove all your data, tracks, and events.
-              </p>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <button
-                  onClick={handleDeleteAccount}
-                  style={{
-                    flex: 1,
-                    padding: '0.75rem 1rem',
-                    background: 'var(--error)',
-                    color: 'white',
-                    borderRadius: '0.5rem',
-                    border: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--error)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--error)'}
-                >
-                  Delete Account
-                </button>
-                <button
-                  onClick={() => setShowDeleteAccount(false)}
-                  style={{
-                    flex: 1,
-                    padding: '0.75rem 1rem',
-                    background: 'var(--hover-bg)',
-                    color: 'var(--text-primary)',
-                    borderRadius: '0.5rem',
-                    border: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </ProtectedRoute>
   );
