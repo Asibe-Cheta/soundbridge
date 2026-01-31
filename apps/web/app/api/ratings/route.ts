@@ -76,7 +76,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const body = await request.json();
+    let body: any = null;
+    try {
+      const rawBody = await request.text();
+      if (!rawBody) {
+        return NextResponse.json({ error: 'Request body is required' }, { status: 400 });
+      }
+      body = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('Invalid JSON body for ratings:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
     const ratedUserId = typeof body?.rated_user_id === 'string' ? body.rated_user_id : '';
     const ratingValue = Number(body?.rating);
     const comment = typeof body?.comment === 'string' ? body.comment.trim() : null;
