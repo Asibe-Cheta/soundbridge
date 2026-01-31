@@ -22,6 +22,7 @@ import { TracksListModal } from '@/src/components/profile/TracksListModal';
 import { ExternalLinksManager } from '@/src/components/profile/ExternalLinksManager';
 import type { ExternalLink } from '@/src/lib/types/external-links';
 import { PLATFORM_METADATA } from '@/src/lib/external-links-validation';
+import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 
 interface ProfileStats {
   totalPlays: number;
@@ -241,7 +242,8 @@ export default function ProfilePage() {
     phone: '',
     genre: 'Not specified',
     experience: 'Beginner',
-    avatarUrl: ''
+    avatarUrl: '',
+    isVerified: false
   });
 
   const [stats, setStats] = useState<ProfileStats>({
@@ -375,7 +377,8 @@ export default function ProfilePage() {
             phone: data.profile.phone || '',
             genre: data.profile.genres?.[0] || '',
             experience: data.profile.experience_level || 'Beginner',
-            avatarUrl: data.profile.avatar_url || ''
+            avatarUrl: data.profile.avatar_url || '',
+            isVerified: data.profile.is_verified || false
           }));
 
           // Set professional headline if available
@@ -1401,7 +1404,10 @@ export default function ProfilePage() {
                     onChange={(e) => handleInputChange('displayName', e.target.value)}
                   />
                 ) : (
-                  <h1 className={`profile-name ${isMobile ? 'text-2xl' : 'text-3xl'}`}>{profileData.displayName}</h1>
+                  <h1 className={`profile-name ${isMobile ? 'text-2xl' : 'text-3xl'} inline-flex items-center gap-2`}>
+                    <span>{profileData.displayName}</span>
+                    {profileData.isVerified ? <VerifiedBadge size={16} /> : null}
+                  </h1>
                 )}
                 <div className={`profile-actions ${isMobile ? 'flex flex-col space-y-2' : 'flex space-x-3'}`}>
                   {isEditing ? (

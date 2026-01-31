@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useTheme } from '../../../src/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Shield, Calendar, Clock } from 'lucide-react';
 
@@ -65,6 +66,7 @@ const formatDateTime = (dateString: string | null | undefined) => {
 
 export default function ModerationDashboard() {
   const { user, loading: authLoading } = useAuth(); // Use AuthContext like other admin pages
+  const { theme } = useTheme();
   const router = useRouter();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [stats, setStats] = useState<ModerationStats | null>(null);
@@ -199,12 +201,14 @@ export default function ModerationDashboard() {
     }
   }
 
+  const isDark = theme === 'dark';
+
   if (authLoading || dataLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className={`min-h-screen ${isDark ? 'bg-gray-950' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
-          <RefreshCw className="h-16 w-16 text-purple-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-400">
+          <RefreshCw className={`h-16 w-16 ${isDark ? 'text-purple-400' : 'text-blue-600'} mx-auto mb-4 animate-spin`} />
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
             {authLoading ? 'Checking authentication...' : 'Loading moderation dashboard...'}
           </p>
         </div>
@@ -215,49 +219,49 @@ export default function ModerationDashboard() {
   // If not authenticated, show message (like /admin/dashboard does)
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className={`min-h-screen ${isDark ? 'bg-gray-950' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
-          <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-white mb-2">Admin Access Required</h2>
-          <p className="text-gray-400">Please log in with admin privileges to access this dashboard.</p>
+          <Shield className={`h-16 w-16 ${isDark ? 'text-gray-400' : 'text-gray-500'} mx-auto mb-4`} />
+          <h2 className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>Admin Access Required</h2>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Please log in with admin privileges to access this dashboard.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} p-6`}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Content Moderation</h1>
-          <p className="text-gray-400">Review and moderate flagged content</p>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Review and moderate flagged content</p>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <p className="text-sm text-gray-400 mb-1">Pending Review</p>
-              <p className="text-2xl font-bold text-orange-400">
+            <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} rounded-lg p-4 border`}>
+              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Pending Review</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
                 {stats.overview.pending_moderation}
               </p>
             </div>
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <p className="text-sm text-gray-400 mb-1">Flagged Content</p>
-              <p className="text-2xl font-bold text-red-400">
+            <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} rounded-lg p-4 border`}>
+              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Flagged Content</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
                 {stats.overview.flagged_content}
               </p>
             </div>
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <p className="text-sm text-gray-400 mb-1">Approved</p>
-              <p className="text-2xl font-bold text-green-400">
+            <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} rounded-lg p-4 border`}>
+              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Approved</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
                 {stats.overview.approved_content}
               </p>
             </div>
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <p className="text-sm text-gray-400 mb-1">Flag Rate</p>
-              <p className="text-2xl font-bold text-purple-400">
+            <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} rounded-lg p-4 border`}>
+              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Flag Rate</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                 {stats.metrics.flag_rate.toFixed(1)}%
               </p>
             </div>
@@ -265,13 +269,15 @@ export default function ModerationDashboard() {
         )}
 
         {/* Filters */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <button
             onClick={() => setFilter('flagged')}
             className={`px-4 py-2 rounded-lg transition ${
               filter === 'flagged'
                 ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : isDark
+                  ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
             }`}
           >
             Flagged ({stats?.overview.flagged_content || 0})
@@ -281,7 +287,9 @@ export default function ModerationDashboard() {
             className={`px-4 py-2 rounded-lg transition ${
               filter === 'pending'
                 ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : isDark
+                  ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
             }`}
           >
             Pending ({stats?.overview.pending_moderation || 0})
@@ -291,7 +299,9 @@ export default function ModerationDashboard() {
             className={`px-4 py-2 rounded-lg transition ${
               filter === 'all'
                 ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : isDark
+                  ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
             }`}
           >
             All
@@ -301,14 +311,14 @@ export default function ModerationDashboard() {
         {/* Track List */}
         <div className="space-y-4">
           {tracks.length === 0 ? (
-            <div className="bg-gray-900 rounded-lg p-8 text-center border border-gray-800">
-              <p className="text-gray-400">No tracks to review</p>
+            <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} rounded-lg p-8 text-center border`}>
+              <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No tracks to review</p>
             </div>
           ) : (
             tracks.map((track) => (
               <div
                 key={track.id}
-                className="bg-gray-900 rounded-lg p-6 border border-gray-800 hover:border-purple-500 transition"
+                className={`${isDark ? 'bg-gray-900 border-gray-800 hover:border-purple-500' : 'bg-white border-gray-200 hover:border-purple-400'} rounded-lg p-6 border transition`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -318,43 +328,43 @@ export default function ModerationDashboard() {
                         FLAGGED
                       </span>
                     </div>
-                    <p className="text-gray-400 mb-3">by {track.artist_name}</p>
+                    <p className={isDark ? 'text-gray-400 mb-3' : 'text-gray-600 mb-3'}>by {track.artist_name}</p>
 
                     {/* Upload Info */}
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                    <div className={`flex items-center gap-4 text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                       <span>Uploaded by @{track.profiles.username}</span>
                       <span>•</span>
                       <span>Confidence: {(track.moderation_confidence * 100).toFixed(0)}%</span>
                     </div>
 
                     {/* Date/Time Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 bg-gray-950 rounded-lg border border-gray-800">
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 rounded-lg border ${isDark ? 'bg-gray-950 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
                       <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-400">Upload Date:</span>
-                        <span className="text-gray-300">{formatDateTime(track.created_at)}</span>
+                        <Calendar className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Upload Date:</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{formatDateTime(track.created_at)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-400">Last Updated:</span>
-                        <span className="text-gray-300">{formatDateTime(track.updated_at)}</span>
+                        <Clock className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Last Updated:</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{formatDateTime(track.updated_at)}</span>
                       </div>
                       {track.moderation_checked_at && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-orange-400" />
-                          <span className="text-gray-400">Checked At:</span>
-                          <span className="text-orange-300">{formatDateTime(track.moderation_checked_at)}</span>
+                          <Clock className={isDark ? 'w-4 h-4 text-orange-400' : 'w-4 h-4 text-orange-500'} />
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Checked At:</span>
+                          <span className={isDark ? 'text-orange-300' : 'text-orange-600'}>{formatDateTime(track.moderation_checked_at)}</span>
                         </div>
                       )}
                       {track.reviewed_at && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-green-400" />
-                          <span className="text-gray-400">Reviewed At:</span>
-                          <span className="text-green-300">{formatDateTime(track.reviewed_at)}</span>
+                          <Clock className={isDark ? 'w-4 h-4 text-green-400' : 'w-4 h-4 text-green-600'} />
+                          <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Reviewed At:</span>
+                          <span className={isDark ? 'text-green-300' : 'text-green-700'}>{formatDateTime(track.reviewed_at)}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="text-gray-400">Status:</span>
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Status:</span>
                         <span className={`px-2 py-1 rounded text-xs ${
                           track.moderation_status === 'pending_check' ? 'bg-yellow-500/20 text-yellow-400' :
                           track.moderation_status === 'checking' ? 'bg-blue-500/20 text-blue-400' :
@@ -370,7 +380,7 @@ export default function ModerationDashboard() {
                     {/* Flag Reasons */}
                     {track.flag_reasons && track.flag_reasons.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-sm text-gray-400 mb-2">Flag Reasons:</p>
+                        <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Flag Reasons:</p>
                         <div className="flex flex-wrap gap-2">
                           {track.flag_reasons.map((reason, idx) => (
                             <span
@@ -387,8 +397,8 @@ export default function ModerationDashboard() {
                     {/* Transcription */}
                     {track.transcription && (
                       <div className="mb-4">
-                        <p className="text-sm text-gray-400 mb-2">Transcription:</p>
-                        <div className="bg-gray-950 rounded p-3 text-sm text-gray-300 max-h-24 overflow-y-auto">
+                        <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Transcription:</p>
+                        <div className={`${isDark ? 'bg-gray-950 text-gray-300' : 'bg-gray-50 text-gray-700'} rounded p-3 text-sm max-h-24 overflow-y-auto border ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                           {track.transcription}
                         </div>
                       </div>
@@ -401,12 +411,12 @@ export default function ModerationDashboard() {
 
                     {/* Review Actions */}
                     {selectedTrack?.id === track.id ? (
-                      <div className="mt-4 p-4 bg-gray-950 rounded-lg">
+                      <div className={`mt-4 p-4 rounded-lg ${isDark ? 'bg-gray-950' : 'bg-gray-50 border border-gray-200'}`}>
                         <textarea
                           value={reviewReason}
                           onChange={(e) => setReviewReason(e.target.value)}
                           placeholder="Optional: Add a reason for your decision..."
-                          className="w-full bg-gray-900 text-white rounded p-3 mb-3 border border-gray-700 focus:border-purple-500 focus:outline-none"
+                          className={`w-full rounded p-3 mb-3 border focus:border-purple-500 focus:outline-none ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'}`}
                           rows={3}
                         />
                         <div className="flex gap-3">
@@ -429,7 +439,7 @@ export default function ModerationDashboard() {
                               setSelectedTrack(null);
                               setReviewReason('');
                             }}
-                            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition"
+                            className={`px-6 py-2 rounded-lg transition ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}
                           >
                             Cancel
                           </button>

@@ -105,7 +105,7 @@ export async function GET(
     // Get author profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline, bio')
+      .select('id, username, display_name, avatar_url, professional_headline, bio, is_verified')
       .eq('id', userId)
       .single();
 
@@ -200,7 +200,7 @@ export async function GET(
           const originalAuthorIds = [...new Set(originalPosts.map(p => p.user_id))];
           const { data: originalAuthors } = await supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url, professional_headline, bio')
+            .select('id, username, display_name, avatar_url, professional_headline, bio, is_verified')
             .in('id', originalAuthorIds);
 
           // Get original post attachments
@@ -282,6 +282,7 @@ export async function GET(
                   avatar_url: originalAuthor.avatar_url || null,
                   headline: originalAuthor.professional_headline || null,
                   bio: originalAuthor.bio || null,
+                  is_verified: originalAuthor.is_verified || false,
                 } : {
                   id: originalPost.user_id,
                   username: '',
@@ -289,6 +290,7 @@ export async function GET(
                   avatar_url: null,
                   headline: null,
                   bio: null,
+                  is_verified: false,
                 },
                 attachments: attachments,
                 reactions: reactionsCount,
@@ -334,6 +336,7 @@ export async function GET(
           role: profile?.professional_headline,
           headline: profile?.professional_headline || null,
           bio: profile?.bio || null,
+          is_verified: profile?.is_verified || false,
         },
         attachments: attachmentsMap.get(post.id) || [],
         reactions: reactionsMap.get(post.id) || {

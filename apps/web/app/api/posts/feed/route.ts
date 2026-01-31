@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         const { data: authors } = await withQueryTimeout(
           supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url, role, location, professional_headline, bio')
+            .select('id, username, display_name, avatar_url, role, location, professional_headline, bio, is_verified')
             .in('id', userIds),
           10000 // 10s timeout for author lookup
         ) as any;
@@ -151,6 +151,7 @@ export async function GET(request: NextRequest) {
                 role: author.role || null,
                 headline: author.headline,
                 bio: author.bio,
+                is_verified: author.is_verified || false,
               };
             } else {
               post.author = null;
@@ -206,7 +207,7 @@ export async function GET(request: NextRequest) {
               const { data: originalAuthors } = await withQueryTimeout(
                 supabase
                   .from('profiles')
-                  .select('id, username, display_name, avatar_url, professional_headline, bio')
+                  .select('id, username, display_name, avatar_url, professional_headline, bio, is_verified')
                   .in('id', originalAuthorIds),
                 5000 // 5s timeout
               ) as any;
@@ -297,6 +298,7 @@ export async function GET(request: NextRequest) {
                         avatar_url: originalAuthor.avatar_url || null,
                         headline: originalAuthor.professional_headline || null,
                         bio: originalAuthor.bio || null,
+                        is_verified: originalAuthor.is_verified || false,
                       } : {
                         id: originalPost.user_id,
                         username: '',
@@ -304,6 +306,7 @@ export async function GET(request: NextRequest) {
                         avatar_url: null,
                         headline: null,
                         bio: null,
+                        is_verified: false,
                       },
                       media_urls: originalPost.media_urls || [],
                       image_url: imageAttachment?.file_url || null,

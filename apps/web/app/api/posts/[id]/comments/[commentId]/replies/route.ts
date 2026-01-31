@@ -93,7 +93,7 @@ export async function POST(
     // Get author profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url')
+      .select('id, username, display_name, avatar_url, is_verified')
       .eq('id', user.id)
       .single();
 
@@ -120,6 +120,7 @@ export async function POST(
               name: profile?.display_name || profile?.username || 'Unknown',
               username: profile?.username,
               avatar_url: profile?.avatar_url,
+              is_verified: profile?.is_verified || false,
             },
             created_at: reply.created_at,
             like_count: 0,

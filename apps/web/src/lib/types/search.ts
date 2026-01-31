@@ -53,6 +53,7 @@ export interface AudioTrack {
     username: string;
     display_name: string;
     avatar_url?: string;
+    is_verified?: boolean;
     location?: string;
     country?: string;
     name?: string; // Added for API compatibility
@@ -92,6 +93,7 @@ export interface Event {
     username: string;
     display_name: string;
     avatar_url?: string;
+    is_verified?: boolean;
     location?: string;
     country?: string;
   };
@@ -109,6 +111,7 @@ export interface Profile {
   avatar_url?: string;
   banner_url?: string;
   role: 'creator' | 'listener';
+  is_verified?: boolean;
   location?: string;
   country?: string;
   country_code?: string;

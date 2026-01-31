@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type AccountDeletionRequest = {
   id: string;
@@ -31,6 +32,7 @@ const formatDate = (value: string | null) => {
 };
 
 export default function AccountDeletionsAdminPage() {
+  const { theme } = useTheme();
   const [requests, setRequests] = useState<AccountDeletionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,67 +83,67 @@ export default function AccountDeletionsAdminPage() {
   return (
     <ProtectedRoute>
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className={`rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6 mb-6`}>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Account Deletions</h1>
-            <p className="text-sm text-gray-500">Manage deletion requests and retention actions.</p>
+            <h1 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Account Deletions</h1>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Manage deletion requests and retention actions.</p>
           </div>
           <button
-            className="px-3 py-2 text-sm rounded bg-gray-900 text-white"
+            className={`px-3 py-2 text-sm rounded ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800'} text-white`}
             onClick={loadRequests}
           >
             Refresh
           </button>
         </div>
 
-        {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
+        {error && <div className="mb-4 text-sm text-red-500">{error}</div>}
         {loading ? (
-          <div className="text-sm text-gray-500">Loading requests...</div>
+          <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading requests...</div>
         ) : (
-          <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <div className={`overflow-x-auto rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow`}>
+            <table className={`min-w-full divide-y text-sm ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <thead className={theme === 'dark' ? 'bg-gray-900/40 divide-gray-700' : 'bg-gray-50 divide-gray-200'}>
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">User</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Reason</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Requested</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Processed</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>User</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Reason</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Status</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Requested</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Processed</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className={theme === 'dark' ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
                 {requests.map((request) => (
                   <tr key={request.id}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">
+                      <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                         {request.profile?.display_name || request.profile?.username || request.user_id}
                       </div>
-                      <div className="text-xs text-gray-500">{request.email || 'Email unavailable'}</div>
+                      <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{request.email || 'Email unavailable'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{request.reason}</div>
-                      {request.detail && <div className="text-xs text-gray-500">{request.detail}</div>}
+                      <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{request.reason}</div>
+                      {request.detail && <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{request.detail}</div>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${theme === 'dark' ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
                         {request.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(request.created_at)}</td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(request.processed_at)}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatDate(request.created_at)}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatDate(request.processed_at)}</td>
                     <td className="px-4 py-3">
                       {request.status === 'pending' ? (
                         <div className="flex items-center gap-2">
                           <button
-                            className="px-2 py-1 text-xs rounded bg-red-600 text-white"
+                            className="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700"
                             onClick={() => handleAction(request.id, 'process_now')}
                             disabled={processing === request.id}
                           >
                             Process now
                           </button>
                           <button
-                            className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-800"
+                            className={`px-2 py-1 text-xs rounded ${theme === 'dark' ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
                             onClick={() => handleAction(request.id, 'cancel')}
                             disabled={processing === request.id}
                           >
@@ -149,7 +151,7 @@ export default function AccountDeletionsAdminPage() {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">No actions</span>
+                        <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>No actions</span>
                       )}
                     </td>
                   </tr>
@@ -157,7 +159,7 @@ export default function AccountDeletionsAdminPage() {
               </tbody>
             </table>
             {requests.length === 0 && (
-              <div className="p-6 text-center text-sm text-gray-500">No deletion requests found.</div>
+              <div className={`p-6 text-center text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No deletion requests found.</div>
             )}
           </div>
         )}

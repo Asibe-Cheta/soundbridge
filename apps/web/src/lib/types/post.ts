@@ -25,8 +25,10 @@ export interface PostAuthor {
   id: string;
   name: string;
   username?: string;
+  display_name?: string;
   avatar_url?: string;
   role?: string; // professional_headline
+  is_verified?: boolean;
 }
 
 export interface Post {
@@ -64,6 +66,7 @@ export interface PostComment {
     name: string;
     username?: string;
     avatar_url?: string;
+    is_verified?: boolean;
   };
   // Legacy field for backward compatibility
   user?: {
@@ -71,6 +74,7 @@ export interface PostComment {
     username: string;
     display_name: string;
     avatar_url?: string;
+    is_verified?: boolean;
   };
   like_count?: number;
   user_liked?: boolean;

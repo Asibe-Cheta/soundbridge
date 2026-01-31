@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle, Clock, FileText, ListChecks, Loader2, RefreshCcw, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 interface VerificationRequestRecord {
   id: string;
@@ -64,10 +65,10 @@ const automatedCheckLabels: Record<string, string> = {
 };
 
 const tonePalette: Record<'default' | 'warning' | 'success' | 'critical', { bg: string; border: string; color: string }> = {
-  default: { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.25)', color: '#cbd5f5' },
-  warning: { bg: 'rgba(250,204,21,0.15)', border: 'rgba(250,204,21,0.25)', color: '#fde68a' },
-  success: { bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.25)', color: '#bbf7d0' },
-  critical: { bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.25)', color: '#fca5a5' },
+  default: { bg: 'var(--tone-default-bg)', border: 'var(--tone-default-border)', color: 'var(--tone-default-text)' },
+  warning: { bg: 'var(--tone-warning-bg)', border: 'var(--tone-warning-border)', color: 'var(--tone-warning-text)' },
+  success: { bg: 'var(--tone-success-bg)', border: 'var(--tone-success-border)', color: 'var(--tone-success-text)' },
+  critical: { bg: 'var(--tone-critical-bg)', border: 'var(--tone-critical-border)', color: 'var(--tone-critical-text)' },
 };
 
 const TonePill: React.FC<{ tone: 'default' | 'warning' | 'success' | 'critical'; children: React.ReactNode }> = ({
@@ -98,6 +99,8 @@ const TonePill: React.FC<{ tone: 'default' | 'warning' | 'success' | 'critical';
 };
 
 const AdminVerificationDashboard: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requests, setRequests] = useState<VerificationRequestRecord[]>([]);
@@ -190,10 +193,10 @@ const AdminVerificationDashboard: React.FC = () => {
       >
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'grid', gap: '0.35rem' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
               {request.provider?.display_name || 'Unknown provider'}
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', gap: '0.75rem' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.75rem' }}>
               <span>
                 <Clock size={14} style={{ marginRight: '0.3rem' }} />
                 {formatDateTime(request.submitted_at)}
@@ -214,10 +217,10 @@ const AdminVerificationDashboard: React.FC = () => {
               gap: '0.5rem',
               padding: '0.9rem',
               borderRadius: '0.75rem',
-              border: '1px solid rgba(148,163,184,0.25)',
-              background: 'rgba(15,23,42,0.4)',
+              border: '1px solid var(--border-secondary)',
+              background: 'var(--bg-tertiary)',
               fontSize: '0.85rem',
-              color: '#cbd5f5',
+              color: 'var(--text-primary)',
             }}
           >
             {request.provider_notes && <div>Provider notes: {request.provider_notes}</div>}
@@ -346,7 +349,7 @@ const AdminVerificationDashboard: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             Reviewed {request.reviewed_at ? formatDateTime(request.reviewed_at) : formatDateTime(request.submitted_at)}
           </div>
         )}
@@ -362,6 +365,25 @@ const AdminVerificationDashboard: React.FC = () => {
         padding: '2rem',
         background: 'var(--bg-primary)',
         color: 'var(--text-primary)',
+        ['--bg-primary' as any]: isDark ? '#0f172a' : '#f8fafc',
+        ['--bg-secondary' as any]: isDark ? 'rgba(15,23,42,0.6)' : '#ffffff',
+        ['--bg-tertiary' as any]: isDark ? 'rgba(15,23,42,0.4)' : '#f1f5f9',
+        ['--border-primary' as any]: isDark ? 'rgba(148,163,184,0.25)' : '#e2e8f0',
+        ['--border-secondary' as any]: isDark ? 'rgba(148,163,184,0.2)' : '#cbd5f5',
+        ['--text-primary' as any]: isDark ? '#f8fafc' : '#0f172a',
+        ['--text-secondary' as any]: isDark ? '#94a3b8' : '#64748b',
+        ['--tone-default-bg' as any]: isDark ? 'rgba(148,163,184,0.15)' : 'rgba(148,163,184,0.12)',
+        ['--tone-default-border' as any]: isDark ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.3)',
+        ['--tone-default-text' as any]: isDark ? '#cbd5f5' : '#475569',
+        ['--tone-warning-bg' as any]: isDark ? 'rgba(250,204,21,0.15)' : 'rgba(234,179,8,0.15)',
+        ['--tone-warning-border' as any]: isDark ? 'rgba(250,204,21,0.25)' : 'rgba(234,179,8,0.3)',
+        ['--tone-warning-text' as any]: isDark ? '#fde68a' : '#92400e',
+        ['--tone-success-bg' as any]: isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.15)',
+        ['--tone-success-border' as any]: isDark ? 'rgba(34,197,94,0.25)' : 'rgba(34,197,94,0.3)',
+        ['--tone-success-text' as any]: isDark ? '#bbf7d0' : '#166534',
+        ['--tone-critical-bg' as any]: isDark ? 'rgba(248,113,113,0.15)' : 'rgba(248,113,113,0.12)',
+        ['--tone-critical-border' as any]: isDark ? 'rgba(248,113,113,0.25)' : 'rgba(248,113,113,0.3)',
+        ['--tone-critical-text' as any]: isDark ? '#fca5a5' : '#991b1b',
       }}
     >
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -377,9 +399,9 @@ const AdminVerificationDashboard: React.FC = () => {
           style={{
             padding: '0.6rem 1rem',
             borderRadius: '0.75rem',
-            border: '1px solid rgba(148,163,184,0.35)',
-            background: 'rgba(15,23,42,0.4)',
-            color: '#cbd5f5',
+            border: '1px solid var(--border-primary)',
+            background: 'var(--bg-tertiary)',
+            color: 'var(--text-primary)',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.4rem',
@@ -394,9 +416,9 @@ const AdminVerificationDashboard: React.FC = () => {
         <div
           style={{
             borderRadius: '0.75rem',
-            border: '1px solid rgba(248,113,113,0.4)',
-            background: 'rgba(248,113,113,0.15)',
-            color: '#fecaca',
+            border: '1px solid rgba(248,113,113,0.35)',
+            background: isDark ? 'rgba(248,113,113,0.15)' : 'rgba(248,113,113,0.12)',
+            color: isDark ? '#fecaca' : '#b91c1c',
             padding: '1rem',
             fontSize: '0.9rem',
             display: 'flex',
@@ -425,7 +447,7 @@ const AdminVerificationDashboard: React.FC = () => {
       ) : (
         <>
           <section style={{ display: 'grid', gap: '1rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'white' }}>Pending review</h2>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Pending review</h2>
             {groupedRequests.pending.length === 0 ? (
               <div
                 style={{
@@ -444,7 +466,7 @@ const AdminVerificationDashboard: React.FC = () => {
           </section>
 
           <section style={{ display: 'grid', gap: '1rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'white' }}>Resolved</h2>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Resolved</h2>
             {groupedRequests.resolved.length === 0 ? (
               <div
                 style={{

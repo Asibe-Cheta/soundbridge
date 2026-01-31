@@ -39,7 +39,8 @@ class DataService {
             id,
             username,
             display_name,
-            avatar_url
+            avatar_url,
+            is_verified
           )
         `)
         .eq('is_public', true)
@@ -66,7 +67,8 @@ class DataService {
           id: track.creator_id,
           name: track.creator?.display_name || track.artist_name || 'Unknown Artist',
           username: track.creator?.username || 'unknown',
-          avatar: track.creator?.avatar_url || null
+          avatar: track.creator?.avatar_url || null,
+          is_verified: track.creator?.is_verified || false
         }
       }));
 
@@ -86,7 +88,7 @@ class DataService {
     try {
       const { data, error } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, bio, avatar_url, banner_url, location, country')
+        .select('id, username, display_name, bio, avatar_url, banner_url, location, country, is_verified')
         .eq('role', 'creator')
         .not('display_name', 'is', null)
         .not('bio', 'is', null)
@@ -140,7 +142,7 @@ class DataService {
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
       const { data: authors } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, professional_headline, location')
+        .select('id, username, display_name, avatar_url, role, professional_headline, location, is_verified')
         .in('id', userIds);
 
       // Get attachments for all posts
@@ -171,14 +173,16 @@ class DataService {
             username: authorData.username,
             display_name: authorData.display_name,
             avatar_url: authorData.avatar_url,
-            role: authorData.role || authorData.professional_headline
+            role: authorData.role || authorData.professional_headline,
+            is_verified: authorData.is_verified
           } : {
             id: post.user_id,
             name: 'User',
             username: null,
             display_name: null,
             avatar_url: null,
-            role: null
+            role: null,
+            is_verified: false
           },
           attachments: attachmentsMap.get(post.id) || []
         };
@@ -214,7 +218,7 @@ class DataService {
       // Build query for suggestions
       let query = this.supabase
         .from('profiles')
-        .select('id, username, display_name, bio, avatar_url, followers_count, location')
+        .select('id, username, display_name, bio, avatar_url, followers_count, location, is_verified')
         .neq('id', userId)
         .order('followers_count', { ascending: false })
         .limit(limit);
@@ -524,22 +528,36 @@ class DataService {
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
       const { data: authors } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, location')
+        .select('id, username, display_name, avatar_url, role, location, is_verified')
         .in('id', userIds);
 
       // Map authors to posts
       const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
-      const postsWithAuthors = posts.map((post: any) => ({
-        ...post,
-        author: authorsMap.get(post.user_id) || {
-          id: post.user_id,
-          username: 'unknown',
-          display_name: 'Unknown User',
-          avatar_url: null,
-          role: null,
-          location: null
-        }
-      }));
+      const postsWithAuthors = posts.map((post: any) => {
+        const authorData = authorsMap.get(post.user_id);
+        return {
+          ...post,
+          author: authorData ? {
+            id: authorData.id,
+            name: authorData.display_name || authorData.username || 'User',
+            username: authorData.username,
+            display_name: authorData.display_name,
+            avatar_url: authorData.avatar_url,
+            role: authorData.role || null,
+            location: authorData.location || null,
+            is_verified: authorData.is_verified || false,
+          } : {
+            id: post.user_id,
+            name: 'Unknown User',
+            username: 'unknown',
+            display_name: 'Unknown User',
+            avatar_url: null,
+            role: null,
+            location: null,
+            is_verified: false,
+          }
+        };
+      });
 
       return { data: postsWithAuthors, error: null };
     } catch (error) {
@@ -581,7 +599,7 @@ class DataService {
       const profileIds = [...new Set(follows.map((f: any) => f[targetColumn]))];
       const { data: profiles } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, location, bio, followers_count')
+        .select('id, username, display_name, avatar_url, role, location, bio, followers_count, is_verified')
         .in('id', profileIds);
 
       // Map profiles to follows
@@ -597,7 +615,8 @@ class DataService {
             avatar_url: profile?.avatar_url || null,
             role: profile?.role || null,
             location: profile?.location || null,
-            bio: profile?.bio || ''
+            bio: profile?.bio || '',
+            is_verified: profile?.is_verified || false
           },
           followers_count: profile?.followers_count || 0,
           created_at: follow.created_at

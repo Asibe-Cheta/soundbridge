@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { dataService } from '@/src/lib/data-service';
 import { createBrowserClient } from '@/src/lib/supabase';
+import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 import {
   User, Bookmark, Activity, Radio, Calendar, Briefcase,
   Users, Eye, TrendingUp, Loader2
@@ -17,6 +18,7 @@ interface ProfileData {
   display_name?: string;
   professional_headline?: string;
   avatar_url?: string;
+  is_verified?: boolean;
 }
 
 interface ConnectionStats {
@@ -52,7 +54,7 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
       const supabase = createBrowserClient();
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, professional_headline, avatar_url')
+        .select('id, username, display_name, professional_headline, avatar_url, is_verified')
         .eq('id', effectiveUserId)
         .single();
 
@@ -144,7 +146,10 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
                   </div>
                 )}
               </div>
-              <h3 className="font-semibold text-white text-sm mb-1">{displayName}</h3>
+              <h3 className="font-semibold text-white text-sm mb-1 flex items-center gap-1">
+                <span>{displayName}</span>
+                {profile?.is_verified ? <VerifiedBadge size={12} /> : null}
+              </h3>
               {headline && (
                 <p className="text-gray-400 text-xs line-clamp-2">{headline}</p>
               )}

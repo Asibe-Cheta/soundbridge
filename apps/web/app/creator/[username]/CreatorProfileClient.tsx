@@ -22,7 +22,8 @@ import type { CreatorProfile, AudioTrack, Event, Message } from '../../../src/li
 import type { AvailabilitySlot, CreateCollaborationRequestData } from '../../../src/lib/types/availability';
 import type { ExternalLink } from '../../../src/lib/types/external-links';
 import { PLATFORM_METADATA } from '../../../src/lib/external-links-validation';
-import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, CheckCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe } from 'lucide-react';
+import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe } from 'lucide-react';
+import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
 
 interface CreatorProfileClientProps {
   username: string;
@@ -444,8 +445,8 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                 className="rounded-full object-cover ring-4 ring-gray-600"
               />
               {creator.is_verified && (
-                <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-1">
-                  <CheckCircle className="h-4 w-4 text-white" />
+                <div className="absolute -bottom-2 -right-2">
+                  <VerifiedBadge size={18} />
                 </div>
               )}
             </div>
@@ -456,7 +457,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                   <h1 className={`font-bold mb-2 text-white ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
                     {creator.display_name || creator.username}
                     {creator.is_verified && (
-                      <CheckCircle className={`inline-block text-blue-500 ml-2 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                      <span className="inline-flex items-center ml-2">
+                        <VerifiedBadge size={isMobile ? 16 : 18} />
+                      </span>
                     )}
                   </h1>
                   <p className={`mb-2 text-gray-300 ${isMobile ? 'text-sm' : ''}`}>@{creator.username}</p>

@@ -56,7 +56,7 @@ export async function GET(
     // Get author profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline, bio')
+      .select('id, username, display_name, avatar_url, professional_headline, bio, is_verified')
       .eq('id', post.user_id)
       .single();
 
@@ -102,7 +102,7 @@ export async function GET(
     const commentUserIds = comments ? [...new Set(comments.map((c) => c.user_id))] : [];
     const { data: commentProfiles } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url')
+      .select('id, username, display_name, avatar_url, is_verified')
       .in('id', commentUserIds);
 
     const profileMap = new Map();
@@ -124,6 +124,7 @@ export async function GET(
                 name: commentProfile?.display_name || commentProfile?.username || 'User',
                 username: commentProfile?.username || null,
                 avatar_url: commentProfile?.avatar_url || null,
+                is_verified: commentProfile?.is_verified || false,
               },
               replies: replies.map((reply) => {
                 const replyProfile = profileMap.get(reply.user_id);
@@ -134,6 +135,7 @@ export async function GET(
                     name: replyProfile?.display_name || replyProfile?.username || 'User',
                     username: replyProfile?.username || null,
                     avatar_url: replyProfile?.avatar_url || null,
+                    is_verified: replyProfile?.is_verified || false,
                   },
                 };
               }),
@@ -165,7 +167,7 @@ export async function GET(
           // Get original post author
           const { data: originalAuthor } = await supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url, professional_headline, bio')
+            .select('id, username, display_name, avatar_url, professional_headline, bio, is_verified')
             .eq('id', originalPost.user_id)
             .single();
 
@@ -216,6 +218,7 @@ export async function GET(
               avatar_url: originalAuthor.avatar_url || null,
               headline: originalAuthor.professional_headline || null,
               bio: originalAuthor.bio || null,
+              is_verified: originalAuthor.is_verified || false,
             } : {
               id: originalPost.user_id,
               username: '',
@@ -223,6 +226,7 @@ export async function GET(
               avatar_url: null,
               headline: null,
               bio: null,
+              is_verified: false,
             },
             media_urls: originalPost.media_urls || [],
             image_url: imageAttachment?.file_url || null,
@@ -254,6 +258,7 @@ export async function GET(
             role: profile?.professional_headline,
             headline: profile?.professional_headline || null,
             bio: profile?.bio || null,
+            is_verified: profile?.is_verified || false,
           },
           attachments: attachments || [],
           reactions: reactionCounts,
@@ -378,7 +383,7 @@ export async function PUT(
     // Get author profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline')
+      .select('id, username, display_name, avatar_url, professional_headline, is_verified')
       .eq('id', updatedPost.user_id)
       .single();
 
@@ -393,6 +398,7 @@ export async function PUT(
             username: profile?.username,
             avatar_url: profile?.avatar_url,
             role: profile?.professional_headline,
+            is_verified: profile?.is_verified || false,
           },
         },
       },

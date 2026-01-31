@@ -11,6 +11,7 @@ import {
   ExternalLink, Loader2, ArrowRight
 } from 'lucide-react';
 import { MessagingWidget } from './MessagingWidget';
+import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 
 interface ConnectionSuggestion {
   id: string;
@@ -20,6 +21,7 @@ interface ConnectionSuggestion {
     username?: string;
     avatar_url?: string;
     role?: string;
+    is_verified?: boolean;
   };
   reason: string;
   mutual_connections?: number;
@@ -85,7 +87,8 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
             name: profile.display_name,
             username: profile.username,
             avatar_url: profile.avatar_url,
-            role: 'creator'
+            role: 'creator',
+            is_verified: profile.is_verified || false
           },
           reason: profile.location ? `Based on location: ${profile.location}` : 'Suggested for you',
           mutual_connections: 0
@@ -179,17 +182,20 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
                           {opp.author.avatar_url ? (
                             <Image
                               src={opp.author.avatar_url}
-                              alt={opp.author.name}
+                              alt={opp.author.name || opp.author.username || 'User'}
                               fill
                               className="object-cover"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-white text-xs">
-                              {opp.author.name?.charAt(0) || 'U'}
+                              {(opp.author.name || opp.author.username || 'U').charAt(0)}
                             </div>
                           )}
                         </div>
-                        <span className="text-xs text-gray-400">{opp.author.name}</span>
+                        <span className="text-xs text-gray-400 inline-flex items-center gap-1">
+                          <span>{opp.author.name || opp.author.username || 'User'}</span>
+                          {opp.author.is_verified ? <VerifiedBadge size={10} /> : null}
+                        </span>
                       </div>
                     )}
                   </Link>
@@ -239,8 +245,9 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white group-hover:text-red-400 transition-colors truncate">
-                        {suggestion.user.name}
+                      <p className="text-sm font-medium text-white group-hover:text-red-400 transition-colors truncate inline-flex items-center gap-1">
+                        <span>{suggestion.user.name}</span>
+                        {suggestion.user.is_verified ? <VerifiedBadge size={12} /> : null}
                       </p>
                       {suggestion.user.role && (
                         <p className="text-xs text-gray-400 truncate">{suggestion.user.role}</p>

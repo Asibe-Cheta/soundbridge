@@ -18,6 +18,7 @@ import { ReportPostModal } from './ReportPostModal';
 import { RepostModal } from './RepostModal';
 import { toast } from '@/src/components/ui/Toast';
 import { LinkText } from './LinkText';
+import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 
 interface PostCardProps {
   post: Post;
@@ -53,6 +54,13 @@ const reactionEmojis = {
   fire: '🔥',
   congrats: '👏',
 };
+
+const NameWithBadge = ({ name, isVerified, className = '' }: { name: string; isVerified?: boolean; className?: string }) => (
+  <span className={`inline-flex items-center gap-1 ${className}`}>
+    <span>{name}</span>
+    {isVerified ? <VerifiedBadge size={12} /> : null}
+  </span>
+);
 
 export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullContent = false, initialBookmarkStatus = false }: PostCardProps) {
   const { user } = useAuth();
@@ -413,7 +421,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
             <Repeat2 size={14} className="text-red-400" />
             <span className="text-xs text-gray-400">
               <span className="text-white font-medium">
-                {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+                <NameWithBadge
+                  name={post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+                  isVerified={post.author?.is_verified}
+                />
               </span>
               {' '}reposted
             </span>
@@ -451,7 +462,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
             <div className="flex items-center gap-2 flex-wrap">
               <Link href={`/creator/${post.author?.username || post.author?.id}`}>
                 <span className="font-semibold text-white hover:text-red-400 transition-colors">
-                  {post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+                  <NameWithBadge
+                    name={post.author?.name || post.author?.username || post.author?.display_name || 'User'}
+                    isVerified={post.author?.is_verified}
+                  />
                 </span>
               </Link>
               {post.author?.role && (
@@ -596,7 +610,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                   onClick={(e) => e.stopPropagation()}
                   className="font-semibold text-white text-sm hover:text-red-400 transition-colors"
                 >
-                  {(post.reposted_from as any).author?.display_name || (post.reposted_from as any).author?.username || 'User'}
+                  <NameWithBadge
+                    name={(post.reposted_from as any).author?.display_name || (post.reposted_from as any).author?.username || 'User'}
+                    isVerified={(post.reposted_from as any).author?.is_verified}
+                  />
                 </Link>
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -1037,7 +1054,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                   <div key={comment.id} className="flex items-start gap-2">
                     <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
                       <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
-                        {comment.author?.name || comment.author?.username || 'User'}
+                        <NameWithBadge
+                          name={comment.author?.name || comment.author?.username || 'User'}
+                          isVerified={comment.author?.is_verified}
+                        />
                       </span>
                     </Link>
                     <div className="text-gray-300 text-sm flex-1 line-clamp-2 break-words">
@@ -1235,7 +1255,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                       <div className="flex items-center gap-2 mb-1">
                         <Link href={`/creator/${comment.author?.username || comment.author?.id}`}>
                           <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
-                            {comment.author?.name || comment.author?.username || 'User'}
+                            <NameWithBadge
+                              name={comment.author?.name || comment.author?.username || 'User'}
+                              isVerified={comment.author?.is_verified}
+                            />
                           </span>
                         </Link>
                         <span className="text-xs text-gray-400">
@@ -1364,7 +1387,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                                 <div className="flex items-center gap-2 mb-1">
                                   <Link href={`/creator/${reply.author?.username || reply.author?.id}`}>
                                     <span className="font-semibold text-white text-sm hover:text-red-400 transition-colors">
-                                      {reply.author?.name || reply.author?.username || 'User'}
+                                      <NameWithBadge
+                                        name={reply.author?.name || reply.author?.username || 'User'}
+                                        isVerified={reply.author?.is_verified}
+                                      />
                                     </span>
                                   </Link>
                                   <span className="text-xs text-gray-400">

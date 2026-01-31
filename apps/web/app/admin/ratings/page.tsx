@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type RatingRecord = {
   id: string;
@@ -30,6 +31,7 @@ const formatDate = (value: string) => {
 };
 
 export default function RatingsAdminPage() {
+  const { theme } = useTheme();
   const [ratings, setRatings] = useState<RatingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,35 +79,35 @@ export default function RatingsAdminPage() {
   return (
     <ProtectedRoute>
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className={`rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6 mb-6`}>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Ratings Moderation</h1>
-            <p className="text-sm text-gray-500">Review and remove creator ratings.</p>
+            <h1 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Ratings Moderation</h1>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Review and remove creator ratings.</p>
           </div>
           <button
-            className="px-3 py-2 text-sm rounded bg-gray-900 text-white"
+            className={`px-3 py-2 text-sm rounded ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800'} text-white`}
             onClick={loadRatings}
           >
             Refresh
           </button>
         </div>
 
-        <div className="flex flex-wrap items-end gap-4 mb-4">
+        <div className={`flex flex-wrap items-end gap-4 mb-4 rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-4`}>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Rated user ID</label>
+            <label className={`block text-xs mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Rated user ID</label>
             <input
               value={ratedUserId}
               onChange={(event) => setRatedUserId(event.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className={`rounded px-3 py-2 text-sm ${theme === 'dark' ? 'bg-gray-900 border border-gray-700 text-white placeholder:text-gray-500' : 'border border-gray-300 text-gray-900'}`}
               placeholder="uuid"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Context</label>
+            <label className={`block text-xs mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Context</label>
             <select
               value={context}
               onChange={(event) => setContext(event.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
+              className={`rounded px-3 py-2 text-sm ${theme === 'dark' ? 'bg-gray-900 border border-gray-700 text-white' : 'border border-gray-300 text-gray-900'}`}
             >
               <option value="">All</option>
               <option value="event">Event</option>
@@ -115,51 +117,51 @@ export default function RatingsAdminPage() {
             </select>
           </div>
           <button
-            className="px-3 py-2 text-sm rounded bg-blue-600 text-white"
+            className="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
             onClick={loadRatings}
           >
             Apply filters
           </button>
         </div>
 
-        {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
+        {error && <div className="mb-4 text-sm text-red-500">{error}</div>}
 
         {loading ? (
-          <div className="text-sm text-gray-500">Loading ratings...</div>
+          <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading ratings...</div>
         ) : (
-          <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <div className={`overflow-x-auto rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow`}>
+            <table className={`min-w-full divide-y text-sm ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <thead className={theme === 'dark' ? 'bg-gray-900/40 divide-gray-700' : 'bg-gray-50 divide-gray-200'}>
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Rated user</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Rater</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Rating</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Context</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Comment</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Rated user</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Rater</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Rating</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Context</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Comment</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Created</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className={theme === 'dark' ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
                 {ratings.map((rating) => (
                   <tr key={rating.id}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">
+                      <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                         {rating.rated_user?.display_name || rating.rated_user?.username || rating.rated_user?.id}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">
+                      <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                         {rating.rater?.display_name || rating.rater?.username || rating.rater?.id}
                       </div>
                     </td>
-                    <td className="px-4 py-3">{rating.rating}</td>
-                    <td className="px-4 py-3">{rating.context}</td>
-                    <td className="px-4 py-3 text-gray-600">{rating.comment || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(rating.created_at)}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>{rating.rating}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>{rating.context}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{rating.comment || '—'}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatDate(rating.created_at)}</td>
                     <td className="px-4 py-3">
                       <button
-                        className="px-2 py-1 text-xs rounded bg-red-600 text-white"
+                        className="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700"
                         onClick={() => handleDelete(rating.id)}
                       >
                         Remove
@@ -170,7 +172,7 @@ export default function RatingsAdminPage() {
               </tbody>
             </table>
             {ratings.length === 0 && (
-              <div className="p-6 text-center text-sm text-gray-500">No ratings found.</div>
+              <div className={`p-6 text-center text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No ratings found.</div>
             )}
           </div>
         )}

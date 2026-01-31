@@ -146,7 +146,8 @@ export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{
           display_name,
           avatar_url,
           location,
-          country
+          country,
+          is_verified
         )
       `)
       .eq('creator_id', creatorId)
@@ -184,7 +185,7 @@ export async function getCreatorTracks(creatorId: string, limit = 20): Promise<{
         country: track.creator.country,
         bio: null,
         role: 'creator' as const,
-        is_verified: false,
+        is_verified: track.creator.is_verified || false,
         social_links: {},
         created_at: '',
         updated_at: ''
@@ -215,7 +216,8 @@ export async function getCreatorEvents(creatorId: string, limit = 20): Promise<{
           display_name,
           avatar_url,
           location,
-          country
+          country,
+          is_verified
         ),
         attendees:event_attendees!event_attendees_event_id_fkey(count)
       `)
@@ -256,7 +258,7 @@ export async function getCreatorEvents(creatorId: string, limit = 20): Promise<{
         country: event.creator.country,
         bio: null,
         role: 'creator' as const,
-        is_verified: false,
+        is_verified: event.creator.is_verified || false,
         social_links: {},
         created_at: '',
         updated_at: ''

@@ -99,7 +99,7 @@ export async function GET(
 
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url')
+      .select('id, username, display_name, avatar_url, is_verified')
       .in('id', userIds);
 
     // Get comment likes
@@ -146,6 +146,7 @@ export async function GET(
                   name: replyProfile?.display_name || replyProfile?.username || 'User',
                   username: replyProfile?.username || null,
                   avatar_url: replyProfile?.avatar_url || null,
+                  is_verified: replyProfile?.is_verified || false,
                 },
                 created_at: reply.created_at,
                 like_count: replyLikeData.count,
@@ -162,6 +163,7 @@ export async function GET(
           name: profile?.display_name || profile?.username || 'User',
           username: profile?.username || null,
           avatar_url: profile?.avatar_url || null,
+          is_verified: profile?.is_verified || false,
         },
         created_at: comment.created_at,
         like_count: likeData.count,
