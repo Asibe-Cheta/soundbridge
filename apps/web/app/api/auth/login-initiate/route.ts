@@ -123,12 +123,9 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 2a. Look up auth user for account state checks
     // ================================================
-    const { data: authUser, error: authUserError } = await supabaseAdmin
-      .schema('auth')
-      .from('users')
-      .select('id, email, email_confirmed_at, raw_app_meta_data, encrypted_password')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+    const { data: authLookup, error: authUserError } = await supabaseAdmin.auth.admin.getUserByEmail(
+      normalizedEmail
+    );
 
     if (authUserError) {
       console.error('❌ Error fetching auth user:', authUserError);
@@ -142,6 +139,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const authUser = authLookup?.user;
+
     if (!authUser) {
       console.warn('⚠️ No auth user found for email:', normalizedEmail);
       return NextResponse.json(
@@ -154,8 +153,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const providers = Array.isArray(authUser.raw_app_meta_data?.providers)
-      ? authUser.raw_app_meta_data.providers
+    const providers = Array.isArray(authUser.app_metadata?.providers)
+      ? authUser.app_metadata.providers
       : [];
 
     if (!authUser.email_confirmed_at) {
