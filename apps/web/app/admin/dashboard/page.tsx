@@ -505,6 +505,54 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Quick Admin Links */}
+      <div className={`${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} border-b ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="/admin/account-deletions"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              Account Deletions
+            </a>
+            <a
+              href="/admin/ratings"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              Ratings Moderation
+            </a>
+            <a
+              href="/admin/verification"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              Service Provider Verification
+            </a>
+            <a
+              href="/admin/verification-users"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              User Verification Badges
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Tab Navigation */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
