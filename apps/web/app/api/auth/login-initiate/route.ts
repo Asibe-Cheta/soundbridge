@@ -132,25 +132,14 @@ export async function POST(request: NextRequest) {
       // Attempt to return a more specific error if possible
       let authUser;
       try {
-        let page = 1;
-        const perPage = 200;
-        while (!authUser) {
-          const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-            page,
-            perPage,
-          });
-          if (listError) {
-            console.error('❌ Error listing auth users:', listError);
-            break;
-          }
+        const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          filter: `email.eq.${normalizedEmail}`,
+        });
+        if (listError) {
+          console.error('❌ Error listing auth users:', listError);
+        } else {
           const users = listData?.users || [];
-          authUser = users.find(
-            (user) => user.email?.toLowerCase() === normalizedEmail
-          );
-          if (users.length < perPage) {
-            break;
-          }
-          page += 1;
+          authUser = users[0];
         }
       } catch (lookupError) {
         console.error('❌ Error during auth user lookup:', lookupError);
