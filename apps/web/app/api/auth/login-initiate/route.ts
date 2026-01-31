@@ -120,68 +120,6 @@ export async function POST(request: NextRequest) {
     // Create fresh admin client for this request
     const supabaseAdmin = getSupabaseAdmin();
 
-    // ================================================
-    // 2a. Look up auth user for account state checks
-    // ================================================
-    const { data: authLookup, error: authUserError } = await supabaseAdmin.auth.admin.getUserByEmail(
-      normalizedEmail
-    );
-
-    if (authUserError) {
-      console.error('❌ Error fetching auth user:', authUserError);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Failed to validate account state',
-          code: 'AUTH_LOOKUP_FAILED'
-        },
-        { status: 500 }
-      );
-    }
-
-    const authUser = authLookup?.user;
-
-    if (!authUser) {
-      console.warn('⚠️ No auth user found for email:', normalizedEmail);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Invalid email or password',
-          code: 'INVALID_CREDENTIALS'
-        },
-        { status: 401 }
-      );
-    }
-
-    const providers = Array.isArray(authUser.app_metadata?.providers)
-      ? authUser.app_metadata.providers
-      : [];
-
-    if (!authUser.email_confirmed_at) {
-      console.warn('⚠️ Email not confirmed for user:', authUser.id);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Email not confirmed',
-          code: 'EMAIL_UNCONFIRMED'
-        },
-        { status: 401 }
-      );
-    }
-
-    if (!authUser.encrypted_password) {
-      const hasOAuthProvider = providers.some((provider: string) => provider !== 'email');
-      console.warn('⚠️ Password not set for user:', authUser.id, 'providers:', providers);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: hasOAuthProvider ? 'OAuth-only account' : 'Password not set for this account',
-          code: hasOAuthProvider ? 'OAUTH_ONLY' : 'PASSWORD_NOT_SET'
-        },
-        { status: 401 }
-      );
-    }
-    
     // Sign in to validate credentials (this creates a session, but we'll sign out immediately)
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email: normalizedEmail,
@@ -189,7 +127,65 @@ export async function POST(request: NextRequest) {
     });
     
     if (signInError || !signInData.user) {
-      console.error('❌ Invalid credentials:', signInError?.message, 'userId:', authUser.id);
+      console.error('❌ Invalid credentials:', signInError?.message);
+      
+      // Attempt to return a more specific error if possible
+      let authUser;
+      try {
+        let page = 1;
+        const perPage = 200;
+        while (!authUser) {
+          const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage,
+          });
+          if (listError) {
+            console.error('❌ Error listing auth users:', listError);
+            break;
+          }
+          const users = listData?.users || [];
+          authUser = users.find(
+            (user) => user.email?.toLowerCase() === normalizedEmail
+          );
+          if (users.length < perPage) {
+            break;
+          }
+          page += 1;
+        }
+      } catch (lookupError) {
+        console.error('❌ Error during auth user lookup:', lookupError);
+      }
+
+      if (authUser) {
+        const providers = Array.isArray(authUser.app_metadata?.providers)
+          ? authUser.app_metadata.providers
+          : [];
+
+        if (!authUser.email_confirmed_at) {
+          console.warn('⚠️ Email not confirmed for user:', authUser.id);
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Email not confirmed',
+              code: 'EMAIL_UNCONFIRMED'
+            },
+            { status: 401 }
+          );
+        }
+
+        if (!authUser.encrypted_password) {
+          const hasOAuthProvider = providers.some((provider: string) => provider !== 'email');
+          console.warn('⚠️ Password not set for user:', authUser.id, 'providers:', providers);
+          return NextResponse.json(
+            { 
+              success: false,
+              error: hasOAuthProvider ? 'OAuth-only account' : 'Password not set for this account',
+              code: hasOAuthProvider ? 'OAUTH_ONLY' : 'PASSWORD_NOT_SET'
+            },
+            { status: 401 }
+          );
+        }
+      }
       return NextResponse.json(
         { 
           success: false,
