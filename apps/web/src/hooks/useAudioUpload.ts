@@ -22,7 +22,10 @@ export interface UploadState {
 export interface UploadActions {
   setAudioFile: (file: File | null) => void;
   setCoverArtFile: (file: File | null) => void;
-  uploadTrack: (trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>, qualitySettings?: AudioQualitySettings) => Promise<boolean>;
+  uploadTrack: (
+    trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>,
+    qualitySettings?: AudioQualitySettings
+  ) => Promise<{ success: boolean; trackId?: string }>;
   cancelUpload: () => void;
   resetUpload: () => void;
   validateFiles: () => { isValid: boolean; errors: string[] };
@@ -208,14 +211,14 @@ export function useAudioUpload(): [UploadState, UploadActions] {
   const uploadTrack = useCallback(async (
     trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>,
     qualitySettings?: AudioQualitySettings
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; trackId?: string }> => {
     if (!user) {
       setState(prev => ({
         ...prev,
         error: 'You must be logged in to upload tracks',
         uploadStatus: 'error'
       }));
-      return false;
+      return { success: false };
     }
 
     if (!state.audioFile) {
@@ -224,7 +227,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
         error: 'Please select an audio file to upload',
         uploadStatus: 'error'
       }));
-      return false;
+      return { success: false };
     }
 
     // Create abort controller for cancellation
@@ -269,7 +272,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
           successMessage: 'Track uploaded successfully!',
           uploadProgress: { audio: 100, cover: 100, processing: 100 }
         }));
-        return true;
+        return { success: true, trackId: result.trackId };
       } else {
         setState(prev => ({
           ...prev,
@@ -277,7 +280,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
           uploadStatus: 'error',
           error: result.error?.message || 'Upload failed'
         }));
-        return false;
+        return { success: false };
       }
     } catch (error) {
       setState(prev => ({
@@ -286,7 +289,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
         uploadStatus: 'error',
         error: error instanceof Error ? error.message : 'Upload failed'
       }));
-      return false;
+      return { success: false };
     }
   }, [user, state.audioFile, state.coverArtFile]);
 

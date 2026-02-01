@@ -168,9 +168,9 @@ export default function PodcastUploadPage() {
       };
 
       console.log('Uploading podcast with data:', podcastData);
-      const success = await uploadActions.uploadTrack(podcastData);
+      const result = await uploadActions.uploadTrack(podcastData);
 
-      if (success) {
+      if (result.success) {
         // Reset form
         setTitle('');
         setEpisodeNumber('');
@@ -184,7 +184,8 @@ export default function PodcastUploadPage() {
         
         // Redirect to success page with podcast details
         console.log('Redirecting to success page...');
-        const successUrl = `/podcast/upload/success?title=${encodeURIComponent(title.trim())}`;
+        const successUrl = `/podcast/upload/success?title=${encodeURIComponent(title.trim())}` +
+          `${result.trackId ? `&trackId=${encodeURIComponent(result.trackId)}` : ''}`;
         window.location.href = successUrl;
       } else {
         console.error('Failed to upload podcast. Please try again.');

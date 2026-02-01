@@ -13,6 +13,8 @@ import { AudioQualitySelector } from '../../src/components/upload/AudioQualitySe
 import UploadEducationModal from '../../src/components/upload/UploadEducationModal';
 import RightsVerificationForm from '../../src/components/upload/RightsVerificationForm';
 import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types/audio-quality';
+import { Toaster } from '../../src/components/ui/Toast';
+import { toast as hotToast } from 'react-hot-toast';
 import { Upload, Music, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
 
 type ContentType = 'music' | 'podcast';
@@ -778,9 +780,30 @@ export default function UnifiedUploadPage() {
         })
       };
 
-      const success = await uploadActions.uploadTrack(trackData, selectedQuality);
+      const result = await uploadActions.uploadTrack(trackData, selectedQuality);
       
-      if (success) {
+      if (result.success) {
+        const trackId = result.trackId;
+        const trackUrl = trackId ? `/track/${trackId}` : '/profile';
+        hotToast.custom((t) => (
+          <div
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-md w-full bg-gray-900 text-white shadow-lg rounded-lg pointer-events-auto flex items-center justify-between p-4 border border-gray-700`}
+          >
+            <div className="mr-3">
+              <p className="text-sm font-semibold">Upload successful</p>
+              <p className="text-xs text-gray-300">Your track is live.</p>
+            </div>
+            <a
+              href={trackUrl}
+              className="text-xs px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              View track
+            </a>
+          </div>
+        ), { duration: 6000 });
+
         // Update pricing if track was set as paid
         if (isPaid && contentType === 'music') {
           try {
@@ -834,7 +857,12 @@ export default function UnifiedUploadPage() {
         uploadActions.resetUpload();
         
         // Redirect to success page
-        window.location.href = `/upload/success?title=${encodeURIComponent(title)}&type=${contentType}`;
+        const successUrl = `/upload/success?title=${encodeURIComponent(title)}&type=${contentType}` +
+          `${trackId ? `&trackId=${encodeURIComponent(trackId)}` : ''}` +
+          `${artistName ? `&artistName=${encodeURIComponent(artistName)}` : ''}` +
+          `${genre ? `&genre=${encodeURIComponent(genre)}` : ''}` +
+          `${description ? `&description=${encodeURIComponent(description)}` : ''}`;
+        window.location.href = successUrl;
       } else {
         console.error('Upload failed');
         alert('Upload failed. Please try again.');
@@ -898,6 +926,7 @@ export default function UnifiedUploadPage() {
         ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
         : 'bg-gray-50'
     }`}>
+      <Toaster />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Content Type Selection */}
         <div className="mb-8">
