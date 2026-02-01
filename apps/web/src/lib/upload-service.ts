@@ -299,6 +299,7 @@ export class AudioUploadService {
     title: string;
     description?: string;
     creator_id: string;
+    artist_name: string;
     file_url: string;
     cover_art_url?: string;
     duration: number;
@@ -576,6 +577,7 @@ export class AudioUploadService {
         title: trackData.title,
         description: trackData.description,
         creator_id: userId,
+        artist_name: trackData.artistName?.trim() || 'Unknown Artist',
         file_url: audioResult.url!,
         cover_art_url: coverArtUrl,
         duration: (trackData.audioFile.metadata as AudioMetadata)?.duration || 0,
