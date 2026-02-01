@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, Suspense, useRef } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
-import { Toaster } from '../../../src/components/ui/Toast';
-import { toast as hotToast } from 'react-hot-toast';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { CheckCircle, Music, Mic, User, Home, Loader2, AlertTriangle, Share2, Heart, MessageCircle, Plus, TrendingUp, Users, Calendar, Globe, ArrowRight, Download, Play, Pause, Volume2 } from 'lucide-react';
 
@@ -20,7 +18,6 @@ function UploadSuccessContent() {
     genre?: string;
     description?: string;
   } | null>(null);
-  const toastShownRef = useRef(false);
 
   useEffect(() => {
     // Get track data from URL params
@@ -43,29 +40,6 @@ function UploadSuccessContent() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!trackData || toastShownRef.current) return;
-    toastShownRef.current = true;
-    const trackUrl = trackData.trackId ? `/track/${trackData.trackId}` : '/profile';
-    hotToast.custom((t) => (
-      <div
-        className={`${
-          t.visible ? 'animate-enter' : 'animate-leave'
-        } max-w-md w-full bg-gray-900 text-white shadow-lg rounded-lg pointer-events-auto flex items-center justify-between p-4 border border-gray-700`}
-      >
-        <div className="mr-3">
-          <p className="text-sm font-semibold">Upload successful</p>
-          <p className="text-xs text-gray-300">Your track is live.</p>
-        </div>
-        <a
-          href={trackUrl}
-          className="text-xs px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          View track
-        </a>
-      </div>
-    ), { duration: 6000 });
-  }, [trackData]);
 
   // Show loading state while checking authentication
   if (loading) {
@@ -109,7 +83,6 @@ function UploadSuccessContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Toaster />
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Success Header */}

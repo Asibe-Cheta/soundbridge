@@ -785,24 +785,27 @@ export default function UnifiedUploadPage() {
       if (result.success) {
         const trackId = result.trackId;
         const trackUrl = trackId ? `/track/${trackId}` : '/profile';
-        hotToast.custom((t) => (
-          <div
-            className={`${
-              t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-md w-full bg-gray-900 text-white shadow-lg rounded-lg pointer-events-auto flex items-center justify-between p-4 border border-gray-700`}
-          >
-            <div className="mr-3">
-              <p className="text-sm font-semibold">Upload successful</p>
-              <p className="text-xs text-gray-300">Your track is live.</p>
-            </div>
-            <a
-              href={trackUrl}
-              className="text-xs px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+        hotToast.custom(
+          (t) => (
+            <div
+              className={`${
+                t.visible ? 'animate-enter' : 'animate-leave'
+              } max-w-md w-full bg-gray-900 text-white shadow-lg rounded-lg pointer-events-auto flex items-center justify-between p-4 border border-gray-700`}
             >
-              View track
-            </a>
-          </div>
-        ), { duration: 6000 });
+              <div className="mr-3">
+                <p className="text-sm font-semibold">Upload successful</p>
+                <p className="text-xs text-gray-300">Your track is live.</p>
+              </div>
+              <a
+                href={trackUrl}
+                className="text-xs px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                View track
+              </a>
+            </div>
+          ),
+          { duration: 6000 }
+        );
 
         // Update pricing if track was set as paid
         if (isPaid && contentType === 'music') {
