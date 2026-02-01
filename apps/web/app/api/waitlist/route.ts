@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
         const emailSent = await SendGridService.sendTemplatedEmail({
           to: email.toLowerCase().trim(),
           from: CONTACT_EMAIL,
+          fromName: 'SoundBridge Team',
+          replyTo: CONTACT_EMAIL,
           templateId: SENDGRID_WAITLIST_TEMPLATE_ID,
           subject: 'Welcome to SoundBridge Waitlist! 🎵',
           dynamicTemplateData: {
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
             founder_name: 'Justice Asibe',
             contact_email: CONTACT_EMAIL,
           },
+          categories: ['waitlist', 'transactional', 'soundbridge'],
         });
 
         if (!emailSent) {

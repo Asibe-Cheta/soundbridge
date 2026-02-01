@@ -7,9 +7,12 @@ export interface EmailData {
   to: string;
   from?: string;
   fromName?: string;
+  replyTo?: string;
   templateId: string;
   dynamicTemplateData: Record<string, any>;
   subject?: string; // Optional subject override for dynamic templates
+  headers?: Record<string, string>;
+  categories?: string[];
 }
 
 export interface PasswordResetData {
@@ -133,29 +136,28 @@ export class SendGridService {
         email: emailData.from || this.fromEmail,
         name: emailData.fromName || this.fromName
       },
-      replyTo: 'contact@soundbridge.live', // Allow users to reply
+      replyTo: emailData.replyTo || 'contact@soundbridge.live', // Allow users to reply
       templateId: emailData.templateId,
       dynamicTemplateData: emailData.dynamicTemplateData,
       // Add headers for better deliverability
       headers: {
         'X-Entity-Ref-ID': `soundbridge-${Date.now()}`,
         'X-Mailer': 'SoundBridge Platform',
-        'Precedence': 'list', // Changed from 'bulk' - these aren't bulk emails
-        'Importance': 'high', // High importance for account notifications
         'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        'X-Priority': '1', // High priority (changed from 3)
-        'X-MSMail-Priority': 'High',
-        'X-Auto-Response-Suppress': 'OOF, AutoReply'
-        // Removed 'Auto-Submitted' - can trigger spam filters
+        'X-Auto-Response-Suppress': 'OOF, AutoReply',
+        ...(emailData.headers || {})
+        // Removed high-priority headers to reduce spam flags
       },
       // Add categories for tracking and filtering
-      categories: ['account-security', 'transactional', 'soundbridge']
+      categories: emailData.categories || ['transactional', 'soundbridge']
     };
 
     // Add subject if provided (overrides template subject)
     if (emailData.subject) {
       msg.subject = emailData.subject;
+    } else if (emailData.dynamicTemplateData?.subject) {
+      msg.subject = String(emailData.dynamicTemplateData.subject);
     }
 
     console.log('📧 SendGrid email payload:', {
