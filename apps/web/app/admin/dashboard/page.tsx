@@ -95,6 +95,16 @@ const buildSeries = (series: any[] | undefined, valueKey: 'count' | 'amount'): C
     .sort((a, b) => a.date.localeCompare(b.date));
 };
 
+const buildGaSeries = (series: any[] | undefined, valueKey: 'activeUsers' | 'sessions' | 'pageViews'): ChartPoint[] => {
+  if (!series?.length) return [];
+  return series
+    .map((point) => ({
+      date: point.date,
+      value: Number(point[valueKey] ?? 0),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
 const getWeekStart = (date: Date) => {
   const day = (date.getDay() + 6) % 7; // Monday start
   const monday = new Date(date);
@@ -1831,6 +1841,9 @@ function AnalyticsTab({
   const messageActivitySeries = aggregateSeries(buildSeries(timeSeries?.messageActivity, 'count'), granularity);
   const revenueSeries = aggregateSeries(buildSeries(timeSeries?.revenue, 'amount'), granularity);
   const subscriptionRevenueSeries = aggregateSeries(buildSeries(timeSeries?.subscriptionRevenue, 'amount'), granularity);
+  const gaActiveSeries = aggregateSeries(buildGaSeries(ga?.series, 'activeUsers'), granularity);
+  const gaSessionsSeries = aggregateSeries(buildGaSeries(ga?.series, 'sessions'), granularity);
+  const gaPageViewsSeries = aggregateSeries(buildGaSeries(ga?.series, 'pageViews'), granularity);
 
   return (
     <div className="space-y-6">
@@ -2037,6 +2050,69 @@ function AnalyticsTab({
               </div>
             </div>
 
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className={`${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Active Users Trend</h4>
+                <InteractiveLineChart data={gaActiveSeries} theme={theme} granularity={granularity} />
+              </div>
+              <div className={`${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Sessions Trend</h4>
+                <InteractiveLineChart data={gaSessionsSeries} theme={theme} granularity={granularity} />
+              </div>
+              <div className={`${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Page Views Trend</h4>
+                <InteractiveLineChart data={gaPageViewsSeries} theme={theme} granularity={granularity} />
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className={`${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Top Traffic Sources</h4>
+                {ga.topSources?.length ? (
+                  <div className="space-y-2">
+                    {ga.topSources.slice(0, 6).map((source: any) => (
+                      <div key={source.source} className="flex items-center justify-between">
+                        <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{source.source}</span>
+                        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatCompactNumber(source.sessions)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>No traffic source data yet.</p>
+                )}
+              </div>
+              <div className={`${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Top Countries</h4>
+                {ga.topCountries?.length ? (
+                  <div className="space-y-2">
+                    {ga.topCountries.slice(0, 6).map((country: any) => (
+                      <div key={country.country} className="flex items-center justify-between">
+                        <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{country.country}</span>
+                        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatCompactNumber(country.users)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>No country data yet.</p>
+                )}
+              </div>
+              <div className={`${theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+                <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Device Breakdown</h4>
+                {ga.devices?.length ? (
+                  <div className="space-y-2">
+                    {ga.devices.map((device: any) => (
+                      <div key={device.device} className="flex items-center justify-between">
+                        <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{device.device}</span>
+                        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatCompactNumber(device.users)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>No device data yet.</p>
+                )}
+              </div>
+            </div>
+
             <div className="mt-6">
               <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Top Pages</h4>
               {ga.topPages?.length ? (
@@ -2044,7 +2120,7 @@ function AnalyticsTab({
                   {ga.topPages.slice(0, 5).map((page: any) => (
                     <div key={page.path} className="flex items-center justify-between">
                       <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{page.path}</span>
-                      <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{page.views}</span>
+                      <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatCompactNumber(page.views)}</span>
                     </div>
                   ))}
                 </div>

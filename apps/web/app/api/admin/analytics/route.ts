@@ -100,6 +100,103 @@ const fetchGaData = async (startDate: string, endDate: string) => {
     views: toNumber(row?.metricValues?.[0]?.value),
   }));
 
+  const trafficSourcesResponse = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'sessionSourceMedium' }],
+      metrics: [{ name: 'sessions' }],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 10,
+    }),
+  });
+
+  const trafficSourcesData = await trafficSourcesResponse.json();
+  if (!trafficSourcesResponse.ok) {
+    throw new Error(trafficSourcesData?.error?.message || 'GA traffic sources request failed');
+  }
+
+  const topSources = (trafficSourcesData?.rows || []).map((row: any) => ({
+    source: row?.dimensionValues?.[0]?.value || 'unknown',
+    sessions: toNumber(row?.metricValues?.[0]?.value),
+  }));
+
+  const geoResponse = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'country' }],
+      metrics: [{ name: 'activeUsers' }],
+      orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+      limit: 10,
+    }),
+  });
+
+  const geoData = await geoResponse.json();
+  if (!geoResponse.ok) {
+    throw new Error(geoData?.error?.message || 'GA geo request failed');
+  }
+
+  const topCountries = (geoData?.rows || []).map((row: any) => ({
+    country: row?.dimensionValues?.[0]?.value || 'Unknown',
+    users: toNumber(row?.metricValues?.[0]?.value),
+  }));
+
+  const deviceResponse = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'deviceCategory' }],
+      metrics: [{ name: 'activeUsers' }],
+      orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
+      limit: 5,
+    }),
+  });
+
+  const deviceData = await deviceResponse.json();
+  if (!deviceResponse.ok) {
+    throw new Error(deviceData?.error?.message || 'GA device request failed');
+  }
+
+  const devices = (deviceData?.rows || []).map((row: any) => ({
+    device: row?.dimensionValues?.[0]?.value || 'unknown',
+    users: toNumber(row?.metricValues?.[0]?.value),
+  }));
+
+  const seriesResponse = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }],
+      orderBys: [{ dimension: { dimensionName: 'date' }, desc: false }],
+      limit: 1000,
+    }),
+  });
+
+  const seriesData = await seriesResponse.json();
+  if (!seriesResponse.ok) {
+    throw new Error(seriesData?.error?.message || 'GA series request failed');
+  }
+
+  const series = (seriesData?.rows || []).map((row: any) => {
+    const rawDate = row?.dimensionValues?.[0]?.value || '';
+    const formattedDate =
+      rawDate.length === 8
+        ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+        : rawDate;
+    return {
+      date: formattedDate,
+      activeUsers: toNumber(row?.metricValues?.[0]?.value),
+      sessions: toNumber(row?.metricValues?.[1]?.value),
+      pageViews: toNumber(row?.metricValues?.[2]?.value),
+    };
+  });
+
   return {
     enabled: true,
     activeUsers: toNumber(metricValues[0]?.value),
@@ -108,6 +205,10 @@ const fetchGaData = async (startDate: string, endDate: string) => {
     avgSessionDuration: toNumber(metricValues[3]?.value),
     engagementRate: toNumber(metricValues[4]?.value),
     topPages,
+    topSources,
+    topCountries,
+    devices,
+    series,
     period: { startDate, endDate },
   };
 };
