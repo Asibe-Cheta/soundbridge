@@ -1636,6 +1636,7 @@ function AnalyticsTab({ theme, data, loading, onRefresh }: {
   }
 
   const { summary, topContent } = data;
+  const ga = data?.ga;
 
   return (
     <div className="space-y-6">
@@ -1748,6 +1749,59 @@ function AnalyticsTab({ theme, data, loading, onRefresh }: {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Web Analytics (Google Analytics) */}
+      <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Web Analytics</h3>
+        </div>
+        {!ga?.enabled ? (
+          <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            Google Analytics not configured. {ga?.reason ? `(${ga.reason})` : ''}
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Active Users</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{ga.activeUsers}</p>
+              </div>
+              <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Sessions</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{ga.sessions}</p>
+              </div>
+              <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Page Views</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{ga.pageViews}</p>
+              </div>
+              <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Avg Session (s)</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{Math.round(ga.avgSessionDuration || 0)}</p>
+              </div>
+              <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Engagement Rate</p>
+                <p className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{(ga.engagementRate * 100).toFixed(1)}%</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Top Pages</h4>
+              {ga.topPages?.length ? (
+                <div className="space-y-2">
+                  {ga.topPages.slice(0, 5).map((page: any) => (
+                    <div key={page.path} className="flex items-center justify-between">
+                      <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{page.path}</span>
+                      <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{page.views}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>No page data yet.</p>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

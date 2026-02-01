@@ -1,13 +1,133 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { JWT } from 'google-auth-library';
 import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin } from '@/src/lib/admin-auth';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+const parsePeriod = (period: string | null) => {
+  switch (period) {
+    case '7d':
+      return { startDate: '7daysAgo', endDate: 'today' };
+    case '30d':
+      return { startDate: '30daysAgo', endDate: 'today' };
+    case '90d':
+      return { startDate: '90daysAgo', endDate: 'today' };
+    case '1y':
+      return { startDate: '365daysAgo', endDate: 'today' };
+    default:
+      return { startDate: '30daysAgo', endDate: 'today' };
+  }
+};
+
+const toNumber = (value?: string) => {
+  if (!value) return 0;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const fetchGaData = async (startDate: string, endDate: string) => {
+  const gaPropertyId = process.env.GA_PROPERTY_ID;
+  const gaServiceAccountEmail = process.env.GA_SERVICE_ACCOUNT_EMAIL;
+  const gaPrivateKeyRaw = process.env.GA_SERVICE_ACCOUNT_PRIVATE_KEY;
+  const gaPrivateKey = gaPrivateKeyRaw ? gaPrivateKeyRaw.replace(/\\n/g, '\n') : null;
+
+  if (!gaPropertyId || !gaServiceAccountEmail || !gaPrivateKey) {
+    return { enabled: false, reason: 'GA configuration missing' };
+  }
+
+  const authClient = new JWT({
+    email: gaServiceAccountEmail,
+    key: gaPrivateKey,
+    scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+  });
+  const accessToken = await authClient.getAccessToken();
+  if (!accessToken?.token) {
+    throw new Error('Failed to obtain GA access token');
+  }
+
+  const baseUrl = `https://analyticsdata.googleapis.com/v1beta/properties/${gaPropertyId}:runReport`;
+  const headers = {
+    Authorization: `Bearer ${accessToken.token}`,
+    'Content-Type': 'application/json',
+  };
+
+  const summaryResponse = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      metrics: [
+        { name: 'activeUsers' },
+        { name: 'sessions' },
+        { name: 'screenPageViews' },
+        { name: 'averageSessionDuration' },
+        { name: 'engagementRate' },
+      ],
+    }),
+  });
+
+  const summaryData = await summaryResponse.json();
+  if (!summaryResponse.ok) {
+    throw new Error(summaryData?.error?.message || 'GA summary request failed');
+  }
+
+  const metricValues = summaryData?.rows?.[0]?.metricValues || [];
+
+  const topPagesResponse = await fetch(baseUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'pagePath' }],
+      metrics: [{ name: 'screenPageViews' }],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 10,
+    }),
+  });
+
+  const topPagesData = await topPagesResponse.json();
+  if (!topPagesResponse.ok) {
+    throw new Error(topPagesData?.error?.message || 'GA top pages request failed');
+  }
+
+  const topPages = (topPagesData?.rows || []).map((row: any) => ({
+    path: row?.dimensionValues?.[0]?.value || '',
+    views: toNumber(row?.metricValues?.[0]?.value),
+  }));
+
+  return {
+    enabled: true,
+    activeUsers: toNumber(metricValues[0]?.value),
+    sessions: toNumber(metricValues[1]?.value),
+    pageViews: toNumber(metricValues[2]?.value),
+    avgSessionDuration: toNumber(metricValues[3]?.value),
+    engagementRate: toNumber(metricValues[4]?.value),
+    topPages,
+    period: { startDate, endDate },
+  };
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status, headers: corsHeaders });
+    }
+
     console.log('📈 Admin Analytics API called');
-    
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d'; // 7d, 30d, 90d, 1y
-    
+
     const supabase = createServiceClient();
 
     // Calculate date range based on period
@@ -174,6 +294,15 @@ export async function GET(request: NextRequest) {
         .sort((a, b) => a.date.localeCompare(b.date));
     };
 
+    const { startDate, endDate } = parsePeriod(period);
+    let gaData: any = { enabled: false, reason: 'GA configuration missing' };
+
+    try {
+      gaData = await fetchGaData(startDate, endDate);
+    } catch (error: any) {
+      gaData = { enabled: false, reason: error?.message || 'GA fetch failed' };
+    }
+
     const analyticsData = {
       period,
       timeSeries: {
@@ -196,21 +325,25 @@ export async function GET(request: NextRequest) {
         totalMessages: messageActivity?.length || 0,
         totalRevenue: revenueData?.reduce((sum, item) => sum + (item.amount_paid || 0), 0) || 0,
         totalSubscriptionRevenue: subscriptionRevenue?.reduce((sum, item) => sum + (item.amount_paid || 0), 0) || 0
-      }
+      },
+      ga: gaData
     };
 
     console.log('✅ Analytics data fetched successfully');
 
-    return NextResponse.json({
-      success: true,
-      data: analyticsData
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: analyticsData,
+      },
+      { headers: corsHeaders }
+    );
 
   } catch (error: any) {
     console.error('❌ Error fetching analytics data:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error', details: error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

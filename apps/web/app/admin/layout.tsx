@@ -20,6 +20,7 @@ export default function AdminLayout({
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/verification-users">User Badges</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/account-deletions">Account Deletions</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/ratings">Ratings</a>
+            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/cookie-consents">Cookie Consents</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/copyright">Copyright</a>
           </div>
         </div>

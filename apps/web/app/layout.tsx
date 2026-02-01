@@ -4,7 +4,8 @@ import './globals.css';
 import '../src/styles/themes.css';
 import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
 import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
-import { SocialScripts } from "@/src/components/SocialScripts";
+import { CookieConsentScripts } from "@/src/components/privacy/CookieConsentScripts";
+import { CookieConsentToast } from "@/src/components/privacy/CookieConsentToast";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
@@ -13,7 +14,6 @@ import Navbar from "@/src/components/layout/Navbar";
 import { StructuredData, organizationStructuredData, websiteStructuredData } from "@/src/components/seo/StructuredData";
 import ErrorBoundary from "@/src/components/ErrorBoundary";
 import { GlobalErrorHandler } from "@/src/components/GlobalErrorHandler";
-import Script from 'next/script';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -157,53 +157,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://aunxdbqukbxyyiusaeqi.supabase.co" />
         
-        {/* Facebook SDK - Only load if App ID is configured */}
-        {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && process.env.NEXT_PUBLIC_FACEBOOK_APP_ID !== 'your-facebook-app-id' && (
-          <Script
-            id="facebook-sdk"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                window.fbAsyncInit = function() {
-                  FB.init({
-                    appId: '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}',
-                    cookie: true,
-                    xfbml: true,
-                    version: 'v18.0'
-                  });
-                };
-                (function(d, s, id) {
-                  var js, fjs = d.getElementsByTagName(s)[0];
-                  if (d.getElementById(id)) return;
-                  js = d.createElement(s); js.id = id;
-                  js.src = "https://connect.facebook.net/en_US/sdk.js";
-                  fjs.parentNode.insertBefore(js, fjs);
-                }(document, 'script', 'facebook-jssdk'));
-              `,
-            }}
-          />
-        )}
-        
-        {/* YouTube API - Only load if Google Client ID is configured */}
-        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== 'disabled' && (
-          <Script
-            id="youtube-api"
-            src="https://apis.google.com/js/api.js"
-            strategy="afterInteractive"
-          />
-        )}
-        
-        {/* Google AdSense */}
-        <Script
-          id="adsense"
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9193690947663942"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-        
-        <SocialScripts />
-        
         {/* Structured Data */}
         <StructuredData type="organization" data={organizationStructuredData} />
         <StructuredData type="website" data={websiteStructuredData} />
@@ -219,6 +172,8 @@ export default function RootLayout({
                   {children}
                   <GlobalAudioPlayer />
                   <OnboardingManager />
+                  <CookieConsentToast />
+                  <CookieConsentScripts />
                 </AudioPlayerProvider>
               </OnboardingProvider>
             </AuthProvider>
