@@ -6,6 +6,7 @@ import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
 import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
 import { CookieConsentScripts } from "@/src/components/privacy/CookieConsentScripts";
 import { CookieConsentToast } from "@/src/components/privacy/CookieConsentToast";
+import WaitlistJoinModal from "@/src/components/waitlist/WaitlistJoinModal";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
@@ -174,6 +175,7 @@ export default function RootLayout({
                   <OnboardingManager />
                   <CookieConsentToast />
                   <CookieConsentScripts />
+                  <WaitlistJoinModal />
                 </AudioPlayerProvider>
               </OnboardingProvider>
             </AuthProvider>
