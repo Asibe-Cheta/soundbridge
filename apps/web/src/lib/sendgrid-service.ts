@@ -160,6 +160,17 @@ export class SendGridService {
       msg.subject = String(emailData.dynamicTemplateData.subject);
     }
 
+    // Force subject override for dynamic templates
+    if (msg.subject) {
+      msg.personalizations = [
+        {
+          to: [{ email: emailData.to }],
+          subject: msg.subject,
+          dynamicTemplateData: emailData.dynamicTemplateData
+        }
+      ];
+    }
+
     console.log('📧 SendGrid email payload:', {
       to: msg.to,
       from: msg.from.email,
