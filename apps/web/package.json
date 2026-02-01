@@ -71,6 +71,7 @@
     "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^1.8.11",
     "react-window-infinite-loader": "^1.0.10",
+    "recharts": "^3.7.0",
     "speakeasy": "^2.0.0",
     "stripe": "^18.5.0",
     "tailwind-merge": "^3.3.1",

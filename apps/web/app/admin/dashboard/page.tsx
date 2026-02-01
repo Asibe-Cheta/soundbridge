@@ -1,6 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 import { Shield, AlertTriangle, Flag, Users, Clock, CheckCircle, X, Eye, User, Mail, Calendar, Filter, Search, RefreshCw, TrendingUp, FileText, Copyright, BarChart3, Settings, UserCheck, Music, Calendar as CalendarIcon, MessageSquare, DollarSign, Activity, Database, Server, Globe } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
@@ -154,8 +163,6 @@ function InteractiveLineChart({
   valueSuffix?: string;
   granularity?: 'daily' | 'weekly' | 'monthly';
 }) {
-  const [tooltip, setTooltip] = useState<{ index: number; xPercent: number } | null>(null);
-
   if (!data.length) {
     return (
       <div className={`h-48 flex items-center justify-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -164,83 +171,67 @@ function InteractiveLineChart({
     );
   }
 
-  const maxValue = Math.max(...data.map((point) => point.value), 0);
-  const pointCount = data.length;
-
-  const points = data.map((point, index) => {
-    const x = pointCount === 1 ? 50 : (index / (pointCount - 1)) * 100;
-    const y = maxValue > 0 ? 100 - (point.value / maxValue) * 100 : 100;
-    return { x, y, value: point.value, date: point.date };
-  });
-
-  const polylinePoints = points.map((point) => `${point.x},${point.y}`).join(' ');
-  const areaPoints = `0,100 ${polylinePoints} 100,100`;
-  const activePoint = tooltip ? points[tooltip.index] : null;
+  const strokeColor = theme === 'dark' ? '#60a5fa' : '#2563eb';
+  const gradientId = useId();
 
   return (
-    <div className="relative h-52">
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        className="w-full h-full"
-        onMouseMove={(event) => {
-          const rect = event.currentTarget.getBoundingClientRect();
-          const x = event.clientX - rect.left;
-          const xPercent = Math.min(100, Math.max(0, (x / rect.width) * 100));
-          const index = pointCount === 1 ? 0 : Math.round((xPercent / 100) * (pointCount - 1));
-          setTooltip({ index, xPercent });
-        }}
-        onMouseLeave={() => setTooltip(null)}
-      >
-        <defs>
-          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={theme === 'dark' ? '#60a5fa' : '#3b82f6'} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={theme === 'dark' ? '#1f2937' : '#ffffff'} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polyline points={areaPoints} fill="url(#chartFill)" stroke="none" />
-        <polyline
-          points={polylinePoints}
-          fill="none"
-          stroke={theme === 'dark' ? '#60a5fa' : '#2563eb'}
-          strokeWidth="2"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {points.map((point, index) => (
-          <circle
-            key={`${point.date}-${index}`}
-            cx={point.x}
-            cy={point.y}
-            r={tooltip?.index === index ? 2.8 : 1.6}
-            fill={theme === 'dark' ? '#93c5fd' : '#2563eb'}
-            opacity={tooltip ? (tooltip.index === index ? 1 : 0.4) : 0.8}
+    <div className="h-52">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={strokeColor} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+          <XAxis
+            dataKey="date"
+            tickFormatter={(value) => formatGranularityLabel(value, granularity)}
+            interval="preserveStartEnd"
+            stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'}
+            tick={{ fontSize: 11 }}
           />
-        ))}
-      </svg>
-
-      {activePoint && (
-        <div
-          className={`absolute px-3 py-2 rounded-lg text-xs shadow-lg ${
-            theme === 'dark' ? 'bg-gray-900 text-gray-100 border border-gray-700' : 'bg-white text-gray-700 border border-gray-200'
-          }`}
-          style={{
-            left: `${activePoint.x}%`,
-            top: `${activePoint.y}%`,
-            transform: 'translate(-50%, -120%)',
-            pointerEvents: 'none',
-          }}
-        >
-          <div className="font-semibold">
-            {valuePrefix}
-            {formatCompactNumber(activePoint.value)}
-            {valueSuffix}
-          </div>
-          <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            {formatGranularityLabel(activePoint.date, granularity)}
-          </div>
-        </div>
-      )}
+          <YAxis
+            tickFormatter={(value) => formatCompactNumber(value)}
+            stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'}
+            tick={{ fontSize: 11 }}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const value = payload[0]?.value ?? 0;
+              return (
+                <div
+                  className={`px-3 py-2 rounded-lg text-xs shadow-lg ${
+                    theme === 'dark'
+                      ? 'bg-gray-900 text-gray-100 border border-gray-700'
+                      : 'bg-white text-gray-700 border border-gray-200'
+                  }`}
+                >
+                  <div className="font-semibold">
+                    {valuePrefix}
+                    {formatCompactNumber(Number(value))}
+                    {valueSuffix}
+                  </div>
+                  <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {formatGranularityLabel(label, granularity)}
+                  </div>
+                </div>
+              );
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={strokeColor}
+            strokeWidth={2}
+            fillOpacity={1}
+            fill={`url(#${gradientId})`}
+            activeDot={{ r: 4 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
