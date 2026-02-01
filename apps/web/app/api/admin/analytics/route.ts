@@ -132,30 +132,30 @@ export async function GET(request: NextRequest) {
 
     // Calculate date range based on period
     const now = new Date();
-    let startDate: Date;
+    let startDateObj: Date;
     
     switch (period) {
       case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        startDateObj = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        startDateObj = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         break;
       case '90d':
-        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        startDateObj = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
         break;
       case '1y':
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        startDateObj = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         break;
       default:
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        startDateObj = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
     // Get user growth data
     const { data: userGrowth, error: userGrowthError } = await supabase
       .from('profiles')
       .select('created_at')
-      .gte('created_at', startDate.toISOString())
+      .gte('created_at', startDateObj.toISOString())
       .order('created_at', { ascending: true });
 
     if (userGrowthError) {
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
     const { data: trackUploads, error: trackUploadsError } = await supabase
       .from('audio_tracks')
       .select('created_at')
-      .gte('created_at', startDate.toISOString())
+      .gte('created_at', startDateObj.toISOString())
       .order('created_at', { ascending: true });
 
     if (trackUploadsError) {
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
     const { data: eventCreations, error: eventCreationsError } = await supabase
       .from('events')
       .select('created_at')
-      .gte('created_at', startDate.toISOString())
+      .gte('created_at', startDateObj.toISOString())
       .order('created_at', { ascending: true });
 
     if (eventCreationsError) {
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
     const { data: messageActivity, error: messageActivityError } = await supabase
       .from('messages')
       .select('created_at')
-      .gte('created_at', startDate.toISOString())
+      .gte('created_at', startDateObj.toISOString())
       .order('created_at', { ascending: true });
 
     if (messageActivityError) {
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
     const { data: revenueData, error: revenueError } = await supabase
       .from('ticket_purchases')
       .select('created_at, amount_paid')
-      .gte('created_at', startDate.toISOString())
+      .gte('created_at', startDateObj.toISOString())
       .eq('status', 'completed')
       .order('created_at', { ascending: true }) as { data: Array<{ created_at: string; amount_paid: number }> | null; error: any };
 
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
     const { data: subscriptionRevenue, error: subscriptionError } = await supabase
       .from('user_subscriptions')
       .select('created_at, amount_paid')
-      .gte('created_at', startDate.toISOString())
+      .gte('created_at', startDateObj.toISOString())
       .eq('status', 'active')
       .order('created_at', { ascending: true }) as { data: Array<{ created_at: string; amount_paid: number }> | null; error: any };
 
