@@ -2507,6 +2507,7 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const limit = 50;
 
   useEffect(() => {
@@ -2575,6 +2576,35 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDelete = async (entry: any) => {
+    if (!entry?.id && !entry?.email) return;
+    const confirmDelete = window.confirm(`Delete ${entry.email || 'this waitlist entry'}?`);
+    if (!confirmDelete) return;
+
+    try {
+      setDeletingId(entry.id || entry.email);
+      const response = await fetch('/api/admin/waitlist', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: entry.id, email: entry.email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData?.error || 'Failed to delete waitlist entry');
+        return;
+      }
+
+      await loadWaitlistData();
+    } catch (error) {
+      console.error('Error deleting waitlist entry:', error);
+      alert('Failed to delete waitlist entry');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -2674,6 +2704,9 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
                     <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
                       Status
                     </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
@@ -2719,6 +2752,19 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
                             Pending
                           </span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleDelete(item)}
+                          disabled={deletingId === (item.id || item.email)}
+                          className={`text-sm font-medium ${
+                            theme === 'dark'
+                              ? 'text-red-400 hover:text-red-300'
+                              : 'text-red-600 hover:text-red-800'
+                          } disabled:opacity-50`}
+                        >
+                          {deletingId === (item.id || item.email) ? 'Deleting...' : 'Delete'}
+                        </button>
                       </td>
                     </tr>
                   ))}
