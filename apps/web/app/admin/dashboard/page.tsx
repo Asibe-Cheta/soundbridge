@@ -77,6 +77,164 @@ const formatDate = (dateString: string) => {
   });
 };
 
+type ChartPoint = { date: string; value: number };
+
+const formatCompactNumber = (value: number) => {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return `${Math.round(value)}`;
+};
+
+const buildSeries = (series: any[] | undefined, valueKey: 'count' | 'amount'): ChartPoint[] => {
+  if (!series?.length) return [];
+  return series
+    .map((point) => ({
+      date: point.date,
+      value: Number(point[valueKey] ?? 0),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+const getWeekStart = (date: Date) => {
+  const day = (date.getDay() + 6) % 7; // Monday start
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - day);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+};
+
+const aggregateSeries = (series: ChartPoint[], granularity: 'daily' | 'weekly' | 'monthly') => {
+  if (granularity === 'daily') return series;
+  const buckets = new Map<string, number>();
+  series.forEach((point) => {
+    const date = new Date(point.date);
+    const bucketDate =
+      granularity === 'weekly'
+        ? getWeekStart(date)
+        : new Date(date.getFullYear(), date.getMonth(), 1);
+    const key = bucketDate.toISOString().split('T')[0];
+    buckets.set(key, (buckets.get(key) || 0) + point.value);
+  });
+  return Array.from(buckets.entries())
+    .map(([date, value]) => ({ date, value }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+const formatGranularityLabel = (dateString: string, granularity: 'daily' | 'weekly' | 'monthly') => {
+  const date = new Date(dateString);
+  if (granularity === 'weekly') {
+    return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+  if (granularity === 'monthly') {
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+function InteractiveLineChart({
+  data,
+  theme,
+  valuePrefix = '',
+  valueSuffix = '',
+  granularity = 'daily',
+}: {
+  data: ChartPoint[];
+  theme: string;
+  valuePrefix?: string;
+  valueSuffix?: string;
+  granularity?: 'daily' | 'weekly' | 'monthly';
+}) {
+  const [tooltip, setTooltip] = useState<{ index: number; xPercent: number } | null>(null);
+
+  if (!data.length) {
+    return (
+      <div className={`h-48 flex items-center justify-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        No data yet.
+      </div>
+    );
+  }
+
+  const maxValue = Math.max(...data.map((point) => point.value), 0);
+  const pointCount = data.length;
+
+  const points = data.map((point, index) => {
+    const x = pointCount === 1 ? 50 : (index / (pointCount - 1)) * 100;
+    const y = maxValue > 0 ? 100 - (point.value / maxValue) * 100 : 100;
+    return { x, y, value: point.value, date: point.date };
+  });
+
+  const polylinePoints = points.map((point) => `${point.x},${point.y}`).join(' ');
+  const areaPoints = `0,100 ${polylinePoints} 100,100`;
+  const activePoint = tooltip ? points[tooltip.index] : null;
+
+  return (
+    <div className="relative h-52">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="w-full h-full"
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const xPercent = Math.min(100, Math.max(0, (x / rect.width) * 100));
+          const index = pointCount === 1 ? 0 : Math.round((xPercent / 100) * (pointCount - 1));
+          setTooltip({ index, xPercent });
+        }}
+        onMouseLeave={() => setTooltip(null)}
+      >
+        <defs>
+          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme === 'dark' ? '#60a5fa' : '#3b82f6'} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={theme === 'dark' ? '#1f2937' : '#ffffff'} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polyline points={areaPoints} fill="url(#chartFill)" stroke="none" />
+        <polyline
+          points={polylinePoints}
+          fill="none"
+          stroke={theme === 'dark' ? '#60a5fa' : '#2563eb'}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {points.map((point, index) => (
+          <circle
+            key={`${point.date}-${index}`}
+            cx={point.x}
+            cy={point.y}
+            r={tooltip?.index === index ? 2.8 : 1.6}
+            fill={theme === 'dark' ? '#93c5fd' : '#2563eb'}
+            opacity={tooltip ? (tooltip.index === index ? 1 : 0.4) : 0.8}
+          />
+        ))}
+      </svg>
+
+      {activePoint && (
+        <div
+          className={`absolute px-3 py-2 rounded-lg text-xs shadow-lg ${
+            theme === 'dark' ? 'bg-gray-900 text-gray-100 border border-gray-700' : 'bg-white text-gray-700 border border-gray-200'
+          }`}
+          style={{
+            left: `${activePoint.x}%`,
+            top: `${activePoint.y}%`,
+            transform: 'translate(-50%, -120%)',
+            pointerEvents: 'none',
+          }}
+        >
+          <div className="font-semibold">
+            {valuePrefix}
+            {formatCompactNumber(activePoint.value)}
+            {valueSuffix}
+          </div>
+          <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            {formatGranularityLabel(activePoint.date, granularity)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -97,6 +255,8 @@ export default function AdminDashboard() {
   const [overviewData, setOverviewData] = useState<any>(null);
   const [usersData, setUsersData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const [analyticsGranularity, setAnalyticsGranularity] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [settingsData, setSettingsData] = useState<any>(null);
   const [tabLoading, setTabLoading] = useState<{[key: string]: boolean}>({});
   
@@ -131,7 +291,7 @@ export default function AdminDashboard() {
           if (!usersData) loadUsersData();
           break;
         case 'analytics':
-          if (!analyticsData) loadAnalyticsData();
+          if (!analyticsData) loadAnalyticsData(analyticsPeriod);
           break;
         case 'settings':
           if (!settingsData) loadSettingsData();
@@ -234,11 +394,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = async (period: '7d' | '30d' | '90d' | '1y' = analyticsPeriod) => {
     try {
       setTabLoading(prev => ({ ...prev, analytics: true }));
       
-      const response = await fetch('/api/admin/analytics?period=30d', {
+      const response = await fetch(`/api/admin/analytics?period=${period}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
@@ -589,7 +749,21 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && <OverviewTab theme={theme} data={overviewData} loading={tabLoading.overview} onWaitlistClick={() => setWaitlistModalOpen(true)} />}
         {activeTab === 'content' && <ContentReviewTab theme={theme} queueItems={queueItems} loading={loading} onItemSelect={setSelectedItem} />}
         {activeTab === 'users' && <UserManagementTab theme={theme} data={usersData} loading={tabLoading.users} onRefresh={loadUsersData} onViewUser={handleViewUser} onBanUser={handleBanUser} />}
-        {activeTab === 'analytics' && <AnalyticsTab theme={theme} data={analyticsData} loading={tabLoading.analytics} onRefresh={loadAnalyticsData} />}
+        {activeTab === 'analytics' && (
+          <AnalyticsTab
+            theme={theme}
+            data={analyticsData}
+            loading={tabLoading.analytics}
+            onRefresh={loadAnalyticsData}
+            period={analyticsPeriod}
+            onPeriodChange={(nextPeriod) => {
+              setAnalyticsPeriod(nextPeriod);
+              loadAnalyticsData(nextPeriod);
+            }}
+            granularity={analyticsGranularity}
+            onGranularityChange={setAnalyticsGranularity}
+          />
+        )}
         {activeTab === 'settings' && <SettingsTab theme={theme} data={settingsData} loading={tabLoading.settings} onRefresh={loadSettingsData} />}
 
       </div>
@@ -1606,11 +1780,24 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
   );
 }
 
-function AnalyticsTab({ theme, data, loading, onRefresh }: { 
-  theme: string; 
-  data: any; 
-  loading: boolean; 
-  onRefresh: () => void;
+function AnalyticsTab({
+  theme,
+  data,
+  loading,
+  onRefresh,
+  period,
+  onPeriodChange,
+  granularity,
+  onGranularityChange,
+}: {
+  theme: string;
+  data: any;
+  loading: boolean;
+  onRefresh: (period?: '7d' | '30d' | '90d' | '1y') => void;
+  period: '7d' | '30d' | '90d' | '1y';
+  onPeriodChange: (period: '7d' | '30d' | '90d' | '1y') => void;
+  granularity: 'daily' | 'weekly' | 'monthly';
+  onGranularityChange: (next: 'daily' | 'weekly' | 'monthly') => void;
 }) {
   if (loading) {
     return (
@@ -1635,21 +1822,58 @@ function AnalyticsTab({ theme, data, loading, onRefresh }: {
     );
   }
 
-  const { summary, topContent } = data;
+  const { summary, topContent, timeSeries } = data;
   const ga = data?.ga;
+
+  const userGrowthSeries = aggregateSeries(buildSeries(timeSeries?.userGrowth, 'count'), granularity);
+  const trackUploadsSeries = aggregateSeries(buildSeries(timeSeries?.trackUploads, 'count'), granularity);
+  const eventCreationsSeries = aggregateSeries(buildSeries(timeSeries?.eventCreations, 'count'), granularity);
+  const messageActivitySeries = aggregateSeries(buildSeries(timeSeries?.messageActivity, 'count'), granularity);
+  const revenueSeries = aggregateSeries(buildSeries(timeSeries?.revenue, 'amount'), granularity);
+  const subscriptionRevenueSeries = aggregateSeries(buildSeries(timeSeries?.subscriptionRevenue, 'amount'), granularity);
 
   return (
     <div className="space-y-6">
       {/* Summary Statistics */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
           <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Analytics Summary</h3>
-          <button 
-            onClick={onRefresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {(['7d', '30d', '90d', '1y'] as const).map((value) => (
+              <button
+                key={value}
+                onClick={() => onPeriodChange(value)}
+                className={`px-3 py-1 rounded-lg text-sm ${
+                  period === value
+                    ? 'bg-blue-600 text-white'
+                    : theme === 'dark'
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {value.toUpperCase()}
+              </button>
+            ))}
+            <select
+              value={granularity}
+              onChange={(event) => onGranularityChange(event.target.value as 'daily' | 'weekly' | 'monthly')}
+              className={`px-3 py-1 rounded-lg text-sm border ${
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 text-gray-200'
+                  : 'bg-white border-gray-200 text-gray-700'
+              }`}
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <button
+              onClick={() => onRefresh(period)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className={`p-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
@@ -1688,6 +1912,34 @@ function AnalyticsTab({ theme, data, loading, onRefresh }: {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Time Series Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>User Growth</h4>
+          <InteractiveLineChart data={userGrowthSeries} theme={theme} granularity={granularity} />
+        </div>
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Track Uploads</h4>
+          <InteractiveLineChart data={trackUploadsSeries} theme={theme} granularity={granularity} />
+        </div>
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Event Creations</h4>
+          <InteractiveLineChart data={eventCreationsSeries} theme={theme} granularity={granularity} />
+        </div>
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Message Activity</h4>
+          <InteractiveLineChart data={messageActivitySeries} theme={theme} granularity={granularity} />
+        </div>
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Ticket Revenue</h4>
+          <InteractiveLineChart data={revenueSeries} theme={theme} valuePrefix="$" granularity={granularity} />
+        </div>
+        <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+          <h4 className={`text-md font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Subscription Revenue</h4>
+          <InteractiveLineChart data={subscriptionRevenueSeries} theme={theme} valuePrefix="$" granularity={granularity} />
         </div>
       </div>
 
