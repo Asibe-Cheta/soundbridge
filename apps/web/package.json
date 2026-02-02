@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "SKIP_TYPE_CHECK=true next build --no-lint",
+    "build": "NODE_OPTIONS=--max_old_space_size=4096 SKIP_TYPE_CHECK=true next build --no-lint",
     "build:optimized": "node scripts/build-optimizer.js optimize && next build --no-lint",
     "build:check": "node scripts/build-optimizer.js check",
     "build:validate": "node scripts/build-optimizer.js validate",
