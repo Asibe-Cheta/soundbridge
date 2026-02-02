@@ -135,18 +135,18 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-slate-950 dark:via-gray-900 dark:to-slate-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-purple-900 dark:to-gray-900">
       <Script id="blog-structured-data" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="rounded-3xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 sm:p-10 shadow-sm">
+        <div className="rounded-3xl bg-white/80 dark:bg-white/5 backdrop-blur p-6 sm:p-10 shadow-sm">
           <div className="mb-6 text-sm text-gray-500 dark:text-gray-300">
             <span>{new Date(post.date).toLocaleDateString()}</span>
             <span className="mx-2">•</span>
             <span>{readMinutes} min read</span>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{post.title}</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-200 mb-8">{post.description}</p>
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">{post.description}</p>
 
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-pink-500 text-white flex items-center justify-center font-semibold">
@@ -163,11 +163,11 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           </article>
         </div>
 
-        <div className="mt-10 p-6 rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur shadow-sm">
+        <div className="mt-10 p-6 rounded-2xl bg-white/80 dark:bg-white/5 backdrop-blur shadow-sm">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
             Start your SoundBridge journey
           </h2>
-          <p className="text-gray-600 dark:text-gray-200 mb-4">
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
             Join the waitlist to connect professionally, promote events for free, and keep 90% of your revenue.
           </p>
           <Link
@@ -185,7 +185,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               <Link
                 key={rel.slug}
                 href={`/blog/${rel.slug}`}
-                className="block rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-4 shadow-sm hover:shadow-md transition"
+                className="block rounded-xl bg-white/80 dark:bg-white/5 backdrop-blur p-4 shadow-sm hover:shadow-md transition"
               >
                 <p className="text-sm text-gray-500 dark:text-gray-300 mb-1">
                   {new Date(rel.date).toLocaleDateString()}
