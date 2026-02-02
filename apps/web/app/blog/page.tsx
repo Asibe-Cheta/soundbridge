@@ -44,7 +44,7 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-slate-950 dark:via-gray-900 dark:to-slate-950">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-10 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur px-6 py-10 text-center shadow-sm">
+        <div className="mb-10 rounded-3xl bg-white/70 dark:bg-slate-900/60 backdrop-blur px-6 py-10 text-center shadow-sm">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
             SoundBridge Blog
           </h1>
@@ -58,7 +58,7 @@ export default function BlogPage() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="block rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 shadow-sm hover:shadow-lg hover:border-red-200/70 dark:hover:border-red-500/30 transition"
+              className="block rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 shadow-sm hover:shadow-lg transition"
             >
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-300 mb-2">
                 <span>{new Date(post.date).toLocaleDateString()}</span>
@@ -75,7 +75,7 @@ export default function BlogPage() {
           ))}
         </div>
 
-        <div className="mt-12 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-8 text-center shadow-sm">
+        <div className="mt-12 rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-8 text-center shadow-sm">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
             Start your SoundBridge journey
           </h2>

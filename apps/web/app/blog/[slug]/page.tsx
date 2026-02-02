@@ -139,7 +139,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       <Script id="blog-structured-data" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 sm:p-10 shadow-sm">
+        <div className="rounded-3xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 sm:p-10 shadow-sm">
           <div className="mb-6 text-sm text-gray-500 dark:text-gray-300">
             <span>{new Date(post.date).toLocaleDateString()}</span>
             <span className="mx-2">•</span>
@@ -163,7 +163,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           </article>
         </div>
 
-        <div className="mt-10 p-6 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur shadow-sm">
+        <div className="mt-10 p-6 rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur shadow-sm">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
             Start your SoundBridge journey
           </h2>
@@ -185,7 +185,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               <Link
                 key={rel.slug}
                 href={`/blog/${rel.slug}`}
-                className="block rounded-xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-4 shadow-sm hover:shadow-md hover:border-red-200/70 dark:hover:border-red-500/30 transition"
+                className="block rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur p-4 shadow-sm hover:shadow-md transition"
               >
                 <p className="text-sm text-gray-500 dark:text-gray-300 mb-1">
                   {new Date(rel.date).toLocaleDateString()}
