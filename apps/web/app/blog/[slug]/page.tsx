@@ -20,7 +20,7 @@ const renderBlock = (block: BlogBlock, index: number) => {
       );
     case 'ul':
       return (
-        <ul key={index} className="list-disc pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+        <ul key={index} className="list-disc pl-5 space-y-2 text-gray-700 dark:text-gray-200">
           {block.items.map((item, idx) => (
             <li key={idx}>{item}</li>
           ))}
@@ -28,9 +28,12 @@ const renderBlock = (block: BlogBlock, index: number) => {
       );
     case 'table':
       return (
-        <div key={index} className="overflow-x-auto">
-          <table className="min-w-full border border-gray-200 dark:border-gray-700 text-sm">
-            <thead className="bg-gray-100 dark:bg-gray-800">
+        <div
+          key={index}
+          className="overflow-x-auto rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur"
+        >
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-100/80 dark:bg-slate-800/80">
               <tr>
                 {block.headers.map((header) => (
                   <th key={header} className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-200">
@@ -41,9 +44,9 @@ const renderBlock = (block: BlogBlock, index: number) => {
             </thead>
             <tbody>
               {block.rows.map((row, rowIdx) => (
-                <tr key={rowIdx} className="border-t border-gray-200 dark:border-gray-700">
+                <tr key={rowIdx} className="border-t border-gray-200/70 dark:border-white/10">
                   {row.map((cell, cellIdx) => (
-                    <td key={cellIdx} className="px-3 py-2 text-gray-600 dark:text-gray-300">
+                    <td key={cellIdx} className="px-3 py-2 text-gray-600 dark:text-gray-200">
                       {cell}
                     </td>
                   ))}
@@ -55,7 +58,7 @@ const renderBlock = (block: BlogBlock, index: number) => {
       );
     default:
       return (
-        <p key={index} className="text-gray-700 dark:text-gray-300 leading-relaxed">
+        <p key={index} className="text-gray-700 dark:text-gray-200 leading-relaxed">
           {block.text}
         </p>
       );
@@ -132,35 +135,39 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-slate-950 dark:via-gray-900 dark:to-slate-950">
       <Script id="blog-structured-data" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          <span>{new Date(post.date).toLocaleDateString()}</span>
-          <span className="mx-2">•</span>
-          <span>{readMinutes} min read</span>
-        </div>
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{post.title}</h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">{post.description}</p>
-
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-pink-500 text-white flex items-center justify-center font-semibold">
-            {post.author.split(' ').map((s) => s[0]).join('')}
+        <div className="rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 sm:p-10 shadow-sm">
+          <div className="mb-6 text-sm text-gray-500 dark:text-gray-300">
+            <span>{new Date(post.date).toLocaleDateString()}</span>
+            <span className="mx-2">•</span>
+            <span>{readMinutes} min read</span>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">{post.author}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Founder & CEO, SoundBridge Live</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{post.title}</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-200 mb-8">{post.description}</p>
+
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-pink-500 text-white flex items-center justify-center font-semibold">
+              {post.author.split(' ').map((s) => s[0]).join('')}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{post.author}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-300">Founder & CEO, SoundBridge Live</p>
+            </div>
           </div>
+
+          <article className="space-y-5 text-base leading-relaxed">
+            {post.content.map((block, index) => renderBlock(block, index))}
+          </article>
         </div>
 
-        <article className="space-y-4">{post.content.map((block, index) => renderBlock(block, index))}</article>
-
-        <div className="mt-12 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800">
+        <div className="mt-10 p-6 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur shadow-sm">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
             Start your SoundBridge journey
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-gray-600 dark:text-gray-200 mb-4">
             Join the waitlist to connect professionally, promote events for free, and keep 90% of your revenue.
           </p>
           <Link
@@ -171,16 +178,16 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           </Link>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-10">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Related posts</h3>
           <div className="grid gap-4">
             {relatedPosts.map((rel) => (
               <Link
                 key={rel.slug}
                 href={`/blog/${rel.slug}`}
-                className="block rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow"
+                className="block rounded-xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-4 shadow-sm hover:shadow-md hover:border-red-200/70 dark:hover:border-red-500/30 transition"
               >
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                <p className="text-sm text-gray-500 dark:text-gray-300 mb-1">
                   {new Date(rel.date).toLocaleDateString()}
                 </p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">{rel.title}</p>

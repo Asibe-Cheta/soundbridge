@@ -22,7 +22,7 @@ export const blogPosts: BlogPost[] = [
     description:
       'The DM problem is killing professional opportunities for musicians and podcasters. Here is why audio creators need a better way to connect and how SoundBridge solves it.',
     date: '2026-02-01',
-    author: 'Justice Echetachukwu',
+    author: 'Justice Chetachukwu Asibe',
     keywords: ['dm problem musicians', 'professional network audio creators', 'music collaboration platform'],
     content: [
       {
@@ -109,7 +109,7 @@ export const blogPosts: BlogPost[] = [
     description:
       'SoundBridge vs Mixcloud vs SoundCloud - which platform is best for UK audio creators? Compare features, pricing, and revenue share to make the right choice.',
     date: '2026-02-02',
-    author: 'Justice Echetachukwu',
+    author: 'Justice Chetachukwu Asibe',
     keywords: ['best platform for musicians UK', 'soundbridge vs soundcloud', 'music platform comparison'],
     content: [
       {
@@ -202,7 +202,7 @@ export const blogPosts: BlogPost[] = [
     description:
       'Stop wasting money on Facebook ads. Learn how to promote music events for free using location-based discovery and professional networking.',
     date: '2026-02-03',
-    author: 'Justice Echetachukwu',
+    author: 'Justice Chetachukwu Asibe',
     keywords: ['promote music events free', 'event promotion without ads', 'music event marketing'],
     content: [
       {
@@ -251,7 +251,7 @@ export const blogPosts: BlogPost[] = [
     description:
       'Most audio creators juggle 7+ tools. Here is the all-in-one platform that consolidates hosting, networking, events, and monetization.',
     date: '2026-02-04',
-    author: 'Justice Echetachukwu',
+    author: 'Justice Chetachukwu Asibe',
     keywords: ['tools for musicians', 'platform for podcasters', 'music creator workflow'],
     content: [
       {

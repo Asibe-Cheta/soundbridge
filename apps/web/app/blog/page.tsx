@@ -42,13 +42,13 @@ const readingTime = (blocks: BlogBlock[]) => Math.max(3, Math.ceil(countWords(bl
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-slate-950 dark:via-gray-900 dark:to-slate-950">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-10 text-center">
+        <div className="mb-10 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur px-6 py-10 text-center shadow-sm">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
             SoundBridge Blog
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
+          <p className="text-lg text-gray-600 dark:text-gray-200">
             Practical growth, networking, and monetization guides for audio creators.
           </p>
         </div>
@@ -58,37 +58,45 @@ export default function BlogPage() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="block rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 p-6 hover:shadow-lg transition-shadow"
+              className="block rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-6 shadow-sm hover:shadow-lg hover:border-red-200/70 dark:hover:border-red-500/30 transition"
             >
-              <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-2">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-300 mb-2">
                 <span>{new Date(post.date).toLocaleDateString()}</span>
                 <span>•</span>
                 <span>{readingTime(post.content)} min read</span>
+                <span>•</span>
+                <span className="text-gray-600 dark:text-gray-200">{post.author}</span>
               </div>
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
                 {post.title}
               </h2>
-              <p className="text-gray-600 dark:text-gray-300">{post.description}</p>
+              <p className="text-gray-600 dark:text-gray-200">{post.description}</p>
             </Link>
           ))}
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-12 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/70 backdrop-blur p-8 text-center shadow-sm">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            Start your SoundBridge journey
+          </h2>
+          <p className="text-gray-600 dark:text-gray-200 mb-6">
+            Join the waitlist to connect professionally, promote events for free, and keep 90% of your revenue.
+          </p>
           <Link
             href="/waitlist"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
           >
-            Start your SoundBridge journey
+            Join Waitlist
           </Link>
         </div>
 
         <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
-          <Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+          <Link href="/about" className="text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white">
             About SoundBridge
           </Link>
           <Link
             href="/how-it-works"
-            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+            className="text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
           >
             How it works
           </Link>
