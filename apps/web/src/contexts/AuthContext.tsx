@@ -230,61 +230,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
           return;
         }
-        
-        // For other events, validate the session (but with timeout)
+
+        // For any other events with a session, trust the session from onAuthStateChange
         if (session) {
-          try {
-            // Use a shorter timeout for getUser() validation
-            const getUserPromise = supabase.auth.getUser();
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('getUser timeout')), 3000)
-            );
-            
-            const { data: { user }, error } = await Promise.race([
-              getUserPromise,
-              timeoutPromise
-            ]) as any;
-            
-            if (error || !user) {
-              // Session is invalid - clear it
-              console.log('AuthProvider: Session invalid in onAuthStateChange, clearing...');
-              waitingForAuthEventRef.current = false;
-              if (fallbackTimeoutRef.current) {
-                clearTimeout(fallbackTimeoutRef.current);
-                fallbackTimeoutRef.current = null;
-              }
-              setSession(null);
-              setUser(null);
-            } else {
-              // Session is valid
-              waitingForAuthEventRef.current = false;
-              if (fallbackTimeoutRef.current) {
-                clearTimeout(fallbackTimeoutRef.current);
-                fallbackTimeoutRef.current = null;
-              }
-              setSession(session);
-              setUser(user);
-            }
-          } catch (error) {
-            // Timeout or error - trust the session from onAuthStateChange
-            console.warn('AuthProvider: getUser validation failed, trusting session from event');
-            waitingForAuthEventRef.current = false;
-            if (fallbackTimeoutRef.current) {
-              clearTimeout(fallbackTimeoutRef.current);
-              fallbackTimeoutRef.current = null;
-            }
-            setSession(session);
-            setUser(session.user);
-          }
-        } else {
           waitingForAuthEventRef.current = false;
           if (fallbackTimeoutRef.current) {
             clearTimeout(fallbackTimeoutRef.current);
             fallbackTimeoutRef.current = null;
           }
-          setSession(null);
-          setUser(null);
+          setSession(session);
+          setUser(session.user);
+          setLoading(false);
+          return;
         }
+
+        waitingForAuthEventRef.current = false;
+        if (fallbackTimeoutRef.current) {
+          clearTimeout(fallbackTimeoutRef.current);
+          fallbackTimeoutRef.current = null;
+        }
+        setSession(null);
+        setUser(null);
         setLoading(false);
       }
     );
