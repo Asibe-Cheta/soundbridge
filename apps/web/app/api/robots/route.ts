@@ -23,6 +23,10 @@ Allow: /search/
 Allow: /feed/
 Allow: /podcast/
 Allow: /legal/
+Allow: /blog/
+Allow: /about/
+Allow: /how-it-works/
+Allow: /waitlist/
 
 # Crawl delay for respectful crawling
 Crawl-delay: 1

@@ -3,7 +3,16 @@
 import Script from 'next/script';
 
 interface StructuredDataProps {
-  type: 'organization' | 'website' | 'music.song' | 'event' | 'person' | 'podcast' | 'service';
+  type:
+    | 'organization'
+    | 'website'
+    | 'music.song'
+    | 'event'
+    | 'person'
+    | 'podcast'
+    | 'service'
+    | 'WebApplication'
+    | 'BlogPosting';
   data: any;
 }
 

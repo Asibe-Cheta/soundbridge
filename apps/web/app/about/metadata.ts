@@ -1,30 +1,31 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About SoundBridge - Music Community Platform',
-  description: 'Learn about SoundBridge, the world\'s first truly level playing field for musicians and creators. Discover our mission to connect artists, promote music discovery, and build a vibrant music community.',
+  title: 'About SoundBridge - Professional Network for Audio Creators',
+  description:
+    'Learn about SoundBridge Live Ltd and our mission to make professional networking accessible for every audio creator.',
   keywords: [
     'about soundbridge',
-    'music platform',
-    'music community',
-    'music discovery',
-    'artist platform',
+    'audio creators platform',
+    'professional network musicians',
     'music collaboration',
     'music networking'
   ],
   openGraph: {
-    title: 'About SoundBridge - Music Community Platform',
-    description: 'Learn about SoundBridge, the world\'s first truly level playing field for musicians and creators.',
+    title: 'About SoundBridge - Professional Network for Audio Creators',
+    description:
+      'Learn about SoundBridge Live Ltd and our mission to make professional networking accessible for every audio creator.',
     url: 'https://soundbridge.live/about',
-    type: 'website',
+    type: 'website'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'About SoundBridge - Music Community Platform',
-    description: 'Learn about SoundBridge, the world\'s first truly level playing field for musicians and creators.',
+    title: 'About SoundBridge - Professional Network for Audio Creators',
+    description:
+      'Learn about SoundBridge Live Ltd and our mission to make professional networking accessible for every audio creator.'
   },
   alternates: {
-    canonical: '/about',
-  },
+    canonical: '/about'
+  }
 };
 
