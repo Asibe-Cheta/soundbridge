@@ -216,7 +216,8 @@ const AUTH_COOKIE_STORAGE_PREFIX = 'sb-auth-cookie:';
 
 const getCookieValue = (name: string) => {
   if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name.replace(/([.$?*|{}()\\[\\]\\\\/+^])/g, '\\\\$1')}=([^;]*)`));
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escapedName}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 };
 
