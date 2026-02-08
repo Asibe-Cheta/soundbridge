@@ -72,20 +72,24 @@ export async function PUT(request: NextRequest) {
     }
 
     if (hasLocationText) {
-      const { error: prefsError } = await supabase
-        .from('user_notification_preferences')
-        .update({
-          location_state: locationState,
-          location_country: locationCountry,
-        })
-        .eq('user_id', user.id);
+      // Update notification_preferences (source of truth with mobile); fallback update legacy table
+      const locationUpdate = { location_state: locationState, location_country: locationCountry, updated_at: new Date().toISOString() };
+      const { error: npError } = await supabase
+        .from('notification_preferences')
+        .upsert({ user_id: user.id, ...locationUpdate }, { onConflict: 'user_id' });
 
-      if (prefsError) {
-        console.error('Error updating notification location:', prefsError);
-        return NextResponse.json(
-          { error: 'Failed to update notification location' },
-          { status: 500 }
-        );
+      if (npError) {
+        const { error: unpError } = await supabase
+          .from('user_notification_preferences')
+          .update({ location_state: locationState, location_country: locationCountry })
+          .eq('user_id', user.id);
+        if (unpError) {
+          console.error('Error updating notification location:', unpError);
+          return NextResponse.json(
+            { error: 'Failed to update notification location' },
+            { status: 500 }
+          );
+        }
       }
     }
     

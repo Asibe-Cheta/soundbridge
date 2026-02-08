@@ -13,6 +13,7 @@ import { ProfessionalSections } from '@/src/components/profile/ProfessionalSecti
 import { PostCard } from '@/src/components/posts/PostCard';
 import { Post } from '@/src/lib/types/post';
 import { dataService } from '@/src/lib/data-service';
+import { eventService } from '@/src/lib/event-service';
 import { useRouter } from 'next/navigation';
 import { User, Edit3, Camera, Save, X, MapPin, Globe, Mail, Phone, Calendar, Music, Users, Heart, Share2, Download, Play, Pause, MoreVertical, Plus, Trash2, Settings, Bell, Lock, Shield, Activity, BarChart3, TrendingUp, Award, Star, Clock, Eye, Clock3, Copy, ExternalLink, Palette, DollarSign, Flag, Instagram, Youtube, Cloud } from 'lucide-react';
 import { BlockUserModal } from '@/src/components/users/BlockUserModal';
@@ -390,7 +391,6 @@ export default function ProfilePage() {
         // Set stats from calculated data
         setStats(data.stats);
         setRecentTracks(data.tracks);
-        setRecentEvents([]); // Events not included in mobile approach
         setRecentAlbums(data.albums || []);
         setRecentPlaylists(data.playlists || []);
         setAnalyticsData(data.analyticsData);
@@ -398,10 +398,42 @@ export default function ProfilePage() {
         // Set connection count from stats
         setConnectionCount(data.stats.following || 0);
 
-        console.log(`✅ Profile + Analytics loaded in ${Date.now() - startTime}ms using mobile approach`);
+        // Load user's events (created + attending) for "My Events" / Recent Events
+        loadUserEvents();
+
         console.log('📊 Profile:', data.profile?.display_name);
         console.log('📊 Stats:', data.stats);
         console.log('📊 Recent tracks:', data.tracks.length);
+      }
+
+      async function loadUserEvents() {
+        if (!user?.id) return;
+        try {
+          const [createdResult, attendingResult] = await Promise.all([
+            eventService.getEventsByCreator(user.id),
+            eventService.getUserAttendingEvents(user.id),
+          ]);
+          const created = createdResult.data || [];
+          const attending = attendingResult.data || [];
+          const createdIds = new Set(created.map((e: { id: string }) => e.id));
+          const onlyAttending = attending.filter((e: { id: string }) => !createdIds.has(e.id));
+          const merged = [...created, ...onlyAttending].sort(
+            (a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+          );
+          const now = new Date();
+          const mapped: RecentEvent[] = merged.slice(0, 10).map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            date: e.formattedDate || new Date(e.event_date).toLocaleDateString(),
+            attendees: e.attendeeCount ?? e.current_attendees ?? 0,
+            location: e.location || e.city || e.venue || 'TBA',
+            status: e.status === 'cancelled' ? 'cancelled' : new Date(e.event_date) >= now ? 'upcoming' : 'past',
+          }));
+          setRecentEvents(mapped);
+        } catch (err) {
+          console.error('Error loading user events:', err);
+          setRecentEvents([]);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading profile and analytics:', error);
@@ -865,43 +897,53 @@ export default function ProfilePage() {
            </div>
         </div>
 
-        {/* Recent Events */}
+        {/* My Events / Recent Events */}
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Recent Events</h3>
-            <Link href="/events/create" className="btn-secondary">
-              <Plus size={16} />
-              Create Event
-            </Link>
+            <h3 className="card-title">My Events</h3>
+            <div className="flex items-center gap-2">
+              <Link href="/events/dashboard" className="btn-secondary">
+                <Eye size={16} />
+                View all
+              </Link>
+              <Link href="/events/create" className="btn-secondary">
+                <Plus size={16} />
+                Create Event
+              </Link>
+            </div>
           </div>
-                     <div className="space-y-3">
-             {recentEvents.length > 0 ? (
-               recentEvents.map((event) => (
-                 <div key={event.id} className="event-item">
-                   <div className="event-status">
-                     <div className={`status-dot ${event.status}`}></div>
-                   </div>
-                   <div className="event-info">
-                     <div className="event-title">{event.title}</div>
-                     <div className="event-meta">
-                       {event.date} • {event.location} • {event.attendees} attendees
-                     </div>
-                   </div>
-                   <div className="event-actions">
-                     <button className="btn-icon">
-                       <Eye size={16} />
-                     </button>
-                   </div>
-                 </div>
-               ))
-             ) : (
-               <div className="text-center py-8 text-gray-400">
-                 <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-                 <p>No events created yet</p>
-                 <p className="text-sm">Start by creating your first event!</p>
-               </div>
-             )}
-           </div>
+          <div className="space-y-3">
+            {recentEvents.length > 0 ? (
+              recentEvents.map((event) => (
+                <Link key={event.id} href={`/events/${event.id}`} className="event-item block hover:bg-white/5 rounded-lg transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="event-status">
+                      <div className={`status-dot ${event.status}`}></div>
+                    </div>
+                    <div className="event-info flex-1 min-w-0">
+                      <div className="event-title truncate">{event.title}</div>
+                      <div className="event-meta text-sm text-gray-400">
+                        {event.date} • {event.location} • {event.attendees} attendees
+                      </div>
+                    </div>
+                    <div className="event-actions shrink-0">
+                      <Eye size={16} className="text-gray-400" />
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Calendar size={48} className="mx-auto mb-4 opacity-50" />
+                <p>No events yet</p>
+                <p className="text-sm">Create an event or discover events to attend.</p>
+                <Link href="/events/dashboard" className="btn-secondary mt-4 inline-flex items-center gap-2">
+                  <Calendar size={16} />
+                  My Events
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

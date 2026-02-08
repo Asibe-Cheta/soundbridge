@@ -19,14 +19,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
     }
 
-    const { data: prefs, error: prefsError } = await supabase
-      .from('user_notification_preferences')
+    // Prefer notification_preferences (aligned with mobile); fallback to user_notification_preferences
+    let prefs: { preferred_event_genres?: string[]; location_state?: string; location_country?: string; event_notifications_enabled?: boolean } | null = null;
+    const { data: np } = await supabase
+      .from('notification_preferences')
       .select('preferred_event_genres, location_state, location_country, event_notifications_enabled')
       .eq('user_id', user.id)
       .single();
-
-    if (prefsError) {
-      return NextResponse.json({ error: 'Failed to load notification preferences' }, { status: 500 });
+    if (np) prefs = np as typeof prefs;
+    if (!prefs) {
+      const { data: unp } = await supabase
+        .from('user_notification_preferences')
+        .select('preferred_event_genres, location_state, location_country, event_notifications_enabled')
+        .eq('user_id', user.id)
+        .single();
+      if (unp) prefs = unp as typeof prefs;
     }
 
     return NextResponse.json({

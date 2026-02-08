@@ -56,13 +56,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: prefs } = await adminClient
-      .from('user_notification_preferences')
+    // Prefer notification_preferences (aligned with mobile); fallback to user_notification_preferences
+    let messageNotificationsEnabled: boolean | null = null;
+    const { data: np } = await adminClient
+      .from('notification_preferences')
       .select('message_notifications_enabled')
       .eq('user_id', message.recipient_id)
       .single();
-
-    if (prefs?.message_notifications_enabled === false) {
+    if (np?.message_notifications_enabled !== undefined) messageNotificationsEnabled = np.message_notifications_enabled;
+    if (messageNotificationsEnabled === null) {
+      const { data: unp } = await adminClient
+        .from('user_notification_preferences')
+        .select('message_notifications_enabled')
+        .eq('user_id', message.recipient_id)
+        .single();
+      if (unp?.message_notifications_enabled !== undefined) messageNotificationsEnabled = unp.message_notifications_enabled;
+    }
+    if (messageNotificationsEnabled === false) {
       return NextResponse.json({ sent: false, reason: 'Notifications disabled' });
     }
 
