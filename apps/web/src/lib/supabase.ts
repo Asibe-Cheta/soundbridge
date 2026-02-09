@@ -651,7 +651,7 @@ export const db = {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .update({ is_read: true })
+        .update({ read: true })
         .eq('id', notificationId)
         .select()
         .single();

@@ -173,14 +173,19 @@ export interface CollaborationTrack {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'follow' | 'like' | 'comment' | 'share' | 'collaboration' | 'collaboration_request' | 'event' | 'system';
+  type: 'follow' | 'like' | 'comment' | 'share' | 'collaboration' | 'collaboration_request' | 'event' | 'system' | string;
   title: string;
-  message: string;
+  /** @deprecated use body (post-migration) */
+  message?: string;
+  body?: string;
   related_id?: string;
   related_type?: string;
   action_url?: string;
   metadata?: Record<string, any>;
-  is_read: boolean;
+  data?: Record<string, unknown>;
+  /** @deprecated use read (post-migration) */
+  is_read?: boolean;
+  read?: boolean;
   read_at?: string;
   created_at: string;
   updated_at?: string;

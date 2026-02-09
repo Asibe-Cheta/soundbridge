@@ -92,7 +92,7 @@ export default function NotificationsListPage() {
   }
 
   const filteredNotifications = filter === 'unread' 
-    ? notificationsState.notifications.filter(n => !n.is_read)
+    ? notificationsState.notifications.filter(n => !(n.read ?? n.is_read))
     : notificationsState.notifications;
 
   return (
@@ -191,14 +191,14 @@ export default function NotificationsListPage() {
               <div
                 key={notification.id}
                 style={{
-                  background: notification.is_read ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.08)',
+                  background: (notification.read ?? notification.is_read) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.08)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '12px',
                   padding: '1.5rem',
                   transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = notification.is_read ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = (notification.read ?? notification.is_read) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.08)'}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
                   {/* Icon */}
@@ -223,7 +223,7 @@ export default function NotificationsListPage() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
                       <div style={{ flex: 1 }}>
                         <h3 style={{ 
-                          color: notification.is_read ? '#ccc' : 'white', 
+                          color: (notification.read ?? notification.is_read) ? '#ccc' : 'white', 
                           margin: '0 0 0.5rem 0',
                           fontSize: '1rem',
                           fontWeight: '600'
@@ -236,7 +236,7 @@ export default function NotificationsListPage() {
                           fontSize: '0.9rem',
                           lineHeight: '1.4'
                         }}>
-                          {notification.message}
+                          {notification.body ?? notification.message}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <Clock size={14} style={{ color: '#666' }} />
@@ -248,7 +248,7 @@ export default function NotificationsListPage() {
 
                       {/* Actions */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {!notification.is_read && (
+                        {!(notification.read ?? notification.is_read) && (
                           <button
                             onClick={() => notificationsActions.markAsRead(notification.id)}
                             style={{

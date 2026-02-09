@@ -47,12 +47,12 @@ class NotificationService {
           user_id: data.user_id,
           type: data.type,
           title: data.title,
-          message: data.message,
+          body: data.message,
           related_id: data.related_id || null,
           related_type: data.related_type || null,
           action_url: data.action_url || null,
           metadata: data.metadata || null,
-          is_read: false,
+          read: false,
           created_at: new Date().toISOString()
         })
         .select()
@@ -103,7 +103,7 @@ class NotificationService {
       const { error } = await this.supabase
         .from('notifications')
         .update({
-          is_read: true,
+          read: true,
           read_at: new Date().toISOString()
         })
         .eq('id', notificationId);
@@ -126,11 +126,11 @@ class NotificationService {
       const { error } = await this.supabase
         .from('notifications')
         .update({
-          is_read: true,
+          read: true,
           read_at: new Date().toISOString()
         })
         .eq('user_id', userId)
-        .eq('is_read', false);
+        .eq('read', false);
 
       if (error) {
         console.error('❌ Error marking all notifications as read:', error);
@@ -151,7 +151,7 @@ class NotificationService {
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .eq('is_read', false);
+        .eq('read', false);
 
       if (error) {
         console.error('❌ Error getting unread count:', error);

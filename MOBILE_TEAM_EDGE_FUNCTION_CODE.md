@@ -1,3 +1,30 @@
+# Edge Function: send-event-notifications — code for mobile team
+
+**Location in web repo:** `supabase/functions/send-event-notifications/`
+
+Create the same structure in your Supabase project and paste the code below. Then deploy with:
+
+```bash
+supabase functions deploy send-event-notifications
+```
+
+---
+
+## File layout
+
+```
+supabase/functions/send-event-notifications/
+├── index.ts           # main handler
+└── _lib/
+    ├── expo.ts        # Expo push API
+    └── time-window.ts # quiet-hours check
+```
+
+---
+
+## 1. `supabase/functions/send-event-notifications/index.ts`
+
+```typescript
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendPushNotifications } from './_lib/expo.ts'
@@ -320,4 +347,191 @@ serve(async (req) => {
       { headers: { 'Content-Type': 'application/json' }, status: 500 }
     );
   }
-})
+});
+```
+
+---
+
+## 2. `supabase/functions/send-event-notifications/_lib/expo.ts`
+
+```typescript
+/**
+ * Expo Push Notification Helper
+ * Sends push notifications using Expo's API
+ */
+
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const CHUNK_SIZE = 100; // Expo recommends max 100 messages per request
+
+interface PushMessage {
+  to: string;
+  sound?: string;
+  title: string;
+  body: string;
+  data?: any;
+  channelId?: string;
+  url?: string;
+}
+
+interface PushReceipt {
+  status: 'ok' | 'error';
+  id?: string;
+  message?: string;
+  details?: any;
+}
+
+/**
+ * Send push notifications via Expo API
+ * @param messages Array of push messages to send
+ * @returns Array of receipts
+ */
+export async function sendPushNotifications(
+  messages: PushMessage[]
+): Promise<PushReceipt[]> {
+  if (messages.length === 0) {
+    return [];
+  }
+
+  // Split into chunks of 100
+  const chunks = chunkArray(messages, CHUNK_SIZE);
+  const allReceipts: PushReceipt[] = [];
+
+  for (const chunk of chunks) {
+    try {
+      const response = await fetch(EXPO_PUSH_URL, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(chunk),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Expo API error:', response.status, errorText);
+
+        // Return error receipts for this chunk
+        allReceipts.push(...chunk.map(() => ({
+          status: 'error' as const,
+          message: `Expo API error: ${response.status}`
+        })));
+        continue;
+      }
+
+      const { data } = await response.json();
+      allReceipts.push(...data);
+
+    } catch (error) {
+      console.error('Error sending push notifications:', error);
+
+      // Return error receipts for this chunk
+      allReceipts.push(...chunk.map(() => ({
+        status: 'error' as const,
+        message: error.message
+      })));
+    }
+  }
+
+  return allReceipts;
+}
+
+/**
+ * Split array into chunks
+ */
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+```
+
+---
+
+## 3. `supabase/functions/send-event-notifications/_lib/time-window.ts`
+
+```typescript
+/**
+ * Time Window Validation Helper
+ * Checks if current time is within user's notification time window
+ */
+
+/**
+ * Check if current time is within notification time window
+ * @param startHour User's notification start hour (0-23)
+ * @param endHour User's notification end hour (0-23)
+ * @param timezone User's timezone (optional, defaults to UTC)
+ * @returns true if within window, false otherwise
+ */
+export function isWithinTimeWindow(
+  startHour: number,
+  endHour: number,
+  timezone: string = 'UTC'
+): boolean {
+  try {
+    // Get current hour in user's timezone
+    const now = new Date();
+    const currentHour = parseInt(
+      now.toLocaleString('en-US', {
+        hour: 'numeric',
+        hour12: false,
+        timeZone: timezone
+      })
+    );
+
+    // Handle same-day time window (e.g., 8 AM - 10 PM)
+    if (startHour <= endHour) {
+      return currentHour >= startHour && currentHour <= endHour;
+    }
+
+    // Handle overnight time window (e.g., 10 PM - 6 AM)
+    return currentHour >= startHour || currentHour <= endHour;
+
+  } catch (error) {
+    console.error('Error checking time window:', error);
+    // Default to allowing notification if timezone check fails
+    return true;
+  }
+}
+
+/**
+ * Get user-friendly time window description
+ */
+export function formatTimeWindow(startHour: number, endHour: number): string {
+  const formatHour = (hour: number) => {
+    if (hour === 0) return '12 AM';
+    if (hour === 12) return '12 PM';
+    if (hour < 12) return `${hour} AM`;
+    return `${hour - 12} PM`;
+  };
+
+  return `${formatHour(startHour)} - ${formatHour(endHour)}`;
+}
+```
+
+---
+
+## Prerequisites (database)
+
+These must exist in the same Supabase project (migrations run by web team):
+
+- `find_nearby_users_for_event` RPC
+- `check_notification_quota` RPC
+- `record_notification_sent` RPC
+- `notifications` table with columns: `user_id`, `type`, `title`, `body`, `data`, `read`
+- Trigger on `events` that invokes this Edge Function on INSERT
+
+If you use the **same** Supabase project as the web app, the migrations are already there. If the mobile app uses a **different** Supabase project, the web team needs to run the same migrations there or share the DB.
+
+## Deploy
+
+From project root (with Supabase CLI linked to the same project):
+
+```bash
+supabase functions deploy send-event-notifications
+```
+
+No extra secrets are required for basic push (Expo’s push API is public). If you add Expo access tokens later, set them with `supabase secrets set EXPO_ACCESS_TOKEN=...`.

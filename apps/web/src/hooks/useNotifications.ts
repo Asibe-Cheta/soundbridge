@@ -64,7 +64,7 @@ export function useNotifications(): [NotificationsState, NotificationsActions] {
           ...prev,
           notifications: prev.notifications.map(notification =>
             notification.id === notificationId
-              ? { ...notification, is_read: true }
+              ? { ...notification, read: true, is_read: true }
               : notification
           )
         }));
@@ -94,6 +94,7 @@ export function useNotifications(): [NotificationsState, NotificationsActions] {
           ...prev,
           notifications: prev.notifications.map(notification => ({
             ...notification,
+            read: true,
             is_read: true
           })),
           unreadCount: 0
