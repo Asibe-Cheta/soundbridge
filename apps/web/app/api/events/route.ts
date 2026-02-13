@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       'Instrumental': 'Classical',
       'Jazz Room': 'Jazz',
       'Workshop': 'Other',
-      'Conference': 'Other',
+      'Conference': 'Conference',
       'Festival': 'Carnival',
       'Other': 'Other',
     };

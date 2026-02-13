@@ -85,3 +85,18 @@ Below is the list of types the backend supports (and their preferred deep links)
 - **Deep links** used in backend payloads: see table in section 3; common pattern is `soundbridge://<screen>/<id>`.
 
 If the mobile team confirms which table (and schema) they use for the Notifications screen and bell, backend can add dual-write or an alternate API so event (and other) notifications appear in the list and the badge stays in sync.
+
+---
+
+## 6. Conference category display (fixed Feb 2026)
+
+**Issue:** Push and in-app notifications showed “Ebuka’s **Other** in Wokingham” instead of “Ebuka’s **Conference**” because Conference was stored as category `Other` in the database.
+
+**Backend fix (done):**
+- Added `Conference` to the `event_category` enum; new Conference events are now stored as `Conference`.
+- API and Edge Function use `event.category` as-is, so push title/body now show “Conference”.
+- Insert scripts and new events use `category: 'Conference'`.
+
+**Mobile action:**
+- **Display:** When showing event category (event detail, notifications, list), use the `category` value from the API as-is. For new Conference events you will receive `"Conference"`; no need to map `Other` → “Conference” for event types.
+- **Legacy:** Existing events in the DB may still have `category: "Other"`. If you want to show a friendlier label only when you know it was created as Conference, you can keep an optional fallback (e.g. show “Conference” only when the notification payload or event metadata indicates it), but for new events the API will send `"Conference"` and push text will already say “Conference”.

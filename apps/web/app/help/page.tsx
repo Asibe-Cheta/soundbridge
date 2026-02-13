@@ -102,6 +102,7 @@ export default function HelpPage() {
         { title: 'Password security', slug: 'password-security' },
         { title: 'Two-factor authentication', slug: '2fa' },
         { title: 'Privacy settings', slug: 'privacy' },
+        { title: 'Request account and data deletion', slug: 'account-deletion' },
         { title: 'Reporting issues', slug: 'reporting' }
       ]
     }
