@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     // 5. Verify session exists and user has permission
     const { data: session, error: sessionError } = await supabase
       .from('live_sessions')
-      .select('id, creator_id, status')
+      .select('id, creator_id, status, agora_channel_name')
       .eq('id', sessionId)
       .single();
 
@@ -141,20 +141,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Verify user can be broadcaster (only creator can broadcast)
-    if (role === 'broadcaster' && session.creator_id !== user.id) {
-      console.error(`❌ [TOKEN API] User ${user.id} tried to broadcast session owned by ${session.creator_id}`);
-      return jsonResponse(
-        { 
-          success: false,
-          error: 'Only the session creator can broadcast' 
-        },
-        403
-      );
+    // 7. Verify user can be broadcaster: creator OR has live_session_participants with role = 'speaker'
+    if (role === 'broadcaster') {
+      const isCreator = session.creator_id === user.id;
+      if (!isCreator) {
+        const { data: participant } = await supabase
+          .from('live_session_participants')
+          .select('role')
+          .eq('session_id', sessionId)
+          .eq('user_id', user.id)
+          .single();
+        const isSpeaker = participant?.role === 'speaker' || participant?.role === 'host';
+        if (!isSpeaker) {
+          console.error(`❌ [TOKEN API] User ${user.id} not authorized as broadcaster for session ${sessionId}`);
+          return jsonResponse(
+            { 
+              success: false,
+              error: 'Not authorized as broadcaster' 
+            },
+            403
+          );
+        }
+      }
     }
 
-    // 8. Generate Agora token
-    const channelName = `session-${sessionId}`;
+    // 8. Generate Agora token — use agora_channel_name from session, fallback to session-{id}
+    const channelName = session.agora_channel_name || `session-${sessionId}`;
     
     // Convert UUID to numeric UID (Agora requires integer)
     // Take first 9 digits from UUID (remove hyphens and non-numeric chars)
