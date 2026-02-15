@@ -96,7 +96,7 @@ Use `reason` and `message` (not `custom_message`). Schema uses `reason` + `messa
 
 ### Recommended opportunities
 
-`GET /opportunities` uses RPC `get_recommended_opportunities` with `limit`, `offset`, optional `type`. Returns `posted_by` (profile), `has_expired_interest`.
+`GET /opportunities` uses RPC `get_recommended_opportunities` with `limit`, `offset`, optional `type`. Returns `posted_by` (profile), `has_expressed_interest`.
 
 ### Project status order
 
