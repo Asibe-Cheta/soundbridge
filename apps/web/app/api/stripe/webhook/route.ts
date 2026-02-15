@@ -118,6 +118,13 @@ export async function POST(request: NextRequest) {
         await handleRefundCreated(refund, supabase);
         break;
 
+      case 'payment_intent.succeeded':
+        const pi = event.data.object as Stripe.PaymentIntent;
+        if (pi.metadata?.project_source === 'opportunity') {
+          await handleOpportunityProjectPaymentSucceeded(pi, supabase);
+        }
+        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -126,6 +133,54 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Webhook processing error:', error);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+  }
+}
+
+async function handleOpportunityProjectPaymentSucceeded(
+  pi: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createClient>
+) {
+  try {
+    const { data: project } = await supabase
+      .from('opportunity_projects')
+      .select('id, interest_id, creator_user_id, poster_user_id, agreed_amount, creator_payout_amount, title, chat_thread_id')
+      .eq('stripe_payment_intent_id', pi.id)
+      .single();
+
+    if (!project) {
+      console.error('[webhook] Opportunity project not found for PaymentIntent:', pi.id);
+      return;
+    }
+
+    await supabase
+      .from('opportunity_projects')
+      .update({ status: 'awaiting_acceptance', updated_at: new Date().toISOString() })
+      .eq('id', project.id);
+
+    await supabase
+      .from('opportunity_interests')
+      .update({ status: 'accepted' })
+      .eq('id', project.interest_id);
+
+    const systemMessage = `[Project agreement] £${project.agreed_amount} is in escrow for "${project.title}". Review and accept the agreement to start.`;
+    await supabase.from('messages').insert({
+      sender_id: project.poster_user_id,
+      recipient_id: project.creator_user_id,
+      content: systemMessage,
+      message_type: 'text',
+    });
+
+    await supabase.from('notifications').insert({
+      user_id: project.creator_user_id,
+      type: 'opportunity_project_agreement',
+      title: '£' + project.agreed_amount + ' in escrow',
+      body: `£${project.agreed_amount} is in escrow and waiting for you — review the project agreement for "${project.title}".`,
+      related_id: project.id,
+      related_type: 'opportunity_project',
+      metadata: { project_id: project.id },
+    });
+  } catch (e) {
+    console.error('[webhook] handleOpportunityProjectPaymentSucceeded error:', e);
   }
 }
 

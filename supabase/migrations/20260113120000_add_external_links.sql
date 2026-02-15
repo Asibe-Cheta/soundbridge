@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS external_links (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_external_links_creator ON external_links(creator_id);
-CREATE INDEX idx_external_links_clicks ON external_links(creator_id, click_count DESC);
+CREATE INDEX IF NOT EXISTS idx_external_links_creator ON external_links(creator_id);
+CREATE INDEX IF NOT EXISTS idx_external_links_clicks ON external_links(creator_id, click_count DESC);
 
 -- Click tracking table (separate for analytics)
 CREATE TABLE IF NOT EXISTS external_link_clicks (
@@ -38,9 +38,9 @@ CREATE TABLE IF NOT EXISTS external_link_clicks (
 );
 
 -- Indexes for click analytics
-CREATE INDEX idx_link_clicks_link ON external_link_clicks(external_link_id, clicked_at DESC);
-CREATE INDEX idx_link_clicks_creator ON external_link_clicks(creator_id, clicked_at DESC);
-CREATE INDEX idx_link_clicks_time ON external_link_clicks(clicked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_link_clicks_link ON external_link_clicks(external_link_id, clicked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_link_clicks_creator ON external_link_clicks(creator_id, clicked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_link_clicks_time ON external_link_clicks(clicked_at DESC);
 
 -- RPC function to track clicks atomically
 CREATE OR REPLACE FUNCTION track_external_link_click(
@@ -96,7 +96,7 @@ $$;
 ALTER TABLE external_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE external_link_clicks ENABLE ROW LEVEL SECURITY;
 
--- Anyone can view external links for public creators
+DROP POLICY IF EXISTS "Public can view creator external links" ON external_links;
 CREATE POLICY "Public can view creator external links"
   ON external_links FOR SELECT
   USING (
@@ -107,17 +107,17 @@ CREATE POLICY "Public can view creator external links"
     )
   );
 
--- Creators can manage their own links
+DROP POLICY IF EXISTS "Creators can manage own links" ON external_links;
 CREATE POLICY "Creators can manage own links"
   ON external_links FOR ALL
   USING (auth.uid() = creator_id);
 
--- Anyone can insert click records (anonymous tracking supported)
+DROP POLICY IF EXISTS "Anyone can record clicks" ON external_link_clicks;
 CREATE POLICY "Anyone can record clicks"
   ON external_link_clicks FOR INSERT
   WITH CHECK (true);
 
--- Users can only view their own click history
+DROP POLICY IF EXISTS "Users view own clicks" ON external_link_clicks;
 CREATE POLICY "Users view own clicks"
   ON external_link_clicks FOR SELECT
   USING (

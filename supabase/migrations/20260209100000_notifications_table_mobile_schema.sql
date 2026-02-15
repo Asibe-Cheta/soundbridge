@@ -33,11 +33,13 @@ ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
 
 -- 4. INSERT policy: users can insert their own (e.g. when persisting received push)
 DROP POLICY IF EXISTS "System can insert notifications" ON notifications;
+DROP POLICY IF EXISTS "Users can insert own notifications" ON notifications;
 CREATE POLICY "Users can insert own notifications"
   ON notifications FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- 5. DELETE policy: users can delete/dismiss their own
+DROP POLICY IF EXISTS "Users can delete own notifications" ON notifications;
 CREATE POLICY "Users can delete own notifications"
   ON notifications FOR DELETE
   USING (auth.uid() = user_id);

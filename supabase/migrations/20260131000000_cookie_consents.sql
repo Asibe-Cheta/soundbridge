@@ -15,6 +15,7 @@ create index if not exists cookie_consents_created_at_idx on public.cookie_conse
 
 alter table public.cookie_consents enable row level security;
 
+drop policy if exists "Allow cookie consent inserts" on public.cookie_consents;
 create policy "Allow cookie consent inserts"
   on public.cookie_consents
   for insert

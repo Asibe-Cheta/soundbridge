@@ -11,15 +11,17 @@
 -- ============================================================
 
 -- Backfill existing reposts into post_reposts table
+-- Uses NOT EXISTS instead of ON CONFLICT so it works even if the unique constraint
+-- wasn't created (e.g. when CREATE TABLE was skipped because table already existed)
 INSERT INTO post_reposts (post_id, user_id, repost_post_id)
-SELECT 
-  reposted_from_id as post_id,
-  user_id,
-  id as repost_post_id
-FROM posts
-WHERE reposted_from_id IS NOT NULL
-  AND deleted_at IS NULL
-ON CONFLICT (post_id, user_id) DO NOTHING; -- Handle duplicates gracefully (if user reposted same post multiple times)
+SELECT p.reposted_from_id, p.user_id, p.id
+FROM posts p
+WHERE p.reposted_from_id IS NOT NULL
+  AND p.deleted_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM post_reposts pr
+    WHERE pr.post_id = p.reposted_from_id AND pr.user_id = p.user_id
+  );
 
 -- ============================================================
 -- VERIFICATION

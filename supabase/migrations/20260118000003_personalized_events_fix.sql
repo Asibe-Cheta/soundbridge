@@ -1,6 +1,8 @@
 -- Personalized Events - Strict location-only logic
 -- Date: January 18, 2026
 -- Purpose: Avoid fallback results; only show truly nearby events
+-- Drop first because return type (RETURNS TABLE) changes; CREATE OR REPLACE cannot change return type
+DROP FUNCTION IF EXISTS get_personalized_events(UUID, INTEGER, INTEGER);
 
 CREATE OR REPLACE FUNCTION get_personalized_events(
   p_user_id UUID,

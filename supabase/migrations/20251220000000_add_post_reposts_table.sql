@@ -36,17 +36,16 @@ CREATE INDEX IF NOT EXISTS idx_post_reposts_post_user ON post_reposts(post_id, u
 -- Enable Row Level Security
 ALTER TABLE post_reposts ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
-
--- Users can view all reposts (for "who reposted" features)
+-- RLS Policies (DROP IF EXISTS for idempotency on re-run)
+DROP POLICY IF EXISTS "post_reposts_select_policy" ON post_reposts;
 CREATE POLICY "post_reposts_select_policy" ON post_reposts
   FOR SELECT USING (true);
 
--- Users can create their own reposts
+DROP POLICY IF EXISTS "post_reposts_insert_policy" ON post_reposts;
 CREATE POLICY "post_reposts_insert_policy" ON post_reposts
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Users can delete their own reposts
+DROP POLICY IF EXISTS "post_reposts_delete_policy" ON post_reposts;
 CREATE POLICY "post_reposts_delete_policy" ON post_reposts
   FOR DELETE USING (auth.uid() = user_id);
 
