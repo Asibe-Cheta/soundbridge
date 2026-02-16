@@ -61,6 +61,19 @@ export async function POST(
       return NextResponse.json({ error: 'This interest has already been accepted or declined' }, { status: 400, headers: CORS });
     }
 
+    const serviceSupabase = createServiceClient();
+    const { data: existingProject } = await serviceSupabase
+      .from('opportunity_projects')
+      .select('id')
+      .eq('interest_id', interestId)
+      .maybeSingle();
+    if (existingProject) {
+      return NextResponse.json(
+        { error: 'Project already exists for this interest' },
+        { status: 409, headers: CORS }
+      );
+    }
+
     const posterUserId = user.id;
     const creatorUserId = interest.interested_user_id;
 
@@ -69,8 +82,6 @@ export async function POST(
     const agreed = Number(agreed_amount);
     const platformFeeAmount = Math.round(agreed * (feePercent / 100) * 100) / 100;
     const creatorPayoutAmount = Math.round((agreed - platformFeeAmount) * 100) / 100;
-
-    const serviceSupabase = createServiceClient();
 
     const userA = posterUserId < creatorUserId ? posterUserId : creatorUserId;
     const userB = posterUserId < creatorUserId ? creatorUserId : posterUserId;
@@ -145,13 +156,15 @@ export async function POST(
       {
         project: {
           id: project.id,
-          status: project.status,
+          opportunity_id: opportunityId,
+          poster_id: posterUserId,
+          creator_id: creatorUserId,
           agreed_amount: project.agreed_amount,
           currency: project.currency,
-          platform_fee_amount: project.platform_fee_amount,
-          creator_payout_amount: project.creator_payout_amount,
-          deadline: project.deadline,
+          deadline: project.deadline ?? null,
           brief: project.brief,
+          status: project.status,
+          created_at: project.created_at,
           chat_thread_id: project.chat_thread_id,
         },
         client_secret: paymentIntent.client_secret,

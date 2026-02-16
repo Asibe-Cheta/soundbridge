@@ -3,7 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { stripe } from '../../../../src/lib/stripe';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import { Expo } from 'expo-server-sdk';
 import { SubscriptionEmailService } from '../../../../src/services/SubscriptionEmailService';
+
+const expo = new Expo();
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -152,6 +155,14 @@ async function handleOpportunityProjectPaymentSucceeded(
       return;
     }
 
+    const { data: posterProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', project.poster_user_id)
+      .single();
+
+    const posterName = posterProfile?.display_name ?? 'The poster';
+
     await supabase
       .from('opportunity_projects')
       .update({ status: 'awaiting_acceptance', updated_at: new Date().toISOString() })
@@ -170,15 +181,46 @@ async function handleOpportunityProjectPaymentSucceeded(
       message_type: 'text',
     });
 
+    const notifTitle = 'Agreement Offer Received';
+    const notifBody = `${posterName} accepted your interest in "${project.title}" and has secured payment. Review and accept the project agreement.`;
+    const dataPayload = { type: 'opportunity_agreement_received', screen: 'OpportunityProject', projectId: project.id };
+
     await supabase.from('notifications').insert({
       user_id: project.creator_user_id,
-      type: 'opportunity_project_agreement',
-      title: '£' + project.agreed_amount + ' in escrow',
-      body: `£${project.agreed_amount} is in escrow and waiting for you — review the project agreement for "${project.title}".`,
+      type: 'opportunity_agreement_received',
+      title: notifTitle,
+      body: notifBody,
       related_id: project.id,
       related_type: 'opportunity_project',
       metadata: { project_id: project.id },
+      data: dataPayload,
     });
+
+    const { data: tokenRow } = await supabase
+      .from('user_push_tokens')
+      .select('push_token')
+      .eq('user_id', project.creator_user_id)
+      .eq('active', true)
+      .order('last_used_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (tokenRow?.push_token && Expo.isExpoPushToken(tokenRow.push_token)) {
+      try {
+        await expo.sendPushNotificationsAsync([
+          {
+            to: tokenRow.push_token,
+            sound: 'default',
+            title: notifTitle,
+            body: notifBody,
+            data: dataPayload,
+            channelId: 'opportunities',
+          },
+        ]);
+      } catch (pushErr) {
+        console.error('[webhook] opportunity agreement push error:', pushErr);
+      }
+    }
   } catch (e) {
     console.error('[webhook] handleOpportunityProjectPaymentSucceeded error:', e);
   }

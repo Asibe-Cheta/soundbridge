@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { Expo } from 'expo-server-sdk';
+
+const expo = new Expo();
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -48,15 +51,46 @@ export async function POST(
 
     const serviceSupabase = createServiceClient();
     const oppTitle = project.title ?? 'Project';
+    const notifTitle = 'Creator accepted';
+    const notifBody = `Creator accepted — your project "${oppTitle}" is now active. Good luck!`;
+    const dataPayload = { type: 'opportunity_project_active', screen: 'OpportunityProject', projectId: id };
+
     await serviceSupabase.from('notifications').insert({
       user_id: project.poster_user_id,
       type: 'opportunity_project_active',
-      title: 'Creator accepted',
-      body: `Creator accepted — your project "${oppTitle}" is now active. Good luck!`,
+      title: notifTitle,
+      body: notifBody,
       related_id: id,
       related_type: 'opportunity_project',
       metadata: { project_id: id },
+      data: dataPayload,
     });
+
+    const { data: tokenRow } = await serviceSupabase
+      .from('user_push_tokens')
+      .select('push_token')
+      .eq('user_id', project.poster_user_id)
+      .eq('active', true)
+      .order('last_used_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (tokenRow?.push_token && Expo.isExpoPushToken(tokenRow.push_token)) {
+      try {
+        await expo.sendPushNotificationsAsync([
+          {
+            to: tokenRow.push_token,
+            sound: 'default',
+            title: notifTitle,
+            body: notifBody,
+            data: dataPayload,
+            channelId: 'opportunities',
+          },
+        ]);
+      } catch (pushErr) {
+        console.error('[accept-agreement] push error:', pushErr);
+      }
+    }
 
     await serviceSupabase.from('messages').insert({
       sender_id: user.id,
