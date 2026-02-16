@@ -90,7 +90,7 @@ export async function POST(
       .single();
 
     const title = 'New Interest in Your Opportunity';
-    const body = `${actorProfile?.display_name || 'Someone'} expressed interest in "${opp.title}"`;
+    const bodyText = `${actorProfile?.display_name || 'Someone'} expressed interest in "${opp.title}"`;
     const dataPayload = {
       type: 'opportunity_interest',
       screen: 'OpportunityInterestList',
@@ -102,7 +102,7 @@ export async function POST(
       user_id: opp.user_id,
       type: 'opportunity_interest',
       title,
-      body,
+      body: bodyText,
       related_id: opportunityId,
       related_type: 'opportunity',
       metadata: { opportunity_id: opportunityId, interest_id: interest.id },
@@ -125,7 +125,7 @@ export async function POST(
             to: tokenRow.push_token,
             sound: 'default',
             title,
-            body,
+            body: bodyText,
             data: dataPayload,
             channelId: 'opportunities',
           },
