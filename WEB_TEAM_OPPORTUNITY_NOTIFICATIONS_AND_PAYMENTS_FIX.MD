@@ -27,10 +27,22 @@ Stripe is probably not initialised / env vars missing in the backend's test envi
 - `STRIPE_SECRET_KEY` is set in backend `.env`
 - `stripe.paymentIntents.create(...)` call exists and handles currency correctly (amounts in pence for GBP)
 
-### Duplicate Project Guard
-On second call for the **same** interest, the endpoint should return **409 Conflict** (not 500) with a message like `"Project already exists for this interest"`. The mobile handles 409 gracefully and shows "Already Accepted" — it only shows "Server error" for non-409 failures.
+### Duplicate Project Guard + Unpaid Project Recovery (Critical)
+The backend correctly returns **409 Conflict** with `{"error":"Project already exists for this interest"}` on duplicate calls. However, there is a race condition / failure path:
 
-### Response Shape Required
+1. First call creates the project record ✓
+2. But Stripe PaymentIntent creation **fails** (500) before `client_secret` is returned
+3. Project now exists in DB with no payment — stuck in unpaid limbo
+4. Every subsequent call returns 409, so the poster can **never retry payment**
+
+**Required fix:** When 409 is returned for an existing project, check if it was already paid:
+- If **not paid**: return `200` with `{ project, client_secret }` using a new/refreshed Stripe PaymentIntent for the same project (not a new project)
+- If **paid**: return `409` as normal (project is active, don't allow another payment)
+
+This makes the endpoint **idempotent for unpaid projects** — safe to retry.
+
+### Response Shape Required (for mobile — client_secret at top level)
+On **success** (HTTP 200 or 201), the response body is **always**:
 ```json
 {
   "project": {
@@ -42,12 +54,17 @@ On second call for the **same** interest, the endpoint should return **409 Confl
     "currency": "GBP",
     "deadline": "2026-03-01",
     "brief": "Looking for a session guitarist...",
-    "status": "pending_creator_acceptance",
-    "created_at": "2026-02-16T..."
+    "status": "payment_pending",
+    "created_at": "2026-02-16T...",
+    "chat_thread_id": "uuid"
   },
   "client_secret": "pi_xxx_secret_yyy"
 }
 ```
+- `client_secret` is at the **top level** (not under `data` or `payment_intent`). Use it for Stripe Payment Sheet: `initPaymentSheet({ paymentIntentClientSecret: response.client_secret })`.
+- Only **200** (unpaid recovery) and **201** (new project) return this shape. The backend never returns success without `client_secret`; if Stripe fails to provide it, the API returns 500 with `{ "error": "Payment setup failed; please try again" }`.
+- On **409** the body is `{ "error": "Project already exists for this interest" }` (no project, no client_secret — do not treat as success).
+- On **4xx/5xx** the body is `{ "error": "..." }`. Mobile should only treat 200/201 as success and only then read `client_secret`.
 
 ### Stripe Payment Model (Escrow / Uber Style)
 - **Poster pays at agreement time** (Stripe PaymentIntent created and captured immediately)
@@ -155,21 +172,3 @@ When creator accepts the project, notify the poster:
 ## Notes for Mobile Team
 - Mobile `OpportunityProject` screen (`src/screens/OpportunityProjectScreen.tsx`) needs to be navigable via the deep link `data.screen` value — confirm route name matches
 - Mobile `NotificationService` already handles Expo push token registration and deep link routing for `screen`/`projectId` payloads
-
----
-
-## Web Team Resolution (Implemented)
-
-### Issue 1 — Accept endpoint
-- **409 on duplicate:** Before creating a PaymentIntent or project, the endpoint checks for an existing `opportunity_projects` row with the same `interest_id`. If found, returns **409 Conflict** with `{ "error": "Project already exists for this interest" }`.
-- **Response shape:** Response now includes `project.opportunity_id`, `project.poster_id`, `project.creator_id`, `project.status`, `project.created_at` for mobile.
-
-### Issue 2 — Push notifications
-- **2a New interest → poster:** `POST /api/opportunities/:id/interest` inserts a notification with `data: { type: 'opportunity_interest', screen: 'OpportunityInterestList', opportunityId, opportunityTitle }` and sends an Expo push to the poster (from `user_push_tokens`).
-- **2b Agreement received → creator:** On `payment_intent.succeeded`, the webhook inserts a notification with `type: 'opportunity_agreement_received'` and `data: { type: 'opportunity_agreement_received', screen: 'OpportunityProject', projectId }`, and sends an Expo push to the creator.
-- **2c Creator accepted → poster:** `POST /api/opportunity-projects/:id/accept-agreement` inserts a notification with `data: { type: 'opportunity_project_active', screen: 'OpportunityProject', projectId }` and sends an Expo push to the poster.
-
-### Migration
-- **20260226300000_opportunity_agreement_received_notification_type.sql** adds `opportunity_agreement_received` to the `notifications.type` check constraint.
-
-Run `npx supabase db push` to apply the migration.

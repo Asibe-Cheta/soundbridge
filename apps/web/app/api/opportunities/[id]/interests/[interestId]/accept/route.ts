@@ -90,6 +90,10 @@ export async function POST(
           },
           description: `Project: ${existingProject.title}`,
         });
+        if (!paymentIntent.client_secret) {
+          console.error('Stripe PaymentIntent missing client_secret (unpaid recovery)');
+          return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
+        }
         const { error: updateErr } = await serviceSupabase
           .from('opportunity_projects')
           .update({ stripe_payment_intent_id: paymentIntent.id })
@@ -197,6 +201,11 @@ export async function POST(
     if (projectErr) {
       console.error('opportunity_projects insert error:', projectErr);
       return NextResponse.json({ error: 'Failed to create project' }, { status: 500, headers: CORS });
+    }
+
+    if (!paymentIntent.client_secret) {
+      console.error('Stripe PaymentIntent missing client_secret (new project)');
+      return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
     }
 
     return NextResponse.json(
