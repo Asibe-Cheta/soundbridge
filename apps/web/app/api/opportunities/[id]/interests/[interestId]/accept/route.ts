@@ -62,20 +62,67 @@ export async function POST(
     }
 
     const serviceSupabase = createServiceClient();
+    const posterUserId = user.id;
+    const creatorUserId = interest.interested_user_id;
+
     const { data: existingProject } = await serviceSupabase
       .from('opportunity_projects')
-      .select('id')
+      .select('id, status, agreed_amount, currency, poster_user_id, creator_user_id, opportunity_id, interest_id, title, brief, deadline, chat_thread_id, created_at')
       .eq('interest_id', interestId)
       .maybeSingle();
+
     if (existingProject) {
+      if (existingProject.status === 'payment_pending' && existingProject.poster_user_id === posterUserId) {
+        if (!stripe) {
+          return NextResponse.json({ error: 'Payment system not configured' }, { status: 500, headers: CORS });
+        }
+        const amountPence = Math.round(Number(existingProject.agreed_amount) * 100);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amountPence,
+          currency: (existingProject.currency || 'GBP').toLowerCase(),
+          capture_method: 'manual',
+          metadata: {
+            project_source: 'opportunity',
+            opportunity_id: existingProject.opportunity_id,
+            interest_id: existingProject.interest_id,
+            poster_user_id: existingProject.poster_user_id,
+            creator_user_id: existingProject.creator_user_id,
+          },
+          description: `Project: ${existingProject.title}`,
+        });
+        const { error: updateErr } = await serviceSupabase
+          .from('opportunity_projects')
+          .update({ stripe_payment_intent_id: paymentIntent.id })
+          .eq('id', existingProject.id);
+        if (updateErr) {
+          console.error('opportunity_projects update stripe_payment_intent_id:', updateErr);
+          return NextResponse.json({ error: 'Failed to refresh payment' }, { status: 500, headers: CORS });
+        }
+        return NextResponse.json(
+          {
+            project: {
+              id: existingProject.id,
+              opportunity_id: existingProject.opportunity_id,
+              poster_id: existingProject.poster_user_id,
+              creator_id: existingProject.creator_user_id,
+              agreed_amount: existingProject.agreed_amount,
+              currency: existingProject.currency,
+              deadline: existingProject.deadline ?? null,
+              brief: existingProject.brief,
+              status: existingProject.status,
+              created_at: existingProject.created_at,
+              chat_thread_id: existingProject.chat_thread_id,
+            },
+            client_secret: paymentIntent.client_secret,
+          },
+          { status: 200, headers: CORS }
+        );
+      }
       return NextResponse.json(
         { error: 'Project already exists for this interest' },
         { status: 409, headers: CORS }
       );
     }
-
-    const posterUserId = user.id;
-    const creatorUserId = interest.interested_user_id;
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', posterUserId).single();
     const feePercent = getPlatformFeePercent(profile?.subscription_tier ?? 'free');
