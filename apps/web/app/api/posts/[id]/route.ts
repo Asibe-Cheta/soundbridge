@@ -327,19 +327,31 @@ export async function PUT(
     };
 
     if (content !== undefined) {
-      if (!content || content.trim().length === 0) {
+      const trimmed = typeof content === 'string' ? content.trim() : '';
+      if (!trimmed) {
         return NextResponse.json(
           { success: false, error: 'Content cannot be empty' },
           { status: 400, headers: corsHeaders }
         );
       }
-      if (content.length > 500) {
+      if (content.length > 3000) {
         return NextResponse.json(
-          { success: false, error: 'Content must be 500 characters or less' },
+          { success: false, error: 'Content must be 3,000 characters or less' },
           { status: 400, headers: corsHeaders }
         );
       }
-      updateData.content = content.trim();
+      updateData.content = trimmed;
+    }
+
+    const { image_urls: imageUrls } = body;
+    if (imageUrls !== undefined) {
+      if (!Array.isArray(imageUrls)) {
+        return NextResponse.json(
+          { success: false, error: 'image_urls must be an array' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      updateData.image_urls = imageUrls.slice(0, 20);
     }
 
     if (visibility !== undefined) {

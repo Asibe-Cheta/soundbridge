@@ -39,6 +39,7 @@ export interface Post {
   post_type: 'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event';
   event_id?: string;
   reposted_from_id?: string; // ID of the original post if this is a repost
+  image_urls?: string[]; // Multi-image support (up to 9), first also in attachments
   created_at: string;
   updated_at?: string;
   deleted_at?: string;

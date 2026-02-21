@@ -29,8 +29,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB - optimized for web performance
-const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB - align with mobile (WEB_TEAM_UX_POST)
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
@@ -68,15 +68,15 @@ export async function POST(request: NextRequest) {
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: 'File must be JPG, PNG, or WEBP' },
+        { success: false, error: 'File must be JPG, PNG, WEBP, or AVIF' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // Validate file size
+    // Validate file size (5MB per WEB_TEAM_UX_POST)
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, error: 'File size must be less than 2MB' },
+        { success: false, error: 'One or more photos exceed the 5 MB limit and were not added.' },
         { status: 400, headers: corsHeaders }
       );
     }

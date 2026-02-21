@@ -86,6 +86,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
   const [isReposting, setIsReposting] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
@@ -405,12 +406,12 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
 
   const totalReactions = reactions.support + reactions.love + reactions.fire + reactions.congrats;
   const hasContent = post.content && post.content.length > 0;
-  const contentPreview = hasContent && post.content.length > 300 && !isExpanded
-    ? post.content.substring(0, 300) + '...'
-    : post.content;
-
-  const imageAttachment = post.attachments?.find(a => a.attachment_type === 'image');
+  const imageUrls: string[] = (post as any).image_urls?.length
+    ? (post as any).image_urls
+    : (post.attachments?.filter(a => a.attachment_type === 'image').map(a => a.file_url) || []);
+  const imageAttachment = imageUrls.length > 0 ? { file_url: imageUrls[0] } : post.attachments?.find(a => a.attachment_type === 'image');
   const audioAttachment = post.attachments?.find(a => a.attachment_type === 'audio');
+  const showSeeMore = hasContent && post.content.length > 200;
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 md:p-6 mb-4 hover:border-white/20 transition-all">
@@ -547,18 +548,20 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content — truncate to 8 lines; See more/See less inline (WEB_TEAM_UX_POST) */}
       {hasContent && (
         <div className="mb-4">
-          <div className="text-gray-200 whitespace-pre-wrap break-words">
-            <LinkText text={contentPreview || ''} />
+          <div
+            className={`text-gray-200 whitespace-pre-wrap break-words ${!isExpanded && showSeeMore ? 'line-clamp-[8]' : ''}`}
+          >
+            <LinkText text={post.content} />
           </div>
-          {post.content.length > 300 && !isExpanded && (
+          {showSeeMore && (
             <button
-              onClick={() => setIsExpanded(true)}
+              onClick={() => setIsExpanded(!isExpanded)}
               className="text-red-400 hover:text-red-300 text-sm font-medium mt-1"
             >
-              See more
+              {isExpanded ? 'See less' : 'See more'}
             </button>
           )}
         </div>
@@ -653,25 +656,59 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
         </div>
       )}
 
-      {/* Image Attachment */}
-      {imageAttachment && (
+      {/* Image grid — 1: 16:9, 2: two cols, 3: 1 large + 2 stacked, 4+: 2-col with +N more (WEB_TEAM_UX_POST) */}
+      {imageUrls.length > 0 && (
         <>
           <div className="mb-4 rounded-lg overflow-hidden">
-            <Image
-              src={imageAttachment.file_url}
-              alt="Post attachment"
-              width={800}
-              height={600}
-              className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => setIsImageModalOpen(true)}
-            />
+            {imageUrls.length === 1 && (
+              <div className="relative w-full aspect-video cursor-pointer" onClick={() => { setImageModalUrl(imageUrls[0]); setIsImageModalOpen(true); }}>
+                <Image src={imageUrls[0]} alt="Post" fill className="object-cover hover:opacity-95" sizes="(max-width:768px) 100vw, 600px" />
+              </div>
+            )}
+            {imageUrls.length === 2 && (
+              <div className="grid grid-cols-2 gap-0.5">
+                {imageUrls.map((url, i) => (
+                  <div key={i} className="relative aspect-square cursor-pointer" onClick={() => { setImageModalUrl(url); setIsImageModalOpen(true); }}>
+                    <Image src={url} alt={`Post ${i + 1}`} fill className="object-cover hover:opacity-95" sizes="200px" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {imageUrls.length === 3 && (
+              <div className="grid grid-cols-3 gap-0.5">
+                <div className="relative row-span-2 aspect-[4/5] cursor-pointer" onClick={() => { setImageModalUrl(imageUrls[0]); setIsImageModalOpen(true); }}>
+                  <Image src={imageUrls[0]} alt="Post 1" fill className="object-cover hover:opacity-95" sizes="250px" />
+                </div>
+                {imageUrls.slice(1, 3).map((url, i) => (
+                  <div key={i} className="relative aspect-square cursor-pointer" onClick={() => { setImageModalUrl(url); setIsImageModalOpen(true); }}>
+                    <Image src={url} alt={`Post ${i + 2}`} fill className="object-cover hover:opacity-95" sizes="120px" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {imageUrls.length >= 4 && (
+              <div className="grid grid-cols-2 gap-0.5">
+                {imageUrls.slice(0, 4).map((url, i) => (
+                  <div key={i} className="relative aspect-square cursor-pointer" onClick={() => { setImageModalUrl(url); setIsImageModalOpen(true); }}>
+                    <Image src={url} alt={`Post ${i + 1}`} fill className="object-cover hover:opacity-95" sizes="200px" />
+                    {i === 3 && imageUrls.length > 4 && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-lg">
+                        +{imageUrls.length - 4} more
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <ImageModal
-            imageUrl={imageAttachment.file_url}
-            alt={`Post image by ${post.author?.name || 'User'}`}
-            isOpen={isImageModalOpen}
-            onClose={() => setIsImageModalOpen(false)}
-          />
+          {imageModalUrl && (
+            <ImageModal
+              imageUrl={imageModalUrl}
+              alt={`Post image by ${post.author?.name || 'User'}`}
+              isOpen={isImageModalOpen}
+              onClose={() => { setIsImageModalOpen(false); setImageModalUrl(null); }}
+            />
+          )}
         </>
       )}
 

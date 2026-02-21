@@ -61,19 +61,25 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { content, visibility = 'connections', post_type = 'update', event_id } = body;
+    const { content, visibility = 'connections', post_type = 'update', event_id, image_urls: imageUrls } = body;
 
-    // Validation
-    if (!content || content.trim().length === 0) {
+    // Validation (3,000 char limit per WEB_TEAM_UX_POST; min 10 non-whitespace if content provided)
+    const trimmed = typeof content === 'string' ? content.trim() : '';
+    if (!trimmed) {
       return NextResponse.json(
         { success: false, error: 'Content is required' },
         { status: 400, headers: corsHeaders }
       );
     }
-
-    if (content.length > 500) {
+    if (trimmed.replace(/\s/g, '').length < 10) {
       return NextResponse.json(
-        { success: false, error: 'Content must be 500 characters or less' },
+        { success: false, error: 'Content must have at least 10 non-whitespace characters' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    if (content.length > 3000) {
+      return NextResponse.json(
+        { success: false, error: 'Content must be 3,000 characters or less' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -92,18 +98,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Build insert payload (image_urls optional, max 20)
+    const insertPayload: Record<string, unknown> = {
+      user_id: user.id,
+      content: trimmed,
+      visibility,
+      post_type,
+      event_id: event_id || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+      insertPayload.image_urls = imageUrls.slice(0, 20);
+    }
+
     // Create post
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .insert({
-        user_id: user.id,
-        content: content.trim(),
-        visibility,
-        post_type,
-        event_id: event_id || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
