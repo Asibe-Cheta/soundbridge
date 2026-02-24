@@ -9,7 +9,7 @@ import { createBrowserClient } from '@/src/lib/supabase';
 import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 import {
   User, Bookmark, Activity, Radio, Calendar, Briefcase,
-  Users, Eye, TrendingUp, Loader2
+  Users, Eye, TrendingUp, Loader2, Wallet
 } from 'lucide-react';
 
 interface ProfileData {
@@ -219,11 +219,18 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
               <span className="text-sm text-gray-300 group-hover:text-white">Events</span>
             </Link>
             <Link
-              href="/network?tab=opportunities"
+              href="/gigs/my"
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors group"
             >
               <Briefcase size={18} className="text-gray-400 group-hover:text-red-400 transition-colors" />
-              <span className="text-sm text-gray-300 group-hover:text-white">Opportunities</span>
+              <span className="text-sm text-gray-300 group-hover:text-white">My Gigs</span>
+            </Link>
+            <Link
+              href="/wallet"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors group"
+            >
+              <Wallet size={18} className="text-gray-400 group-hover:text-red-400 transition-colors" />
+              <span className="text-sm text-gray-300 group-hover:text-white">Wallet</span>
             </Link>
           </nav>
         </div>

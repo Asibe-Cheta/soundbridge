@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss, Compass, Music, Info } from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss, Compass, Music, Info, Briefcase, Wallet, MapPin } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -479,6 +479,23 @@ export default function Navbar() {
                  <Calendar size={18} color={pathname === '/events' ? '#DC2626' : undefined} />
                  <span>Events</span>
                </Link>
+               <Link href="/gigs/my" style={{ 
+                 textDecoration: 'none', 
+                 color: pathname === '/gigs/my' ? '#DC2626' : 'var(--text-primary)',
+                 transition: 'all 0.3s ease',
+                 padding: '0.5rem 1rem',
+                 borderRadius: '8px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '0.5rem',
+                 fontWeight: pathname === '/gigs/my' ? '600' : '400'
+               }}
+               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+               onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/gigs/my' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
+               >
+                 <Briefcase size={18} color={pathname === '/gigs/my' ? '#DC2626' : undefined} />
+                 <span>Gigs</span>
+               </Link>
                <Link href="/creators" style={{ 
                  textDecoration: 'none', 
                  color: pathname === '/creators' ? '#DC2626' : 'var(--text-primary)',
@@ -726,7 +743,43 @@ export default function Navbar() {
                        Settings
                      </div>
                    </Link>
-                  
+                   <div style={{ height: '1px', background: 'var(--border-primary)', margin: '0.5rem 0' }}></div>
+                   <Link href="/wallet" style={{ textDecoration: 'none' }}>
+                     <div style={{
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '0.75rem',
+                       padding: '0.75rem',
+                       color: 'var(--text-primary)',
+                       borderRadius: '8px',
+                       transition: 'all 0.3s ease',
+                       fontWeight: '500'
+                     }}
+                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                     >
+                       <Wallet size={16} />
+                       Wallet
+                     </div>
+                   </Link>
+                   <Link href="/settings/availability" style={{ textDecoration: 'none' }}>
+                     <div style={{
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '0.75rem',
+                       padding: '0.75rem',
+                       color: 'var(--text-primary)',
+                       borderRadius: '8px',
+                       transition: 'all 0.3s ease',
+                       fontWeight: '500'
+                     }}
+                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                     >
+                       <MapPin size={16} />
+                       Gig Availability
+                     </div>
+                   </Link>
                   {/* Theme Toggle */}
                   <ThemeToggle />
                   
@@ -1031,6 +1084,29 @@ export default function Navbar() {
             >
               <Calendar size={20} style={{ color: '#F97316' }} />
               Events
+            </Link>
+            <Link 
+              href="/gigs/my" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{ 
+                textDecoration: 'none', 
+                color: 'white',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                fontSize: isMobile ? '0.9rem' : '17px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <Briefcase size={20} style={{ color: '#DC2626' }} />
+              Gigs
             </Link>
             <Link 
               href="/creators" 

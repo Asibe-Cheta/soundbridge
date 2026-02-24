@@ -5,11 +5,15 @@ import { OpportunityCard, ExpressInterestModal, type Opportunity, type InterestD
 import { Button, Input } from '@/src/components/ui';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Search, Filter, Briefcase, Users, Music } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Filter, Briefcase, Users, Music, Flame } from 'lucide-react';
+
+type TabMode = 'planned' | 'urgent';
 
 export default function OpportunitiesPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const [tab, setTab] = useState<TabMode>('planned');
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
@@ -29,9 +33,10 @@ export default function OpportunitiesPage() {
   const limit = 20;
 
   useEffect(() => {
-    loadOpportunities();
+    if (tab === 'planned') loadOpportunities();
+    else setLoading(false);
     checkUserStatus();
-  }, [page, typeFilter, categoryFilter, locationFilter, user]);
+  }, [tab, page, typeFilter, categoryFilter, locationFilter, user]);
 
   const checkUserStatus = async () => {
     if (!user) {
@@ -87,8 +92,8 @@ export default function OpportunitiesPage() {
       }
 
       const data = await response.json();
-      setOpportunities(data.opportunities || []);
-      setTotalPages(data.totalPages || 1);
+      setOpportunities(data.opportunities || data.items || []);
+      setTotalPages(data.totalPages || Math.ceil((data.total ?? 0) / limit) || 1);
     } catch (error) {
       console.error('Error loading opportunities:', error);
     } finally {
@@ -167,15 +172,76 @@ export default function OpportunitiesPage() {
             Opportunities
           </h1>
           <p
-            className={`text-lg ${
+            className={`text-lg mb-6 ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
             }`}
           >
             Discover collaborations, events, and job opportunities from the SoundBridge community
           </p>
+
+          {/* Planned vs Urgent tab */}
+          <div className="flex gap-2 p-1 rounded-lg bg-white/5 border border-white/10 w-fit">
+            <button
+              type="button"
+              onClick={() => setTab('planned')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                tab === 'planned'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Briefcase size={16} />
+              Planned Opportunities
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('urgent')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                tab === 'urgent'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Flame size={16} />
+              Urgent Gigs
+            </button>
+          </div>
         </div>
 
-        {/* Filters */}
+        {/* Urgent tab: placeholder until browse API exists */}
+        {tab === 'urgent' && (
+          <div
+            className={`mb-8 p-8 rounded-xl text-center ${
+              theme === 'dark' ? 'bg-white/10 border border-white/10' : 'bg-white border border-gray-200'
+            }`}
+          >
+            <Flame className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-red-400' : 'text-red-500'}`} />
+            <h2 className={`text-xl font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Urgent Gigs
+            </h2>
+            <p className={`text-sm mb-6 max-w-md mx-auto ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              Last-minute, location-based gigs. Post one to find musicians near you, or browse your own.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link
+                href="/gigs/urgent/create"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors"
+              >
+                <Flame size={18} />
+                Post Urgent Gig
+              </Link>
+              <Link
+                href="/gigs/my"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/20 hover:bg-white/10 font-medium text-sm transition-colors"
+              >
+                My Gigs
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Filters (planned only) */}
+        {tab === 'planned' && (
         <div
           className={`mb-8 p-6 rounded-xl ${
             theme === 'dark'
@@ -244,8 +310,9 @@ export default function OpportunitiesPage() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Opportunities Grid */}
+        {/* Opportunities Grid (planned only) */}
         {loading ? (
           <div
             className={`text-center py-12 ${
@@ -312,7 +379,7 @@ export default function OpportunitiesPage() {
               </div>
             )}
           </>
-        )}
+        ) }
       </div>
 
       {/* Express Interest Modal */}

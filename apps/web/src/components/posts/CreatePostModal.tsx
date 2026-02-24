@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { X, Image as ImageIcon, Music, Globe, Users, Loader2, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { X, Image as ImageIcon, Music, Globe, Users, Loader2, AlertCircle, Link as LinkIcon, Flame } from 'lucide-react';
 import { hasUrls, extractUrls } from '@/src/lib/link-utils';
 
 interface CreatePostModalProps {
@@ -31,6 +32,7 @@ const compressImage = (file: File): Promise<File> =>
 
 export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onClose, onPostCreated }: CreatePostModalProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState<'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event'>('update');
   const [visibility, setVisibility] = useState<'connections' | 'public'>('connections');
@@ -469,6 +471,21 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Post Type
             </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  router.push('/gigs/urgent/create');
+                }}
+                disabled={isUploading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+              >
+                <Flame size={14} />
+                Urgent Gig
+              </button>
+              <span className="text-gray-500 text-sm self-center">or choose below:</span>
+            </div>
             <select
               value={postType}
               onChange={(e) => setPostType(e.target.value as any)}
