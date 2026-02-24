@@ -76,6 +76,29 @@ export async function POST(
       })
       .eq('id', id);
 
+    const releasedAmount = Number(project.creator_payout_amount);
+    const currency = (project.currency || 'GBP').toString().toUpperCase().slice(0, 3);
+    let { data: wallet } = await serviceSupabase.from('user_wallets').select('id, balance').eq('user_id', project.creator_user_id).eq('currency', currency).maybeSingle();
+    if (!wallet?.id) {
+      const { data: created } = await serviceSupabase.from('user_wallets').insert({ user_id: project.creator_user_id, currency }).select('id').single();
+      if (created?.id) wallet = { id: created.id, balance: 0 };
+    }
+    if (wallet?.id) {
+      await serviceSupabase.from('wallet_transactions').insert({
+        wallet_id: wallet.id,
+        user_id: project.creator_user_id,
+        transaction_type: 'deposit',
+        amount: releasedAmount,
+        currency,
+        description: `Opportunity payment — "${project.title}"`,
+        reference_id: id,
+        status: 'completed',
+        metadata: { project_id: id, stripe_transfer_id: transferId },
+      });
+      const newBalance = Number(wallet.balance ?? 0) + releasedAmount;
+      await serviceSupabase.from('user_wallets').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('id', wallet.id);
+    }
+
     await serviceSupabase.from('notifications').insert([
       {
         user_id: project.creator_user_id,

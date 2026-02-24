@@ -105,6 +105,13 @@ async function handlePaymentSucceeded(
 ) {
   try {
     const metadata = paymentIntent.metadata;
+    if (metadata.gig_source === 'urgent') {
+      const { runUrgentGigMatching } = await import('@/src/lib/urgent-gig-matching');
+      const result = await runUrgentGigMatching(supabase, paymentIntent.id);
+      if (result) console.log('Urgent gig matching done:', result.gigId, 'matched:', result.matchedCount);
+      return;
+    }
+
     const { content_id, content_type, buyer_id, creator_id, creator_earnings, platform_fee } = metadata;
 
     if (!content_id || !content_type || !buyer_id || !creator_id) {
