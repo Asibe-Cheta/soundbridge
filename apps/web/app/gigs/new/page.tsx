@@ -20,7 +20,7 @@ export default function GigTypeSelectionPage() {
         <Card
           variant="glass"
           className="cursor-pointer transition-all hover:border-primary/50"
-          onClick={() => router.push('/opportunities')}
+          onClick={() => router.push('/opportunities/new')}
         >
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
@@ -33,7 +33,7 @@ export default function GigTypeSelectionPage() {
                   Plan a collaboration, event, or job. No rush — set your own timeline.
                 </p>
                 <Button variant="outline" className="w-full sm:w-auto" asChild>
-                  <Link href="/opportunities">Post Opportunity →</Link>
+                  <Link href="/opportunities/new">Post Opportunity →</Link>
                 </Button>
               </div>
             </div>
