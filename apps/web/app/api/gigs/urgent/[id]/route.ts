@@ -33,7 +33,7 @@ export async function GET(
 
     const { data: gig, error } = await service
       .from('opportunity_posts')
-      .select('id, user_id, gig_type, skill_required, genre, date_needed, duration_hours, payment_amount, payment_currency, location_address, location_lat, location_lng, location_radius_km, description, expires_at, urgent_status, created_at')
+      .select('id, user_id, gig_type, skill_required, genre, date_needed, duration_hours, payment_amount, payment_currency, location_address, location_lat, location_lng, location_radius_km, description, expires_at, urgent_status, selected_provider_id, created_at')
       .eq('id', id)
       .eq('gig_type', 'urgent')
       .single();
@@ -75,6 +75,27 @@ export async function GET(
       }
     }
 
+    let project_id: string | null = null;
+    if (gig.urgent_status === 'confirmed' || gig.urgent_status === 'completed') {
+      const { data: proj } = await service
+        .from('opportunity_projects')
+        .select('id')
+        .eq('opportunity_id', id)
+        .maybeSingle();
+      project_id = proj?.id ?? null;
+    }
+
+    let my_response_status: string | null = null;
+    if (!isRequester) {
+      const { data: myResp } = await service
+        .from('gig_responses')
+        .select('status')
+        .eq('gig_id', id)
+        .eq('provider_id', user.id)
+        .maybeSingle();
+      my_response_status = myResp?.status ?? null;
+    }
+
     const payload = {
       id: gig.id,
       gig_type: gig.gig_type,
@@ -86,8 +107,12 @@ export async function GET(
       payment_currency: gig.payment_currency,
       location_address: gig.location_address,
       status: gig.urgent_status ?? 'searching',
+      urgent_status: gig.urgent_status ?? 'searching',
       expires_at: gig.expires_at,
       description: gig.description,
+      selected_provider_id: gig.selected_provider_id ?? null,
+      project_id,
+      my_response_status,
       requester: requester ? {
         id: requester.id,
         display_name: requester.display_name ?? 'User',

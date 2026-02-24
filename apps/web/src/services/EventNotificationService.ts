@@ -10,20 +10,22 @@ import { createClient } from '@supabase/supabase-js';
 // Initialize Expo SDK
 const expo = new Expo();
 
-// Supabase client for server-side operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Missing Supabase credentials for Event Notification Service');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+// Supabase client for server-side operations (lazy so build can run without env)
+let _eventNotifSupabase: ReturnType<typeof createClient> | null = null;
+function getSupabaseAdmin() {
+  if (!_eventNotifSupabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      console.error('❌ Missing Supabase credentials for Event Notification Service');
+      throw new Error('Supabase env not configured');
+    }
+    _eventNotifSupabase = createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
   }
-});
+  return _eventNotifSupabase;
+}
 
 // Types
 interface Event {
@@ -73,7 +75,7 @@ class EventNotificationService {
       console.log(`📧 Queuing notifications for event: ${eventId}`);
 
       // Get event details
-      const { data: event, error: eventError } = await supabaseAdmin
+      const { data: event, error: eventError } = await getSupabaseAdmin()
         .from('events')
         .select(`
           *,
@@ -92,7 +94,7 @@ class EventNotificationService {
       }
 
       // Get matching users using the database function
-      const { data: matchingUsers, error: usersError } = await supabaseAdmin
+      const { data: matchingUsers, error: usersError } = await getSupabaseAdmin()
         .rpc('get_matching_users_for_event', { p_event_id: eventId });
 
       if (usersError) {
@@ -114,7 +116,7 @@ class EventNotificationService {
       const notifications = [];
       for (const user of matchingUsers) {
         // Check if already notified
-        const { data: existingNotif } = await supabaseAdmin
+        const { data: existingNotif } = await getSupabaseAdmin()
           .from('event_notifications')
           .select('id')
           .eq('user_id', user.user_id)
@@ -151,7 +153,7 @@ class EventNotificationService {
 
       // Bulk insert notifications
       if (notifications.length > 0) {
-        const { error: insertError } = await supabaseAdmin
+        const { error: insertError } = await getSupabaseAdmin()
           .from('event_notifications')
           .insert(notifications);
 
@@ -161,7 +163,7 @@ class EventNotificationService {
         }
 
         // Update event notification status
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from('events')
           .update({
             notification_sent: true,
@@ -196,7 +198,7 @@ class EventNotificationService {
       console.log('📤 Sending queued notifications...');
 
       // Get queued notifications ready to be sent
-      const { data: notifications, error: fetchError } = await supabaseAdmin
+      const { data: notifications, error: fetchError } = await getSupabaseAdmin()
         .from('event_notifications')
         .select(`
           *,
@@ -226,7 +228,7 @@ class EventNotificationService {
 
       // Get push tokens for users
       const userIds = notifications.map(n => n.user_id);
-      const { data: pushTokens, error: tokenError } = await supabaseAdmin
+      const { data: pushTokens, error: tokenError } = await getSupabaseAdmin()
         .from('user_push_tokens')
         .select('user_id, push_token')
         .in('user_id', userIds)
@@ -314,7 +316,7 @@ class EventNotificationService {
               );
 
               // Increment user notification count
-              await supabaseAdmin.rpc('increment_user_notification_count', {
+              await getSupabaseAdmin().rpc('increment_user_notification_count', {
                 p_user_id: notifications.find(n => n.id === notificationId)?.user_id
               });
 
@@ -364,7 +366,7 @@ class EventNotificationService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Get user's push token
-      const { data: tokenData, error: tokenError } = await supabaseAdmin
+      const { data: tokenData, error: tokenError } = await getSupabaseAdmin()
         .from('user_push_tokens')
         .select('push_token')
         .eq('user_id', userId)
@@ -564,7 +566,7 @@ class EventNotificationService {
     expoTicketId: string | null,
     errorMessage: string | null
   ): Promise<void> {
-    await supabaseAdmin.rpc('update_notification_status', {
+    await getSupabaseAdmin().rpc('update_notification_status', {
       p_notification_id: notificationId,
       p_status: status,
       p_expo_ticket_id: expoTicketId,

@@ -2043,6 +2043,14 @@ export default function SettingsPage() {
             <Share2 size={16} />
             Social Connections
           </a>
+          <a
+            href="/settings/availability"
+            className="tab-button"
+            style={{ textDecoration: 'none' }}
+          >
+            <Zap size={16} />
+            Urgent Gig Availability
+          </a>
         </div>
 
         {/* Tab Content */}

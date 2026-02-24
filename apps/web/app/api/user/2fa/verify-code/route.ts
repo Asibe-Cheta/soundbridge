@@ -30,19 +30,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
 import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/src/lib/supabase';
 import { decryptSecret, encryptSecret } from '@/src/lib/encryption';
 
-// Create a service role client for server-side operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+function getSupabaseAdmin() {
+  return createServiceClient();
+}
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
@@ -102,7 +95,7 @@ export async function POST(request: NextRequest) {
     
     if (verificationSessionId) {
       // New flow: lookup by UUID id
-      const result = await supabaseAdmin
+      const result = await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .select('*')
         .eq('id', verificationSessionId)
@@ -111,7 +104,7 @@ export async function POST(request: NextRequest) {
       sessionError = result.error;
     } else {
       // Legacy flow: lookup by session_token
-      const result = await supabaseAdmin
+      const result = await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .select('*')
         .eq('session_token', sessionToken)
@@ -224,7 +217,7 @@ export async function POST(request: NextRequest) {
         // Legacy flow: use generateLink + verifyOtp
         console.log('✅ Using legacy generateLink flow for already verified session');
         
-        const { data: userDataForVerified, error: userErrorForVerified } = await supabaseAdmin.auth.admin.getUserById(
+        const { data: userDataForVerified, error: userErrorForVerified } = await getSupabaseAdmin().auth.admin.getUserById(
           session.user_id
         );
         
@@ -243,7 +236,7 @@ export async function POST(request: NextRequest) {
         userEmail = userDataForVerified.user.email!;
         
         // Generate magic link to get hashed token
-        const { data: linkDataForVerified, error: linkErrorForVerified } = await supabaseAdmin.auth.admin.generateLink({
+        const { data: linkDataForVerified, error: linkErrorForVerified } = await getSupabaseAdmin().auth.admin.generateLink({
           type: 'magiclink',
           email: userEmail,
         });
@@ -298,7 +291,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 6. Retrieve user's encrypted TOTP secret
     // ================================================
-    const { data: secretRecord, error: fetchError } = await supabaseAdmin
+    const { data: secretRecord, error: fetchError } = await getSupabaseAdmin()
       .from('two_factor_secrets')
       .select('encrypted_secret')
       .eq('user_id', session.user_id)
@@ -359,7 +352,7 @@ export async function POST(request: NextRequest) {
       const shouldLock = failedAttempts >= MAX_FAILED_ATTEMPTS;
       
       // Update session with failed attempt
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .update({
           failed_attempts: failedAttempts,
@@ -370,7 +363,7 @@ export async function POST(request: NextRequest) {
         .eq('id', session.id);
       
       // Log failed verification
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('two_factor_audit_log')
         .insert({
           user_id: session.user_id,
@@ -413,7 +406,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 10. Mark session as verified
     // ================================================
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('two_factor_verification_sessions')
       .update({
         verified: true,
@@ -469,7 +462,7 @@ export async function POST(request: NextRequest) {
       // Legacy flow: use generateLink + verifyOtp
       console.log('✅ Using legacy generateLink flow');
       
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+      const { data: userData, error: userError } = await getSupabaseAdmin().auth.admin.getUserById(
         session.user_id
       );
       
@@ -486,7 +479,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Generate magic link to get hashed token
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      const { data: linkData, error: linkError } = await getSupabaseAdmin().auth.admin.generateLink({
         type: 'magiclink',
         email: userData.user.email!,
       });
@@ -530,7 +523,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 12. Log successful verification
     // ================================================
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('two_factor_audit_log')
       .insert({
         user_id: session.user_id,

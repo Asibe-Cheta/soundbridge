@@ -10,7 +10,11 @@ import type {
 } from './types/messaging';
 
 export class MessagingService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
   private subscriptions: Map<string, unknown> = new Map();
   private typingTimeouts: Map<string, NodeJS.Timeout> = new Map();
 

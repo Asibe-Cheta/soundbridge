@@ -27,7 +27,7 @@ export default function WaitlistPage() {
   const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'already_exists' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [signupCount, setSignupCount] = useState<number | null>(null);
@@ -125,20 +125,18 @@ export default function WaitlistPage() {
       if (response.ok && result.success) {
         setSubmitStatus('success');
         setEmail('');
-        // Reset extended form
         setShowExtendedForm(false);
         setRole('');
         setCountry('');
         setState('');
         setCity('');
         setSelectedGenres([]);
-        // Update count if provided
-        if (result.already_exists) {
-          // User already exists, but still show success
-        }
+      } else if (response.status === 409 && result.already_exists) {
+        setSubmitStatus('already_exists');
+        setErrorMessage('');
       } else {
         setSubmitStatus('error');
-        setErrorMessage(result.error || 'Failed to join waitlist. Please try again.');
+        setErrorMessage(result.error || result.message || 'Failed to join waitlist. Please try again.');
       }
     } catch (error) {
       console.error('Waitlist signup error:', error);
@@ -455,6 +453,11 @@ export default function WaitlistPage() {
         {/* Status Messages */}
         {submitStatus === 'error' && errorMessage && (
           <p className="text-red-500 text-sm text-center">{errorMessage}</p>
+        )}
+        {submitStatus === 'already_exists' && (
+          <p className="text-amber-600 dark:text-amber-400 text-sm text-center font-medium">
+            You're already on the waitlist! We'll notify you when we launch.
+          </p>
         )}
         {submitStatus === 'success' && (
           <p className="text-green-500 text-sm text-center">

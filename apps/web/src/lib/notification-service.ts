@@ -29,8 +29,12 @@ export interface NotificationPreferences {
 }
 
 class NotificationService {
-  private supabase = createBrowserClient();
-  
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
+
   // Method to get API client for server-side operations
   getApiClient() {
     return this.supabase;

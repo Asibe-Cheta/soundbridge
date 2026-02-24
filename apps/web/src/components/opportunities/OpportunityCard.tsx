@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Button, Avatar, AvatarImage, AvatarFallback } from '@/src/components/ui';
 import { useTheme } from '@/src/contexts/ThemeContext';
-import { MapPin, Calendar, PoundSterling, Briefcase, Users, Music } from 'lucide-react';
+import { MapPin, Calendar, PoundSterling, Briefcase, Users, Music, Flame } from 'lucide-react';
 
 export interface Opportunity {
   id: string;
@@ -28,6 +28,10 @@ export interface Opportunity {
     display_name: string;
     avatar_url: string | null;
   };
+  /** Urgent gig: show 🔥 URGENT badge, countdown, distance */
+  gig_type?: 'urgent' | 'planned';
+  expires_at?: string | null;
+  distance_km?: number | null;
 }
 
 interface OpportunityCardProps {
@@ -48,6 +52,32 @@ const typeIcons = {
   job: Briefcase,
 };
 
+function useUrgentCountdown(expiresAt: string | null | undefined): string | null {
+  const [countdown, setCountdown] = useState<string | null>(() => {
+    if (!expiresAt) return null;
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms <= 0) return null;
+    const h = Math.floor(ms / (60 * 60 * 1000));
+    const m = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+    return `${h}h ${m}m`;
+  });
+  useEffect(() => {
+    if (!expiresAt) return setCountdown(null);
+    const run = () => {
+      const ms = new Date(expiresAt).getTime() - Date.now();
+      if (ms <= 0) setCountdown(null);
+      else {
+        const h = Math.floor(ms / (60 * 60 * 1000));
+        const m = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+        setCountdown(`${h}h ${m}m`);
+      }
+    };
+    const t = setInterval(run, 60 * 1000);
+    return () => clearInterval(t);
+  }, [expiresAt]);
+  return countdown;
+}
+
 export function OpportunityCard({
   opportunity,
   onExpressInterest,
@@ -55,6 +85,12 @@ export function OpportunityCard({
 }: OpportunityCardProps) {
   const { theme } = useTheme();
   const TypeIcon = typeIcons[opportunity.type];
+  const isUrgent = opportunity.gig_type === 'urgent';
+  const urgentCountdown = useUrgentCountdown(isUrgent ? opportunity.expires_at : null);
+  const showUrgentCountdown =
+    isUrgent &&
+    urgentCountdown != null &&
+    new Date(opportunity.expires_at!).getTime() - Date.now() <= 2 * 60 * 60 * 1000;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null;
@@ -80,12 +116,17 @@ export function OpportunityCard({
   return (
     <Card
       variant="glass"
-      className={`transition-all duration-300 ${
+      className={`transition-all duration-300 relative ${
         theme === 'dark'
           ? 'hover:bg-white/15 hover:border-white/25'
           : 'hover:bg-gray-50 hover:border-gray-300'
       }`}
     >
+      {isUrgent && (
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-red-500 text-white text-xs font-medium">
+          <Flame size={12} /> URGENT
+        </div>
+      )}
       <CardContent className="p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex items-start gap-3 flex-1">
@@ -133,7 +174,17 @@ export function OpportunityCard({
         </p>
 
         <div className="flex flex-wrap gap-4 mb-4 text-sm">
-          {opportunity.location && (
+          {isUrgent && opportunity.budget_max != null && (
+            <div className="flex items-center gap-1.5">
+              <PoundSterling size={16} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                £{opportunity.budget_max}
+                {opportunity.distance_km != null ? ` · ${opportunity.distance_km}km` : ''}
+                {showUrgentCountdown ? ` · Expires in ${urgentCountdown}` : ''}
+              </span>
+            </div>
+          )}
+          {!isUrgent && opportunity.location && (
             <div className="flex items-center gap-1.5">
               <MapPin
                 size={16}
@@ -144,7 +195,7 @@ export function OpportunityCard({
               </span>
             </div>
           )}
-          {opportunity.deadline && (
+          {!isUrgent && opportunity.deadline && (
             <div className="flex items-center gap-1.5">
               <Calendar
                 size={16}
@@ -155,7 +206,7 @@ export function OpportunityCard({
               </span>
             </div>
           )}
-          {formatBudget() && (
+          {!isUrgent && formatBudget() && (
             <div className="flex items-center gap-1.5">
               <PoundSterling
                 size={16}

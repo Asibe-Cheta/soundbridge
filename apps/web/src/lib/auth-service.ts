@@ -1,10 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AuthError, User } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+let _authSupabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (!_authSupabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) throw new Error('Supabase env not configured');
+    _authSupabase = createClient(url, key);
+  }
+  return _authSupabase;
+}
 
 // Rate limiting store (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -77,7 +83,7 @@ export class AuthService {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await getSupabase().auth.signUp({
         email,
         password,
         options: {
@@ -101,7 +107,7 @@ export class AuthService {
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await getSupabase().auth.signInWithPassword({
         email,
         password
       });
@@ -121,7 +127,7 @@ export class AuthService {
       const backupCodes = this.generateBackupCodes();
       
       // Store MFA settings
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('mfa_settings')
         .upsert({
           user_id: userId,
@@ -142,7 +148,7 @@ export class AuthService {
   // Verify MFA
   async verifyMFA(userId: string, code: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('mfa_settings')
         .select('*')
         .eq('user_id', userId)
@@ -160,7 +166,7 @@ export class AuthService {
       }
 
       // Update last used
-      await supabase
+      await getSupabase()
         .from('mfa_settings')
         .update({ last_used: new Date().toISOString() })
         .eq('user_id', userId);
@@ -174,19 +180,19 @@ export class AuthService {
   // Get current session
   async getSession(): Promise<AuthSession | null> {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session }, error } = await getSupabase().auth.getSession();
       
       if (error || !session) return null;
 
       // Get MFA settings
-      const { data: mfaData } = await supabase
+      const { data: mfaData } = await getSupabase()
         .from('mfa_settings')
         .select('*')
         .eq('user_id', session.user.id)
         .single();
 
       // Get user role
-      const { data: roleData } = await supabase
+      const { data: roleData } = await getSupabase()
         .from('user_roles')
         .select('*')
         .eq('user_id', session.user.id)
@@ -206,7 +212,7 @@ export class AuthService {
   // Sign out
   async signOut(): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await getSupabase().auth.signOut();
       if (error) throw error;
       return { success: true };
     } catch (error) {
@@ -222,7 +228,7 @@ export class AuthService {
     }
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await getSupabase().auth.resetPasswordForEmail(email);
       if (error) throw error;
       return { success: true };
     } catch (error) {

@@ -3,13 +3,9 @@ import { createServiceClient } from '@/src/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
     const baseUrl = 'https://soundbridge.live';
-    
-    // Get current date for lastmod
     const currentDate = new Date().toISOString();
-    
-    // Static pages
+
     const staticPages = [
       { url: '/', priority: '1.0', changefreq: 'daily' },
       { url: '/events', priority: '0.9', changefreq: 'daily' },
@@ -20,26 +16,25 @@ export async function GET(request: NextRequest) {
       { url: '/legal/cookies', priority: '0.3', changefreq: 'monthly' },
     ];
 
-    // Fetch creators from database
-    const { data: creators } = await supabase
-      .from('profiles')
-      .select('username, updated_at')
-      .eq('is_public', true as any)
-      .not('username', 'is', null) as { data: any; error: any };
+    let creators: any[] = [];
+    let events: any[] = [];
+    let podcasts: any[] = [];
 
-    // Fetch events from database
-    const { data: events } = await supabase
-      .from('events')
-      .select('id, title, created_at, updated_at')
-      .eq('is_public', true as any)
-      .gte('event_date', new Date().toISOString() as any) as { data: any; error: any };
-
-    // Fetch podcasts from database
-    const { data: podcasts } = await supabase
-      .from('audio_tracks')
-      .select('id, title, created_at, updated_at')
-      .eq('genre', 'podcast' as any)
-      .eq('is_public', true as any) as { data: any; error: any };
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabase = createServiceClient();
+        const [creatorsRes, eventsRes, podcastsRes] = await Promise.all([
+          supabase.from('profiles').select('username, updated_at').eq('is_public', true as any).not('username', 'is', null) as Promise<{ data: any }>,
+          supabase.from('events').select('id, title, created_at, updated_at').eq('is_public', true as any).gte('event_date', new Date().toISOString() as any) as Promise<{ data: any }>,
+          supabase.from('audio_tracks').select('id, title, created_at, updated_at').eq('genre', 'podcast' as any).eq('is_public', true as any) as Promise<{ data: any }>,
+        ]);
+        creators = creatorsRes.data ?? [];
+        events = eventsRes.data ?? [];
+        podcasts = podcastsRes.data ?? [];
+      } catch (_) {
+        // Use static-only sitemap when Supabase is unavailable (e.g. build without env)
+      }
+    }
 
     // Generate XML sitemap
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';

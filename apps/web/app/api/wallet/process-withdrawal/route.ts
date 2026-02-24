@@ -4,9 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(key, { apiVersion: '2025-08-27.basil' });
+}
 
 export async function POST(request: NextRequest) {
   const corsHeaders = {
@@ -218,7 +220,7 @@ async function processBankTransfer(transaction: any, method: any) {
     const details = method.encrypted_details;
     
     // Create Stripe transfer to connected account
-    const transfer = await stripe.transfers.create({
+    const transfer = await getStripe().transfers.create({
       amount: Math.abs(transaction.amount) * 100, // Convert to cents
       currency: transaction.currency.toLowerCase(),
       destination: method.stripe_account_id, // User's Stripe Connect account

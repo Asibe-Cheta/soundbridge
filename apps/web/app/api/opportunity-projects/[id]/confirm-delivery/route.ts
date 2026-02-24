@@ -91,6 +91,7 @@ export async function POST(
         amount: releasedAmount,
         currency,
         description: `Opportunity payment — "${project.title}"`,
+        reference_type: 'opportunity_project',
         reference_id: id,
         status: 'completed',
         metadata: { project_id: id, stripe_transfer_id: transferId },

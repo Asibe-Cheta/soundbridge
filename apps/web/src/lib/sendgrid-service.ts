@@ -1,7 +1,21 @@
-import sgMail from '@sendgrid/mail';
+// Dynamic import so build can run without loading @sendgrid/mail (which throws when apiKey is missing)
+let _sgMail: { setApiKey: (k: string) => void; send: (msg: any) => Promise<any> } | null | undefined = undefined;
+async function getSgMail(): Promise<{ setApiKey: (k: string) => void; send: (msg: any) => Promise<any> } | null> {
+  if (_sgMail !== undefined) return _sgMail;
+  const key = process.env.SENDGRID_API_KEY;
+  if (!key) {
+    _sgMail = null;
+    return null;
+  }
+  const m = await import('@sendgrid/mail');
+  m.default.setApiKey(key);
+  _sgMail = m.default;
+  return _sgMail;
+}
 
-// Initialize SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+function ensureSendGridKey(): boolean {
+  return !!process.env.SENDGRID_API_KEY;
+}
 
 export interface EmailData {
   to: string;
@@ -125,8 +139,8 @@ export class SendGridService {
    * Generic email sending method
    */
   private static async sendEmail(emailData: EmailData): Promise<void> {
-    // Check if API key is configured
-    if (!process.env.SENDGRID_API_KEY) {
+    const sgMail = await getSgMail();
+    if (!sgMail) {
       throw new Error('SENDGRID_API_KEY is not configured in environment variables');
     }
 
@@ -366,6 +380,8 @@ export class SendGridService {
    */
   private static async sendPlainTextPurchaseConfirmation(data: PurchaseConfirmationData): Promise<boolean> {
     try {
+      const sgMail = await getSgMail();
+      if (!sgMail) return false;
       const currencySymbol = data.currency === 'USD' ? '$' : data.currency === 'GBP' ? '£' : '€';
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -414,6 +430,8 @@ export class SendGridService {
    */
   private static async sendPlainTextSaleNotification(data: SaleNotificationData): Promise<boolean> {
     try {
+      const sgMail = await getSgMail();
+      if (!sgMail) return false;
       const currencySymbol = data.currency === 'USD' ? '$' : data.currency === 'GBP' ? '£' : '€';
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { SubscriptionEmailService } from '../../../../src/services/SubscriptionEmailService';
 
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase env not configured');
+  return createClient(url, key);
+}
+
 /**
  * Cron job endpoint to downgrade accounts after grace period expires
  * Should be called daily via Vercel Cron or similar service
@@ -34,10 +41,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = getSupabase();
 
     const now = new Date();
     const sevenDaysAgo = new Date(now);

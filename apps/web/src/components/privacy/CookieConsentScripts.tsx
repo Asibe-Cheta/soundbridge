@@ -141,16 +141,6 @@ export function CookieConsentScripts() {
         <Script id="youtube-api" src="https://apis.google.com/js/api.js" strategy="afterInteractive" />
       )}
 
-      {marketing && (
-        <Script
-          id="adsense"
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9193690947663942"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-      )}
-
       {functional && <SocialScripts />}
     </>
   );

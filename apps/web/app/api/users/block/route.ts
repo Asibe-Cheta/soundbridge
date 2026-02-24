@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase env not configured');
+  return createClient(url, key);
+}
 
 // Validation schema for block requests
 const BlockUserSchema = z.object({
@@ -13,8 +15,8 @@ const BlockUserSchema = z.object({
   reason: z.string().optional()
 });
 
-// Helper to get authenticated user
-async function getAuthenticatedUser(request: NextRequest) {
+// Helper to get authenticated user (supabase from getSupabase() in handler)
+async function getAuthenticatedUser(request: NextRequest, supabase: ReturnType<typeof createClient>) {
   const authHeader = request.headers.get('authorization');
   const cookieHeader = request.headers.get('cookie');
   
@@ -53,7 +55,8 @@ async function getAuthenticatedUser(request: NextRequest) {
 // POST /api/users/block - Block a user
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const supabase = getSupabase();
+    const user = await getAuthenticatedUser(request, supabase);
     
     if (!user) {
       return NextResponse.json(
@@ -148,7 +151,8 @@ export async function POST(request: NextRequest) {
 // DELETE /api/users/block - Unblock a user
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const supabase = getSupabase();
+    const user = await getAuthenticatedUser(request, supabase);
     
     if (!user) {
       return NextResponse.json(
@@ -216,7 +220,8 @@ export async function DELETE(request: NextRequest) {
 // GET /api/users/block - Check block status and get blocked users list
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const supabase = getSupabase();
+    const user = await getAuthenticatedUser(request, supabase);
     
     if (!user) {
       return NextResponse.json(

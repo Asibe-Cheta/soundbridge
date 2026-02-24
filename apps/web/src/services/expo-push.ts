@@ -11,10 +11,16 @@ const expo = new Expo({
   useFcmV1: true, // Use FCM V1 API
 });
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _expoSupabaseAdmin: ReturnType<typeof createClient> | null = null;
+function getSupabaseAdmin() {
+  if (!_expoSupabaseAdmin) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Supabase env not configured');
+    _expoSupabaseAdmin = createClient(url, key);
+  }
+  return _expoSupabaseAdmin;
+}
 
 // =====================================================
 // TYPE DEFINITIONS
@@ -45,7 +51,7 @@ export interface PushNotificationResult {
  * Get active push tokens for a user
  */
 async function getUserPushTokens(userId: string): Promise<string[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('user_push_tokens')
     .select('push_token')
     .eq('user_id', userId)
@@ -63,7 +69,7 @@ async function getUserPushTokens(userId: string): Promise<string[]> {
  * Get unread notification count for badge
  */
 async function getUnreadCount(userId: string): Promise<number> {
-  const { count, error } = await supabaseAdmin
+  const { count, error } = await getSupabaseAdmin()
     .from('notification_logs')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
@@ -88,7 +94,7 @@ async function logNotification(
   data: Record<string, any>,
   tickets: ExpoPushTicket[]
 ): Promise<void> {
-  const { error } = await supabaseAdmin.from('notification_logs').insert({
+  const { error } = await getSupabaseAdmin().from('notification_logs').insert({
     user_id: userId,
     notification_type: notificationType,
     title,
@@ -110,7 +116,7 @@ async function logNotification(
  */
 async function incrementNotificationCount(userId: string): Promise<void> {
   // Use the database function
-  const { error } = await supabaseAdmin.rpc('increment_notification_count', {
+  const { error } = await getSupabaseAdmin().rpc('increment_notification_count', {
     p_user_id: userId,
   });
   
@@ -248,7 +254,7 @@ export async function checkNotificationReceipts(
           
           // Update database if delivered
           if (receipt.status === 'ok') {
-            await supabaseAdmin
+            await getSupabaseAdmin()
               .from('notification_logs')
               .update({ delivered_at: new Date().toISOString() })
               .eq('expo_receipt_id', id);
@@ -257,7 +263,7 @@ export async function checkNotificationReceipts(
           // Log errors
           if (receipt.status === 'error') {
             console.error('Receipt error:', receipt.message, receipt.details);
-            await supabaseAdmin
+            await getSupabaseAdmin()
               .from('notification_logs')
               .update({ expo_status: 'error' })
               .eq('expo_receipt_id', id);
@@ -279,7 +285,7 @@ export async function checkNotificationReceipts(
  * Mark push token as inactive (e.g., when device token expires)
  */
 export async function deactivatePushToken(pushToken: string): Promise<void> {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('user_push_tokens')
     .update({ active: false })
     .eq('push_token', pushToken);
@@ -301,7 +307,7 @@ export async function queueNotification(
   scheduledFor: Date,
   priority: number = 0
 ): Promise<void> {
-  const { error } = await supabaseAdmin.from('notification_queue').insert({
+  const { error } = await getSupabaseAdmin().from('notification_queue').insert({
     user_id: userId,
     notification_type: notificationType,
     title,
@@ -325,7 +331,7 @@ export async function queueNotification(
 export async function processQueuedNotifications(): Promise<void> {
   try {
     // Get pending notifications that are due
-    const { data: notifications, error } = await supabaseAdmin
+    const { data: notifications, error } = await getSupabaseAdmin()
       .from('notification_queue')
       .select('*')
       .eq('status', 'pending')
@@ -356,7 +362,7 @@ export async function processQueuedNotifications(): Promise<void> {
         });
         
         // Update queue status
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from('notification_queue')
           .update({
             status: result.success ? 'sent' : 'failed',
@@ -366,7 +372,7 @@ export async function processQueuedNotifications(): Promise<void> {
           .eq('id', notification.id);
       } catch (error: any) {
         console.error('Error sending queued notification:', error);
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from('notification_queue')
           .update({
             status: 'failed',
@@ -408,7 +414,7 @@ export async function getNotificationStats(userId: string): Promise<{
   delivered: number;
   clicked: number;
 }> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('notification_logs')
     .select('*')
     .eq('user_id', userId);

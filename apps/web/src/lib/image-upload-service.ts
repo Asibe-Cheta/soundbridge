@@ -8,7 +8,11 @@ import type {
 
 // Image upload service for SoundBridge
 export class ImageUploadService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   // Validate image file
   validateImageFile(file: File, maxSize: number = 5 * 1024 * 1024): { isValid: boolean; errors: string[] } {

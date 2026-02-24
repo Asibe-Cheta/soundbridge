@@ -9,7 +9,11 @@ import type {
 } from './types/availability';
 
 class AvailabilityService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   // Availability Management
   async createAvailability(data: CreateAvailabilityData): Promise<{ data: CreatorAvailability | null; error: string | null }> {

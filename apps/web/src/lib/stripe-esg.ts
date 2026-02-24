@@ -1,14 +1,10 @@
 import Stripe from 'stripe';
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-
-if (!STRIPE_SECRET_KEY) {
-  throw new Error('Missing STRIPE_SECRET_KEY');
-}
-
-export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2025-08-27.basil',
-});
+// Lazy init so build can run without STRIPE_SECRET_KEY; routes should check stripe before use
+const key = process.env.STRIPE_SECRET_KEY;
+export const stripe: Stripe | null = key
+  ? new Stripe(key, { apiVersion: '2025-08-27.basil' })
+  : null;
 
 
 // Base platform fees

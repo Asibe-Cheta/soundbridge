@@ -13,7 +13,11 @@ import { audioProcessingService } from './audio-processing-service';
 
 // Audio upload service for SoundBridge
 export class AudioUploadService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   // Validate audio file
   validateAudioFile(file: File, userTier: 'free' | 'premium' | 'unlimited' = 'free'): { isValid: boolean; errors: string[]; warnings?: string[] } {

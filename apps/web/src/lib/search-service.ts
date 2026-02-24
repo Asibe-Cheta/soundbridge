@@ -12,7 +12,11 @@ import type {
 } from './types/search';
 
 export class SearchService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   /**
    * Perform full-text search across all content types

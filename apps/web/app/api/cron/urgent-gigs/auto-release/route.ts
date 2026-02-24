@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
           amount: releasedAmount,
           currency,
           description: `Opportunity payment (auto-released) — "${project.title}"`,
+          reference_type: 'opportunity_project',
           reference_id: project.id,
           status: 'completed',
           metadata: { project_id: project.id, stripe_transfer_id: transferId },

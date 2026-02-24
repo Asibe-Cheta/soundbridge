@@ -2,7 +2,11 @@ import { createBrowserClient } from './supabase';
 import type { CustomBranding, BrandingUpdateRequest, BrandingValidationResult, BrandingValidationError } from './types/branding';
 
 export class BrandingService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   /**
    * Get user's custom branding settings

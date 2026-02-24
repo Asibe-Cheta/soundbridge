@@ -18,7 +18,8 @@ export interface WalletTransaction {
   amount: number;
   currency: string;
   description?: string;
-  reference_id?: string;
+  reference_type?: string | null;
+  reference_id?: string | null;
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
   metadata?: any;
   created_at: string;
@@ -45,7 +46,11 @@ export interface WithdrawalRequest {
 }
 
 export class WalletService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   /**
    * Get user's wallet

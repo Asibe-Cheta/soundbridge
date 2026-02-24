@@ -2,9 +2,39 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Bell, X, Check, Trash2, Clock, Users, Share2, MessageSquare, Heart, Calendar } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, X, Check, Trash2, Clock, Users, Share2, MessageSquare, Heart, Calendar, Flame } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import type { Notification } from '../../lib/types/social';
+
+/** Urgent gig / project notification types — deep link to the right page (w.md §9) */
+function getNotificationUrl(notification: Notification): string | null {
+  const type = notification.type;
+  const meta = notification.metadata ?? notification.data ?? {};
+  const gigId = meta.gig_id;
+  const projectId = meta.project_id ?? notification.related_id;
+  const disputeId = meta.dispute_id;
+  const rateeId = meta.ratee_id;
+  const rateeName = meta.ratee_name ?? '';
+
+  switch (type) {
+    case 'urgent_gig':
+    case 'gig_confirmed':
+    case 'gig_starting_soon':
+      return gigId ? `/gigs/${gigId}/detail` : null;
+    case 'gig_accepted':
+      return gigId ? `/gigs/${gigId}/responses` : null;
+    case 'confirm_completion':
+    case 'opportunity_project_completed':
+      return projectId ? `/projects/${projectId}` : null;
+    case 'opportunity_project_disputed':
+      return disputeId ? `/dispute/view/${disputeId}` : null;
+    case 'rating_prompt':
+      return projectId && rateeId ? `/rate/${projectId}?rateeId=${encodeURIComponent(rateeId)}&rateeName=${encodeURIComponent(rateeName)}` : null;
+    default:
+      return null;
+  }
+}
 
 interface NotificationBellProps {
   className?: string;
@@ -12,6 +42,12 @@ interface NotificationBellProps {
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
+    case 'urgent_gig':
+    case 'gig_accepted':
+    case 'gig_confirmed':
+    case 'gig_starting_soon':
+    case 'gig_filled':
+      return <Flame size={16} />;
     case 'collaboration_request':
     case 'collaboration':
       return <Share2 size={16} />;
@@ -62,6 +98,7 @@ const formatTimeAgo = (dateString: string) => {
 };
 
 export function NotificationBell({ className = '' }: NotificationBellProps) {
+  const router = useRouter();
   const [notificationsState, notificationsActions] = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -88,6 +125,8 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
       await notificationsActions.markAsRead(notification.id);
     }
     setIsOpen(false);
+    const url = getNotificationUrl(notification);
+    if (url) router.push(url);
   };
 
   const handleMarkAllAsRead = async () => {

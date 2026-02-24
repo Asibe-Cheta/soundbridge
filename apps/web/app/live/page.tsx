@@ -44,38 +44,15 @@ export default function LiveSessionsPage() {
   const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'past'>('live');
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClientComponentClient();
-
   useEffect(() => {
-    loadSessions();
-    
-    // Set up real-time subscription for live sessions
-    const channel = supabase
-      .channel('live_sessions_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'live_sessions',
-        },
-        () => {
-          loadSessions();
-        }
-      )
-      .subscribe();
+    const supabase = createClientComponentClient();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    const loadSessions = async () => {
+      try {
+        setLoading(true);
 
-  const loadSessions = async () => {
-    try {
-      setLoading(true);
-
-      // Load live sessions
-      const { data: live } = await supabase
+        // Load live sessions
+        const { data: live } = await supabase
         .from('live_sessions')
         .select(`
           *,
@@ -151,7 +128,30 @@ export default function LiveSessionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+    };
+
+    loadSessions();
+
+    // Set up real-time subscription for live sessions
+    const channel = supabase
+      .channel('live_sessions_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_sessions',
+        },
+        () => {
+          loadSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return 'TBA';

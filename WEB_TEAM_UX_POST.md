@@ -6,6 +6,25 @@
 
 ---
 
+## ✅ URGENT — Backend + Database Fix
+
+**API:** `POST /api/posts` and `PUT /api/posts/:id` allow up to **3,000 characters** in code.
+
+**Database:** If mobile sees:
+`violates check constraint "posts_content_check"` or "Failed to create post" when posting > 500 chars, the **Supabase database** still has the old 500-character CHECK. Fix it by running this on the **Supabase project** (Dashboard → SQL Editor):
+
+**Run the hotfix script:** `supabase/HOTFIX_posts_content_3000.sql`
+
+Or run manually:
+```sql
+ALTER TABLE posts DROP CONSTRAINT IF EXISTS posts_content_check;
+ALTER TABLE posts DROP CONSTRAINT IF EXISTS posts_content_max_3000;
+ALTER TABLE posts ADD CONSTRAINT posts_content_max_3000 CHECK (char_length(content) <= 3000);
+```
+After this, posts up to 3,000 characters will succeed.
+
+---
+
 ## Context
 
 The following improvements were made to the mobile app's "Drop" (post) creation and display experience, based on user feedback and LinkedIn UX benchmarking. Please mirror these changes on the web app.
@@ -147,7 +166,8 @@ If the web team adds the `image_urls` column, please notify the mobile team so w
 
 ## Summary Checklist
 
-- [x] Raise post character limit to 3,000; counter only visible at ≥ 80% used
+- [x] 🚨 **URGENT:** Change `POST /api/posts` (and `PUT /api/posts/:id`) validation from 500 → 3,000 chars — **done**
+- [x] Raise post character limit to 3,000 on web UI; counter only visible at ≥ 80% used
 - [x] Support up to 20 images per post in the composer (grid preview, add/remove, badge)
 - [x] Upload each image to `post-attachments` bucket; collect all public URLs
 - [x] Add `image_urls TEXT[]` to `posts` table (keep existing `image_url` for backwards compat)

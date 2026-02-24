@@ -1,7 +1,11 @@
 import { createServiceClient } from './supabase';
 import type { Database } from './types';
 
-const serviceSupabase = createServiceClient();
+let _serviceSupabase: ReturnType<typeof createServiceClient> | null = null;
+function getServiceSupabase() {
+  if (!_serviceSupabase) _serviceSupabase = createServiceClient();
+  return _serviceSupabase;
+}
 
 const FREE_TIER_STORAGE_LIMIT = 30 * 1024 * 1024; // 30MB in bytes
 const GRACE_PERIOD_DAYS = 90;
@@ -10,7 +14,7 @@ const GRACE_PERIOD_DAYS = 90;
  * Check if a user is eligible for a grace period
  */
 export async function isEligibleForGracePeriod(userId: string): Promise<boolean> {
-  const { data, error } = await serviceSupabase.rpc('is_eligible_for_grace_period', {
+  const { data, error } = await getServiceSupabase().rpc('is_eligible_for_grace_period', {
     p_user_id: userId,
   });
 
@@ -26,7 +30,7 @@ export async function isEligibleForGracePeriod(userId: string): Promise<boolean>
  * Calculate total storage used by a user's audio tracks
  */
 async function calculateUserStorage(userId: string): Promise<number> {
-  const { data: tracks, error } = await serviceSupabase
+  const { data: tracks, error } = await getServiceSupabase()
     .from('audio_tracks')
     .select('file_size')
     .eq('creator_id', userId)
@@ -72,7 +76,7 @@ export async function grantGracePeriod(
     gracePeriodEnds.setDate(gracePeriodEnds.getDate() + GRACE_PERIOD_DAYS);
 
     // Get current grace period usage
-    const { data: profile } = await serviceSupabase
+    const { data: profile } = await getServiceSupabase()
       .from('profiles')
       .select('grace_periods_used, last_grace_period_used')
       .eq('id', userId)
@@ -81,7 +85,7 @@ export async function grantGracePeriod(
     const gracePeriodsUsed = (profile?.grace_periods_used || 0) + 1;
 
     // Update profile with grace period
-    const { error: updateError } = await serviceSupabase
+    const { error: updateError } = await getServiceSupabase()
       .from('profiles')
       .update({
         downgraded_at: new Date().toISOString(),
@@ -99,7 +103,7 @@ export async function grantGracePeriod(
     }
 
     // Record subscription change for abuse prevention
-    const { error: changeError } = await serviceSupabase
+    const { error: changeError } = await getServiceSupabase()
       .from('subscription_changes')
       .insert({
         user_id: userId,
@@ -136,7 +140,7 @@ export async function expireGracePeriods(): Promise<{
 
   try {
     // Find all users with expired grace periods
-    const { data: expiredProfiles, error: fetchError } = await serviceSupabase
+    const { data: expiredProfiles, error: fetchError } = await getServiceSupabase()
       .from('profiles')
       .select('id, grace_period_ends, storage_at_downgrade')
       .not('grace_period_ends', 'is', null)
@@ -161,7 +165,7 @@ export async function expireGracePeriods(): Promise<{
         await markExcessContentPrivate(profile.id, profile.storage_at_downgrade || 0);
 
         // Clear grace period fields
-        const { error: clearError } = await serviceSupabase
+        const { error: clearError } = await getServiceSupabase()
           .from('profiles')
           .update({
             grace_period_ends: null,
@@ -198,7 +202,7 @@ export async function expireGracePeriods(): Promise<{
  */
 async function markExcessContentPrivate(userId: string, storageAtDowngrade: number): Promise<void> {
   // Get all user's tracks sorted by priority (most played first, then most recent)
-  const { data: tracks, error: tracksError } = await serviceSupabase
+  const { data: tracks, error: tracksError } = await getServiceSupabase()
     .from('audio_tracks')
     .select('id, file_size, play_count, created_at')
     .eq('creator_id', userId)
@@ -231,7 +235,7 @@ async function markExcessContentPrivate(userId: string, storageAtDowngrade: numb
   // as private if they have excess storage. This is a conservative approach.
   if (storageAtDowngrade > FREE_TIER_STORAGE_LIMIT) {
     // Get all posts by the user that might contain audio attachments
-    const { data: userPosts, error: postsError } = await serviceSupabase
+    const { data: userPosts, error: postsError } = await getServiceSupabase()
       .from('posts')
       .select('id')
       .eq('user_id', userId)
@@ -245,7 +249,7 @@ async function markExcessContentPrivate(userId: string, storageAtDowngrade: numb
       
       // Mark all posts as private (conservative approach)
       // In the future, we can refine this to only mark posts containing excess tracks
-      const { error: updateError } = await serviceSupabase
+      const { error: updateError } = await getServiceSupabase()
         .from('posts')
         .update({ is_private: true })
         .in('id', postIds);
@@ -269,7 +273,7 @@ export async function getStorageStatus(userId: string): Promise<{
   daysRemaining: number;
   canUpload: boolean;
 }> {
-  const { data, error } = await serviceSupabase.rpc('get_storage_status', {
+  const { data, error } = await getServiceSupabase().rpc('get_storage_status', {
     p_user_id: userId,
   });
 

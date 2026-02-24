@@ -109,7 +109,11 @@ export interface AnalyticsData {
 }
 
 export class DashboardService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   /**
    * Get dashboard statistics for a user

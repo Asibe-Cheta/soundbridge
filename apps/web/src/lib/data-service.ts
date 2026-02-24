@@ -14,7 +14,11 @@
 import { createBrowserClient } from './supabase';
 
 class DataService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   /**
    * Get trending audio tracks

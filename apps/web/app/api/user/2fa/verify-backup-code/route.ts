@@ -28,20 +28,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/src/lib/supabase';
 import { verifyBackupCode, formatBackupCode, isValidBackupCodeFormat } from '@/src/lib/backup-codes';
 import { decryptSecret } from '@/src/lib/encryption';
 
-// Create a service role client for server-side operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+function getSupabaseAdmin() {
+  return createServiceClient();
+}
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
@@ -108,7 +101,7 @@ export async function POST(request: NextRequest) {
     
     if (verificationSessionId) {
       // New flow: lookup by UUID id
-      const result = await supabaseAdmin
+      const result = await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .select('*')
         .eq('id', verificationSessionId)
@@ -117,7 +110,7 @@ export async function POST(request: NextRequest) {
       sessionError = result.error;
     } else {
       // Legacy flow: lookup by session_token
-      const result = await supabaseAdmin
+      const result = await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .select('*')
         .eq('session_token', sessionToken)
@@ -194,7 +187,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 6. Retrieve user's backup codes (unused only)
     // ================================================
-    const { data: backupCodes, error: fetchError } = await supabaseAdmin
+    const { data: backupCodes, error: fetchError } = await getSupabaseAdmin()
       .from('two_factor_backup_codes')
       .select('*')
       .eq('user_id', session.user_id)
@@ -253,7 +246,7 @@ export async function POST(request: NextRequest) {
       const shouldLock = failedAttempts >= MAX_FAILED_ATTEMPTS;
       
       // Update session with failed attempt
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .update({
           failed_attempts: failedAttempts,
@@ -264,7 +257,7 @@ export async function POST(request: NextRequest) {
         .eq('id', session.id);
       
       // Log failed verification
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('two_factor_audit_log')
         .insert({
           user_id: session.user_id,
@@ -307,7 +300,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 9. Mark backup code as used
     // ================================================
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await getSupabaseAdmin()
       .from('two_factor_backup_codes')
       .update({
         used: true,
@@ -323,7 +316,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 10. Mark session as verified
     // ================================================
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('two_factor_verification_sessions')
       .update({
         verified: true,
@@ -333,7 +326,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 11. Count remaining backup codes
     // ================================================
-    const { count: remainingCount } = await supabaseAdmin
+    const { count: remainingCount } = await getSupabaseAdmin()
       .from('two_factor_backup_codes')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', session.user_id)
@@ -347,7 +340,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 12. Log successful verification
     // ================================================
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('two_factor_audit_log')
       .insert({
         user_id: session.user_id,
@@ -412,7 +405,7 @@ export async function POST(request: NextRequest) {
       // Legacy flow: use generateLink + verifyOtp
       console.log('✅ Using legacy generateLink flow');
       
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+      const { data: userData, error: userError } = await getSupabaseAdmin().auth.admin.getUserById(
         session.user_id
       );
       
@@ -429,7 +422,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Generate magic link to get hashed token
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      const { data: linkData, error: linkError } = await getSupabaseAdmin().auth.admin.generateLink({
         type: 'magiclink',
         email: userData.user.email!,
       });

@@ -14,7 +14,11 @@ import type {
 import { PLATFORM_FEES, MINIMUM_PAYOUTS } from './types/revenue';
 
 export class RevenueService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   /**
    * Get creator's revenue summary

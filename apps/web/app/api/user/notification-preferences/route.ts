@@ -28,6 +28,8 @@ function mapToResponse(prefs: Record<string, unknown> | null) {
     preferredEventGenres: prefs.preferred_event_genres ?? [],
     locationState: prefs.location_state ?? null,
     locationCountry: prefs.location_country ?? null,
+    urgentGigNotificationsEnabled: prefs.urgent_gig_notifications_enabled ?? true,
+    urgentGigActionButtonsEnabled: prefs.urgent_gig_action_buttons_enabled ?? true,
   };
 }
 
@@ -70,6 +72,8 @@ export async function GET(request: NextRequest) {
           collaboration_notifications_enabled: true,
           wallet_notifications_enabled: true,
           preferred_event_genres: [],
+          urgent_gig_notifications_enabled: true,
+          urgent_gig_action_buttons_enabled: true,
         })
       );
     }
@@ -118,6 +122,8 @@ export async function PUT(request: NextRequest) {
     if (updates.preferredEventGenres !== undefined) payload.preferred_event_genres = updates.preferredEventGenres;
     if (updates.locationState !== undefined) payload.location_state = updates.locationState;
     if (updates.locationCountry !== undefined) payload.location_country = updates.locationCountry;
+    if (updates.urgentGigNotificationsEnabled !== undefined) payload.urgent_gig_notifications_enabled = updates.urgentGigNotificationsEnabled;
+    if (updates.urgentGigActionButtonsEnabled !== undefined) payload.urgent_gig_action_buttons_enabled = updates.urgentGigActionButtonsEnabled;
 
     const { data: prefs, error } = await supabase
       .from('notification_preferences')

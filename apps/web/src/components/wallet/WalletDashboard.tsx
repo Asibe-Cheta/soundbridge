@@ -1,19 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { walletService, type Wallet, type WalletTransaction } from '../../lib/wallet-service';
-import { Wallet as WalletIcon, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, AlertCircle, Plus, Minus, Eye, EyeOff } from 'lucide-react';
+import { Wallet as WalletIcon, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, AlertCircle, Plus, Minus, Eye, EyeOff, ExternalLink } from 'lucide-react';
 
 interface WalletDashboardProps {
   userId: string;
 }
 
 export function WalletDashboard({ userId }: WalletDashboardProps) {
+  const router = useRouter();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const hasProjectLink = (t: WalletTransaction) =>
+    (t.reference_type === 'opportunity_project' && t.reference_id) ||
+    (t.metadata?.project_id && (t.description?.includes('Opportunity payment') || t.description?.includes('Urgent gig payment')));
+  const getProjectId = (t: WalletTransaction) => t.reference_id ?? t.metadata?.project_id;
 
   useEffect(() => {
     loadWalletData();
@@ -191,42 +198,57 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
               <p className="text-gray-500 text-sm">Your wallet activity will appear here</p>
             </div>
           ) : (
-            transactions.map((transaction) => (
-              <div key={transaction.id} className="p-6 hover:bg-gray-700/50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-gray-700 rounded-lg">
-                      {getTransactionIcon(transaction.transaction_type)}
+            transactions.map((transaction) => {
+              const projectId = hasProjectLink(transaction) ? getProjectId(transaction) : null;
+              return (
+                <div
+                  key={transaction.id}
+                  className={`p-6 transition-colors ${projectId ? 'hover:bg-gray-700/50 cursor-pointer' : ''}`}
+                  onClick={() => projectId && router.push(`/projects/${projectId}`)}
+                  role={projectId ? 'button' : undefined}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-gray-700 rounded-lg">
+                        {getTransactionIcon(transaction.transaction_type)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">
+                          {walletService.getTransactionTypeDisplay(transaction.transaction_type)}
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          {transaction.description || 'Wallet transaction'}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {formatDate(transaction.created_at)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-white">
-                        {walletService.getTransactionTypeDisplay(transaction.transaction_type)}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {transaction.description || 'Wallet transaction'}
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        {formatDate(transaction.created_at)}
-                      </p>
+
+                    <div className="text-right flex items-center gap-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`font-semibold ${
+                            transaction.amount > 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {transaction.amount > 0 ? '+' : ''}{walletService.formatCurrency(transaction.amount, transaction.currency)}
+                          </span>
+                          {getStatusIcon(transaction.status)}
+                        </div>
+                        <p className="text-gray-500 text-xs capitalize">
+                          {transaction.status}
+                        </p>
+                      </div>
+                      {projectId && (
+                        <span className="text-blue-400 text-sm flex items-center gap-1 whitespace-nowrap">
+                          View project <ExternalLink className="h-3 w-3" />
+                        </span>
+                      )}
                     </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="flex items-center space-x-2">
-                      <span className={`font-semibold ${
-                        transaction.amount > 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {transaction.amount > 0 ? '+' : ''}{walletService.formatCurrency(transaction.amount, transaction.currency)}
-                      </span>
-                      {getStatusIcon(transaction.status)}
-                    </div>
-                    <p className="text-gray-500 text-xs capitalize">
-                      {transaction.status}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

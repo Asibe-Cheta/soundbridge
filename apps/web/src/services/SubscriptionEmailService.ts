@@ -72,10 +72,16 @@ export interface TicketConfirmationData {
 }
 
 export class SubscriptionEmailService {
-  private static supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  private static _supabase: ReturnType<typeof createClient> | null = null;
+  private static get supabase() {
+    if (!SubscriptionEmailService._supabase) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!url || !key) throw new Error('Supabase env not configured');
+      SubscriptionEmailService._supabase = createClient(url, key);
+    }
+    return SubscriptionEmailService._supabase;
+  }
 
   /**
    * Send subscription confirmation email when user upgrades

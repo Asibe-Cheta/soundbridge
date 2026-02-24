@@ -1,7 +1,9 @@
 import { createBrowserClient } from './supabase';
 import type { Database } from './types';
 
-const supabase = createBrowserClient();
+function getSupabase() {
+  return createBrowserClient();
+}
 
 export type BookingStatus =
   | 'pending'
@@ -26,7 +28,7 @@ export interface CreateBookingPayload {
 
 export const bookingService = {
   async createBooking(payload: CreateBookingPayload) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('service_bookings')
       .insert({
         provider_id: payload.providerId,
@@ -48,7 +50,7 @@ export const bookingService = {
   },
 
   async listBookingsForProvider(providerId: string) {
-    return supabase
+    return getSupabase()
       .from('service_bookings')
       .select('*')
       .eq('provider_id', providerId)
@@ -56,7 +58,7 @@ export const bookingService = {
   },
 
   async listBookingsForBooker(bookerId: string) {
-    return supabase
+    return getSupabase()
       .from('service_bookings')
       .select('*')
       .eq('booker_id', bookerId)
@@ -68,7 +70,7 @@ export const bookingService = {
     status: BookingStatus,
     fields: Partial<Database['public']['Tables']['service_bookings']['Update']> = {},
   ) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('service_bookings')
       .update({
         status,

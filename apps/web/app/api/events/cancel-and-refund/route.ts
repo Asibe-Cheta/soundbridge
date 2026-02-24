@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(key, { apiVersion: '2025-08-27.basil' });
+}
 
 interface CancelEventRequest {
   eventId: string;
@@ -181,6 +183,7 @@ async function processSingleRefund(
       .eq('id', purchase.id);
 
     // Create refund via Stripe
+    const stripe = getStripe();
     const refund = await stripe.refunds.create({
       payment_intent: purchase.stripe_payment_intent_id,
       amount: Math.round(purchase.amount_paid * 100), // Convert to cents

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { createServiceClient } from '@/src/lib/supabase';
 import { grantGracePeriod } from '@/src/lib/grace-period-service';
 
 const corsHeaders = {
@@ -9,10 +9,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Stripe-Signature',
 };
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-});
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(key, { apiVersion: '2024-12-18.acacia' });
+}
 
 /**
  * POST /api/webhooks/subscription
@@ -26,16 +27,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     // Create Supabase client with service role (bypasses RLS)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const supabase = createServiceClient();
 
     // Get raw body for Stripe signature verification
     const body = await request.text();
@@ -51,7 +43,7 @@ export async function POST(request: NextRequest) {
 
       // Verify Stripe webhook signature
       try {
-        const event = stripe.webhooks.constructEvent(
+        const event = getStripe().webhooks.constructEvent(
           body,
           signature,
           process.env.STRIPE_WEBHOOK_SECRET!

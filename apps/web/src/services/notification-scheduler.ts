@@ -19,10 +19,16 @@ import {
 } from '../lib/notification-utils';
 import { sendPushNotification, sendBatchPushNotifications, processQueuedNotifications } from './expo-push';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Supabase env not configured');
+    _supabaseAdmin = createClient(url, key);
+  }
+  return _supabaseAdmin;
+}
 
 // =====================================================
 // EVENT NOTIFICATION SCHEDULER
@@ -38,7 +44,7 @@ export async function processNewEventNotifications(): Promise<void> {
     // Get events created in last 24 hours that haven't been processed
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
-    const { data: events, error: eventsError } = await supabaseAdmin
+    const { data: events, error: eventsError } = await getSupabaseAdmin()
       .from('events')
       .select('*')
       .gte('created_at', yesterday)
@@ -73,7 +79,7 @@ export async function processUrgentEventNotifications(): Promise<void> {
     const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     
     // Get events starting in next 24 hours
-    const { data: events, error } = await supabaseAdmin
+    const { data: events, error } = await getSupabaseAdmin()
       .from('events')
       .select('*')
       .gte('event_date', now.toISOString())
@@ -90,7 +96,7 @@ export async function processUrgentEventNotifications(): Promise<void> {
     // Process each urgent event
     for (const event of events) {
       // Check if we already sent urgent notification
-      const { data: sentNotifs } = await supabaseAdmin
+      const { data: sentNotifs } = await getSupabaseAdmin()
         .from('notification_logs')
         .select('id')
         .eq('related_entity_id', event.id)
@@ -117,7 +123,7 @@ export async function processUrgentEventNotifications(): Promise<void> {
 async function processEventNotifications(event: any, forceUrgent: boolean = false): Promise<void> {
   try {
     // Get creator details
-    const { data: creator, error: creatorError } = await supabaseAdmin
+    const { data: creator, error: creatorError } = await getSupabaseAdmin()
       .from('profiles')
       .select('id, username, display_name')
       .eq('id', event.creator_id)
@@ -129,7 +135,7 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
     }
     
     // Get creator follower count
-    const { count: followerCount } = await supabaseAdmin
+    const { count: followerCount } = await getSupabaseAdmin()
       .from('creator_subscriptions')
       .select('*', { count: 'exact', head: true })
       .eq('creator_id', event.creator_id);
@@ -160,7 +166,7 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
     };
     
     // Get eligible users (same state + genre match)
-    const { data: eligibleUsers, error: usersError } = await supabaseAdmin
+    const { data: eligibleUsers, error: usersError } = await getSupabaseAdmin()
       .from('user_notification_preferences')
       .select('*')
       .eq('notifications_enabled', true)
@@ -176,7 +182,7 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
     console.log(`Found ${eligibleUsers.length} eligible users for event ${event.id}`);
     
     // Check if similar events exist for batching
-    const { count: similarEventsCount } = await supabaseAdmin
+    const { count: similarEventsCount } = await getSupabaseAdmin()
       .from('events')
       .select('*', { count: 'exact', head: true })
       .eq('state', event.state)
@@ -205,7 +211,7 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
       }
       
       // Check if already notified about this event
-      const { data: existingNotif } = await supabaseAdmin
+      const { data: existingNotif } = await getSupabaseAdmin()
         .from('notification_logs')
         .select('id')
         .eq('user_id', userPrefs.user_id)
@@ -217,7 +223,7 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
       }
       
       // Check if following creator
-      const { data: subscription } = await supabaseAdmin
+      const { data: subscription } = await getSupabaseAdmin()
         .from('creator_subscriptions')
         .select('notify_on_event_post')
         .eq('user_id', userPrefs.user_id)
@@ -232,7 +238,7 @@ async function processEventNotifications(event: any, forceUrgent: boolean = fals
         : selectNotificationFormat(eventData, creatorData, similarEventsCount || 0, isFollowing);
       
       // Get user's display name
-      const { data: profile } = await supabaseAdmin
+      const { data: profile } = await getSupabaseAdmin()
         .from('profiles')
         .select('username')
         .eq('id', userPrefs.user_id)
@@ -309,7 +315,7 @@ export async function eveningBatch(): Promise<void> {
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const dayAfterTomorrow = new Date(Date.now() + 48 * 60 * 60 * 1000);
   
-  const { data: upcomingEvents, error } = await supabaseAdmin
+  const { data: upcomingEvents, error } = await getSupabaseAdmin()
     .from('events')
     .select('*')
     .gte('event_date', tomorrow.toISOString())

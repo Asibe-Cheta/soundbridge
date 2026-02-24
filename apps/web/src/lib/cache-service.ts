@@ -69,7 +69,11 @@ export const cacheService = new CacheService();
 
 // Optimized database service with caching
 export class OptimizedDatabaseService {
-  private supabase = createBrowserClient();
+  private _supabase: ReturnType<typeof createBrowserClient> | null = null;
+  private get supabase() {
+    if (!this._supabase) this._supabase = createBrowserClient();
+    return this._supabase;
+  }
 
   // Cached user profile
   async getUserProfile(userId: string) {

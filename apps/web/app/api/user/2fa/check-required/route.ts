@@ -23,20 +23,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/src/lib/supabase';
 import crypto from 'crypto';
 
-// Create a service role client for operations that need to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+function getSupabaseAdmin() {
+  return createServiceClient();
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,7 +102,7 @@ export async function POST(request: NextRequest) {
     // This handles the case where user verifies 2FA and then immediately signs in again
     // Use service role client to bypass RLS
     const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
-    const { data: verifiedSession } = await supabaseAdmin
+    const { data: verifiedSession } = await getSupabaseAdmin()
       .from('two_factor_verification_sessions')
       .select('id, verified, expires_at, created_at')
       .eq('user_id', user.id)
@@ -125,7 +117,7 @@ export async function POST(request: NextRequest) {
       console.log('✅ User has a recently verified 2FA session (within 30s) - allowing login');
       
       // Delete the verified session (one-time use) - use service role client
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('two_factor_verification_sessions')
         .delete()
         .eq('id', verifiedSession.id);
@@ -155,7 +147,7 @@ export async function POST(request: NextRequest) {
     
     // Create verification session (expires in 5 minutes)
     // Use service role client to bypass RLS (table only allows service_role)
-    const { data: session, error: sessionError } = await supabaseAdmin
+    const { data: session, error: sessionError } = await getSupabaseAdmin()
       .from('two_factor_verification_sessions')
       .insert({
         user_id: user.id,

@@ -34,21 +34,22 @@ export async function POST(request: NextRequest) {
     // Create Supabase service client
     const supabase = createServiceClient();
 
-    // Check if email already exists
+    // Prevent duplicate signups: if email is already on the waitlist (and not deleted by admin), reject.
+    const normalizedEmail = email.toLowerCase().trim();
     const { data: existing } = await supabase
       .from('waitlist')
-      .select('email')
-      .eq('email', email.toLowerCase().trim())
-      .single();
+      .select('id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json(
-        { 
-          success: true,
+        {
+          success: false,
+          already_exists: true,
           message: "You're already on the waitlist! We'll notify you when we launch.",
-          already_exists: true
         },
-        { status: 200 }
+        { status: 409 }
       );
     }
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { data: waitlistEntry, error: dbError } = await supabase
       .from('waitlist')
       .insert({
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         role: role || null,
         location: location || null, // Legacy field - stores JSON string if provided
         country: country || null,
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (SENDGRID_WAITLIST_TEMPLATE_ID) {
       try {
         const emailSent = await SendGridService.sendTemplatedEmail({
-          to: email.toLowerCase().trim(),
+          to: normalizedEmail,
           from: CONTACT_EMAIL,
           fromName: 'SoundBridge Team',
           replyTo: CONTACT_EMAIL,
