@@ -224,11 +224,17 @@ export default function OpportunitiesPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
-                href="/gigs/urgent/create"
+                href="/gigs/new"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors"
               >
+                Post a gig
+              </Link>
+              <Link
+                href="/gigs/urgent/create"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/20 hover:bg-white/10 font-medium text-sm transition-colors"
+              >
                 <Flame size={18} />
-                Post Urgent Gig
+                Post urgent gig
               </Link>
               <Link
                 href="/gigs/my"
