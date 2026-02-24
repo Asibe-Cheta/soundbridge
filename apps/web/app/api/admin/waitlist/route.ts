@@ -47,11 +47,28 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    const rows = data || [];
+    const genreIds = [...new Set(rows.flatMap((r: { genres?: string[] }) => (Array.isArray(r.genres) ? r.genres : [])))];
+    const genreMap: Record<string, string> = {};
+    if (genreIds.length > 0) {
+      const { data: genres } = await adminCheck.serviceClient
+        .from('genres')
+        .select('id, name')
+        .in('id', genreIds);
+      (genres || []).forEach((g: { id: string; name: string }) => { genreMap[g.id] = g.name; });
+    }
+    const dataWithGenreNames = rows.map((row: { genres?: string[]; [k: string]: unknown }) => ({
+      ...row,
+      genre_names: Array.isArray(row.genres) && row.genres.length > 0
+        ? row.genres.map((id: string) => genreMap[id] || id).join(', ')
+        : null,
+    }));
+    
     console.log('✅ Waitlist signups fetched successfully');
     
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: dataWithGenreNames,
       pagination: {
         total: count || 0,
         page,

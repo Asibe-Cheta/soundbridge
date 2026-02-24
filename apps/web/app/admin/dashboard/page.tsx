@@ -2556,7 +2556,7 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
       item.country || '',
       item.state || '',
       item.city || '',
-      Array.isArray(item.genres) ? item.genres.join(', ') : (item.genres || ''),
+      item.genre_names ?? (Array.isArray(item.genres) ? item.genres.join(', ') : (item.genres || '')),
       item.referral_source || '',
       item.signed_up_at ? new Date(item.signed_up_at).toLocaleString() : '',
       item.confirmed ? 'Yes' : 'No'
@@ -2727,9 +2727,9 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
                         {item.country || '-'}
                       </td>
                       <td className={`px-6 py-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                        {Array.isArray(item.genres) && item.genres.length > 0
+                        {item.genre_names || (Array.isArray(item.genres) && item.genres.length > 0
                           ? item.genres.join(', ')
-                          : item.genres || '-'}
+                          : item.genres) || '-'}
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                         {item.signed_up_at
