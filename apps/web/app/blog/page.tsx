@@ -54,7 +54,9 @@ export default function BlogPage() {
         </div>
 
         <div className="grid gap-6">
-          {blogPosts.map((post) => (
+          {[...blogPosts]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
