@@ -26,6 +26,16 @@ export interface AudioTrack {
   likesCount?: number;
   commentsCount?: number;
   sharesCount?: number;
+  // Moderation / copyright
+  moderationStatus?:
+    | 'pending_check'
+    | 'checking'
+    | 'clean'
+    | 'flagged'
+    | 'approved'
+    | 'rejected'
+    | 'appealed'
+    | 'taken_down';
   // Copyright info
   copyrightStatus?: 'clear' | 'pending' | 'flagged' | 'blocked';
   copyrightScore?: number;

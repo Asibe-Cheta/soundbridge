@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
+import TrackActionsClient from '@/src/components/track/TrackActionsClient';
 
 interface Props {
   params: { trackId: string };
@@ -128,7 +129,24 @@ export default async function TrackPage({ params }: Props) {
     notFound();
   }
 
+  // Get current authenticated user to determine ownership (for report/counter-notice UX)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isOwner = !!user && user.id === track.creator_id;
   const creatorName = track.creator?.display_name || track.creator?.username || 'Unknown Artist';
+  const trackUrl = `https://soundbridge.live/track/${params.trackId}`;
+
+  // Fetch latest takedown (if any) for this track so owner can submit counter-notice
+  const { data: takedown } = await supabase
+    .from('takedowns')
+    .select('id, status')
+    .eq('content_id', track.id)
+    .eq('content_type', 'track')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center p-4">
@@ -165,6 +183,18 @@ export default async function TrackPage({ params }: Props) {
               <div className="text-2xl font-bold">{track.like_count?.toLocaleString() || 0}</div>
               <div className="text-sm text-gray-400">Likes</div>
             </div>
+          </div>
+
+          {/* Actions: report button for non-owners, copyright-removed state for owner */}
+          <div className="mb-8">
+            <TrackActionsClient
+              trackId={track.id}
+              trackTitle={track.title}
+              trackUrl={trackUrl}
+              isOwner={isOwner}
+              moderationStatus={track.moderation_status as any}
+              takedownId={takedown?.id || null}
+            />
           </div>
 
           {/* Download CTA */}

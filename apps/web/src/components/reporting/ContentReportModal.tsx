@@ -9,6 +9,7 @@ interface ContentReportModalProps {
   contentType: 'track' | 'profile' | 'comment' | 'playlist';
   contentTitle?: string;
   contentUrl?: string;
+  onOpenDMCA?: () => void;
 }
 
 const REPORT_TYPES = [
@@ -83,7 +84,8 @@ export const ContentReportModal: React.FC<ContentReportModalProps> = ({
   contentId,
   contentType,
   contentTitle,
-  contentUrl
+  contentUrl,
+  onOpenDMCA
 }) => {
   const [currentStep, setCurrentStep] = useState<'type' | 'details' | 'copyright' | 'submit'>('type');
   const [selectedReportType, setSelectedReportType] = useState<string>('');
@@ -231,7 +233,12 @@ export const ContentReportModal: React.FC<ContentReportModalProps> = ({
                       key={type.id}
                       onClick={() => {
                         setSelectedReportType(type.id);
-                        setCurrentStep('details');
+                        // For copyright, branch into choice between quick report vs formal DMCA
+                        if (type.id === 'copyright_infringement') {
+                          setCurrentStep('copyright');
+                        } else {
+                          setCurrentStep('details');
+                        }
                       }}
                       className={`w-full p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${type.borderColor} ${type.bgColor} hover:scale-[1.02]`}
                     >
@@ -249,6 +256,63 @@ export const ContentReportModal: React.FC<ContentReportModalProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 1b: Copyright path selection (quick vs formal DMCA/CDPA) */}
+          {currentStep === 'copyright' && (
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setCurrentStep('type')}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  ← Back
+                </button>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  How do you want to report this?
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <button
+                  onClick={() => setCurrentStep('details')}
+                  className="w-full p-4 rounded-lg border-2 border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300 transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <Flag className="h-5 w-5 text-red-600" />
+                    <div>
+                      <div className="font-semibold text-red-700">Quick report to SoundBridge</div>
+                      <div className="text-sm text-red-700/80">
+                        Sends this track to our moderation team as a copyright issue. Recommended if you are not the
+                        rights holder or do not want to submit a formal legal notice.
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (onOpenDMCA) {
+                      // Close this modal and open the formal DMCA notice form
+                      onOpenDMCA();
+                      onClose();
+                    }
+                  }}
+                  className="w-full p-4 rounded-lg border-2 border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <Copyright className="h-5 w-5 text-purple-700" />
+                    <div>
+                      <div className="font-semibold text-purple-800">Formal DMCA/CDPA notice</div>
+                      <div className="text-sm text-purple-800/80">
+                        Opens the full legal notice form required under DMCA/CDPA (17 USC 512(c)(3)). Use this if you
+                        are the copyright owner or authorized agent and want a formal takedown.
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
           )}

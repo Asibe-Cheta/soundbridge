@@ -287,35 +287,48 @@ export default function UnifiedUploadPage() {
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
     
-    // ACRCloud validation
-    if (contentType === 'music' && acrcloudStatus === 'checking') {
-      return 'Please wait for audio verification to complete';
-    }
-    
-    if (contentType === 'music' && acrcloudStatus === 'match') {
-      // Match found - require ISRC verification
-      if (!isrcCode.trim()) {
-        return 'ISRC code is required. This track appears to be a released song.';
+    // ACRCloud + ISRC validation (music only)
+    if (contentType === 'music') {
+      // Still block while ACRCloud is running
+      if (acrcloudStatus === 'checking') {
+        return 'Please wait for audio verification to complete';
       }
-      if (isrcVerificationStatus !== 'success') {
-        return 'ISRC code must be verified before uploading';
+
+      const isOriginalNoMatch = acrcloudStatus === 'no_match' && !isCover;
+
+      // Originals with no match: ISRC is required ownership proof
+      if (isOriginalNoMatch) {
+        if (!isrcCode.trim()) {
+          return 'Please enter your ISRC code to verify ownership of this original track.';
+        }
+        if (isrcVerificationStatus === 'idle' || isrcVerificationStatus === 'loading') {
+          return 'Please wait for ISRC verification to complete';
+        }
+        if (isrcVerificationStatus === 'error') {
+          return 'Your ISRC code could not be verified. Please check it and try again.';
+        }
       }
-      // Check artist name match
-      if (acrcloudData?.artistMatch && !acrcloudData.artistMatch.match) {
+
+      // If user has entered an ISRC in any other case (covers or detected match),
+      // make sure verification has completed successfully before allowing upload.
+      if (!isOriginalNoMatch && isrcCode.trim()) {
+        if (isrcVerificationStatus === 'idle' || isrcVerificationStatus === 'loading') {
+          return 'Please wait for ISRC verification to complete';
+        }
+        if (isrcVerificationStatus === 'error') {
+          return 'Your ISRC code could not be verified. Please check it and try again.';
+        }
+      }
+
+      // For detected matches, keep the artist mismatch guardrails
+      if (acrcloudStatus === 'match' && acrcloudData?.artistMatch && !acrcloudData.artistMatch.match) {
         return `This track belongs to "${acrcloudData.detectedArtist}". If this is you, ensure your profile name matches.`;
       }
-    }
-    
-    if (contentType === 'music' && acrcloudStatus === 'no_match' && !isOriginalConfirmed) {
-      return 'Please confirm this is your original/unreleased music';
-    }
-    
-    // Cover song validation (legacy - for manually marked covers)
-    if (isCover && !isrcCode.trim()) {
-      return 'ISRC code is required for cover songs';
-    }
-    if (isCover && isrcVerificationStatus !== 'success') {
-      return 'ISRC code must be verified before uploading a cover song';
+
+      // Require explicit confirmation for originals where no match was found
+      if (acrcloudStatus === 'no_match' && !isOriginalConfirmed) {
+        return 'Please confirm this is your original/unreleased music';
+      }
     }
     
     return null;
@@ -1306,16 +1319,16 @@ export default function UnifiedUploadPage() {
                     {acrcloudStatus === 'match' ? (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                          ISRC Verification Required *
+                          ISRC (optional for released songs)
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          This track was detected as a released song. Please provide
-                          the ISRC code to verify ownership.
+                          This track was detected as a released song. You may enter your distributor&apos;s ISRC
+                          to verify ownership, or leave it blank.
                         </p>
                       </div>
                     ) : (
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Cover Song Verification
+                        Cover &amp; Ownership Verification
                       </h3>
                     )}
 
@@ -1334,18 +1347,28 @@ export default function UnifiedUploadPage() {
                       </label>
                     )}
 
-                    {/* Show ISRC input if ACRCloud match OR user checked "cover song" */}
-                    {(acrcloudStatus === 'match' || isCover) && (
+                    {/* Show ISRC input:
+                        - Always for no_match originals (ownership proof required)
+                        - For detected matches (optional)
+                        - For covers (optional) */}
+                    {(acrcloudStatus === 'match' || acrcloudStatus === 'no_match' || isCover) && (
                       <div className="mt-3 space-y-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          ISRC Code *
+                          ISRC Code
+                          {acrcloudStatus === 'no_match' && !isCover && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </label>
                         <div className="space-y-2">
                           <input
                             type="text"
                             value={isrcCode}
                             onChange={(e) => handleISRCChange(e.target.value)}
-                            placeholder="Type the ISRC code (e.g., GBUM71502800)"
+                            placeholder={
+                              acrcloudStatus === 'no_match' && !isCover
+                                ? 'e.g., GBUM71502800 (required for originals)'
+                                : 'Type the ISRC code (e.g., GBUM71502800)'
+                            }
                             maxLength={14}
                             className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                               isrcVerificationStatus === 'error'
@@ -1358,6 +1381,27 @@ export default function UnifiedUploadPage() {
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             Format: XX-XXX-YY-NNNNN (12 characters, hyphens optional)
                           </p>
+
+                          {/* Ownership proof banner for originals with no ACR match */}
+                          {acrcloudStatus === 'no_match' && !isCover && (
+                            <div className="mt-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                              <p className="text-sm font-semibold text-blue-800 dark:text-blue-100 mb-1">
+                                Ownership Proof Required
+                              </p>
+                              <p className="text-xs text-blue-700 dark:text-blue-300">
+                                To protect against accidental copyright infringement, originals require an ISRC.
+                                Get one free from your distributor (DistroKid, TuneCore, CD Baby, etc.).
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Hint for covers where ISRC is optional */}
+                          {(isCover || (acrcloudStatus === 'match' && !isCover)) && (
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              No ISRC? That&apos;s fine — leave it blank. SoundBridge will assign your recording an
+                              ISRC once we complete our PPL registration.
+                            </p>
+                          )}
 
                           {/* Verification Status */}
                           {isrcVerificationStatus === 'loading' && (

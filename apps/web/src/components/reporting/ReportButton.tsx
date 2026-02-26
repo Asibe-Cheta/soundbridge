@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Flag, AlertTriangle } from 'lucide-react';
 import { ContentReportModal } from './ContentReportModal';
+import { DMCAFormModal } from '@/src/components/dmca/DMCAFormModal';
 
 interface ReportButtonProps {
   contentId: string;
@@ -22,6 +23,7 @@ export const ReportButton: React.FC<ReportButtonProps> = ({
   className = ''
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDmcaOpen, setIsDmcaOpen] = useState(false);
 
   const handleReportClick = () => {
     setIsModalOpen(true);
@@ -100,6 +102,18 @@ export const ReportButton: React.FC<ReportButtonProps> = ({
         onClose={() => setIsModalOpen(false)}
         contentId={contentId}
         contentType={contentType}
+        contentTitle={contentTitle}
+        contentUrl={contentUrl}
+        onOpenDMCA={() => {
+          setIsModalOpen(false);
+          setIsDmcaOpen(true);
+        }}
+      />
+
+      <DMCAFormModal
+        isOpen={isDmcaOpen}
+        onClose={() => setIsDmcaOpen(false)}
+        contentId={contentId}
         contentTitle={contentTitle}
         contentUrl={contentUrl}
       />

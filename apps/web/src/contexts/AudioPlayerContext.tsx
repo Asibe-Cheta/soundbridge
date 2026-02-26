@@ -185,6 +185,16 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     });
     console.log('🚨 CONTEXT DEBUG - Full track object:', JSON.stringify(track, null, 2));
     
+    // Copyright / moderation guardrails
+    if (track.moderationStatus === 'taken_down') {
+      setError('This track has been removed following a copyright notice. The uploader may submit a counter-notice.');
+      return;
+    }
+    if (track.moderationStatus === 'flagged' || track.moderationStatus === 'rejected') {
+      setError('This track is not available for playback due to moderation.');
+      return;
+    }
+
     if (!audioRef.current) {
       console.log('🎵 No audio ref, returning');
       return;

@@ -177,7 +177,8 @@ export default function MusicPage({ params }: MusicPageProps) {
         duration: track.duration || 0,
         artwork: track.cover_art_url || '',
         url: track.file_url || '',
-        liked: likedTracks.has(track.id)
+        liked: likedTracks.has(track.id),
+        moderationStatus: track.moderation_status as any
       };
       
       console.log('Playing track:', audioTrack);
