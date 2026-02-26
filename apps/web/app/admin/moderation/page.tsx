@@ -25,6 +25,10 @@ interface Track {
   transcription: string | null;
   created_at: string;
   updated_at: string;
+  suspected_duplicate?: boolean;
+  original_artist_name?: string | null;
+  original_song_title?: string | null;
+  is_cover?: boolean;
   profiles: {
     username: string;
     display_name: string | null;
@@ -74,7 +78,7 @@ export default function ModerationDashboard() {
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [reviewReason, setReviewReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'flagged' | 'pending' | 'all'>('flagged');
+  const [filter, setFilter] = useState<'flagged' | 'pending' | 'all' | 'suspected_duplicate'>('flagged');
 
   // Note: No redirect logic here - let the API handle auth checks
   // This matches the behavior of /admin/dashboard and /admin/copyright
@@ -306,6 +310,18 @@ export default function ModerationDashboard() {
           >
             All
           </button>
+          <button
+            onClick={() => setFilter('suspected_duplicate')}
+            className={`px-4 py-2 rounded-lg transition ${
+              filter === 'suspected_duplicate'
+                ? 'bg-purple-600 text-white'
+                : isDark
+                  ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            Suspected duplicates
+          </button>
         </div>
 
         {/* Track List */}
@@ -324,11 +340,22 @@ export default function ModerationDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-xl font-semibold">{track.title}</h3>
-                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
-                        FLAGGED
-                      </span>
+                      {track.suspected_duplicate ? (
+                        <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded">
+                          SUSPECTED DUPLICATE
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
+                          FLAGGED
+                        </span>
+                      )}
                     </div>
                     <p className={isDark ? 'text-gray-400 mb-3' : 'text-gray-600 mb-3'}>by {track.artist_name}</p>
+                    {(track.original_artist_name || track.original_song_title) && (
+                      <p className={`text-sm mb-3 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                        Original: {[track.original_artist_name, track.original_song_title].filter(Boolean).join(' – ')}
+                      </p>
+                    )}
 
                     {/* Upload Info */}
                     <div className={`flex items-center gap-4 text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>

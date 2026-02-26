@@ -339,6 +339,12 @@ export class AudioUploadService {
     isrc_code?: string | null;
     isrc_verified?: boolean;
     isrc_verified_at?: string | null;
+    // ISRC auto-assignment (WEB_TEAM_ISRC_AUTO_ASSIGNMENT)
+    isrc_source?: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated';
+    isrc_soundbridge_generated?: boolean;
+    original_artist_name?: string | null;
+    original_song_title?: string | null;
+    suspected_duplicate?: boolean;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const insertData = {
@@ -576,6 +582,27 @@ export class AudioUploadService {
         console.log('ℹ️ No cover art file provided');
       }
 
+      const td = trackData as any;
+      const acr = td.acrcloudData;
+      const isrcSource = td.isrc_source || (acr?.detectedISRC ? 'acrcloud_detected' : (td.isrcCode ? 'user_provided' : 'soundbridge_generated'));
+      let resolvedIsrc: string | null = null;
+      if (isrcSource === 'acrcloud_detected' && acr?.detectedISRC) {
+        resolvedIsrc = String(acr.detectedISRC).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
+      } else if (isrcSource === 'user_provided' && td.isrcCode) {
+        resolvedIsrc = String(td.isrcCode).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
+      } else if (isrcSource === 'soundbridge_generated') {
+        try {
+          const res = await fetch('/api/isrc/next', { method: 'POST' });
+          if (!res.ok) throw new Error('ISRC generation failed');
+          const json = await res.json();
+          resolvedIsrc = json.isrc || null;
+        } catch (err) {
+          console.error('Failed to generate ISRC:', err);
+          return { success: false, error: { code: 'ISRC_ERROR', message: 'Failed to generate ISRC' } };
+        }
+      }
+      const suspectedDup = !!td.suspected_duplicate;
+
       // Create database record
       const dbResult = await this.createAudioTrackRecord({
         title: trackData.title,
@@ -589,7 +616,7 @@ export class AudioUploadService {
         tags: trackData.tags,
         lyrics: trackData.lyrics || null,
         lyrics_language: trackData.lyricsLanguage || 'en',
-        is_public: trackData.privacy === 'public',
+        is_public: suspectedDup ? false : (trackData.privacy === 'public'),
         // Audio quality information
         audio_quality: qualitySettings?.level || 'standard',
         bitrate: qualitySettings?.bitrate || 128,
@@ -597,30 +624,35 @@ export class AudioUploadService {
         channels: qualitySettings?.channels || 2,
         codec: qualitySettings?.codec || 'mp3',
         // ACRCloud fields (from trackData if provided)
-        ...((trackData as any).acrcloudData ? {
-          acrcloud_checked: (trackData as any).acrcloudData ? true : false,
-          acrcloud_match_found: (trackData as any).acrcloudData?.matchFound || false,
-          acrcloud_detected_artist: (trackData as any).acrcloudData?.detectedArtist || null,
-          acrcloud_detected_title: (trackData as any).acrcloudData?.detectedTitle || null,
-          acrcloud_detected_isrc: (trackData as any).acrcloudData?.detectedISRC || null,
-          acrcloud_detected_album: (trackData as any).acrcloudData?.detectedAlbum || null,
-          acrcloud_detected_label: (trackData as any).acrcloudData?.detectedLabel || null,
-          acrcloud_checked_at: (trackData as any).acrcloudData ? new Date().toISOString() : null,
-          acrcloud_response_data: (trackData as any).acrcloudData?.rawResponse || null,
-          is_released: (trackData as any).acrcloudData?.matchFound || false,
-          release_status: (trackData as any).acrcloudData?.matchFound 
-            ? ((trackData as any).acrcloudData?.artistMatch?.match && (trackData as any).isCover ? 'released_verified' : 'pending_review')
-            : ((trackData as any).acrcloudData?.isUnreleased ? 'unreleased_original' : 'pending_review'),
-          ownership_verified: (trackData as any).acrcloudData?.artistMatch?.match && (trackData as any).isCover ? true : false,
-          ownership_verified_at: (trackData as any).acrcloudData?.artistMatch?.match && (trackData as any).isCover ? new Date().toISOString() : null,
-          artist_name_match: (trackData as any).acrcloudData?.artistMatch?.match || null,
-          artist_name_match_confidence: (trackData as any).acrcloudData?.artistMatchConfidence || null
+        ...(acr ? {
+          acrcloud_checked: true,
+          acrcloud_match_found: acr.matchFound || false,
+          acrcloud_detected_artist: acr.detectedArtist || null,
+          acrcloud_detected_title: acr.detectedTitle || null,
+          acrcloud_detected_isrc: acr.detectedISRC || null,
+          acrcloud_detected_album: acr.detectedAlbum || null,
+          acrcloud_detected_label: acr.detectedLabel || null,
+          acrcloud_checked_at: new Date().toISOString(),
+          acrcloud_response_data: acr.rawResponse || null,
+          is_released: acr.matchFound || false,
+          release_status: acr.matchFound
+            ? (acr.artistMatch?.match && td.isCover ? 'released_verified' : 'pending_review')
+            : (acr.isUnreleased ? 'unreleased_original' : 'pending_review'),
+          ownership_verified: acr.artistMatch?.match && td.isCover ? true : false,
+          ownership_verified_at: acr.artistMatch?.match && td.isCover ? new Date().toISOString() : null,
+          artist_name_match: acr.artistMatch?.match || null,
+          artist_name_match_confidence: acr.artistMatchConfidence || null
         } : {}),
         // Cover song fields
-        is_cover: (trackData as any).isCover || false,
-        isrc_code: (trackData as any).isrcCode || null,
-        isrc_verified: (trackData as any).isCover && (trackData as any).isrcCode ? true : false,
-        isrc_verified_at: (trackData as any).isCover && (trackData as any).isrcCode ? new Date().toISOString() : null
+        is_cover: td.isCover || false,
+        isrc_code: resolvedIsrc,
+        isrc_source: isrcSource,
+        isrc_soundbridge_generated: isrcSource === 'soundbridge_generated',
+        isrc_verified: isrcSource === 'acrcloud_detected' ? !!acr?.detectedISRCVerified : (isrcSource === 'user_provided'),
+        isrc_verified_at: (isrcSource === 'acrcloud_detected' && acr?.detectedISRCVerified) || isrcSource === 'user_provided' ? new Date().toISOString() : null,
+        original_artist_name: td.original_artist_name?.trim() || null,
+        original_song_title: td.original_song_title?.trim() || null,
+        suspected_duplicate: suspectedDup
       });
 
       if (!dbResult.success) {

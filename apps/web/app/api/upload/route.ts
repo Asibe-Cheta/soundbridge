@@ -51,6 +51,11 @@ export async function POST(request: NextRequest) {
       // Cover song fields
       isCover,
       isrcCode,
+      // ISRC auto-assignment (WEB_TEAM_ISRC_AUTO_ASSIGNMENT)
+      isrc_source,
+      original_artist_name,
+      original_song_title,
+      suspected_duplicate,
       // New validation fields
       fileData,
       validationPassed,
@@ -73,20 +78,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate cover song ISRC requirements
+    // Cover/original metadata: original artist/title required when cover
     if (isCover) {
-      if (!isrcCode || !isrcCode.trim()) {
+      if (!original_artist_name || !String(original_artist_name).trim()) {
         return NextResponse.json(
-          { error: 'ISRC code is required for cover songs' },
+          { error: 'Original artist name is required for cover songs' },
           { status: 400 }
         );
       }
-      
-      // Validate ISRC format (basic check - full validation done in frontend)
-      const normalizedISRC = isrcCode.replace(/[-\s]/g, '').toUpperCase();
+      if (!original_song_title || !String(original_song_title).trim()) {
+        return NextResponse.json(
+          { error: 'Original song title is required for cover songs' },
+          { status: 400 }
+        );
+      }
+    }
+    // If user provided ISRC, validate format
+    if (isrc_source === 'user_provided' && isrcCode?.trim()) {
+      const normalizedISRC = String(isrcCode).replace(/[-\s]/g, '').toUpperCase();
       if (normalizedISRC.length !== 12) {
         return NextResponse.json(
-          { error: 'Invalid ISRC format. Should be 12 characters (XX-XXX-YY-NNNNN)' },
+          { error: 'Invalid ISRC format. Should be 12 characters (e.g. XX-XXX-YY-NNNNN)' },
           { status: 400 }
         );
       }
@@ -278,6 +290,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Resolve ISRC per WEB_TEAM_ISRC_AUTO_ASSIGNMENT: acrcloud_detected | user_provided | soundbridge_generated
+    const registrantCode = (process.env.ISRC_REGISTRANT_CODE || 'SBR').trim() || 'SBR';
+    let assignedIsrc: string | null = null;
+    let assignedSource: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated' = 'soundbridge_generated';
+    if (isrc_source === 'acrcloud_detected' && acrcloudData?.detectedISRC) {
+      assignedIsrc = String(acrcloudData.detectedISRC).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
+      assignedSource = 'acrcloud_detected';
+    } else if (isrc_source === 'user_provided' && isrcCode?.trim()) {
+      assignedIsrc = String(isrcCode).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
+      assignedSource = 'user_provided';
+    } else {
+      const { data: generated } = await supabase.rpc('generate_soundbridge_isrc', { p_registrant: registrantCode });
+      assignedIsrc = generated as string;
+      assignedSource = 'soundbridge_generated';
+    }
+
     // Determine release status based on ACRCloud and cover song data
     function determineReleaseStatus(acrData: any, isCoverSong: boolean): string {
       if (isCoverSong) {
@@ -312,12 +340,18 @@ export async function POST(request: NextRequest) {
       tags: tags || null,
       lyrics: lyrics?.trim() || null,
       lyrics_language: lyricsLanguage || 'en',
-      is_public: privacy === 'public',
+      is_public: suspected_duplicate ? false : (privacy === 'public'),
       // Cover song fields
       is_cover: isCover || false,
-      isrc_code: isCover && isrcCode ? isrcCode.replace(/[-\s]/g, '').toUpperCase().substring(0, 12) : (acrcloudData?.detectedISRC || null),
-      isrc_verified: isCover && isrcCode ? true : (acrcloudData?.detectedISRCVerified || false),
-      isrc_verified_at: (isCover && isrcCode) || acrcloudData?.detectedISRCVerified ? new Date().toISOString() : null,
+      isrc_code: assignedIsrc,
+      isrc_source: assignedSource,
+      isrc_soundbridge_generated: assignedSource === 'soundbridge_generated',
+      isrc_verified: assignedSource === 'acrcloud_detected' ? (acrcloudData?.detectedISRCVerified || false) : (assignedSource === 'user_provided'),
+      isrc_verified_at: (assignedSource === 'acrcloud_detected' && acrcloudData?.detectedISRCVerified) || assignedSource === 'user_provided' ? new Date().toISOString() : null,
+      // Original work (covers / match)
+      original_artist_name: original_artist_name?.trim() || null,
+      original_song_title: original_song_title?.trim() || null,
+      suspected_duplicate: !!suspected_duplicate,
       // ACRCloud fields
       acrcloud_checked: acrcloudData ? true : false,
       acrcloud_match_found: acrcloudData?.matchFound || false,

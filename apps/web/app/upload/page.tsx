@@ -51,6 +51,9 @@ export default function UnifiedUploadPage() {
   const [isrcVerificationError, setIsrcVerificationError] = useState<string | null>(null);
   const [isrcVerificationData, setIsrcVerificationData] = useState<any>(null);
   const isrcVerificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Original work (required for match or when "this is a cover") — WEB_TEAM_ISRC_AUTO_ASSIGNMENT
+  const [originalArtistName, setOriginalArtistName] = useState('');
+  const [originalSongTitle, setOriginalSongTitle] = useState('');
 
   // ACRCloud fingerprinting states
   const [acrcloudStatus, setAcrcloudStatus] = useState<'idle' | 'checking' | 'match' | 'no_match' | 'error'>('idle');
@@ -223,6 +226,8 @@ export default function UnifiedUploadPage() {
     setAcrcloudStatus('idle');
     setAcrcloudData(null);
     setAcrcloudError(null);
+    setOriginalArtistName('');
+    setOriginalSongTitle('');
     setIsOriginalConfirmed(false);
     
     console.log('✅ File set in upload state, title auto-filled:', fileName);
@@ -274,6 +279,8 @@ export default function UnifiedUploadPage() {
     setAcrcloudStatus('idle');
     setAcrcloudData(null);
     setAcrcloudError(null);
+    setOriginalArtistName('');
+    setOriginalSongTitle('');
     setIsOriginalConfirmed(false);
   };
 
@@ -295,29 +302,24 @@ export default function UnifiedUploadPage() {
       }
 
       const isOriginalNoMatch = acrcloudStatus === 'no_match' && !isCover;
+      const isMatchOrCover = acrcloudStatus === 'match' || isCover;
 
-      // Originals with no match: ISRC is required ownership proof
-      if (isOriginalNoMatch) {
-        if (!isrcCode.trim()) {
-          return 'Please enter your ISRC code to verify ownership of this original track.';
-        }
-        if (isrcVerificationStatus === 'idle' || isrcVerificationStatus === 'loading') {
-          return 'Please wait for ISRC verification to complete';
-        }
-        if (isrcVerificationStatus === 'error') {
-          return 'Your ISRC code could not be verified. Please check it and try again.';
-        }
+      // Original artist/title required when match or "this is a cover" (WEB_TEAM_ISRC_AUTO_ASSIGNMENT)
+      if (isMatchOrCover) {
+        if (!originalArtistName.trim()) return 'Original artist name is required';
+        if (!originalSongTitle.trim()) return 'Original song title is required';
       }
 
-      // If user has entered an ISRC in any other case (covers or detected match),
-      // make sure verification has completed successfully before allowing upload.
-      if (!isOriginalNoMatch && isrcCode.trim()) {
-        if (isrcVerificationStatus === 'idle' || isrcVerificationStatus === 'loading') {
-          return 'Please wait for ISRC verification to complete';
-        }
-        if (isrcVerificationStatus === 'error') {
-          return 'Your ISRC code could not be verified. Please check it and try again.';
-        }
+      // Originals (no match): ISRC optional; if entered, must be verifying or verified
+      if (isOriginalNoMatch && isrcCode.trim()) {
+        if (isrcVerificationStatus === 'loading') return 'Please wait...';
+        if (isrcVerificationStatus === 'error') return 'Could not verify ISRC. Check it or leave blank.';
+      }
+
+      // If user entered ISRC (any path), block until verified or show error
+      if (isrcCode.trim()) {
+        if (isrcVerificationStatus === 'loading') return 'Please wait...';
+        if (isrcVerificationStatus === 'error') return 'Could not verify ISRC. Check it or leave blank.';
       }
 
       // For detected matches, keep the artist mismatch guardrails
@@ -592,7 +594,9 @@ export default function UnifiedUploadPage() {
         // Match found - require ISRC verification
         setAcrcloudStatus('match');
         setAcrcloudData(data);
-        
+        setOriginalArtistName(data.detectedArtist || '');
+        setOriginalSongTitle(data.detectedTitle || '');
+
         // SECURITY: DO NOT auto-fill ISRC - user must manually input it to prove ownership
         // SECURITY: DO NOT auto-check "cover song" - user must consciously decide
         // The detected ISRC is stored in acrcloudData but NOT shown to user
@@ -764,6 +768,13 @@ export default function UnifiedUploadPage() {
 
     try {
       // Use the uploadTrack method from the hook
+      const isMatch = acrcloudStatus === 'match';
+      const isCoverOrMatch = isCover || isMatch;
+      const isrcSource: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated' =
+        isMatch && acrcloudData?.detectedISRC ? 'acrcloud_detected'
+        : isrcCode.trim() ? 'user_provided'
+        : 'soundbridge_generated';
+
       const trackData = {
         title: title.trim(),
         description: description.trim(),
@@ -777,8 +788,12 @@ export default function UnifiedUploadPage() {
           genre: genre.trim(),
           lyrics: lyrics.trim(),
           lyricsLanguage: lyricsLanguage,
-          isCover: isCover || (acrcloudStatus === 'match'),
-          isrcCode: (isCover || acrcloudStatus === 'match') ? isrcCode.trim() : undefined,
+          isCover: isCoverOrMatch,
+          isrcCode: isrcCode.trim() || undefined,
+          isrc_source: isrcSource,
+          original_artist_name: (isCoverOrMatch ? originalArtistName.trim() : undefined) || undefined,
+          original_song_title: (isCoverOrMatch ? originalSongTitle.trim() : undefined) || undefined,
+          suspected_duplicate: isMatch,
           // Audio quality fields with defaults
           audioQuality: 'standard',
           bitrate: 128,
@@ -1217,49 +1232,24 @@ export default function UnifiedUploadPage() {
                             <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
                               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                                This song appears to be a released track
+                                ⚠️ This recording matches a known release. Fill in the original artist and title below, then upload as a cover. If you own this recording, your upload will be queued for manual review.
                               </p>
                               <div className="space-y-2 text-xs text-yellow-700 dark:text-yellow-300">
                                 {acrcloudData.detectedTitle && (
-                                  <p>
-                                    <span className="font-semibold">Title:</span> {acrcloudData.detectedTitle}
-                                  </p>
+                                  <p><span className="font-semibold">Title:</span> {acrcloudData.detectedTitle}</p>
                                 )}
                                 {acrcloudData.detectedArtist && (
-                                  <p>
-                                    <span className="font-semibold">Artist:</span> {acrcloudData.detectedArtist}
-                                  </p>
+                                  <p><span className="font-semibold">Artist:</span> {acrcloudData.detectedArtist}</p>
                                 )}
                                 {acrcloudData.detectedAlbum && (
-                                  <p>
-                                    <span className="font-semibold">Album:</span> {acrcloudData.detectedAlbum}
-                                  </p>
+                                  <p><span className="font-semibold">Album:</span> {acrcloudData.detectedAlbum}</p>
                                 )}
                                 {acrcloudData.artistMatch && !acrcloudData.artistMatch.match && (
                                   <p className="text-red-700 dark:text-red-300 font-medium mt-2">
-                                    ⚠️ Artist name mismatch. This track belongs to "{acrcloudData.detectedArtist}". Please verify ownership with ISRC.
+                                    ⚠️ Artist name mismatch. This track belongs to &quot;{acrcloudData.detectedArtist}&quot;. Please verify ownership with ISRC.
                                   </p>
                                 )}
                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* SECURITY: Ownership Verification Warning - NO ISRC SHOWN */}
-                      {acrcloudStatus === 'match' && (
-                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                          <div className="flex items-start space-x-3">
-                            <div className="text-2xl">🛡️</div>
-                            <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-2">
-                                Ownership Verification Required
-                              </h4>
-                              <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
-                                To upload this track, please enter the ISRC code from your music
-                                distributor (DistroKid, TuneCore, CD Baby, etc.). The ISRC must
-                                match the detected track.
-                              </p>
                             </div>
                           </div>
                         </div>
@@ -1319,17 +1309,51 @@ export default function UnifiedUploadPage() {
                     {acrcloudStatus === 'match' ? (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                          ISRC (optional for released songs)
+                          Original work &amp; ISRC (optional)
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          This track was detected as a released song. You may enter your distributor&apos;s ISRC
-                          to verify ownership, or leave it blank.
+                          This track was detected as a released song. Confirm original artist and title below; you may enter your distributor&apos;s ISRC or leave blank.
                         </p>
                       </div>
                     ) : (
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         Cover &amp; Ownership Verification
                       </h3>
+                    )}
+
+                    {/* Original Artist Name / Original Song Title — required when match or "this is a cover" (WEB_TEAM_ISRC_AUTO_ASSIGNMENT) */}
+                    {(acrcloudStatus === 'match' || isCover) && (
+                      <div className="space-y-3 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Original Artist Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={originalArtistName}
+                            onChange={(e) => setOriginalArtistName(e.target.value)}
+                            placeholder="e.g. Taylor Swift"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Original Song Title <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={originalSongTitle}
+                            onChange={(e) => setOriginalSongTitle(e.target.value)}
+                            placeholder="e.g. Shake It Off"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        {acrcloudStatus === 'match' && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Auto-filled from audio fingerprint — edit if incorrect.
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     {/* Only show "cover song" checkbox if ACRCloud DIDN'T detect a match */}
@@ -1355,9 +1379,6 @@ export default function UnifiedUploadPage() {
                       <div className="mt-3 space-y-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           ISRC Code
-                          {acrcloudStatus === 'no_match' && !isCover && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
                         </label>
                         <div className="space-y-2">
                           <input
@@ -1366,7 +1387,7 @@ export default function UnifiedUploadPage() {
                             onChange={(e) => handleISRCChange(e.target.value)}
                             placeholder={
                               acrcloudStatus === 'no_match' && !isCover
-                                ? 'e.g., GBUM71502800 (required for originals)'
+                                ? 'e.g., GBUM71502800 — leave blank to auto-assign'
                                 : 'Type the ISRC code (e.g., GBUM71502800)'
                             }
                             maxLength={14}
@@ -1382,15 +1403,14 @@ export default function UnifiedUploadPage() {
                             Format: XX-XXX-YY-NNNNN (12 characters, hyphens optional)
                           </p>
 
-                          {/* Ownership proof banner for originals with no ACR match */}
+                          {/* ISRC Auto-Assignment banner for originals (no match) — WEB_TEAM_ISRC_AUTO_ASSIGNMENT */}
                           {acrcloudStatus === 'no_match' && !isCover && (
-                            <div className="mt-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                              <p className="text-sm font-semibold text-blue-800 dark:text-blue-100 mb-1">
-                                Ownership Proof Required
+                            <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                              <p className="text-sm font-semibold text-green-800 dark:text-green-100 mb-1">
+                                ✓ ISRC Auto-Assignment
                               </p>
-                              <p className="text-xs text-blue-700 dark:text-blue-300">
-                                To protect against accidental copyright infringement, originals require an ISRC.
-                                Get one free from your distributor (DistroKid, TuneCore, CD Baby, etc.).
+                              <p className="text-xs text-green-700 dark:text-green-300">
+                                SoundBridge will assign an ISRC (GB-SBR-26-XXXXX) to this recording automatically. If you already have a distributor ISRC, enter it below to use yours instead.
                               </p>
                             </div>
                           )}
@@ -1773,8 +1793,7 @@ export default function UnifiedUploadPage() {
                 uploadState.isUploading || 
                 isValidating || 
                 !agreedToCopyright ||
-                (isCover && isrcVerificationStatus !== 'success') ||
-                (acrcloudStatus === 'match' && isrcVerificationStatus !== 'success')
+                (!!isrcCode.trim() && (isrcVerificationStatus === 'loading' || isrcVerificationStatus === 'error'))
               }
               className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >

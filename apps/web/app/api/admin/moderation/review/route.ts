@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Get track info before updating
     const { data: track, error: fetchError } = await supabase
       .from('audio_tracks')
-      .select('id, title, artist_name, creator_id, moderation_status, flag_reasons')
+      .select('id, title, artist_name, creator_id, moderation_status, flag_reasons, suspected_duplicate')
       .eq('id', trackId)
       .single();
 
@@ -83,9 +83,11 @@ export async function POST(request: NextRequest) {
       reviewed_at: new Date().toISOString()
     };
 
-    // If rejecting, ensure track is not public
     if (action === 'reject') {
       updateData.is_public = false;
+    } else if (track.suspected_duplicate) {
+      // Approve suspected duplicate: allow track to go public
+      updateData.is_public = true;
     }
 
     const { error: updateError } = await supabase

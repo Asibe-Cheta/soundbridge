@@ -70,6 +70,10 @@ export async function GET(request: NextRequest) {
         transcription,
         created_at,
         updated_at,
+        suspected_duplicate,
+        original_artist_name,
+        original_song_title,
+        is_cover,
         profiles:creator_id (
           id,
           username,
@@ -78,8 +82,10 @@ export async function GET(request: NextRequest) {
         )
       `, { count: 'exact' });
 
-    // Filter by status
-    if (filter === 'flagged') {
+    // Filter by status (WEB_TEAM_ISRC_AUTO_ASSIGNMENT: suspected duplicates queue)
+    if (filter === 'suspected_duplicate') {
+      query = query.eq('suspected_duplicate', true).in('moderation_status', ['pending_check', 'checking']);
+    } else if (filter === 'flagged') {
       // Show only tracks that have been flagged by moderation system
       query = query.eq('moderation_flagged', true);
     } else if (filter === 'pending') {
