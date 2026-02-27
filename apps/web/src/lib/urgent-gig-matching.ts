@@ -1,10 +1,12 @@
 /**
  * Urgent gig matching: run after payment_intent.succeeded for gig_source=urgent
  * WEB_TEAM_URGENT_GIGS_BACKEND_REQUIREMENTS.md §3
+ * WEB_TEAM_GIG_NOTIFICATIONS_BACKEND_REQUIRED.md — payload + rate limits + DND/prefs
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { haversineKm } from './haversine';
+import { sendUrgentGigPush } from './gig-push-notifications';
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 
@@ -54,6 +56,22 @@ function isInDnd(dndStart: string | null, dndEnd: string | null, now: Date): boo
   return nowMins >= startMins && nowMins < endMins;
 }
 
+/** DND check in user's timezone (WEB_TEAM_GIG_NOTIFICATIONS_BACKEND_REQUIRED.md) */
+function isInDndInTimezone(dndStart: string | null, dndEnd: string | null, timezone: string): boolean {
+  if (!dndStart || !dndEnd) return false;
+  const formatter = new Intl.DateTimeFormat('en-GB', { timeZone: timezone || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+  const parts = formatter.formatToParts(new Date());
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
+  const nowMins = hour * 60 + minute;
+  const [sh, sm] = dndStart.split(':').map(Number);
+  const [eh, em] = dndEnd.split(':').map(Number);
+  const startMins = sh * 60 + (sm || 0);
+  let endMins = eh * 60 + (em || 0);
+  if (endMins <= startMins) endMins += 24 * 60;
+  return nowMins >= startMins && nowMins < endMins;
+}
+
 function availabilityScore(schedule: Record<string, { available?: boolean; hours?: string }> | null, now: Date): number {
   if (!schedule) return 0.5;
   const day = DAY_NAMES[now.getDay()];
@@ -96,7 +114,7 @@ export async function runUrgentGigMatching(
 ): Promise<{ gigId: string; matchedCount: number } | null> {
   const { data: gig, error: gigErr } = await supabase
     .from('opportunity_posts')
-    .select('id, user_id, skill_required, genre, location_lat, location_lng, location_radius_km, duration_hours, payment_amount, location_address, date_needed, title')
+    .select('id, user_id, skill_required, genre, location_lat, location_lng, location_radius_km, duration_hours, payment_amount, payment_currency, location_address, date_needed, title')
     .eq('stripe_payment_intent_id', paymentIntentId)
     .eq('gig_type', 'urgent')
     .single();
@@ -125,11 +143,15 @@ export async function runUrgentGigMatching(
   }
 
   const userIds = availabilityRows.map((r) => r.user_id);
-  const [skillsRes, genresRes, ratingsRes] = await Promise.all([
+  const [skillsRes, genresRes, ratingsRes, profilesRes] = await Promise.all([
     supabase.from('profile_skills').select('user_id, skill').in('user_id', userIds).then((r) => (r.error ? { data: [] as { user_id: string; skill: string }[] } : r)),
     supabase.from('profiles').select('id, genres').in('id', userIds),
     supabase.from('gig_ratings').select('ratee_id, overall_rating').in('ratee_id', userIds),
+    supabase.from('profiles').select('id, timezone, notification_preferences').in('id', userIds),
   ]);
+  const profileByUser = new Map<string, { timezone?: string | null; notification_preferences?: Record<string, unknown> | null }>(
+    (profilesRes.data ?? []).map((p: { id: string; timezone?: string; notification_preferences?: Record<string, unknown> }) => [p.id, { timezone: p.timezone, notification_preferences: p.notification_preferences }])
+  );
 
   const skillsByUser = new Map<string, string[]>();
   for (const row of (skillsRes.data ?? []) as { user_id: string; skill: string }[]) {
@@ -158,7 +180,11 @@ export async function runUrgentGigMatching(
   const scored: { user_id: string; score: number; distance_km: number; row: (typeof availabilityRows)[0] }[] = [];
 
   for (const row of availabilityRows) {
-    if (isInDnd(row.dnd_start, row.dnd_end, now)) continue;
+    const profile = profileByUser.get(row.user_id);
+    const tz = profile?.timezone || 'UTC';
+    if (isInDndInTimezone(row.dnd_start, row.dnd_end, tz)) continue;
+    const urgentEnabled = profile?.notification_preferences?.urgentGigNotificationsEnabled;
+    if (urgentEnabled === false) continue;
 
     const avgRating = ratingByUser.get(row.user_id);
     const avg = avgRating && avgRating.count > 0 ? avgRating.sum / avgRating.count : null;
@@ -194,6 +220,7 @@ export async function runUrgentGigMatching(
   const todayStart = new Date(now);
   todayStart.setUTCHours(0, 0, 0, 0);
   const todayStartStr = todayStart.toISOString();
+  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
   const { data: todayCounts } = await supabase
     .from('notification_rate_limits')
     .select('user_id')
@@ -210,9 +237,26 @@ export async function runUrgentGigMatching(
   for (const s of top10) {
     const maxPerDay = s.row.max_notifications_per_day ?? 5;
     if ((countByUser.get(s.user_id) ?? 0) >= maxPerDay) continue;
+    const { data: recentDeclines } = await supabase
+      .from('notification_rate_limits')
+      .select('id')
+      .eq('user_id', s.user_id)
+      .eq('notification_type', 'urgent_gig')
+      .eq('action', 'declined')
+      .gte('sent_at', twoHoursAgo)
+      .order('sent_at', { ascending: false })
+      .limit(3);
+    if ((recentDeclines?.length ?? 0) >= 3) continue;
     toNotify.push(s);
     countByUser.set(s.user_id, (countByUser.get(s.user_id) ?? 0) + 1);
   }
+
+  const paymentAmount = Number(gig.payment_amount) || 0;
+  const skillLabel = gig.skill_required ?? 'Gig';
+  const genreLabel = Array.isArray(gig.genre) && gig.genre.length > 0 ? gig.genre[0] : '';
+  const locationLabel = gig.location_address ?? 'Luton';
+  const dateNeeded = gig.date_needed ? new Date(gig.date_needed).toISOString() : '';
+  const paymentCurrency = (gig as { payment_currency?: string }).payment_currency ?? 'GBP';
 
   for (const s of toNotify) {
     await supabase.from('gig_responses').insert({
@@ -225,57 +269,26 @@ export async function runUrgentGigMatching(
       notification_type: 'urgent_gig',
       sent_at: now.toISOString(),
       gig_id: gig.id,
-      action: 'notified',
     });
   }
 
-  if (toNotify.length > 0) {
-    const { data: tokens } = await supabase
-      .from('user_push_tokens')
-      .select('user_id, push_token')
-      .in('user_id', toNotify.map((s) => s.user_id))
-      .eq('active', true);
-
-    const Expo = await import('expo-server-sdk').then((m) => m.Expo);
-    const expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN, useFcmV1: true });
-    const payments = (gig.payment_amount ?? 0).toFixed(0);
-    const skillLabel = gig.skill_required ?? 'Gig';
-    const locationLabel = gig.location_address ?? 'Nearby';
-    const dateTime = gig.date_needed ? new Date(gig.date_needed).toISOString() : '';
-
-    const tokenByUser = new Map<string, string>((tokens ?? []).map((t: { user_id: string; push_token: string }) => [t.user_id, t.push_token]));
-    const messages: { to: string; title: string; body: string; data: Record<string, unknown>; sound?: string }[] = [];
-    for (const s of toNotify) {
-      const pushToken = tokenByUser.get(s.user_id);
-      if (!pushToken || !Expo.isExpoPushToken(pushToken)) continue;
-      const dist = s.distance_km.toFixed(1);
-      messages.push({
-        to: pushToken,
-        title: `Urgent Gig: ${skillLabel} — Tonight`,
-        body: `£${payments} · ${dist}km away · ${locationLabel}`,
-        data: {
-          type: 'urgent_gig',
-          gig_id: gig.id,
-          distance_km: s.distance_km,
-          payment: paymentAmount,
-          skill: gig.skill_required,
-          genre: gig.genre,
-          location: gig.location_address,
-          date_time: dateTime,
-        },
-        sound: 'default',
-      });
-    }
-    if (messages.length > 0) {
-      try {
-        const chunks = expo.chunkPushNotifications(messages);
-        for (const chunk of chunks) {
-          await expo.sendPushNotificationsAsync(chunk);
-        }
-      } catch (e) {
-        console.error('Urgent gig push send error:', e);
-      }
-    }
+  for (const s of toNotify) {
+    const bodyParts = [`£${paymentAmount.toFixed(0)}`];
+    if (genreLabel) bodyParts.push(genreLabel);
+    bodyParts.push(`${s.distance_km.toFixed(1)}km away`);
+    bodyParts.push(locationLabel);
+    await sendUrgentGigPush(supabase, s.user_id, {
+      gigId: gig.id,
+      title: `🎺 Urgent Gig: ${skillLabel} Tonight`,
+      body: bodyParts.join(' · '),
+      distance_km: s.distance_km,
+      payment: paymentAmount,
+      payment_currency: paymentCurrency,
+      skill: skillLabel,
+      genre: gig.genre,
+      date_needed: dateNeeded,
+      location_address: gig.location_address,
+    });
   }
 
   return { gigId: gig.id, matchedCount: toNotify.length };

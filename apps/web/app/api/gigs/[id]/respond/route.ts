@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { sendGigAcceptedPush } from '@/src/lib/gig-push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -67,13 +68,21 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Failed to update response' }, { status: 500, headers: CORS });
     }
 
-    await service.from('notification_rate_limits').insert({
-      user_id: user.id,
-      notification_type: 'urgent_gig',
-      sent_at: respondedAt.toISOString(),
-      gig_id: gigId,
-      action: action === 'accept' ? 'accepted' : 'declined',
-    });
+    const { data: rateLimitRows } = await service
+      .from('notification_rate_limits')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('gig_id', gigId)
+      .eq('notification_type', 'urgent_gig')
+      .is('action', null)
+      .order('sent_at', { ascending: false })
+      .limit(1);
+    if (rateLimitRows?.length) {
+      await service
+        .from('notification_rate_limits')
+        .update({ action: action === 'accept' ? 'accepted' : 'declined' })
+        .eq('id', rateLimitRows[0].id);
+    }
 
     if (action === 'accept') {
       const { data: gig } = await service.from('opportunity_posts').select('user_id, skill_required').eq('id', gigId).single();
@@ -87,6 +96,9 @@ export async function POST(
           related_type: 'opportunity_post',
           metadata: { gig_id: gigId, response_id: responseRow.id },
         });
+        const { data: providerProfile } = await service.from('profiles').select('display_name').eq('id', user.id).single();
+        const name = (providerProfile as { display_name?: string } | null)?.display_name ?? 'Someone';
+        await sendGigAcceptedPush(service, gig.user_id, name, gig.skill_required ?? 'gig');
       }
     }
 

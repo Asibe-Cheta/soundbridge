@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { sendGigStartingSoonPush } from '@/src/lib/gig-push-notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const service = createServiceClient();
     const { data: gigs } = await service
       .from('opportunity_posts')
-      .select('id, user_id, selected_provider_id, title, date_needed')
+      .select('id, user_id, selected_provider_id, title, date_needed, location_address')
       .eq('gig_type', 'urgent')
       .eq('urgent_status', 'confirmed')
       .not('selected_provider_id', 'is', null)
@@ -39,19 +40,23 @@ export async function GET(request: NextRequest) {
     const sentSet = new Set((alreadySent ?? []).map((r: { gig_id: string }) => r.gig_id));
 
     let notified = 0;
+    const dateNeededStr = (g: { date_needed?: string | null }) => (g.date_needed ? new Date(g.date_needed).toISOString() : '');
+    const address = (g: { location_address?: string | null }) => g.location_address ?? null;
     for (const gig of gigs) {
       if (sentSet.has(gig.id)) continue;
       const userIds = [gig.user_id, gig.selected_provider_id].filter(Boolean) as string[];
+      const title = gig.title ?? 'Urgent gig';
       for (const uid of userIds) {
         await service.from('notifications').insert({
           user_id: uid,
-          type: 'opportunity_project_declined',
-          title: 'Your gig starts in 1 hour',
-          body: `"${gig.title ?? 'Urgent gig'}" is coming up soon.`,
+          type: 'gig_starting_soon',
+          title: '⏰ Gig starting in 1 hour',
+          body: `"${title}" is coming up soon.`,
           related_id: gig.id,
           related_type: 'opportunity_post',
           metadata: { type: 'gig_starting_soon', gig_id: gig.id },
         });
+        await sendGigStartingSoonPush(service, uid, title, dateNeededStr(gig), address(gig));
         await service.from('notification_rate_limits').insert({
           user_id: uid,
           notification_type: 'gig_starting_soon',

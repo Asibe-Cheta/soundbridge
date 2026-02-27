@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendOpportunityPush } from '@/src/lib/gig-push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -112,6 +114,11 @@ export async function POST(request: NextRequest) {
       console.error('Opportunity insert error:', error);
       return NextResponse.json({ error: error.message || 'Failed to create opportunity' }, { status: 500, headers: CORS });
     }
+
+    notifyNearbyCreatorsForOpportunity(row.id, user.id, row.skills_needed ?? [], row.location).catch((e) =>
+      console.error('Opportunity notify nearby:', e)
+    );
+
     return NextResponse.json(row, { status: 201, headers: CORS });
   } catch (e) {
     console.error('POST /api/opportunities:', e);
@@ -160,4 +167,56 @@ export async function GET(request: NextRequest) {
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
+}
+
+/** Notify nearby creators who match skills (WEB_TEAM_GIG_NOTIFICATIONS_BACKEND_REQUIRED.md Part 2). Max 3/day per user. */
+async function notifyNearbyCreatorsForOpportunity(
+  opportunityId: string,
+  posterUserId: string,
+  skillsNeeded: string[],
+  location: string | null
+): Promise<void> {
+  if (!skillsNeeded?.length) return;
+  const service = createServiceClient();
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+
+  const { data: userIdsWithSkill } = await service
+    .from('profile_skills')
+    .select('user_id')
+    .in('skill', skillsNeeded)
+    .neq('user_id', posterUserId);
+  const candidateIds = [...new Set((userIdsWithSkill ?? []).map((r: { user_id: string }) => r.user_id))];
+  if (!candidateIds.length) return;
+
+  const { data: todayCounts } = await service
+    .from('notification_rate_limits')
+    .select('user_id')
+    .eq('notification_type', 'opportunity')
+    .gte('sent_at', todayStart.toISOString());
+  const countByUser = new Map<string, number>();
+  for (const r of todayCounts ?? []) {
+    const u = (r as { user_id: string }).user_id;
+    countByUser.set(u, (countByUser.get(u) ?? 0) + 1);
+  }
+
+  const skillLabel = skillsNeeded[0] ?? 'musician';
+  const city = (location?.trim() || 'Near you').slice(0, 80);
+  let sent = 0;
+  const maxRecipients = 10;
+  for (const uid of candidateIds) {
+    if ((countByUser.get(uid) ?? 0) >= 3) continue;
+    if (sent >= maxRecipients) break;
+    const ok = await sendOpportunityPush(service, uid, opportunityId, skillLabel, city);
+    if (ok) {
+      await service.from('notification_rate_limits').insert({
+        user_id: uid,
+        notification_type: 'opportunity',
+        gig_id: opportunityId,
+        sent_at: new Date().toISOString(),
+      });
+      countByUser.set(uid, (countByUser.get(uid) ?? 0) + 1);
+      sent++;
+    }
+  }
 }

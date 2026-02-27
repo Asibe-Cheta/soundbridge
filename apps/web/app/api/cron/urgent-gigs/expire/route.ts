@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { sendGigExpiredPush } from '@/src/lib/gig-push-notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,13 +41,14 @@ export async function GET(request: NextRequest) {
         .eq('id', gig.id);
       await service.from('notifications').insert({
         user_id: gig.user_id,
-        type: 'opportunity_project_declined',
-        title: 'Urgent gig expired',
-        body: `No one was available in time for "${gig.title ?? 'your gig'}". Payment has been refunded.`,
+        type: 'gig_expired',
+        title: '😔 Your gig expired',
+        body: 'No provider was found. You have not been charged.',
         related_id: gig.id,
         related_type: 'opportunity_post',
         metadata: { gig_id: gig.id },
       });
+      await sendGigExpiredPush(service, gig.user_id);
     }
 
     return NextResponse.json({ success: true, expired: gigs.length });

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { sendGigConfirmedPush } from '@/src/lib/gig-push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,7 @@ export async function POST(
 
     const { data: gig, error: gigErr } = await service
       .from('opportunity_posts')
-      .select('id, user_id, title, description, payment_amount, payment_currency, urgent_status')
+      .select('id, user_id, title, description, payment_amount, payment_currency, urgent_status, date_needed')
       .eq('id', gigId)
       .eq('gig_type', 'urgent')
       .single();
@@ -109,7 +110,6 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Failed to create project' }, { status: 500, headers: CORS });
     }
 
-    const { data: providerProfile } = await service.from('profiles').select('display_name').eq('id', providerId).single();
     await service.from('notifications').insert({
       user_id: providerId,
       type: 'gig_confirmed',
@@ -119,6 +119,7 @@ export async function POST(
       related_type: 'opportunity_project',
       metadata: { gig_id: gigId, project_id: project.id },
     });
+    await sendGigConfirmedPush(service, providerId, gig.title ?? 'Your gig', gig.date_needed ?? '');
 
     const { data: otherResponses } = await service.from('gig_responses').select('provider_id').eq('gig_id', gigId).eq('status', 'expired');
     for (const r of otherResponses ?? []) {
