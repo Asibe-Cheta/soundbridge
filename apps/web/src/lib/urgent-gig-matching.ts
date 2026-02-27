@@ -45,17 +45,6 @@ interface CandidateRow {
   review_count: number;
 }
 
-function isInDnd(dndStart: string | null, dndEnd: string | null, now: Date): boolean {
-  if (!dndStart || !dndEnd) return false;
-  const [sh, sm] = dndStart.split(':').map(Number);
-  const [eh, em] = dndEnd.split(':').map(Number);
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const startMins = sh * 60 + sm;
-  let endMins = eh * 60 + em;
-  if (endMins <= startMins) endMins += 24 * 60;
-  return nowMins >= startMins && nowMins < endMins;
-}
-
 /** DND check in user's timezone (WEB_TEAM_GIG_NOTIFICATIONS_BACKEND_REQUIRED.md) */
 function isInDndInTimezone(dndStart: string | null, dndEnd: string | null, timezone: string): boolean {
   if (!dndStart || !dndEnd) return false;
@@ -251,7 +240,6 @@ export async function runUrgentGigMatching(
     countByUser.set(s.user_id, (countByUser.get(s.user_id) ?? 0) + 1);
   }
 
-  const paymentAmount = Number(gig.payment_amount) || 0;
   const skillLabel = gig.skill_required ?? 'Gig';
   const genreLabel = Array.isArray(gig.genre) && gig.genre.length > 0 ? gig.genre[0] : '';
   const locationLabel = gig.location_address ?? 'Luton';
