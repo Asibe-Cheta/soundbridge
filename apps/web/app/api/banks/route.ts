@@ -26,6 +26,14 @@ const CORS = {
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const banksCache = new Map<string, { banks: { name: string; code: string }[]; ts: number }>();
 
+/** Fallback when Wise returns no list (e.g. UK: sort code identifies branch). Name only; code left empty for user to enter sort code. */
+const UK_BANKS_FALLBACK: { name: string; code: string }[] = [
+  'Barclays', 'HSBC UK', 'Lloyds Bank', 'NatWest', 'Royal Bank of Scotland', 'Santander UK',
+  'Nationwide', 'Metro Bank', 'TSB', 'Virgin Money', 'Starling Bank', 'Monzo', 'Revolut',
+  'First Direct', 'Halifax', 'Bank of Scotland', 'Ulster Bank', 'Danske Bank UK', 'Co-operative Bank',
+  'Standard Chartered', 'Clydesdale Bank', 'Yorkshire Bank', 'Paragon Bank', 'Shawbrook Bank',
+].map((name) => ({ name, code: '' }));
+
 function cacheKey(country: string, currency: string): string {
   return `banks:${country.toUpperCase()}:${currency.toUpperCase()}`;
 }
@@ -84,10 +92,14 @@ export async function GET(request: NextRequest) {
       ? (data as { values: { key?: string; name?: string }[] }).values
       : [];
 
-    const banks = values.map((b: { key?: string; name?: string }) => ({
+    let banks = values.map((b: { key?: string; name?: string }) => ({
       name: typeof b.name === 'string' ? b.name : '',
       code: typeof b.key === 'string' ? b.key : '',
     })).filter((b) => b.name || b.code);
+
+    if (banks.length === 0 && country === 'GB') {
+      banks = UK_BANKS_FALLBACK;
+    }
 
     setCached(country, currency, banks);
     return safeJson(banks);
