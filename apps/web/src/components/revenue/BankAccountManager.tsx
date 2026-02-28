@@ -21,6 +21,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [showWalletInfo, setShowWalletInfo] = useState(false);
+  const [supportedByStripe, setSupportedByStripe] = useState<boolean | null>(null);
 
   const [formData, setFormData] = useState<BankAccountFormData>({
     account_holder_name: '',
@@ -34,6 +35,13 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
   useEffect(() => {
     loadBankAccount();
   }, [userId]);
+
+  useEffect(() => {
+    fetch('/api/banking/detect-country-for-stripe', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => setSupportedByStripe(data.supported_by_stripe === true))
+      .catch(() => setSupportedByStripe(false));
+  }, []);
 
   const loadBankAccount = async () => {
     try {
@@ -607,37 +615,44 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Set Up Payout Account</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Connect your bank account to receive payouts from your earnings. 
-                We use Stripe Connect for secure and reliable payments.
+                {supportedByStripe === false
+                  ? 'Add your bank account details to receive payouts from your earnings.'
+                  : 'Connect your bank account to receive payouts from your earnings. We use Stripe Connect for supported countries, or you can add your bank details manually.'}
               </p>
             </div>
             
             <div className="space-y-3">
-              <button
-                onClick={handleSetupStripeConnect}
-                disabled={saving}
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-2"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Setting up...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4" />
-                    <span>Set Up with Stripe Connect</span>
-                  </>
-                )}
-              </button>
+              {supportedByStripe !== false && (
+                <button
+                  onClick={handleSetupStripeConnect}
+                  disabled={saving}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Setting up...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Set Up with Stripe Connect</span>
+                    </>
+                  )}
+                </button>
+              )}
               
               <button
                 onClick={() => setIsEditing(true)}
                 disabled={saving}
-                className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                className={`w-full px-6 py-3 rounded-lg transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-2 ${
+                  supportedByStripe === false
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                }`}
               >
                 <Building2 className="h-4 w-4" />
-                <span>Manual Bank Account Setup</span>
+                <span>{supportedByStripe === false ? 'Add Bank Account' : 'Manual Bank Account Setup'}</span>
               </button>
             </div>
 

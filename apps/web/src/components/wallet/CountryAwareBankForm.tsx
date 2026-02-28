@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { MapPin, Building2, CreditCard, Shield, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapPin, Building2, CreditCard, Shield, CheckCircle, AlertCircle, Loader2, Search } from 'lucide-react';
 
 type FieldConfig = {
   required: boolean;
@@ -346,6 +346,12 @@ interface CountryAwareBankFormProps {
   initialData?: any;
 }
 
+/** Field name that holds bank code for each country (for bank picker auto-fill). */
+const BANK_CODE_FIELD: Record<string, string> = {
+  NG: 'bank_code', GH: 'swift_code', KE: 'swift_code', ZA: 'branch_code', SG: 'bank_code',
+  CN: 'bank_code', JP: 'branch_code', IN: 'ifsc_code', US: 'routing_number', GB: 'sort_code',
+};
+
 export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryAwareBankFormProps) {
   const [selectedCountry, setSelectedCountry] = useState<string>('GB'); // Default to UK
   const [formData, setFormData] = useState<any>({});
@@ -353,8 +359,13 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
   const [loading, setLoading] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(true);
   const [detectionStatus, setDetectionStatus] = useState<string>('');
+  const [availableBanks, setAvailableBanks] = useState<{ name: string; code: string }[]>([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [bankSearch, setBankSearch] = useState('');
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
 
   const countryInfo = COUNTRY_BANKING_INFO[selectedCountry];
+  const bankCodeField = BANK_CODE_FIELD[selectedCountry] ?? null;
 
   useEffect(() => {
     // Auto-detect user's country based on browser locale or IP
@@ -365,6 +376,30 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
       setFormData(initialData);
     }
   }, []);
+
+  // Fetch bank list when country (and thus currency) changes
+  useEffect(() => {
+    if (!selectedCountry || !countryInfo?.currency) {
+      setAvailableBanks([]);
+      return;
+    }
+    let cancelled = false;
+    setBanksLoading(true);
+    setAvailableBanks([]);
+    const url = `/api/banks?country=${encodeURIComponent(selectedCountry)}&currency=${encodeURIComponent(countryInfo.currency)}`;
+    fetch(url, { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.banks)) setAvailableBanks(data.banks);
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableBanks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setBanksLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [selectedCountry, countryInfo?.currency]);
 
   const detectUserCountry = async () => {
     setDetectingLocation(true);
@@ -467,6 +502,8 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
     setSelectedCountry(countryCode);
     setFormData({});
     setErrors({});
+    setBankSearch('');
+    setBankDropdownOpen(false);
   };
 
   const handleFieldChange = (fieldName: string, value: string) => {
@@ -540,6 +577,24 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
     }
   };
 
+  const filteredBanks = useMemo(() => {
+    if (!bankSearch.trim()) return availableBanks.slice(0, 50);
+    const q = bankSearch.trim().toLowerCase();
+    return availableBanks.filter((b) => b.name.toLowerCase().includes(q) || (b.code && String(b.code).toLowerCase().includes(q))).slice(0, 50);
+  }, [availableBanks, bankSearch]);
+
+  const handleSelectBank = (bank: { name: string; code: string }) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      bank_name: bank.name,
+      ...(bankCodeField ? { [bankCodeField]: bank.code } : {}),
+    }));
+    setBankSearch(bank.name);
+    setBankDropdownOpen(false);
+    if (errors.bank_name) setErrors((e) => ({ ...e, bank_name: '' }));
+    if (bankCodeField && errors[bankCodeField]) setErrors((e) => ({ ...e, [bankCodeField]: '' }));
+  };
+
   const renderField = (fieldName: string, fieldInfo: any) => {
     const value = formData[fieldName] || '';
     const error = errors[fieldName];
@@ -562,6 +617,59 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
             <option value="savings">Savings</option>
             <option value="business">Business</option>
           </select>
+          {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+        </div>
+      );
+    }
+
+    if (fieldName === 'bank_name' && availableBanks.length > 0) {
+      const displayValue = bankDropdownOpen ? bankSearch : value;
+      return (
+        <div key={fieldName} className="relative">
+          <label className="block text-gray-400 text-sm mb-2">
+            {fieldInfo.label} {fieldInfo.required && <span className="text-red-400">*</span>}
+            {banksLoading && <span className="text-gray-500 text-xs ml-2">(loading banks…)</span>}
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={displayValue}
+              onChange={(e) => {
+                setBankSearch(e.target.value);
+                handleFieldChange(fieldName, e.target.value);
+                setBankDropdownOpen(true);
+              }}
+              onFocus={() => {
+                setBankDropdownOpen(true);
+                if (formData.bank_name && !bankSearch) setBankSearch(formData.bank_name);
+              }}
+              onBlur={() => setTimeout(() => setBankDropdownOpen(false), 200)}
+              placeholder="Search or type bank name"
+              className={`w-full px-3 py-2 pr-10 bg-gray-700 border rounded-lg text-white focus:outline-none ${
+                error ? 'border-red-500' : 'border-gray-600 focus:border-blue-500'
+              }`}
+              autoComplete="off"
+            />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          </div>
+          {bankDropdownOpen && filteredBanks.length > 0 && (
+            <ul
+              className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-1"
+              role="listbox"
+            >
+              {filteredBanks.map((bank) => (
+                <li
+                  key={`${bank.code}-${bank.name}`}
+                  role="option"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelectBank(bank); }}
+                  className="px-3 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex justify-between"
+                >
+                  <span>{bank.name}</span>
+                  {bank.code && <span className="text-gray-400">{bank.code}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
           {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
         </div>
       );
