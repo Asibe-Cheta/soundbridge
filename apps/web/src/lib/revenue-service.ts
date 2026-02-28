@@ -145,7 +145,6 @@ export class RevenueService {
         body: JSON.stringify({
           creatorId,
           amount: tipData.amount,
-          currency: 'USD',
           message: tipData.message,
           isAnonymous: tipData.is_anonymous,
           userTier,

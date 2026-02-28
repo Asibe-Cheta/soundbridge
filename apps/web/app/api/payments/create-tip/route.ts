@@ -4,6 +4,57 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 
+// Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; Wise converts at payout.
+const STRIPE_SUPPORTED_CURRENCIES = new Set([
+  'usd', 'gbp', 'eur', 'cad', 'aud', 'sgd', 'hkd', 'jpy', 'nzd', 'dkk', 'sek', 'nok', 'chf',
+  'mxn', 'brl', 'inr', 'pln', 'zar', 'krw', 'try', 'thb', 'myr', 'php', 'idr', 'aed', 'sar', 'ils',
+  'egp', 'ars', 'clp', 'cop', 'pen', 'vnd', 'cny',
+]);
+
+// Stripe minimum charge per currency (in major units). NGN etc. charge in USD so use USD minimum when fallback.
+const STRIPE_MIN_AMOUNTS: Record<string, number> = {
+  usd: 0.5,
+  gbp: 0.3,
+  eur: 0.5,
+  jpy: 50,
+  krw: 500,
+  inr: 0.5,
+  mxn: 10,
+  brl: 0.5,
+  aud: 0.5,
+  cad: 0.5,
+  chf: 0.5,
+  dkk: 2.5,
+  nok: 3,
+  sek: 3,
+  sgd: 0.5,
+  hkd: 4,
+  nzd: 0.5,
+  thb: 15,
+  myr: 2,
+  php: 25,
+  idr: 5000,
+  vnd: 10000,
+  aed: 2,
+  sar: 2,
+  ils: 2,
+  pln: 2,
+  zar: 5,
+  try: 2,
+  egp: 15,
+  ars: 100,
+  clp: 500,
+  cop: 2000,
+  pen: 2,
+  cny: 3,
+};
+
+function stripeAmountInMinorUnits(amountMajor: number, currencyLower: string): number {
+  const zeroDecimal = new Set(['jpy', 'krw', 'vnd', 'clp', 'pyg', 'jod', 'kwd', 'omr', 'bif', 'djf', 'gnf', 'kmf', 'xaf', 'xof', 'mad']);
+  if (zeroDecimal.has(currencyLower)) return Math.round(amountMajor);
+  return Math.round(amountMajor * 100);
+}
+
 export async function POST(request: NextRequest) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -57,8 +108,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Parse request body
-    const { creatorId, amount, currency, message, isAnonymous, userTier = 'free', paymentMethod = 'card' } = await request.json();
+    // Parse request body — currency is determined by backend from creator's wallet, not from client
+    const { creatorId, amount, message, isAnonymous, userTier = 'free', paymentMethod = 'card' } = await request.json();
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -88,6 +139,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve tip currency from creator's wallet (WEB_TEAM_TIP_CURRENCY_FIX)
+    const { data: creatorWallets } = await supabase
+      .from('user_wallets')
+      .select('currency, balance')
+      .eq('user_id', creatorId)
+      .order('balance', { ascending: false });
+
+    const creatorCurrencyRaw = creatorWallets?.[0]?.currency ?? 'USD';
+    const creatorCurrencyLower = String(creatorCurrencyRaw).toLowerCase();
+    const tipCurrencyLower = STRIPE_SUPPORTED_CURRENCIES.has(creatorCurrencyLower)
+      ? creatorCurrencyLower
+      : 'usd';
+    const tipCurrency = tipCurrencyLower.toUpperCase();
+
+    const tipAmount = Number(amount);
+    const minAmount = STRIPE_MIN_AMOUNTS[tipCurrencyLower] ?? STRIPE_MIN_AMOUNTS.usd ?? 0.5;
+    if (tipAmount < minAmount) {
+      return NextResponse.json(
+        { error: `Minimum tip amount is ${minAmount} ${tipCurrency}` },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Calculate platform fee based on tipper's tier (userTier)
     const normalizedTier = String(userTier || 'free').toLowerCase();
     const platformFeeRate = normalizedTier === 'free' ? 0.10 : 0.08;
@@ -96,7 +170,6 @@ export async function POST(request: NextRequest) {
       : ['premium', 'unlimited'].includes(normalizedTier)
         ? 'pro'
         : 'free';
-    const tipAmount = Number(amount);
     const platformFee = Math.round(tipAmount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
 
@@ -110,8 +183,8 @@ export async function POST(request: NextRequest) {
 
     // Configure payment methods based on selection
     const paymentIntentConfig: any = {
-      amount: Math.round(tipAmount * 100), // Convert to cents
-      currency: currency || 'USD',
+      amount: stripeAmountInMinorUnits(tipAmount, tipCurrencyLower),
+      currency: tipCurrencyLower,
       metadata: {
         creatorId,
         tipperId: user.id,
@@ -167,7 +240,7 @@ export async function POST(request: NextRequest) {
         sender_id: user.id,
         recipient_id: creatorId,
         amount: tipAmount,
-        currency: currency || 'USD',
+        currency: tipCurrency,
         message: message,
         is_anonymous: isAnonymous || false,
         status: 'pending',
@@ -185,7 +258,7 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId,
         tipper_id: user.id,
         amount: tipAmount,
-        currency: currency || 'USD',
+        currency: tipCurrency,
         message: message,
         is_anonymous: isAnonymous || false,
         stripe_payment_intent_id: paymentIntent.id,
@@ -212,6 +285,7 @@ export async function POST(request: NextRequest) {
       tipRecordId: tipsRow?.id || null,
       platformFee,
       creatorEarnings,
+      currency: tipCurrency,
       message: 'Payment intent created'
     }, { headers: corsHeaders });
     

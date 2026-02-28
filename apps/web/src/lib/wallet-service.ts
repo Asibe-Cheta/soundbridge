@@ -14,7 +14,7 @@ export interface WalletTransaction {
   id: string;
   wallet_id: string;
   user_id: string;
-  transaction_type: 'deposit' | 'withdrawal' | 'tip_received' | 'tip_sent' | 'payout' | 'refund';
+  transaction_type: 'deposit' | 'withdrawal' | 'tip_received' | 'tip_sent' | 'payout' | 'refund' | 'gig_payment' | 'gig_refund' | 'content_sale';
   amount: number;
   currency: string;
   description?: string;
@@ -354,13 +354,16 @@ export class WalletService {
    * Get transaction type display name
    */
   getTransactionTypeDisplay(type: WalletTransaction['transaction_type']): string {
-    const typeMap = {
+    const typeMap: Record<WalletTransaction['transaction_type'], string> = {
       deposit: 'Deposit',
       withdrawal: 'Withdrawal',
       tip_received: 'Tip Received',
       tip_sent: 'Tip Sent',
       payout: 'Payout',
-      refund: 'Refund'
+      refund: 'Refund',
+      gig_payment: 'Gig Payment',
+      gig_refund: 'Gig Refund',
+      content_sale: 'Content Sale',
     };
     return typeMap[type] || type;
   }

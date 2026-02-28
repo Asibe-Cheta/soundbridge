@@ -63,6 +63,34 @@ export interface SaleNotificationData {
   analyticsUrl: string;
 }
 
+/** WEB_TEAM_GIG_PAYMENT_EMAIL_RECEIPT.md — creator earnings receipt */
+export interface GigCreatorReceiptData {
+  to: string;
+  creator_name: string;
+  gig_title: string;
+  requester_name: string;
+  gross_amount: string;
+  platform_fee: string;
+  creator_earnings: string;
+  wallet_balance: string;
+  currency: string;
+  gig_completed_at: string;
+  withdrawal_cta_url: string;
+  is_wise_country?: boolean;
+}
+
+/** WEB_TEAM_GIG_PAYMENT_EMAIL_RECEIPT.md — requester payment confirmation */
+export interface GigRequesterConfirmationData {
+  to: string;
+  requester_name: string;
+  creator_name: string;
+  gig_title: string;
+  amount_charged: string;
+  gig_completed_at: string;
+  stripe_receipt_url: string;
+  gig_view_url: string;
+}
+
 export class SendGridService {
   private static fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live';
   private static fromName = process.env.SENDGRID_FROM_NAME || 'SoundBridge Team';
@@ -467,6 +495,80 @@ export class SendGridService {
       return true;
     } catch (error) {
       console.error('Error sending plain text sale notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send gig creator earnings receipt (WEB_TEAM_GIG_PAYMENT_EMAIL_RECEIPT.md)
+   */
+  static async sendGigCreatorPaymentReceipt(data: GigCreatorReceiptData): Promise<boolean> {
+    try {
+      const templateId = process.env.SENDGRID_GIG_CREATOR_RECEIPT_TEMPLATE_ID;
+      if (!templateId) {
+        console.warn('SENDGRID_GIG_CREATOR_RECEIPT_TEMPLATE_ID not configured');
+        return false;
+      }
+      const emailData: EmailData = {
+        to: data.to,
+        from: process.env.SENDGRID_PAYMENTS_FROM_EMAIL || this.fromEmail,
+        fromName: process.env.SENDGRID_PAYMENTS_FROM_NAME || 'SoundBridge Payments',
+        templateId,
+        subject: `You earned $${data.creator_earnings} on SoundBridge`,
+        dynamicTemplateData: {
+          creator_name: data.creator_name,
+          gig_title: data.gig_title,
+          requester_name: data.requester_name,
+          gross_amount: data.gross_amount,
+          platform_fee: data.platform_fee,
+          creator_earnings: data.creator_earnings,
+          wallet_balance: data.wallet_balance,
+          currency: data.currency,
+          gig_completed_at: data.gig_completed_at,
+          withdrawal_cta_url: data.withdrawal_cta_url,
+          is_wise_country: data.is_wise_country ?? false,
+        },
+      };
+      await this.sendEmail(emailData);
+      console.log(`Gig creator receipt sent to ${data.to}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending gig creator receipt:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send gig requester payment confirmation (WEB_TEAM_GIG_PAYMENT_EMAIL_RECEIPT.md)
+   */
+  static async sendGigRequesterPaymentConfirmation(data: GigRequesterConfirmationData): Promise<boolean> {
+    try {
+      const templateId = process.env.SENDGRID_GIG_REQUESTER_CONFIRMATION_TEMPLATE_ID;
+      if (!templateId) {
+        console.warn('SENDGRID_GIG_REQUESTER_CONFIRMATION_TEMPLATE_ID not configured');
+        return false;
+      }
+      const emailData: EmailData = {
+        to: data.to,
+        from: process.env.SENDGRID_PAYMENTS_FROM_EMAIL || this.fromEmail,
+        fromName: process.env.SENDGRID_PAYMENTS_FROM_NAME || 'SoundBridge Payments',
+        templateId,
+        subject: `Your gig payment to ${data.creator_name} is confirmed`,
+        dynamicTemplateData: {
+          requester_name: data.requester_name,
+          creator_name: data.creator_name,
+          gig_title: data.gig_title,
+          amount_charged: data.amount_charged,
+          gig_completed_at: data.gig_completed_at,
+          stripe_receipt_url: data.stripe_receipt_url || '#',
+          gig_view_url: data.gig_view_url,
+        },
+      };
+      await this.sendEmail(emailData);
+      console.log(`Gig requester confirmation sent to ${data.to}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending gig requester confirmation:', error);
       return false;
     }
   }

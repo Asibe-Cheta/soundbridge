@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { sendGigPaymentPush } from '@/src/lib/gig-push-notifications';
+import { sendGigPaymentEmails } from '@/src/lib/gig-payment-emails';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +12,8 @@ const CORS = {
 };
 
 /**
- * POST /api/opportunity-projects/:id/confirm-delivery — Poster confirms delivery; capture payment & transfer to creator
+ * POST /api/opportunity-projects/:id/confirm-delivery — Poster confirms delivery; capture payment, instant wallet credit (no transfer)
+ * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — creator sees balance immediately; they withdraw via Wise when they choose
  */
 export async function POST(
   request: NextRequest,
@@ -25,7 +28,7 @@ export async function POST(
     const { id } = await params;
     const { data: project } = await supabase
       .from('opportunity_projects')
-      .select('id, poster_user_id, status, stripe_payment_intent_id, creator_user_id, creator_payout_amount, currency, title')
+      .select('id, poster_user_id, status, stripe_payment_intent_id, creator_user_id, creator_payout_amount, currency, title, opportunity_id')
       .eq('id', id)
       .single();
 
@@ -48,31 +51,12 @@ export async function POST(
     await stripe.paymentIntents.capture(paymentIntentId);
 
     const serviceSupabase = createServiceClient();
-    const { data: creatorAccount } = await serviceSupabase
-      .from('creator_bank_accounts')
-      .select('stripe_account_id')
-      .eq('user_id', project.creator_user_id)
-      .maybeSingle();
-
-    let transferId: string | null = null;
-    if (creatorAccount?.stripe_account_id) {
-      const amountPence = Math.round(Number(project.creator_payout_amount) * 100);
-      const transfer = await stripe.transfers.create({
-        amount: amountPence,
-        currency: (project.currency || 'gbp').toLowerCase(),
-        destination: creatorAccount.stripe_account_id,
-        metadata: { project_id: id, opportunity_project: '1' },
-      });
-      transferId = transfer.id;
-    }
-
     await supabase
       .from('opportunity_projects')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        stripe_transfer_id: transferId,
       })
       .eq('id', id);
 
@@ -87,25 +71,62 @@ export async function POST(
       await serviceSupabase.from('wallet_transactions').insert({
         wallet_id: wallet.id,
         user_id: project.creator_user_id,
-        transaction_type: 'deposit',
+        transaction_type: 'gig_payment',
         amount: releasedAmount,
         currency,
-        description: `Opportunity payment — "${project.title}"`,
+        description: `Gig payment — "${project.title}"`,
         reference_type: 'opportunity_project',
         reference_id: id,
         status: 'completed',
-        metadata: { project_id: id, stripe_transfer_id: transferId },
+        metadata: { project_id: id },
       });
       const newBalance = Number(wallet.balance ?? 0) + releasedAmount;
       await serviceSupabase.from('user_wallets').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('id', wallet.id);
     }
 
+    await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {
+      amount: releasedAmount,
+      currency,
+      gigTitle: project.title ?? 'Gig',
+      gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
+    });
+
+    const PLATFORM_FEE_PCT = 0.12;
+    const grossAmount = releasedAmount / (1 - PLATFORM_FEE_PCT);
+    const platformFee = grossAmount * PLATFORM_FEE_PCT;
+    let stripeReceiptUrl: string | null = null;
+    if (paymentIntentId && stripe) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['charges.data'] });
+        const charges = (pi as { charges?: { data?: Array<{ receipt_url?: string }> } }).charges?.data;
+        stripeReceiptUrl = charges?.[0]?.receipt_url ?? null;
+      } catch {
+        /* ignore */
+      }
+    }
+    sendGigPaymentEmails({
+      service: serviceSupabase,
+      creatorUserId: project.creator_user_id,
+      requesterUserId: project.poster_user_id,
+      gigTitle: project.title ?? 'Gig',
+      grossAmount,
+      platformFee,
+      creatorEarnings: releasedAmount,
+      newWalletBalance: Number(wallet?.balance ?? 0) + releasedAmount,
+      currency,
+      gigCompletedAt: new Date(),
+      gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
+      projectId: id,
+      stripeReceiptUrl,
+    }).catch(() => {});
+
+    const amountDisplay = currency === 'GBP' ? `£${releasedAmount.toFixed(2)}` : currency === 'EUR' ? `€${releasedAmount.toFixed(2)}` : `${currency} ${releasedAmount.toFixed(2)}`;
     await serviceSupabase.from('notifications').insert([
       {
         user_id: project.creator_user_id,
         type: 'opportunity_project_completed',
-        title: 'Payment released',
-        body: `Payment released — £${project.creator_payout_amount} for "${project.title}".`,
+        title: '💰 Payment received!',
+        body: `${amountDisplay} from "${project.title}" is in your SoundBridge wallet.`,
         related_id: id,
         related_type: 'opportunity_project',
         metadata: { project_id: id },
@@ -130,7 +151,7 @@ export async function POST(
       },
     ]);
 
-    return NextResponse.json({ success: true, status: 'completed', stripe_transfer_id: transferId }, { headers: CORS });
+    return NextResponse.json({ success: true, status: 'completed' }, { headers: CORS });
   } catch (e) {
     console.error('POST confirm-delivery:', e);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS });

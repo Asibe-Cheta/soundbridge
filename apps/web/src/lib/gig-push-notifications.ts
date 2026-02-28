@@ -204,6 +204,33 @@ export async function sendGigRatingPromptPush(
   }
 }
 
+/** gig_payment — to creator when gig is completed and wallet is credited (WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET) */
+export async function sendGigPaymentPush(
+  supabase: SupabaseClient,
+  creatorUserId: string,
+  payload: { amount: number; currency: string; gigTitle: string; gigId: string }
+): Promise<boolean> {
+  const token = await getPushTokenForUser(supabase, creatorUserId);
+  if (!token) return false;
+  const expo = getExpo();
+  const symbol = payload.currency === 'GBP' ? '£' : payload.currency === 'EUR' ? '€' : payload.currency === 'NGN' ? '₦' : '$';
+  const amountStr = `${symbol}${payload.amount.toFixed(2)}`;
+  try {
+    await expo.sendPushNotificationsAsync([{
+      to: token,
+      title: '💰 Payment received!',
+      body: `${amountStr} from "${payload.gigTitle}" is in your SoundBridge wallet.`,
+      sound: 'default',
+      priority: 'high',
+      data: { type: 'gig_payment', gigId: payload.gigId, deepLink: 'soundbridge://wallet' },
+    }]);
+    return true;
+  } catch (e) {
+    console.error('sendGigPaymentPush:', e);
+    return false;
+  }
+}
+
 /** opportunity — new planned opportunity near creator */
 export async function sendOpportunityPush(
   supabase: SupabaseClient,

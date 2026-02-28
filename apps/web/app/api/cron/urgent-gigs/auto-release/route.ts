@@ -1,11 +1,14 @@
 /**
  * Cron: auto-release escrow for delivered projects >48h with no dispute (run daily 00:00 UTC)
  * WEB_TEAM_URGENT_GIGS_BACKEND_REQUIREMENTS.md §5.4
+ * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — instant wallet credit only, no Stripe transfer
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { sendGigPaymentPush } from '@/src/lib/gig-push-notifications';
+import { sendGigPaymentEmails } from '@/src/lib/gig-payment-emails';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const { data: projects } = await service
       .from('opportunity_projects')
-      .select('id, poster_user_id, creator_user_id, status, stripe_payment_intent_id, creator_payout_amount, currency, title, updated_at')
+      .select('id, opportunity_id, poster_user_id, creator_user_id, status, stripe_payment_intent_id, creator_payout_amount, currency, title, updated_at')
       .eq('status', 'delivered')
       .lt('updated_at', fortyEightHoursAgo);
 
@@ -46,31 +49,12 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const { data: creatorAccount } = await service
-        .from('creator_bank_accounts')
-        .select('stripe_account_id')
-        .eq('user_id', project.creator_user_id)
-        .maybeSingle();
-
-      let transferId: string | null = null;
-      if (creatorAccount?.stripe_account_id) {
-        const amountPence = Math.round(Number(project.creator_payout_amount) * 100);
-        const transfer = await stripe.transfers.create({
-          amount: amountPence,
-          currency: (project.currency || 'gbp').toString().toLowerCase(),
-          destination: creatorAccount.stripe_account_id,
-          metadata: { project_id: project.id, opportunity_project: '1', auto_release: '1' },
-        });
-        transferId = transfer.id;
-      }
-
       await service
         .from('opportunity_projects')
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          stripe_transfer_id: transferId,
         })
         .eq('id', project.id);
 
@@ -85,14 +69,14 @@ export async function GET(request: NextRequest) {
         await service.from('wallet_transactions').insert({
           wallet_id: wallet.id,
           user_id: project.creator_user_id,
-          transaction_type: 'deposit',
+          transaction_type: 'gig_payment',
           amount: releasedAmount,
           currency,
-          description: `Opportunity payment (auto-released) — "${project.title}"`,
+          description: `Gig payment (auto-released) — "${project.title}"`,
           reference_type: 'opportunity_project',
           reference_id: project.id,
           status: 'completed',
-          metadata: { project_id: project.id, stripe_transfer_id: transferId },
+          metadata: { project_id: project.id, auto_release: true },
         });
         await service.from('user_wallets').update({
           balance: Number(wallet.balance ?? 0) + releasedAmount,
@@ -100,12 +84,49 @@ export async function GET(request: NextRequest) {
         }).eq('id', wallet.id);
       }
 
+      await sendGigPaymentPush(service, project.creator_user_id, {
+        amount: releasedAmount,
+        currency,
+        gigTitle: project.title ?? 'Gig',
+        gigId: (project as { opportunity_id?: string }).opportunity_id ?? project.id,
+      });
+
+      const PLATFORM_FEE_PCT = 0.12;
+      const grossAmount = releasedAmount / (1 - PLATFORM_FEE_PCT);
+      const platformFee = grossAmount * PLATFORM_FEE_PCT;
+      let stripeReceiptUrl: string | null = null;
+      if (project.stripe_payment_intent_id && stripe) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(project.stripe_payment_intent_id, { expand: ['charges.data'] });
+          const charges = (pi as { charges?: { data?: Array<{ receipt_url?: string }> } }).charges?.data;
+          stripeReceiptUrl = charges?.[0]?.receipt_url ?? null;
+        } catch {
+          /* ignore */
+        }
+      }
+      sendGigPaymentEmails({
+        service,
+        creatorUserId: project.creator_user_id,
+        requesterUserId: project.poster_user_id,
+        gigTitle: project.title ?? 'Gig',
+        grossAmount,
+        platformFee,
+        creatorEarnings: releasedAmount,
+        newWalletBalance: Number(wallet?.balance ?? 0) + releasedAmount,
+        currency,
+        gigCompletedAt: new Date(),
+        gigId: (project as { opportunity_id?: string }).opportunity_id ?? project.id,
+        projectId: project.id,
+        stripeReceiptUrl,
+      }).catch(() => {});
+
+      const amountDisplay = currency === 'GBP' ? `£${releasedAmount.toFixed(2)}` : currency === 'EUR' ? `€${releasedAmount.toFixed(2)}` : `${currency} ${releasedAmount.toFixed(2)}`;
       await service.from('notifications').insert([
         {
           user_id: project.creator_user_id,
           type: 'opportunity_project_completed',
-          title: 'Payment auto-released',
-          body: `Your payment of £${releasedAmount} for "${project.title}" has been released.`,
+          title: '💰 Payment received!',
+          body: `${amountDisplay} from "${project.title}" is in your SoundBridge wallet.`,
           related_id: project.id,
           related_type: 'opportunity_project',
           metadata: { project_id: project.id },

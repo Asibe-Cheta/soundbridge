@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { walletService, type Wallet, type WalletTransaction } from '../../lib/wallet-service';
 import { Wallet as WalletIcon, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, AlertCircle, Plus, Minus, Eye, EyeOff, ExternalLink } from 'lucide-react';
@@ -19,7 +20,11 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
 
   const hasProjectLink = (t: WalletTransaction) =>
     (t.reference_type === 'opportunity_project' && t.reference_id) ||
-    (t.metadata?.project_id && (t.description?.includes('Opportunity payment') || t.description?.includes('Urgent gig payment')));
+    (t.metadata?.project_id && (
+      t.description?.includes('Opportunity payment') ||
+      t.description?.includes('Urgent gig payment') ||
+      t.description?.includes('Gig payment')
+    ));
   const getProjectId = (t: WalletTransaction) => t.reference_id ?? t.metadata?.project_id;
 
   useEffect(() => {
@@ -61,6 +66,12 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
         return <WalletIcon className="h-4 w-4 text-green-400" />;
       case 'refund':
         return <ArrowDownLeft className="h-4 w-4 text-yellow-400" />;
+      case 'gig_payment':
+        return <ArrowDownLeft className="h-4 w-4 text-green-400" />;
+      case 'gig_refund':
+        return <ArrowDownLeft className="h-4 w-4 text-yellow-400" />;
+      case 'content_sale':
+        return <TrendingUp className="h-4 w-4 text-blue-400" />;
       default:
         return <WalletIcon className="h-4 w-4 text-gray-400" />;
     }
@@ -158,7 +169,10 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
           </div>
         </button>
 
-        <button className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-left">
+        <Link
+          href="/dashboard"
+          className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-left block"
+        >
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-red-500/20 rounded-lg">
               <Minus className="h-5 w-5 text-red-400" />
@@ -168,9 +182,12 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
               <p className="text-gray-400 text-sm">Cash out to bank account</p>
             </div>
           </div>
-        </button>
+        </Link>
 
-        <button className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-left">
+        <Link
+          href="/dashboard"
+          className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-left block"
+        >
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-blue-500/20 rounded-lg">
               <WalletIcon className="h-5 w-5 text-blue-400" />
@@ -180,7 +197,7 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
               <p className="text-gray-400 text-sm">Withdrawal methods</p>
             </div>
           </div>
-        </button>
+        </Link>
       </div>
 
       {/* Recent Transactions */}
