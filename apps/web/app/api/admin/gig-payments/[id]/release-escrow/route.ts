@@ -1,10 +1,12 @@
 /**
  * POST /api/admin/gig-payments/:id/release-escrow — Manually release stuck escrow (WEB_TEAM_GIG_PAYMENT_ADMIN_MONITORING.md)
+ * Wise-country creators are credited in USD (GBP→USD at release); Stripe Connect countries in requester currency.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
 import { stripe } from '@/src/lib/stripe';
+import { creditGigPaymentToWallet } from '@/src/lib/gig-wallet-credit';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -59,30 +61,23 @@ export async function POST(
     updated_at: new Date().toISOString(),
   }).eq('id', projectId);
 
-  const releasedAmount = Number(project.creator_payout_amount);
-  const currency = (project.currency || 'GBP').toString().toUpperCase().slice(0, 3);
-  let { data: wallet } = await service.from('user_wallets').select('id, balance').eq('user_id', project.creator_user_id).eq('currency', currency).maybeSingle();
-  if (!wallet?.id) {
-    const { data: created } = await service.from('user_wallets').insert({ user_id: project.creator_user_id, currency }).select('id').single();
-    if (created?.id) wallet = { id: created.id, balance: 0 };
-  }
-  if (wallet?.id) {
-    await service.from('wallet_transactions').insert({
-      wallet_id: wallet.id,
-      user_id: project.creator_user_id,
-      transaction_type: 'gig_payment',
-      amount: releasedAmount,
-      currency,
-      description: `Gig payment (admin release) — "${project.title}"`,
-      reference_type: 'opportunity_project',
-      reference_id: projectId,
-      status: 'completed',
-      metadata: { admin_release: true, reason },
-    });
-    await service.from('user_wallets').update({ balance: Number(wallet.balance ?? 0) + releasedAmount, updated_at: new Date().toISOString() }).eq('id', wallet.id);
-  }
+  const creditResult = await creditGigPaymentToWallet(service, {
+    id: projectId,
+    creator_user_id: project.creator_user_id,
+    creator_payout_amount: project.creator_payout_amount,
+    currency: project.currency ?? undefined,
+    title: project.title,
+    opportunity_id: project.opportunity_id,
+  }, {
+    stripePaymentIntentId: project.stripe_payment_intent_id ?? undefined,
+    metadata: { admin_release: true, reason },
+    descriptionPrefix: 'Gig payment (admin release)',
+  });
 
-  return NextResponse.json({ success: true, message: 'Escrow released and wallet credited' }, { headers: CORS });
+  return NextResponse.json(
+    { success: true, message: 'Escrow released and wallet credited', credited_amount: creditResult.creditedAmount, credited_currency: creditResult.creditedCurrency },
+    { headers: CORS }
+  );
 }
 
 export async function OPTIONS() {

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { sendGigPaymentPush } from '@/src/lib/gig-push-notifications';
 import { sendGigPaymentEmails } from '@/src/lib/gig-payment-emails';
+import { creditGigPaymentToWallet } from '@/src/lib/gig-wallet-credit';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -60,39 +61,28 @@ export async function POST(
       })
       .eq('id', id);
 
-    const releasedAmount = Number(project.creator_payout_amount);
-    const currency = (project.currency || 'GBP').toString().toUpperCase().slice(0, 3);
-    let { data: wallet } = await serviceSupabase.from('user_wallets').select('id, balance').eq('user_id', project.creator_user_id).eq('currency', currency).maybeSingle();
-    if (!wallet?.id) {
-      const { data: created } = await serviceSupabase.from('user_wallets').insert({ user_id: project.creator_user_id, currency }).select('id').single();
-      if (created?.id) wallet = { id: created.id, balance: 0 };
-    }
-    if (wallet?.id) {
-      await serviceSupabase.from('wallet_transactions').insert({
-        wallet_id: wallet.id,
-        user_id: project.creator_user_id,
-        transaction_type: 'gig_payment',
-        amount: releasedAmount,
-        currency,
-        description: `Gig payment — "${project.title}"`,
-        reference_type: 'opportunity_project',
-        reference_id: id,
-        status: 'completed',
-        metadata: { project_id: id },
-      });
-      const newBalance = Number(wallet.balance ?? 0) + releasedAmount;
-      await serviceSupabase.from('user_wallets').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('id', wallet.id);
-    }
+    const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
+      id,
+      creator_user_id: project.creator_user_id,
+      creator_payout_amount: project.creator_payout_amount,
+      currency: project.currency ?? undefined,
+      title: project.title,
+      opportunity_id: (project as { opportunity_id?: string }).opportunity_id,
+    }, {
+      stripePaymentIntentId: paymentIntentId,
+      metadata: { project_id: id },
+      descriptionPrefix: 'Gig payment',
+    });
 
     await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {
-      amount: releasedAmount,
-      currency,
+      amount: creditResult.creditedAmount,
+      currency: creditResult.creditedCurrency,
       gigTitle: project.title ?? 'Gig',
       gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
     });
 
     const PLATFORM_FEE_PCT = 0.12;
-    const grossAmount = releasedAmount / (1 - PLATFORM_FEE_PCT);
+    const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
     const platformFee = grossAmount * PLATFORM_FEE_PCT;
     let stripeReceiptUrl: string | null = null;
     if (paymentIntentId && stripe) {
@@ -111,16 +101,16 @@ export async function POST(
       gigTitle: project.title ?? 'Gig',
       grossAmount,
       platformFee,
-      creatorEarnings: releasedAmount,
-      newWalletBalance: Number(wallet?.balance ?? 0) + releasedAmount,
-      currency,
+      creatorEarnings: creditResult.creditedAmount,
+      newWalletBalance: creditResult.newBalance,
+      currency: creditResult.creditedCurrency,
       gigCompletedAt: new Date(),
       gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
       projectId: id,
       stripeReceiptUrl,
     }).catch(() => {});
 
-    const amountDisplay = currency === 'GBP' ? `£${releasedAmount.toFixed(2)}` : currency === 'EUR' ? `€${releasedAmount.toFixed(2)}` : `${currency} ${releasedAmount.toFixed(2)}`;
+    const amountDisplay = creditResult.creditedCurrency === 'GBP' ? `£${creditResult.creditedAmount.toFixed(2)}` : creditResult.creditedCurrency === 'EUR' ? `€${creditResult.creditedAmount.toFixed(2)}` : `${creditResult.creditedCurrency} ${creditResult.creditedAmount.toFixed(2)}`;
     await serviceSupabase.from('notifications').insert([
       {
         user_id: project.creator_user_id,

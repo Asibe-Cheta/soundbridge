@@ -9,6 +9,7 @@ import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { sendGigPaymentPush } from '@/src/lib/gig-push-notifications';
 import { sendGigPaymentEmails } from '@/src/lib/gig-payment-emails';
+import { creditGigPaymentToWallet } from '@/src/lib/gig-wallet-credit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,41 +59,28 @@ export async function GET(request: NextRequest) {
         })
         .eq('id', project.id);
 
-      const releasedAmount = Number(project.creator_payout_amount);
-      const currency = (project.currency || 'GBP').toString().toUpperCase().slice(0, 3);
-      let { data: wallet } = await service.from('user_wallets').select('id, balance').eq('user_id', project.creator_user_id).eq('currency', currency).maybeSingle();
-      if (!wallet?.id) {
-        const { data: created } = await service.from('user_wallets').insert({ user_id: project.creator_user_id, currency }).select('id').single();
-        if (created?.id) wallet = { id: created.id, balance: 0 };
-      }
-      if (wallet?.id) {
-        await service.from('wallet_transactions').insert({
-          wallet_id: wallet.id,
-          user_id: project.creator_user_id,
-          transaction_type: 'gig_payment',
-          amount: releasedAmount,
-          currency,
-          description: `Gig payment (auto-released) — "${project.title}"`,
-          reference_type: 'opportunity_project',
-          reference_id: project.id,
-          status: 'completed',
-          metadata: { project_id: project.id, auto_release: true },
-        });
-        await service.from('user_wallets').update({
-          balance: Number(wallet.balance ?? 0) + releasedAmount,
-          updated_at: new Date().toISOString(),
-        }).eq('id', wallet.id);
-      }
+      const creditResult = await creditGigPaymentToWallet(service, {
+        id: project.id,
+        creator_user_id: project.creator_user_id,
+        creator_payout_amount: project.creator_payout_amount,
+        currency: project.currency ?? undefined,
+        title: project.title,
+        opportunity_id: project.opportunity_id,
+      }, {
+        stripePaymentIntentId: project.stripe_payment_intent_id ?? undefined,
+        metadata: { project_id: project.id, auto_release: true },
+        descriptionPrefix: 'Gig payment (auto-released)',
+      });
 
       await sendGigPaymentPush(service, project.creator_user_id, {
-        amount: releasedAmount,
-        currency,
+        amount: creditResult.creditedAmount,
+        currency: creditResult.creditedCurrency,
         gigTitle: project.title ?? 'Gig',
         gigId: (project as { opportunity_id?: string }).opportunity_id ?? project.id,
       });
 
       const PLATFORM_FEE_PCT = 0.12;
-      const grossAmount = releasedAmount / (1 - PLATFORM_FEE_PCT);
+      const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
       const platformFee = grossAmount * PLATFORM_FEE_PCT;
       let stripeReceiptUrl: string | null = null;
       if (project.stripe_payment_intent_id && stripe) {
@@ -111,16 +99,16 @@ export async function GET(request: NextRequest) {
         gigTitle: project.title ?? 'Gig',
         grossAmount,
         platformFee,
-        creatorEarnings: releasedAmount,
-        newWalletBalance: Number(wallet?.balance ?? 0) + releasedAmount,
-        currency,
+        creatorEarnings: creditResult.creditedAmount,
+        newWalletBalance: creditResult.newBalance,
+        currency: creditResult.creditedCurrency,
         gigCompletedAt: new Date(),
         gigId: (project as { opportunity_id?: string }).opportunity_id ?? project.id,
         projectId: project.id,
         stripeReceiptUrl,
       }).catch(() => {});
 
-      const amountDisplay = currency === 'GBP' ? `£${releasedAmount.toFixed(2)}` : currency === 'EUR' ? `€${releasedAmount.toFixed(2)}` : `${currency} ${releasedAmount.toFixed(2)}`;
+      const amountDisplay = creditResult.creditedCurrency === 'GBP' ? `£${creditResult.creditedAmount.toFixed(2)}` : creditResult.creditedCurrency === 'EUR' ? `€${creditResult.creditedAmount.toFixed(2)}` : `${creditResult.creditedCurrency} ${creditResult.creditedAmount.toFixed(2)}`;
       await service.from('notifications').insert([
         {
           user_id: project.creator_user_id,

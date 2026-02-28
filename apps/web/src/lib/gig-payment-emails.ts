@@ -4,9 +4,8 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { WISE_COUNTRIES } from './gig-wallet-credit';
 import { SendGridService } from './sendgrid-service';
-
-const WISE_COUNTRIES = ['NG', 'GH', 'KE', 'EG', 'ZA', 'UG', 'TZ'] as const;
 const WITHDRAWAL_CTA_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://soundbridge.live';
 const GIG_VIEW_BASE = WITHDRAWAL_CTA_URL + '/projects';
 

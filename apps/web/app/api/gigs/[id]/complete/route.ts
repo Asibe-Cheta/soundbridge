@@ -2,6 +2,7 @@
  * POST /api/gigs/:id/complete — Mark gig completed; capture payment, instant wallet credit, notify (no immediate Wise/Stripe transfer)
  * WEB_TEAM_URGENT_GIGS_BACKEND_REQUIREMENTS.md
  * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — two-step: wallet credited now; creator withdraws via Wise when they choose
+ * Wise-country creators credited in USD; Stripe Connect in requester currency.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,6 +11,7 @@ import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { sendGigPaymentPush } from '@/src/lib/gig-push-notifications';
 import { sendGigPaymentEmails } from '@/src/lib/gig-payment-emails';
+import { creditGigPaymentToWallet } from '@/src/lib/gig-wallet-credit';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -90,39 +92,28 @@ export async function POST(
       updated_at: new Date().toISOString(),
     }).eq('id', project.id);
 
-    const releasedAmount = Number(project.creator_payout_amount);
-    const currency = (project.currency || 'GBP').toString().toUpperCase().slice(0, 3);
-    let { data: wallet } = await service.from('user_wallets').select('id, balance').eq('user_id', project.creator_user_id).eq('currency', currency).maybeSingle();
-    if (!wallet?.id) {
-      const { data: created } = await service.from('user_wallets').insert({ user_id: project.creator_user_id, currency }).select('id').single();
-      if (created?.id) wallet = { id: created.id, balance: 0 };
-    }
-    if (wallet?.id) {
-      await service.from('wallet_transactions').insert({
-        wallet_id: wallet.id,
-        user_id: project.creator_user_id,
-        transaction_type: 'gig_payment',
-        amount: releasedAmount,
-        currency,
-        description: `Gig payment — "${project.title}"`,
-        reference_type: 'opportunity_project',
-        reference_id: project.id,
-        status: 'completed',
-        metadata: { project_id: project.id, gig_id: gigId },
-      });
-      const newBalance = Number(wallet.balance ?? 0) + releasedAmount;
-      await service.from('user_wallets').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('id', wallet.id);
-    }
+    const creditResult = await creditGigPaymentToWallet(service, {
+      id: project.id,
+      creator_user_id: project.creator_user_id,
+      creator_payout_amount: project.creator_payout_amount,
+      currency: project.currency ?? undefined,
+      title: project.title,
+      opportunity_id: gigId,
+    }, {
+      stripePaymentIntentId: gig.stripe_payment_intent_id ?? undefined,
+      metadata: { project_id: project.id, gig_id: gigId },
+      descriptionPrefix: 'Gig payment',
+    });
 
     await sendGigPaymentPush(service, project.creator_user_id, {
-      amount: releasedAmount,
-      currency,
+      amount: creditResult.creditedAmount,
+      currency: creditResult.creditedCurrency,
       gigTitle: project.title ?? 'Gig',
       gigId,
     });
 
     const PLATFORM_FEE_PCT = 0.12;
-    const grossAmount = releasedAmount / (1 - PLATFORM_FEE_PCT);
+    const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
     const platformFee = grossAmount * PLATFORM_FEE_PCT;
     let stripeReceiptUrl: string | null = null;
     if (gig.stripe_payment_intent_id && stripe) {
@@ -141,9 +132,9 @@ export async function POST(
       gigTitle: project.title ?? 'Gig',
       grossAmount,
       platformFee,
-      creatorEarnings: releasedAmount,
-      newWalletBalance: Number(wallet?.balance ?? 0) + releasedAmount,
-      currency,
+      creatorEarnings: creditResult.creditedAmount,
+      newWalletBalance: creditResult.newBalance,
+      currency: creditResult.creditedCurrency,
       gigCompletedAt: new Date(),
       gigId,
       projectId: project.id,
