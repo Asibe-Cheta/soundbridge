@@ -52,9 +52,10 @@ Auth: Bearer token (standard user auth)
 Wise provides a global bank directory. Proxy it for every country Wise supports:
 
 ```
-GET https://api.transferwise.com/v1/banks?country={country}&currency={currency}
-Authorization: Bearer {WISE_API_KEY}
+GET {WISE_API_URL}/v1/banks?country={country}&currency={currency}
+Authorization: Bearer {WISE_API_TOKEN}
 ```
+Default `WISE_API_URL` is `https://api.wise.com`. Use `WISE_API_TOKEN` (same as other Wise integrations).
 
 **Wise response shape:**
 
