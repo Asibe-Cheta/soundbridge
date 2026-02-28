@@ -2,8 +2,10 @@
  * GET /api/banks
  *
  * Returns list of banks for a country/currency for the bank account form.
- * Proxies Wise's bank directory. Empty list = no picker (free-text input).
- * Never returns HTTP error — always 200 with { banks: [] } on failure or unsupported.
+ * Proxies Wise's global bank directory — works for any country (Africa, Americas,
+ * Asia, Europe, etc.). Same endpoint for NG, US, JP, BR, IN, etc.; Wise returns
+ * a list when they have one for that country, or [] for IBAN/UK-style countries.
+ * Empty list = no picker (free-text input). Never returns HTTP error.
  *
  * Query: country (ISO 3166-1 alpha-2), currency (ISO 4217)
  * Auth: Bearer token (standard user auth)

@@ -578,16 +578,16 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
   };
 
   const filteredBanks = useMemo(() => {
-    if (!bankSearch.trim()) return availableBanks.slice(0, 50);
+    if (!bankSearch.trim()) return availableBanks.slice(0, 80);
     const q = bankSearch.trim().toLowerCase();
-    return availableBanks.filter((b) => b.name.toLowerCase().includes(q) || (b.code && String(b.code).toLowerCase().includes(q))).slice(0, 50);
+    return availableBanks.filter((b) => b.name.toLowerCase().includes(q) || (b.code && String(b.code).toLowerCase().includes(q))).slice(0, 80);
   }, [availableBanks, bankSearch]);
 
   const handleSelectBank = (bank: { name: string; code: string }) => {
     setFormData((prev: any) => ({
       ...prev,
       bank_name: bank.name,
-      ...(bankCodeField ? { [bankCodeField]: bank.code } : {}),
+      ...(bankCodeField && bank.code ? { [bankCodeField]: bank.code } : {}),
     }));
     setBankSearch(bank.name);
     setBankDropdownOpen(false);
@@ -629,6 +629,9 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
           <label className="block text-gray-400 text-sm mb-2">
             {fieldInfo.label} {fieldInfo.required && <span className="text-red-400">*</span>}
             {banksLoading && <span className="text-gray-500 text-xs ml-2">(loading banks…)</span>}
+            {!banksLoading && availableBanks.length > 0 && (
+              <span className="text-gray-500 text-xs ml-2">— type to search</span>
+            )}
           </label>
           <div className="relative">
             <input
@@ -644,7 +647,7 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
                 if (formData.bank_name && !bankSearch) setBankSearch(formData.bank_name);
               }}
               onBlur={() => setTimeout(() => setBankDropdownOpen(false), 200)}
-              placeholder="Search or type bank name"
+              placeholder="Type to see bank suggestions"
               className={`w-full px-3 py-2 pr-10 bg-gray-700 border rounded-lg text-white focus:outline-none ${
                 error ? 'border-red-500' : 'border-gray-600 focus:border-blue-500'
               }`}
