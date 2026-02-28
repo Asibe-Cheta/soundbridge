@@ -710,6 +710,16 @@ export default function AdminDashboard() {
             >
               User Verification Badges
             </a>
+            <a
+              href="/admin/gig-payments"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              Gig Payments
+            </a>
           </div>
         </div>
       </div>
@@ -1312,7 +1322,13 @@ function OverviewTab({ theme, data, loading, onWaitlistClick }: { theme: string;
       {/* Quick Actions */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
         <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a href="/admin/gig-payments" className={`p-4 ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} rounded-lg transition-colors block`}>
+            <div className="flex items-center gap-3">
+              <DollarSign className={`h-5 w-5 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} />
+              <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Gig Payments</span>
+            </div>
+          </a>
           <button className={`p-4 ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} rounded-lg transition-colors`}>
             <div className="flex items-center gap-3">
               <UserCheck className={`h-5 w-5 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
