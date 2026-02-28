@@ -116,8 +116,8 @@ export async function GET(request: NextRequest) {
         return titleMatch || posterName.includes(s) || creatorName.includes(s);
       });
       // Re-fetch profiles for filtered rows
-      const userIds = [...new Set(filtered.flatMap((g) => [g.poster_user_id, g.creator_user_id]))];
-      const { data: profiles } = await service.from('profiles').select('id, username, display_name, country_code').in('id', userIds);
+      const filteredUserIds = [...new Set(filtered.flatMap((g) => [g.poster_user_id, g.creator_user_id]))];
+      const { data: profiles } = await service.from('profiles').select('id, username, display_name, country_code').in('id', filteredUserIds);
       const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
       const rows = filtered.map((g) => {
         const paymentStatus = g.status === 'completed' ? 'released' : g.status === 'disputed' ? 'disputed' : 'escrowed';
