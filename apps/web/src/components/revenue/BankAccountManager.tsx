@@ -241,8 +241,14 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Redirect to Stripe onboarding
-        window.location.href = result.onboardingUrl;
+        // Redirect to Stripe onboarding only when we have a URL (immediate mode)
+        if (result.onboardingUrl && typeof result.onboardingUrl === 'string') {
+          window.location.href = result.onboardingUrl;
+        } else if (result.skipOnboarding) {
+          setSuccess(result.message || 'Account ready. Complete verification when you want to withdraw.');
+        } else {
+          setError('No verification link received. Please try again.');
+        }
       } else {
         setError(result.error || 'Failed to start verification');
       }
@@ -287,6 +293,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       const result = await response.json();

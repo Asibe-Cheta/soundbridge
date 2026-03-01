@@ -29,28 +29,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get country from request body or default to US
-    const { country = 'US' } = await request.json().catch(() => ({}));
-    
+    // Parse request body once (consuming it twice would make the second read empty)
+    const body = await request.json().catch(() => ({}));
+    const requestCountry = body.country || body.Country || 'US';
+    const setupMode = body.setupMode || 'deferred';
+
     // Validate country code (Stripe supports specific countries)
     const supportedCountries = ['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'SE', 'NO', 'DK', 'FI', 'BE', 'AT', 'CH', 'IE', 'PT', 'LU', 'SI', 'SK', 'CZ', 'PL', 'HU', 'GR', 'CY', 'MT', 'EE', 'LV', 'LT', 'JP', 'SG', 'HK', 'MY', 'TH', 'NZ'];
-    
-    if (!supportedCountries.includes(country)) {
+
+    if (!supportedCountries.includes(requestCountry)) {
       return NextResponse.json(
-        { error: `Country ${country} not supported by Stripe Connect` },
+        { error: `Country ${requestCountry} not supported by Stripe Connect` },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // OPTION: Get setup mode and country from request (immediate vs deferred)
-    const body = await request.json().catch(() => ({}));
-    const setupMode = body.setupMode || 'deferred';
-    const requestCountry = body.country || country;
-
     // Create Stripe Connect account
     const account = await stripe.accounts.create({
       type: 'express',
-      country: requestCountry, // Dynamic country based on user selection
+      country: requestCountry,
       email: user.email,
       capabilities: {
         card_payments: { requested: true },
@@ -165,7 +162,7 @@ export async function POST(request: NextRequest) {
       return currencyMap[countryCode] || 'USD';
     };
 
-    const currency = getCurrencyForCountry(country);
+    const currency = getCurrencyForCountry(requestCountry);
 
     // Check if bank account already exists
     const { data: existingAccount } = await supabase

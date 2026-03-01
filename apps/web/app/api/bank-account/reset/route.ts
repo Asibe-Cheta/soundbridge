@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   const corsHeaders = {
@@ -11,44 +9,7 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    let supabase;
-    let user;
-    let authError;
-
-    // Check for Authorization header (mobile app) - try ALL mobile app headers
-    const authHeader = request.headers.get('authorization') || 
-                      request.headers.get('Authorization') ||
-                      request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token') ||
-                      request.headers.get('x-supabase-token');
-    
-    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-      // Mobile app authentication
-      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        }
-      );
-      
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      user = userData.user;
-      authError = userError;
-    } else {
-      // Web app authentication
-      const cookieStore = cookies();
-      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-      
-      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
-      user = userData;
-      authError = userError;
-    }
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -62,14 +23,14 @@ export async function POST(request: NextRequest) {
     // Get the existing bank account to check for Stripe Connect ID
     const { data: existingAccount } = await supabase
       .from('creator_bank_accounts')
-      .select('stripe_connect_account_id')
+      .select('stripe_account_id')
       .eq('user_id', user.id)
       .single();
 
     // If there's a Stripe Connect account, we should note it
     // (We don't delete it from Stripe as that could cause issues)
-    if (existingAccount?.stripe_connect_account_id) {
-      console.log('🔄 RESET BANK ACCOUNT: Found Stripe Connect account:', existingAccount.stripe_connect_account_id);
+    if (existingAccount?.stripe_account_id) {
+      console.log('🔄 RESET BANK ACCOUNT: Found Stripe Connect account:', existingAccount.stripe_account_id);
       console.log('⚠️ Note: Stripe Connect account will remain in Stripe but be unlinked from this user');
     }
 
@@ -93,7 +54,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         message: 'Bank account reset successfully. You can now set up a new Stripe Connect account.',
-        note: existingAccount?.stripe_connect_account_id ?
+        note: existingAccount?.stripe_account_id ?
           'Previous Stripe Connect account has been unlinked. You can create a new one.' :
           'You can now create a new Stripe Connect account.'
       },
