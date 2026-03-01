@@ -1,19 +1,19 @@
 /**
  * POST /api/upload/fingerprint
- * 
- * Fingerprint audio file via ACRCloud and return identification results
- * This endpoint is called automatically during upload to check if the audio
- * matches known released tracks.
- * 
- * NOTE: Vercel has a 10MB payload limit. For files > 10MB, use audioFileUrl
- * parameter instead of sending the file directly (upload to Supabase Storage first).
+ *
+ * Fingerprint audio file via ACRCloud and return identification results.
+ * Called by mobile and web during upload. Accepts:
+ * - JSON: { audioFileUrl: string, artistName?: string } (mobile sends this after uploading to Supabase Storage)
+ * - multipart/form-data: audioFile + optional artistName
+ *
+ * @see WEB_TEAM_ACRCLOUD_405_FIX_REQUIRED.md — ensure client uses POST (not GET) to exactly /api/upload/fingerprint
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-// Vercel function configuration
-export const maxDuration = 60; // 60 seconds for audio processing
+export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs'; // ensure Node runtime (ffmpeg, large body)
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { identifyAudio } from '@/src/lib/acrcloud-api';
 import { matchArtistNames } from '@/src/lib/artist-name-matcher';
@@ -35,7 +35,29 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
+/** GET not supported — mobile and web must use POST with audioFileUrl (or form-data). Prevents 405 confusion when only POST is implemented. */
+export async function GET(request: NextRequest) {
+  const path = request.nextUrl?.pathname ?? request.url ?? 'unknown';
+  console.log('[fingerprint] method=GET path=' + path + ' — client should use POST');
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Method not allowed. Use POST with JSON body: { audioFileUrl, artistName? } or multipart/form-data with audioFile.',
+      errorCode: 'METHOD_NOT_ALLOWED',
+    },
+    {
+      status: 405,
+      headers: {
+        ...corsHeaders,
+        Allow: 'POST, OPTIONS',
+      },
+    }
+  );
+}
+
 export async function POST(request: NextRequest) {
+  const path = request.nextUrl?.pathname ?? request.url ?? 'unknown';
+  console.log('[fingerprint] method=POST path=' + path);
   try {
     console.log('🔍 ACRCloud fingerprinting API called');
 
@@ -133,13 +155,11 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // JSON with base64 (backward compatibility - deprecated)
-      console.warn('⚠️ ACRCloud fingerprinting: Using deprecated base64 JSON format. Please migrate to multipart/form-data.');
-      
+      // JSON: mobile sends { audioFileUrl, artistName } after uploading to Supabase Storage; optional fileData for base64
       let body: any;
       try {
         body = await request.json();
-        console.log('✅ ACRCloud fingerprinting: Request body parsed (base64 format)', {
+        console.log('✅ ACRCloud fingerprinting: Request body parsed (JSON)', {
           hasFileData: !!body.fileData,
           hasAudioFileUrl: !!body.audioFileUrl,
           hasArtistName: !!body.artistName,

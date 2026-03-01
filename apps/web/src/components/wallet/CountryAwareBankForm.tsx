@@ -352,6 +352,70 @@ const BANK_CODE_FIELD: Record<string, string> = {
   CN: 'bank_code', JP: 'branch_code', IN: 'ifsc_code', US: 'routing_number', GB: 'sort_code',
 };
 
+/** Curated bank lists for key markets. Used first so we avoid APILayer noise (e.g. UK FCA-registered entities). @see WEB_TEAM_BANK_LIST_API_REQUIRED.md */
+const CURATED_BANK_COUNTRIES = ['GB', 'NG', 'GH', 'CA', 'US', 'IN'] as const;
+const BUILTIN_BANKS: Record<string, { name: string; code: string }[]> = {
+  GB: [
+    { name: 'Barclays', code: 'BUKBGB22' }, { name: 'Lloyds Bank', code: 'LOYDGB21' }, { name: 'HSBC UK', code: 'HBUKGB4B' },
+    { name: 'NatWest', code: 'NWBKGB2L' }, { name: 'Santander UK', code: 'ABBYGB2L' }, { name: 'Halifax', code: 'HLFXGB21' },
+    { name: 'Nationwide Building Society', code: 'NAIAGB21' }, { name: 'TSB Bank', code: 'TSBSGB2A' }, { name: 'Monzo', code: 'MONZGB2L' },
+    { name: 'Starling Bank', code: 'SRLGGB3L' }, { name: 'First Direct', code: 'MIDLGB22' }, { name: 'Metro Bank', code: 'MYMBGB2L' },
+    { name: 'Co-operative Bank', code: 'CPBKGB22' }, { name: 'Virgin Money', code: 'NRNBGB21' }, { name: 'Bank of Scotland', code: 'BOFSGB21' },
+    { name: 'Royal Bank of Scotland', code: 'RBSSGB2L' }, { name: 'Revolut', code: 'REVOGB21' }, { name: 'Wise (TransferWise)', code: 'TRWIGB22' },
+    { name: 'Chase UK', code: 'CHASDEFX' }, { name: 'Clydesdale Bank', code: 'CLYDGB21' }, { name: 'Standard Chartered UK', code: 'SCBLGB2L' },
+    { name: 'Investec Bank UK', code: 'INVSGB2X' }, { name: 'Handelsbanken UK', code: 'HANSGB22' }, { name: 'Triodos Bank UK', code: 'TRIOGB21' },
+    { name: 'Yorkshire Building Society', code: '' }, { name: 'Skipton Building Society', code: '' }, { name: 'Coventry Building Society', code: '' },
+    { name: 'Leeds Building Society', code: '' }, { name: 'Atom Bank', code: '' }, { name: 'Tandem Bank', code: '' },
+    { name: 'Marcus by Goldman Sachs', code: '' }, { name: 'Aldermore Bank', code: '' }, { name: 'Shawbrook Bank', code: '' },
+    { name: 'OakNorth Bank', code: '' }, { name: 'Paragon Bank', code: '' }, { name: 'Tesco Bank', code: '' },
+  ],
+  NG: [
+    { name: 'Access Bank', code: '044' }, { name: 'Zenith Bank', code: '057' }, { name: 'GTBank (Guaranty Trust)', code: '058' },
+    { name: 'First Bank of Nigeria', code: '011' }, { name: 'UBA (United Bank for Africa)', code: '033' }, { name: 'Fidelity Bank', code: '070' },
+    { name: 'FCMB (First City Monument Bank)', code: '214' }, { name: 'Union Bank', code: '032' }, { name: 'Sterling Bank', code: '232' },
+    { name: 'Stanbic IBTC Bank', code: '221' }, { name: 'Ecobank Nigeria', code: '050' }, { name: 'Keystone Bank', code: '082' },
+    { name: 'Polaris Bank', code: '076' }, { name: 'Wema Bank', code: '035' }, { name: 'Unity Bank', code: '215' },
+    { name: 'Citibank Nigeria', code: '023' }, { name: 'Standard Chartered Nigeria', code: '068' }, { name: 'JAIZ Bank', code: '301' },
+    { name: 'SunTrust Bank', code: '100' }, { name: 'Providus Bank', code: '101' }, { name: 'Titan Trust Bank', code: '102' },
+    { name: 'Globus Bank', code: '103' }, { name: 'Lotus Bank', code: '303' }, { name: 'Opay', code: '304' },
+    { name: 'Kuda Bank', code: '090267' }, { name: 'Moniepoint', code: '090405' }, { name: 'PalmPay', code: '999991' },
+  ],
+  GH: [
+    { name: 'Ghana Commercial Bank', code: 'GHCBGHAC' }, { name: 'Ecobank Ghana', code: 'ECOCGHAC' }, { name: 'Absa Bank Ghana', code: 'BARCGHAC' },
+    { name: 'Standard Chartered Ghana', code: 'SCBLGHAC' }, { name: 'Fidelity Bank Ghana', code: 'FBLIGHAC' }, { name: 'Stanbic Bank Ghana', code: 'SBICGHAC' },
+    { name: 'Zenith Bank Ghana', code: 'ZEBLGHAC' }, { name: 'Access Bank Ghana', code: 'ABNGGHAC' }, { name: 'Prudential Bank Ghana', code: 'PBGHGHAC' },
+    { name: 'UBA Ghana', code: 'UNAFGHAC' }, { name: 'CalBank Ghana', code: 'CALBGHAC' }, { name: 'Societe Generale Ghana', code: 'SGBFGHAC' },
+    { name: 'GTBank Ghana', code: 'GTBIGHAC' }, { name: 'Bank of Africa Ghana', code: 'BOAFGHAC' }, { name: 'Republic Bank Ghana', code: '' },
+    { name: 'Agricultural Development Bank (ADB)', code: '' }, { name: 'National Investment Bank (NIB)', code: '' }, { name: 'OmniBSIC Bank Ghana', code: '' },
+    { name: 'First Atlantic Bank Ghana', code: '' }, { name: 'Consolidated Bank Ghana', code: '' }, { name: 'ARB Apex Bank', code: '' },
+  ],
+  CA: [
+    { name: 'Royal Bank of Canada (RBC)', code: '003' }, { name: 'TD Canada Trust', code: '004' }, { name: 'Scotiabank', code: '002' },
+    { name: 'Bank of Montreal (BMO)', code: '001' }, { name: 'CIBC', code: '010' }, { name: 'National Bank of Canada', code: '006' },
+    { name: 'Laurentian Bank', code: '039' }, { name: 'Canadian Western Bank', code: '030' }, { name: 'Desjardins Group', code: '815' },
+    { name: 'ATB Financial', code: '219' }, { name: 'Manulife Bank', code: '540' }, { name: 'EQ Bank (Equitable)', code: '623' },
+    { name: 'Tangerine Bank', code: '614' }, { name: 'Coast Capital Savings', code: '809' }, { name: 'Meridian Credit Union', code: '837' },
+  ],
+  US: [
+    { name: 'JPMorgan Chase', code: 'CHASUS33' }, { name: 'Bank of America', code: 'BOFAUS3N' }, { name: 'Wells Fargo', code: 'WFBIUS6S' },
+    { name: 'Citibank', code: 'CITIUS33' }, { name: 'U.S. Bancorp (US Bank)', code: 'USBKUS44' }, { name: 'Truist Bank', code: 'BRBTUS33' },
+    { name: 'Goldman Sachs Bank', code: 'GSUSUS33' }, { name: 'TD Bank US', code: 'NRTHUS33' }, { name: 'PNC Bank', code: 'PNCCUS33' },
+    { name: 'Capital One', code: 'HIBKUS44' }, { name: 'Charles Schwab Bank', code: 'SWIBUS33' }, { name: 'Ally Bank', code: 'ALLBUS33' },
+    { name: 'Citizens Bank', code: 'CTZNUS33' }, { name: 'Fifth Third Bank', code: 'FTBCUS3C' }, { name: 'KeyBank', code: 'KEYCUS33' },
+    { name: 'Huntington Bank', code: 'HUNTUS33' }, { name: 'Regions Bank', code: '' }, { name: 'BMO Bank (BMO Harris)', code: '' },
+    { name: 'Comerica Bank', code: '' }, { name: 'Navy Federal Credit Union', code: '' }, { name: 'USAA Bank', code: '' },
+    { name: 'SoFi Bank', code: '' }, { name: 'Discover Bank', code: '' }, { name: 'Chime', code: '' },
+  ],
+  IN: [
+    { name: 'State Bank of India (SBI)', code: '' }, { name: 'HDFC Bank', code: '' }, { name: 'ICICI Bank', code: '' },
+    { name: 'Kotak Mahindra Bank', code: '' }, { name: 'Axis Bank', code: '' }, { name: 'Punjab National Bank (PNB)', code: '' },
+    { name: 'Bank of Baroda', code: '' }, { name: 'Canara Bank', code: '' }, { name: 'Union Bank of India', code: '' },
+    { name: 'Indian Bank', code: '' }, { name: 'Central Bank of India', code: '' }, { name: 'Bank of India', code: '' },
+    { name: 'IndusInd Bank', code: '' }, { name: 'Yes Bank', code: '' }, { name: 'Federal Bank', code: '' },
+    { name: 'IDFC First Bank', code: '' }, { name: 'Bandhan Bank', code: '' }, { name: 'IDBI Bank', code: '' },
+  ],
+};
+
 export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryAwareBankFormProps) {
   const [selectedCountry, setSelectedCountry] = useState<string>('GB'); // Default to UK
   const [formData, setFormData] = useState<any>({});
@@ -377,10 +441,14 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
     }
   }, []);
 
-  // Fetch bank list when country (and thus currency) changes
+  // Bank list: curated first for GB, NG, GH, CA, US, IN (avoids APILayer noise e.g. UK FCA entities); API for other countries.
   useEffect(() => {
     if (!selectedCountry || !countryInfo?.currency) {
       setAvailableBanks([]);
+      return;
+    }
+    if (CURATED_BANK_COUNTRIES.includes(selectedCountry as typeof CURATED_BANK_COUNTRIES[number])) {
+      setAvailableBanks(BUILTIN_BANKS[selectedCountry] ?? []);
       return;
     }
     let cancelled = false;
