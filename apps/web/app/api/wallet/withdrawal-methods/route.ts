@@ -1,59 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+
+/**
+ * Withdrawal methods API — available to all authenticated users (no creator role required).
+ * @see WEB_TEAM_BANK_ACCOUNTS_FOR_ALL_USERS.md
+ */
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
+};
 
 export async function GET(request: NextRequest) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
-  };
-
   try {
-    let supabase;
-    let user;
-    let authError;
-
-    // Check for Authorization header (mobile app) - try ALL mobile app headers
-    const authHeader = request.headers.get('authorization') || 
-                      request.headers.get('Authorization') ||
-                      request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token') ||
-                      request.headers.get('x-supabase-token');
-    
-    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-      // Mobile app authentication
-      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        }
-      );
-      
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      user = userData.user;
-      authError = userError;
-    } else {
-      // Web app authentication
-      const cookieStore = cookies();
-      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-      
-      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
-      user = userData;
-      authError = userError;
-    }
-
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -69,78 +34,30 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching withdrawal methods:', methodsError);
       return NextResponse.json(
         { error: 'Failed to fetch withdrawal methods' },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
     return NextResponse.json(
-      { 
-        methods: methods || [],
-        count: methods?.length || 0
-      },
-      { status: 200, headers: corsHeaders }
+      { methods: methods || [], count: methods?.length || 0 },
+      { status: 200, headers: CORS_HEADERS }
     );
-
   } catch (error: any) {
     console.error('Error fetching withdrawal methods:', error);
     return NextResponse.json(
-      { error: `Internal server error: ${error.message || 'Unknown error'}` },
-      { status: 500, headers: corsHeaders }
+      { error: error?.message || 'Unknown error' },
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
-  };
-
   try {
-    let supabase;
-    let user;
-    let authError;
-
-    // Check for Authorization header (mobile app) - try ALL mobile app headers
-    const authHeader = request.headers.get('authorization') || 
-                      request.headers.get('Authorization') ||
-                      request.headers.get('x-authorization') ||
-                      request.headers.get('x-auth-token') ||
-                      request.headers.get('x-supabase-token');
-    
-    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
-      // Mobile app authentication
-      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        }
-      );
-      
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      user = userData.user;
-      authError = userError;
-    } else {
-      // Web app authentication
-      const cookieStore = cookies();
-      supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-      
-      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
-      user = userData;
-      authError = userError;
-    }
-
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: CORS_HEADERS }
       );
     }
 
@@ -159,7 +76,7 @@ export async function POST(request: NextRequest) {
     if (!method_type || !method_name) {
       return NextResponse.json(
         { error: 'Method type and name are required' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -171,7 +88,7 @@ export async function POST(request: NextRequest) {
         if (!bank_details) {
           return NextResponse.json(
             { error: 'Bank details are required for bank transfer' },
-            { status: 400, headers: corsHeaders }
+            { status: 400, headers: CORS_HEADERS }
           );
         }
         encryptedDetails = {
@@ -188,7 +105,7 @@ export async function POST(request: NextRequest) {
         if (!paypal_email) {
           return NextResponse.json(
             { error: 'PayPal email is required' },
-            { status: 400, headers: corsHeaders }
+            { status: 400, headers: CORS_HEADERS }
           );
         }
         encryptedDetails = {
@@ -200,7 +117,7 @@ export async function POST(request: NextRequest) {
         if (!crypto_address) {
           return NextResponse.json(
             { error: 'Crypto address is required' },
-            { status: 400, headers: corsHeaders }
+            { status: 400, headers: CORS_HEADERS }
           );
         }
         encryptedDetails = {
@@ -214,7 +131,7 @@ export async function POST(request: NextRequest) {
         if (!card_details) {
           return NextResponse.json(
             { error: 'Card details are required' },
-            { status: 400, headers: corsHeaders }
+            { status: 400, headers: CORS_HEADERS }
           );
         }
         encryptedDetails = {
@@ -228,7 +145,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json(
           { error: 'Invalid method type' },
-          { status: 400, headers: corsHeaders }
+          { status: 400, headers: CORS_HEADERS }
         );
     }
 
@@ -253,39 +170,23 @@ export async function POST(request: NextRequest) {
       console.error('Error creating withdrawal method:', methodError);
       return NextResponse.json(
         { error: 'Failed to create withdrawal method' },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
     return NextResponse.json(
-      { 
-        success: true,
-        method: method,
-        message: 'Withdrawal method added successfully'
-      },
-      { status: 200, headers: corsHeaders }
+      { success: true, method, message: 'Withdrawal method added successfully' },
+      { status: 200, headers: CORS_HEADERS }
     );
-
   } catch (error: any) {
     console.error('Error creating withdrawal method:', error);
     return NextResponse.json(
-      { error: `Internal server error: ${error.message || 'Unknown error'}` },
-      { status: 500, headers: corsHeaders }
+      { error: error?.message || 'Unknown error' },
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
 
-// Handle preflight CORS requests
-export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json(
-    { message: 'CORS preflight' },
-    { 
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
-      }
-    }
-  );
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }

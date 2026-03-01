@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
+/**
+ * Payout eligibility for the current user. No creator role required — any authenticated user
+ * can have a verified bank account and balance; eligibility = verified bank + sufficient balance.
+ * @see WEB_TEAM_BANK_ACCOUNTS_FOR_ALL_USERS.md
+ */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    
-    // Get the current user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -15,7 +16,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get payout eligibility
     const { data, error } = await supabase.rpc('get_payout_eligibility', {
       p_creator_id: user.id
     });
