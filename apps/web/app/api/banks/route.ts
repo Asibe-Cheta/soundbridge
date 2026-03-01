@@ -10,7 +10,7 @@
  * Auth: Bearer token (standard user auth)
  * Cache: in-memory 7 days (key banks:{country}:{currency}). Use Redis in production if available.
  *
- * Env: WISE_API_TOKEN, APILAYER_API_KEY (optional; used when Wise returns no list)
+ * Env: WISE_API_KEY or WISE_API_TOKEN, APILAYER_API_KEY (optional; used when Wise returns no list)
  * @see WEB_TEAM_BANK_LIST_API_REQUIRED.md
  */
 
@@ -78,7 +78,7 @@ function extractWiseBanks(requirements: unknown[]): BankEntry[] {
 
 /** Wise account-requirements: GET form. Returns banks for non-IBAN countries; empty for UK/IBAN. */
 async function getWiseBanks(currency: string): Promise<BankEntry[]> {
-  const token = process.env.WISE_API_TOKEN;
+  const token = process.env.WISE_API_KEY || process.env.WISE_API_TOKEN;
   const baseUrl = (process.env.WISE_API_URL || 'https://api.wise.com').replace(/\/$/, '');
   if (!token) return [];
 
