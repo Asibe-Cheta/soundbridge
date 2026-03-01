@@ -82,11 +82,13 @@ export async function POST(
       },
     });
 
+    // Update only stripe_payment_intent_id (and updated_at); do not set stripe_client_secret
+    // here so the update succeeds when that column does not exist (migration not run).
+    // We still return client_secret in the response so the mobile can open the payment sheet.
     const { error: updateErr } = await serviceSupabase
       .from('opportunity_projects')
       .update({
         stripe_payment_intent_id: newPi.id,
-        ...(newPi.client_secret && { stripe_client_secret: newPi.client_secret }),
         updated_at: new Date().toISOString(),
       })
       .eq('id', projectId);
