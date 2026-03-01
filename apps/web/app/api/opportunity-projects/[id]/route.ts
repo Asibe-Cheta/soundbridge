@@ -34,7 +34,13 @@ export async function GET(
       return NextResponse.json({ error: 'Not allowed to view this project' }, { status: 403, headers: CORS });
     }
 
-    return NextResponse.json(project, { headers: CORS });
+    const isPoster = project.poster_user_id === user.id;
+    const out = { ...project };
+    if (project.status !== 'payment_pending' || !isPoster) {
+      delete (out as Record<string, unknown>).stripe_client_secret;
+    }
+
+    return NextResponse.json(out, { headers: CORS });
   } catch (e) {
     console.error('GET /api/opportunity-projects/[id]:', e);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS });

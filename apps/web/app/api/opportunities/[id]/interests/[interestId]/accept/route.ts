@@ -96,7 +96,10 @@ export async function POST(
         }
         const { error: updateErr } = await serviceSupabase
           .from('opportunity_projects')
-          .update({ stripe_payment_intent_id: paymentIntent.id })
+          .update({
+            stripe_payment_intent_id: paymentIntent.id,
+            stripe_client_secret: paymentIntent.client_secret ?? null,
+          })
           .eq('id', existingProject.id);
         if (updateErr) {
           console.error('opportunity_projects update stripe_payment_intent_id:', updateErr);
@@ -123,7 +126,7 @@ export async function POST(
         );
       }
       return NextResponse.json(
-        { error: 'Project already exists for this interest' },
+        { error: 'Project already created for this interest', project_id: existingProject.id },
         { status: 409, headers: CORS }
       );
     }
@@ -193,6 +196,7 @@ export async function POST(
         deadline: deadline || null,
         status: 'payment_pending',
         stripe_payment_intent_id: paymentIntent.id,
+        stripe_client_secret: paymentIntent.client_secret ?? null,
         chat_thread_id: conv.id,
       })
       .select()
