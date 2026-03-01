@@ -94,7 +94,7 @@ async function getWiseBanks(currency: string): Promise<BankEntry[]> {
   return extractWiseBanks(data);
 }
 
-/** APILayer Bank Data API — UK and IBAN countries. code left empty (user enters sort code/IBAN). */
+/** APILayer Bank Data API — UK, IBAN, US, CA and others. Map bic → code when present. */
 async function getAPILayerBanks(country: string): Promise<BankEntry[]> {
   const apiKey = process.env.APILAYER_API_KEY;
   if (!apiKey) return [];
@@ -105,12 +105,18 @@ async function getAPILayerBanks(country: string): Promise<BankEntry[]> {
   });
 
   if (!res.ok) return [];
-  const data = await res.json().catch(() => null);
-  if (!Array.isArray(data)) return [];
+  const raw = await res.json().catch(() => null);
+  const arr = Array.isArray(raw)
+    ? raw
+    : raw && Array.isArray((raw as { data?: unknown[] }).data)
+      ? (raw as { data: unknown[] }).data
+      : raw && Array.isArray((raw as { banks?: unknown[] }).banks)
+        ? (raw as { banks: unknown[] }).banks
+        : [];
 
-  return data.map((b: { id?: number; name?: string }) => ({
+  return arr.map((b: { name?: string; bic?: string; code?: string; id?: number }) => ({
     name: typeof b.name === 'string' ? b.name : '',
-    code: '',
+    code: typeof (b.bic ?? b.code) === 'string' ? String(b.bic ?? b.code) : '',
   })).filter((b) => b.name);
 }
 

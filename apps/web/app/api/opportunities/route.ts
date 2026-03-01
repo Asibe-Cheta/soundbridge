@@ -9,20 +9,9 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
 
-const ACTIVE_POST_LIMITS: Record<string, number> = {
-  free: 2,
-  premium: 10,
-  pro: 10,
-  unlimited: 999,
-};
-
-function getTierLimit(tier: string): number {
-  const t = (tier || 'free').toLowerCase();
-  return ACTIVE_POST_LIMITS[t] ?? ACTIVE_POST_LIMITS.free;
-}
-
 /**
- * POST /api/opportunities — Create opportunity (tier limit enforced)
+ * POST /api/opportunities — Create opportunity (no tier limit; posting is free and unlimited).
+ * @see WEB_TEAM_MOBILE_UPDATES_2026_03_01.MD
  */
 export async function POST(request: NextRequest) {
   try {
@@ -64,30 +53,6 @@ export async function POST(request: NextRequest) {
     }
     if (visibility && !['public', 'connections'].includes(visibility)) {
       return NextResponse.json({ error: 'visibility must be public or connections' }, { status: 400, headers: CORS });
-    }
-
-    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
-    const tier = (profile?.subscription_tier || 'free').toLowerCase();
-    const limit = getTierLimit(tier);
-
-    const { count, error: countErr } = await supabase
-      .from('opportunity_posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .gt('expires_at', new Date().toISOString());
-
-    if (!countErr && count !== null && count >= limit) {
-      return NextResponse.json(
-        {
-          error: 'active_post_limit_reached',
-          current_count: count,
-          limit,
-          upgrade_required: true,
-          message: `Free accounts can have ${limit} active opportunities. Upgrade to Premium for 10.`,
-        },
-        { status: 403, headers: CORS }
-      );
     }
 
     const { data: row, error } = await supabase
