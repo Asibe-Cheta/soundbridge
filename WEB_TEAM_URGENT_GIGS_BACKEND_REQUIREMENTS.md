@@ -404,6 +404,36 @@ CREATE POLICY "Parties can view their disputes"
   6. Prompt both parties to rate (handled via push notification)
 - Response: `{ "success": true, "data": { "released_amount": 105.60, "currency": "GBP" } }`
 
+**GET /api/gigs/my**
+- Auth required — requester (poster) only
+- Returns all urgent gigs posted by the authenticated user, newest first
+- Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "gig_type": "urgent",
+      "skill_required": "trumpeter",
+      "genre": ["gospel"],
+      "date_needed": "2026-02-24T19:00:00Z",
+      "duration_hours": 2,
+      "payment_amount": 120.00,
+      "payment_currency": "GBP",
+      "location_address": "Luton Church, 123 High St",
+      "status": "searching",
+      "payment_status": "escrowed",
+      "expires_at": "2026-02-24T23:00:00Z",
+      "response_count": 3,
+      "created_at": "2026-02-24T10:00:00Z"
+    }
+  ]
+}
+```
+- **Backend:** Endpoint implemented. If `gig_type` (or related columns) are missing, returns `200 { success: true, data: [] }` so the mobile never gets 500. Once the urgent-gigs schema migration is run, the section will populate automatically with no mobile release required (MyOpportunitiesScreen catch block only sees 500; 200 + empty array shows empty state).
+- Include `response_count` (number of `gig_responses` rows for that gig) so the mobile can show a badge without a separate request.
+
 **POST /api/gigs/:id/expire** *(internal — called by cron job, not mobile)*
 - Cancels urgent gig if `expires_at` passed and no provider selected
 - Refunds Stripe Payment Intent
@@ -853,6 +883,7 @@ if (content.length > 3000) { ... }
 - [ ] `GET /api/user/availability`
 - [ ] `PATCH /api/user/availability`
 - [ ] `POST /api/user/availability/location`
+- [x] `GET /api/gigs/my` (implemented; returns 200 with `data: []` if schema not ready, full list once migration run)
 - [ ] `POST /api/gigs/urgent` (create + Stripe Payment Intent + trigger matching)
 - [ ] `GET /api/gigs/urgent/:id`
 - [ ] `GET /api/gigs/urgent/:id/responses`

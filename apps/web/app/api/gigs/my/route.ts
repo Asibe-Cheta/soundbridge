@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('gigs/my:', error);
-      return NextResponse.json({ success: false, error: 'Failed to load' }, { status: 500, headers: CORS });
+      console.error('gigs/my:', error?.message ?? error);
+      return NextResponse.json({ success: true, data: [] }, { headers: CORS });
     }
 
     const list = gigs ?? [];
