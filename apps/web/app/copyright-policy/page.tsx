@@ -43,12 +43,15 @@ export default function CopyrightPolicyPage() {
                 <Scale className="w-6 h-6 mr-2 text-red-600" />
                 DMCA Takedown Process
               </h2>
+              <p className="text-gray-700 mb-4">
+                SoundBridge Live Ltd&apos;s DMCA Designated Agent is registered with the U.S. Copyright Office (Registration No. DMCA-1070287). To submit a takedown notice, email: <a href="mailto:contact@soundbridge.live" className="text-blue-600 hover:underline font-medium">contact@soundbridge.live</a>
+              </p>
               <div className="bg-red-50 p-6 rounded-lg mb-6">
                 <p className="text-red-900 font-semibold mb-4">
                   If you believe your copyright has been infringed, send a notice to:
                 </p>
                 <div className="bg-white p-4 rounded border-l-4 border-red-500">
-                  <p className="font-bold text-red-900 text-lg">dmca@soundbridge.live</p>
+                  <p className="font-bold text-red-900 text-lg">contact@soundbridge.live</p>
                 </div>
               </div>
               
