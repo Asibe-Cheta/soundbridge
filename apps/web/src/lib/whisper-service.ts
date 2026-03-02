@@ -45,12 +45,13 @@ export interface TranscriptionResult {
 }
 
 /**
- * Check if Whisper is installed on the system
+ * Check if Whisper is installed on the system.
+ * Uses command -v (POSIX) when which/where are not available (e.g. Vercel serverless).
  */
 export async function isWhisperInstalled(): Promise<boolean> {
   try {
-    // Check if whisper command is available
-    await execAsync('which whisper || where whisper');
+    // Prefer command -v (works in minimal sh); fallback for Windows
+    await execAsync('command -v whisper 2>/dev/null || which whisper 2>/dev/null || where whisper 2>/dev/null');
     return true;
   } catch (error) {
     console.error('Whisper is not installed:', error);

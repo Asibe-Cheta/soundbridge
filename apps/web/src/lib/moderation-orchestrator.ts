@@ -1,7 +1,7 @@
 // Moderation Orchestrator for SoundBridge
 // Combines Whisper transcription + OpenAI moderation + Spam detection
 
-import { transcribeAudioFromUrl } from './whisper-service';
+import { transcribeAudioFromUrl, isWhisperInstalled } from './whisper-service';
 import { moderateContent, type ModerationResult } from './content-moderation-service';
 import type { WhisperModel } from './whisper-service';
 
@@ -58,21 +58,33 @@ export async function moderateAudioTrack(
   try {
     console.log(`🎵 Starting moderation for track: ${metadata.title} by ${metadata.artistName}`);
 
-    // Step 1: Transcribe audio with Whisper
-    console.log('Step 1: Transcribing audio...');
-    const transcriptionResult = await transcribeAudioFromUrl(audioUrl, {
-      model: whisperModel,
-      sampleOnly,
-      maxDuration
-    });
+    let transcriptionText = '';
+    let transcriptionTime = 0;
 
-    console.log(`✅ Transcription complete in ${transcriptionResult.processingTime.toFixed(1)}s`);
-    console.log(`📝 Transcribed ${transcriptionResult.text.length} characters`);
+    const whisperAvailable = await isWhisperInstalled();
+    if (!whisperAvailable) {
+      console.warn(
+        '⚠️ Whisper is not installed in this environment (e.g. Vercel serverless). ' +
+          'Running metadata-only moderation (title, description, artist).'
+      );
+    } else {
+      // Step 1: Transcribe audio with Whisper
+      console.log('Step 1: Transcribing audio...');
+      const transcriptionResult = await transcribeAudioFromUrl(audioUrl, {
+        model: whisperModel,
+        sampleOnly,
+        maxDuration
+      });
+      transcriptionText = transcriptionResult.text;
+      transcriptionTime = transcriptionResult.processingTime;
+      console.log(`✅ Transcription complete in ${transcriptionResult.processingTime.toFixed(1)}s`);
+      console.log(`📝 Transcribed ${transcriptionResult.text.length} characters`);
+    }
 
-    // Step 2: Moderate transcription
+    // Step 2: Moderate (transcription when available, else metadata only)
     console.log('Step 2: Moderating content...');
     const moderationResult = await moderateContent(
-      transcriptionResult.text,
+      transcriptionText,
       {
         title: metadata.title,
         description: metadata.description,
@@ -91,8 +103,8 @@ export async function moderateAudioTrack(
     }
 
     return {
-      transcription: transcriptionResult.text,
-      transcriptionTime: transcriptionResult.processingTime,
+      transcription: transcriptionText,
+      transcriptionTime,
       moderationResult,
       totalProcessingTime,
       success: true

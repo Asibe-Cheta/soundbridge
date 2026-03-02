@@ -22,6 +22,15 @@ The cron job runs **every 5 minutes** and:
 - Moderation check → Within 5 minutes
 - Admin review → If flagged
 
+### Whisper on Vercel (serverless)
+
+Vercel’s serverless runtime does **not** include the Python Whisper CLI. The cron job detects this and **does not fail**: it runs **metadata-only moderation** (title, description, artist name) via OpenAI + spam checks. So:
+
+- **On Vercel:** Tracks are moderated using metadata only; no audio transcription.
+- **With Whisper** (e.g. Railway or self-hosted): Full pipeline runs (transcribe → moderate transcript + metadata).
+
+To get full transcription-based moderation in production, run the cron (or a separate worker) in an environment where Whisper is installed (see [WHISPER_SETUP_GUIDE.md](./WHISPER_SETUP_GUIDE.md)).
+
 ---
 
 ## Environment Variables Required

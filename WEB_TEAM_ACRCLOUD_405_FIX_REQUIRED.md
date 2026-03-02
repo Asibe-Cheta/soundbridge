@@ -170,3 +170,18 @@ curl -i -X POST "${BASE}/api/upload/fingerprint" \
 ### 4. Optional: echo endpoint to see what the server sees
 
 If you cannot access backend logs, add a temporary route that echoes method and path (e.g. `GET/POST /api/upload/fingerprint-debug` returning `{ method, path }`). Call it with POST from the same client and same base URL as the app. If the response shows `method: "GET"` or a different path, the issue is client-side or proxy (redirect/rewrite). Remove the debug route after use.
+
+---
+
+## Where to get ACRCloud keys for Identify API
+
+The fingerprint endpoint uses ACRCloud’s **Identify API** (`/v1/identify`), not the Console API.
+
+- **Identify API** uses the **Access Key** and **Access Secret** of a **specific project** (e.g. under “Audio & Video Recognition”). That’s what `ACRCLOUD_ACCESS_KEY` and `ACRCLOUD_ACCESS_SECRET` in Vercel must be.
+- **Account-level** “Old Access Keys” and “Personal Access Token” (under Developer Setting) are for the **Console API** only. The console warns: *“Please do not use them for Identify API which needs access key and access secret of a specific project you created.”*
+
+So if keys “disappeared” in the console:
+
+1. You may be looking in the wrong place: **Developer Setting → Old Access Keys / Personal Access Token** are not used for fingerprinting.
+2. Go to **Products → Audio & Video Recognition** → open (or create) a project. The project’s **Access Key** and **Access Secret** are shown there. Those are the values to put in Vercel as `ACRCLOUD_ACCESS_KEY` and `ACRCLOUD_ACCESS_SECRET`.
+3. Confirm you’re in the correct ACRCloud account (the one used when the project was created). If the project was created under another account, either use that account to copy the project keys or create a new project in the current account and update Vercel with the new key/secret.

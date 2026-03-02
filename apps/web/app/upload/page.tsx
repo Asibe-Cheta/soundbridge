@@ -292,6 +292,7 @@ export default function UnifiedUploadPage() {
     if (contentType === 'podcast' && !episodeNumber.trim()) return 'Episode number is required';
     if (contentType === 'podcast' && !podcastCategory.trim()) return 'Category selection is required for podcast episodes';
     if (!uploadState.audioFile) return 'Audio file is required';
+    if (!uploadState.coverArtFile) return 'Cover art is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
     
     // ACRCloud + ISRC validation (music only)
@@ -1727,10 +1728,10 @@ export default function UnifiedUploadPage() {
             </div>
           </div>
 
-          {/* Cover Art */}
+          {/* Cover Art (required) */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Cover Art
+              Cover Art <span className="text-red-500">*</span>
             </h3>
             <ImageUpload
               onImageSelect={handleCoverArtSelect}
@@ -1740,6 +1741,14 @@ export default function UnifiedUploadPage() {
               uploadProgress={uploadState.uploadProgress.cover}
               uploadStatus={uploadState.uploadStatus}
             />
+            {!uploadState.coverArtFile && (
+              <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <AlertTriangle className="w-4 h-4 inline mr-1" />
+                  Cover art is required to publish your track.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Copyright Agreement */}
@@ -1792,6 +1801,7 @@ export default function UnifiedUploadPage() {
               disabled={
                 uploadState.isUploading || 
                 isValidating || 
+                !uploadState.coverArtFile ||
                 !agreedToCopyright ||
                 (!!isrcCode.trim() && (isrcVerificationStatus === 'loading' || isrcVerificationStatus === 'error'))
               }
