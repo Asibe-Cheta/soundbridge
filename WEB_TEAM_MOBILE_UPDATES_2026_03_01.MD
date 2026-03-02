@@ -158,33 +158,9 @@ Replace with no limit — any authenticated user can create as many opportunitie
 
 ---
 
-## 4. REGRESSION: `GET /api/opportunities/mine` — Now Returning 500
+## 4. ~~REGRESSION: `GET /api/opportunities/mine`~~ — ✅ FIXED (2026-03-01)
 
-**Observed:** 2026-03-01 (post build #212 local testing)
-
-`GET /api/opportunities/mine` is returning `500 { "error": "Failed to load opportunities" }`. This endpoint was **previously working** — it is not a new feature, it is a regression.
-
-**Impact:** Users cannot see any of their own posted opportunities on the My Opportunities screen. The screen falls back to an empty state.
-
-**Likely cause:** The schema migration requested in `WEB_TEAM_URGENT_GIGS_BACKEND_REQUIREMENTS.md` adds:
-
-```sql
-ALTER TABLE opportunities
-  ADD COLUMN gig_type TEXT NOT NULL DEFAULT 'planned'
-  ...
-```
-
-If this migration ran but the `GET /api/opportunities/mine` query now references `gig_type` without proper fallback handling (or if the migration failed mid-way and left the table in a bad state), the query will throw.
-
-**Fix:**
-
-1. Check Vercel function logs for the full error stack trace on `/api/opportunities/mine`
-2. If the migration ran: ensure `GET /api/opportunities/mine` either:
-   - Filters `WHERE gig_type = 'planned'` (to return only planned opportunities)
-   - **Or** returns all regardless of `gig_type` (simpler)
-3. If the migration has NOT run yet: the cause is something else — check Vercel logs
-
-**This is P0 — users cannot see their own posts at all.**
+**Resolved by web team:** The 500 was caused by the query referencing `gig_type` before the migration ran. Fixed by selecting only base columns — endpoint now returns 200 regardless of migration state. Will return full planned opportunity list once the urgent-gigs schema migration runs. No mobile release required.
 
 ---
 
@@ -244,7 +220,7 @@ These likely use the existing `connections` or `collaboration_requests` table. C
 | Poster project list (`?role=poster`) | ✅ Implemented | Verify `role=poster` filter works; return `stripe_client_secret` for `payment_pending` |
 | Bank picker for GB/IBAN countries | ✅ Fallback in place | Fix `/api/banks` to return banks from APILayer (key already in Vercel) |
 | Unlimited opportunity posting | ✅ Limit removed | Remove server-side tier limit on `POST /api/opportunities` |
-| `GET /api/opportunities/mine` | ✅ Was working | **REGRESSION** — now 500; check Vercel logs, likely migration side-effect |
+| `GET /api/opportunities/mine` | ✅ Working | ✅ Fixed — was 500, now returns 200; populates after migration |
 | `GET /api/connections/requests/pending` | ✅ Mobile wired | **MISSING** — 404; build endpoint + accept/decline routes |
 
 ---
