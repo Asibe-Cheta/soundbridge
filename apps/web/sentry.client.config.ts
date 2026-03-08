@@ -31,6 +31,10 @@ Sentry.init({
     'ChunkLoadError:',
     /Loading chunk [\d]+ failed/,
     'Multiple Sentry Session Replay instances are not supported',
+    // Instagram/Meta in-app browser: injected script fails when WebView bridge is torn down
+    'Error invoking enableButtonsClickedMetaDataLogging: Java object is gone',
+    /enableButtonsClickedMetaDataLogging.*Java object is gone/,
+    /Java object is gone/,
   ],
 
   // Enable logs to be sent to Sentry
@@ -70,6 +74,15 @@ Sentry.init({
 
     // Filter out localhost errors in production build
     if (event.request?.url?.includes('localhost')) {
+      return null;
+    }
+
+    // Drop errors from Instagram/Meta in-app browser injected scripts (WebView bridge teardown)
+    const message = event.exception?.values?.[0]?.value ?? event.message ?? '';
+    if (
+      typeof message === 'string' &&
+      (message.includes('Java object is gone') || message.includes('enableButtonsClickedMetaDataLogging'))
+    ) {
       return null;
     }
 
