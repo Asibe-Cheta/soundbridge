@@ -1,65 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
-// CORS headers for mobile app
-const corsHeaders = {
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
-};
+  'Content-Type': 'application/json',
+} as const;
 
-export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+function jsonResponse(body: object, status = 200) {
+  return NextResponse.json(body, { status, headers: CORS_HEADERS });
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: CORS_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
   try {
     console.log('🔍 Check Username API called');
 
-    // Parse request body
-    const body = await request.json();
-    const { username } = body;
+    const body = await request.json().catch(() => ({}));
+    const username = typeof body?.username === 'string' ? body.username : undefined;
 
-    // Validate username is provided
-    if (!username || typeof username !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'Username is required' },
-        { status: 400, headers: corsHeaders }
-      );
+    if (!username) {
+      return jsonResponse({ success: false, error: 'Username is required' }, 400);
     }
 
-    // Validate username format
     const usernamePattern = /^[a-z0-9_]+$/;
     const trimmedUsername = username.toLowerCase().trim();
 
     if (trimmedUsername.length < 3) {
-      return NextResponse.json(
-        { success: false, error: 'Username must be at least 3 characters' },
-        { status: 400, headers: corsHeaders }
-      );
+      return jsonResponse({ success: false, error: 'Username must be at least 3 characters' }, 400);
     }
-
     if (trimmedUsername.length > 30) {
-      return NextResponse.json(
-        { success: false, error: 'Username must be no more than 30 characters' },
-        { status: 400, headers: corsHeaders }
-      );
+      return jsonResponse({ success: false, error: 'Username must be no more than 30 characters' }, 400);
     }
-
     if (!usernamePattern.test(trimmedUsername)) {
-      return NextResponse.json(
+      return jsonResponse(
         { success: false, error: 'Username can only contain lowercase letters, numbers, and underscores' },
-        { status: 400, headers: corsHeaders }
+        400
       );
     }
 
-    // Get Supabase client (authentication optional for username checking)
     const { supabase } = await getSupabaseRouteClient(request, false);
 
-    // Check if username exists
     const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
       .select('username')
@@ -68,36 +56,30 @@ export async function POST(request: NextRequest) {
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('❌ Error checking username:', checkError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to check username availability' },
-        { status: 500, headers: corsHeaders }
-      );
+      return jsonResponse({ success: false, error: 'Failed to check username availability' }, 500);
     }
 
     const isAvailable = !existingProfile;
-
-    // Generate suggestions if username is unavailable
-    const suggestions: string[] = [];
-    if (!isAvailable) {
-      // Generate 3 alternative suggestions
-      for (let i = 1; i <= 3; i++) {
-        suggestions.push(`${trimmedUsername}${i}`);
-      }
-    }
+    const suggestions: string[] = !isAvailable
+      ? [`${trimmedUsername}1`, `${trimmedUsername}2`, `${trimmedUsername}3`]
+      : [];
 
     console.log('✅ Username check completed:', { username: trimmedUsername, available: isAvailable });
 
-    return NextResponse.json({
+    return jsonResponse({
       success: true,
       available: isAvailable,
-      suggestions: suggestions
-    }, { headers: corsHeaders });
-
-  } catch (error: any) {
-    console.error('❌ Error checking username:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error', details: error.message },
-      { status: 500, headers: corsHeaders }
+      suggestions,
+    });
+  } catch (err: unknown) {
+    console.error('❌ Error checking username:', err);
+    return jsonResponse(
+      {
+        success: false,
+        error: 'Internal server error',
+        details: err instanceof Error ? err.message : 'Unknown error',
+      },
+      500
     );
   }
 }
