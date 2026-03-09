@@ -177,7 +177,7 @@ export default function TermsOfService() {
                 <strong>File Validation:</strong> All uploaded content undergoes automated validation to ensure compliance with our technical requirements, copyright policies, and community guidelines.
               </p>
               <p>
-                <strong>Tier-Based Limits:</strong> Storage limits vary by subscription tier: Free (30MB), Premium (2GB), and Unlimited (10GB). Upload limits are: Free (3 lifetime tracks), Premium (7 tracks per month), and Unlimited (unlimited tracks). Processing times also vary by tier.
+                <strong>Tier-Based Limits:</strong> Storage limits vary by subscription tier: Free (250MB), Premium (2GB), and Unlimited (10GB). Free tier is storage-based (250MB, roughly 30–40 tracks); Premium and Unlimited offer higher storage and features. Processing times also vary by tier.
               </p>
               <p>
                 <strong>Content Analysis:</strong> We may analyze your content using automated systems to detect copyright violations, inappropriate content, or technical issues.
@@ -256,7 +256,7 @@ export default function TermsOfService() {
                 <strong>Feature Changes:</strong> We reserve the right to modify subscription features, limits, and pricing with 30 days' notice. Continued use constitutes acceptance of changes.
               </p>
               <p>
-                <strong>Downgrades and Grace Period:</strong> When you downgrade from Premium or Unlimited to Free, you'll receive a 90-day grace period where all your content remains accessible. During this time, you cannot upload new content if you're over the 30MB free tier limit. After 90 days, you'll choose which tracks to keep public (within 30MB), and the rest will become private (still accessible to you, but not public). You can re-subscribe anytime to restore public access to all your content. Grace periods are limited to once per year to prevent abuse.
+                <strong>Downgrades and Grace Period:</strong> When you downgrade from Premium or Unlimited to Free, you&apos;ll receive a 90-day grace period where all your content remains accessible. Tracks over the 250MB free tier limit are set to private (not deleted) — still accessible to you, but not public. You can re-subscribe anytime to restore public access. Nothing is deleted. Grace periods are limited to once per year to prevent abuse.
               </p>
             </div>
           </section>

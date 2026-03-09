@@ -89,10 +89,9 @@ function PricingContent() {
       borderColor: 'border-blue-200/50',
       buttonColor: 'bg-blue-600 hover:bg-blue-700',
       features: [
-        '3 track uploads (lifetime)',
+        '250MB storage (~30–40 tracks)',
         '5 professional searches/month',
         '2 direct messages/month (outbound)',
-        '30MB total storage',
         'Unlimited streaming',
         'Basic profile & portfolio',
         'Receive tips (keep 95%)',
@@ -174,7 +173,7 @@ function PricingContent() {
         { name: 'Track Uploads', free: '3 lifetime', premium: '7/month', unlimited: 'Unlimited' },
         { name: 'Professional Searches', free: '5/month', premium: 'Unlimited', unlimited: 'Unlimited' },
         { name: 'Direct Messages (sent)', free: '2/month', premium: 'Unlimited', unlimited: 'Unlimited' },
-        { name: 'Storage Space', free: '30MB', premium: '2GB', unlimited: '10GB' },
+        { name: 'Storage Space', free: '250MB', premium: '2GB', unlimited: '10GB' },
         { name: 'Audio Previews in Posts', free: '30 seconds', premium: '60 seconds', unlimited: '60 seconds' },
         { name: 'Max File Size', free: '50MB', premium: '50MB', unlimited: '50MB' }
       ]
@@ -468,7 +467,7 @@ function PricingContent() {
                 <div className="space-y-3 text-white/70">
                   <div className="flex justify-between items-center">
                     <span>Free Tier</span>
-                    <span className="text-blue-400 font-semibold">30MB • 2-5 min</span>
+                    <span className="text-blue-400 font-semibold">250MB • 2-5 min</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Premium Tier</span>
@@ -630,7 +629,7 @@ function PricingContent() {
                 },
                 {
                   q: "What happens to my content if I downgrade?",
-                  a: "Your content is always safe. When you downgrade, you keep all your uploads and can still access them. You'll just lose access to premium features."
+                  a: "Your content is never deleted. When you downgrade to Free (250MB), tracks within that limit remain public. Tracks exceeding 250MB are set to private for 90 days — you can re-subscribe at any time to restore them."
                 },
                 {
                   q: "How does revenue sharing work?",
@@ -638,23 +637,31 @@ function PricingContent() {
                 },
                 {
                   q: "Do you offer a free trial?",
-                  a: "We don't offer a traditional free trial because our Free tier IS your trial! You get unlimited time to test SoundBridge with 3 uploads, professional searches, and messaging - no credit card required. When you're ready to upgrade to Pro, you're protected by our 7-day money-back guarantee. If Pro isn't right for you, request a refund within 7 days for a full refund, no questions asked."
+                  a: "We don't offer a traditional free trial because our Free tier IS your trial! You get 250MB storage to upload your music and podcasts, plus professional searches and messaging — no credit card required. When you're ready to upgrade, you're protected by our 7-day money-back guarantee."
                 },
                 {
                   q: "How does the 7-day money-back guarantee work?",
-                  a: "If you upgrade to Pro and decide it's not for you within 7 days of payment, simply request a refund from your billing settings. You'll receive a full refund within 3-5 business days, no questions asked. Your account will revert to the Free tier. If you have more than 3 tracks, you'll choose which 3 to keep public - the rest become private (not deleted)."
+                  a: "If you upgrade and decide it's not for you within 7 days of payment, request a refund from your billing settings. You'll receive a full refund within 3-5 business days, no questions asked. Your account will revert to the Free tier (250MB). Content over 250MB becomes private (not deleted); re-subscribe anytime to restore public access."
                 },
                 {
                   q: "What happens to my content if I cancel or request a refund?",
-                  a: "Your content is never deleted. If you have more than 3 tracks when you downgrade to Free, you'll choose which 3 to keep public. The rest become private (only visible to you). If you upgrade to Pro again later, all your tracks automatically become public again."
+                  a: "Your content is never deleted. When you downgrade to Free (250MB), tracks within that limit stay public. Tracks exceeding 250MB are set to private for 90 days (still accessible to you). Re-subscribe anytime to restore public access to all your content."
                 },
                 {
                   q: "What are the upload and storage limits?",
-                  a: "Free tier: 3 lifetime track uploads and 30MB total storage. Premium tier: 7 tracks per month and 2GB total storage. Unlimited tier: Unlimited track uploads and 10GB total storage. All plans include our smart validation system."
+                  a: "Free tier: 250MB storage (roughly 30–40 high-quality tracks). Premium: 2GB storage. Unlimited: 10GB storage. All plans include our smart validation system. Upgrade to Premium or Unlimited for more."
+                },
+                {
+                  q: "How much storage do I get for free?",
+                  a: "250MB, enough for approximately 30–40 high-quality audio tracks."
+                },
+                {
+                  q: "How many tracks can I upload for free?",
+                  a: "The free tier is storage-based (250MB), not track-count-based. At an average of ~8MB per high-quality track, that's roughly 30–40 tracks. Upgrade to Premium (2GB) or Unlimited (10GB) for more."
                 },
                 {
                   q: "What happens to my content if I downgrade from Premium/Unlimited to Free?",
-                  a: "When you downgrade, you'll receive a 90-day grace period where all your content remains accessible. During this time, you cannot upload new content if you're over the 30MB free tier limit. After 90 days, you'll choose which tracks to keep public (within 30MB), and the rest will become private (still accessible to you, but not public). You can re-subscribe anytime to restore public access to all your content."
+                  a: "When you downgrade, you get a 90-day grace period where all your content remains accessible. Tracks over the 250MB free limit are set to private (not deleted) — still accessible to you, but not public. You can re-subscribe anytime to restore public access. Nothing is deleted."
                 },
                 {
                   q: "How does the upload validation work?",

@@ -7,7 +7,7 @@ function getServiceSupabase() {
   return _serviceSupabase;
 }
 
-const FREE_TIER_STORAGE_LIMIT = 30 * 1024 * 1024; // 30MB in bytes
+const FREE_TIER_STORAGE_LIMIT = 250 * 1024 * 1024; // 250MB in bytes
 const GRACE_PERIOD_DAYS = 90;
 
 /**
@@ -194,7 +194,7 @@ export async function expireGracePeriods(): Promise<{
 
 /**
  * Mark excess content as private when grace period expires
- * Keeps tracks that fit within 30MB limit as public, marks the rest as private
+ * Keeps tracks that fit within 250MB limit as public, marks the rest as private
  * 
  * Note: Since posts and audio_tracks don't have a direct foreign key relationship,
  * we mark posts as private based on the user's total storage usage. Posts containing
@@ -215,7 +215,7 @@ async function markExcessContentPrivate(userId: string, storageAtDowngrade: numb
     return;
   }
 
-  // Select tracks that fit in 30MB
+  // Select tracks that fit in 250MB
   let totalSize = 0;
   const publicTrackIds: string[] = [];
   const privateTrackIds: string[] = [];

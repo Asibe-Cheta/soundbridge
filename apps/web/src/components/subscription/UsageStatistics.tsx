@@ -106,7 +106,7 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
       value: storageStatus ? `${storageStatus.usedFormatted} / ${storageStatus.limitFormatted}` : (usage.formatted_storage || '0 B'),
       icon: <HardDrive className="h-5 w-5 text-orange-500" />,
       color: 'bg-orange-50 border-orange-200',
-      description: storageStatus ? `${storageStatus.percentage}% of ${storageStatus.tier === 'free' ? '30MB' : storageStatus.tier === 'premium' ? '2GB' : '10GB'} limit used` : 'Total storage space used'
+      description: storageStatus ? `${storageStatus.percentage}% of ${storageStatus.tier === 'free' ? '250MB' : storageStatus.tier === 'premium' ? '2GB' : '10GB'} limit used` : 'Total storage space used'
     },
     {
       title: 'Total Plays',
@@ -212,7 +212,7 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
             <div className="flex items-center space-x-2">
               <HardDrive className="h-5 w-5" style={{ color: '#f97316' }} />
               <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                Storage Limit ({storageStatus.tier === 'free' ? '30MB' : storageStatus.tier === 'premium' ? '2GB' : '10GB'})
+                Storage Limit ({storageStatus.tier === 'free' ? '250MB' : storageStatus.tier === 'premium' ? '2GB' : '10GB'})
               </h4>
             </div>
             <span className="text-xs font-medium" style={{ color: storageStatus.percentage > 90 ? '#ef4444' : storageStatus.percentage > 70 ? '#f59e0b' : 'var(--text-secondary)' }}>
@@ -315,7 +315,7 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
                 ? 'Premium users can upload up to 7 tracks per month. Limit resets on the 1st of each month.'
                 : data?.subscription?.tier === 'unlimited'
                 ? 'Unlimited users can upload as many tracks as they want, up to 10GB storage.'
-                : 'Free users can upload up to 3 tracks total (lifetime limit). Upgrade to Premium for 7 uploads per month or Unlimited for unlimited uploads.'
+                : 'Free users get 250MB storage (roughly 30–40 tracks). Upgrade to Premium (2GB) or Unlimited (10GB) for more.'
               }
             </p>
           </div>

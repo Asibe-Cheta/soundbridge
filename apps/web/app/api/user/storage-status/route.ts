@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // Define storage limits per tier (in bytes)
     const STORAGE_LIMITS: Record<string, number> = {
-      free: 30 * 1024 * 1024,      // 30MB
+      free: 250 * 1024 * 1024,     // 250MB
       premium: 2 * 1024 * 1024 * 1024,  // 2GB
       unlimited: 10 * 1024 * 1024 * 1024, // 10GB
     };

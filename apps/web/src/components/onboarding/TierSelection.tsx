@@ -75,7 +75,7 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-green-400 flex-shrink-0" />
-                  <span className="text-sm">3 track uploads (lifetime)</span>
+                  <span className="text-sm">250MB storage</span>
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-green-400 flex-shrink-0" />

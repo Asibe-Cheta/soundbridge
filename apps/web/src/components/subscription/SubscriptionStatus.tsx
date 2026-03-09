@@ -234,7 +234,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
               style={{ color: 'var(--text-primary)' }}
             >
               {subscription.tier === 'free'
-                ? '30MB Storage'
+                ? '250MB Storage'
                 : subscription.tier === 'premium'
                 ? '2GB Storage'
                 : '10GB Storage'}

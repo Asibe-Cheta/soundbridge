@@ -461,7 +461,7 @@ function SubscriptionDashboardContent({ className = '' }: SubscriptionDashboardP
                 Grace Period Expired
               </h3>
               <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
-                Your grace period has ended. Only 30MB of your content remains public. The rest is now private (still accessible to you, but not visible to others).
+                Your grace period has ended. Content within the 250MB free limit remains public. The rest is now private (still accessible to you, but not visible to others).
               </p>
               <div className="flex items-center space-x-2 text-sm mb-4" style={{ color: '#ef4444' }}>
                 <X className="h-4 w-4" />
