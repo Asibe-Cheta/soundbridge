@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -195,9 +196,23 @@ export async function GET(request: NextRequest) {
     const { data: searchLimit } = await supabase.rpc('check_search_limit', { p_user_id: user.id });
     const { data: messageLimit } = await supabase.rpc('check_message_limit', { p_user_id: user.id });
 
+    // Founding member: check by email (service client can read founding_members)
+    let isFoundingMember = false;
+    const email = user.email?.toLowerCase().trim();
+    if (email) {
+      const serviceSupabase = createServiceClient();
+      const { data: fm } = await serviceSupabase
+        .from('founding_members')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      isFoundingMember = !!fm;
+    }
+
     return NextResponse.json({
       success: true,
       data: {
+        is_founding_member: isFoundingMember,
         subscription: finalSubscription,
         usage: usage || defaultUsage,
         revenue: revenue || defaultRevenue,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export interface SubscriptionData {
+  is_founding_member?: boolean;
   subscription: {
     tier: 'free' | 'premium' | 'unlimited'; // Updated: premium and unlimited instead of pro/enterprise
     status: 'active' | 'cancelled' | 'expired' | 'trial' | 'past_due';

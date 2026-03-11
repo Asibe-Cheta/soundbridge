@@ -147,15 +147,28 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
             </p>
           </div>
         </div>
-        <span
-          className="px-3 py-1 rounded-full text-sm font-medium"
-          style={{
-            background: tierInfo.badgeColor,
-            color: 'white'
-          }}
-        >
-          {tierInfo.name}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="px-3 py-1 rounded-full text-sm font-medium"
+            style={{
+              background: tierInfo.badgeColor,
+              color: 'white'
+            }}
+          >
+            {tierInfo.name}
+          </span>
+          {data.is_founding_member && (
+            <span
+              className="px-3 py-1 rounded-full text-xs font-medium"
+              style={{
+                background: 'linear-gradient(to right, #DC2626, #EC4899)',
+                color: 'white'
+              }}
+            >
+              Founding Member
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

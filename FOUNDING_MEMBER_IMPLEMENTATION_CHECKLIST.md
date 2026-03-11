@@ -74,21 +74,18 @@ Backend and frontend changes (web team / codebase).
 
 - [x] In `apps/web/app/api/stripe/create-checkout-session/route.ts`: after auth, check `founding_members` by user email (service client). If found and `STRIPE_FOUNDING_MEMBER_COUPON_ID` is set, create the checkout session with `discounts: [{ coupon: ... }]`. No promo code; applied automatically for founding members.
 
-### 7. Profile / subscription API: expose Founding Member
+### 7. Profile / subscription API: expose Founding Member — done
 
-- [ ] Wherever the app returns current user profile or subscription status (e.g. `/api/user/subscription-status`, profile fetch, or Me API), include a field such as `is_founding_member: boolean` so the dashboard and any badge UI can use it.
-- [ ] Set this from the DB (founding_members table or profiles.is_founding_member).
+- [x] `/api/subscription/status` returns `is_founding_member: boolean` (lookup by user email in `founding_members`). Dashboard and badge use it.
 
-### 8. Founding Member badge on web
+### 8. Founding Member badge on web — done
 
-- [ ] On profile (and anywhere you show “Pro” / “Unlimited” badges), if `is_founding_member` is true, show a “Founding Member” badge (design to match existing tier badges).
-- [ ] Ensure the badge is based on the backend flag, not on subscription tier (they keep the badge even if they lapse).
+- [x] Subscription dashboard (SubscriptionStatus) shows a “Founding Member” badge when `is_founding_member` is true (red–pink gradient pill next to tier badge).
 
-### 9. Founding Member claim landing page + API (email CTA)
+### 9. Founding Member claim landing page + API (email CTA) — done
 
-- [ ] **Landing page** (e.g. `/founding-member`): Short copy about Founding Member benefits, one primary CTA: **“I am a Founding Member”** (or “Claim my status”). On click: either use logged-in user’s email or show a field to enter the email they used on the waitlist. Call the check API, then show success or graceful “not on the list” message. No subscription or app download required here—just claim/confirm status.
-- [ ] **API** (e.g. `POST /api/founding-member/check` or `GET /api/founding-member/check?email=...`): Accept email (from body or query; or from session if logged in). Normalize email (lowercase, trim). Look up in `founding_members` (or the table that holds the 100 emails). Return e.g. `{ found: true }` or `{ found: false }` and optional `message` for UI. Rate-limit by IP/email to avoid abuse. Do not expose the full list.
-- [ ] Backend must have the 100 founding member emails loaded (see step 5 backfill) before this page is used. Set `{{cta_url}}` in the email to this landing page URL (e.g. `https://soundbridge.live/founding-member`).
+- [x] **Landing page** `/founding-member`: Copy + email field (pre-filled if logged in) + “I'm a Founding Member” button. Calls check API and shows success or “not on the list” message with contact hint.
+- [x] **API** `POST /api/founding-member/check`: Body `{ email? }` or uses session email. Looks up in `founding_members`, returns `{ found, message }`. Set `{{cta_url}}` in the email to `https://soundbridge.live/founding-member`.
 
 ### 10. (Optional) Endpoint to send Founding Member emails
 
