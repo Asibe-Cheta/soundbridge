@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { stripe, getPriceId } from '@/src/lib/stripe';
 
 export const dynamic = 'force-dynamic';
@@ -75,6 +76,20 @@ export async function POST(request: NextRequest) {
     
     console.log('[create-checkout-session] User authenticated:', user.id);
 
+    // Founding member: apply 10% coupon if email is in founding_members
+    const foundingMemberCouponId = process.env.STRIPE_FOUNDING_MEMBER_COUPON_ID;
+    let applyFoundingMemberCoupon = false;
+    const email = user.email?.toLowerCase().trim();
+    if (email && foundingMemberCouponId) {
+      const serviceSupabase = createServiceClient();
+      const { data: fm } = await serviceSupabase
+        .from('founding_members')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      applyFoundingMemberCoupon = !!fm;
+    }
+
     // Get price ID from body or derive from plan + billing cycle
     let finalPriceId = priceId;
     if (!finalPriceId && plan) {
@@ -140,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Checkout Session
-    console.log('[create-checkout-session] Creating session for user:', user.id);
+    console.log('[create-checkout-session] Creating session for user:', user.id, applyFoundingMemberCoupon ? '(founding member coupon applied)' : '');
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -151,6 +166,9 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
+      ...(applyFoundingMemberCoupon && foundingMemberCouponId
+        ? { discounts: [{ coupon: foundingMemberCouponId }] }
+        : {}),
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/pricing?canceled=true`,
       // Note: Do NOT set customer_email when customer is set - Stripe only allows one

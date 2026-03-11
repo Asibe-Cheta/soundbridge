@@ -44,7 +44,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
     );
   }
 
-  const { subscription, features } = data;
+  const { subscription } = data;
 
   const getTierInfo = (tier: string) => {
     switch (tier) {
@@ -205,153 +205,54 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
           Plan Features
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {/* Upload Limits */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: '#10b981' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {subscription.tier === 'free'
-                ? '3 Lifetime Uploads'
-                : subscription.tier === 'premium'
-                ? '7 Uploads Per Month'
-                : 'Unlimited Uploads'}
-            </span>
-          </div>
-
-          {/* Storage Limits */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: '#10b981' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {subscription.tier === 'free'
-                ? '250MB Storage'
-                : subscription.tier === 'premium'
-                ? '2GB Storage'
-                : '10GB Storage'}
-            </span>
-          </div>
-
-          {/* Unlimited Searches */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.unlimitedSearches ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.unlimitedSearches ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Unlimited Searches
-            </span>
-          </div>
-
-          {/* Unlimited Messages */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.unlimitedMessages ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.unlimitedMessages ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Unlimited Messages
-            </span>
-          </div>
-
-          {/* Advanced Analytics */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.advancedAnalytics ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.advancedAnalytics ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Advanced Analytics
-            </span>
-          </div>
-
-          {/* Custom Username */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.customUsername ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.customUsername ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Custom Username
-            </span>
-          </div>
-
-          {/* Priority Support */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.prioritySupport ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.prioritySupport ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Priority Support
-            </span>
-          </div>
-
-          {/* Revenue Sharing */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.revenueSharing ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.revenueSharing ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Revenue Sharing
-            </span>
-          </div>
-
-          {/* Featured Placement */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.featuredPlacement ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.featuredPlacement ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Featured Placement
-            </span>
-          </div>
-
-          {/* Verified Badge */}
-          <div className="flex items-center space-x-2">
-            <CheckCircle
-              className="h-4 w-4"
-              style={{ color: features.verifiedBadge ? '#10b981' : 'var(--text-tertiary)' }}
-            />
-            <span
-              className="text-sm"
-              style={{ color: features.verifiedBadge ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-            >
-              Verified Badge Eligible
-            </span>
-          </div>
+          {(subscription.tier === 'free'
+            ? [
+                '250MB storage (~30–40 tracks)',
+                'Unlimited event promotion',
+                'Create & sell event tickets',
+                'Basic profile & networking',
+                'Receive tips (keep 95%)',
+                'Browse & discover music',
+                'Basic analytics',
+                'Community support',
+              ]
+            : subscription.tier === 'premium'
+            ? [
+                'Host paid events (keep 95% of revenue)',
+                'Sell audio downloads',
+                '2GB storage (~250 tracks)',
+                'Unlimited uploads*',
+                'Pro badge on profile',
+                'Custom profile URL',
+                'Featured on Discover 1×/month',
+                'Advanced analytics',
+                'Priority in feed',
+                '60-second audio previews',
+                'AI collaboration matching',
+                'Priority support',
+              ]
+            : [
+                '10GB storage (~1,000+ tracks)',
+                'Unlimited uploads',
+                'Unlimited badge on profile',
+                'Featured on Discover 2×/month',
+                'Top priority in feed',
+                'All Premium features',
+                'Fan subscriptions (earn monthly)',
+                'Social media post generator',
+                'Custom promo codes',
+                'Email list export',
+                'Lower fees (3% vs 5%)',
+                'Highest priority support',
+              ]
+          ).map((label) => (
+            <div key={label} className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4" style={{ color: '#10b981' }} />
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                {label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -57,10 +57,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's current subscription to determine limits
-    const { data: subscription, error: subscriptionError } = await supabase
+    // Get user's current subscription tier (profiles = source of truth; fallback user_subscriptions)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+
+    const { data: subscription } = await supabase
       .from('user_subscriptions')
-      .select('plan')
+      .select('tier, plan')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .single();
@@ -80,26 +86,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Calculate usage limits based on plan (matching existing pricing structure)
-    const getPlanLimits = (plan: string) => {
-      switch (plan?.toLowerCase()) {
+    const tier = profile?.subscription_tier || subscription?.tier || 'free';
+    const plan = subscription?.plan || (tier === 'premium' ? 'Premium' : tier === 'unlimited' ? 'Unlimited' : 'Free');
+
+    // Storage limits: Free 250MB, Premium 2GB, Unlimited 10GB (match pricing page)
+    const getPlanLimits = (tierKey: string) => {
+      switch (tierKey) {
+        case 'premium':
         case 'pro':
           return {
-            uploads: { used: usage?.uploads_used || 0, limit: 10 },
-            storage: { used: usage?.storage_used || 0, limit: 500, unit: 'MB' },
+            uploads: { used: usage?.uploads_used || 0, limit: 7 },
+            storage: { used: usage?.storage_used || 0, limit: 2 * 1024, unit: 'MB' },
+            bandwidth: { used: usage?.bandwidth_used || 0, limit: 10000, unit: 'MB' }
+          };
+        case 'unlimited':
+          return {
+            uploads: { used: usage?.uploads_used || 0, limit: -1 },
+            storage: { used: usage?.storage_used || 0, limit: 10 * 1024, unit: 'MB' },
             bandwidth: { used: usage?.bandwidth_used || 0, limit: 10000, unit: 'MB' }
           };
         default:
           return {
-            uploads: { used: usage?.uploads_used || 0, limit: 3 },
-            storage: { used: usage?.storage_used || 0, limit: 0.5, unit: 'GB' },
+            uploads: { used: usage?.uploads_used || 0, limit: -1 },
+            storage: { used: usage?.storage_used || 0, limit: 250, unit: 'MB' },
             bandwidth: { used: usage?.bandwidth_used || 0, limit: 1000, unit: 'MB' }
           };
       }
     };
 
-    const plan = subscription?.plan || 'Free Plan';
-    const usageStats = getPlanLimits(plan);
+    const usageStats = getPlanLimits(tier);
 
     return NextResponse.json(
       {

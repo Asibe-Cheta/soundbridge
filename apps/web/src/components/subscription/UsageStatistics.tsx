@@ -285,7 +285,7 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
                 Grace Period Expired
               </h4>
               <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Your grace period has ended. Only 30MB of your content remains public. The rest is now private (still accessible to you).
+                Your grace period has ended. Content within the 250MB free limit remains public. The rest is now private (still accessible to you).
               </p>
               <p className="text-xs" style={{ color: '#ef4444' }}>
                 ⚠️ Uploads are blocked. Delete content or re-subscribe to upload again.
@@ -308,7 +308,7 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
           </div>
           <div>
             <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {data?.subscription?.tier === 'premium' ? '7 Uploads Per Month' : data?.subscription?.tier === 'unlimited' ? 'Unlimited Uploads' : '3 Lifetime Uploads'}
+              {data?.subscription?.tier === 'premium' ? '7 Uploads Per Month' : data?.subscription?.tier === 'unlimited' ? 'Unlimited Uploads' : '250MB storage (~30–40 tracks)'}
             </h4>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               {data?.subscription?.tier === 'premium' 
