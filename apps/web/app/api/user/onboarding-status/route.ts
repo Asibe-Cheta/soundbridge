@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await withQueryTimeout(
       supabase
         .from('profiles')
-        .select('id, username, display_name, role, bio, location, country, genres, avatar_url, collaboration_enabled, min_notice_days, auto_decline_unavailable, social_links, onboarding_completed, onboarding_step, onboarding_user_type, profile_completed, subscription_tier, subscription_status')
+        .select('id, username, display_name, role, bio, location, country, genres, avatar_url, collaboration_enabled, min_notice_days, auto_decline_unavailable, social_links, onboarding_completed, onboarding_step, onboarding_user_type, profile_completed, subscription_tier, subscription_status, preferred_event_types')
         .eq('id', user.id)
         .maybeSingle(),
       5000

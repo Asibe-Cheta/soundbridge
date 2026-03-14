@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useOnboarding, OnboardingUserType } from '@/src/contexts/OnboardingContext';
-import { Music, Mic, Briefcase, Headphones, X, ArrowRight } from 'lucide-react';
+import { Music, Mic, Briefcase, Headphones, Calendar, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 
 interface UserTypeSelectionProps {
@@ -39,6 +39,13 @@ const userTypeOptions = [
     description: 'Discover and support independent creators',
     icon: Headphones,
     gradient: 'from-blue-500 to-cyan-500'
+  },
+  {
+    id: 'event_organiser' as OnboardingUserType,
+    title: 'Event Organiser',
+    description: 'Promote events, sell tickets, grow your audience.',
+    icon: Calendar,
+    gradient: 'from-amber-500 to-orange-500'
   }
 ];
 

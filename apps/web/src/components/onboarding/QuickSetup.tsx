@@ -153,7 +153,8 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
       newErrors.username = 'Username is not available';
     }
 
-    if (formData.genres.length < 3) {
+    const isEventOrganiser = onboardingState.onboardingUserType === 'event_organiser';
+    if (!isEventOrganiser && formData.genres.length < 3) {
       newErrors.genres = 'Please select at least 3 genres';
     }
 
@@ -225,11 +226,12 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
     }
   };
 
-  const canContinue = 
+  const isEventOrganiser = onboardingState.onboardingUserType === 'event_organiser';
+  const canContinue =
     formData.displayName.length >= 2 &&
     formData.username.length >= 3 &&
     usernameAvailable === true &&
-    formData.genres.length >= 3;
+    (isEventOrganiser || formData.genres.length >= 3);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">

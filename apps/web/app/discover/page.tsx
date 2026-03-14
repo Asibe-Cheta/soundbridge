@@ -19,6 +19,7 @@ import type { Event } from '../../src/lib/types/creator';
 import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search';
 import type { AudioTrack } from '../../src/lib/types/audio';
 import ShareModal from '@/src/components/social/ShareModal';
+import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
 import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, Briefcase } from 'lucide-react';
 
 export default function DiscoverPage() {
@@ -57,6 +58,8 @@ export default function DiscoverPage() {
   const [showFallback, setShowFallback] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showFirstActionPrompt, setShowFirstActionPrompt] = useState(false);
+  const [onboardingUserType, setOnboardingUserType] = useState<string | null>(null);
 
   // Use the search hook for trending content
   const {
@@ -76,6 +79,27 @@ export default function DiscoverPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Post-onboarding first action prompt (once per user, ~800ms after load)
+  useEffect(() => {
+    if (!user?.id) return;
+    if (wasFirstActionPromptShown(user.id)) return;
+
+    const timer = setTimeout(() => {
+      fetch('/api/user/onboarding-status', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (!data?.profile?.onboarding_completed) return;
+          const type = data?.profile?.onboarding_user_type;
+          if (type === 'music_lover' || !type) return;
+          setOnboardingUserType(type);
+          setShowFirstActionPrompt(true);
+        })
+        .catch(() => {});
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [user?.id]);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -1479,6 +1503,15 @@ export default function DiscoverPage() {
             coverArt: selectedTrackForShare.cover_art_url,
             url: selectedTrackForShare.file_url
           }}
+        />
+      )}
+
+      {user?.id && (
+        <PostOnboardingFirstActionPrompt
+          isOpen={showFirstActionPrompt}
+          onClose={() => setShowFirstActionPrompt(false)}
+          onboardingUserType={onboardingUserType as any}
+          userId={user.id}
         />
       )}
     </>

@@ -11,6 +11,9 @@ import { ValueDemo } from './ValueDemo';
 import { TierSelection } from './TierSelection';
 import { PaymentCollection } from './PaymentCollection';
 import { WelcomeConfirmation } from './WelcomeConfirmation';
+import { EventTypesStep } from './EventTypesStep';
+import { EventOrganiserLocationStep } from './EventOrganiserLocationStep';
+import { FirstPostStep } from './FirstPostStep';
 
 // Legacy components (kept for backward compatibility)
 import { RoleSelectionModal } from './RoleSelectionModal';
@@ -48,8 +51,11 @@ export function OnboardingManager() {
 
   if (!showOnboarding) return null;
 
-  // NEW FLOW: 7-screen onboarding
-  const isNewFlow = ['welcome', 'userType', 'quickSetup', 'valueDemo', 'tierSelection', 'payment', 'welcomeConfirmation'].includes(currentStep);
+  // NEW FLOW: includes event organiser steps, first post, follow suggestions (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
+  const isNewFlow = [
+    'welcome', 'userType', 'quickSetup', 'valueDemo', 'tierSelection', 'payment', 'welcomeConfirmation',
+    'eventTypes', 'eventOrganiser_location', 'eventOrganiser_valueDemo', 'followSuggestions', 'firstPost'
+  ].includes(currentStep);
 
   if (isNewFlow) {
     return (
@@ -77,56 +83,82 @@ export function OnboardingManager() {
         {currentStep === 'quickSetup' && (
           <QuickSetup
             isOpen={showOnboarding}
-            onContinue={() => {
-              // Continue handled by component
-            }}
+            onContinue={() => {}}
             onBack={() => setCurrentStep('userType')}
           />
         )}
-        
-        {currentStep === 'valueDemo' && (
-          <ValueDemo
+
+        {currentStep === 'eventTypes' && (
+          <EventTypesStep
             isOpen={showOnboarding}
-            onContinue={() => {
-              // Continue handled by component
-            }}
+            onContinue={() => {}}
             onBack={() => setCurrentStep('quickSetup')}
           />
         )}
-        
+
+        {currentStep === 'eventOrganiser_location' && (
+          <EventOrganiserLocationStep
+            isOpen={showOnboarding}
+            onContinue={() => {}}
+            onBack={() => setCurrentStep('eventTypes')}
+          />
+        )}
+
+        {currentStep === 'valueDemo' && (
+          <ValueDemo
+            isOpen={showOnboarding}
+            onContinue={() => {}}
+            onBack={() => setCurrentStep('quickSetup')}
+          />
+        )}
+
+        {currentStep === 'eventOrganiser_valueDemo' && (
+          <ValueDemo
+            isOpen={showOnboarding}
+            onContinue={() => {}}
+            onBack={() => setCurrentStep('eventOrganiser_location')}
+          />
+        )}
+
         {currentStep === 'tierSelection' && (
           <TierSelection
             isOpen={showOnboarding}
             onContinue={(tier) => {
-              if (tier === 'pro') {
-                // Payment screen will be shown by component
+              if (tier === 'premium' || tier === 'unlimited') {
+                setCurrentStep('payment');
               } else {
-                // Welcome confirmation will be shown by component
+                setCurrentStep('firstPost');
               }
             }}
-            onBack={() => setCurrentStep('valueDemo')}
+            onBack={() => setCurrentStep(onboardingState.onboardingUserType === 'event_organiser' ? 'eventOrganiser_valueDemo' : 'valueDemo')}
           />
         )}
-        
+
         {currentStep === 'payment' && (
           <PaymentCollection
-            key="payment-modal" // Force remount to reset state
+            key="payment-modal"
             isOpen={showOnboarding}
             selectedTier={onboardingState.selectedTier as 'premium' | 'unlimited'}
-            onSuccess={() => {
-              // Welcome confirmation will be shown
+            onSuccess={() => setCurrentStep('firstPost')}
+            onBack={() => setCurrentStep('tierSelection')}
+          />
+        )}
+
+        {currentStep === 'firstPost' && (
+          <FirstPostStep
+            isOpen={showOnboarding}
+            onComplete={async () => {
+              if (completeOnboarding) await completeOnboarding();
             }}
             onBack={() => setCurrentStep('tierSelection')}
           />
         )}
-        
+
         {currentStep === 'welcomeConfirmation' && (
           <WelcomeConfirmation
             isOpen={showOnboarding}
             onComplete={async () => {
-              if (completeOnboarding) {
-                await completeOnboarding();
-              }
+              if (completeOnboarding) await completeOnboarding();
             }}
           />
         )}

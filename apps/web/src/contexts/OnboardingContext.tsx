@@ -5,13 +5,15 @@ import { useAuth } from './AuthContext';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
 
 export type UserRole = 'musician' | 'podcaster' | 'event_promoter' | 'listener';
-export type OnboardingUserType = 'music_creator' | 'podcast_creator' | 'industry_professional' | 'music_lover' | null;
-// Support both old and new flow steps
-export type OnboardingStep = 
+export type OnboardingUserType = 'music_creator' | 'podcast_creator' | 'industry_professional' | 'music_lover' | 'event_organiser' | null;
+// Support both old and new flow steps (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
+export type OnboardingStep =
   // Old flow
   'role_selection' | 'profile_setup' | 'first_action' | 'completed' |
-  // New flow (from ONBOARDING_NEW_FLOW.md)
-  'welcome' | 'userType' | 'quickSetup' | 'valueDemo' | 'tierSelection' | 'payment' | 'welcomeConfirmation';
+  // New flow
+  'welcome' | 'userType' | 'quickSetup' | 'valueDemo' | 'tierSelection' | 'payment' | 'welcomeConfirmation' |
+  // Event organiser + follow suggestions + first post
+  'eventTypes' | 'eventOrganiser_location' | 'eventOrganiser_valueDemo' | 'followSuggestions' | 'firstPost';
 
 interface OnboardingState {
   currentStep: OnboardingStep;

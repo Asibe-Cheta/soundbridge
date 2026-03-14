@@ -33,8 +33,10 @@ export function ValueDemo({ isOpen, onContinue, onBack }: ValueDemoProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && onboardingState.onboardingUserType !== 'event_organiser') {
       fetchCreators();
+    } else if (isOpen && onboardingState.onboardingUserType === 'event_organiser') {
+      setLoading(false);
     }
   }, [isOpen, onboardingState.onboardingUserType]);
 
@@ -90,6 +92,41 @@ export function ValueDemo({ isOpen, onContinue, onBack }: ValueDemoProps) {
 
         {/* Content */}
         <div className="p-6 md:p-8">
+          {onboardingState.onboardingUserType === 'event_organiser' ? (
+            <>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
+                Organisers like you are thriving here
+              </h2>
+              <ul className="space-y-4 mt-8 max-w-xl mx-auto text-white/90">
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span>Sell tickets directly — no middlemen</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span>Reach audiences in your city and beyond</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span>Track RSVPs, sales, and reach in one dashboard</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span>Promote to genre-matched music lovers</span>
+                </li>
+              </ul>
+              <div className="mt-8 text-center">
+                <button
+                  onClick={handleContinue}
+                  className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold transition-all flex items-center gap-2 mx-auto"
+                >
+                  Continue
+                  <ArrowRight size={20} />
+                </button>
+              </div>
+            </>
+          ) : (
+          <>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
             You're joining an amazing community
           </h2>
@@ -174,6 +211,8 @@ export function ValueDemo({ isOpen, onContinue, onBack }: ValueDemoProps) {
               <ArrowRight size={20} />
             </button>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { PostCard } from '@/src/components/posts/PostCard';
 import { CreatePostModal } from '@/src/components/posts/CreatePostModal';
 import { FeedLeftSidebar } from '@/src/components/feed/FeedLeftSidebar';
 import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
+import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
 import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
@@ -56,6 +57,27 @@ export default function FeedPage() {
         });
     }
   }, [user?.id]);
+
+  // Post-onboarding first action prompt: show once on first feed load (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
+  useEffect(() => {
+    if (!user?.id || authLoading) return;
+    if (wasFirstActionPromptShown(user.id)) return;
+
+    const timer = setTimeout(() => {
+      fetch('/api/user/onboarding-status', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (!data?.profile?.onboarding_completed) return;
+          const type = data?.profile?.onboarding_user_type;
+          if (type === 'music_lover' || !type) return;
+          setOnboardingUserType(type);
+          setShowFirstActionPrompt(true);
+        })
+        .catch(() => {});
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [user?.id, authLoading]);
 
   // Fetch posts - REMOVED bookmark check from here (mobile team recommendation)
   // Use refs for loading states to avoid dependency issues
@@ -370,6 +392,16 @@ export default function FeedPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onPostCreated={handlePostCreated}
       />
+
+      {/* Post-onboarding first action prompt (once per user, ~800ms after load) */}
+      {user?.id && (
+        <PostOnboardingFirstActionPrompt
+          isOpen={showFirstActionPrompt}
+          onClose={() => setShowFirstActionPrompt(false)}
+          onboardingUserType={onboardingUserType as any}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

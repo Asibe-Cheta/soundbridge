@@ -26,7 +26,7 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
       setCurrentStep('payment');
       onContinue(selectedTier);
     } else if (selectedTier === 'free') {
-      setCurrentStep('welcomeConfirmation');
+      setCurrentStep('firstPost');
       onContinue('free');
     }
   };
@@ -52,9 +52,12 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
 
         {/* Content */}
         <div className="p-6 md:p-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center">
-            Choose Your Plan
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
+            One last thing 🎉
           </h2>
+          <p className="text-white/70 text-center mb-8">
+            Start free — upgrade anytime from your profile
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Free Tier */}
@@ -98,8 +101,9 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                 }`}
               >
-                Start Free
+                Start for Free →
               </button>
+              <p className="text-center text-white/60 text-xs mt-2">No card required • Upgrade anytime</p>
             </div>
 
             {/* Premium Tier */}

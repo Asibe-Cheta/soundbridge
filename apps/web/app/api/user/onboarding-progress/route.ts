@@ -34,14 +34,16 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { 
-      currentStep, 
-      selectedRole, 
-      profileCompleted, 
-      firstActionCompleted, 
+    const {
+      currentStep,
+      selectedRole,
+      profileCompleted,
+      firstActionCompleted,
       userId,
-      userType, // NEW: onboarding_user_type from new flow
-      onboarding_user_type // Alternative field name
+      userType, // onboarding_user_type from new flow
+      onboarding_user_type,
+      preferred_event_types, // Event organiser: array of event type IDs
+      event_reach // Event organiser: local | regional | national | international
     } = body;
 
     // Validate required fields
@@ -63,17 +65,23 @@ export async function POST(request: NextRequest) {
     if (selectedRole) updateData.role = selectedRole;
     if (profileCompleted !== undefined) updateData.profile_completed = profileCompleted;
     if (firstActionCompleted !== undefined) updateData.first_action_completed = firstActionCompleted;
-    
-    // NEW: Support onboarding_user_type from new flow
-    // Values: 'music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null
+
+    // onboarding_user_type: include event_organiser (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
     const onboardingUserType = userType || onboarding_user_type;
     if (onboardingUserType !== undefined) {
-      const validUserTypes = ['music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null];
+      const validUserTypes = ['music_creator', 'podcast_creator', 'industry_professional', 'music_lover', 'event_organiser', null];
       if (validUserTypes.includes(onboardingUserType)) {
         updateData.onboarding_user_type = onboardingUserType;
       } else {
         console.warn('⚠️ Invalid onboarding_user_type:', onboardingUserType);
       }
+    }
+
+    if (preferred_event_types !== undefined && Array.isArray(preferred_event_types)) {
+      updateData.preferred_event_types = preferred_event_types;
+    }
+    if (event_reach !== undefined && ['local', 'regional', 'national', 'international'].includes(event_reach)) {
+      updateData.event_reach = event_reach;
     }
 
     console.log('🔄 Updating onboarding progress:', updateData);
