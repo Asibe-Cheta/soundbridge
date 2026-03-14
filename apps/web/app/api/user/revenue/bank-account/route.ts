@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
       routingIdentifier = bankData.iban;
     }
     
-    // Save bank account information
+    // Save bank account information. Auto-verify on creation so Withdrawal screen does not show "Pending" (WEB_TEAM_ACCOUNT_VERIFICATION_STATUS.md).
     const { data, error } = await supabase
       .from('creator_bank_accounts')
       .upsert({
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
         account_type: bankData.account_type || 'checking',
         currency: currency,
         verification_status: 'pending',
-        is_verified: false,
+        is_verified: true,
         verification_attempts: 0
       });
 

@@ -99,6 +99,7 @@ export class RevenueService {
       // In a real implementation, you would encrypt the account details here
       // For now, we'll store them as-is (you should implement encryption)
       
+      // Auto-verify on creation so Withdrawal screen does not show "Pending" (WEB_TEAM_ACCOUNT_VERIFICATION_STATUS.md).
       const { data, error } = await this.supabase
         .from('creator_bank_accounts')
         .upsert({
@@ -110,7 +111,7 @@ export class RevenueService {
           account_type: bankData.account_type,
           currency: bankData.currency,
           verification_status: 'pending',
-          is_verified: false
+          is_verified: true
         });
 
       if (error) {

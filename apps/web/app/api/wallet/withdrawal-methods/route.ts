@@ -158,7 +158,8 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Create withdrawal method with country information
+    // Create withdrawal method with country information.
+    // Auto-verify on creation so Withdrawal screen does not show "Pending" (WEB_TEAM_ACCOUNT_VERIFICATION_STATUS.md).
     const { data: method, error: methodError } = await supabase
       .from('wallet_withdrawal_methods')
       .insert({
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
         currency: currency,
         banking_system: method_type === 'bank_transfer' ? 'ACH' : null,
         encrypted_details: encryptedDetails,
-        is_verified: false,
+        is_verified: true,
         is_default: false
       })
       .select()
