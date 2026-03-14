@@ -9,6 +9,14 @@ SENDGRID_SIGNUP_TEMPLATE_ID=your_signup_template_id
 SENDGRID_RESET_TEMPLATE_ID=your_reset_template_id
 SENDGRID_FROM_EMAIL=contact@soundbridge.live
 SENDGRID_FROM_NAME=SoundBridge Team
+# Subscription upgrade (mobile/RevenueCat) - WEB_TEAM_SUBSCRIPTION_UPGRADE_EMAIL.md
+SENDGRID_SUBSCRIPTION_UPGRADE_TEMPLATE_ID=your_subscription_upgrade_template_id
+# Optional: separate templates per plan
+# SENDGRID_SUBSCRIPTION_UPGRADE_PREMIUM_TEMPLATE_ID=
+# SENDGRID_SUBSCRIPTION_UPGRADE_UNLIMITED_TEMPLATE_ID=
+
+# RevenueCat webhook (optional auth)
+REVENUECAT_WEBHOOK_AUTHORIZATION=your_revenuecat_webhook_secret
 
 # Supabase Auth Hook Secret (copy from Supabase dashboard)
 # This should match the secret shown in your Supabase Auth Hooks settings

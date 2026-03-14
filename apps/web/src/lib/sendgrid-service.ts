@@ -91,6 +91,15 @@ export interface GigRequesterConfirmationData {
   gig_view_url: string;
 }
 
+/** WEB_TEAM_SUBSCRIPTION_UPGRADE_EMAIL.md — mobile/RevenueCat upgrade confirmation */
+export interface SubscriptionUpgradeData {
+  to: string;
+  plan_name: string;
+  plan_price: string;
+  plan_features: string[];
+  manage_url: string;
+}
+
 export class SendGridService {
   private static fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live';
   private static fromName = process.env.SENDGRID_FROM_NAME || 'SoundBridge Team';
@@ -534,6 +543,49 @@ export class SendGridService {
       return true;
     } catch (error) {
       console.error('Error sending gig creator receipt:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send subscription upgrade confirmation (WEB_TEAM_SUBSCRIPTION_UPGRADE_EMAIL.md — mobile/RevenueCat)
+   * Uses SENDGRID_SUBSCRIPTION_UPGRADE_PREMIUM_TEMPLATE_ID or SENDGRID_SUBSCRIPTION_UPGRADE_UNLIMITED_TEMPLATE_ID,
+   * or single SENDGRID_SUBSCRIPTION_UPGRADE_TEMPLATE_ID with plan_name variable.
+   */
+  static async sendSubscriptionUpgradeEmail(data: SubscriptionUpgradeData): Promise<boolean> {
+    try {
+      const isPremium = data.plan_name.toLowerCase().includes('premium');
+      const templateId = isPremium
+        ? (process.env.SENDGRID_SUBSCRIPTION_UPGRADE_PREMIUM_TEMPLATE_ID ||
+           process.env.SENDGRID_SUBSCRIPTION_UPGRADE_TEMPLATE_ID)
+        : (process.env.SENDGRID_SUBSCRIPTION_UPGRADE_UNLIMITED_TEMPLATE_ID ||
+           process.env.SENDGRID_SUBSCRIPTION_UPGRADE_TEMPLATE_ID);
+
+      if (!templateId) {
+        console.warn('SENDGRID_SUBSCRIPTION_UPGRADE_*_TEMPLATE_ID not configured');
+        return false;
+      }
+
+      const emailData: EmailData = {
+        to: data.to,
+        from: this.fromEmail,
+        fromName: this.fromName,
+        templateId,
+        subject: `You're now on SoundBridge ${data.plan_name}!`,
+        dynamicTemplateData: {
+          plan_name: data.plan_name,
+          plan_price: data.plan_price,
+          plan_features: data.plan_features,
+          manage_url: data.manage_url,
+          app_name: 'SoundBridge',
+          support_email: 'contact@soundbridge.live',
+        },
+      };
+      await this.sendEmail(emailData);
+      console.log(`Subscription upgrade email sent to ${data.to} (${data.plan_name})`);
+      return true;
+    } catch (error) {
+      console.error('Error sending subscription upgrade email:', error);
       return false;
     }
   }
