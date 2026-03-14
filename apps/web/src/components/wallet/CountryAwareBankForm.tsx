@@ -340,6 +340,86 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
   }
 };
 
+/** Built-in list of 70+ countries for banking. Never rely solely on API — merge API extras with this list. @see WEB_TEAM_BANK_ACCOUNTS_FOR_ALL.md */
+const BUILDIN_BANKING_COUNTRIES: { code: string; name: string; currency: string }[] = [
+  ...Object.entries(COUNTRY_BANKING_INFO).map(([code, info]) => ({ code, name: info.country, currency: info.currency })),
+  { code: 'AD', name: 'Andorra', currency: 'EUR' },
+  { code: 'AT', name: 'Austria', currency: 'EUR' },
+  { code: 'BE', name: 'Belgium', currency: 'EUR' },
+  { code: 'BG', name: 'Bulgaria', currency: 'BGN' },
+  { code: 'HR', name: 'Croatia', currency: 'EUR' },
+  { code: 'CY', name: 'Cyprus', currency: 'EUR' },
+  { code: 'CZ', name: 'Czech Republic', currency: 'CZK' },
+  { code: 'DK', name: 'Denmark', currency: 'DKK' },
+  { code: 'EE', name: 'Estonia', currency: 'EUR' },
+  { code: 'FI', name: 'Finland', currency: 'EUR' },
+  { code: 'GR', name: 'Greece', currency: 'EUR' },
+  { code: 'HU', name: 'Hungary', currency: 'HUF' },
+  { code: 'IS', name: 'Iceland', currency: 'ISK' },
+  { code: 'IE', name: 'Ireland', currency: 'EUR' },
+  { code: 'LV', name: 'Latvia', currency: 'EUR' },
+  { code: 'LI', name: 'Liechtenstein', currency: 'CHF' },
+  { code: 'LT', name: 'Lithuania', currency: 'EUR' },
+  { code: 'LU', name: 'Luxembourg', currency: 'EUR' },
+  { code: 'MT', name: 'Malta', currency: 'EUR' },
+  { code: 'NO', name: 'Norway', currency: 'NOK' },
+  { code: 'PL', name: 'Poland', currency: 'PLN' },
+  { code: 'PT', name: 'Portugal', currency: 'EUR' },
+  { code: 'RO', name: 'Romania', currency: 'RON' },
+  { code: 'SK', name: 'Slovakia', currency: 'EUR' },
+  { code: 'SI', name: 'Slovenia', currency: 'EUR' },
+  { code: 'SE', name: 'Sweden', currency: 'SEK' },
+  { code: 'TR', name: 'Turkey', currency: 'TRY' },
+  { code: 'EG', name: 'Egypt', currency: 'EGP' },
+  { code: 'MA', name: 'Morocco', currency: 'MAD' },
+  { code: 'TZ', name: 'Tanzania', currency: 'TZS' },
+  { code: 'UG', name: 'Uganda', currency: 'UGX' },
+  { code: 'SN', name: 'Senegal', currency: 'XOF' },
+  { code: 'CI', name: "Côte d'Ivoire", currency: 'XOF' },
+  { code: 'CM', name: 'Cameroon', currency: 'XAF' },
+  { code: 'ET', name: 'Ethiopia', currency: 'ETB' },
+  { code: 'RW', name: 'Rwanda', currency: 'RWF' },
+  { code: 'BW', name: 'Botswana', currency: 'BWP' },
+  { code: 'MU', name: 'Mauritius', currency: 'MUR' },
+  { code: 'SA', name: 'Saudi Arabia', currency: 'SAR' },
+  { code: 'IL', name: 'Israel', currency: 'ILS' },
+  { code: 'AE', name: 'United Arab Emirates', currency: 'AED' },
+  { code: 'QA', name: 'Qatar', currency: 'QAR' },
+  { code: 'BH', name: 'Bahrain', currency: 'BHD' },
+  { code: 'KW', name: 'Kuwait', currency: 'KWD' },
+  { code: 'OM', name: 'Oman', currency: 'OMR' },
+  { code: 'JO', name: 'Jordan', currency: 'JOD' },
+  { code: 'PK', name: 'Pakistan', currency: 'PKR' },
+  { code: 'BD', name: 'Bangladesh', currency: 'BDT' },
+  { code: 'LK', name: 'Sri Lanka', currency: 'LKR' },
+  { code: 'PH', name: 'Philippines', currency: 'PHP' },
+  { code: 'ID', name: 'Indonesia', currency: 'IDR' },
+  { code: 'MY', name: 'Malaysia', currency: 'MYR' },
+  { code: 'TH', name: 'Thailand', currency: 'THB' },
+  { code: 'VN', name: 'Vietnam', currency: 'VND' },
+  { code: 'KR', name: 'South Korea', currency: 'KRW' },
+  { code: 'HK', name: 'Hong Kong', currency: 'HKD' },
+  { code: 'TW', name: 'Taiwan', currency: 'TWD' },
+  { code: 'NZ', name: 'New Zealand', currency: 'NZD' },
+  { code: 'CL', name: 'Chile', currency: 'CLP' },
+  { code: 'CO', name: 'Colombia', currency: 'COP' },
+  { code: 'PE', name: 'Peru', currency: 'PEN' },
+  { code: 'EC', name: 'Ecuador', currency: 'USD' },
+].filter((v, i, a) => a.findIndex(x => x.code === v.code) === i); // dedupe by code
+
+/** Fallback field config when selected country is not in COUNTRY_BANKING_INFO. */
+const GENERIC_COUNTRY_FIELDS: CountryBankingInfo = {
+  country: 'Other',
+  currency: 'USD',
+  fields: {
+    account_holder_name: { required: true, label: 'Account Holder Name' },
+    bank_name: { required: true, label: 'Bank Name' },
+    account_number: { required: true, label: 'Account Number', placeholder: '' },
+    account_type: { required: true, label: 'Account Type' }
+  },
+  validation: {}
+};
+
 interface CountryAwareBankFormProps {
   onSave: (formData: any) => void;
   onCancel: () => void;
@@ -427,8 +507,40 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
   const [banksLoading, setBanksLoading] = useState(false);
   const [bankSearch, setBankSearch] = useState('');
   const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  // Merged country list: built-in first, then API extras (never replace with API only). @see WEB_TEAM_BANK_ACCOUNTS_FOR_ALL.md
+  const [countryList, setCountryList] = useState<{ code: string; name: string; currency: string }[]>(() => BUILDIN_BANKING_COUNTRIES);
 
-  const countryInfo = COUNTRY_BANKING_INFO[selectedCountry];
+  useEffect(() => {
+    fetch('/api/banking/countries', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.countries || !Array.isArray(data.countries)) return;
+        const byCode = new Map(BUILDIN_BANKING_COUNTRIES.map((c) => [c.code, c]));
+        data.countries.forEach((c: { country_code?: string; country_name?: string; currency?: string }) => {
+          const code = c.country_code || c.countryCode;
+          if (code && !byCode.has(code)) {
+            byCode.set(code, {
+              code,
+              name: c.country_name || c.countryName || code,
+              currency: c.currency || 'USD'
+            });
+          }
+        });
+        setCountryList(Array.from(byCode.values()).sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .catch(() => {});
+  }, []);
+
+  const countryInfo: CountryBankingInfo = useMemo(() => {
+    const builtin = COUNTRY_BANKING_INFO[selectedCountry];
+    if (builtin) return builtin;
+    const listEntry = countryList.find((c) => c.code === selectedCountry);
+    return {
+      ...GENERIC_COUNTRY_FIELDS,
+      country: listEntry?.name ?? selectedCountry,
+      currency: listEntry?.currency ?? 'USD'
+    };
+  }, [selectedCountry, countryList]);
   const bankCodeField = BANK_CODE_FIELD[selectedCountry] ?? null;
 
   useEffect(() => {
@@ -481,9 +593,9 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
         const data = await response.json();
         console.log('🌍 Detected country from IP:', data.country_code);
         
-        if (data.country_code && COUNTRY_BANKING_INFO[data.country_code]) {
+        if (data.country_code && BUILDIN_BANKING_COUNTRIES.some((c) => c.code === data.country_code)) {
           setSelectedCountry(data.country_code);
-          setDetectionStatus(`✅ Detected: ${data.country_name} (${data.country_code})`);
+          setDetectionStatus(`✅ Detected: ${data.country_name || data.country_code} (${data.country_code})`);
           setDetectingLocation(false);
           return;
         }
@@ -497,7 +609,7 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
       const countryCode = locale.split('-')[1]?.toUpperCase();
       console.log('🌍 Browser locale detected:', countryCode);
       
-      if (countryCode && COUNTRY_BANKING_INFO[countryCode]) {
+      if (countryCode && BUILDIN_BANKING_COUNTRIES.some((c) => c.code === countryCode)) {
         setSelectedCountry(countryCode);
         setDetectionStatus(`✅ Detected from browser: ${countryCode}`);
         setDetectingLocation(false);
@@ -545,7 +657,7 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
       };
       
       const detectedCountry = timezoneToCountry[timezone];
-      if (detectedCountry && COUNTRY_BANKING_INFO[detectedCountry]) {
+      if (detectedCountry && BUILDIN_BANKING_COUNTRIES.some((c) => c.code === detectedCountry)) {
         setSelectedCountry(detectedCountry);
         setDetectionStatus(`✅ Detected from timezone: ${detectedCountry}`);
         setDetectingLocation(false);
@@ -803,9 +915,9 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
           onChange={(e) => handleCountryChange(e.target.value)}
           className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
         >
-          {Object.entries(COUNTRY_BANKING_INFO).map(([code, info]) => (
-            <option key={code} value={code}>
-              {info.country} ({info.currency})
+          {countryList.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name} ({c.currency})
             </option>
           ))}
         </select>

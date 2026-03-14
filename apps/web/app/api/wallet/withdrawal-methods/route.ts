@@ -62,15 +62,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      method_type, 
-      method_name, 
+    const {
+      method_type,
+      method_name,
       country,
       currency,
-      bank_details, 
-      paypal_email, 
-      crypto_address, 
-      card_details 
+      account_holder_name: topLevelAccountHolderName, // Top-level required for DB/constraints; see WEB_TEAM_BANK_ACCOUNTS_FOR_ALL.md
+      bank_details,
+      paypal_email,
+      crypto_address,
+      card_details
     } = body;
 
     if (!method_type || !method_name) {
@@ -81,8 +82,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Encrypt sensitive details based on method type
-    let encryptedDetails = {};
-    
+    let encryptedDetails: Record<string, unknown> = {};
+
     switch (method_type) {
       case 'bank_transfer':
         if (!bank_details) {
@@ -91,8 +92,16 @@ export async function POST(request: NextRequest) {
             { status: 400, headers: CORS_HEADERS }
           );
         }
+        // Prefer top-level account_holder_name (required by DB constraints when writing to creator_bank_accounts-style schemas)
+        const accountHolderName = topLevelAccountHolderName ?? bank_details.account_holder_name;
+        if (!accountHolderName) {
+          return NextResponse.json(
+            { error: 'Account holder name is required (send as top-level account_holder_name or inside bank_details)' },
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
         encryptedDetails = {
-          account_holder_name: bank_details.account_holder_name,
+          account_holder_name: accountHolderName,
           bank_name: bank_details.bank_name,
           account_number: bank_details.account_number, // TODO: Encrypt this
           routing_number: bank_details.routing_number, // TODO: Encrypt this

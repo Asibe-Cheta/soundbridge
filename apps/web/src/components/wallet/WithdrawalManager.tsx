@@ -320,7 +320,10 @@ function AddWithdrawalMethodModal({
     const methodData = {
       method_type: methodType,
       method_name: methodName,
-      ...(methodType === 'bank_transfer' && { bank_details: bankDetails }),
+      ...(methodType === 'bank_transfer' && {
+        account_holder_name: bankDetails.account_holder_name,
+        bank_details: bankDetails
+      }),
       ...(methodType === 'paypal' && { paypal_email: paypalEmail }),
       ...(methodType === 'crypto' && { crypto_address: cryptoAddress }),
       ...(methodType === 'prepaid_card' && { card_details: cardDetails })
