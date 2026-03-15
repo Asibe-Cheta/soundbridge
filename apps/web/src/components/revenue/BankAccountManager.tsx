@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { revenueService } from '../../lib/revenue-service';
 import { walletService } from '../../lib/wallet-service';
+import { isWiseCurrency } from '../../lib/wise-currencies';
 import { CountryAwareBankForm } from '../wallet/CountryAwareBankForm';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
 import { Building2, CreditCard, Shield, CheckCircle, AlertCircle, Edit, Save, X, Loader2, Eye, EyeOff, Wallet, RefreshCw, Info } from 'lucide-react';
@@ -358,7 +359,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             Manage your bank account for payouts
           </p>
         </div>
-        {bankAccount && !isEditing && (
+        {bankAccount && !isEditing && !isWiseCurrency(bankAccount.currency) && (
           <div className="flex items-center space-x-3">
             <button
               onClick={handleResetBankAccount}
@@ -455,95 +456,114 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       {/* Bank Account Information */}
       {bankAccount ? (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          {/* Stripe Connect Warning if not set up */}
-          {bankAccount && !bankAccount.stripe_account_id && (
-            <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-yellow-300 mb-1">Stripe Connect Not Set Up</h4>
-                  <p className="text-yellow-200 text-sm mb-3">
-                    Your bank details are saved, but you need to complete Stripe Connect setup to receive payouts.
-                    Earnings will be stored in your digital wallet until setup is complete.
-                  </p>
-                  <button
-                    onClick={handleSetupStripeConnect}
-                    disabled={saving}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Setting up...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-4 w-4" />
-                        <span>Complete Stripe Connect Setup</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {(() => {
+            const isWiseAccount = isWiseCurrency(bankAccount.currency);
+            return (
+              <>
+                {/* Wise: Ready for Withdrawals (no Stripe UI) */}
+                {isWiseAccount && (
+                  <div className="mb-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-green-300 mb-1">Ready for Withdrawals</h4>
+                        <p className="text-green-200 text-sm">
+                          Your bank account is set up. Payouts are processed via Wise directly to your local bank in {bankAccount.currency}. No further verification needed — just request a withdrawal when you&apos;re ready.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-          {/* Complete Verification Button (for pending Stripe accounts) */}
-          {bankAccount && bankAccount.stripe_account_id && bankAccount.verification_status === 'pending' && (
-            <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-blue-300 mb-1">Complete Verification to Withdraw</h4>
-                  <p className="text-blue-200 text-sm mb-3">
-                    You can start earning immediately! Complete verification now to withdraw funds anytime, or do it later when you're ready to cash out.
-                  </p>
-                  <button
-                    onClick={() => handleCompleteVerification()}
-                    disabled={saving}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Loading...</span>
-                      </>
-                    ) : (
-                      <>
+                {/* Stripe Connect Warning if not set up (Stripe users only) */}
+                {!isWiseAccount && bankAccount && !bankAccount.stripe_account_id && (
+                  <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-yellow-300 mb-1">Stripe Connect Not Set Up</h4>
+                        <p className="text-yellow-200 text-sm mb-3">
+                          Your bank details are saved, but you need to complete Stripe Connect setup to receive payouts.
+                          Earnings will be stored in your digital wallet until setup is complete.
+                        </p>
+                        <button
+                          onClick={handleSetupStripeConnect}
+                          disabled={saving}
+                          className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Setting up...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4" />
+                              <span>Complete Stripe Connect Setup</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Complete Verification Button (Stripe users only — never for Wise) */}
+                {!isWiseAccount && bankAccount && bankAccount.stripe_account_id && bankAccount.verification_status === 'pending' && (
+                  <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-blue-300 mb-1">Complete Verification to Withdraw</h4>
+                        <p className="text-blue-200 text-sm mb-3">
+                          You can start earning immediately! Complete verification now to withdraw funds anytime, or do it later when you&apos;re ready to cash out.
+                        </p>
+                        <button
+                          onClick={() => handleCompleteVerification()}
+                          disabled={saving}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Loading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="h-4 w-4" />
+                              <span>Complete Verification Now</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {/* Verification Status — show Active for Wise */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${getVerificationStatusColor(isWiseAccount ? 'verified' : bankAccount.verification_status)}`}>
+                        {getVerificationStatusIcon(isWiseAccount ? 'verified' : bankAccount.verification_status)}
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Verification Status</p>
+                        <p className="text-gray-400 text-sm capitalize">
+                          {isWiseAccount ? 'Active' : bankAccount.verification_status}
+                        </p>
+                      </div>
+                    </div>
+                    {(bankAccount.is_verified || isWiseAccount) && (
+                      <div className="flex items-center space-x-2 text-green-400">
                         <Shield className="h-4 w-4" />
-                        <span>Complete Verification Now</span>
-                      </>
+                        <span className="text-sm font-medium">{isWiseAccount ? 'Ready' : 'Verified'}</span>
+                      </div>
                     )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+                  </div>
 
-          <div className="space-y-4">
-            {/* Verification Status */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${getVerificationStatusColor(bankAccount.verification_status)}`}>
-                  {getVerificationStatusIcon(bankAccount.verification_status)}
-                </div>
-                <div>
-                  <p className="text-white font-medium">Verification Status</p>
-                  <p className="text-gray-400 text-sm capitalize">
-                    {bankAccount.verification_status}
-                  </p>
-                </div>
-              </div>
-              {bankAccount.is_verified && (
-                <div className="flex items-center space-x-2 text-green-400">
-                  <Shield className="h-4 w-4" />
-                  <span className="text-sm font-medium">Verified</span>
-                </div>
-              )}
-            </div>
-
-            {/* Account Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Account Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-400 text-sm">Account Holder</p>
                 <p className="text-white font-medium">{bankAccount.account_holder_name}</p>
@@ -560,24 +580,27 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                 <p className="text-gray-400 text-sm">Currency</p>
                 <p className="text-white font-medium">{bankAccount.currency}</p>
               </div>
-            </div>
+                  </div>
 
-            {/* Account Number (Masked) */}
-            <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-              <div>
-                <p className="text-gray-400 text-sm">Account Number</p>
-                <p className="text-white font-medium">
-                  {showAccountDetails ? formData.account_number : `****${formData.account_number.slice(-4)}`}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowAccountDetails(!showAccountDetails)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
-              >
-                {showAccountDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
+                  {/* Account Number (Masked) */}
+                  <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
+                    <div>
+                      <p className="text-gray-400 text-sm">Account Number</p>
+                      <p className="text-white font-medium">
+                        {showAccountDetails ? formData.account_number : `****${formData.account_number.slice(-4)}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowAccountDetails(!showAccountDetails)}
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                    >
+                      {showAccountDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       ) : (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">

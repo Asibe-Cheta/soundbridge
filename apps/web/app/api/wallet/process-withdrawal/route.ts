@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import Stripe from 'stripe';
+import { isWiseCurrency } from '@/src/lib/wise-currencies';
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -111,7 +112,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!withdrawalMethod.is_verified) {
+    const canWithdraw = withdrawalMethod.is_verified || isWiseCurrency(withdrawalMethod.currency);
+    if (!canWithdraw) {
       return NextResponse.json(
         { error: 'Withdrawal method is not verified' },
         { status: 400, headers: corsHeaders }

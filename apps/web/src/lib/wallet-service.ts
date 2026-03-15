@@ -33,6 +33,7 @@ export interface WithdrawalMethod {
   method_name: string;
   is_verified: boolean;
   is_default: boolean;
+  currency?: string | null;
   encrypted_details?: any;
   created_at: string;
   updated_at: string;
