@@ -140,6 +140,7 @@ export async function POST(
     const userA = posterUserId < creatorUserId ? posterUserId : creatorUserId;
     const userB = posterUserId < creatorUserId ? creatorUserId : posterUserId;
 
+    // Find or create conversation (avoid duplicate key when one already exists or race)
     let conv = await serviceSupabase
       .from('conversations')
       .select('id')
@@ -153,11 +154,30 @@ export async function POST(
         .insert({ user_a_id: userA, user_b_id: userB })
         .select('id')
         .single();
-      if (convErr || !newConv) {
-        console.error('conversations insert error:', convErr);
-        return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500, headers: CORS });
+
+      if (convErr) {
+        const code = (convErr as { code?: string })?.code;
+        // Unique violation or any insert failure: conversation may already exist (race or prior attempt)
+        const { data: existing } = await serviceSupabase
+          .from('conversations')
+          .select('id')
+          .eq('user_a_id', userA)
+          .eq('user_b_id', userB)
+          .maybeSingle();
+        if (existing?.id) {
+          conv = existing;
+        } else {
+          console.error('conversations insert error:', { code, message: convErr.message, details: convErr.details });
+          return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500, headers: CORS });
+        }
+      } else if (newConv) {
+        conv = newConv;
       }
-      conv = newConv;
+    }
+
+    if (!conv?.id) {
+      console.error('conversations: no conversation id after find-or-create', { userA, userB });
+      return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500, headers: CORS });
     }
 
     if (!stripe) {
