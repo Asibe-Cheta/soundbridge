@@ -67,7 +67,11 @@ export async function POST(request: NextRequest) {
       method_name,
       country,
       currency,
-      account_holder_name: topLevelAccountHolderName, // Top-level required for DB/constraints; see WEB_TEAM_BANK_ACCOUNTS_FOR_ALL.md
+      account_holder_name: topLevelAccountHolderName,
+      bank_name: topLevelBankName,
+      account_number: topLevelAccountNumber,
+      account_type: topLevelAccountType,
+      bank_code: topLevelBankCode,
       bank_details,
       paypal_email,
       crypto_address,
@@ -83,32 +87,69 @@ export async function POST(request: NextRequest) {
 
     // Encrypt sensitive details based on method type
     let encryptedDetails: Record<string, unknown> = {};
+    let insertCountry: string | undefined = country;
+    let insertCurrency: string | undefined = currency;
 
     switch (method_type) {
-      case 'bank_transfer':
-        if (!bank_details) {
+      case 'bank_transfer': {
+        // Defensive extraction: try top level then bank_details (WEB_TEAM_BANK_ACCOUNTS_NULL_FIELDS_FIX.md)
+        const bd = bank_details || {};
+        const accountHolderName =
+          topLevelAccountHolderName ?? bd.account_holder_name ?? null;
+        const bankName =
+          topLevelBankName ?? bd.bank_name ?? null;
+        const accountNumber =
+          topLevelAccountNumber ?? bd.account_number ?? bd.iban ?? null;
+        const accountType =
+          topLevelAccountType ?? bd.account_type ?? 'checking';
+        const bankCode =
+          topLevelBankCode ?? bd.bank_code ?? bd.swift_code ?? bd.routing_number ?? bd.branch_code ?? bd.sort_code ?? '';
+        const curr = currency ?? bd.currency ?? null;
+        const ctry = country ?? bd.country ?? null;
+
+        if (!accountHolderName || !String(accountHolderName).trim()) {
           return NextResponse.json(
-            { error: 'Bank details are required for bank transfer' },
+            { error: 'Account holder name is required' },
             { status: 400, headers: CORS_HEADERS }
           );
         }
-        // Prefer top-level account_holder_name (required by DB constraints when writing to creator_bank_accounts-style schemas)
-        const accountHolderName = topLevelAccountHolderName ?? bank_details.account_holder_name;
-        if (!accountHolderName) {
+        if (!bankName || !String(bankName).trim()) {
           return NextResponse.json(
-            { error: 'Account holder name is required (send as top-level account_holder_name or inside bank_details)' },
+            { error: 'Bank name is required' },
             { status: 400, headers: CORS_HEADERS }
           );
         }
+        if (!accountNumber || !String(accountNumber).trim()) {
+          return NextResponse.json(
+            { error: 'Account number (or IBAN) is required' },
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+        if (!curr || !String(curr).trim()) {
+          return NextResponse.json(
+            { error: 'Currency is required' },
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+        if (!ctry || !String(ctry).trim()) {
+          return NextResponse.json(
+            { error: 'Country is required' },
+            { status: 400, headers: CORS_HEADERS }
+          );
+        }
+
+        insertCountry = ctry;
+        insertCurrency = curr;
         encryptedDetails = {
-          account_holder_name: accountHolderName,
-          bank_name: bank_details.bank_name,
-          account_number: bank_details.account_number, // TODO: Encrypt this
-          routing_number: bank_details.routing_number, // TODO: Encrypt this
-          account_type: bank_details.account_type,
-          currency: currency || bank_details.currency || 'USD' // Use currency from request body
+          account_holder_name: String(accountHolderName).trim(),
+          bank_name: String(bankName).trim(),
+          account_number: String(accountNumber).trim(),
+          routing_number: String(bankCode).trim(),
+          account_type: accountType,
+          currency: String(curr).trim()
         };
         break;
+      }
         
       case 'paypal':
         if (!paypal_email) {
@@ -166,8 +207,8 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         method_type: method_type,
         method_name: method_name,
-        country: country,
-        currency: currency,
+        country: insertCountry ?? null,
+        currency: insertCurrency ?? null,
         banking_system: method_type === 'bank_transfer' ? 'ACH' : null,
         encrypted_details: encryptedDetails,
         is_verified: true,

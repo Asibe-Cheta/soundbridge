@@ -101,12 +101,41 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse request body
-    const bankData: any = await request.json();
-    
-    // Validate required fields - handle country-specific field structures
-    if (!bankData.account_holder_name || !bankData.bank_name || !bankData.account_number) {
+    const body: any = await request.json();
+    const bd = body.bank_details || {};
+
+    // Defensive extraction: try top level then bank_details (WEB_TEAM_BANK_ACCOUNTS_NULL_FIELDS_FIX.md)
+    const bankData: any = {
+      account_holder_name: body.account_holder_name ?? bd.account_holder_name ?? null,
+      bank_name: body.bank_name ?? bd.bank_name ?? null,
+      account_number: body.account_number ?? bd.account_number ?? bd.iban ?? null,
+      account_type: body.account_type ?? bd.account_type ?? 'checking',
+      bank_code: body.bank_code ?? bd.bank_code ?? null,
+      swift_code: body.swift_code ?? bd.swift_code ?? null,
+      routing_number: body.routing_number ?? bd.routing_number ?? null,
+      sort_code: body.sort_code ?? bd.sort_code ?? null,
+      branch_code: body.branch_code ?? bd.branch_code ?? null,
+      bsb_code: body.bsb_code ?? bd.bsb_code ?? null,
+      iban: body.iban ?? bd.iban ?? null,
+      country: body.country ?? bd.country ?? 'US',
+      currency: body.currency ?? bd.currency ?? 'USD'
+    };
+
+    if (!bankData.account_holder_name || !String(bankData.account_holder_name).trim()) {
       return NextResponse.json(
-        { error: 'Account holder name, bank name, and account number are required' },
+        { error: 'Account holder name is required' },
+        { status: 400 }
+      );
+    }
+    if (!bankData.bank_name || !String(bankData.bank_name).trim()) {
+      return NextResponse.json(
+        { error: 'Bank name is required' },
+        { status: 400 }
+      );
+    }
+    if (!bankData.account_number || !String(bankData.account_number).trim()) {
+      return NextResponse.json(
+        { error: 'Account number (or IBAN) is required' },
         { status: 400 }
       );
     }

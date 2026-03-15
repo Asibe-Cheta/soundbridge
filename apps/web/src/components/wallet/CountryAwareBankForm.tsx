@@ -733,22 +733,56 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
     return Object.keys(newErrors).length === 0;
   };
 
+  // Normalize bank code for API (country-specific field name → top-level bank_code)
+  const getBankCode = (): string => {
+    const codeField = BANK_CODE_FIELD[selectedCountry];
+    if (codeField && formData[codeField]) return String(formData[codeField]).trim();
+    return (
+      formData.bank_code ||
+      formData.swift_code ||
+      formData.sort_code ||
+      formData.routing_number ||
+      formData.branch_code ||
+      formData.ifsc_code ||
+      formData.bsb_code ||
+      formData.transit_number ||
+      formData.institution_number ||
+      formData.cbu ||
+      formData.clabe ||
+      ''
+    );
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
 
     setLoading(true);
-    
+
     try {
+      const methodName =
+        formData.account_holder_name
+          ? `${formData.account_holder_name}'s ${countryInfo.country} Account`
+          : 'Bank Account';
+      const accountNumber =
+        formData.account_number || formData.iban || '';
+      const bankCode = getBankCode();
+
       const submissionData = {
         method_type: 'bank_transfer',
-        method_name: formData.account_holder_name ? `${formData.account_holder_name}'s ${countryInfo.country} Account` : 'Bank Account',
+        method_name: methodName,
+        account_holder_name: (formData.account_holder_name || '').trim(),
+        bank_name: (formData.bank_name || '').trim(),
+        account_number: accountNumber.trim(),
+        account_type: (formData.account_type || 'checking').trim(),
+        bank_code: bankCode,
+        routing_number: bankCode, // alias for revenue/creator_bank_accounts APIs
         country: selectedCountry,
-        currency: countryInfo.currency,
-        ...formData
+        currency: countryInfo.currency || '',
+        bank_details: { ...formData }
       };
-      
+
       await onSave(submissionData);
     } catch (error) {
       console.error('Error saving bank details:', error);
