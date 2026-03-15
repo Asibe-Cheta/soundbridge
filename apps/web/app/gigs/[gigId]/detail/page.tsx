@@ -140,6 +140,9 @@ export default function ProviderGigDetailPage() {
                 {gig.skill_required} · {new Date(gig.date_needed).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })} · {gig.location_address || 'Location'}
               </p>
               <p className="font-medium mt-2">Your earnings: {gig.payment_currency} {creatorPayout} (after 12% platform fee)</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                You&apos;ll be paid via your SoundBridge wallet once the gig is completed. Withdrawals to your local bank via Wise typically take 1–3 business days.
+              </p>
             </CardContent>
           </Card>
           {gig.project_id && (
@@ -198,6 +201,9 @@ export default function ProviderGigDetailPage() {
             <p className="text-2xl font-semibold">{gig.payment_currency} {gig.payment_amount}</p>
             {gig.distance_km != null && <p className="text-sm text-muted-foreground">{gig.distance_km}km away</p>}
           </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Payment is held securely by SoundBridge and released to your wallet on gig completion. You can then withdraw to your local bank via Wise (1–3 business days).
+          </p>
           <p className="text-sm text-muted-foreground mb-4">{gig.location_address || 'Location'}</p>
 
           <p className="text-sm mb-2">

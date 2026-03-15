@@ -468,7 +468,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                       <div className="flex-1">
                         <h4 className="font-medium text-green-300 mb-1">Ready for Withdrawals</h4>
                         <p className="text-green-200 text-sm">
-                          Your bank account is set up. Payouts are processed via Wise directly to your local bank in {bankAccount.currency}. No further verification needed — just request a withdrawal when you&apos;re ready.
+                          Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {bankAccount.currency} via Wise — typically arriving within 1–3 business days. Minimum withdrawal is $25. No further verification needed.
                         </p>
                       </div>
                     </div>
@@ -711,7 +711,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                   <h4 className="font-medium text-blue-300 text-sm">Why Stripe Connect?</h4>
                   <ul className="text-blue-200 text-xs mt-1 space-y-1">
                     <li>• Secure and trusted payment processing</li>
-                    <li>• Faster payouts (1-2 business days)</li>
+                    <li>• Payouts via Wise typically arrive in 1–3 business days</li>
                     <li>• Lower fees compared to manual transfers</li>
                     <li>• Automatic tax reporting and compliance</li>
                   </ul>

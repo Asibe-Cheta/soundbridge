@@ -113,7 +113,7 @@ export function PayoutRequest() {
       const result = await response.json();
 
       if (result.success) {
-        setSuccess(`Payout request for $${amount.toFixed(2)} submitted successfully!`);
+        setSuccess('Your withdrawal request has been submitted. Funds are sent via Wise and typically arrive in your local bank within 1–3 business days.');
         setRequestAmount('');
         loadPayoutData(); // Reload data
       } else {
@@ -168,9 +168,13 @@ export function PayoutRequest() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white">Payout Request</h3>
-            <p className="text-gray-400 text-sm">Request withdrawal of your earnings</p>
+            <p className="text-gray-400 text-sm">Withdraw to your local bank via Wise — typically 1–3 business days. No SoundBridge fees charged.</p>
           </div>
         </div>
+
+        <p className="text-gray-500 text-xs mb-4">
+          I understand that withdrawals are processed via Wise and typically arrive in my local bank within 1–3 business days.
+        </p>
 
         {eligibility && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

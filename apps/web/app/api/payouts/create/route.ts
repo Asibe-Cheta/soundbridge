@@ -211,9 +211,9 @@ export async function POST(request: NextRequest) {
       // Don't fail - transfer is already created
     }
 
-    // Calculate estimated arrival (typically 2-7 business days for Express accounts)
+    // Estimate arrival (Wise: typically 1-3 business days)
     const estimatedArrival = new Date();
-    estimatedArrival.setDate(estimatedArrival.getDate() + 5); // 5 business days estimate
+    estimatedArrival.setDate(estimatedArrival.getDate() + 3);
 
     return NextResponse.json(
       {

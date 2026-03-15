@@ -37,7 +37,7 @@ export default function WithdrawalsPage() {
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>How Withdrawals Work</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                When you earn money on SoundBridge (from events, services, etc.), the funds are automatically transferred to your connected bank account after the event or service is completed. You don't need to manually request withdrawals - it happens automatically!
+                When you earn on SoundBridge (gigs, tips, content sales), funds are added to your <strong>SoundBridge wallet</strong> when the gig or order is completed. From your wallet you can request a withdrawal to your local bank at any time (minimum $25). Withdrawals are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
               </p>
             </section>
 
@@ -50,22 +50,11 @@ export default function WithdrawalsPage() {
                     <div>
                       <h3 className={`text-xl font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Processing Time</h3>
                       <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-                        After an event or service is completed, payments are processed within <strong>2-7 business days</strong>. This includes:
+                        Funds are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
                       </p>
-                      <ul className={`mt-3 space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                        <li className="flex items-start gap-3">
-                          <CheckCircle className={`w-5 h-5 mt-1 flex-shrink-0 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
-                          <span>Platform fee deduction (automatically calculated)</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <CheckCircle className={`w-5 h-5 mt-1 flex-shrink-0 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
-                          <span>Transfer to your Stripe account</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <CheckCircle className={`w-5 h-5 mt-1 flex-shrink-0 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
-                          <span>Bank processing time (varies by bank)</span>
-                        </li>
-                      </ul>
+                      <p className={`mt-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                        After you submit a withdrawal request, the money is sent to your connected bank account. Timing can vary slightly by bank and country.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -75,7 +64,7 @@ export default function WithdrawalsPage() {
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Minimum Withdrawal Amount</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                There is typically no minimum withdrawal amount. However, your bank may have minimum deposit requirements. All earnings are automatically transferred to your account once processed.
+                The minimum withdrawal amount is <strong>$25</strong>. You can request a withdrawal from your wallet whenever your balance meets this minimum.
               </p>
             </section>
 
@@ -107,8 +96,8 @@ export default function WithdrawalsPage() {
                 <ul className={`space-y-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                   <li>• Check that your bank account is correctly connected</li>
                   <li>• Verify your bank account details are correct</li>
-                  <li>• Allow up to 7 business days for processing</li>
-                  <li>• Contact support if payment is delayed beyond 7 days</li>
+                  <li>• Allow up to 3 business days for funds to arrive</li>
+                  <li>• Contact support if payment is delayed beyond 3 business days</li>
                 </ul>
               </div>
             </section>

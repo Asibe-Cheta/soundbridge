@@ -155,6 +155,19 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
         </div>
       </div>
 
+      {/* About your wallet — WEB_TEAM_PAYMENT_FLOW_MESSAGING */}
+      <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+        <p className="text-gray-300 text-sm mb-3">
+          Your digital wallet stores earnings from gigs, tips, and content sales. Once funds are in your wallet, you can request a withdrawal to your local bank account at any time (minimum $25).
+        </p>
+        <ul className="text-gray-400 text-sm space-y-1">
+          <li>• Gig payments land in your wallet on completion</li>
+          <li>• Withdraw to your local bank via Wise (1–3 business days)</li>
+          <li>• Supports 40+ currencies across Africa, Asia & Latin America</li>
+          <li>• Minimum withdrawal: $25</li>
+        </ul>
+      </div>
+
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-left">
