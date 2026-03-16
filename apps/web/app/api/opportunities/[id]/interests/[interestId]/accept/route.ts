@@ -222,6 +222,13 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to create project' }, { status: 500, headers: CORS });
     }
 
+    // Mark interest as accepted so poster UI stops showing "Accept & Create Project" (mobile request)
+    const now = new Date().toISOString();
+    await serviceSupabase
+      .from('opportunity_interests')
+      .update({ status: 'accepted', updated_at: now })
+      .eq('id', interestId);
+
     // Create Stripe PaymentIntent after project exists; wrap in try/catch so project creation succeeds even if Stripe fails
     let clientSecret: string | null = null;
     let stripePaymentIntentId: string | null = null;
