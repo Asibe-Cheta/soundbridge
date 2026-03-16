@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
       quality_rating: qualityRating,
       payment_promptness_rating: paymentPromptnessRating,
       review_text: reviewText,
+      written_review: writtenReview,
     } = body;
+    const reviewTextOrWritten = typeof reviewText === 'string' ? reviewText : typeof writtenReview === 'string' ? writtenReview : null;
 
     if (!projectId || !rateeId || overallRating == null || professionalismRating == null || punctualityRating == null) {
       return NextResponse.json(
@@ -70,23 +72,47 @@ export async function POST(request: NextRequest) {
     }
 
     const raterId = user.id;
+
+    const clamp = (n: number) => Math.min(5, Math.max(1, Math.round(Number(n))));
+    const overall = clamp(overallRating);
+    const professionalism = clamp(professionalismRating);
+    const punctuality = clamp(punctualityRating);
+    const quality = qualityRating != null ? clamp(qualityRating) : null;
+    const paymentPromptness = paymentPromptnessRating != null ? clamp(paymentPromptnessRating) : null;
+
+    const { data: existing } = await service
+      .from('gig_ratings')
+      .select('id, overall_rating, created_at')
+      .eq('project_id', projectId)
+      .eq('rater_id', raterId)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({ success: true, rating: existing }, { headers: CORS });
+    }
+
     const { error: insertErr } = await service.from('gig_ratings').insert({
       project_id: projectId,
       rater_id: raterId,
       ratee_id: rateeId,
-      overall_rating: Number(overallRating),
-      professionalism_rating: Number(professionalismRating),
-      punctuality_rating: Number(punctualityRating),
-      quality_rating: qualityRating != null ? Number(qualityRating) : null,
-      payment_promptness_rating: paymentPromptnessRating != null ? Number(paymentPromptnessRating) : null,
-      review_text: typeof reviewText === 'string' ? reviewText.slice(0, 1000) : null,
+      overall_rating: overall,
+      professionalism_rating: professionalism,
+      punctuality_rating: punctuality,
+      quality_rating: quality,
+      payment_promptness_rating: paymentPromptness,
+      review_text: reviewTextOrWritten != null ? String(reviewTextOrWritten).slice(0, 1000) : null,
     });
 
     if (insertErr) {
       if (insertErr.code === '23505') {
-        return NextResponse.json({ success: false, error: 'You have already rated this project' }, { status: 409, headers: CORS });
+        return NextResponse.json({ success: true }, { headers: CORS });
       }
-      console.error('gig_ratings insert:', insertErr);
+      console.error('gig_ratings insert:', {
+        code: (insertErr as { code?: string }).code,
+        message: (insertErr as { message?: string }).message,
+        details: (insertErr as { details?: string }).details,
+        hint: (insertErr as { hint?: string }).hint,
+      });
       return NextResponse.json({ success: false, error: 'Failed to submit rating' }, { status: 500, headers: CORS });
     }
 
