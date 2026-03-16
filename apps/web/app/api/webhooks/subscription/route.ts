@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createServiceClient } from '@/src/lib/supabase';
 import { grantGracePeriod } from '@/src/lib/grace-period-service';
+import { stripe } from '@/src/lib/stripe';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,10 +10,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Stripe-Signature',
 };
 
-function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured');
-  return new Stripe(key, { apiVersion: '2024-12-18.acacia' });
+function getStripe(): Stripe | null {
+  return stripe || null;
+}
+
+/** Webhook secret for this subscription endpoint (can be same or different from main webhook) */
+function getSubscriptionWebhookSecret(): string {
+  return process.env.STRIPE_WEBHOOK_SECRET_SUBSCRIPTION || process.env.STRIPE_WEBHOOK_SECRET || '';
 }
 
 /**
@@ -41,24 +45,32 @@ export async function POST(request: NextRequest) {
     if (signature) {
       console.log('💳 Verifying Stripe webhook signature...');
 
-      // Verify Stripe webhook signature
+      const webhookSecret = getSubscriptionWebhookSecret();
+      if (!webhookSecret) {
+        console.error('❌ STRIPE_WEBHOOK_SECRET or STRIPE_WEBHOOK_SECRET_SUBSCRIPTION not set');
+        return NextResponse.json({ received: true, error: 'Webhook secret not configured' }, { status: 200, headers: corsHeaders });
+      }
+
+      const stripeClient = getStripe();
+      if (!stripeClient) {
+        console.error('❌ Stripe not configured');
+        return NextResponse.json({ received: true, error: 'Stripe not configured' }, { status: 200, headers: corsHeaders });
+      }
+
       try {
-        const event = getStripe().webhooks.constructEvent(
-          body,
-          signature,
-          process.env.STRIPE_WEBHOOK_SECRET!
-        );
+        const event = stripeClient.webhooks.constructEvent(body, signature, webhookSecret);
         payload = event;
         console.log('✅ Stripe signature verified');
       } catch (err: any) {
         console.error('❌ Stripe signature verification failed:', err.message);
         return NextResponse.json(
           { error: 'Invalid signature' },
-          { status: 401, headers: corsHeaders }
+          { status: 400, headers: corsHeaders }
         );
       }
 
-      return handleStripeWebhook(supabase, payload);
+      const response = await handleStripeWebhook(supabase, payload);
+      return response;
     }
 
     // Check if it's a RevenueCat webhook (has Authorization header)
@@ -113,9 +125,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ WEBHOOK: Error processing webhook:', error);
+    // Always return 200 so Stripe does not disable the webhook (STRIPE_WEBHOOK_DISABLED_FIX.md)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500, headers: corsHeaders }
+      { received: true, error: error?.message },
+      { status: 200, headers: corsHeaders }
     );
   }
 }
@@ -196,83 +209,125 @@ async function handleRevenueCatWebhook(supabase: any, payload: any) {
 }
 
 /**
- * Handle Stripe webhook events
+ * Handle Stripe webhook events.
+ * Always returns 200 so Stripe does not disable the webhook.
  */
 async function handleStripeWebhook(supabase: any, payload: any) {
   const event = payload;
   const eventType = event.type;
+  const obj = event.data.object;
 
   console.log('💳 STRIPE WEBHOOK:', eventType);
 
-  // Extract subscription data
-  const subscription = event.data.object;
-  const customerId = subscription.customer;
-  const priceId = subscription.items?.data[0]?.price?.id || subscription.plan?.id;
+  try {
+    // checkout.session.completed: object is Session
+    if (eventType === 'checkout.session.completed') {
+      const session = obj as { customer?: string; subscription?: string; metadata?: { userId?: string; user_id?: string } };
+      const userId = session.metadata?.userId || session.metadata?.user_id;
+      if (!userId) {
+        console.warn('⚠️ STRIPE: No userId in checkout session metadata');
+        return NextResponse.json({ received: true, skipped: true }, { status: 200, headers: corsHeaders });
+      }
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string;
+      if (subscriptionId && getStripe()) {
+        const sub = await getStripe()!.subscriptions.retrieve(subscriptionId);
+        const priceId = sub.items?.data?.[0]?.price?.id || (sub as any).plan?.id;
+        const { tier, period } = parsePriceId(priceId);
+        await handleSubscriptionActivated(supabase, {
+          userId,
+          tier: tier === 'free' ? 'premium' : tier,
+          period,
+          status: 'active',
+          startDate: new Date(sub.current_period_start * 1000),
+          renewalDate: new Date(sub.current_period_end * 1000),
+          stripeCustomerId: customerId,
+        });
+      }
+      return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+    }
 
-  // Get user ID from Stripe customer ID or metadata
-  const metadataUserId =
-    subscription?.metadata?.userId ||
-    subscription?.metadata?.user_id ||
-    subscription?.metadata?.userid;
+    // invoice.payment_succeeded / invoice.payment_failed: object is Invoice
+    if (eventType === 'invoice.payment_succeeded') {
+      const invoice = obj as { customer?: string; subscription?: string };
+      const subscriptionId = invoice.subscription as string;
+      if (!subscriptionId || !getStripe()) {
+        return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+      }
+      const sub = await getStripe()!.subscriptions.retrieve(subscriptionId);
+      return handleStripeWebhook(supabase, { ...event, type: 'customer.subscription.updated', data: { object: sub } });
+    }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('stripe_customer_id', customerId)
-    .single();
+    if (eventType === 'invoice.payment_failed') {
+      const invoice = obj as { customer?: string };
+      const customerId = invoice.customer as string;
+      const { data: profile } = await supabase.from('profiles').select('id').eq('stripe_customer_id', customerId).single();
+      if (profile?.id) {
+        await handlePaymentFailed(supabase, { userId: profile.id });
+      }
+      return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+    }
 
-  const userId = profile?.id || metadataUserId;
+    // Subscription events: object is Subscription
+    const subscription = obj;
+    const customerId = subscription.customer;
+    const priceId = subscription.items?.data?.[0]?.price?.id || subscription.plan?.id;
 
-  if (!userId) {
-    console.warn('⚠️ STRIPE: No user found for customer:', customerId);
-    // Return 2xx so Stripe stops retrying old/unknown customers
-    return NextResponse.json(
-      { received: true, skipped: true, reason: 'User not found' },
-      { status: 200, headers: corsHeaders }
-    );
+    const metadataUserId =
+      subscription?.metadata?.userId ||
+      subscription?.metadata?.user_id ||
+      subscription?.metadata?.userid;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', customerId)
+      .single();
+
+    const userId = profile?.id || metadataUserId;
+
+    if (!userId) {
+      console.warn('⚠️ STRIPE: No user found for customer:', customerId);
+      return NextResponse.json(
+        { received: true, skipped: true, reason: 'User not found' },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    const { tier, period } = parsePriceId(priceId);
+
+    switch (eventType) {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const status = subscription.status === 'active' ? 'active' :
+                       subscription.status === 'past_due' ? 'past_due' :
+                       subscription.status === 'canceled' ? 'cancelled' : 'active';
+
+        await handleSubscriptionActivated(supabase, {
+          userId,
+          tier: tier === 'free' ? 'premium' : tier,
+          period,
+          status,
+          startDate: new Date((subscription.current_period_start ?? 0) * 1000),
+          renewalDate: new Date((subscription.current_period_end ?? 0) * 1000),
+          stripeCustomerId: customerId,
+        });
+        break;
+      }
+
+      case 'customer.subscription.deleted':
+        await handleSubscriptionExpired(supabase, { userId });
+        break;
+
+      default:
+        console.log('ℹ️ STRIPE: Unhandled event type:', eventType);
+    }
+
+    return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+  } catch (err: any) {
+    console.error('❌ STRIPE WEBHOOK handler error:', err);
+    return NextResponse.json({ received: true, error: err?.message }, { status: 200, headers: corsHeaders });
   }
-
-  // Determine tier and period from price ID
-  const { tier, period } = parsePriceId(priceId);
-
-  switch (eventType) {
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated':
-      // Subscription created or updated
-      const status = subscription.status === 'active' ? 'active' :
-                     subscription.status === 'past_due' ? 'past_due' :
-                     subscription.status === 'canceled' ? 'cancelled' : 'active';
-
-      await handleSubscriptionActivated(supabase, {
-        userId,
-        tier,
-        period,
-        status,
-        startDate: new Date(subscription.current_period_start * 1000),
-        renewalDate: new Date(subscription.current_period_end * 1000),
-        stripeCustomerId: customerId,
-      });
-      break;
-
-    case 'customer.subscription.deleted':
-      // Subscription cancelled and expired
-      await handleSubscriptionExpired(supabase, {
-        userId,
-      });
-      break;
-
-    case 'invoice.payment_failed':
-      // Payment failed
-      await handlePaymentFailed(supabase, {
-        userId,
-      });
-      break;
-
-    default:
-      console.log('ℹ️ STRIPE: Unhandled event type:', eventType);
-  }
-
-  return NextResponse.json({ received: true }, { headers: corsHeaders });
 }
 
 /**
