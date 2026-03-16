@@ -36,9 +36,11 @@ export async function POST(
     if (agreed_amount == null || agreed_amount <= 0) {
       return NextResponse.json({ error: 'agreed_amount is required and must be positive' }, { status: 400, headers: CORS });
     }
-    if (!brief || typeof brief !== 'string' || !brief.trim()) {
-      return NextResponse.json({ error: 'brief is required' }, { status: 400, headers: CORS });
+    if (!brief || typeof brief !== 'string' || brief.trim().length < 10) {
+      return NextResponse.json({ error: 'brief is required (min 10 characters)' }, { status: 400, headers: CORS });
     }
+    // Never pass empty string to DATE column — normalize to null
+    const deadlineVal = (typeof deadline === 'string' ? deadline.trim() : deadline) || null;
 
     const { data: opp } = await supabase
       .from('opportunity_posts')
@@ -68,7 +70,7 @@ export async function POST(
 
     const { data: existingProject } = await serviceSupabase
       .from('opportunity_projects')
-      .select('id, status, agreed_amount, currency, poster_user_id, creator_user_id, opportunity_id, interest_id, title, brief, deadline, chat_thread_id, created_at')
+      .select('id, status, agreed_amount, currency, poster_user_id, creator_user_id, opportunity_id, interest_id, title, brief, deadline, chat_thread_id, created_at, platform_fee_percent, platform_fee_amount, creator_payout_amount')
       .eq('interest_id', interestId)
       .maybeSingle();
 
@@ -111,13 +113,19 @@ export async function POST(
             project: {
               id: existingProject.id,
               opportunity_id: existingProject.opportunity_id,
-              poster_id: existingProject.poster_user_id,
-              creator_id: existingProject.creator_user_id,
+              interest_id: existingProject.interest_id,
+              poster_user_id: existingProject.poster_user_id,
+              creator_user_id: existingProject.creator_user_id,
+              title: existingProject.title,
+              brief: existingProject.brief,
               agreed_amount: existingProject.agreed_amount,
               currency: existingProject.currency,
+              platform_fee_percent: existingProject.platform_fee_percent,
+              platform_fee_amount: existingProject.platform_fee_amount,
+              creator_payout_amount: existingProject.creator_payout_amount,
               deadline: existingProject.deadline ?? null,
-              brief: existingProject.brief,
               status: existingProject.status,
+              stripe_payment_intent_id: paymentIntent.id,
               created_at: existingProject.created_at,
               chat_thread_id: existingProject.chat_thread_id,
             },
@@ -181,25 +189,7 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500, headers: CORS });
     }
 
-    if (!stripe) {
-      return NextResponse.json({ error: 'Payment system not configured' }, { status: 500, headers: CORS });
-    }
-
-    const amountPence = Math.round(agreed * 100);
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountPence,
-      currency: (currency || 'GBP').toLowerCase(),
-      capture_method: 'manual',
-      metadata: {
-        project_source: 'opportunity',
-        opportunity_id: opportunityId,
-        interest_id: interestId,
-        poster_user_id: posterUserId,
-        creator_user_id: creatorUserId,
-      },
-      description: `Project: ${opp.title}`,
-    });
-
+    // Insert project first so Stripe failure doesn't block project creation (WEB_TEAM_ACCEPT_INTEREST_500_FIX)
     const { data: project, error: projectErr } = await serviceSupabase
       .from('opportunity_projects')
       .insert({
@@ -214,10 +204,10 @@ export async function POST(
         platform_fee_percent: feePercent,
         platform_fee_amount: platformFeeAmount,
         creator_payout_amount: creatorPayoutAmount,
-        deadline: deadline || null,
+        deadline: deadlineVal,
         status: 'payment_pending',
-        stripe_payment_intent_id: paymentIntent.id,
-        stripe_client_secret: paymentIntent.client_secret ?? null,
+        stripe_payment_intent_id: null,
+        stripe_client_secret: null,
         chat_thread_id: conv.id,
       })
       .select()
@@ -230,25 +220,44 @@ export async function POST(
         hint: (projectErr as { hint?: unknown }).hint,
         code: (projectErr as { code?: string }).code,
       });
-
-      // Best-effort cleanup so we don't leave orphaned Incomplete PaymentIntents in Stripe
-      try {
-        await stripe.paymentIntents.cancel(paymentIntent.id);
-      } catch (cancelErr) {
-        console.error('Failed to cancel PaymentIntent after project insert error:', cancelErr);
-      }
-
       return NextResponse.json({ error: 'Failed to create project' }, { status: 500, headers: CORS });
     }
 
-    if (!paymentIntent.client_secret) {
-      console.error('Stripe PaymentIntent missing client_secret (new project)', { paymentIntentId: paymentIntent.id });
+    // Create Stripe PaymentIntent after project exists; wrap in try/catch so project creation succeeds even if Stripe fails
+    let clientSecret: string | null = null;
+    let stripePaymentIntentId: string | null = null;
+    if (stripe) {
       try {
-        await stripe.paymentIntents.cancel(paymentIntent.id);
-      } catch (cancelErr) {
-        console.error('Failed to cancel PaymentIntent without client_secret:', cancelErr);
+        const amountPence = Math.round(agreed * 100);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amountPence,
+          currency: (currency || 'GBP').toLowerCase(),
+          capture_method: 'manual',
+          metadata: {
+            project_source: 'opportunity',
+            opportunity_id: opportunityId,
+            interest_id: interestId,
+            poster_user_id: posterUserId,
+            creator_user_id: creatorUserId,
+            recipientUserId: creatorUserId,
+          },
+          description: `Project: ${opp.title}`,
+        });
+        clientSecret = paymentIntent.client_secret ?? null;
+        stripePaymentIntentId = paymentIntent.id;
+        const { error: updateErr } = await serviceSupabase
+          .from('opportunity_projects')
+          .update({
+            stripe_payment_intent_id: paymentIntent.id,
+            stripe_client_secret: clientSecret,
+          })
+          .eq('id', project.id);
+        if (updateErr) {
+          console.error('opportunity_projects update stripe after create:', updateErr);
+        }
+      } catch (stripeErr) {
+        console.error('Stripe PaymentIntent create failed (project already created):', stripeErr instanceof Error ? stripeErr.message : stripeErr);
       }
-      return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
     }
 
     // Push: Agreement Ready — notify creator (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §6)
@@ -264,22 +273,28 @@ export async function POST(
         project: {
           id: project.id,
           opportunity_id: opportunityId,
-          poster_id: posterUserId,
-          creator_id: creatorUserId,
+          interest_id: interestId,
+          poster_user_id: posterUserId,
+          creator_user_id: creatorUserId,
+          title: project.title,
+          brief: project.brief,
           agreed_amount: project.agreed_amount,
           currency: project.currency,
+          platform_fee_percent: project.platform_fee_percent ?? feePercent,
+          platform_fee_amount: project.platform_fee_amount ?? platformFeeAmount,
+          creator_payout_amount: project.creator_payout_amount ?? creatorPayoutAmount,
           deadline: project.deadline ?? null,
-          brief: project.brief,
           status: project.status,
+          stripe_payment_intent_id: stripePaymentIntentId ?? project.stripe_payment_intent_id ?? null,
           created_at: project.created_at,
           chat_thread_id: project.chat_thread_id,
         },
-        client_secret: paymentIntent.client_secret,
+        client_secret: clientSecret,
       },
       { status: 201, headers: CORS }
     );
   } catch (e) {
-    console.error('POST accept interest:', e);
+    console.error('POST accept interest:', e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : '');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS });
   }
 }
