@@ -61,85 +61,90 @@ export async function POST(
       })
       .eq('id', id);
 
-    const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
-      id,
-      creator_user_id: project.creator_user_id,
-      creator_payout_amount: project.creator_payout_amount,
-      currency: project.currency ?? undefined,
-      title: project.title,
-      opportunity_id: (project as { opportunity_id?: string }).opportunity_id,
-    }, {
-      stripePaymentIntentId: paymentIntentId,
-      metadata: { project_id: id },
-      descriptionPrefix: 'Gig payment',
-    });
+    // Secondary operations: wallet credit, push, emails, notifications — don't fail the response
+    try {
+      const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
+        id,
+        creator_user_id: project.creator_user_id,
+        creator_payout_amount: project.creator_payout_amount,
+        currency: project.currency ?? undefined,
+        title: project.title,
+        opportunity_id: (project as { opportunity_id?: string }).opportunity_id,
+      }, {
+        stripePaymentIntentId: paymentIntentId,
+        metadata: { project_id: id },
+        descriptionPrefix: 'Gig payment',
+      });
 
-    await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {
-      amount: creditResult.creditedAmount,
-      currency: creditResult.creditedCurrency,
-      gigTitle: project.title ?? 'Gig',
-      gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
-    });
+      await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {
+        amount: creditResult.creditedAmount,
+        currency: creditResult.creditedCurrency,
+        gigTitle: project.title ?? 'Gig',
+        gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
+      });
 
-    const PLATFORM_FEE_PCT = 0.12;
-    const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
-    const platformFee = grossAmount * PLATFORM_FEE_PCT;
-    let stripeReceiptUrl: string | null = null;
-    if (paymentIntentId && stripe) {
-      try {
-        const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['charges.data'] });
-        const charges = (pi as { charges?: { data?: Array<{ receipt_url?: string }> } }).charges?.data;
-        stripeReceiptUrl = charges?.[0]?.receipt_url ?? null;
-      } catch {
-        /* ignore */
+      const PLATFORM_FEE_PCT = 0.12;
+      const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
+      const platformFee = grossAmount * PLATFORM_FEE_PCT;
+      let stripeReceiptUrl: string | null = null;
+      if (paymentIntentId && stripe) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['charges.data'] });
+          const charges = (pi as { charges?: { data?: Array<{ receipt_url?: string }> } }).charges?.data;
+          stripeReceiptUrl = charges?.[0]?.receipt_url ?? null;
+        } catch {
+          /* ignore */
+        }
       }
-    }
-    sendGigPaymentEmails({
-      service: serviceSupabase,
-      creatorUserId: project.creator_user_id,
-      requesterUserId: project.poster_user_id,
-      gigTitle: project.title ?? 'Gig',
-      grossAmount,
-      platformFee,
-      creatorEarnings: creditResult.creditedAmount,
-      newWalletBalance: creditResult.newBalance,
-      currency: creditResult.creditedCurrency,
-      gigCompletedAt: new Date(),
-      gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
-      projectId: id,
-      stripeReceiptUrl,
-    }).catch(() => {});
+      sendGigPaymentEmails({
+        service: serviceSupabase,
+        creatorUserId: project.creator_user_id,
+        requesterUserId: project.poster_user_id,
+        gigTitle: project.title ?? 'Gig',
+        grossAmount,
+        platformFee,
+        creatorEarnings: creditResult.creditedAmount,
+        newWalletBalance: creditResult.newBalance,
+        currency: creditResult.creditedCurrency,
+        gigCompletedAt: new Date(),
+        gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
+        projectId: id,
+        stripeReceiptUrl,
+      }).catch(() => {});
 
-    const amountDisplay = creditResult.creditedCurrency === 'GBP' ? `£${creditResult.creditedAmount.toFixed(2)}` : creditResult.creditedCurrency === 'EUR' ? `€${creditResult.creditedAmount.toFixed(2)}` : `${creditResult.creditedCurrency} ${creditResult.creditedAmount.toFixed(2)}`;
-    await serviceSupabase.from('notifications').insert([
-      {
-        user_id: project.creator_user_id,
-        type: 'opportunity_project_completed',
-        title: '💰 Payment received!',
-        body: `${amountDisplay} from "${project.title}" is in your SoundBridge wallet.`,
-        related_id: id,
-        related_type: 'opportunity_project',
-        metadata: { project_id: id },
-      },
-      {
-        user_id: project.creator_user_id,
-        type: 'opportunity_review_prompt',
-        title: 'Leave a review',
-        body: 'How was working with the poster? Leave a verified review.',
-        related_id: id,
-        related_type: 'opportunity_project',
-        metadata: { project_id: id },
-      },
-      {
-        user_id: user.id,
-        type: 'opportunity_review_prompt',
-        title: 'Leave a review',
-        body: 'How was working with the creator? Leave a verified review.',
-        related_id: id,
-        related_type: 'opportunity_project',
-        metadata: { project_id: id },
-      },
-    ]);
+      const amountDisplay = creditResult.creditedCurrency === 'GBP' ? `£${creditResult.creditedAmount.toFixed(2)}` : creditResult.creditedCurrency === 'EUR' ? `€${creditResult.creditedAmount.toFixed(2)}` : `${creditResult.creditedCurrency} ${creditResult.creditedAmount.toFixed(2)}`;
+      await serviceSupabase.from('notifications').insert([
+        {
+          user_id: project.creator_user_id,
+          type: 'opportunity_project_completed',
+          title: '💰 Payment received!',
+          body: `${amountDisplay} from "${project.title}" is in your SoundBridge wallet.`,
+          related_id: id,
+          related_type: 'opportunity_project',
+          metadata: { project_id: id },
+        },
+        {
+          user_id: project.creator_user_id,
+          type: 'opportunity_review_prompt',
+          title: 'Leave a review',
+          body: 'How was working with the poster? Leave a verified review.',
+          related_id: id,
+          related_type: 'opportunity_project',
+          metadata: { project_id: id },
+        },
+        {
+          user_id: user.id,
+          type: 'opportunity_review_prompt',
+          title: 'Leave a review',
+          body: 'How was working with the creator? Leave a verified review.',
+          related_id: id,
+          related_type: 'opportunity_project',
+          metadata: { project_id: id },
+        },
+      ]);
+    } catch (secondaryError) {
+      console.error('confirm-delivery: secondary (wallet/push/notifications):', secondaryError);
+    }
 
     return NextResponse.json({ success: true, status: 'completed' }, { headers: CORS });
   } catch (e) {

@@ -35,10 +35,20 @@ export async function GET(
     }
 
     const isPoster = project.poster_user_id === user.id;
-    const out = { ...project };
+    const otherUserId = project.poster_user_id === user.id ? project.creator_user_id : project.poster_user_id;
+    const { data: otherProfile } = await supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .eq('id', otherUserId)
+      .single();
+
+    const out: Record<string, unknown> = { ...project };
     if (project.status !== 'payment_pending' || !isPoster) {
-      delete (out as Record<string, unknown>).stripe_client_secret;
+      delete out.stripe_client_secret;
     }
+    out.other_party = otherProfile
+      ? { id: otherProfile.id, display_name: otherProfile.display_name ?? null, avatar_url: otherProfile.avatar_url ?? null }
+      : null;
 
     return NextResponse.json(out, { headers: CORS });
   } catch (e) {
