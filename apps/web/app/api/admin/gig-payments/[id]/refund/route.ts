@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
 import { stripe } from '@/src/lib/stripe';
+import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,7 @@ export async function POST(
 
   const { data: project, error: projErr } = await service
     .from('opportunity_projects')
-    .select('id, opportunity_id, creator_user_id, title, creator_payout_amount, currency, stripe_payment_intent_id')
+    .select('id, opportunity_id, creator_user_id, title, creator_payout_amount, agreed_amount, currency, stripe_payment_intent_id')
     .eq('id', projectId)
     .single();
 
@@ -65,6 +66,19 @@ export async function POST(
       metadata: { admin_refund: true, reason },
     });
     await service.from('user_wallets').update({ balance: Number(wallet.balance) - amount, updated_at: new Date().toISOString() }).eq('id', wallet.id);
+  }
+
+  const { data: gig } = await service.from('opportunity_posts').select('user_id').eq('id', project.opportunity_id).single();
+  const requesterUserId = gig?.user_id;
+  if (requesterUserId) {
+    const refundAmount = Number(project.agreed_amount ?? project.creator_payout_amount);
+    const symbol = currency === 'GBP' ? '£' : currency === 'NGN' ? '₦' : currency === 'EUR' ? '€' : '$';
+    sendExpoPush(service, requesterUserId, {
+      title: 'Refund Processed',
+      body: `${symbol}${refundAmount.toFixed(2)} has been refunded to your wallet`,
+      data: { type: 'gig_refund', gigId: project.opportunity_id, amount: Math.round(refundAmount * 100) },
+      channelId: 'tips',
+    }).catch((e) => console.error('Gig refund push:', e));
   }
 
   return NextResponse.json({ success: true, message: 'Refund processed' }, { headers: CORS });

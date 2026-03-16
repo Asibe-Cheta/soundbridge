@@ -34,6 +34,7 @@ export async function sendUrgentGigPush(
   toUserId: string,
   payload: {
     gigId: string;
+    requesterId: string;
     title: string;
     body: string;
     distance_km: number;
@@ -53,11 +54,13 @@ export async function sendUrgentGigPush(
     title: payload.title,
     body: payload.body,
     categoryId: 'urgent_gig',
+    channelId: 'urgent_gigs' as const,
     sound: 'default' as const,
     priority: 'high' as const,
     data: {
       type: 'urgent_gig',
       gigId: payload.gigId,
+      userId: payload.requesterId,
       distance_km: payload.distance_km,
       payment: payload.payment,
       payment_currency: payload.payment_currency || 'GBP',
@@ -76,12 +79,13 @@ export async function sendUrgentGigPush(
   }
 }
 
-/** gig_accepted — to poster when provider accepts */
+/** gig_accepted — to requester when provider accepts (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §8) */
 export async function sendGigAcceptedPush(
   supabase: SupabaseClient,
   posterUserId: string,
   providerName: string,
-  skill: string
+  gigId: string,
+  providerUserId: string
 ): Promise<boolean> {
   const token = await getPushTokenForUser(supabase, posterUserId);
   if (!token) return false;
@@ -89,11 +93,12 @@ export async function sendGigAcceptedPush(
   try {
     await expo.sendPushNotificationsAsync([{
       to: token,
-      title: '⚡ Someone accepted your gig!',
-      body: `${providerName} accepted your ${skill} gig.`,
+      title: 'Provider Accepted',
+      body: `${providerName} accepted your gig request`,
       sound: 'default',
       priority: 'high',
-      data: { type: 'gig_accepted' },
+      channelId: 'urgent_gigs',
+      data: { type: 'gig_accepted', gigId, userId: providerUserId },
     }]);
     return true;
   } catch (e) {
@@ -102,25 +107,28 @@ export async function sendGigAcceptedPush(
   }
 }
 
-/** gig_confirmed — to selected provider */
+/** gig_confirmed — to selected provider (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §9) */
 export async function sendGigConfirmedPush(
   supabase: SupabaseClient,
   providerUserId: string,
+  requesterName: string,
+  gigId: string,
+  requesterUserId: string,
   title: string,
   dateNeeded: string
 ): Promise<boolean> {
   const token = await getPushTokenForUser(supabase, providerUserId);
   if (!token) return false;
   const expo = getExpo();
-  const dateStr = dateNeeded ? new Date(dateNeeded).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '';
   try {
     await expo.sendPushNotificationsAsync([{
       to: token,
-      title: '✅ You got the gig!',
-      body: `You've been selected for ${title} — ${dateStr}`,
+      title: 'You Got the Gig!',
+      body: `${requesterName} selected you for the gig`,
       sound: 'default',
       priority: 'high',
-      data: { type: 'gig_confirmed' },
+      channelId: 'urgent_gigs',
+      data: { type: 'gig_confirmed', gigId, userId: requesterUserId },
     }]);
     return true;
   } catch (e) {
@@ -129,10 +137,11 @@ export async function sendGigConfirmedPush(
   }
 }
 
-/** gig_expired — to poster when no provider found in time */
+/** gig_expired — to requester when no provider found; refund triggered (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §11) */
 export async function sendGigExpiredPush(
   supabase: SupabaseClient,
-  posterUserId: string
+  posterUserId: string,
+  gigId: string
 ): Promise<boolean> {
   const token = await getPushTokenForUser(supabase, posterUserId);
   if (!token) return false;
@@ -140,10 +149,11 @@ export async function sendGigExpiredPush(
   try {
     await expo.sendPushNotificationsAsync([{
       to: token,
-      title: '😔 Your gig expired',
-      body: 'No provider was found. You have not been charged.',
+      title: 'Gig Expired',
+      body: 'No provider was found. Your payment has been refunded.',
       sound: 'default',
-      data: { type: 'gig_expired' },
+      channelId: 'urgent_gigs',
+      data: { type: 'gig_expired', gigId },
     }]);
     return true;
   } catch (e) {
@@ -152,10 +162,11 @@ export async function sendGigExpiredPush(
   }
 }
 
-/** gig_starting_soon — to poster and provider ~1h before */
+/** gig_starting_soon — to poster and provider ~1h before (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §10) */
 export async function sendGigStartingSoonPush(
   supabase: SupabaseClient,
   userId: string,
+  gigId: string,
   title: string,
   dateNeeded: string,
   address: string | null
@@ -163,15 +174,14 @@ export async function sendGigStartingSoonPush(
   const token = await getPushTokenForUser(supabase, userId);
   if (!token) return false;
   const expo = getExpo();
-  const timeStr = dateNeeded ? new Date(dateNeeded).toLocaleTimeString(undefined, { timeStyle: 'short' }) : '';
-  const body = address ? `${title} starts at ${timeStr}. ${address}` : `${title} starts at ${timeStr}`;
   try {
     await expo.sendPushNotificationsAsync([{
       to: token,
-      title: '⏰ Gig starting in 1 hour',
-      body,
+      title: 'Gig Starting Soon',
+      body: 'Your gig starts in 1 hour',
       sound: 'default',
-      data: { type: 'gig_starting_soon' },
+      channelId: 'urgent_gigs',
+      data: { type: 'gig_starting_soon', gigId },
     }]);
     return true;
   } catch (e) {
@@ -180,22 +190,25 @@ export async function sendGigStartingSoonPush(
   }
 }
 
-/** gig_rating_received — prompt poster to rate provider ~24h after completion */
+/** gig_rating_received — prompt one party to rate the other (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §14) */
 export async function sendGigRatingPromptPush(
   supabase: SupabaseClient,
-  posterUserId: string,
-  providerName: string
+  recipientUserId: string,
+  otherPartyDisplayName: string,
+  gigId: string,
+  projectId: string
 ): Promise<boolean> {
-  const token = await getPushTokenForUser(supabase, posterUserId);
+  const token = await getPushTokenForUser(supabase, recipientUserId);
   if (!token) return false;
   const expo = getExpo();
   try {
     await expo.sendPushNotificationsAsync([{
       to: token,
-      title: '⭐ Rate your gig',
-      body: `How did ${providerName} do? Share your feedback.`,
+      title: 'Rate Your Experience',
+      body: `How was the gig? Leave a rating for ${otherPartyDisplayName}`,
       sound: 'default',
-      data: { type: 'gig_rating_received' },
+      channelId: 'social',
+      data: { type: 'gig_rating_received', gigId, projectId },
     }]);
     return true;
   } catch (e) {
@@ -204,7 +217,7 @@ export async function sendGigRatingPromptPush(
   }
 }
 
-/** gig_payment — to creator when gig is completed and wallet is credited (WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET) */
+/** gig_payment — to provider when gig completed and wallet credited (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §12) */
 export async function sendGigPaymentPush(
   supabase: SupabaseClient,
   creatorUserId: string,
@@ -218,11 +231,12 @@ export async function sendGigPaymentPush(
   try {
     await expo.sendPushNotificationsAsync([{
       to: token,
-      title: '💰 Payment received!',
-      body: `${amountStr} from "${payload.gigTitle}" is in your SoundBridge wallet.`,
+      title: 'Payment Received',
+      body: `${amountStr} has been added to your wallet for completing the gig`,
       sound: 'default',
       priority: 'high',
-      data: { type: 'gig_payment', gigId: payload.gigId, deepLink: 'soundbridge://wallet' },
+      channelId: 'tips',
+      data: { type: 'gig_payment', gigId: payload.gigId, amount: Math.round(payload.amount * 100) },
     }]);
     return true;
   } catch (e) {

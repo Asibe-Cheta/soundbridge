@@ -267,6 +267,7 @@ export async function runUrgentGigMatching(
     bodyParts.push(locationLabel);
     await sendUrgentGigPush(supabase, s.user_id, {
       gigId: gig.id,
+      requesterId: requesterId,
       title: `🎺 Urgent Gig: ${skillLabel} Tonight`,
       body: bodyParts.join(' · '),
       distance_km: s.distance_km,

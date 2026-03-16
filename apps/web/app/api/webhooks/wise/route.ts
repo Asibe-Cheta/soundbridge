@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { wiseConfig } from '@/src/lib/wise/config';
+import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,6 +150,21 @@ async function handleTransferStateChange(
     if (updateError) {
       console.error('❌ Failed to update payout:', updateError);
       return;
+    }
+
+    if (newStatus === 'completed') {
+      const userId = (payout as { creator_id?: string }).creator_id ?? (payout as { user_id?: string }).user_id;
+      const amount = Number((payout as { amount?: number }).amount ?? 0);
+      const currency = (payout as { currency?: string }).currency ?? 'NGN';
+      if (userId) {
+        const symbol = currency === 'NGN' ? '₦' : currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$';
+        sendExpoPush(supabase, userId, {
+          title: 'Payout Sent',
+          body: `${symbol}${amount.toFixed(2)} payout has been sent to your bank account`,
+          data: { type: 'payout', amount: Math.round(amount * 100) },
+          channelId: 'tips',
+        }).catch((e) => console.error('Payout push:', e));
+      }
     }
 
     console.log('✅ Payout updated successfully:', {

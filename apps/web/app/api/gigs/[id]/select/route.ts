@@ -110,6 +110,8 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Failed to create project' }, { status: 500, headers: CORS });
     }
 
+    const { data: requesterProfile } = await service.from('profiles').select('display_name').eq('id', user.id).single();
+    const requesterName = (requesterProfile as { display_name?: string } | null)?.display_name ?? 'The requester';
     await service.from('notifications').insert({
       user_id: providerId,
       type: 'gig_confirmed',
@@ -119,7 +121,7 @@ export async function POST(
       related_type: 'opportunity_project',
       metadata: { gig_id: gigId, project_id: project.id },
     });
-    await sendGigConfirmedPush(service, providerId, gig.title ?? 'Your gig', gig.date_needed ?? '');
+    await sendGigConfirmedPush(service, providerId, requesterName, gigId, user.id, gig.title ?? 'Your gig', gig.date_needed ?? '');
 
     const { data: otherResponses } = await service.from('gig_responses').select('provider_id').eq('gig_id', gigId).eq('status', 'expired');
     for (const r of otherResponses ?? []) {

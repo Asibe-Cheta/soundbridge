@@ -41,25 +41,42 @@ export async function GET(request: NextRequest) {
 
     const { data: alreadySent } = await service
       .from('notification_rate_limits')
-      .select('gig_id')
+      .select('gig_id, user_id')
       .eq('notification_type', 'gig_rating_prompt')
       .in('gig_id', oppIds);
-    const sentSet = new Set((alreadySent ?? []).map((r: { gig_id: string }) => r.gig_id));
+    const sentSet = new Set((alreadySent ?? []).map((r: { gig_id: string; user_id: string }) => `${r.gig_id}:${r.user_id}`));
 
     let notified = 0;
     for (const project of projects) {
-      if (!urgentSet.has(project.opportunity_id) || sentSet.has(project.opportunity_id)) continue;
-      const { data: creator } = await service.from('profiles').select('display_name').eq('id', project.creator_user_id).single();
-      const name = (creator as { display_name?: string } | null)?.display_name ?? 'Your provider';
-      await sendGigRatingPromptPush(service, project.poster_user_id, name);
-      await service.from('notification_rate_limits').insert({
-        user_id: project.poster_user_id,
-        notification_type: 'gig_rating_prompt',
-        sent_at: new Date().toISOString(),
-        gig_id: project.opportunity_id,
-      });
-      sentSet.add(project.opportunity_id);
-      notified++;
+      if (!urgentSet.has(project.opportunity_id)) continue;
+      const gigId = project.opportunity_id;
+      const projectId = project.id;
+      const { data: creatorProfile } = await service.from('profiles').select('display_name').eq('id', project.creator_user_id).single();
+      const { data: posterProfile } = await service.from('profiles').select('display_name').eq('id', project.poster_user_id).single();
+      const creatorName = (creatorProfile as { display_name?: string } | null)?.display_name ?? 'Your provider';
+      const posterName = (posterProfile as { display_name?: string } | null)?.display_name ?? 'The requester';
+      if (!sentSet.has(`${gigId}:${project.poster_user_id}`)) {
+        await sendGigRatingPromptPush(service, project.poster_user_id, creatorName, gigId, projectId);
+        await service.from('notification_rate_limits').insert({
+          user_id: project.poster_user_id,
+          notification_type: 'gig_rating_prompt',
+          sent_at: new Date().toISOString(),
+          gig_id: gigId,
+        });
+        sentSet.add(`${gigId}:${project.poster_user_id}`);
+        notified++;
+      }
+      if (!sentSet.has(`${gigId}:${project.creator_user_id}`)) {
+        await sendGigRatingPromptPush(service, project.creator_user_id, posterName, gigId, projectId);
+        await service.from('notification_rate_limits').insert({
+          user_id: project.creator_user_id,
+          notification_type: 'gig_rating_prompt',
+          sent_at: new Date().toISOString(),
+          gig_id: gigId,
+        });
+        sentSet.add(`${gigId}:${project.creator_user_id}`);
+        notified++;
+      }
     }
 
     return NextResponse.json({ success: true, notified });

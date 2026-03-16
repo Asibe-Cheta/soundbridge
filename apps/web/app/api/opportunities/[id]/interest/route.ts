@@ -89,12 +89,13 @@ export async function POST(
       .eq('id', user.id)
       .single();
 
-    const title = 'New Interest in Your Opportunity';
-    const bodyText = `${actorProfile?.display_name || 'Someone'} expressed interest in "${opp.title}"`;
+    const title = 'New Interest';
+    const bodyText = `${actorProfile?.display_name || 'Someone'} expressed interest in your opportunity`;
     const dataPayload = {
       type: 'opportunity_interest',
-      screen: 'OpportunityInterestList',
       opportunityId,
+      userId: user.id,
+      screen: 'OpportunityInterestList',
       opportunityTitle: opp.title,
     };
 

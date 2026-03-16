@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         related_type: 'opportunity_post',
         metadata: { gig_id: gig.id },
       });
-      await sendGigExpiredPush(service, gig.user_id);
+      await sendGigExpiredPush(service, gig.user_id, gig.id);
     }
 
     return NextResponse.json({ success: true, expired: gigs.length });

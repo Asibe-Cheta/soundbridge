@@ -98,7 +98,7 @@ export async function POST(
         });
         const { data: providerProfile } = await service.from('profiles').select('display_name').eq('id', user.id).single();
         const name = (providerProfile as { display_name?: string } | null)?.display_name ?? 'Someone';
-        await sendGigAcceptedPush(service, gig.user_id, name, gig.skill_required ?? 'gig');
+        await sendGigAcceptedPush(service, gig.user_id, name, gigId, user.id);
       }
     }
 

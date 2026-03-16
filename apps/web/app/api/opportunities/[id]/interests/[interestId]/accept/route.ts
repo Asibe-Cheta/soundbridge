@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -249,6 +250,14 @@ export async function POST(
       }
       return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
     }
+
+    // Push: Agreement Ready — notify creator (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §6)
+    sendExpoPush(serviceSupabase, creatorUserId, {
+      title: 'Agreement Ready',
+      body: `Review and sign the project agreement for ${opp.title}`,
+      data: { type: 'opportunity_agreement_received', projectId: project.id, userId: posterUserId },
+      channelId: 'opportunities',
+    }).catch((e) => console.error('opportunity_agreement_received push:', e));
 
     return NextResponse.json(
       {

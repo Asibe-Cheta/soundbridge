@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -62,6 +63,17 @@ export async function POST(
       related_type: 'opportunity_project',
       metadata: { project_id: id, reason },
     });
+
+    const { data: oppProject } = await serviceSupabase.from('opportunity_projects').select('opportunity_id').eq('id', id).single();
+    const gigId = oppProject?.opportunity_id ?? id;
+    const { data: disputerProfile } = await serviceSupabase.from('profiles').select('display_name, username').eq('id', user.id).single();
+    const disputerName = disputerProfile?.display_name || disputerProfile?.username || 'Someone';
+    await sendExpoPush(serviceSupabase, otherUserId, {
+      title: 'Dispute Raised',
+      body: `${disputerName} has raised a dispute on your project`,
+      data: { type: 'dispute_raised', projectId: id, gigId, userId: user.id },
+      channelId: 'urgent_gigs',
+    }).catch((e) => console.error('Dispute push:', e));
 
     return NextResponse.json({ success: true, status: 'disputed' }, { headers: CORS });
   } catch (e) {

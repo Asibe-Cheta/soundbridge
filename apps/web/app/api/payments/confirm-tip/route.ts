@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
 
       const { data: senderProfile } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, display_name')
         .eq('id', senderId)
         .single();
 
@@ -252,21 +252,20 @@ export async function POST(request: NextRequest) {
       const amountInCents = Math.round(amount * 100);
 
       if (pushToken && (pushToken.startsWith('ExponentPushToken[') || pushToken.startsWith('ExpoPushToken['))) {
+        const buyerLabel = isAnonymous ? 'Someone' : (senderProfile?.display_name || senderUsername || 'Someone');
         await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: pushToken,
-            title: 'You received a tip! 🎉',
-            body: `${senderLabel} sent you a ${formattedAmount} tip`,
+            title: 'Content Sold',
+            body: `${buyerLabel} purchased your content for ${formattedAmount}`,
             data: {
-              type: 'tip',
-              tipId: tipsRow?.id || tipAnalytics?.id || tipData.id,
+              type: 'content_purchase',
               amount: amountInCents,
+              userId: senderId,
+              tipId: tipsRow?.id || tipAnalytics?.id || tipData.id,
               currency,
-              senderId,
-              senderUsername: isAnonymous ? null : senderUsername,
-              message: tipMessage || null,
               deepLink: 'soundbridge://wallet/tips'
             },
             sound: 'default',

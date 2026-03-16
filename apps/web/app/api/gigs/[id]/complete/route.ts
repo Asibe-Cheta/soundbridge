@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
-import { sendGigPaymentPush } from '@/src/lib/gig-push-notifications';
+import { sendGigPaymentPush, sendGigRatingPromptPush } from '@/src/lib/gig-push-notifications';
 import { sendGigPaymentEmails } from '@/src/lib/gig-payment-emails';
 import { creditGigPaymentToWallet } from '@/src/lib/gig-wallet-credit';
 
@@ -171,6 +171,14 @@ export async function POST(
         metadata: { project_id: project.id },
       },
     ]);
+
+    // Push: Rate your gig partner — both parties (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §14)
+    const { data: creatorProfile } = await service.from('profiles').select('display_name').eq('id', project.creator_user_id).single();
+    const { data: requesterProfile } = await service.from('profiles').select('display_name').eq('id', user.id).single();
+    const creatorName = (creatorProfile as { display_name?: string } | null)?.display_name ?? 'Your provider';
+    const requesterName = (requesterProfile as { display_name?: string } | null)?.display_name ?? 'The requester';
+    sendGigRatingPromptPush(service, project.creator_user_id, requesterName, gigId, project.id).catch((e) => console.error('Rating push (creator):', e));
+    sendGigRatingPromptPush(service, user.id, creatorName, gigId, project.id).catch((e) => console.error('Rating push (requester):', e));
 
     return NextResponse.json({
       success: true,

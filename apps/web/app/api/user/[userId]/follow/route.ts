@@ -9,6 +9,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -76,6 +78,25 @@ export async function POST(
         { success: false, error: 'Failed to follow user', details: error.message },
         { status: 500, headers: corsHeaders }
       );
+    }
+
+    // Push: New Follower — notify User B (targetUserId)
+    try {
+      const service = createServiceClient();
+      const { data: followerProfile } = await service
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', user.id)
+        .single();
+      const displayName = followerProfile?.display_name || followerProfile?.username || 'Someone';
+      await sendExpoPush(service, targetUserId, {
+        title: 'New Follower',
+        body: `${displayName} started following you`,
+        data: { type: 'new_follower', followerId: user.id, userId: user.id },
+        channelId: 'social',
+      });
+    } catch (pushErr) {
+      console.error('Follow push notification:', pushErr);
     }
 
     const { count } = await supabase

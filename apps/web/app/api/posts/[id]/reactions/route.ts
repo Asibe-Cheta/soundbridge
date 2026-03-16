@@ -5,7 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { notifyPostReaction } from '@/src/lib/post-notifications';
+import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -180,8 +182,14 @@ export async function POST(
         const userName = userProfile?.display_name || userProfile?.username || 'Someone';
         notifyPostReaction(post.user_id, userName, postId, reaction_type).catch((err) => {
           console.error('Failed to send reaction notification:', err);
-          // Don't fail the request if notification fails
         });
+        const service = createServiceClient();
+        sendExpoPush(service, post.user_id, {
+          title: 'New Reaction',
+          body: `${userName} reacted to your post`,
+          data: { type: 'reaction', postId, userId: user.id },
+          channelId: 'social',
+        }).catch((err) => console.error('Reaction push:', err));
       }
     }
 

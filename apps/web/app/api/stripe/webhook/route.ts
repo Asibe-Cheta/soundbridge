@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { Expo } from 'expo-server-sdk';
 import { SubscriptionEmailService } from '../../../../src/services/SubscriptionEmailService';
+import { sendExpoPush } from '../../../../src/lib/push-notifications';
 
 const expo = new Expo();
 
@@ -361,6 +362,15 @@ async function handleSubscriptionUpdated(
       console.error('[webhook] Error updating subscription:', error);
     } else {
       console.log('[webhook] Successfully updated subscription status');
+      if (status === 'active') {
+        const plan = (subscription as { metadata?: { plan?: string } }).metadata?.plan ?? 'pro';
+        sendExpoPush(supabase, userId, {
+          title: 'Subscription Updated',
+          body: `Your ${plan} subscription is active`,
+          data: { type: 'subscription', plan },
+          channelId: 'tips',
+        }).catch((e) => console.error('[webhook] Subscription push:', e));
+      }
     }
 
   } catch (error) {

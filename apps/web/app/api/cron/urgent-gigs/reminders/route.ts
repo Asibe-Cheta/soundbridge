@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           related_type: 'opportunity_post',
           metadata: { type: 'gig_starting_soon', gig_id: gig.id },
         });
-        await sendGigStartingSoonPush(service, uid, title, dateNeededStr(gig), address(gig));
+        await sendGigStartingSoonPush(service, uid, gig.id, title, dateNeededStr(gig), address(gig));
         await service.from('notification_rate_limits').insert({
           user_id: uid,
           notification_type: 'gig_starting_soon',

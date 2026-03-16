@@ -10,8 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Expo } from 'expo-server-sdk';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-
-const expo = new Expo();
+import { getPushToken } from '@/src/lib/push-notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,16 +75,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ sent: false, reason: 'Notifications disabled' });
     }
 
-    const { data: tokenRow } = await adminClient
-      .from('user_push_tokens')
-      .select('push_token')
-      .eq('user_id', message.recipient_id)
-      .eq('active', true)
-      .order('last_used_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!tokenRow?.push_token || !Expo.isExpoPushToken(tokenRow.push_token)) {
+    // Prefer profiles.expo_push_token then user_push_tokens (same as other push flows; fixes DM pushes when app writes only to profiles)
+    const pushToken = await getPushToken(adminClient, message.recipient_id);
+    if (!pushToken) {
       return NextResponse.json({ sent: false, reason: 'No valid push token' });
     }
 
@@ -96,22 +88,23 @@ export async function POST(request: NextRequest) {
       .single();
 
     const senderName = sender?.display_name || sender?.username || 'Someone';
-    const title = `New message from ${senderName}`;
-    const body = (message.content || '').substring(0, 100);
+    const conversationId = [message.sender_id, message.recipient_id].sort().join('_');
+    const title = senderName;
+    const body = (message.content || '').substring(0, 80);
     const payload = {
       type: 'message',
+      entityId: conversationId,
+      userId: message.sender_id,
       messageId: message.id,
       senderId: message.sender_id,
-      conversationId: [
-        message.sender_id,
-        message.recipient_id,
-      ].sort().join('_'),
+      conversationId,
     };
 
     const tickets = await expo.sendPushNotificationsAsync([
       {
-        to: tokenRow.push_token,
+        to: pushToken,
         sound: 'default',
+        priority: 'high',
         title,
         body,
         data: payload,

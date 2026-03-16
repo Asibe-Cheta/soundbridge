@@ -134,6 +134,15 @@ export async function POST(request: NextRequest) {
       tokenId = newToken!.id;
     }
     
+    // Also update profiles.expo_push_token so DM and other pushes can use it (doc: prefer profiles then user_push_tokens)
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update({ expo_push_token: pushToken, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+    if (profileErr) {
+      console.warn('Could not update profiles.expo_push_token (column may not exist in this env):', profileErr.message);
+    }
+
     console.log(`✅ Push token registered successfully: ${tokenId}`);
     
     return NextResponse.json({
@@ -189,6 +198,13 @@ export async function DELETE(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Clear profiles.expo_push_token if it was this token so we don't send to a dead device
+    await supabase
+      .from('profiles')
+      .update({ expo_push_token: null, updated_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .eq('expo_push_token', pushToken);
     
     console.log(`✅ Push token deactivated successfully`);
     
