@@ -6,12 +6,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
+
+/**
+ * Recompute rating_avg and rating_count for a user from creator_ratings + gig_ratings and update profiles.
+ * WEB_TEAM_GIG_RATINGS_NOT_SHOWING_ON_PROFILE.Md
+ */
+async function refreshProfileRatings(service: SupabaseClient, userId: string): Promise<void> {
+  try {
+    const [creatorRes, gigRes] = await Promise.all([
+      service.from('creator_ratings').select('rating').eq('rated_user_id', userId),
+      service.from('gig_ratings').select('overall_rating').eq('ratee_id', userId),
+    ]);
+    const creatorRatings = (creatorRes.data ?? []).map((r) => Number((r as { rating: number }).rating)).filter((n) => !Number.isNaN(n) && n >= 1 && n <= 5);
+    const gigRatings = (gigRes.data ?? []).map((r) => Number((r as { overall_rating: number }).overall_rating)).filter((n) => !Number.isNaN(n) && n >= 1 && n <= 5);
+    const allScores = [...creatorRatings, ...gigRatings];
+    const count = allScores.length;
+    const avg = count > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / count) * 100) / 100 : 0;
+    await service.from('profiles').update({ rating_avg: avg, rating_count: count, updated_at: new Date().toISOString() }).eq('id', userId);
+  } catch (e) {
+    console.error('refreshProfileRatings:', e);
+  }
+}
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
@@ -115,6 +137,8 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ success: false, error: 'Failed to submit rating' }, { status: 500, headers: CORS });
     }
+
+    await refreshProfileRatings(service, rateeId);
 
     return NextResponse.json({ success: true }, { headers: CORS });
   } catch (e) {

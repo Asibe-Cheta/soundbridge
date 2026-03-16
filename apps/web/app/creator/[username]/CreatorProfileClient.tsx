@@ -22,7 +22,7 @@ import type { CreatorProfile, AudioTrack, Event, Message } from '../../../src/li
 import type { AvailabilitySlot, CreateCollaborationRequestData } from '../../../src/lib/types/availability';
 import type { ExternalLink } from '../../../src/lib/types/external-links';
 import { PLATFORM_METADATA } from '../../../src/lib/external-links-validation';
-import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe } from 'lucide-react';
+import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe, Star } from 'lucide-react';
 import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
 
 interface CreatorProfileClientProps {
@@ -463,6 +463,14 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                     )}
                   </h1>
                   <p className={`mb-2 text-gray-300 ${isMobile ? 'text-sm' : ''}`}>@{creator.username}</p>
+                  {(creator as Record<string, unknown>).rating_count != null && Number((creator as Record<string, unknown>).rating_count) > 0 && (
+                    <div className="flex items-center gap-1.5 mb-2 text-amber-400">
+                      <Star className="h-4 w-4 fill-current" />
+                      <span className="text-gray-300">
+                        {(Number((creator as Record<string, unknown>).rating_avg) || 0).toFixed(1)} · {Number((creator as Record<string, unknown>).rating_count)} {Number((creator as Record<string, unknown>).rating_count) === 1 ? 'review' : 'reviews'}
+                      </span>
+                    </div>
+                  )}
                   {creator.location && (
                     <div className="flex items-center mb-2 text-gray-300">
                       <MapPin className="h-4 w-4 mr-1" />
