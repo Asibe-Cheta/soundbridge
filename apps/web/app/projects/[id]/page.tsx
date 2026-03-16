@@ -15,7 +15,7 @@ interface Project {
   id: string;
   title: string;
   brief: string;
-  agreed_amount: number;
+  agreed_amount: number | null;
   currency: string;
   status: string;
   poster_user_id: string;
@@ -211,7 +211,7 @@ export default function OpportunityProjectPage() {
         <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">{project.brief}</p>
           <p className="text-sm font-medium">
-            {project.currency} {project.agreed_amount}
+            {project.currency} {(project.agreed_amount ?? 0).toFixed(2)}
           </p>
           <p className="text-xs text-muted-foreground">
             Status: <span className="font-medium">{getStatusLabel(project.status)}</span>
