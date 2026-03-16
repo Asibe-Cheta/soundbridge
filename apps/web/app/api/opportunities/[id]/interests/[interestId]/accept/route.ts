@@ -223,12 +223,30 @@ export async function POST(
       .single();
 
     if (projectErr) {
-      console.error('opportunity_projects insert error:', projectErr);
+      console.error('opportunity_projects insert error:', {
+        message: (projectErr as { message?: string }).message ?? projectErr,
+        details: (projectErr as { details?: unknown }).details,
+        hint: (projectErr as { hint?: unknown }).hint,
+        code: (projectErr as { code?: string }).code,
+      });
+
+      // Best-effort cleanup so we don't leave orphaned Incomplete PaymentIntents in Stripe
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error('Failed to cancel PaymentIntent after project insert error:', cancelErr);
+      }
+
       return NextResponse.json({ error: 'Failed to create project' }, { status: 500, headers: CORS });
     }
 
     if (!paymentIntent.client_secret) {
-      console.error('Stripe PaymentIntent missing client_secret (new project)');
+      console.error('Stripe PaymentIntent missing client_secret (new project)', { paymentIntentId: paymentIntent.id });
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error('Failed to cancel PaymentIntent without client_secret:', cancelErr);
+      }
       return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
     }
 

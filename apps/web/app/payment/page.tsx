@@ -11,13 +11,15 @@ import Link from 'next/link';
 // recreating the `Stripe` object on every render.
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm({ clientSecret }: { clientSecret: string }) {
+function CheckoutForm({ clientSecret, returnUrl }: { clientSecret: string; returnUrl?: string | null }) {
   const stripe = useStripe();
   const elements = useElements();
   
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const successReturnPath = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/tip-success';
 
   useEffect(() => {
     if (!stripe || !clientSecret) {
@@ -32,6 +34,10 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
           break;
         case 'processing':
           setMessage('Your payment is processing.');
+          break;
+        case 'requires_capture':
+          setMessage('Payment authorised — funds held in escrow.');
+          setIsSuccess(true);
           break;
         case 'requires_payment_method':
           // Don't show error message immediately - this is the initial state
@@ -60,7 +66,7 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/tip-success`,
+        return_url: `${window.location.origin}${successReturnPath}`,
       },
     });
 
@@ -81,13 +87,15 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
         <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Payment Successful!</h2>
-          <p className="text-gray-400 mb-6">Your tip has been sent successfully.</p>
+          <p className="text-gray-400 mb-6">
+            {returnUrl ? 'Funds are held in escrow. The creator can now accept the agreement and start the project.' : 'Your tip has been sent successfully.'}
+          </p>
           <Link
-            href="/creator/creator"
+            href={successReturnPath}
             className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Creator
+            {returnUrl ? 'Back to project' : 'Back to Creator'}
           </Link>
         </div>
       </div>
@@ -98,10 +106,10 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">
         <div className="flex items-center mb-6">
-          <Link href="/creator/creator" className="mr-4">
+          <Link href={successReturnPath} className="mr-4">
             <ArrowLeft className="h-5 w-5 text-gray-400 hover:text-white" />
           </Link>
-          <h2 className="text-2xl font-bold text-white">Complete Your Payment</h2>
+          <h2 className="text-2xl font-bold text-white">{returnUrl ? 'Secure project payment' : 'Complete Your Payment'}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -144,6 +152,7 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
 function PaymentPageContent() {
   const searchParams = useSearchParams();
   const clientSecret = searchParams.get('client_secret');
+  const returnUrl = searchParams.get('return_url');
 
   if (!clientSecret) {
     return (
@@ -181,7 +190,7 @@ function PaymentPageContent() {
 
   return (
     <Elements options={options} stripe={stripePromise}>
-      <CheckoutForm clientSecret={clientSecret} />
+      <CheckoutForm clientSecret={clientSecret} returnUrl={returnUrl} />
     </Elements>
   );
 }

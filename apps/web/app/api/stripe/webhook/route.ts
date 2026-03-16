@@ -121,12 +121,13 @@ export async function POST(request: NextRequest) {
         await handleRefundCreated(refund, supabase);
         break;
 
-      case 'payment_intent.succeeded':
+      case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
         if (pi.metadata?.project_source === 'opportunity') {
           await handleOpportunityProjectPaymentSucceeded(pi, supabase);
         }
         break;
+      }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);

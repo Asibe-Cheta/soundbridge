@@ -22,6 +22,21 @@ interface Project {
   creator_user_id: string;
   updated_at: string;
   completed_at?: string | null;
+  stripe_client_secret?: string | null;
+}
+
+function getStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    awaiting_acceptance: 'Awaiting creator acceptance',
+    payment_pending: 'Payment required',
+    active: 'Active',
+    delivered: 'Work delivered',
+    completed: 'Completed',
+    disputed: 'Disputed',
+    cancelled: 'Cancelled',
+    declined: 'Declined',
+  };
+  return labels[status] ?? status;
 }
 
 const AUTO_RELEASE_HOURS = 48;
@@ -141,6 +156,19 @@ export default function OpportunityProjectPage() {
     }
   };
 
+  const acceptAgreement = async () => {
+    if (!projectId) return;
+    try {
+      const res = await fetchWithAuth(`/api/opportunity-projects/${projectId}/accept-agreement`, { method: 'POST' });
+      if (res.ok) {
+        const p = await fetchWithAuth(`/api/opportunity-projects/${projectId}`).then((r) => r.json());
+        setProject(p);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleRatingLater = () => {
     try {
       const raw = localStorage.getItem(RATING_PROMPTED_KEY);
@@ -185,7 +213,9 @@ export default function OpportunityProjectPage() {
           <p className="text-sm font-medium">
             {project.currency} {project.agreed_amount}
           </p>
-          <p className="text-xs text-muted-foreground">Status: {project.status}</p>
+          <p className="text-xs text-muted-foreground">
+            Status: <span className="font-medium">{getStatusLabel(project.status)}</span>
+          </p>
           {isCreator && (
             <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
               Payment is held securely by SoundBridge and released to your wallet on gig completion. You can then withdraw to your local bank via Wise (1–3 business days).
@@ -209,6 +239,38 @@ export default function OpportunityProjectPage() {
           <p className="text-sm">
             Please confirm the work was completed — auto-releases in {countdown}
           </p>
+        </div>
+      )}
+
+      {/* Poster: complete payment (payment_pending) */}
+      {project.status === 'payment_pending' && isPoster && project.stripe_client_secret && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
+          <p className="text-sm mb-3">Complete payment to secure the project. Funds will be held in escrow until work is delivered.</p>
+          <Button
+            asChild
+            className="w-full"
+          >
+            <a href={`/payment?client_secret=${encodeURIComponent(project.stripe_client_secret)}&return_url=${encodeURIComponent(`/projects/${projectId}`)}`}>
+              Complete payment
+            </a>
+          </Button>
+        </div>
+      )}
+
+      {/* Poster: payment in escrow, waiting for creator to accept */}
+      {project.status === 'awaiting_acceptance' && isPoster && (
+        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 mb-4">
+          <p className="text-sm">Payment in escrow — waiting for the creator to accept the agreement. They will be notified.</p>
+        </div>
+      )}
+
+      {/* Creator: accept agreement (awaiting_acceptance) */}
+      {project.status === 'awaiting_acceptance' && isCreator && (
+        <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-4">
+          <p className="text-sm mb-3">Review and accept the agreement to start the project. Payment is already held in escrow.</p>
+          <Button onClick={acceptAgreement} className="w-full">
+            Accept agreement
+          </Button>
         </div>
       )}
 
