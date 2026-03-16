@@ -656,11 +656,11 @@ async function handleRefundCreated(
           status: 'refunded',
           refund_id: refund.id,
           refunded_at: new Date(refund.created * 1000).toISOString(),
-          refund_amount: refund.amount,
+          refund_amount: refund.amount / 100,
           metadata: {
             refund_id: refund.id,
             refunded_at: new Date(refund.created * 1000).toISOString(),
-            refund_amount: refund.amount,
+            refund_amount: refund.amount / 100,
             refund_status: refund.status,
             refund_reason: refund.reason
           },

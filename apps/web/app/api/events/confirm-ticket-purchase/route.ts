@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     // Get amount and currency from payment intent (source of truth)
-    const amount = paymentIntent.amount; // Amount in smallest currency unit
+    const amountMinor = paymentIntent.amount; // Stripe: smallest currency unit (pence/cents)
+    const amountMajor = amountMinor / 100; // Store and use major units (pounds/dollars) in DB
     const currency = paymentIntent.currency; // 'gbp' or 'ngn'
 
     // Check if ticket already exists for this payment intent (idempotency)
@@ -61,9 +62,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingTicket && !checkError) {
-      // Ticket already created for this payment intent
-      const platformFeeAmount = Math.round(existingTicket.amount_paid * 0.05);
-      const organizerAmount = existingTicket.amount_paid - platformFeeAmount;
+      // Ticket already created for this payment intent (amount_paid stored in major units)
+      const platformFeeAmount = Math.round((existingTicket.amount_paid * 0.05) * 100) / 100;
+      const organizerAmount = Math.round((existingTicket.amount_paid - platformFeeAmount) * 100) / 100;
 
       return NextResponse.json(
         {
@@ -141,23 +142,26 @@ export async function POST(request: NextRequest) {
       ticketCodes.push(codeData);
     }
 
-    // Calculate fees (5% platform fee, 95% to organizer)
-    const platformFeeAmount = Math.round(amount * 0.05);
-    const organizerAmount = amount - platformFeeAmount;
+    // Calculate fees in major units (5% platform fee, 95% to organizer)
+    const platformFeeAmountMajor = Math.round(amountMajor * 0.05 * 100) / 100;
+    const organizerAmountMajor = Math.round((amountMajor - platformFeeAmountMajor) * 100) / 100;
+    const amountPerTicketMajor = amountMajor / quantity;
+    const platformFeePerTicket = platformFeeAmountMajor / quantity;
+    const organizerPerTicket = organizerAmountMajor / quantity;
 
-    // Create ticket records (one per ticket)
+    // Create ticket records (one per ticket) — store amounts in major units
     const ticketRecords = ticketCodes.map((ticketCode) => ({
       event_id: eventId,
       user_id: user.id,
       ticket_code: ticketCode,
       quantity: 1, // Each record represents one ticket
-      amount_paid: Math.round(amount / quantity), // Split amount across tickets
+      amount_paid: Math.round(amountPerTicketMajor * 100) / 100,
       currency: currency.toUpperCase(),
       payment_intent_id: paymentIntentId,
       purchase_date: new Date().toISOString(),
       status: 'active',
-      platform_fee_amount: Math.round(platformFeeAmount / quantity),
-      organizer_amount: Math.round(organizerAmount / quantity),
+      platform_fee_amount: Math.round(platformFeePerTicket * 100) / 100,
+      organizer_amount: Math.round(organizerPerTicket * 100) / 100,
     }));
 
     const { data: createdTickets, error: insertError } = await supabaseAdmin
@@ -232,13 +236,13 @@ export async function POST(request: NextRequest) {
         user_id: ticket.user_id,
         ticket_code: ticket.ticket_code,
         quantity: quantity,
-        amount_paid: amount,
+        amount_paid: amountMajor,
         currency: currency.toLowerCase(),
         payment_intent_id: ticket.payment_intent_id,
         purchase_date: ticket.purchase_date,
         status: ticket.status,
-        platform_fee_amount: platformFeeAmount,
-        organizer_amount: organizerAmount,
+        platform_fee_amount: platformFeeAmountMajor,
+        organizer_amount: organizerAmountMajor,
         // Include all ticket codes for multi-ticket purchases
         all_ticket_codes: ticketCodes,
       },

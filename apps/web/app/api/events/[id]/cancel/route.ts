@@ -286,10 +286,13 @@ async function processSingleRefund(
       };
     }
 
-    // Create refund via Stripe
+    // Create refund via Stripe (Stripe expects amount in smallest unit).
+    // DB stores amount_paid in major units (new); legacy rows may be in cents — treat values >= 100 as cents.
+    const amountPaid = Number(ticket.amount_paid);
+    const refundAmountCents = amountPaid >= 100 ? Math.round(amountPaid) : Math.round(amountPaid * 100);
     const refund = await stripe.refunds.create({
       payment_intent: ticket.payment_intent_id,
-      amount: ticket.amount_paid, // Amount in smallest currency unit (already stored correctly)
+      amount: refundAmountCents,
       reason: 'requested_by_customer',
       metadata: {
         event_id: ticket.event_id,
@@ -302,14 +305,14 @@ async function processSingleRefund(
 
     console.log(`✅ Stripe refund created: ${refund.id}`);
 
-    // Update ticket status in database
+    // Update ticket status in database (refund_amount in major units)
     const { error: updateError } = await supabase
       .from('purchased_event_tickets')
       .update({
         status: 'refunded',
         refund_id: refund.id,
         refunded_at: new Date().toISOString(),
-        refund_amount: ticket.amount_paid,
+        refund_amount: refundAmountCents / 100,
         refund_reason: cancellationReason,
         metadata: {
           refund_id: refund.id,
