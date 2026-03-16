@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
-import { sendExpoPush } from '@/src/lib/push-notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -235,6 +234,7 @@ export async function POST(
           capture_method: 'manual',
           metadata: {
             project_source: 'opportunity',
+            projectId: project.id,
             opportunity_id: opportunityId,
             interest_id: interestId,
             poster_user_id: posterUserId,
@@ -260,13 +260,7 @@ export async function POST(
       }
     }
 
-    // Push: Agreement Ready — notify creator (WEB_TEAM_PUSH_NOTIFICATIONS_REQUIRED.MD §6)
-    sendExpoPush(serviceSupabase, creatorUserId, {
-      title: 'Agreement Ready',
-      body: `Review and sign the project agreement for ${opp.title}`,
-      data: { type: 'opportunity_agreement_received', projectId: project.id, userId: posterUserId },
-      channelId: 'opportunities',
-    }).catch((e) => console.error('opportunity_agreement_received push:', e));
+    // Payment-first: do NOT notify creator here. Creator is notified only from payment_intent.succeeded webhook (WEB_TEAM_PAYMENT_FIRST_ARCHITECTURE.MD).
 
     return NextResponse.json(
       {

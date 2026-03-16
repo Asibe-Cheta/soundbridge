@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       q = q.eq('poster_user_id', user.id);
     } else if (role === 'creator') {
       q = q.eq('creator_user_id', user.id);
+      // Payment-first: creator must NOT see payment_pending (only from awaiting_acceptance onwards)
+      q = q.neq('status', 'payment_pending');
     }
     if (status) q = q.eq('status', status);
 

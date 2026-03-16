@@ -122,6 +122,14 @@ export async function POST(request: NextRequest) {
         await handleRefundCreated(refund, supabase);
         break;
 
+      case 'payment_intent.succeeded': {
+        const piSucceeded = event.data.object as Stripe.PaymentIntent;
+        if (piSucceeded.metadata?.project_source === 'opportunity') {
+          await handleOpportunityProjectPaymentSucceeded(piSucceeded, supabase);
+        }
+        break;
+      }
+
       case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
         if (pi.metadata?.project_source === 'opportunity') {
@@ -165,10 +173,19 @@ async function handleOpportunityProjectPaymentSucceeded(
 
     const posterName = posterProfile?.display_name ?? 'The poster';
 
-    await supabase
+    // Only flip from payment_pending → awaiting_acceptance (idempotent; payment-first architecture)
+    const { data: updateData } = await supabase
       .from('opportunity_projects')
       .update({ status: 'awaiting_acceptance', updated_at: new Date().toISOString() })
-      .eq('id', project.id);
+      .eq('id', project.id)
+      .eq('status', 'payment_pending')
+      .select('id')
+      .maybeSingle();
+
+    if (!updateData) {
+      console.log('[webhook] Project already moved from payment_pending, skipping duplicate processing:', project.id);
+      return;
+    }
 
     await supabase
       .from('opportunity_interests')
@@ -198,31 +215,13 @@ async function handleOpportunityProjectPaymentSucceeded(
       data: dataPayload,
     });
 
-    const { data: tokenRow } = await supabase
-      .from('user_push_tokens')
-      .select('push_token')
-      .eq('user_id', project.creator_user_id)
-      .eq('active', true)
-      .order('last_used_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (tokenRow?.push_token && Expo.isExpoPushToken(tokenRow.push_token)) {
-      try {
-        await expo.sendPushNotificationsAsync([
-          {
-            to: tokenRow.push_token,
-            sound: 'default',
-            title: notifTitle,
-            body: notifBody,
-            data: dataPayload,
-            channelId: 'opportunities',
-          },
-        ]);
-      } catch (pushErr) {
-        console.error('[webhook] opportunity agreement push error:', pushErr);
-      }
-    }
+    await sendExpoPush(supabase, project.creator_user_id, {
+      title: notifTitle,
+      body: notifBody,
+      data: { type: 'opportunity_agreement_received', screen: 'OpportunityProject', projectId: project.id },
+      channelId: 'opportunities',
+      sound: 'default',
+    }).catch((pushErr) => console.error('[webhook] opportunity agreement push error:', pushErr));
   } catch (e) {
     console.error('[webhook] handleOpportunityProjectPaymentSucceeded error:', e);
   }
