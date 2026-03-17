@@ -162,6 +162,20 @@ async function handleOpportunityProjectPaymentSucceeded(
   supabase: ReturnType<typeof createClient>
 ) {
   try {
+    // Manual capture: when customer completes the sheet, status is requires_capture. We must capture so funds are secured and payment_intent.succeeded can fire.
+    if (pi.status === 'requires_capture' && stripe) {
+      try {
+        await stripe.paymentIntents.capture(pi.id);
+      } catch (captureErr: any) {
+        if (captureErr?.code === 'payment_intent_unexpected_state' && captureErr?.payment_intent?.status === 'succeeded') {
+          // Already captured (e.g. by another webhook delivery)
+        } else {
+          console.error('[webhook] paymentIntents.capture failed:', captureErr?.message ?? captureErr);
+          return;
+        }
+      }
+    }
+
     const { data: project } = await supabase
       .from('opportunity_projects')
       .select('id, interest_id, creator_user_id, poster_user_id, agreed_amount, creator_payout_amount, title, chat_thread_id')
