@@ -134,6 +134,7 @@ SET available_balance = COALESCE(total_earned, 0) - COALESCE(total_paid_out, 0)
 WHERE available_balance IS NULL;
 
 -- Create or replace the revenue summary function
+-- this_month_earnings / last_month_earnings include tips (tip_analytics) + gig payments (wallet_transactions)
 CREATE OR REPLACE FUNCTION get_creator_revenue_summary(user_uuid UUID)
 RETURNS TABLE (
   total_earned DECIMAL,
@@ -153,20 +154,57 @@ BEGIN
     COALESCE(cr.total_paid_out, 0) as total_paid_out,
     COALESCE(cr.pending_balance, 0) as pending_balance,
     COALESCE(cr.available_balance, 0) as available_balance,
+
+    -- This month: tips + gig payments (including backfill rows with metadata->gig_payment_backfill)
     COALESCE((
       SELECT SUM(creator_earnings)
       FROM tip_analytics 
       WHERE creator_id = user_uuid 
-      AND status = 'completed'
-      AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
-    ), 0) as this_month_earnings,
+        AND status = 'completed'
+        AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+    ), 0)
+    +
+    COALESCE((
+      SELECT SUM(amount)
+      FROM wallet_transactions wt
+      WHERE wt.user_id = user_uuid
+        AND wt.status = 'completed'
+        AND wt.created_at >= DATE_TRUNC('month', CURRENT_DATE)
+        AND wt.created_at < DATE_TRUNC('month', CURRENT_DATE + INTERVAL '1 month')
+        AND (
+          wt.transaction_type = 'gig_payment'
+          OR (
+            wt.transaction_type = 'deposit'
+            AND wt.metadata ? 'gig_payment_backfill'
+          )
+        )
+    ), 0) AS this_month_earnings,
+
+    -- Last month: tips + gig payments
     COALESCE((
       SELECT SUM(creator_earnings)
       FROM tip_analytics 
       WHERE creator_id = user_uuid 
-      AND status = 'completed'
-      AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
-    ), 0) as last_month_earnings,
+        AND status = 'completed'
+        AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+    ), 0)
+    +
+    COALESCE((
+      SELECT SUM(amount)
+      FROM wallet_transactions wt
+      WHERE wt.user_id = user_uuid
+        AND wt.status = 'completed'
+        AND wt.created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+        AND wt.created_at < DATE_TRUNC('month', CURRENT_DATE)
+        AND (
+          wt.transaction_type = 'gig_payment'
+          OR (
+            wt.transaction_type = 'deposit'
+            AND wt.metadata ? 'gig_payment_backfill'
+          )
+        )
+    ), 0) AS last_month_earnings,
+
     COALESCE((
       SELECT SUM(creator_earnings)
       FROM tip_analytics 
@@ -177,7 +215,7 @@ BEGIN
     0.00 as total_subscriptions -- Placeholder for future subscriptions
   FROM creator_revenue cr
   WHERE cr.user_id = user_uuid;
-  
+
   -- If no revenue record exists, return zeros
   IF NOT FOUND THEN
     RETURN QUERY SELECT 
