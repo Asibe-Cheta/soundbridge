@@ -354,7 +354,7 @@ export class TicketEmailService {
           
           <div class="footer">
             <p><strong>Need Help?</strong></p>
-            <p>Contact us at support@soundbridge.live</p>
+            <p>Contact us at contact@soundbridge.live</p>
             <p style="margin-top: 20px;">© ${new Date().getFullYear()} SoundBridge. All rights reserved.</p>
           </div>
         </div>
@@ -407,7 +407,7 @@ See you at the event!
 Best regards,
 The SoundBridge Team
 
-Need help? Contact us at support@soundbridge.live
+Need help? Contact us at contact@soundbridge.live
     `.trim();
   }
 
@@ -600,7 +600,7 @@ END:VCALENDAR`;
           
           <div class="footer">
             <p><strong>Need Help?</strong></p>
-            <p>If you have any questions about your refund, please contact our support team at support@soundbridge.live</p>
+            <p>If you have any questions about your refund, please contact our support team at contact@soundbridge.live</p>
             <p style="margin-top: 20px;">© ${new Date().getFullYear()} SoundBridge. All rights reserved.</p>
           </div>
         </div>
@@ -658,7 +658,7 @@ We understand this is disappointing, and we apologize for any inconvenience. We 
 
 Browse other events: https://soundbridge.live/events
 
-Need help? Contact us at support@soundbridge.live
+Need help? Contact us at contact@soundbridge.live
 
 © ${new Date().getFullYear()} SoundBridge. All rights reserved.
     `.trim();

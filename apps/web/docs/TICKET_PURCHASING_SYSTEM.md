@@ -766,7 +766,7 @@ SELECT creator_id FROM events WHERE id = 'event-uuid';
 For technical support or questions:
 
 - **Documentation**: This file and inline code comments
-- **Email**: support@soundbridge.app
+- **Email**: contact@soundbridge.live
 - **GitHub Issues**: [Report bugs or request features]
 
 ---

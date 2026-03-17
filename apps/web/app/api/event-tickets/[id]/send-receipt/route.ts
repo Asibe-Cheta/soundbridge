@@ -91,9 +91,13 @@ export async function POST(
     const platformFeeDisplay = typeof t.platform_fee_amount === 'number' ? t.platform_fee_amount.toFixed(2) : String(t.platform_fee_amount);
     const dateUtc = new Date(t.purchase_date).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     const eventDate = ev.event_date ? new Date(ev.event_date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/logos/logo-trans-lockup.png`;
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align:center; margin-bottom: 32px;">
+          <img src="${logoUrl}" alt="SoundBridge" height="48" style="object-fit:contain;" />
+        </div>
         <h1>SoundBridge Ticket Receipt</h1>
         <table style="width: 100%; border-collapse: collapse;">
           <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Receipt #</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${t.id}</td></tr>

@@ -121,7 +121,7 @@ export class SubscriptionEmailService {
           }),
           invoice_url: data.invoiceUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=billing`,
           dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-          support_email: 'support@soundbridge.live',
+          support_email: 'contact@soundbridge.live',
           app_name: 'SoundBridge',
           money_back_guarantee_text: '7-day money-back guarantee'
         },
@@ -176,7 +176,7 @@ export class SubscriptionEmailService {
             day: 'numeric'
           }),
           dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-          support_email: 'support@soundbridge.live',
+          support_email: 'contact@soundbridge.live',
           app_name: 'SoundBridge'
         },
         subject: `Payment Receipt - ${data.amount} ${data.currency}`
@@ -230,7 +230,7 @@ export class SubscriptionEmailService {
           }),
           update_payment_url: data.updatePaymentUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=billing&action=update-payment`,
           dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-          support_email: 'support@soundbridge.live',
+          support_email: 'contact@soundbridge.live',
           app_name: 'SoundBridge'
         },
         subject: `⚠️ Payment Failed - Action Required`
@@ -285,7 +285,7 @@ export class SubscriptionEmailService {
           }),
           reactivate_url: data.reactivateUrl || `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
           dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-          support_email: 'support@soundbridge.live',
+          support_email: 'contact@soundbridge.live',
           app_name: 'SoundBridge'
         },
         subject: `Your SoundBridge Pro subscription has ended`
@@ -335,7 +335,7 @@ export class SubscriptionEmailService {
           refund_amount: data.refundAmount,
           cancellation_reason: data.cancellationReason,
           refund_timeline: refundTimeline,
-          support_email: 'support@soundbridge.live',
+          support_email: 'contact@soundbridge.live',
           app_name: 'SoundBridge',
           events_url: `${process.env.NEXT_PUBLIC_APP_URL}/events`
         },
@@ -394,7 +394,7 @@ export class SubscriptionEmailService {
           <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/events" style="color: #0066cc;">Browse Events</a></p>
 
           <p style="margin-top: 30px; color: #666; font-size: 12px;">
-            If you have any questions, please contact us at support@soundbridge.live
+            If you have any questions, please contact us at contact@soundbridge.live
           </p>
         </div>
       `;
@@ -419,7 +419,7 @@ ${data.cancellationReason}
 
 We apologize for any inconvenience this may cause.
 
-If you have any questions, please contact us at support@soundbridge.live
+If you have any questions, please contact us at contact@soundbridge.live
 
 SoundBridge Team
       `.trim();
@@ -487,8 +487,8 @@ SoundBridge Team
           }),
           payment_intent_id: data.paymentIntentId,
           organizer_name: data.organizerName || 'Event Organizer',
-          organizer_email: data.organizerEmail || 'support@soundbridge.live',
-          support_email: 'support@soundbridge.live',
+          organizer_email: data.organizerEmail || 'contact@soundbridge.live',
+          support_email: 'contact@soundbridge.live',
           app_name: 'SoundBridge',
           app_url: process.env.NEXT_PUBLIC_APP_URL || 'https://soundbridge.live',
           my_tickets_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/dashboard`,
@@ -631,7 +631,7 @@ SoundBridge Team
             <!-- Footer -->
             <div style="background-color: #1a1a2e; padding: 30px 20px; text-align: center;">
               <p style="color: #999; font-size: 14px; margin: 0 0 10px 0;">
-                Questions? Contact us at <a href="mailto:support@soundbridge.live" style="color: #EC4899; text-decoration: none;">support@soundbridge.live</a>
+                Questions? Contact us at <a href="mailto:contact@soundbridge.live" style="color: #EC4899; text-decoration: none;">contact@soundbridge.live</a>
               </p>
               <p style="color: #666; font-size: 12px; margin: 10px 0 0 0;">
                 © ${new Date().getFullYear()} SoundBridge. All rights reserved.
@@ -677,7 +677,7 @@ View your tickets: ${process.env.NEXT_PUBLIC_APP_URL}/events/dashboard
 ${data.organizerName ? `Event Organizer: ${data.organizerName}` : ''}
 ${data.organizerEmail ? `Contact: ${data.organizerEmail}` : ''}
 
-Questions? Contact support@soundbridge.live
+Questions? Contact contact@soundbridge.live
 
 © ${new Date().getFullYear()} SoundBridge. All rights reserved.
       `.trim();

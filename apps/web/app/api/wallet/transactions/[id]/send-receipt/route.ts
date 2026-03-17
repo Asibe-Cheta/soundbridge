@@ -82,9 +82,13 @@ export async function POST(
       : '—';
     const dateUtc = new Date(tx.created_at).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     const amountStr = `${tx.currency} ${Number(tx.amount).toFixed(2)}`;
+    const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/logos/logo-trans-lockup.png`;
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align:center; margin-bottom: 32px;">
+          <img src="${logoUrl}" alt="SoundBridge" height="48" style="object-fit:contain;" />
+        </div>
         <h1>SoundBridge Receipt</h1>
         <table style="width: 100%; border-collapse: collapse;">
           <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Receipt #</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${tx.id}</td></tr>

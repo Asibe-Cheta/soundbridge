@@ -536,6 +536,8 @@ export class SendGridService {
           gig_completed_at: data.gig_completed_at,
           withdrawal_cta_url: data.withdrawal_cta_url,
           is_wise_country: data.is_wise_country ?? false,
+          support_email: 'contact@soundbridge.live',
+          receipt_logo_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/logos/logo-trans-lockup.png`,
         },
       };
       await this.sendEmail(emailData);
@@ -614,6 +616,8 @@ export class SendGridService {
           gig_completed_at: data.gig_completed_at,
           stripe_receipt_url: data.stripe_receipt_url || '#',
           gig_view_url: data.gig_view_url,
+          support_email: 'contact@soundbridge.live',
+          receipt_logo_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/logos/logo-trans-lockup.png`,
         },
       };
       await this.sendEmail(emailData);
@@ -628,14 +632,22 @@ export class SendGridService {
   /**
    * Send a raw HTML email (e.g. receipt). No template required.
    * WEB_TEAM_RECEIPTS_AND_PLATFORM_FEE_FIX.MD
+   * Optional from/fromName for invoice emails (e.g. SoundBridge Live Ltd).
    */
-  static async sendHtmlEmail(to: string, subject: string, html: string): Promise<boolean> {
+  static async sendHtmlEmail(
+    to: string,
+    subject: string,
+    html: string,
+    options?: { from?: string; fromName?: string }
+  ): Promise<boolean> {
     try {
       const sgMail = await getSgMail();
       if (!sgMail) return false;
+      const fromEmail = options?.from ?? this.fromEmail;
+      const fromName = options?.fromName ?? this.fromName;
       await sgMail.send({
         to,
-        from: { email: this.fromEmail, name: this.fromName },
+        from: { email: fromEmail, name: fromName },
         replyTo: 'contact@soundbridge.live',
         subject,
         html,

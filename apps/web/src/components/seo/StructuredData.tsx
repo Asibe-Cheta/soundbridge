@@ -55,7 +55,7 @@ export const organizationStructuredData = {
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer service',
-    email: 'support@soundbridge.live',
+    email: 'contact@soundbridge.live',
   },
   founder: {
     '@type': 'Person',

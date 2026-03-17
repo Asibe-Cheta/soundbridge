@@ -6,6 +6,13 @@ import Stripe from 'stripe';
 import { Expo } from 'expo-server-sdk';
 import { SubscriptionEmailService } from '../../../../src/services/SubscriptionEmailService';
 import { sendExpoPush } from '../../../../src/lib/push-notifications';
+import {
+  getNextInvoiceNumber,
+  sendInvoiceReceipt,
+  sendPaymentFailedEmail,
+  sendSubscriptionCancelledEmail,
+  sendSubscriptionPlanChangeEmail,
+} from '../../../../src/lib/subscription-invoice-email';
 
 const expo = new Expo();
 
@@ -388,11 +395,9 @@ async function handleSubscriptionUpdated(
 ) {
   try {
     const subscriptionId = subscription.id;
-    
-    // Find user by subscription ID (more reliable than metadata)
     const { data: existingSub } = await supabase
       .from('user_subscriptions')
-      .select('user_id')
+      .select('user_id, subscription_price_id')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
@@ -407,9 +412,11 @@ async function handleSubscriptionUpdated(
                    subscription.status === 'canceled' ? 'cancelled' : 
                    subscription.status === 'past_due' ? 'past_due' : 'expired';
 
-    console.log('[webhook] Updating subscription status for user:', userId);
+    const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
+    const previousPriceId = (existingSub as { subscription_price_id?: string }).subscription_price_id ?? null;
+    const planChanged = priceId != null && previousPriceId != null && priceId !== previousPriceId;
+    const planName = subscription.items?.data?.[0]?.price?.nickname ?? subscription.items?.data?.[0]?.price?.recurring?.interval === 'year' ? 'Pro (Annual)' : 'Pro (Monthly)';
 
-    // Use upsert to avoid UPDATE RLS issues
     const { error } = await supabase
       .from('user_subscriptions')
       .upsert(
@@ -418,29 +425,37 @@ async function handleSubscriptionUpdated(
           subscription_renewal_date: subscriptionEndDate.toISOString(),
           subscription_ends_at: subscriptionEndDate.toISOString(),
           status,
+          ...(priceId && { subscription_price_id: priceId }),
           updated_at: new Date().toISOString(),
         },
-        {
-          onConflict: 'user_id',
-          ignoreDuplicates: false,
-        }
+        { onConflict: 'user_id', ignoreDuplicates: false }
       );
 
     if (error) {
       console.error('[webhook] Error updating subscription:', error);
-    } else {
-      console.log('[webhook] Successfully updated subscription status');
-      if (status === 'active') {
-        const plan = (subscription as { metadata?: { plan?: string } }).metadata?.plan ?? 'pro';
-        sendExpoPush(supabase, userId, {
-          title: 'Subscription Updated',
-          body: `Your ${plan} subscription is active`,
-          data: { type: 'subscription', plan },
-          channelId: 'tips',
-        }).catch((e) => console.error('[webhook] Subscription push:', e));
-      }
+      return;
     }
 
+    if (status === 'active') {
+      const plan = (subscription as { metadata?: { plan?: string } }).metadata?.plan ?? 'pro';
+      sendExpoPush(supabase, userId, {
+        title: 'Subscription Updated',
+        body: `Your ${plan} subscription is active`,
+        data: { type: 'subscription', plan },
+        channelId: 'tips',
+      }).catch((e) => console.error('[webhook] Subscription push:', e));
+    }
+
+    if (planChanged) {
+      const userInfo = await SubscriptionEmailService.getUserInfo(userId);
+      if (userInfo?.email) {
+        await sendSubscriptionPlanChangeEmail(userInfo.email, {
+          customerName: userInfo.name || 'there',
+          planName,
+          billingUrl: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/billing`,
+        });
+      }
+    }
   } catch (error) {
     console.error('[webhook] Error in handleSubscriptionUpdated:', error);
   }
@@ -504,15 +519,13 @@ async function handleSubscriptionDeleted(
 
     console.log(`✅ Subscription cancelled and downgraded to free: ${subscriptionId}`);
 
-    // Send downgrade email
     const userInfo = await SubscriptionEmailService.getUserInfo(userId);
-    if (userInfo && userInfo.email) {
-      await SubscriptionEmailService.sendAccountDowngraded({
-        userEmail: userInfo.email,
-        userName: userInfo.name,
-        downgradeReason: 'cancelled',
-        downgradeDate: new Date().toISOString(),
-        reactivateUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`
+    if (userInfo?.email) {
+      const accessEndDate = new Date((subscription as { current_period_end?: number }).current_period_end * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+      await sendSubscriptionCancelledEmail(userInfo.email, {
+        customerName: userInfo.name || 'there',
+        accessEndDate,
+        resubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/upgrade`,
       });
     }
   } catch (error) {
@@ -528,7 +541,6 @@ async function handlePaymentSucceeded(
     const subscriptionId = invoice.subscription as string;
     if (!subscriptionId) return;
 
-    // Find user by subscription ID (more reliable than metadata)
     const { data: existingSub } = await supabase
       .from('user_subscriptions')
       .select('user_id')
@@ -544,9 +556,7 @@ async function handlePaymentSucceeded(
 
     if (invoice.period_end) {
       const renewalDate = new Date(invoice.period_end * 1000);
-      
-      // Use upsert to avoid UPDATE RLS issues
-      const { error } = await supabase
+      await supabase
         .from('user_subscriptions')
         .upsert(
           {
@@ -556,47 +566,97 @@ async function handlePaymentSucceeded(
             status: 'active',
             updated_at: new Date().toISOString(),
           },
-          {
-            onConflict: 'user_id',
-            ignoreDuplicates: false,
-          }
+          { onConflict: 'user_id', ignoreDuplicates: false }
         );
+    }
 
-      if (error) {
-        console.error('[webhook] Error updating payment succeeded status:', error);
-      } else {
-        console.log('[webhook] Payment succeeded, subscription renewed:', subscriptionId);
-        
-        // Get subscription details for email
-        const { data: subscriptionData } = await supabase
-          .from('user_subscriptions')
-          .select('billing_cycle, subscription_renewal_date')
-          .eq('user_id', userId)
-          .single();
+    // UK-compliant invoice email (WEB_TEAM_SUBSCRIPTION_BILLING_INVOICES.MD) — idempotent by stripe_invoice_id
+    let invoiceNumber: string;
+    const { data: existingInv } = await supabase
+      .from('subscription_invoices')
+      .select('invoice_number')
+      .eq('stripe_invoice_id', invoice.id)
+      .maybeSingle();
 
-        // Send payment receipt email
-        const userInfo = await SubscriptionEmailService.getUserInfo(userId);
-        if (userInfo && userInfo.email && invoice) {
-          const amount = (invoice.amount_paid / 100).toFixed(2);
-          const currency = invoice.currency?.toUpperCase() || 'GBP';
-          const billingCycle = subscriptionData?.billing_cycle || 'monthly';
-          
-          await SubscriptionEmailService.sendPaymentReceipt({
-            userEmail: userInfo.email,
-            userName: userInfo.name,
-            amount: `${currency === 'GBP' ? '£' : '$'}${amount}`,
-            currency,
-            billingCycle: billingCycle as 'monthly' | 'yearly',
-            paymentDate: new Date().toISOString(),
-            invoiceNumber: invoice.number || invoice.id,
-            invoiceUrl: invoice.hosted_invoice_url || invoice.invoice_pdf || undefined,
-            nextBillingDate: subscriptionData?.subscription_renewal_date || new Date().toISOString()
-          });
+    if (existingInv?.invoice_number) {
+      invoiceNumber = existingInv.invoice_number as string;
+    } else {
+      try {
+        invoiceNumber = await getNextInvoiceNumber(supabase);
+        const { error: insertErr } = await supabase.from('subscription_invoices').insert({
+          stripe_invoice_id: invoice.id,
+          invoice_number: invoiceNumber,
+          user_id: userId,
+        });
+        if (insertErr) {
+          if ((insertErr as { code?: string }).code === '23505') {
+            const { data: row } = await supabase.from('subscription_invoices').select('invoice_number').eq('stripe_invoice_id', invoice.id).single();
+            invoiceNumber = (row?.invoice_number as string) ?? invoiceNumber;
+          } else {
+            throw insertErr;
+          }
         }
+      } catch (e) {
+        console.error('[webhook] getNextInvoiceNumber/storeSubscriptionInvoice:', e);
+        return;
       }
     }
+
+    const userInfo = await SubscriptionEmailService.getUserInfo(userId);
+    if (!userInfo?.email) return;
+
+    if (!stripe) return;
+    const fullInvoice = await stripe.invoices.retrieve(invoice.id, {
+      expand: ['customer', 'default_payment_method'],
+    });
+    const customer = fullInvoice.customer as Stripe.Customer | null;
+    const pm = fullInvoice.default_payment_method;
+    const cardLast4 =
+      typeof pm === 'object' && pm && 'card' in pm && (pm as Stripe.PaymentMethod).card?.last4
+        ? (pm as Stripe.PaymentMethod).card!.last4
+        : '';
+
+    const addr = customer?.address;
+    const billingAddressFormatted = addr
+      ? [addr.line1, addr.line2, addr.city, addr.state, addr.postal_code, addr.country].filter(Boolean).join(', ')
+      : '';
+
+    const line = fullInvoice.lines?.data?.[0];
+    const periodStart = line?.period?.start != null ? new Date((line.period.start as number) * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+    const periodEnd = line?.period?.end != null ? new Date((line.period.end as number) * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+    const interval = (line?.price as Stripe.Price)?.recurring?.interval;
+    const billingCycle = interval === 'year' ? 'Annual' : 'Monthly';
+    const unitPrice = line?.amount != null ? (line.amount / 100).toFixed(2) : '0.00';
+    const subtotal = (fullInvoice.subtotal ?? 0) / 100;
+    const totalDiscountAmounts = (fullInvoice as Stripe.Invoice).total_discount_amounts;
+    const discountAmount = totalDiscountAmounts?.[0]?.amount;
+    const discount = fullInvoice.discount && discountAmount != null
+      ? `${(fullInvoice.discount as { coupon?: { name?: string } }).coupon?.name ?? 'Discount'} — £${(discountAmount / 100).toFixed(2)}`
+      : null;
+    const paidAt = fullInvoice.status_transitions?.paid_at != null ? new Date((fullInvoice.status_transitions.paid_at as number) * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('en-GB');
+
+    await sendInvoiceReceipt(userInfo.email, {
+      invoiceNumber,
+      invoiceDate: new Date((fullInvoice.created as number) * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }),
+      paymentCollectedDate: paidAt,
+      customerName: (customer?.name ?? userInfo.name) || '—',
+      customerEmail: (customer?.email ?? userInfo.email) || '',
+      billingAddressFormatted,
+      planName: (line?.description as string) || 'SoundBridge Live subscription',
+      billingPeriodStart: periodStart,
+      billingPeriodEnd: periodEnd,
+      billingCycle,
+      unitPriceFormatted: `£${unitPrice}`,
+      quantity: line?.quantity ?? 1,
+      subtotalFormatted: `£${subtotal.toFixed(2)}`,
+      discountFormatted: discount,
+      totalChargedFormatted: `£${((fullInvoice.amount_paid ?? 0) / 100).toFixed(2)}`,
+      paymentMethodLast4: cardLast4,
+      transactionReference: typeof fullInvoice.payment_intent === 'string' ? fullInvoice.payment_intent : (fullInvoice.payment_intent as Stripe.PaymentIntent)?.id ?? fullInvoice.id,
+    });
+    console.log('[webhook] UK invoice email sent:', invoiceNumber, subscriptionId);
   } catch (error) {
-    console.error('[webhook] Error in handleInvoicePaymentSucceeded:', error);
+    console.error('[webhook] Error in handlePaymentSucceeded:', error);
   }
 }
 
@@ -606,57 +666,40 @@ async function handlePaymentFailed(
 ) {
   try {
     const subscriptionId = invoice.subscription as string;
-    
-    if (subscriptionId) {
-      // Find user by subscription ID
-      const { data: existingSub } = await supabase
-        .from('user_subscriptions')
-        .select('user_id, billing_cycle')
-        .eq('stripe_subscription_id', subscriptionId)
-        .single();
+    if (!subscriptionId) return;
 
-      if (!existingSub) {
-        console.error('[webhook] Subscription not found for payment failed:', subscriptionId);
-        return;
-      }
+    const { data: existingSub } = await supabase
+      .from('user_subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single();
 
-      const userId = existingSub.user_id;
-      const gracePeriodEndDate = new Date();
-      gracePeriodEndDate.setDate(gracePeriodEndDate.getDate() + 7); // 7-day grace period
-
-      // Mark as past_due and set grace period end date
-      await supabase
-        .from('user_subscriptions')
-        .update({
-          status: 'past_due',
-          updated_at: new Date().toISOString()
-        })
-        .eq('stripe_subscription_id', subscriptionId);
-
-      console.log(`⚠️ Payment failed, subscription marked as past_due: ${subscriptionId}`);
-      
-      // Send payment failed email
-      const userInfo = await SubscriptionEmailService.getUserInfo(userId);
-      if (userInfo && userInfo.email && invoice) {
-        const amount = (invoice.amount_due / 100).toFixed(2);
-        const currency = invoice.currency?.toUpperCase() || 'GBP';
-        const billingCycle = existingSub.billing_cycle || 'monthly';
-        
-        await SubscriptionEmailService.sendPaymentFailed({
-          userEmail: userInfo.email,
-          userName: userInfo.name,
-          amount: `${currency === 'GBP' ? '£' : '$'}${amount}`,
-          currency,
-          billingCycle: billingCycle as 'monthly' | 'yearly',
-          paymentDate: new Date().toISOString(),
-          gracePeriodEndDate: gracePeriodEndDate.toISOString(),
-          updatePaymentUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=billing&action=update-payment`
-        });
-      }
-      
-      // Note: Grace period handling will check past_due subscriptions and downgrade after 7 days
-      // This should be done via a cron job or scheduled task
+    if (!existingSub) {
+      console.error('[webhook] Subscription not found for payment failed:', subscriptionId);
+      return;
     }
+
+    await supabase
+      .from('user_subscriptions')
+      .update({ status: 'past_due', updated_at: new Date().toISOString() })
+      .eq('stripe_subscription_id', subscriptionId);
+
+    const userInfo = await SubscriptionEmailService.getUserInfo(existingSub.user_id);
+    if (!userInfo?.email) return;
+
+    const amountFormatted = `£${(invoice.amount_due / 100).toFixed(2)}`;
+    const nextRetry = invoice.next_payment_attempt != null ? new Date(invoice.next_payment_attempt * 1000).toISOString() : null;
+    const reason = (invoice as { last_finalization_error?: { message?: string } }).last_finalization_error?.message;
+
+    await sendPaymentFailedEmail(userInfo.email, {
+      customerName: userInfo.name || 'there',
+      amountFormatted,
+      reason,
+      nextRetryDate: nextRetry,
+      updatePaymentUrl: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/billing`,
+      noMoreRetries: !nextRetry,
+    });
+    console.log('[webhook] Payment failed email sent:', subscriptionId);
   } catch (error) {
     console.error('Error handling payment failed:', error);
   }
