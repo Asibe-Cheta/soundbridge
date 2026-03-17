@@ -138,6 +138,21 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'payment_intent.payment_failed': {
+        const piFailed = event.data.object as Stripe.PaymentIntent;
+        if (piFailed.metadata?.project_source === 'opportunity') {
+          console.warn(
+            '[webhook] payment_intent.payment_failed for opportunity project PaymentIntent:',
+            piFailed.id,
+            'status:',
+            piFailed.status
+          );
+          // Status remains payment_pending; mobile can call retry-payment to get a new client secret.
+          // We intentionally do not change project state here to avoid conflicting with client UX.
+        }
+        break;
+      }
+
       case 'payment_intent.canceled': {
         const piCanceled = event.data.object as Stripe.PaymentIntent;
         if (piCanceled.metadata?.project_source === 'opportunity') {
