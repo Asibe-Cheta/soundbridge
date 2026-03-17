@@ -52,6 +52,63 @@ export async function POST(
     await stripe.paymentIntents.capture(paymentIntentId);
 
     const serviceSupabase = createServiceClient();
+
+    // Critical path: wallet credit then mark completed. If wallet credit fails, we return 500
+    // so the client can retry; we do NOT mark completed until creator is credited.
+    const agreedAmount = Number(project.agreed_amount);
+    const feePct = Number(project.platform_fee_percent) || 12;
+    const effectivePayout =
+      project.creator_payout_amount != null && Number(project.creator_payout_amount) > 0
+        ? Number(project.creator_payout_amount)
+        : agreedAmount > 0
+          ? Math.round((agreedAmount * (1 - feePct / 100)) * 100) / 100
+          : 0;
+
+    console.log('[confirm-delivery] Crediting wallet', {
+      projectId: id,
+      creator_user_id: project.creator_user_id,
+      effectivePayout,
+      currency: project.currency,
+    });
+
+    const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
+      id,
+      creator_user_id: project.creator_user_id,
+      creator_payout_amount: effectivePayout,
+      currency: project.currency ?? undefined,
+      title: project.title,
+      opportunity_id: (project as { opportunity_id?: string }).opportunity_id,
+    }, {
+      stripePaymentIntentId: paymentIntentId,
+      metadata: { project_id: id },
+      descriptionPrefix: 'Gig payment',
+    });
+
+    // Update creator_revenue so Earnings tab reflects the gig
+    const { data: revRow } = await serviceSupabase
+      .from('creator_revenue')
+      .select('total_earned, available_balance')
+      .eq('user_id', project.creator_user_id)
+      .maybeSingle();
+    const add = creditResult.creditedAmount;
+    if (revRow) {
+      await serviceSupabase
+        .from('creator_revenue')
+        .update({
+          total_earned: (Number(revRow.total_earned) || 0) + add,
+          available_balance: (Number(revRow.available_balance) || 0) + add,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', project.creator_user_id);
+    } else {
+      await serviceSupabase.from('creator_revenue').insert({
+        user_id: project.creator_user_id,
+        total_earned: add,
+        available_balance: add,
+      });
+    }
+
+    // Only mark project completed after wallet was credited (atomic: capture → credit → completed)
     await supabase
       .from('opportunity_projects')
       .update({
@@ -61,61 +118,8 @@ export async function POST(
       })
       .eq('id', id);
 
-    // Secondary operations: wallet credit, push, emails, notifications — don't fail the response
+    // Non-critical: push, emails, notifications — log but don't fail the response
     try {
-      const agreedAmount = Number(project.agreed_amount);
-      const feePct = Number(project.platform_fee_percent) || 12;
-      const effectivePayout =
-        project.creator_payout_amount != null && Number(project.creator_payout_amount) > 0
-          ? Number(project.creator_payout_amount)
-          : agreedAmount > 0
-            ? Math.round((agreedAmount * (1 - feePct / 100)) * 100) / 100
-            : 0;
-
-      console.log('[confirm-delivery] Crediting wallet', {
-        projectId: id,
-        creator_user_id: project.creator_user_id,
-        effectivePayout,
-        currency: project.currency,
-      });
-
-      const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
-        id,
-        creator_user_id: project.creator_user_id,
-        creator_payout_amount: effectivePayout,
-        currency: project.currency ?? undefined,
-        title: project.title,
-        opportunity_id: (project as { opportunity_id?: string }).opportunity_id,
-      }, {
-        stripePaymentIntentId: paymentIntentId,
-        metadata: { project_id: id },
-        descriptionPrefix: 'Gig payment',
-      });
-
-      // Update creator_revenue so Earnings tab (GET /api/user/revenue/summary) reflects the gig
-      const { data: revRow } = await serviceSupabase
-        .from('creator_revenue')
-        .select('total_earned, available_balance')
-        .eq('user_id', project.creator_user_id)
-        .maybeSingle();
-      const add = creditResult.creditedAmount;
-      if (revRow) {
-        await serviceSupabase
-          .from('creator_revenue')
-          .update({
-            total_earned: (Number(revRow.total_earned) || 0) + add,
-            available_balance: (Number(revRow.available_balance) || 0) + add,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', project.creator_user_id);
-      } else {
-        await serviceSupabase.from('creator_revenue').insert({
-          user_id: project.creator_user_id,
-          total_earned: add,
-          available_balance: add,
-        });
-      }
-
       await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {
         amount: creditResult.creditedAmount,
         currency: creditResult.creditedCurrency,
@@ -190,7 +194,7 @@ export async function POST(
         newBalance: creditResult.newBalance,
       });
     } catch (secondaryError) {
-      console.error('confirm-delivery: secondary (wallet/push/notifications):', secondaryError instanceof Error ? secondaryError.message : secondaryError, secondaryError instanceof Error ? secondaryError.stack : '');
+      console.error('confirm-delivery: secondary (push/emails/notifications):', secondaryError instanceof Error ? secondaryError.message : secondaryError, secondaryError instanceof Error ? secondaryError.stack : '');
     }
 
     return NextResponse.json({ success: true, status: 'completed' }, { headers: CORS });
