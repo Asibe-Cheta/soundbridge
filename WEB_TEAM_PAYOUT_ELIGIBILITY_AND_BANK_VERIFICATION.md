@@ -32,6 +32,8 @@
 
 **Auth:** If the user is not authenticated, the API still returns **401** (no 200 body). Only the *eligibility logic* is non-throwing and always returns a valid object on 200.
 
+**Mobile:** For any **200** response, do not throw. Parse the JSON and use `eligible` and `reasons` (and optional balance fields). Treat `eligible: false` as a valid result and show `reasons` in the UI (e.g. "No verified bank account"); only treat **non-2xx** as a network/error state and then show a generic message or retry — do not use the body’s `error` string to throw, since the API no longer returns 5xx for eligibility.
+
 ---
 
 ## 2. How a bank account gets marked as verified (`creator_bank_accounts`)
