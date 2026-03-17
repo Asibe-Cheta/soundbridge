@@ -138,6 +138,14 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'payment_intent.canceled': {
+        const piCanceled = event.data.object as Stripe.PaymentIntent;
+        if (piCanceled.metadata?.project_source === 'opportunity') {
+          await handleOpportunityProjectPaymentCanceled(piCanceled, supabase);
+        }
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -224,6 +232,38 @@ async function handleOpportunityProjectPaymentSucceeded(
     }).catch((pushErr) => console.error('[webhook] opportunity agreement push error:', pushErr));
   } catch (e) {
     console.error('[webhook] handleOpportunityProjectPaymentSucceeded error:', e);
+  }
+}
+
+/** When poster cancels the payment sheet (or PaymentIntent is canceled), reset project to payment_pending so they can retry. */
+async function handleOpportunityProjectPaymentCanceled(
+  pi: Stripe.PaymentIntent,
+  supabase: ReturnType<typeof createClient>
+) {
+  try {
+    const { data: project } = await supabase
+      .from('opportunity_projects')
+      .select('id, status')
+      .eq('stripe_payment_intent_id', pi.id)
+      .maybeSingle();
+
+    if (!project) {
+      return;
+    }
+
+    await supabase
+      .from('opportunity_projects')
+      .update({
+        status: 'payment_pending',
+        stripe_payment_intent_id: null,
+        stripe_client_secret: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', project.id);
+
+    console.log('[webhook] Project reset to payment_pending after payment_intent.canceled:', project.id);
+  } catch (e) {
+    console.error('[webhook] handleOpportunityProjectPaymentCanceled error:', e);
   }
 }
 
