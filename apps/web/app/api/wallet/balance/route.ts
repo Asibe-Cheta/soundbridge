@@ -58,9 +58,39 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const currency = searchParams.get('currency') || 'USD';
+    const currencyParam = searchParams.get('currency');
 
-    // Get wallet balance
+    // When no currency specified, return all wallets so the app can show balance (e.g. gig credits go to GBP, not USD)
+    if (!currencyParam || currencyParam === '') {
+      const { data: wallets, error: walletsError } = await supabase
+        .from('user_wallets')
+        .select('balance, currency')
+        .eq('user_id', user.id);
+
+      if (walletsError) {
+        console.error('Error fetching wallet balances:', walletsError);
+        return NextResponse.json(
+          { error: 'Failed to fetch wallet balance' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      const list = (wallets ?? []) as { balance: number; currency: string }[];
+      const usdWallet = list.find((w) => w.currency === 'USD');
+      const primary = usdWallet ?? list.find((w) => Number(w.balance) > 0) ?? list[0];
+      return NextResponse.json(
+        {
+          balance: primary ? Number(primary.balance) : 0,
+          currency: primary?.currency ?? 'USD',
+          hasWallet: list.length > 0,
+          wallets: list.map((w) => ({ currency: w.currency, balance: Number(w.balance) })),
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    const currency = currencyParam;
+
     const { data: wallet, error: walletError } = await supabase
       .from('user_wallets')
       .select('balance, currency')
@@ -77,10 +107,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
+      {
         balance: wallet?.balance || 0,
         currency: wallet?.currency || currency,
-        hasWallet: !!wallet
+        hasWallet: !!wallet,
       },
       { status: 200, headers: corsHeaders }
     );

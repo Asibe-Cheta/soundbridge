@@ -29,7 +29,7 @@ export async function POST(
     const { id } = await params;
     const { data: project } = await supabase
       .from('opportunity_projects')
-      .select('id, poster_user_id, status, stripe_payment_intent_id, creator_user_id, creator_payout_amount, currency, title, opportunity_id')
+      .select('id, poster_user_id, status, stripe_payment_intent_id, creator_user_id, creator_payout_amount, agreed_amount, platform_fee_percent, currency, title, opportunity_id')
       .eq('id', id)
       .single();
 
@@ -63,10 +63,26 @@ export async function POST(
 
     // Secondary operations: wallet credit, push, emails, notifications — don't fail the response
     try {
+      const agreedAmount = Number(project.agreed_amount);
+      const feePct = Number(project.platform_fee_percent) || 12;
+      const effectivePayout =
+        project.creator_payout_amount != null && Number(project.creator_payout_amount) > 0
+          ? Number(project.creator_payout_amount)
+          : agreedAmount > 0
+            ? Math.round((agreedAmount * (1 - feePct / 100)) * 100) / 100
+            : 0;
+
+      console.log('[confirm-delivery] Crediting wallet', {
+        projectId: id,
+        creator_user_id: project.creator_user_id,
+        effectivePayout,
+        currency: project.currency,
+      });
+
       const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
         id,
         creator_user_id: project.creator_user_id,
-        creator_payout_amount: project.creator_payout_amount,
+        creator_payout_amount: effectivePayout,
         currency: project.currency ?? undefined,
         title: project.title,
         opportunity_id: (project as { opportunity_id?: string }).opportunity_id,
@@ -142,8 +158,15 @@ export async function POST(
           metadata: { project_id: id },
         },
       ]);
+
+      console.log('[confirm-delivery] Wallet credited', {
+        projectId: id,
+        creditedAmount: creditResult.creditedAmount,
+        creditedCurrency: creditResult.creditedCurrency,
+        newBalance: creditResult.newBalance,
+      });
     } catch (secondaryError) {
-      console.error('confirm-delivery: secondary (wallet/push/notifications):', secondaryError);
+      console.error('confirm-delivery: secondary (wallet/push/notifications):', secondaryError instanceof Error ? secondaryError.message : secondaryError, secondaryError instanceof Error ? secondaryError.stack : '');
     }
 
     return NextResponse.json({ success: true, status: 'completed' }, { headers: CORS });

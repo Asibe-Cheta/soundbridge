@@ -1,16 +1,14 @@
 /**
- * Gig payment wallet credit — currency handling for Wise vs Stripe Connect creators
+ * Gig payment wallet credit — always credit in USD (dollar equivalent) so the Digital Wallet
+ * shows one balance regardless of payer/creator country or payment currency (GBP, USD, etc.).
  * WEB_TEAM_GIG_PAYMENT_ADMIN_MONITORING.md, instant wallet flow
- *
- * For Wise-country creators (e.g. Nigeria): credit wallet in USD (convert from requester
- * currency at release time). For UK/EU (Stripe Connect), credit in GBP/EUR as-is.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { currencyService } from './currency-service';
 import { stripe } from './stripe';
 
-/** Countries where payouts go via Wise; wallet must be credited in USD for Wise USD→local conversion. */
+/** Countries where payouts go via Wise (kept for metadata; we now always credit USD). */
 export const WISE_COUNTRIES = ['NG', 'GH', 'KE', 'EG', 'ZA', 'UG', 'TZ'] as const;
 
 export interface GigWalletCreditProject {
@@ -35,12 +33,6 @@ export interface CreditGigPaymentResult {
   walletId: string | null;
   /** New balance after credit (if wallet was found/created) */
   newBalance: number;
-}
-
-async function getCreatorCountryCode(service: SupabaseClient, userId: string): Promise<string | null> {
-  const { data } = await service.from('profiles').select('country_code').eq('id', userId).single();
-  const code = (data as { country_code?: string | null } | null)?.country_code;
-  return code && typeof code === 'string' ? code.trim().toUpperCase().slice(0, 2) : null;
 }
 
 /**
@@ -71,8 +63,8 @@ async function getStripeExchangeRateToUsd(
 }
 
 /**
- * Credit creator wallet for a gig payment. Converts to USD for Wise-country creators;
- * otherwise uses the project (requester) currency.
+ * Credit creator wallet for a gig payment. Always credits in USD (dollar equivalent) so the
+ * Digital Wallet shows one balance regardless of where payment was from or which currency was used.
  */
 export async function creditGigPaymentToWallet(
   service: SupabaseClient,
@@ -86,14 +78,13 @@ export async function creditGigPaymentToWallet(
   const title = project.title ?? 'Gig';
   const prefix = options.descriptionPrefix ?? 'Gig payment';
 
-  const countryCode = await getCreatorCountryCode(service, creatorId);
-  const isWiseCountry = countryCode ? (WISE_COUNTRIES as readonly string[]).includes(countryCode) : false;
-
   let creditedAmount: number;
-  let creditedCurrency: string;
   const meta: Record<string, unknown> = { ...options.metadata };
 
-  if (isWiseCountry && sourceCurrency !== 'USD') {
+  if (sourceCurrency === 'USD') {
+    creditedAmount = sourceAmount;
+    meta.fx_source = 'none';
+  } else {
     // Convert to USD at point of credit: prefer Stripe charge rate, else live FX
     let rate: number | null = null;
     if (options.stripePaymentIntentId && stripe) {
@@ -109,11 +100,9 @@ export async function creditGigPaymentToWallet(
     }
     meta.original_amount = sourceAmount;
     meta.original_currency = sourceCurrency;
-    creditedCurrency = 'USD';
-  } else {
-    creditedAmount = sourceAmount;
-    creditedCurrency = sourceCurrency;
   }
+
+  const creditedCurrency = 'USD';
 
   let wallet: { id: string; balance: number } | null = await service
     .from('user_wallets')
