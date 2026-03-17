@@ -154,7 +154,7 @@ export default function WaitlistPage() {
     },
     {
       question: 'How much does it cost?',
-      answer: 'Free to join! When we launch, uploading 3 tracks is free. Subscriptions (£5-10/month) unlock unlimited uploads and premium features.'
+      answer: 'Start free with our Free plan (250MB storage, ~30–40 tracks). When you’re ready, you can upgrade to paid plans from around £6.99/month (or local equivalent) to unlock more storage, unlimited uploads and advanced tools. See the Pricing page for full details.'
     },
     {
       question: 'What genres are supported?',
@@ -162,7 +162,7 @@ export default function WaitlistPage() {
     },
     {
       question: 'Is this only for UK artists?',
-      answer: 'Initially launching in the UK, but we\'ll expand globally based on demand.'
+      answer: 'No. We\'re launching globally from day one, but our founding team and first community are based in the UK.'
     },
     {
       question: 'How is this different from Spotify?',
