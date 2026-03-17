@@ -45,3 +45,44 @@ END $$;
 ```
 
 **If you have already run migration `20260228140000_gig_payment_wallet_transaction_type.sql`**, you can use `'gig_payment'` instead of `'deposit'` in the INSERT above. Otherwise use `'deposit'` so the constraint is satisfied.
+
+---
+
+## Backfill creator_revenue (Earnings tab)
+
+The Earnings tab on Profile reads from `creator_revenue` (e.g. GET /api/user/revenue/summary → `get_creator_revenue_summary`). Run this **after** the wallet backfill so the same creator’s Total Earnings and balance reflect the £8.80 gig (~$11.18 USD).
+
+```sql
+-- Backfill creator_revenue for pi_3T6GcG0Bt6mXrdye10HwRyaF (Earnings tab)
+-- Uses UPDATE then INSERT (no UNIQUE on user_id in prod)
+DO $$
+DECLARE
+  v_creator_id uuid;
+  v_amount numeric := 11.18;
+  v_updated integer;
+BEGIN
+  SELECT creator_user_id INTO v_creator_id
+  FROM opportunity_projects
+  WHERE stripe_payment_intent_id = 'pi_3T6GcG0Bt6mXrdye10HwRyaF'
+  LIMIT 1;
+
+  IF v_creator_id IS NULL THEN
+    RAISE NOTICE 'No project found for pi_3T6GcG0Bt6mXrdye10HwRyaF';
+    RETURN;
+  END IF;
+
+  UPDATE creator_revenue
+  SET total_earned = COALESCE(total_earned, 0) + v_amount,
+      available_balance = COALESCE(available_balance, 0) + v_amount,
+      updated_at = NOW()
+  WHERE user_id = v_creator_id;
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+
+  IF v_updated = 0 THEN
+    INSERT INTO creator_revenue (user_id, total_earned, available_balance, updated_at)
+    VALUES (v_creator_id, v_amount, v_amount, NOW());
+  END IF;
+
+  RAISE NOTICE 'creator_revenue backfill applied for user % (+$11.18)', v_creator_id;
+END $$;
+```

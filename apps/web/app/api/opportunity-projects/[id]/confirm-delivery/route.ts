@@ -92,6 +92,30 @@ export async function POST(
         descriptionPrefix: 'Gig payment',
       });
 
+      // Update creator_revenue so Earnings tab (GET /api/user/revenue/summary) reflects the gig
+      const { data: revRow } = await serviceSupabase
+        .from('creator_revenue')
+        .select('total_earned, available_balance')
+        .eq('user_id', project.creator_user_id)
+        .maybeSingle();
+      const add = creditResult.creditedAmount;
+      if (revRow) {
+        await serviceSupabase
+          .from('creator_revenue')
+          .update({
+            total_earned: (Number(revRow.total_earned) || 0) + add,
+            available_balance: (Number(revRow.available_balance) || 0) + add,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', project.creator_user_id);
+      } else {
+        await serviceSupabase.from('creator_revenue').insert({
+          user_id: project.creator_user_id,
+          total_earned: add,
+          available_balance: add,
+        });
+      }
+
       await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {
         amount: creditResult.creditedAmount,
         currency: creditResult.creditedCurrency,
