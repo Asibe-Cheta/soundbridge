@@ -103,7 +103,7 @@ export async function runUrgentGigMatching(
 ): Promise<{ gigId: string; matchedCount: number } | null> {
   const { data: gig, error: gigErr } = await supabase
     .from('opportunity_posts')
-    .select('id, user_id, skill_required, genre, location_lat, location_lng, location_radius_km, duration_hours, payment_amount, payment_currency, location_address, date_needed, title')
+    .select('id, user_id, skill_required, genre, location_lat, location_lng, location_radius_km, duration_hours, payment_amount, payment_currency, location_address, date_needed, title, payment_status')
     .eq('stripe_payment_intent_id', paymentIntentId)
     .eq('gig_type', 'urgent')
     .single();
@@ -111,6 +111,11 @@ export async function runUrgentGigMatching(
   if (gigErr || !gig) {
     console.error('Urgent gig not found for PI:', paymentIntentId, gigErr);
     return null;
+  }
+
+  // Idempotency: if we've already marked this gig as escrowed, don't re-run matching / notifications
+  if ((gig as { payment_status?: string }).payment_status === 'escrowed') {
+    return { gigId: gig.id, matchedCount: 0 };
   }
 
   const requesterId = gig.user_id;

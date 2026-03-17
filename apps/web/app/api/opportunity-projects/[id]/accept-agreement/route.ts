@@ -99,7 +99,16 @@ export async function POST(
       message_type: 'text',
     });
 
-    return NextResponse.json({ success: true, status: 'active' }, { headers: CORS });
+    const { data: fullProject } = await serviceSupabase
+      .from('opportunity_projects')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    return NextResponse.json(
+      fullProject != null ? { success: true, ...fullProject } : { success: true, status: 'active' },
+      { headers: CORS }
+    );
   } catch (e) {
     console.error('POST accept-agreement:', e);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS });

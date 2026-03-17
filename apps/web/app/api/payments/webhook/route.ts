@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     // Handle different event types
     switch (event.type) {
       case 'payment_intent.succeeded':
+      case 'payment_intent.amount_capturable_updated':
         await handlePaymentSucceeded(event.data.object as Stripe.PaymentIntent, supabase);
         break;
 
