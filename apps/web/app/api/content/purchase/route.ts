@@ -167,9 +167,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate fees (90/10 split)
+    // Calculate fees (doc: 5% platform for audio/content; internal 90/10 for now)
     const platformFee = Math.round(price * 0.10 * 100) / 100;
     const creatorEarnings = Math.round(price * 0.90 * 100) / 100;
+    const amountCents = Math.round(price * 100);
+    const platformFeeCents = Math.round(amountCents * 0.05); // 5% for Stripe Collected fees
 
     // Create Stripe Payment Intent
     if (!stripe) {
@@ -179,8 +181,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(price * 100), // Convert to cents
+    const { data: creatorBank } = creatorId
+      ? await supabase
+          .from('creator_bank_accounts')
+          .select('stripe_account_id')
+          .eq('user_id', creatorId)
+          .not('stripe_account_id', 'is', null)
+          .maybeSingle()
+      : { data: null };
+    const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+
+    const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
+      amount: amountCents,
       currency: currency.toLowerCase(),
       payment_method: payment_method_id,
       confirm: true,
@@ -193,7 +205,13 @@ export async function POST(request: NextRequest) {
         buyer_email: user.email || '',
       },
       description: `Purchase: ${content.title || 'Content'}`,
-    });
+    };
+    if (stripeAccountId && platformFeeCents > 0 && platformFeeCents < amountCents) {
+      piParams.application_fee_amount = platformFeeCents;
+      piParams.transfer_data = { destination: stripeAccountId };
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     if (paymentIntent.status !== 'succeeded') {
       return NextResponse.json(

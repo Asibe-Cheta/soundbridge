@@ -173,6 +173,9 @@ export async function POST(request: NextRequest) {
     const platformFee = Math.round(tipAmount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
 
+    // Stripe application_fee: 5% (doc); 3% for Unlimited tier
+    const stripeFeeRate = normalizedTier === 'unlimited' ? 0.03 : 0.05;
+
     // Create real Stripe payment intent
     if (!stripe) {
       return NextResponse.json(
@@ -181,9 +184,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const amountMinor = stripeAmountInMinorUnits(tipAmount, tipCurrencyLower);
+    const { data: creatorBank } = await supabase
+      .from('creator_bank_accounts')
+      .select('stripe_account_id')
+      .eq('user_id', creatorId)
+      .not('stripe_account_id', 'is', null)
+      .maybeSingle();
+    const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+
     // Configure payment methods based on selection
-    const paymentIntentConfig: any = {
-      amount: stripeAmountInMinorUnits(tipAmount, tipCurrencyLower),
+    const paymentIntentConfig: Record<string, unknown> = {
+      amount: amountMinor,
       currency: tipCurrencyLower,
       metadata: {
         creatorId,
@@ -197,6 +209,13 @@ export async function POST(request: NextRequest) {
       },
       description: `Tip to creator ${creatorId}`,
     };
+    if (stripeAccountId && amountMinor > 0) {
+      const applicationFeeMinor = Math.round(amountMinor * stripeFeeRate);
+      if (applicationFeeMinor > 0 && applicationFeeMinor < amountMinor) {
+        paymentIntentConfig.application_fee_amount = applicationFeeMinor;
+        paymentIntentConfig.transfer_data = { destination: stripeAccountId };
+      }
+    }
 
     // Configure payment methods based on selection
     if (paymentMethod === 'apple_pay') {
@@ -212,7 +231,7 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig as Parameters<typeof stripe.paymentIntents.create>[0]);
 
     // Record the tip in the enhanced tip analytics system
     const { data: tipData, error: tipError } = await supabase

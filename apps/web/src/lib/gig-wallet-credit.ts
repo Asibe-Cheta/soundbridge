@@ -135,6 +135,7 @@ export async function creditGigPaymentToWallet(
       reference_id: projectId,
       status: 'completed',
       metadata: meta,
+      ...(options.stripePaymentIntentId && { stripe_payment_intent_id: options.stripePaymentIntentId }),
     });
     await service
       .from('user_wallets')

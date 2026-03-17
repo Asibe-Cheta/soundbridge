@@ -79,7 +79,16 @@ export async function POST(
           return NextResponse.json({ error: 'Payment system not configured' }, { status: 500, headers: CORS });
         }
         const amountPence = Math.round(Number(existingProject.agreed_amount) * 100);
-        const paymentIntent = await stripe.paymentIntents.create({
+        const feePct = existingProject.platform_fee_percent ?? 12;
+        const platformFeePence = Math.round(amountPence * (feePct / 100));
+        const { data: creatorBank } = await serviceSupabase
+          .from('creator_bank_accounts')
+          .select('stripe_account_id')
+          .eq('user_id', existingProject.creator_user_id)
+          .not('stripe_account_id', 'is', null)
+          .maybeSingle();
+        const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+        const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountPence,
           currency: (existingProject.currency || 'GBP').toLowerCase(),
           capture_method: 'manual',
@@ -91,7 +100,12 @@ export async function POST(
             creator_user_id: existingProject.creator_user_id,
           },
           description: `Project: ${existingProject.title}`,
-        });
+        };
+        if (stripeAccountId && platformFeePence > 0 && platformFeePence < amountPence) {
+          paymentIntentParams.application_fee_amount = platformFeePence;
+          paymentIntentParams.transfer_data = { destination: stripeAccountId };
+        }
+        const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
         if (!paymentIntent.client_secret) {
           console.error('Stripe PaymentIntent missing client_secret (unpaid recovery)');
           return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
@@ -235,7 +249,15 @@ export async function POST(
     if (stripe) {
       try {
         const amountPence = Math.round(agreed * 100);
-        const paymentIntent = await stripe.paymentIntents.create({
+        const platformFeePence = Math.round(amountPence * (feePercent / 100));
+        const { data: creatorBank } = await serviceSupabase
+          .from('creator_bank_accounts')
+          .select('stripe_account_id')
+          .eq('user_id', creatorUserId)
+          .not('stripe_account_id', 'is', null)
+          .maybeSingle();
+        const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+        const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountPence,
           currency: (currency || 'GBP').toLowerCase(),
           capture_method: 'manual',
@@ -249,7 +271,12 @@ export async function POST(
             recipientUserId: creatorUserId,
           },
           description: `Project: ${opp.title}`,
-        });
+        };
+        if (stripeAccountId && platformFeePence > 0 && platformFeePence < amountPence) {
+          paymentIntentParams.application_fee_amount = platformFeePence;
+          paymentIntentParams.transfer_data = { destination: stripeAccountId };
+        }
+        const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
         clientSecret = paymentIntent.client_secret ?? null;
         stripePaymentIntentId = paymentIntent.id;
         const { error: updateErr } = await serviceSupabase

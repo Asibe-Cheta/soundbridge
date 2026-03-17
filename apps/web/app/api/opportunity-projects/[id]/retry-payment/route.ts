@@ -32,7 +32,7 @@ export async function POST(
     const serviceSupabase = createServiceClient();
     const { data: project, error: projectError } = await serviceSupabase
       .from('opportunity_projects')
-      .select('id, poster_user_id, creator_user_id, status, agreed_amount, currency, opportunity_id, stripe_payment_intent_id')
+      .select('id, poster_user_id, creator_user_id, status, agreed_amount, currency, opportunity_id, stripe_payment_intent_id, platform_fee_percent')
       .eq('id', projectId)
       .single();
 
@@ -70,7 +70,16 @@ export async function POST(
     }
 
     const amountCents = Math.round(Number(project.agreed_amount) * 100);
-    const newPi = await stripe.paymentIntents.create({
+    const feePct = project.platform_fee_percent ?? 12;
+    const platformFeeCents = Math.round(amountCents * (feePct / 100));
+    const { data: creatorBank } = await serviceSupabase
+      .from('creator_bank_accounts')
+      .select('stripe_account_id')
+      .eq('user_id', project.creator_user_id)
+      .not('stripe_account_id', 'is', null)
+      .maybeSingle();
+    const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+    const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
       amount: amountCents,
       currency: (project.currency || 'GBP').toLowerCase(),
       capture_method: 'manual',
@@ -80,7 +89,12 @@ export async function POST(
         poster_user_id: project.poster_user_id,
         creator_user_id: project.creator_user_id,
       },
-    });
+    };
+    if (stripeAccountId && platformFeeCents > 0 && platformFeeCents < amountCents) {
+      piParams.application_fee_amount = platformFeeCents;
+      piParams.transfer_data = { destination: stripeAccountId };
+    }
+    const newPi = await stripe.paymentIntents.create(piParams);
 
     // Update only stripe_payment_intent_id (and updated_at); do not set stripe_client_secret
     // here so the update succeeds when that column does not exist (migration not run).

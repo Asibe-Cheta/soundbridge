@@ -624,4 +624,26 @@ export class SendGridService {
       return false;
     }
   }
+
+  /**
+   * Send a raw HTML email (e.g. receipt). No template required.
+   * WEB_TEAM_RECEIPTS_AND_PLATFORM_FEE_FIX.MD
+   */
+  static async sendHtmlEmail(to: string, subject: string, html: string): Promise<boolean> {
+    try {
+      const sgMail = await getSgMail();
+      if (!sgMail) return false;
+      await sgMail.send({
+        to,
+        from: { email: this.fromEmail, name: this.fromName },
+        replyTo: 'contact@soundbridge.live',
+        subject,
+        html,
+      });
+      return true;
+    } catch (error) {
+      console.error('Error sending HTML email:', error);
+      return false;
+    }
+  }
 }
