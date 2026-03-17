@@ -242,6 +242,28 @@ If production was still returning HTML for these paths, likely causes were: (a) 
 
 ---
 
+## Production verification (Web team – March 9, 2026)
+
+**Live test from Web team:**
+
+```bash
+curl -s -o /dev/null -w "%{http_code} %{content_type}\n" "https://www.soundbridge.live/api/genres?category=music"
+# Result: 200 application/json
+```
+
+**Full response:** `GET https://www.soundbridge.live/api/genres?category=music` returns **200 OK**, **Content-Type: application/json**, and a valid JSON body with `{"success":true,"genres":[...],"count":35,"category":"music",...}` (35 music genres).
+
+So the endpoint **is live and correct** in production. If the mobile app still saw 404 at 16:24, possible causes:
+
+1. **Deploy timing** – Test was before the latest deploy finished. Please **retry now** (no code changes needed).
+2. **Exact URL** – Use exactly `https://www.soundbridge.live/api/genres?category=music` (no trailing slash, `www` subdomain).
+3. **Caching** – App or device cache serving an old 404. Try: force-close app, clear app cache, or reinstall; or test from a different device/network.
+4. **Network / proxy** – Corporate or carrier proxy returning a cached 404. Try Wi‑Fi vs cellular, or another network.
+
+**Action for Mobile:** Call the same URL again from the app (or from a browser/Postman on the same device). If it still returns 404, share the **exact request URL** and **response headers** from the app (e.g. from a network inspector or log), and we can check for redirects or host mismatch.
+
+---
+
 **Prepared by:** Mobile Team  
 **Date:** March 9, 2026  
 **Urgency:** HIGH - Blocking user onboarding flow

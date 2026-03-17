@@ -86,3 +86,42 @@ BEGIN
   RAISE NOTICE 'creator_revenue backfill applied for user % (+$11.18)', v_creator_id;
 END $$;
 ```
+
+---
+
+## Verification (Earnings tab — e.g. Merit Uche @kachi191)
+
+Run in **Supabase SQL Editor** to confirm the backfill target and that Earnings data is present.
+
+**1) Who the backfill targets (creator of the gig for this payment intent):**
+```sql
+SELECT op.creator_user_id AS backfill_target_user_id,
+       p.username,
+       p.display_name
+FROM opportunity_projects op
+LEFT JOIN profiles p ON p.id = op.creator_user_id
+WHERE op.stripe_payment_intent_id = 'pi_3T6GcG0Bt6mXrdye10HwRyaF'
+LIMIT 1;
+```
+
+**2) Merit Uche’s user id (to confirm it matches backfill_target_user_id):**
+```sql
+SELECT id AS user_id, username, display_name
+FROM profiles
+WHERE username = 'kachi191'
+LIMIT 1;
+```
+
+**3) creator_revenue row for that user (should show total_earned/available_balance ≥ 11.18 after backfill):**
+```sql
+SELECT user_id, total_earned, available_balance, updated_at
+FROM creator_revenue
+WHERE user_id = (SELECT creator_user_id FROM opportunity_projects WHERE stripe_payment_intent_id = 'pi_3T6GcG0Bt6mXrdye10HwRyaF' LIMIT 1);
+```
+
+**4) What GET /api/user/revenue/summary returns (RPC used by Earnings tab):**
+```sql
+SELECT * FROM get_creator_revenue_summary(
+  (SELECT creator_user_id FROM opportunity_projects WHERE stripe_payment_intent_id = 'pi_3T6GcG0Bt6mXrdye10HwRyaF' LIMIT 1)
+);
+```

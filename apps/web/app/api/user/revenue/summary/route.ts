@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!data || data.length === 0) {
-      // Return default values if no revenue data exists
+      // Return default values if no revenue data exists (numbers for mobile .toFixed(2))
       return NextResponse.json({
         total_earned: 0,
         total_paid_out: 0,
@@ -38,11 +38,24 @@ export async function GET(request: NextRequest) {
         last_month_earnings: 0,
         total_tips: 0,
         total_track_sales: 0,
-        total_subscriptions: 0
+        total_subscriptions: 0,
       });
     }
 
-    return NextResponse.json(data[0]);
+    const row = data[0];
+    const toNum = (v: unknown): number =>
+      typeof v === 'number' && !Number.isNaN(v) ? v : Number(v) || 0;
+    return NextResponse.json({
+      total_earned: toNum(row.total_earned),
+      total_paid_out: toNum(row.total_paid_out),
+      pending_balance: toNum(row.pending_balance),
+      available_balance: toNum(row.available_balance),
+      this_month_earnings: toNum(row.this_month_earnings),
+      last_month_earnings: toNum(row.last_month_earnings),
+      total_tips: toNum(row.total_tips),
+      total_track_sales: toNum(row.total_track_sales),
+      total_subscriptions: toNum(row.total_subscriptions),
+    });
     
   } catch (error) {
     console.error('Error in revenue summary GET:', error);
