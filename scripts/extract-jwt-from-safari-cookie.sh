@@ -11,10 +11,14 @@ if [[ -z "$VAL" ]]; then
   exit 1
 fi
 DECODED=$(echo "$VAL" | base64 -d 2>/dev/null) || { echo "Base64 decode failed. Paste only the cookie value (base64-...)." >&2; exit 1; }
+# Trim trailing newlines so jq sees a single line (cookie sometimes decodes with trailing \n)
+DECODED=$(printf '%s' "$DECODED" | tr -d '\n\r')
 if command -v jq &>/dev/null; then
-  JWT=$(echo "$DECODED" | jq -r '.access_token // empty')
-else
-  JWT=$(echo "$DECODED" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+  JWT=$(printf '%s' "$DECODED" | jq -r '.access_token // empty' 2>/dev/null) || true
+fi
+# If jq failed (e.g. truncated cookie JSON), fall back to grep; access_token is near the start
+if [[ -z "$JWT" || "$JWT" == "null" ]]; then
+  JWT=$(printf '%s' "$DECODED" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
 fi
 if [[ -z "$JWT" || "$JWT" == "null" ]]; then
   echo "Could not find access_token in cookie. Is the value complete?" >&2
