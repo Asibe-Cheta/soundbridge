@@ -118,6 +118,22 @@ export async function POST(
       })
       .eq('id', id);
 
+    // Platform fee tracking for P&L (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md)
+    const grossPence = Math.round(Number(project.agreed_amount) * 100);
+    const platformFeePence = Math.round(Number(project.platform_fee_amount ?? 0) * 100) || Math.round(grossPence * (Number(project.platform_fee_percent) || 12) / 100);
+    const creatorPayoutPence = Math.round(effectivePayout * 100);
+    await serviceSupabase.rpc('insert_platform_revenue', {
+      p_charge_type: 'gig_payment',
+      p_gross_amount: grossPence,
+      p_platform_fee_amount: platformFeePence,
+      p_platform_fee_percent: project.platform_fee_percent ?? 12,
+      p_creator_payout_amount: creatorPayoutPence,
+      p_stripe_payment_intent_id: paymentIntentId,
+      p_reference_id: id,
+      p_creator_user_id: project.creator_user_id,
+      p_currency: (project.currency || 'GBP').toUpperCase(),
+    }).then(() => {}).catch((err) => console.error('[confirm-delivery] insert_platform_revenue:', err));
+
     // Non-critical: push, emails, notifications — log but don't fail the response
     try {
       await sendGigPaymentPush(serviceSupabase, project.creator_user_id, {

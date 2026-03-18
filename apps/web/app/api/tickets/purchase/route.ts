@@ -121,11 +121,13 @@ export async function POST(request: NextRequest) {
       if (code) ticketCodes.push(code);
     }
 
-    // Create Payment Intent with Stripe Connect
+    const amountPence = Math.round(totalAmount * 100);
+    const platformFeePence = Math.round(platformFee * 100);
+    const promoterPence = amountPence - platformFeePence;
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100), // Convert to pence
+      amount: amountPence,
       currency: 'gbp',
-      application_fee_amount: Math.round(platformFee * 100),
+      application_fee_amount: platformFeePence,
       transfer_data: {
         destination: promoterStripeAccount,
       },
@@ -140,6 +142,12 @@ export async function POST(request: NextRequest) {
         buyer_email: buyerEmail,
         user_tier: userTier,
         ticket_codes: ticketCodes.join(','),
+        charge_type: 'event_ticket',
+        platform_fee_amount: String(platformFeePence),
+        platform_fee_percent: String(PLATFORM_FEE_PERCENT),
+        creator_payout_amount: String(promoterPence),
+        reference_id: ticket.event?.id ?? ticketId,
+        creator_user_id: ticket.event?.creator_id ?? '',
       },
       description: `${quantity}x ${ticket.ticket_name} for ${ticket.event?.title}`,
       receipt_email: buyerEmail,

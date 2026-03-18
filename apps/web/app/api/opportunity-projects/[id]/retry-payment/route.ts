@@ -79,6 +79,7 @@ export async function POST(
       .not('stripe_account_id', 'is', null)
       .maybeSingle();
     const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+    const creatorPayoutCents = amountCents - platformFeeCents;
     const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
       amount: amountCents,
       currency: (project.currency || 'GBP').toLowerCase(),
@@ -88,6 +89,11 @@ export async function POST(
         opportunity_id: project.opportunity_id,
         poster_user_id: project.poster_user_id,
         creator_user_id: project.creator_user_id,
+        charge_type: 'gig_payment',
+        platform_fee_amount: String(platformFeeCents),
+        platform_fee_percent: String(feePct),
+        creator_payout_amount: String(creatorPayoutCents),
+        reference_id: project.id,
       },
     };
     if (stripeAccountId && platformFeeCents > 0 && platformFeeCents < amountCents) {

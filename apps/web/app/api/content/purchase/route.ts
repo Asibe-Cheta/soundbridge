@@ -191,6 +191,7 @@ export async function POST(request: NextRequest) {
       : { data: null };
     const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
 
+    const creatorPayoutCents = amountCents - platformFeeCents;
     const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
       amount: amountCents,
       currency: currency.toLowerCase(),
@@ -203,6 +204,12 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId || '',
         buyer_id: user.id,
         buyer_email: user.email || '',
+        charge_type: 'audio_sale',
+        platform_fee_amount: String(platformFeeCents),
+        platform_fee_percent: '5',
+        creator_payout_amount: String(creatorPayoutCents),
+        reference_id: content_id,
+        creator_user_id: creatorId || '',
       },
       description: `Purchase: ${content.title || 'Content'}`,
     };
@@ -245,6 +252,18 @@ export async function POST(request: NextRequest) {
         { status: 500, headers: corsHeaders }
       );
     }
+
+    await supabase.rpc('insert_platform_revenue', {
+      p_charge_type: 'audio_sale',
+      p_gross_amount: amountCents,
+      p_platform_fee_amount: platformFeeCents,
+      p_platform_fee_percent: 5,
+      p_creator_payout_amount: amountCents - platformFeeCents,
+      p_stripe_payment_intent_id: paymentIntent.id,
+      p_reference_id: content_id,
+      p_creator_user_id: creatorId || null,
+      p_currency: currency.toUpperCase(),
+    }).catch((err) => console.error('[content/purchase] insert_platform_revenue:', err));
 
     // Transfer earnings to creator's wallet
     if (creatorId) {

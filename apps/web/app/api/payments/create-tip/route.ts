@@ -193,7 +193,8 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
 
-    // Configure payment methods based on selection
+    const platformFeeMinor = Math.round(amountMinor * stripeFeeRate);
+    const creatorPayoutMinor = amountMinor - platformFeeMinor;
     const paymentIntentConfig: Record<string, unknown> = {
       amount: amountMinor,
       currency: tipCurrencyLower,
@@ -205,7 +206,12 @@ export async function POST(request: NextRequest) {
         platformFee: platformFee.toString(),
         creatorEarnings: creatorEarnings.toString(),
         tipMessage: message || '',
-        isAnonymous: (isAnonymous || false).toString()
+        isAnonymous: (isAnonymous || false).toString(),
+        charge_type: 'tip',
+        platform_fee_amount: String(platformFeeMinor),
+        platform_fee_percent: String(Math.round(stripeFeeRate * 100)),
+        creator_payout_amount: String(creatorPayoutMinor),
+        creator_user_id: creatorId,
       },
       description: `Tip to creator ${creatorId}`,
     };

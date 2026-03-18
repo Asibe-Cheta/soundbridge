@@ -88,6 +88,7 @@ export async function POST(
           .not('stripe_account_id', 'is', null)
           .maybeSingle();
         const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+        const creatorPayoutPence = amountPence - platformFeePence;
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountPence,
           currency: (existingProject.currency || 'GBP').toLowerCase(),
@@ -98,6 +99,11 @@ export async function POST(
             interest_id: existingProject.interest_id,
             poster_user_id: existingProject.poster_user_id,
             creator_user_id: existingProject.creator_user_id,
+            charge_type: 'gig_payment',
+            platform_fee_amount: String(platformFeePence),
+            platform_fee_percent: String(feePct),
+            creator_payout_amount: String(creatorPayoutPence),
+            reference_id: existingProject.id,
           },
           description: `Project: ${existingProject.title}`,
         };
@@ -257,6 +263,7 @@ export async function POST(
           .not('stripe_account_id', 'is', null)
           .maybeSingle();
         const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+        const creatorPayoutPence = amountPence - platformFeePence;
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountPence,
           currency: (currency || 'GBP').toLowerCase(),
@@ -269,6 +276,11 @@ export async function POST(
             poster_user_id: posterUserId,
             creator_user_id: creatorUserId,
             recipientUserId: creatorUserId,
+            charge_type: 'gig_payment',
+            platform_fee_amount: String(platformFeePence),
+            platform_fee_percent: String(feePercent),
+            creator_payout_amount: String(creatorPayoutPence),
+            reference_id: project.id,
           },
           description: `Project: ${opp.title}`,
         };

@@ -145,6 +145,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const meta = paymentIntent.metadata as Record<string, string | undefined>;
+    const grossMinor = paymentIntent.amount ?? 0;
+    const platformFeeMinor = meta.platform_fee_amount ? parseInt(meta.platform_fee_amount, 10) : Math.round(grossMinor * 0.05);
+    const creatorPayoutMinor = meta.creator_payout_amount ? parseInt(meta.creator_payout_amount, 10) : grossMinor - platformFeeMinor;
+    const feePct = meta.platform_fee_percent ? parseFloat(meta.platform_fee_percent) : 5;
+    const creatorIdForRevenue = tipsRow?.recipient_id || tipData.creator_id || meta.creator_user_id || null;
+    await supabase.rpc('insert_platform_revenue', {
+      p_charge_type: 'tip',
+      p_gross_amount: grossMinor,
+      p_platform_fee_amount: platformFeeMinor,
+      p_platform_fee_percent: feePct,
+      p_creator_payout_amount: creatorPayoutMinor,
+      p_stripe_payment_intent_id: paymentIntentId,
+      p_reference_id: paymentIntentId,
+      p_creator_user_id: creatorIdForRevenue,
+      p_currency: (paymentIntent.currency || 'USD').toUpperCase(),
+    }).catch((err) => console.error('[confirm-tip] insert_platform_revenue:', err));
+
     const amount = Number(
         tipAnalytics?.tip_amount ??
           tipsRow?.amount ??
