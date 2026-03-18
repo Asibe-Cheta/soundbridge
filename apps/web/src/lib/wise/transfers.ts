@@ -76,7 +76,7 @@ export interface CreateRecipientParams {
   accountNumber: string;
   bankCode: string;
   accountHolderName: string;
-  type?: 'aba' | 'swift' | 'sort_code' | 'routing_number' | 'ifsc' | 'bsb' | 'clabe' | 'bank_code';
+  type?: 'aba' | 'swift' | 'sort_code' | 'routing_number' | 'ifsc' | 'bsb' | 'clabe' | 'bank_code' | 'nuban';
 }
 
 export interface Recipient {
@@ -482,7 +482,7 @@ export async function createRecipient(
 function getRecipientTypeForCurrency(currency: SupportedCurrency): string {
   switch (currency) {
     case 'NGN':
-      return 'bank_code'; // Nigerian banks use bank codes
+      return 'nuban'; // Nigerian NUBAN (Wise rejects "bank_code")
     case 'GHS':
       return 'swift'; // Ghanaian banks primarily use SWIFT
     case 'KES':
@@ -494,7 +494,7 @@ function getRecipientTypeForCurrency(currency: SupportedCurrency): string {
     case 'EUR':
       return 'iban'; // European banks use IBAN
     default:
-      return 'bank_code';
+      return 'nuban';
   }
 }
 
