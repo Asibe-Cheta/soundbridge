@@ -147,8 +147,9 @@ function validatePayoutParams(params: PayoutToCreatorParams): void {
     throw new Error('Creator ID is required');
   }
 
-  if (!params.amount || params.amount <= 0) {
-    throw new Error('Amount must be greater than 0');
+  const hasSourceAmount = params.sourceAmount != null && params.sourceAmount > 0 && params.sourceCurrency;
+  if (!hasSourceAmount && (!params.amount || params.amount <= 0)) {
+    throw new Error('Amount must be greater than 0 (or provide sourceAmount and sourceCurrency for USD payout)');
   }
 
   if (!['NGN', 'GHS', 'KES'].includes(params.currency)) {
@@ -359,9 +360,10 @@ export async function payoutToCreator(
       const { getBankName } = await import('./transfers');
       const bankName = getBankName(params.bankCode, params.currency);
 
+      const recordAmount = params.amount > 0 ? params.amount : (transfer.targetValue ?? 0);
       payout = await createPayoutRecord({
         creator_id: params.creatorId,
-        amount: params.amount,
+        amount: recordAmount,
         currency: params.currency,
         wise_transfer_id: transfer.id,
         wise_recipient_id: recipientId,

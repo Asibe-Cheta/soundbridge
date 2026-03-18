@@ -181,9 +181,9 @@ export async function POST(request: NextRequest) {
           { status: 404, headers: corsHeaders }
         );
       }
-      if (pr.status !== 'pending') {
+      if (pr.status !== 'pending' && pr.status !== 'failed') {
         return NextResponse.json(
-          { error: `Payout request is not pending (status: ${pr.status})` },
+          { error: `Payout request cannot be initiated (status: ${pr.status}). Only pending or failed requests can be triggered or retried.` },
           { status: 400, headers: corsHeaders }
         );
       }
