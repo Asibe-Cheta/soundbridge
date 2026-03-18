@@ -67,6 +67,7 @@ export {
   type CreateRecipientParams,
   type Recipient,
   type SupportedCurrency,
+  type WiseRecipientAddress,
 } from './transfers';
 
 // Database functions

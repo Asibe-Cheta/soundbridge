@@ -8,6 +8,7 @@
  */
 
 import { getWiseClient, WiseApiError } from './client';
+import { wiseConfig } from './config';
 
 // ============================================================================
 // TYPES
@@ -71,12 +72,22 @@ export interface ResolvedAccount {
   valid: boolean;
 }
 
+/** Address for Wise recipient (required for NGN and some other currencies). */
+export interface WiseRecipientAddress {
+  country: string; // ISO 3166-1 alpha-2 e.g. NG
+  city: string;
+  firstLine: string;
+  postCode: string;
+}
+
 export interface CreateRecipientParams {
   currency: SupportedCurrency;
   accountNumber: string;
   bankCode: string;
   accountHolderName: string;
-  type?: 'aba' | 'swift' | 'sort_code' | 'routing_number' | 'ifsc' | 'bsb' | 'clabe' | 'bank_code' | 'nuban';
+  type?: 'aba' | 'swift' | 'sort_code' | 'routing_number' | 'ifsc' | 'bsb' | 'clabe' | 'bank_code' | 'nuban' | 'nigeria' | 'ghana_local' | 'kenya_local' | 'kenya_mobile' | 'southafrica';
+  legalType?: 'PRIVATE' | 'BUSINESS';
+  address?: WiseRecipientAddress;
 }
 
 export interface Recipient {
@@ -421,12 +432,21 @@ export async function createRecipient(
       details: {},
     };
 
-    // Add account details based on currency/country
+    // Add account details based on currency/country (Wise expects type + details per account-requirements)
     if (params.currency === 'NGN') {
-      // Nigerian Naira - use bank code and account number
+      // NGN: type "nigeria", legalType, bankCode (Wise internal), accountNumber (10 digits), address required
+      const profileId = wiseConfig().profileId;
+      if (profileId) recipientData.profile = profileId;
       recipientData.details = {
-        accountNumber: params.accountNumber,
+        legalType: params.legalType ?? 'PRIVATE',
         bankCode: params.bankCode,
+        accountNumber: params.accountNumber,
+        address: params.address ?? {
+          country: 'NG',
+          city: 'Lagos',
+          firstLine: 'N/A',
+          postCode: '000000',
+        },
       };
     } else if (params.currency === 'GHS') {
       // Ghanaian Cedi - may use SWIFT code
@@ -479,22 +499,23 @@ export async function createRecipient(
  * Get recipient type based on currency
  * Different currencies use different account validation methods
  */
+/** Wise recipient type per currency (must match GET /v1/account-requirements). @see WEB_TEAM_PAYOUT_ELIGIBILITY_AND_BANK_VERIFICATION.md §4 */
 function getRecipientTypeForCurrency(currency: SupportedCurrency): string {
   switch (currency) {
     case 'NGN':
-      return 'nuban'; // Nigerian NUBAN (Wise rejects "bank_code")
+      return 'nigeria';
     case 'GHS':
-      return 'swift'; // Ghanaian banks primarily use SWIFT
+      return 'ghana_local';
     case 'KES':
-      return 'swift'; // Kenyan banks primarily use SWIFT
+      return 'kenya_local';
     case 'USD':
-      return 'aba'; // US banks use ABA routing numbers
+      return 'aba';
     case 'GBP':
-      return 'sort_code'; // UK banks use sort codes
+      return 'sort_code';
     case 'EUR':
-      return 'iban'; // European banks use IBAN
+      return 'iban';
     default:
-      return 'nuban';
+      return 'iban';
   }
 }
 

@@ -10,6 +10,8 @@ export interface WiseConfig {
   environment: 'sandbox' | 'live';
   apiUrl: string;
   webhookSecret: string;
+  /** Optional Wise profile ID for recipient creation (e.g. NGN); from WISE_PROFILE_ID */
+  profileId?: number;
 }
 
 /**
@@ -51,11 +53,13 @@ export function getWiseConfig(): WiseConfig {
       : 'https://api.sandbox.transferwise.tech'
   );
 
+  const profileId = process.env.WISE_PROFILE_ID;
   return {
     apiToken,
     environment: environment as 'sandbox' | 'live',
     apiUrl,
     webhookSecret,
+    profileId: profileId ? parseInt(profileId, 10) : undefined,
   };
 }
 
