@@ -62,8 +62,14 @@ export class WiseClient {
         if (isJson) {
           try {
             const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
             errorDetails = errorData;
+            // Wise 422 uses { errors: [{ code, message, path }] }; top-level message/error may be missing
+            const firstError = Array.isArray(errorData?.errors) && errorData.errors.length > 0 ? errorData.errors[0] : undefined;
+            errorMessage =
+              errorData.message ??
+              errorData.error ??
+              (firstError && (firstError.message || `${firstError.path ?? 'field'}: ${firstError.code ?? 'invalid'}`)) ??
+              errorMessage;
           } catch {
             // If JSON parsing fails, use default error message
           }

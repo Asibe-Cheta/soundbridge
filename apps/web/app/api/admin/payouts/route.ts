@@ -273,10 +273,12 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', payout_request_id);
         console.error('❌ Payout by request id error:', error);
-        return NextResponse.json(
-          { error: 'Payout failed', message: error?.message ?? 'Wise transfer failed' },
-          { status: 500, headers: corsHeaders }
-        );
+        const payload: { error: string; message: string; details?: unknown } = {
+          error: 'Payout failed',
+          message: error?.message ?? 'Wise transfer failed',
+        };
+        if (error?.details != null) payload.details = error.details;
+        return NextResponse.json(payload, { status: 500, headers: corsHeaders });
       }
     }
 
