@@ -285,12 +285,12 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
       account_holder_name: { required: true, label: 'Account Holder Name' },
       bank_name: { required: true, label: 'Bank Name' },
       account_number: { required: true, label: 'Account Number', placeholder: '1234567890' },
-      bank_code: { required: true, label: 'Bank Code', placeholder: '123' },
+      bank_code: { required: true, label: 'Bank Code (select your bank)', placeholder: 'Select bank above' },
       account_type: { required: true, label: 'Account Type' }
     },
     validation: {
       account_number: /^\d{10}$/,
-      bank_code: /^\d{3}$/
+      bank_code: /^[A-Za-z0-9]{2,20}$/ // Wise internal codes e.g. UBA, ACCESS
     }
   },
   SG: {
@@ -432,7 +432,10 @@ const BANK_CODE_FIELD: Record<string, string> = {
   CN: 'bank_code', JP: 'branch_code', IN: 'ifsc_code', US: 'routing_number', GB: 'sort_code',
 };
 
-/** Curated bank lists for key markets. Used first so we avoid APILayer noise (e.g. UK FCA-registered entities). @see WEB_TEAM_BANK_LIST_API_REQUIRED.md */
+/** Countries that use Wise payout bank list — fetch from GET /api/payouts/bank-options so we store Wise internal codes. @see WEB_TEAM_WISE_BANK_OPTIONS_ENDPOINT.md.md */
+const WISE_BANK_OPTIONS_COUNTRIES: Record<string, string> = { NG: 'NGN', GH: 'GHS', KE: 'KES' };
+
+/** Curated bank lists for key markets. Used for non-Wise countries or fallback when bank-options fails. @see WEB_TEAM_BANK_LIST_API_REQUIRED.md */
 const CURATED_BANK_COUNTRIES = ['GB', 'NG', 'GH', 'CA', 'US', 'IN'] as const;
 const BUILTIN_BANKS: Record<string, { name: string; code: string }[]> = {
   GB: [
@@ -553,11 +556,30 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
     }
   }, []);
 
-  // Bank list: curated first for GB, NG, GH, CA, US, IN (avoids APILayer noise e.g. UK FCA entities); API for other countries.
+  // Bank list: Wise payout currencies (NG, GH, KE) use GET /api/payouts/bank-options so we store Wise internal codes; others use curated or /api/banks.
   useEffect(() => {
     if (!selectedCountry || !countryInfo?.currency) {
       setAvailableBanks([]);
       return;
+    }
+    const wiseCurrency = WISE_BANK_OPTIONS_COUNTRIES[selectedCountry];
+    if (wiseCurrency) {
+      let cancelled = false;
+      setBanksLoading(true);
+      setAvailableBanks([]);
+      fetch(`/api/payouts/bank-options?currency=${encodeURIComponent(wiseCurrency)}`, { credentials: 'include' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && Array.isArray(data.banks)) setAvailableBanks(data.banks);
+          else if (!cancelled && BUILTIN_BANKS[selectedCountry]) setAvailableBanks(BUILTIN_BANKS[selectedCountry] ?? []);
+        })
+        .catch(() => {
+          if (!cancelled && BUILTIN_BANKS[selectedCountry]) setAvailableBanks(BUILTIN_BANKS[selectedCountry] ?? []);
+        })
+        .finally(() => {
+          if (!cancelled) setBanksLoading(false);
+        });
+      return () => { cancelled = true; };
     }
     if (CURATED_BANK_COUNTRIES.includes(selectedCountry as typeof CURATED_BANK_COUNTRIES[number])) {
       setAvailableBanks(BUILTIN_BANKS[selectedCountry] ?? []);

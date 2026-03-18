@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
       reasons,
       has_bank_account,
       bank_account_verified,
+      can_request_payout: eligible,
       ...(available_balance != null && { available_balance }),
       ...(pending_requests != null && { pending_requests }),
       min_payout: MIN_PAYOUT,
