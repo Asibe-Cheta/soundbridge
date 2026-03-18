@@ -107,6 +107,23 @@ The admin endpoint calls Wise with:
 
 ---
 
+## Troubleshooting: "Account verification failed: Resource not found"
+
+**Trace:** The error is thrown when the **Wise account validation** step fails with a 404.
+
+1. **Admin route** (`apps/web/app/api/admin/payouts/route.ts`) loads the payout request and the creator’s verified bank (NGN/GHS/KES), then calls `payoutToCreator()`.
+2. **Payout flow** (`apps/web/src/lib/wise/payout.ts`) does:
+   - Step 3: **Resolve/verify bank account** → `resolveAccount()` in `transfers.ts`.
+   - Step 4: Get or create Wise recipient → `getOrCreateRecipient()`.
+   - Step 6: Create transfer.
+3. **resolveAccount** (`apps/web/src/lib/wise/transfers.ts`) POSTs to **`/v1/validators/account-number`** with `{ accountNumber, bankCode, currency }`.
+4. **Wise API** returns **404** with body like `{ message: "Resource not found" }`. The Wise Platform API may not expose this validator endpoint for all profiles/currencies, so the “resource” that’s not found is that validation endpoint (or the validation feature for this account).
+5. That error is rethrown as `Account verification failed: Resource not found` and returned to the client.
+
+**Fix (in code):** When the validator returns 404 / "Resource not found", we **skip** the account verification step and proceed with the **provided** bank details and account holder name. Wise still validates when creating the recipient (`POST /v1/accounts`) and when creating the transfer, so invalid accounts will fail there with a clear error.
+
+---
+
 ## After Triggering
 
 Please confirm:

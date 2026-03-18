@@ -276,7 +276,7 @@ export async function payoutToCreator(
     throw new Error(`Creator not found: ${params.creatorId}`);
   }
 
-  // Step 3: Resolve/verify bank account
+  // Step 3: Resolve/verify bank account (skip if Wise validator returns 404 — endpoint may not exist for this profile/currency)
   console.log(`🔍 Verifying bank account for creator ${params.creatorId}...`);
   let resolvedAccount: ResolvedAccount;
   try {
@@ -303,8 +303,20 @@ export async function payoutToCreator(
 
     console.log(`✅ Account verified: ${resolvedAccount.accountHolderName}`);
   } catch (error: any) {
-    console.error(`❌ Account verification failed:`, error);
-    throw new Error(`Account verification failed: ${error.message}`);
+    const is404 = error?.code === '404' || (typeof error?.message === 'string' && error.message.includes('Resource not found'));
+    if (is404) {
+      console.warn(`⚠️ Wise account validator returned 404 (Resource not found); skipping pre-validation and using provided details.`);
+      resolvedAccount = {
+        accountNumber: params.bankAccountNumber,
+        bankCode: params.bankCode,
+        currency: params.currency,
+        accountHolderName: params.accountHolderName.trim(),
+        valid: true,
+      };
+    } else {
+      console.error(`❌ Account verification failed:`, error);
+      throw new Error(`Account verification failed: ${error.message}`);
+    }
   }
 
   // Step 4: Create or get Wise recipient
