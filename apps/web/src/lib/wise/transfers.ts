@@ -7,6 +7,7 @@
  * Reference: https://docs.wise.com/api-docs/api-reference/transfer
  */
 
+import { randomUUID } from 'crypto';
 import { getWiseClient, WiseApiError } from './client';
 import { wiseConfig } from './config';
 
@@ -253,7 +254,6 @@ export async function createTransfer(
       } as WiseApiError;
     }
 
-    // Step 3: Create transfer (Wise expects targetAccount as integer; quoteUuid as string)
     const targetAccountId = typeof recipientId === 'string' ? parseInt(recipientId, 10) : recipientId;
     if (Number.isNaN(targetAccountId)) {
       throw {
@@ -261,17 +261,33 @@ export async function createTransfer(
         message: 'Recipient ID must be a valid integer for Wise transfer',
       } as WiseApiError;
     }
-    const transferData = {
+
+    // Step 3: Get transfer requirements — only send fields Wise accepts for this route (avoids "Illegal query argument")
+    const requirementsBody = {
       targetAccount: targetAccountId,
       quoteUuid: String(quoteUuid),
-      customerTransactionId: params.reference,
+      details: {},
+    };
+    const requirements = await client.post<{ details?: Record<string, unknown>; transferPurpose?: string; [key: string]: unknown }>(
+      '/v1/transfer-requirements',
+      requirementsBody
+    );
+
+    // Step 4: Create transfer — only send fields Wise accepts; customerTransactionId must be fresh UUID v4
+    const customerTransactionId = randomUUID();
+    const transferPayload = {
+      targetAccount: targetAccountId,
+      quoteUuid: String(quoteUuid),
+      customerTransactionId,
+      details: {},
     };
 
-    const transfer = await client.post<Transfer>('/v1/transfers', transferData);
+    const transfer = await client.post<Transfer>('/v1/transfers', transferPayload);
 
-    // Step 4: Fund the transfer (if required by Wise API)
-    // Note: Some transfers may require funding separately
-    // Check Wise API docs for your specific use case
+    // Step 5: Fund the transfer (required — without this, money doesn't move)
+    await client.post<unknown>(`/v3/profiles/${profileId}/transfers/${transfer.id}/payments`, {
+      type: 'BALANCE',
+    });
 
     return transfer;
   } catch (error: any) {

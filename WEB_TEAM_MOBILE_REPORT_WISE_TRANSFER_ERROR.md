@@ -59,10 +59,18 @@ We are not intentionally adding any query string to the transfer POST; the error
 
 ---
 
-## Next steps on our side
+## Implemented from mobile team checklist (2026-01-26)
+
+- **POST /v1/transfer-requirements** is called before creating the transfer (with `targetAccount`, `quoteUuid`, `details: {}`).
+- Transfer body sends only `targetAccount`, `quoteUuid`, `customerTransactionId`, and `details: {}` (no extra fields).
+- **customerTransactionId** is a fresh **UUID v4** per transfer (`crypto.randomUUID()`), not reused.
+- **Quote** is created immediately before the transfer in the same flow (within 30 min TTL).
+- **targetAccount** is sent as integer; **quoteUuid** is `quote.id` from the v3 quote response.
+- **Funding step** added: after `POST /v1/transfers`, we call **POST /v3/profiles/{profileId}/transfers/{transferId}/payments** with `{ "type": "BALANCE" }` so the transfer is actually funded.
+
+## Next steps on our side (if error persists)
 
 - We will **return full Wise error details** in the payout API response (`details`) so the next run can show the full `errors[]` / body from Wise.
-- We will double-check that **v3 quote id** is accepted by **POST /v1/transfers** as `quoteUuid` (or if we must use a v2 quote for v1/transfers).
 - If you can share the exact Wise request/response (with IDs redacted) for a **successful** transfer from your side, we can align our request (path, query, body, headers) with that.
 
 ---
