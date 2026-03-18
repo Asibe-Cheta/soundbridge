@@ -69,12 +69,10 @@ CREATE OR REPLACE FUNCTION check_sufficient_balance(
 DECLARE
   available_balance DECIMAL(10,2);
 BEGIN
-  -- Get available balance from creator_revenue table
-  SELECT COALESCE(available_balance, 0) INTO available_balance
-  FROM creator_revenue 
-  WHERE user_id = p_creator_id;
-  
-  -- Return true if balance is sufficient
+  SELECT COALESCE(cr.available_balance, 0) INTO available_balance
+  FROM creator_revenue cr
+  WHERE cr.user_id = p_creator_id;
+
   RETURN available_balance >= p_amount;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -89,18 +87,15 @@ DECLARE
   min_payout DECIMAL(10,2) := 25.00;
   result JSON;
 BEGIN
-  -- Get available balance
-  SELECT COALESCE(available_balance, 0) INTO available_balance
-  FROM creator_revenue 
-  WHERE user_id = p_creator_id;
-  
-  -- Get pending payout requests
-  SELECT COALESCE(SUM(amount), 0) INTO pending_requests
-  FROM payout_requests 
-  WHERE creator_id = p_creator_id 
-    AND status IN ('pending', 'approved', 'processing');
-  
-  -- Build result
+  SELECT COALESCE(cr.available_balance, 0) INTO available_balance
+  FROM creator_revenue cr
+  WHERE cr.user_id = p_creator_id;
+
+  SELECT COALESCE(SUM(pr.amount), 0) INTO pending_requests
+  FROM payout_requests pr
+  WHERE pr.creator_id = p_creator_id
+    AND pr.status IN ('pending', 'approved', 'processing');
+
   result := json_build_object(
     'available_balance', available_balance,
     'pending_requests', pending_requests,
