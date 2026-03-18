@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 /** Minimum payout amount (must match backend) */
 const MIN_PAYOUT = 25;
@@ -11,10 +12,14 @@ function ineligiblePayload(reasons: string[]): Record<string, unknown> {
     eligible: false,
     reasons: reasons.length ? reasons : ['Unable to determine eligibility'],
     min_payout: MIN_PAYOUT,
+    has_bank_account: false,
+    bank_account_verified: false,
     eligibility: {
       eligible: false,
       reasons: reasons.length ? reasons : ['Unable to determine eligibility'],
       min_payout: MIN_PAYOUT,
+      has_bank_account: false,
+      bank_account_verified: false,
     },
   };
 }
@@ -41,10 +46,14 @@ export async function GET(request: NextRequest) {
     let available_balance: number | null = null;
     let pending_requests: number | null = null;
     let withdrawable_amount: number | null = null;
+    let has_bank_account = false;
+    let bank_account_verified = false;
 
     try {
-      // 1. Check for at least one verified bank account (never throw)
-      const { data: bankAccounts, error: bankError } = await supabase
+      // 1. Check for at least one verified bank account — use service role so we see rows
+      //    regardless of RLS (Bearer token + anon can sometimes miss rows in creator_bank_accounts).
+      const service = createServiceClient();
+      const { data: bankAccounts, error: bankError } = await service
         .from('creator_bank_accounts')
         .select('id, is_verified')
         .eq('user_id', user.id);
@@ -54,8 +63,10 @@ export async function GET(request: NextRequest) {
         reasons.push('Unable to verify bank account');
         eligible = false;
       } else {
-        const hasVerified = bankAccounts?.some((b) => b.is_verified === true) ?? false;
-        if (!hasVerified) {
+        const accounts = bankAccounts ?? [];
+        has_bank_account = accounts.length > 0;
+        bank_account_verified = accounts.some((b) => b.is_verified === true);
+        if (!bank_account_verified) {
           reasons.push('No verified bank account');
           eligible = false;
         }
@@ -97,6 +108,8 @@ export async function GET(request: NextRequest) {
     const payload = {
       eligible,
       reasons,
+      has_bank_account,
+      bank_account_verified,
       ...(available_balance != null && { available_balance }),
       ...(pending_requests != null && { pending_requests }),
       min_payout: MIN_PAYOUT,

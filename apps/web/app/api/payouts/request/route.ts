@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -22,8 +23,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create payout request
-    const { data, error } = await supabase.rpc('create_payout_request', {
+    // Use service-role RPC that accepts creator_id so we don't depend on auth.uid() in RPC context
+    const service = createServiceClient();
+    const { data, error } = await service.rpc('create_payout_request_for_user', {
+      p_creator_id: user.id,
       p_amount: amount,
       p_currency: currency
     });
