@@ -97,8 +97,15 @@ Trigger command (from repo root, with cookie file):
 
 ---
 
+## 403 Forbidden (after checklist fix)
+
+If the error changes to **"Transfer creation failed: forbidden"**, it’s a **Wise dashboard / API key permissions** issue, not code. See **`WEB_TEAM_WISE_403_FORBIDDEN_CHECKLIST.md`** for the full checklist (token full access, Create transfers permission, SCA/2FA, balance funding, profile type).
+
+---
+
 ## References
 
 - Payout eligibility & Wise recipient types: `WEB_TEAM_PAYOUT_ELIGIBILITY_AND_BANK_VERIFICATION.md` (§4)
 - Bank options (Wise internal codes): `WEB_TEAM_WISE_BANK_OPTIONS_ENDPOINT.md.md`
 - Trigger flow: `WEB_TEAM_TRIGGER_PENDING_PAYOUT_NOW.MD`
+- **403 Forbidden:** `WEB_TEAM_WISE_403_FORBIDDEN_CHECKLIST.md`
