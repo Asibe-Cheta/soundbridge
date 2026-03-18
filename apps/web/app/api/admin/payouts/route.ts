@@ -204,15 +204,17 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        // When sourceCurrency + sourceAmount are provided (e.g. USD payout request), Wise converts at live rate to target (currency).
         const payoutParams: PayoutToCreatorParams = {
           creatorId: singlePayoutParams.creatorId,
           amount: singlePayoutParams.amount,
-          currency: singlePayoutParams.currency,
+          currency: singlePayoutParams.currency as 'NGN' | 'GHS' | 'KES',
           bankAccountNumber: singlePayoutParams.bankAccountNumber,
           bankCode: singlePayoutParams.bankCode,
           accountHolderName: singlePayoutParams.accountHolderName,
           reason: singlePayoutParams.reason,
           sourceCurrency: singlePayoutParams.sourceCurrency || 'GBP',
+          ...(singlePayoutParams.sourceAmount != null && { sourceAmount: singlePayoutParams.sourceAmount }),
         };
 
         const payout = await payoutToCreator(payoutParams);

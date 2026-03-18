@@ -55,3 +55,36 @@ So:
 **References:**  
 - Wise list: `apps/web/src/lib/wise-currencies.ts` (`isWiseCurrency`).  
 - One-off data fixes (existing rows): `migrations/wise_creator_bank_accounts_auto_verify.sql`, `migrations/fix_bank_account_is_verified.sql` — these are not the ongoing verification flow.
+
+---
+
+## 3. Payout request currency (POST /api/payouts/request)
+
+**Argument to the web team:** Wise is built for exactly this — source currency USD, target currency NGN; Wise converts at live rate. Making the mobile pre-convert is reinventing the wheel. The backend admin payout flow just needs to pass **`sourceCurrency: "USD"`** and **`targetCurrency: bankAccount.currency`** to Wise; Wise handles the rest.
+
+**Decision:** Mobile sends **`currency: "USD"`** and **amount in USD**. Backend/admin flow uses that as the source amount and passes **`sourceCurrency: "USD"`** and **`targetCurrency: bankAccount.currency`** (e.g. NGN) to Wise; Wise converts at live rate and sends NGN to the creator’s bank. No mobile pre-conversion.
+
+**Wise natively supports source/target currency.** The correct approach is:
+
+```
+POST /v1/transfers (Wise API)
+{
+  "sourceCurrency": "USD",
+  "targetCurrency": "NGN",
+  "sourceAmount": 40.44,   // or omit and use targetAmount
+  "targetAccount": <wise_account_id for creator’s NGN bank>
+}
+```
+
+Wise converts at the live mid-market rate and sends NGN to the creator’s bank. No pre-conversion needed.
+
+**Backend (implemented):** `POST /api/admin/payouts/initiate` accepts optional **`sourceCurrency`** and **`sourceAmount`**. When both are set (e.g. for a USD payout request: `sourceCurrency: "USD"`, `sourceAmount: 40.44`), the Wise flow uses a source-amount quote and converts to **`currency`** (target, e.g. NGN). Pass **`targetCurrency: bankAccount.currency`** and bank details; Wise handles the rate and conversion. No mobile changes — mobile already sends USD.
+
+---
+
+## 4. Server logs when payout request fails
+
+When `POST /api/payouts/request` fails:
+
+- **500:** Supabase/RPC threw; server logs **`create_payout_request_for_user RPC error:`** with `message`, `code`, `details`, `hint`.
+- **400:** RPC returned `success: false`; server logs **`create_payout_request_for_user rejected:`** with `error` (exact string, e.g. "Insufficient balance or pending requests", "No verified bank account found"), `creator_id`, `amount`, `currency`, and `eligibility` (the same object returned to the client). The response body includes `error` and optionally `eligibility` so the client can show the exact reason.

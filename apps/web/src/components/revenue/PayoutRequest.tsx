@@ -4,11 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, Clock, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, TrendingUp, Info } from 'lucide-react';
 
 interface PayoutEligibility {
-  available_balance: number;
-  pending_requests: number;
+  eligible: boolean;
+  reasons: string[];
+  has_bank_account?: boolean;
+  bank_account_verified?: boolean;
+  available_balance?: number;
+  pending_requests?: number;
   min_payout: number;
-  can_request_payout: boolean;
-  withdrawable_amount: number;
+  withdrawable_amount?: number;
 }
 
 interface PayoutRequest {
@@ -89,8 +92,8 @@ export function PayoutRequest() {
       return;
     }
 
-    if (!eligibility?.can_request_payout) {
-      setError('Insufficient balance or pending requests');
+    if (!eligibility?.eligible) {
+      setError(eligibility?.reasons?.length ? eligibility.reasons[0] : 'Insufficient balance or pending requests');
       return;
     }
 
@@ -168,7 +171,7 @@ export function PayoutRequest() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white">Payout Request</h3>
-            <p className="text-gray-400 text-sm">Withdraw to your local bank via Wise — typically 1–3 business days. No SoundBridge fees charged.</p>
+            <p className="text-gray-400 text-sm">Withdraw in USD; Wise converts to your bank currency at live rate. Typically 1–3 business days. No SoundBridge fees charged.</p>
           </div>
         </div>
 
@@ -181,10 +184,10 @@ export function PayoutRequest() {
             <div className="bg-gray-700/50 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
                 <CreditCard className="h-4 w-4 text-blue-400" />
-                <span className="text-sm text-gray-400">Available Balance</span>
+                <span className="text-sm text-gray-400">Available Balance (USD)</span>
               </div>
               <div className="text-xl font-semibold text-white">
-                {formatCurrency(eligibility.available_balance)}
+                {formatCurrency(eligibility.available_balance ?? 0)}
               </div>
             </div>
 
@@ -194,17 +197,17 @@ export function PayoutRequest() {
                 <span className="text-sm text-gray-400">Pending Requests</span>
               </div>
               <div className="text-xl font-semibold text-white">
-                {formatCurrency(eligibility.pending_requests)}
+                {formatCurrency(eligibility.pending_requests ?? 0)}
               </div>
             </div>
 
             <div className="bg-gray-700/50 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
                 <TrendingUp className="h-4 w-4 text-green-400" />
-                <span className="text-sm text-gray-400">Withdrawable</span>
+                <span className="text-sm text-gray-400">Withdrawable (USD)</span>
               </div>
               <div className="text-xl font-semibold text-white">
-                {formatCurrency(eligibility.withdrawable_amount)}
+                {formatCurrency(eligibility.withdrawable_amount ?? 0)}
               </div>
             </div>
           </div>
@@ -231,21 +234,18 @@ export function PayoutRequest() {
             </div>
           </div>
 
-          {eligibility && !eligibility.can_request_payout && (
+          {eligibility && !eligibility.eligible && eligibility.reasons?.length > 0 && (
             <div className="flex items-center space-x-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <Info className="h-4 w-4 text-yellow-400" />
+              <Info className="h-4 w-4 text-yellow-400 shrink-0" />
               <span className="text-sm text-yellow-300">
-                {eligibility.withdrawable_amount < 25 
-                  ? `Insufficient balance. You need $${(25 - eligibility.withdrawable_amount).toFixed(2)} more to request a payout.`
-                  : 'You have pending payout requests. Please wait for them to be processed.'
-                }
+                {eligibility.reasons.join('. ')}
               </span>
             </div>
           )}
 
           <button
             onClick={handleRequestPayout}
-            disabled={requesting || !eligibility?.can_request_payout || !requestAmount}
+            disabled={requesting || !eligibility?.eligible || !requestAmount}
             className="w-full px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {requesting ? (

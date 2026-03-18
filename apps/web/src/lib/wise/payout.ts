@@ -34,13 +34,18 @@ import { WiseApiError } from './client';
 
 export interface PayoutToCreatorParams {
   creatorId: string;
+  /** Target amount (in destination currency) when sourceAmount is not set; ignored when sourceAmount is set. */
   amount: number;
+  /** Destination (bank) currency, e.g. NGN. */
   currency: 'NGN' | 'GHS' | 'KES';
   bankAccountNumber: string;
   bankCode: string;
   accountHolderName: string;
   reason?: string;
+  /** Source currency for conversion (e.g. USD). When set with sourceAmount, Wise converts at live rate. */
   sourceCurrency?: 'GBP' | 'USD' | 'EUR'; // Default: GBP
+  /** When set with sourceCurrency, transfer is quoted in source amount; Wise converts to currency (target). */
+  sourceAmount?: number;
 }
 
 export interface PayoutResult {
@@ -322,10 +327,11 @@ export async function payoutToCreator(
     transfer = await retryWithBackoff(() =>
       createTransfer({
         targetCurrency: params.currency,
-        targetAmount: params.amount,
+        ...(params.sourceAmount != null && params.sourceCurrency
+          ? { sourceAmount: params.sourceAmount, sourceCurrency: params.sourceCurrency }
+          : { targetAmount: params.amount, sourceCurrency: params.sourceCurrency || 'GBP' }),
         recipientId,
         reference,
-        sourceCurrency: params.sourceCurrency || 'GBP', // Default: GBP
       })
     );
 

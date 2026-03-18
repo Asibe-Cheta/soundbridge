@@ -17,10 +17,12 @@ export type SupportedCurrency = 'NGN' | 'GHS' | 'KES' | 'USD' | 'GBP' | 'EUR';
 
 export interface CreateTransferParams {
   targetCurrency: SupportedCurrency;
-  targetAmount: number;
+  /** When sourceAmount + sourceCurrency are set, quote uses source amount and Wise converts to target. */
+  targetAmount?: number;
+  sourceAmount?: number;
+  sourceCurrency?: SupportedCurrency; // Default GBP when using targetAmount; use 'USD' for USD payout requests
   recipientId?: string; // If provided, use existing recipient
   reference: string; // Unique transfer ID for tracking
-  sourceCurrency?: SupportedCurrency; // Default: USD (or GBP if specified)
   // Optional: Create recipient inline if recipientId not provided
   recipient?: {
     accountNumber: string;
@@ -175,12 +177,16 @@ export async function createTransfer(
   const client = getWiseClient();
 
   try {
-    // Step 1: Create quote for the transfer
-    const quoteParams = {
-      sourceCurrency: params.sourceCurrency || 'GBP', // Default: GBP (from Wise balance)
-      targetCurrency: params.targetCurrency,
-      targetAmount: params.targetAmount,
-    };
+    // Step 1: Create quote for the transfer (Wise accepts either sourceAmount or targetAmount)
+    const sourceCurrency = params.sourceCurrency || 'GBP';
+    const quoteParams =
+      params.sourceAmount != null && params.sourceAmount > 0
+        ? { sourceCurrency, sourceAmount: params.sourceAmount, targetCurrency: params.targetCurrency }
+        : {
+            sourceCurrency,
+            targetCurrency: params.targetCurrency,
+            targetAmount: params.targetAmount!,
+          };
 
     const quote = await client.post<{
       id: string;

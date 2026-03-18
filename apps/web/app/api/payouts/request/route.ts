@@ -32,16 +32,30 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error creating payout request:', error);
+      console.error('create_payout_request_for_user RPC error:', {
+        message: error.message,
+        code: (error as { code?: string })?.code,
+        details: (error as { details?: string })?.details,
+        hint: (error as { hint?: string })?.hint,
+      });
       return NextResponse.json(
-        { error: 'Failed to create payout request' },
+        { error: 'Failed to create payout request', details: error.message },
         { status: 500 }
       );
     }
 
     if (!data.success) {
+      const rpcError = (data as { error?: string })?.error ?? 'Unknown error';
+      const eligibility = (data as { eligibility?: unknown })?.eligibility;
+      console.error('create_payout_request_for_user rejected:', {
+        error: rpcError,
+        creator_id: user.id,
+        amount,
+        currency,
+        eligibility,
+      });
       return NextResponse.json(
-        { error: data.error },
+        { error: rpcError, eligibility: eligibility ?? undefined },
         { status: 400 }
       );
     }
