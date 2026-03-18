@@ -253,10 +253,17 @@ export async function createTransfer(
       } as WiseApiError;
     }
 
-    // Step 3: Create transfer
+    // Step 3: Create transfer (Wise expects targetAccount as integer; quoteUuid as string)
+    const targetAccountId = typeof recipientId === 'string' ? parseInt(recipientId, 10) : recipientId;
+    if (Number.isNaN(targetAccountId)) {
+      throw {
+        error: 'Invalid recipient',
+        message: 'Recipient ID must be a valid integer for Wise transfer',
+      } as WiseApiError;
+    }
     const transferData = {
-      targetAccount: recipientId,
-      quoteUuid,
+      targetAccount: targetAccountId,
+      quoteUuid: String(quoteUuid),
       customerTransactionId: params.reference,
     };
 

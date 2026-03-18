@@ -278,6 +278,7 @@ export async function POST(request: NextRequest) {
           message: error?.message ?? 'Wise transfer failed',
         };
         if (error?.details != null) payload.details = error.details;
+        else if (error != null) payload.details = { error: error?.error, message: error?.message, code: error?.code };
         return NextResponse.json(payload, { status: 500, headers: corsHeaders });
       }
     }
