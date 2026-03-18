@@ -182,15 +182,31 @@ export const KENYAN_BANK_CODES: Record<string, string> = {
  * });
  * ```
  */
+/** Resolve Wise profile ID (required for quote creation). Uses WISE_PROFILE_ID or first profile from GET /v1/profiles. */
+async function getProfileId(): Promise<number> {
+  const fromConfig = wiseConfig().profileId;
+  if (fromConfig) return fromConfig;
+  const client = getWiseClient();
+  const profiles = await client.get<Array<{ id: number }>>('/v1/profiles');
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw {
+      error: 'Profile required',
+      message: 'Wise quote requires a profile. Set WISE_PROFILE_ID or ensure your token has a profile.',
+    } as WiseApiError;
+  }
+  return profiles[0].id;
+}
+
 export async function createTransfer(
   params: CreateTransferParams
 ): Promise<Transfer> {
   const client = getWiseClient();
 
   try {
-    // Step 1: Create quote for the transfer (Wise accepts either sourceAmount or targetAmount)
+    // Step 1: Create quote (profile-scoped v3; Wise requires profile for quotes)
+    const profileId = await getProfileId();
     const sourceCurrency = params.sourceCurrency || 'GBP';
-    const quoteParams =
+    const quoteBody =
       params.sourceAmount != null && params.sourceAmount > 0
         ? { sourceCurrency, sourceAmount: params.sourceAmount, targetCurrency: params.targetCurrency }
         : {
@@ -200,19 +216,21 @@ export async function createTransfer(
           };
 
     const quote = await client.post<{
-      id: string;
-      sourceAmount: number;
-      targetAmount: number;
-      rate: number;
-      createdTime: string;
-    }>('/v2/quotes', quoteParams);
+      id: string | number;
+      sourceAmount?: number;
+      targetAmount?: number;
+      rate?: number;
+      createdTime?: string;
+    }>(`/v3/profiles/${profileId}/quotes`, quoteBody);
 
-    if (!quote.id) {
+    const quoteId = quote?.id;
+    if (quoteId == null || quoteId === '') {
       throw {
         error: 'Quote creation failed',
         message: 'Failed to create quote for transfer',
       } as WiseApiError;
     }
+    const quoteUuid = typeof quoteId === 'number' ? String(quoteId) : quoteId;
 
     // Step 2: Create or use recipient
     let recipientId = params.recipientId;
@@ -238,7 +256,7 @@ export async function createTransfer(
     // Step 3: Create transfer
     const transferData = {
       targetAccount: recipientId,
-      quoteUuid: quote.id,
+      quoteUuid,
       customerTransactionId: params.reference,
     };
 
