@@ -440,6 +440,24 @@ export async function GET(request: NextRequest) {
 
       const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
+      // Fallback: for creators with no display_name and no email in profiles, get email from Auth
+      const idsNeedingAuthEmail = creatorIds.filter((id: string) => {
+        const p = profileMap.get(id);
+        const hasName = Boolean((p?.display_name ?? '').trim());
+        const hasEmail = Boolean((p?.email ?? '').trim());
+        return !hasName && !hasEmail;
+      });
+      const authEmailByUserId = new Map<string, string>();
+      if (idsNeedingAuthEmail.length > 0) {
+        await Promise.all(
+          idsNeedingAuthEmail.map(async (userId: string) => {
+            const { data } = await supabase.auth.admin.getUserById(userId);
+            const email = data?.user?.email?.trim();
+            if (email) authEmailByUserId.set(userId, email);
+          })
+        );
+      }
+
       // Fetch verified bank accounts for these creators (needed when payout_requests.bank_account_id is null)
       const { data: banks } = await supabase
         .from('creator_bank_accounts')
@@ -487,10 +505,13 @@ export async function GET(request: NextRequest) {
             : 'Stripe Connect';
 
         const displayName = (creator?.display_name ?? '').trim() || null;
-        const email = creator?.email ?? null;
+        const profileEmail = (creator?.email ?? '').trim() || null;
+        const authEmail = authEmailByUserId.get(r.creator_id) ?? null;
+        const email = profileEmail || authEmail;
         const creator_name =
           displayName ||
-          email ||
+          profileEmail ||
+          authEmail ||
           (r.creator_id ? `Creator ${String(r.creator_id).slice(0, 8)}…` : null);
         return {
           ...r,
