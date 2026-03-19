@@ -211,18 +211,31 @@ export async function POST(request: NextRequest) {
           { status: 200, headers: corsHeaders }
         );
       } catch (error: any) {
+        // Do NOT set status to 'failed': only Wise webhook (transfer.failed / transfer.cancelled) should set failed.
+        // Revert to pending so admin can retry. If a Wise transfer was created but funding failed (e.g. 403),
+        // the transfer may still exist and need manual funding via "Retry / Fund" on a processing row.
         await supabase
           .from('payout_requests')
           .update({
-            status: 'failed',
+            status: 'pending',
+            processed_at: null,
+            stripe_transfer_id: null,
             updated_at: new Date().toISOString(),
-            rejection_reason: error?.message ?? 'Wise transfer failed',
+            rejection_reason: error?.message ?? 'Last attempt failed (retry or fund transfer if it exists)',
           })
           .eq('id', payout_request_id);
         console.error('❌ Payout by request id error:', error);
+        const is403 =
+          error?.code === 403 ||
+          error?.status === 403 ||
+          String(error?.message ?? '').includes('403');
+        const message =
+          is403
+            ? 'Funding failed (403). Request re-queued to Pending. If a Wise transfer was created, check In Progress and use Retry / Fund.'
+            : (error?.message ?? 'Wise transfer failed');
         const payload: { error: string; message: string; details?: unknown } = {
           error: 'Payout failed',
-          message: error?.message ?? 'Wise transfer failed',
+          message,
         };
         if (error?.details != null) payload.details = error.details;
         else if (error != null) payload.details = { error: error?.error, message: error?.message, code: error?.code };
@@ -385,11 +398,11 @@ export async function GET(request: NextRequest) {
     const creatorId = searchParams.get('creatorId');
     const pendingRequests = searchParams.get('pending_requests') === '1' || searchParams.get('pending_requests') === 'true';
 
-    // List pending payout_requests (so admin can get id and POST to initiate) — no SQL needed
+    // List payout_requests (pending or processing) — no SQL needed
     if (pendingRequests) {
       let prQuery = supabase
         .from('payout_requests')
-        .select('id, creator_id, amount, currency, status, requested_at, bank_account_id')
+        .select('id, creator_id, amount, currency, status, requested_at, bank_account_id, stripe_transfer_id, rejection_reason')
         .order('requested_at', { ascending: false })
         .range(offset, offset + limit - 1);
       if (status) prQuery = prQuery.eq('status', status);
@@ -473,10 +486,16 @@ export async function GET(request: NextRequest) {
             ? 'Wise'
             : 'Stripe Connect';
 
+        const displayName = (creator?.display_name ?? '').trim() || null;
+        const email = creator?.email ?? null;
+        const creator_name =
+          displayName ||
+          email ||
+          (r.creator_id ? `Creator ${String(r.creator_id).slice(0, 8)}…` : null);
         return {
           ...r,
-          creator_name: creator?.display_name ?? creator?.username ?? r.creator_id,
-          creator_email: creator?.email ?? null,
+          creator_name: creator_name || r.creator_id,
+          creator_email: email,
           bank_name: chosenBank?.bank_name ?? null,
           bank_currency: bankCurrency,
           bank_account_masked: chosenBank ? maskAccountNumber(accountNumberPlain) : null,

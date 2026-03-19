@@ -177,9 +177,19 @@ export async function POST(request: NextRequest) {
           })
           .in('id', payoutRequestIds);
 
+        const rawMessage = err?.message || 'Batch submission failed';
+        const is403 =
+          err?.code === 403 ||
+          err?.status === 403 ||
+          String(rawMessage).includes('403');
+        const error =
+          is403
+            ? `${rawMessage} — Requests re-queued to Pending. If Wise transfers were created, they may appear under In Progress; use Retry / Fund there.`
+            : rawMessage;
+
         submissionErrors.push({
           sourceCurrency,
-          error: err?.message || 'Batch submission failed',
+          error,
           payout_request_ids: payoutRequestIds,
         });
       }

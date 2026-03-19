@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
-import { CheckCircle, Clock, RefreshCw, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react';
 
 type PendingPayoutRequest = {
   id: string;
@@ -17,6 +17,12 @@ type PendingPayoutRequest = {
   bank_currency?: string;
   bank_account_masked?: string;
   payout_rail?: string;
+  stripe_transfer_id?: string | null;
+  rejection_reason?: string | null;
+};
+
+type ProcessingPayoutRequest = PendingPayoutRequest & {
+  stripe_transfer_id: string;
 };
 
 type WisePayoutRow = {
@@ -48,6 +54,8 @@ export default function AdminPayoutsPage() {
   const dark = theme === 'dark';
 
   const [pending, setPending] = useState<PendingPayoutRequest[]>([]);
+  const [processing, setProcessing] = useState<ProcessingPayoutRequest[]>([]);
+  const [failedRequests, setFailedRequests] = useState<PendingPayoutRequest[]>([]);
   const [historyCompleted, setHistoryCompleted] = useState<WisePayoutRow[]>([]);
   const [historyFailed, setHistoryFailed] = useState<WisePayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,8 +77,10 @@ export default function AdminPayoutsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [pendingRes, completedRes, failedRes] = await Promise.all([
+      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes] = await Promise.all([
         fetch('/api/admin/payouts?pending_requests=1&limit=50&offset=0', { credentials: 'include' }),
+        fetch('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0', { credentials: 'include' }),
+        fetch('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?status=completed&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?status=failed&limit=50&offset=0', { credentials: 'include' }),
       ]);
@@ -79,6 +89,19 @@ export default function AdminPayoutsPage() {
 
       const pendingJson = await pendingRes.json();
       setPending(pendingJson.payout_requests ?? []);
+
+      if (processingRes.ok) {
+        const processingJson = await processingRes.json();
+        const list = (processingJson.payout_requests ?? []).filter(
+          (p: PendingPayoutRequest) => p.stripe_transfer_id
+        ) as ProcessingPayoutRequest[];
+        setProcessing(list);
+      }
+
+      if (failedRequestsRes.ok) {
+        const failedRequestsJson = await failedRequestsRes.json();
+        setFailedRequests(failedRequestsJson.payout_requests ?? []);
+      }
 
       if (completedRes.ok) {
         const completedJson = await completedRes.json();
@@ -112,7 +135,7 @@ export default function AdminPayoutsPage() {
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        throw new Error(json.error || 'Failed to approve payout');
+        throw new Error(json.message || json.error || 'Failed to approve payout');
       }
       await load();
     } catch (e) {
@@ -166,6 +189,46 @@ export default function AdminPayoutsPage() {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to reject payout');
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const fundProcessing = async (payoutRequestId: string) => {
+    setActionBusyId(payoutRequestId);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/payouts/fund', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payout_request_id: payoutRequestId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to fund transfer');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to fund transfer');
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const retryFailed = async (payoutRequestId: string) => {
+    setActionBusyId(payoutRequestId);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/payouts/retry', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payout_request_id: payoutRequestId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to re-queue');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to re-queue payout');
     } finally {
       setActionBusyId(null);
     }
@@ -314,7 +377,7 @@ export default function AdminPayoutsPage() {
                     className={`border-t ${dark ? 'border-gray-700 hover:bg-gray-700/30' : 'border-gray-100 hover:bg-gray-50'}`}
                   >
                     <td className="p-3">
-                      <div className="font-medium text-white">{p.creator_name || p.creator_id}</div>
+                      <div className="font-medium text-white">{p.creator_name || p.creator_email || 'Unknown creator'}</div>
                       {p.creator_email && <div className={`${mutedClass} text-xs`}>{p.creator_email}</div>}
                     </td>
                     <td className="p-3">
@@ -359,6 +422,150 @@ export default function AdminPayoutsPage() {
                           Reject
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className={`rounded-lg border overflow-hidden mb-6 ${cardClass}`}>
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Loader2 className={`h-5 w-5 ${mutedClass}`} />
+            <h2 className={`text-lg font-semibold ${textClass}`}>In Progress (processing)</h2>
+          </div>
+          <span className={`text-sm ${mutedClass}`}>Wise transfer created but not yet funded — use Retry / Fund if stuck</span>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading…</div>
+        ) : processing.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No payouts in processing.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className={dark ? 'bg-gray-700/50' : 'bg-gray-50'}>
+                <tr>
+                  <th className="text-left p-3 font-medium">Creator</th>
+                  <th className="text-left p-3 font-medium">Amount</th>
+                  <th className="text-left p-3 font-medium">Requested</th>
+                  <th className="text-left p-3 font-medium">Wise transfer ID</th>
+                  <th className="w-40 text-right p-3 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {processing.map((p) => (
+                  <tr
+                    key={p.id}
+                    className={`border-t ${dark ? 'border-gray-700 hover:bg-gray-700/30' : 'border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <td className="p-3">
+                      <div className="font-medium text-white">{p.creator_name || p.creator_email || 'Unknown creator'}</div>
+                      {p.creator_email && <div className={`${mutedClass} text-xs`}>{p.creator_email}</div>}
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-white">{formatMoney(p.amount, p.currency)}</div>
+                    </td>
+                    <td className="p-3">
+                      <div className={mutedClass}>{p.requested_at ? new Date(p.requested_at).toLocaleString() : '—'}</div>
+                    </td>
+                    <td className="p-3">
+                      <code className={`text-xs ${dark ? 'text-cyan-300' : 'text-cyan-700'}`} title={p.stripe_transfer_id}>
+                        {p.stripe_transfer_id}
+                      </code>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        disabled={!!actionBusyId && actionBusyId === p.id}
+                        onClick={() => fundProcessing(p.id)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
+                          dark
+                            ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                            : 'bg-amber-600 hover:bg-amber-500 text-white'
+                        } disabled:opacity-60`}
+                      >
+                        {actionBusyId === p.id ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Funding…
+                          </>
+                        ) : (
+                          'Retry / Fund'
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className={`rounded-lg border overflow-hidden mb-6 ${cardClass}`}>
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <XCircle className={`h-5 w-5 ${mutedClass}`} />
+            <h2 className={`text-lg font-semibold ${textClass}`}>Failed requests</h2>
+          </div>
+          <span className={`text-sm ${mutedClass}`}>Wise confirmed failure or cancelled — Retry re-queues as pending</span>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading…</div>
+        ) : failedRequests.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No failed payout requests.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className={dark ? 'bg-gray-700/50' : 'bg-gray-50'}>
+                <tr>
+                  <th className="text-left p-3 font-medium">Creator</th>
+                  <th className="text-left p-3 font-medium">Amount</th>
+                  <th className="text-left p-3 font-medium">Requested</th>
+                  <th className="text-left p-3 font-medium">Reason</th>
+                  <th className="w-32 text-right p-3 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {failedRequests.map((p) => (
+                  <tr
+                    key={p.id}
+                    className={`border-t ${dark ? 'border-gray-700 hover:bg-gray-700/30' : 'border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <td className="p-3">
+                      <div className="font-medium text-white">{p.creator_name || p.creator_email || 'Unknown creator'}</div>
+                      {p.creator_email && <div className={`${mutedClass} text-xs`}>{p.creator_email}</div>}
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-white">{formatMoney(p.amount, p.currency)}</div>
+                    </td>
+                    <td className="p-3">
+                      <div className={mutedClass}>{p.requested_at ? new Date(p.requested_at).toLocaleString() : '—'}</div>
+                    </td>
+                    <td className="p-3 max-w-xs">
+                      <div className={`text-xs truncate ${mutedClass}`} title={p.rejection_reason ?? undefined}>
+                        {p.rejection_reason || '—'}
+                      </div>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        disabled={!!actionBusyId && actionBusyId === p.id}
+                        onClick={() => retryFailed(p.id)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
+                          dark
+                            ? 'bg-green-600 hover:bg-green-500 text-white'
+                            : 'bg-green-600 hover:bg-green-500 text-white'
+                        } disabled:opacity-60`}
+                      >
+                        {actionBusyId === p.id ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-queuing…
+                          </>
+                        ) : (
+                          'Retry'
+                        )}
+                      </button>
                     </td>
                   </tr>
                 ))}

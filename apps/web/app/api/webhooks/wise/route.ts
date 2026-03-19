@@ -153,9 +153,9 @@ async function handleTransferStateChange(
       return;
     }
 
-    // Keep payout_requests in sync + notify creator when Wise confirms completion.
-    // We map payout_requests -> wise_payouts via payout_requests.stripe_transfer_id = wise_payouts.id.
-    if (newStatus === 'completed' || newStatus === 'failed') {
+    // Keep payout_requests in sync + notify creator when Wise confirms completion or failure.
+    // Only set payout_requests to 'failed' when Wise confirms (webhook); never from API errors (e.g. 403 funding).
+    if (newStatus === 'completed' || newStatus === 'failed' || newStatus === 'cancelled') {
       try {
         // Primary mapping: payout_requests.stripe_transfer_id = wise_payout.id
         let payoutRequest = await supabase
@@ -263,12 +263,14 @@ async function handleTransferStateChange(
             }
           }
 
-          if (newStatus === 'failed' && payoutRequest.status !== 'failed') {
+          if ((newStatus === 'failed' || newStatus === 'cancelled') && payoutRequest.status !== 'failed') {
             await supabase
               .from('payout_requests')
               .update({
                 status: 'failed',
-                rejection_reason: payout.error_message || `Wise transfer ${currentState}`,
+                rejection_reason: newStatus === 'cancelled'
+                  ? 'Transfer cancelled by Wise'
+                  : (payout.error_message || `Wise transfer ${currentState}`),
                 updated_at: new Date().toISOString(),
               })
               .eq('id', payoutRequest.id);

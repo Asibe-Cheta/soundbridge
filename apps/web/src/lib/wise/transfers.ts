@@ -343,6 +343,33 @@ export async function getTransferStatus(transferId: string): Promise<Transfer> {
   }
 }
 
+/** Resolve Wise profile ID for v3 endpoints. */
+async function getProfileIdForV3(): Promise<number> {
+  const fromConfig = wiseConfig().profileId;
+  if (fromConfig) return fromConfig;
+  const client = getWiseClient();
+  const profiles = await client.get<Array<{ id: number }>>('/v1/profiles');
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw {
+      error: 'Profile required',
+      message: 'Wise requires a profile. Set WISE_PROFILE_ID or ensure your token has a profile.',
+    } as WiseApiError;
+  }
+  return profiles[0].id;
+}
+
+/**
+ * Fund an existing Wise transfer (e.g. one created in a batch that was not yet funded).
+ * POST /v3/profiles/{profileId}/transfers/{transferId}/payments with type: BALANCE.
+ */
+export async function fundTransfer(transferId: string): Promise<void> {
+  const client = getWiseClient();
+  const profileId = await getProfileIdForV3();
+  await client.post<unknown>(`/v3/profiles/${profileId}/transfers/${transferId}/payments`, {
+    type: 'BALANCE',
+  });
+}
+
 // ============================================================================
 // ACCOUNT VERIFICATION FUNCTIONS
 // ============================================================================
