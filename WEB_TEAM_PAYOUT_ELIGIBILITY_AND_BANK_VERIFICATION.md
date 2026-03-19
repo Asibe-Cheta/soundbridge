@@ -16,19 +16,19 @@
     "reasons": ["No verified bank account"],
     "available_balance": 0,
     "pending_requests": 0,
-    "min_payout": 25,
+    "min_payout": 50,
     "withdrawable_amount": 0
   },
   "available_balance": 0,
   "pending_requests": 0,
-  "min_payout": 25,
+  "min_payout": 50,
   "withdrawable_amount": 0
 }
 ```
 
 - **`eligible`**: `true` only when the user has at least one verified bank account and sufficient balance (withdrawable ≥ min_payout).
 - **`reasons`**: List of blocking reasons, e.g. `"No verified bank account"`, `"Insufficient balance"`, `"Unable to verify bank account"`, `"Unable to determine balance"`, `"Unable to determine eligibility"`.
-- Balance fields may be omitted if the balance RPC fails; `min_payout` is always present (25). Use `eligible` + `reasons` for UX; use the numeric fields for display when present.
+- Balance fields may be omitted if the balance RPC fails; `min_payout` is always present (50). Use `eligible` + `reasons` for UX; use the numeric fields for display when present. **Minimum is $50** because Wise transfer fees are ~\$7 flat — at $25, fees would be ~28% of the payout.
 
 **Auth:** If the user is not authenticated, the API still returns **401** (no 200 body). Only the *eligibility logic* is non-throwing and always returns a valid object on 200.
 
@@ -60,11 +60,11 @@ So:
 
 ## 3. Payout request currency (POST /api/payouts/request)
 
-**Argument to the web team:** Wise is built for exactly this — source currency USD, target currency NGN; Wise converts at live rate. Making the mobile pre-convert is reinventing the wheel. The backend admin payout flow just needs to pass **`sourceCurrency: "USD"`** and **`targetCurrency: bankAccount.currency`** to Wise; Wise handles the rest.
+**Decision: Mobile sends `currency: "USD"` and amount in USD. Backend handles conversion via Wise API.**
 
-**Decision:** Mobile sends **`currency: "USD"`** and **amount in USD**. Backend/admin flow uses that as the source amount and passes **`sourceCurrency: "USD"`** and **`targetCurrency: bankAccount.currency`** (e.g. NGN) to Wise; Wise converts at live rate and sends NGN to the creator’s bank. No mobile pre-conversion.
+The wallet balance is denominated in USD. Requiring the mobile to convert USD → NGN before submitting is unnecessary complexity — it would need live exchange rates, rounding logic, and introduces a second source of truth.
 
-**Wise natively supports source/target currency.** The correct approach is:
+**Wise natively supports source/target currency separation.** The correct approach is:
 
 ```
 POST /v1/transfers (Wise API)
@@ -78,11 +78,118 @@ POST /v1/transfers (Wise API)
 
 Wise converts at the live mid-market rate and sends NGN to the creator’s bank. No pre-conversion needed.
 
-**Backend (implemented):** `POST /api/admin/payouts/initiate` accepts optional **`sourceCurrency`** and **`sourceAmount`**. When both are set (e.g. for a USD payout request: `sourceCurrency: "USD"`, `sourceAmount: 40.44`), the Wise flow uses a source-amount quote and converts to **`currency`** (target, e.g. NGN). Pass **`targetCurrency: bankAccount.currency`** and bank details; Wise handles the rate and conversion. No mobile changes — mobile already sends USD.
+**Required backend change (admin payout initiate flow):**
+
+When `POST /api/admin/payouts/initiate` processes a payout request:
+
+1. Read `payout_requests.amount` (USD) and `payout_requests.currency` (USD)
+2. Look up creator’s `creator_bank_accounts` row to get `currency` (e.g. NGN) and bank details
+3. Call Wise `createTransfer` with:
+   - `sourceCurrency: "USD"`
+   - `targetCurrency: bankAccount.currency` (e.g. `"NGN"`)
+   - `sourceAmount: payout_requests.amount`
+4. Wise handles the rate and conversion automatically
+
+This keeps the wallet in USD, payout requests in USD, and lets Wise do what it’s designed to do. No mobile changes needed — mobile already sends USD.
 
 ---
 
-## 4. Server logs when payout request fails
+## 4. Wise Recipient Types — Correct Values Per Currency
+
+**Critical:** The recipient `type` sent to `POST /v1/accounts` (Wise) must match exactly what Wise's `GET /v1/account-requirements` returns for that currency. Using wrong types (e.g. `"nuban"`, `"bank_code"`) causes 422 errors.
+
+### Always call account-requirements first
+
+```
+GET https://api.wise.com/v1/account-requirements?source=USD&target=NGN&sourceAmount=100
+Authorization: Bearer <WISE_API_TOKEN>
+```
+
+Returns an array of available `type` values and their required `details` fields for that currency. Use the `type` from this response — never hardcode.
+
+---
+
+### Quick-Reference: Correct Type Strings Per Currency
+
+| Currency | Country | Type String(s) | Key Account Fields |
+|---|---|---|---|
+| **NGN** | Nigeria | `nigeria` | `bankCode` (dropdown) + `accountNumber` (10 digits NUBAN) |
+| **GBP** | UK | `sort_code`, `iban`, `swift_code` | `sortCode` (6 digits) + `accountNumber` (8 digits) |
+| **EUR** | Europe | `iban`, `swift_code` | `IBAN` (uppercase key) |
+| **USD** | US | `aba`, `fedwire_local`, `swift_code` | `abartn` (9-digit routing) + `accountNumber` + `accountType` |
+| **KES** | Kenya | `kenya_mobile`, `kenya_local` | M-PESA: `accountNumber` (mobile) / Bank: `bankCode` + `accountNumber` |
+| **GHS** | Ghana | `ghana_local` | `bankCode` + `accountNumber` (8–20 digits) |
+| **ZAR** | South Africa | `southafrica` | `bankCode` (BIC/SWIFT) + `accountNumber` (7–11 digits) |
+| **CAD** | Canada | `canadian`, `interac` | `institutionNumber` (3d) + `transitNumber` (5d) + `accountNumber` |
+| **AUD** | Australia | `australian`, `australian_bpay` | `bsbCode` (BSB, async validated) + `accountNumber` |
+| **INR** | India | `indian`, `indian_upi` | `ifscCode` (11 chars, async) + `accountNumber` |
+| **BRL** | Brazil | `brazil`, `brazil_business` | `bankCode` + `branchCode` + `accountNumber` + `cpf` (async) |
+| **MXN** | Mexico | `mexican` | `clabe` (18 digits) |
+| **PHP** | Philippines | `philippines`, `philippinesmobile` | `bankCode` + `accountNumber` |
+| **SGD** | Singapore | `singapore`, `singapore_paynow` | `bankCode` + `accountNumber` or UEN/mobile |
+| **JPY** | Japan | `japanese` | `bankCode` (4d) → then `branchCode` (cascading) + `accountNumber` |
+| **TZS** | Tanzania | `tanzania_local` | `bankCode` + `accountNumber` (8–20 digits) |
+| **UGX** | Uganda | `uganda_local` | `bankCode` + `accountNumber` (8–20 digits) |
+| **ZAR** | South Africa | `southafrica` | `bankCode` (BIC/SWIFT) + `accountNumber` |
+
+---
+
+### NGN — Full Spec (Current Active Currency)
+
+```json
+POST /v1/accounts
+{
+  "profile": "<WISE_PROFILE_ID>",
+  "accountHolderName": "Uche Onyekachukwu Merit",
+  "currency": "NGN",
+  "type": "nigeria",
+  "details": {
+    "legalType": "PRIVATE",
+    "bankCode": "<wise_internal_bank_code>",
+    "accountNumber": "0123456789",
+    "address": {
+      "country": "NG",
+      "city": "Lagos",
+      "firstLine": "123 Main Street",
+      "postCode": "100001"
+    }
+  }
+}
+```
+
+- `type` must be `"nigeria"` — NOT `"nuban"`, NOT `"bank_code"`
+- `accountNumber` must be exactly 10 digits (NUBAN format)
+- `bankCode` is Wise's internal dropdown code — get valid values from `GET /v1/account-requirements` response under `fields[].group[].key === "bankCode"` → `valuesAllowed[]`
+- `legalType`: `"PRIVATE"` for individuals, `"BUSINESS"` for companies
+
+---
+
+### Universal address fields (required for all currencies)
+
+```json
+"address": {
+  "country": "NG",       // ISO 3166-1 alpha-2
+  "city": "Lagos",
+  "firstLine": "123 Main Street",
+  "postCode": "100001"
+}
+```
+
+---
+
+### Implementation Notes
+
+1. **Never hardcode field lists** — always call `GET /v1/account-requirements` first. Wise updates requirements periodically.
+2. **Cascading fields** — for Japan (and some others), after selecting `bankCode` you must re-POST to `/v1/account-requirements` with current details to get branch-level fields (`refreshRequirementsOnChange: true`).
+3. **Async validation** — Australia (BSB), India (IFSC), Brazil (CPF/branch) have server-side async validation via a URL in the `validationAsync` field of the requirement.
+4. **IBAN field key is uppercase** — `"IBAN"` and `"BIC"` in the `details` object, not `"iban"` / `"bic"`.
+5. **USD routing key** — `"abartn"` (not `"routingNumber"`).
+6. **Idempotency** — include `X-idempotency-uuid` header on `POST /v1/accounts` to safely retry.
+7. **Sandbox:** `https://api.sandbox.transferwise.tech` / **Production:** `https://api.wise.com`
+
+---
+
+## 5. Server logs when payout request fails
 
 When `POST /api/payouts/request` fails:
 

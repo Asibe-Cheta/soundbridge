@@ -37,7 +37,7 @@ export default function WithdrawalsPage() {
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>How Withdrawals Work</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                When you earn on SoundBridge (gigs, tips, content sales), funds are added to your <strong>SoundBridge wallet</strong> when the gig or order is completed. From your wallet you can request a withdrawal to your local bank at any time (minimum $25). Withdrawals are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
+                When you earn on SoundBridge (gigs, tips, content sales), funds are added to your <strong>SoundBridge wallet</strong> when the gig or order is completed. From your wallet you can request a withdrawal to your local bank at any time (minimum $50). Withdrawals are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
               </p>
             </section>
 
@@ -64,7 +64,7 @@ export default function WithdrawalsPage() {
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Minimum Withdrawal Amount</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                The minimum withdrawal amount is <strong>$25</strong>. You can request a withdrawal from your wallet whenever your balance meets this minimum.
+                The minimum withdrawal amount is <strong>$50</strong>. You can request a withdrawal from your wallet whenever your balance meets this minimum.
               </p>
             </section>
 

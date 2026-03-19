@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 
-/** Minimum payout amount (must match backend) */
-const MIN_PAYOUT = 25;
+/** Minimum payout amount (must match backend RPC get_payout_eligibility). Raised to $50 because Wise transfer fees are ~$7 flat — at $25, fees would be ~28%. */
+const MIN_PAYOUT = 50;
 
 /** Safe eligibility payload when something goes wrong (never 5xx). */
 function ineligiblePayload(reasons: string[]): Record<string, unknown> {

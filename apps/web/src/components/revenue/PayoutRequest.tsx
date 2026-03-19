@@ -87,8 +87,8 @@ export function PayoutRequest() {
   const handleRequestPayout = async () => {
     const amount = parseFloat(requestAmount);
     
-    if (!amount || amount < 25) {
-      setError('Minimum withdrawal amount is $25.00');
+    if (!amount || amount < 50) {
+      setError('Minimum withdrawal amount is $50.00');
       return;
     }
 
@@ -217,13 +217,13 @@ export function PayoutRequest() {
         <div className="space-y-4">
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              Withdrawal Amount (Minimum: $25.00)
+              Withdrawal Amount (Minimum: $50.00)
             </label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="number"
-                min="25"
+                min="50"
                 step="0.01"
                 value={requestAmount}
                 onChange={(e) => setRequestAmount(e.target.value)}

@@ -4,7 +4,7 @@
 
 1. **Payer** books a gig and pays via Stripe (card/PayPal)
 2. On gig **completion**, SoundBridge captures the PaymentIntent and transfers earnings to the creator's **SoundBridge wallet**
-3. Creator requests a **withdrawal** from their wallet (minimum $25)
+3. Creator requests a **withdrawal** from their wallet (minimum $50)
 4. SoundBridge sends the payout via **Wise** to the creator's local bank account
 5. Funds arrive in the creator's local bank within **1–3 business days**
 
@@ -20,12 +20,12 @@ The goal is to make sure users — especially in Africa, Asia, and Latin America
 
 Add or update the "About" or informational section to reflect:
 
-> Your digital wallet stores earnings from gigs, tips, and content sales. Once funds are in your wallet, you can request a withdrawal to your local bank account at any time (minimum $25).
+> Your digital wallet stores earnings from gigs, tips, and content sales. Once funds are in your wallet, you can request a withdrawal to your local bank account at any time (minimum $50).
 >
 > - Gig payments land in your wallet on completion
 > - Withdraw to your local bank via Wise (1–3 business days)
 > - Supports 40+ currencies across Africa, Asia & Latin America
-> - Minimum withdrawal: $25
+> - Minimum withdrawal: $50
 
 ### 2. Withdrawal / Payout page
 
@@ -45,7 +45,7 @@ Update any agreement/consent checkbox text to say:
 
 For users with Wise-routed currencies (NGN, GHS, KES, ZAR, INR, BRL, etc.), the description under their bank account card should read:
 
-> Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {CURRENCY} via Wise — typically arriving within 1–3 business days. Minimum withdrawal is $25. No further verification needed.
+> Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {CURRENCY} via Wise — typically arriving within 1–3 business days. Minimum withdrawal is $50. No further verification needed.
 
 See `WEB_TEAM_WISE_VERIFICATION_STATUS_FIX.md` for the full list of Wise currencies.
 

@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
     const { amount, currency = 'USD' } = await request.json();
     
     // Validate required fields
-    if (!amount || amount < 25) {
+    if (!amount || amount < 50) {
       return NextResponse.json(
-        { error: 'Minimum withdrawal amount is $25.00' },
+        { error: 'Minimum withdrawal amount is $50.00' },
         { status: 400 }
       );
     }
