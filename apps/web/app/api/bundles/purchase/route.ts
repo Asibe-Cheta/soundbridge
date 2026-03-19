@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 export async function POST(request: NextRequest) {
   try {
@@ -122,10 +123,13 @@ export async function POST(request: NextRequest) {
     const { data: ticketCode } = await supabase.rpc('generate_ticket_code');
 
     // Create Payment Intent
+    const amountPence = Math.round(bundlePrice * 100);
+    const platformFeePence = Math.round(platformFee * 100);
+    const promoterPence = amountPence - platformFeePence;
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(bundlePrice * 100),
+      amount: amountPence,
       currency: 'gbp',
-      application_fee_amount: Math.round(platformFee * 100),
+      application_fee_amount: platformFeePence,
       transfer_data: {
         destination: promoterStripeAccount,
       },
@@ -140,10 +144,16 @@ export async function POST(request: NextRequest) {
         user_tier: userTier,
         is_bundle: 'true',
         bundled_tracks: JSON.stringify(bundle.bundled_track_ids || []),
+        charge_type: 'event_ticket',
+        platform_fee_amount: String(platformFeePence),
+        platform_fee_percent: String(PLATFORM_FEE_PERCENT),
+        creator_payout_amount: String(promoterPence),
+        creator_id: bundle.event?.creator_id ?? '',
       },
       description: `${bundle.bundle_name} for ${bundle.event?.title}`,
       receipt_email: buyerEmail,
     });
+    await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
 
     // Create bundle purchase record
     const { data: bundlePurchase, error: bundlePurchaseError } = await supabase

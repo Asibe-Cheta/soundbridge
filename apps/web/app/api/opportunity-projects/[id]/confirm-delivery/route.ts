@@ -29,7 +29,7 @@ export async function POST(
     const { id } = await params;
     const { data: project } = await supabase
       .from('opportunity_projects')
-      .select('id, poster_user_id, status, stripe_payment_intent_id, creator_user_id, creator_payout_amount, agreed_amount, platform_fee_percent, currency, title, opportunity_id')
+      .select('id, poster_user_id, status, stripe_payment_intent_id, creator_user_id, creator_payout_amount, agreed_amount, platform_fee_percent, platform_fee_amount, currency, title, opportunity_id')
       .eq('id', id)
       .single();
 
@@ -56,7 +56,7 @@ export async function POST(
     // Critical path: wallet credit then mark completed. If wallet credit fails, we return 500
     // so the client can retry; we do NOT mark completed until creator is credited.
     const agreedAmount = Number(project.agreed_amount);
-    const feePct = Number(project.platform_fee_percent) || 12;
+    const feePct = Number(project.platform_fee_percent) || 15;
     const effectivePayout =
       project.creator_payout_amount != null && Number(project.creator_payout_amount) > 0
         ? Number(project.creator_payout_amount)
@@ -120,13 +120,13 @@ export async function POST(
 
     // Platform fee tracking for P&L (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md)
     const grossPence = Math.round(Number(project.agreed_amount) * 100);
-    const platformFeePence = Math.round(Number(project.platform_fee_amount ?? 0) * 100) || Math.round(grossPence * (Number(project.platform_fee_percent) || 12) / 100);
+    const platformFeePence = Math.round(Number(project.platform_fee_amount ?? 0) * 100) || Math.round(grossPence * (Number(project.platform_fee_percent) || 15) / 100);
     const creatorPayoutPence = Math.round(effectivePayout * 100);
     await serviceSupabase.rpc('insert_platform_revenue', {
       p_charge_type: 'gig_payment',
       p_gross_amount: grossPence,
       p_platform_fee_amount: platformFeePence,
-      p_platform_fee_percent: project.platform_fee_percent ?? 12,
+      p_platform_fee_percent: project.platform_fee_percent ?? 15,
       p_creator_payout_amount: creatorPayoutPence,
       p_stripe_payment_intent_id: paymentIntentId,
       p_reference_id: id,
@@ -143,7 +143,7 @@ export async function POST(
         gigId: (project as { opportunity_id?: string }).opportunity_id ?? id,
       });
 
-      const PLATFORM_FEE_PCT = 0.12;
+      const PLATFORM_FEE_PCT = 0.15;
       const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
       const platformFee = grossAmount * PLATFORM_FEE_PCT;
       let stripeReceiptUrl: string | null = null;

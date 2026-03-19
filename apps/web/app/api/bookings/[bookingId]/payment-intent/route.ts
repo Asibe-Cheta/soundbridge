@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 import { stripe } from '@/src/lib/stripe-esg';
 import type { Database } from '@/src/lib/types';
 
@@ -149,6 +150,10 @@ export async function POST(
   if (!paymentIntentId) {
     const applicationFeeAmount = Math.round(Number(booking.platform_fee) * 100);
     const currency = booking.currency ?? 'USD';
+    const totalDollars = Number(booking.total_amount);
+    const platformFeeDollars = Number(booking.platform_fee);
+    const platformFeePercent = totalDollars > 0 ? Math.round((platformFeeDollars / totalDollars) * 100) : 0;
+    const creatorPayoutMinor = amountInMinorUnits - applicationFeeAmount;
 
     const newIntent = await stripe.paymentIntents.create({
       amount: amountInMinorUnits,
@@ -162,9 +167,15 @@ export async function POST(
         bookingId: booking.id,
         providerId: booking.provider_id,
         bookerId: booking.booker_id,
+        charge_type: 'gig_payment',
+        platform_fee_amount: String(applicationFeeAmount),
+        platform_fee_percent: String(platformFeePercent),
+        creator_payout_amount: String(creatorPayoutMinor),
+        creator_id: booking.provider_id,
       },
       description: `SoundBridge booking with ${booking.provider_profile?.display_name ?? 'provider'}`,
     });
+    await addStripePaymentIntentIdToMetadata(stripe, newIntent.id, (newIntent.metadata ?? {}) as Record<string, string>);
 
     paymentIntentId = newIntent.id;
 

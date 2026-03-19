@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-
-/** Minimum payout amount (must match backend RPC get_payout_eligibility). Raised to $50 because Wise transfer fees are ~$7 flat — at $25, fees would be ~28%. */
-const MIN_PAYOUT = 50;
+import { getMinPayoutForCurrency, MIN_PAYOUT_NON_WISE_USD } from '@/src/lib/payout-minimum';
 
 /** Safe eligibility payload when something goes wrong (never 5xx). */
-function ineligiblePayload(reasons: string[]): Record<string, unknown> {
+function ineligiblePayload(reasons: string[], minPayout: number = MIN_PAYOUT_NON_WISE_USD): Record<string, unknown> {
   return {
     success: true,
     eligible: false,
     reasons: reasons.length ? reasons : ['Unable to determine eligibility'],
-    min_payout: MIN_PAYOUT,
+    min_payout: minPayout,
     has_bank_account: false,
     bank_account_verified: false,
     eligibility: {
       eligible: false,
       reasons: reasons.length ? reasons : ['Unable to determine eligibility'],
-      min_payout: MIN_PAYOUT,
+      min_payout: minPayout,
       has_bank_account: false,
       bank_account_verified: false,
     },
@@ -48,14 +46,15 @@ export async function GET(request: NextRequest) {
     let withdrawable_amount: number | null = null;
     let has_bank_account = false;
     let bank_account_verified = false;
+    let bank_currency: string | null = null;
+    let min_payout = MIN_PAYOUT_NON_WISE_USD;
 
     try {
-      // 1. Check for at least one verified bank account — use service role so we see rows
-      //    regardless of RLS (Bearer token + anon can sometimes miss rows in creator_bank_accounts).
+      // 1. Check for at least one verified bank account and get currency for min_payout
       const service = createServiceClient();
       const { data: bankAccounts, error: bankError } = await service
         .from('creator_bank_accounts')
-        .select('id, is_verified')
+        .select('id, is_verified, currency')
         .eq('user_id', user.id);
 
       if (bankError) {
@@ -65,16 +64,24 @@ export async function GET(request: NextRequest) {
       } else {
         const accounts = bankAccounts ?? [];
         has_bank_account = accounts.length > 0;
-        bank_account_verified = accounts.some((b) => b.is_verified === true);
+        const verified = accounts.filter((b) => b.is_verified === true);
+        bank_account_verified = verified.length > 0;
+        if (verified.length > 0 && verified[0].currency) {
+          bank_currency = verified[0].currency;
+        } else if (accounts.length > 0 && (accounts[0] as { currency?: string }).currency) {
+          bank_currency = (accounts[0] as { currency: string }).currency;
+        }
         if (!bank_account_verified) {
           reasons.push('No verified bank account');
           eligible = false;
         }
+        min_payout = getMinPayoutForCurrency(bank_currency);
       }
 
-      // 2. Get balance/eligibility from RPC (do not treat RPC failure as 500)
+      // 2. Get balance/eligibility from RPC (pass bank currency for currency-aware min_payout)
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_payout_eligibility', {
         p_creator_id: user.id,
+        p_bank_currency: bank_currency ?? null,
       });
 
       if (rpcError) {
@@ -86,8 +93,8 @@ export async function GET(request: NextRequest) {
       } else if (rpcData) {
         const bal = rpcData.available_balance ?? 0;
         const pending = rpcData.pending_requests ?? 0;
-        const minPayout = rpcData.min_payout ?? MIN_PAYOUT;
-        const withdrawable = rpcData.withdrawable_amount ?? Math.max(0, bal - pending);
+        const withdrawable = rpcData.withdrawable_amount ?? Math.max(0, Number(bal) - Number(pending));
+        min_payout = Number(rpcData.min_payout) ?? min_payout;
         const canRequest = rpcData.can_request_payout === true;
 
         available_balance = Number(bal);
@@ -113,7 +120,7 @@ export async function GET(request: NextRequest) {
       can_request_payout: eligible,
       ...(available_balance != null && { available_balance }),
       ...(pending_requests != null && { pending_requests }),
-      min_payout: MIN_PAYOUT,
+      min_payout,
       ...(withdrawable_amount != null && { withdrawable_amount }),
     };
 
@@ -125,6 +132,6 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     // Top-level safety: auth or any uncaught throw → still 200 with ineligible (mobile must never see 5xx)
     console.error('Payout eligibility handler error:', e);
-    return NextResponse.json(ineligiblePayload(['Unable to determine eligibility']), { status: 200 });
+    return NextResponse.json(ineligiblePayload(['Unable to determine eligibility'], MIN_PAYOUT_NON_WISE_USD), { status: 200 });
   }
 }

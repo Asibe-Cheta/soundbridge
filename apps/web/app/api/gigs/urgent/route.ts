@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -75,9 +76,15 @@ export async function POST(request: NextRequest) {
         gig_source: 'urgent',
         requester_user_id: user.id,
         skill_required: String(skill_required),
+        charge_type: 'gig_payment',
+        platform_fee_amount: '0',
+        platform_fee_percent: '0',
+        creator_payout_amount: String(amountPence),
+        creator_id: '',
       },
       description: `Urgent gig: ${skill_required}`,
     });
+    await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
 
     const service = createServiceClient();
     const title = `Urgent: ${String(skill_required)}`;

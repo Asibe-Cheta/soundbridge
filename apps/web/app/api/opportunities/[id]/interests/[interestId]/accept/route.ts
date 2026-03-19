@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -9,9 +10,10 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
 
+/** Platform fee: 15% for free/pro, 8% for unlimited (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md). */
 function getPlatformFeePercent(tier: string): number {
   const t = (tier || 'free').toLowerCase();
-  return t === 'unlimited' ? 8 : 12;
+  return t === 'unlimited' ? 8 : 15;
 }
 
 /**
@@ -79,7 +81,7 @@ export async function POST(
           return NextResponse.json({ error: 'Payment system not configured' }, { status: 500, headers: CORS });
         }
         const amountPence = Math.round(Number(existingProject.agreed_amount) * 100);
-        const feePct = existingProject.platform_fee_percent ?? 12;
+        const feePct = existingProject.platform_fee_percent ?? 15;
         const platformFeePence = Math.round(amountPence * (feePct / 100));
         const { data: creatorBank } = await serviceSupabase
           .from('creator_bank_accounts')
@@ -103,6 +105,7 @@ export async function POST(
             platform_fee_amount: String(platformFeePence),
             platform_fee_percent: String(feePct),
             creator_payout_amount: String(creatorPayoutPence),
+            creator_id: existingProject.creator_user_id,
             reference_id: existingProject.id,
           },
           description: `Project: ${existingProject.title}`,
@@ -112,6 +115,7 @@ export async function POST(
           paymentIntentParams.transfer_data = { destination: stripeAccountId };
         }
         const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+        await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
         if (!paymentIntent.client_secret) {
           console.error('Stripe PaymentIntent missing client_secret (unpaid recovery)');
           return NextResponse.json({ error: 'Payment setup failed; please try again' }, { status: 500, headers: CORS });
@@ -280,6 +284,7 @@ export async function POST(
             platform_fee_amount: String(platformFeePence),
             platform_fee_percent: String(feePercent),
             creator_payout_amount: String(creatorPayoutPence),
+            creator_id: creatorUserId,
             reference_id: project.id,
           },
           description: `Project: ${opp.title}`,
@@ -289,6 +294,7 @@ export async function POST(
           paymentIntentParams.transfer_data = { destination: stripeAccountId };
         }
         const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+        await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
         clientSecret = paymentIntent.client_secret ?? null;
         stripePaymentIntentId = paymentIntent.id;
         const { error: updateErr } = await serviceSupabase

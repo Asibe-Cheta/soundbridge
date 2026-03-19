@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -70,7 +71,7 @@ export async function POST(
     }
 
     const amountCents = Math.round(Number(project.agreed_amount) * 100);
-    const feePct = project.platform_fee_percent ?? 12;
+    const feePct = project.platform_fee_percent ?? 15;
     const platformFeeCents = Math.round(amountCents * (feePct / 100));
     const { data: creatorBank } = await serviceSupabase
       .from('creator_bank_accounts')
@@ -89,6 +90,7 @@ export async function POST(
         opportunity_id: project.opportunity_id,
         poster_user_id: project.poster_user_id,
         creator_user_id: project.creator_user_id,
+        creator_id: project.creator_user_id,
         charge_type: 'gig_payment',
         platform_fee_amount: String(platformFeeCents),
         platform_fee_percent: String(feePct),
@@ -101,6 +103,7 @@ export async function POST(
       piParams.transfer_data = { destination: stripeAccountId };
     }
     const newPi = await stripe.paymentIntents.create(piParams);
+    await addStripePaymentIntentIdToMetadata(stripe, newPi.id, (newPi.metadata ?? {}) as Record<string, string>);
 
     // Update only stripe_payment_intent_id (and updated_at); do not set stripe_client_secret
     // here so the update succeeds when that column does not exist (migration not run).

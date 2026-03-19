@@ -82,7 +82,7 @@ export async function POST(
     }
 
     const agreed = Number(gig.payment_amount);
-    const feePercent = 12;
+    const feePercent = 15;
     const platformFee = Math.round(agreed * (feePercent / 100) * 100) / 100;
     const creatorPayout = Math.round((agreed - platformFee) * 100) / 100;
     const { data: project, error: projErr } = await service

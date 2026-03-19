@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 // Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; Wise converts at payout.
 const STRIPE_SUPPORTED_CURRENCIES = new Set([
@@ -211,6 +212,7 @@ export async function POST(request: NextRequest) {
         platform_fee_amount: String(platformFeeMinor),
         platform_fee_percent: String(Math.round(stripeFeeRate * 100)),
         creator_payout_amount: String(creatorPayoutMinor),
+        creator_id: creatorId,
         creator_user_id: creatorId,
       },
       description: `Tip to creator ${creatorId}`,
@@ -238,6 +240,7 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig as Parameters<typeof stripe.paymentIntents.create>[0]);
+    await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
 
     // Record the tip in the enhanced tip analytics system
     const { data: tipData, error: tipError } = await supabase

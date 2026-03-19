@@ -1,6 +1,10 @@
 -- Raise minimum payout from $25 to $50.
 -- Wise transfer fees are ~$7 flat; at $25 minimum, fees would be ~28% of the payout.
 -- At $50 minimum, fees are ~14%, leaving a more reasonable amount for the creator.
+--
+-- SUPERSEDED by 20260127100000_currency_aware_min_payout.sql: min is now currency-aware
+-- ($30 for Wise currencies, $20 otherwise). The later migration drops this function
+-- and replaces it with get_payout_eligibility(p_creator_id, p_bank_currency).
 
 CREATE OR REPLACE FUNCTION get_payout_eligibility(
   p_creator_id UUID

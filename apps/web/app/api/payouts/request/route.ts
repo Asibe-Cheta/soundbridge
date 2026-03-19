@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,11 +15,12 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const { amount, currency = 'USD' } = await request.json();
-    
-    // Validate required fields
-    if (!amount || amount < 50) {
+    const minPayout = getMinPayoutForCurrency(currency);
+
+    // Validate required fields (currency-aware minimum: $30 Wise, $20 others)
+    if (!amount || typeof amount !== 'number' || amount < minPayout) {
       return NextResponse.json(
-        { error: 'Minimum withdrawal amount is $50.00' },
+        { error: `Minimum withdrawal amount is $${minPayout}.00 for ${currency || 'your account'}.` },
         { status: 400 }
       );
     }

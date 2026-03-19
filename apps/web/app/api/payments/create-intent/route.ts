@@ -3,6 +3,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -193,8 +194,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const amountCents = Math.round(dbPrice * 100);
+    const platformFeeCents = Math.round(platformFee * 100);
+    const creatorPayoutCents = Math.round(creatorEarnings * 100);
+    const platformFeePercent = dbPrice > 0 ? Math.round((platformFee / dbPrice) * 100) : 10;
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(dbPrice * 100), // Convert to cents
+      amount: amountCents,
       currency: dbCurrency.toLowerCase(),
       metadata: {
         content_id: content_id,
@@ -203,9 +209,14 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId || '',
         platform_fee: platformFee.toFixed(2),
         creator_earnings: creatorEarnings.toFixed(2),
+        charge_type: 'audio_sale',
+        platform_fee_amount: String(platformFeeCents),
+        platform_fee_percent: String(platformFeePercent),
+        creator_payout_amount: String(creatorPayoutCents),
       },
       description: `Purchase: ${content.title || 'Content'}`,
     });
+    await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
 
     return NextResponse.json(
       {

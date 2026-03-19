@@ -462,17 +462,30 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
               <>
                 {/* Wise: Ready for Withdrawals (no Stripe UI) */}
                 {isWiseAccount && (
-                  <div className="mb-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="font-medium text-green-300 mb-1">Ready for Withdrawals</h4>
-                        <p className="text-green-200 text-sm">
-                          Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {bankAccount.currency} via Wise — typically arriving within 1–3 business days. Minimum withdrawal is $25. No further verification needed.
-                        </p>
+                  <>
+                    <div className="mb-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-green-300 mb-1">Ready for Withdrawals</h4>
+                          <p className="text-green-200 text-sm">
+                            Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {bankAccount.currency} via Wise — typically arriving within 1–3 business days. Minimum withdrawal is $30. No further verification needed.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                    <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-blue-300 mb-1">Lower fees with a UK, EU, or US account</h4>
+                          <p className="text-blue-200 text-sm">
+                            Have a UK, EU, or US bank account? Add it to receive your earnings with significantly lower fees, then transfer to your local account using an app like Lemfi, Wise Personal, or your bank&apos;s international transfer.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {/* Stripe Connect Warning if not set up (Stripe users only) */}

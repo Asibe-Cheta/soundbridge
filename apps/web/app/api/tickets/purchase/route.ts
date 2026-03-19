@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 
 export async function POST(request: NextRequest) {
   try {
@@ -147,11 +148,13 @@ export async function POST(request: NextRequest) {
         platform_fee_percent: String(PLATFORM_FEE_PERCENT),
         creator_payout_amount: String(promoterPence),
         reference_id: ticket.event?.id ?? ticketId,
+        creator_id: ticket.event?.creator_id ?? '',
         creator_user_id: ticket.event?.creator_id ?? '',
       },
       description: `${quantity}x ${ticket.ticket_name} for ${ticket.event?.title}`,
       receipt_email: buyerEmail,
     });
+    await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
 
     // Create pending ticket purchase records
     const purchaseRecords = ticketCodes.map((code, index) => ({

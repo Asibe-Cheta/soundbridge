@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe-esg';
+import { createServiceClient } from '@/src/lib/supabase';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
 import type { Database } from '@/src/lib/types';
 
@@ -181,6 +182,24 @@ export async function POST(
       },
     },
   ]);
+
+  // Platform fee tracking for P&L (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md)
+  const service = createServiceClient();
+  const grossMinor = Math.round(Number(booking.total_amount) * 100);
+  const platformFeeMinor = Math.round(Number(booking.platform_fee) * 100);
+  const creatorPayoutMinor = Math.round(Number(booking.provider_payout ?? 0) * 100);
+  const feePct = grossMinor > 0 ? (platformFeeMinor / grossMinor) * 100 : 0;
+  await service.rpc('insert_platform_revenue', {
+    p_charge_type: 'gig_payment',
+    p_gross_amount: grossMinor,
+    p_platform_fee_amount: platformFeeMinor,
+    p_platform_fee_percent: Math.round(feePct * 100) / 100,
+    p_creator_payout_amount: creatorPayoutMinor,
+    p_stripe_payment_intent_id: paymentIntent.id,
+    p_reference_id: booking.id,
+    p_creator_user_id: booking.provider_id,
+    p_currency: (booking.currency ?? 'USD').toUpperCase(),
+  }).catch((err) => console.error('[confirm-payment] insert_platform_revenue:', err));
 
   const { data: hydratedBooking, error: hydrateError } = await supabaseClient
     .from('service_bookings')

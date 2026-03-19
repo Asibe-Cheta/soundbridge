@@ -158,7 +158,7 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
       {/* About your wallet — WEB_TEAM_PAYMENT_FLOW_MESSAGING */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
         <p className="text-gray-300 text-sm mb-3">
-          Your digital wallet stores earnings from gigs, tips, and content sales. Once funds are in your wallet, you can request a withdrawal to your local bank account at any time (minimum $50).
+          Your digital wallet stores earnings from gigs, tips, and content sales. Once funds are in your wallet, you can request a withdrawal to your local bank account at any time (minimum $20–$30 depending on your bank currency).
         </p>
         <ul className="text-gray-400 text-sm space-y-1">
           <li>• Gig payments land in your wallet on completion</li>
