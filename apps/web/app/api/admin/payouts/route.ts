@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin } from '@/src/lib/admin-auth';
 import { payoutToCreator } from '@/src/lib/wise/payout';
 import { batchPayout, type BatchPayoutItem } from '@/src/lib/wise/batch-payout';
 import type { PayoutToCreatorParams } from '@/src/lib/wise/payout';
@@ -45,34 +45,6 @@ function toPlaintext(stored: string | null | undefined): string {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
-}
-
-/**
- * Check if user is admin
- */
-async function isAdmin(userId: string): Promise<boolean> {
-  const supabase = createServiceClient();
-  
-  // Check profiles.role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userId)
-    .single();
-
-  if (profile?.role === 'admin') {
-    return true;
-  }
-
-  // Check user_roles table
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId)
-    .eq('role', 'admin')
-    .single();
-
-  return !!userRole;
 }
 
 /**
@@ -117,40 +89,16 @@ async function isAdmin(userId: string): Promise<boolean> {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const supabase = createServiceClient();
-    const authHeader = request.headers.get('authorization');
-    
-    let userId: string | null = null;
-
-    // Try to get user from Bearer token
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
-    }
-
-    // If no user from token, try to get from session (for web requests)
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id || null;
-    }
-
-    if (!userId) {
+    const admin = await requireAdmin(request);
+    if (!admin.ok) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401, headers: corsHeaders }
+        { error: admin.error },
+        { status: admin.status, headers: corsHeaders }
       );
     }
 
-    // Check if user is admin
-    const userIsAdmin = await isAdmin(userId);
-    if (!userIsAdmin) {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403, headers: corsHeaders }
-      );
-    }
+    const supabase = admin.serviceClient;
+    const userId = admin.userId;
 
     // Parse request body (support both payout_request_id trigger and single/batch payloads)
     let body: Record<string, unknown>;
@@ -242,12 +190,11 @@ export async function POST(request: NextRequest) {
           sourceAmount: Number(pr.amount),
         };
         const payout = await payoutToCreator(payoutParams);
-
+        // Store mapping payout_requests -> wise_payouts.
+        // Do NOT mark completed here: wait for the Wise webhook to confirm transfer completion.
         await supabase
           .from('payout_requests')
           .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             stripe_transfer_id: payout.id,
           })
@@ -419,38 +366,16 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user
-    const supabase = createServiceClient();
-    const authHeader = request.headers.get('authorization');
-    
-    let userId: string | null = null;
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
-    }
-
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id || null;
-    }
-
-    if (!userId) {
+    const admin = await requireAdmin(request);
+    if (!admin.ok) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401, headers: corsHeaders }
+        { error: admin.error },
+        { status: admin.status, headers: corsHeaders }
       );
     }
 
-    // Check if user is admin
-    const userIsAdmin = await isAdmin(userId);
-    if (!userIsAdmin) {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403, headers: corsHeaders }
-      );
-    }
+    const supabase = admin.serviceClient;
+    const userId = admin.userId;
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -478,8 +403,89 @@ export async function GET(request: NextRequest) {
           { status: 500, headers: corsHeaders }
         );
       }
+
+      const rows = requests || [];
+      if (rows.length === 0) {
+        return NextResponse.json(
+          { success: true, payout_requests: [], limit, offset },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      const creatorIds = [...new Set(rows.map((r: any) => r.creator_id).filter(Boolean))];
+      if (creatorIds.length === 0) {
+        return NextResponse.json(
+          { success: true, payout_requests: [], limit, offset },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+      const bankAccountIds = rows.map((r: any) => r.bank_account_id).filter(Boolean);
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', creatorIds);
+
+      const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+
+      // Fetch verified bank accounts for these creators (needed when payout_requests.bank_account_id is null)
+      const { data: banks } = await supabase
+        .from('creator_bank_accounts')
+        .select('id, user_id, bank_name, currency, account_number_encrypted')
+        .in('user_id', creatorIds)
+        .eq('is_verified', true);
+
+      const banksByUserId = new Map<string, any[]>();
+      const bankById = new Map<string, any>();
+      (banks ?? []).forEach((b: any) => {
+        bankById.set(b.id, b);
+        const list = banksByUserId.get(b.user_id) ?? [];
+        list.push(b);
+        banksByUserId.set(b.user_id, list);
+      });
+
+      const maskAccountNumber = (v: string | null | undefined) => {
+        const s = String(v ?? '').trim();
+        const digits = s.replace(/\D/g, '');
+        if (digits.length < 4) return '****';
+        return `****${digits.slice(-4)}`;
+      };
+
+      const enriched = rows.map((r: any) => {
+        const creator = profileMap.get(r.creator_id);
+
+        const chosenBank =
+          (r.bank_account_id ? bankById.get(r.bank_account_id) : null) ??
+          (banksByUserId.get(r.creator_id) ?? [])[0] ??
+          null;
+
+        const bankCurrency = (chosenBank?.currency ?? null) ? String(chosenBank.currency).toUpperCase() : null;
+        let accountNumberPlain: string | null = null;
+        if (chosenBank?.account_number_encrypted != null) {
+          try {
+            accountNumberPlain = toPlaintext(chosenBank.account_number_encrypted);
+          } catch (e) {
+            accountNumberPlain = null;
+          }
+        }
+
+        const payoutRail =
+          bankCurrency && ['NGN', 'GHS', 'KES'].includes(bankCurrency)
+            ? 'Wise'
+            : 'Stripe Connect';
+
+        return {
+          ...r,
+          creator_name: creator?.display_name ?? creator?.username ?? r.creator_id,
+          creator_email: creator?.email ?? null,
+          bank_name: chosenBank?.bank_name ?? null,
+          bank_currency: bankCurrency,
+          bank_account_masked: chosenBank ? maskAccountNumber(accountNumberPlain) : null,
+          payout_rail: payoutRail,
+        };
+      });
+
       return NextResponse.json(
-        { success: true, payout_requests: requests || [], limit, offset },
+        { success: true, payout_requests: enriched, limit, offset },
         { status: 200, headers: corsHeaders }
       );
     }

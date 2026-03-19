@@ -46,6 +46,10 @@ yarn-error.log*
 # supabase
 supabase/sql/
 
+# Generated secrets (never commit)
+scripts/soundbridge-*.json
+
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

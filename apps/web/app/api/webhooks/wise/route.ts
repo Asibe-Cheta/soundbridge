@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { wiseConfig } from '@/src/lib/wise/config';
 import { sendExpoPush } from '@/src/lib/push-notifications';
+import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -150,6 +151,132 @@ async function handleTransferStateChange(
     if (updateError) {
       console.error('❌ Failed to update payout:', updateError);
       return;
+    }
+
+    // Keep payout_requests in sync + notify creator when Wise confirms completion.
+    // We map payout_requests -> wise_payouts via payout_requests.stripe_transfer_id = wise_payouts.id.
+    if (newStatus === 'completed' || newStatus === 'failed') {
+      try {
+        // Primary mapping: payout_requests.stripe_transfer_id = wise_payout.id
+        let payoutRequest = await supabase
+          .from('payout_requests')
+          .select('id, creator_id, amount, currency, status')
+          .eq('stripe_transfer_id', payout.id)
+          .maybeSingle()
+          .then((r) => r.data);
+
+        // Fallback mapping (important for batch race): wise_payout.customer_transaction_id = payout_requests.id
+        if (!payoutRequest && (payout as any).customer_transaction_id) {
+          payoutRequest = await supabase
+            .from('payout_requests')
+            .select('id, creator_id, amount, currency, status')
+            .eq('id', (payout as any).customer_transaction_id)
+            .maybeSingle()
+            .then((r) => r.data);
+        }
+
+        if (payoutRequest) {
+          if (newStatus === 'completed' && payoutRequest.status !== 'completed') {
+            await supabase
+              .from('payout_requests')
+              .update({
+                status: 'completed',
+                completed_at: occurredAt || new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', payoutRequest.id);
+
+            // Deduct creator wallet / revenue balance.
+            // Prefer process_creator_payout if present; otherwise fall back to record_revenue_transaction.
+            try {
+              await supabase.rpc('process_creator_payout', {
+                user_uuid: payoutRequest.creator_id,
+                payout_amount: Number(payoutRequest.amount),
+              });
+            } catch (e) {
+              console.warn('process_creator_payout not available; falling back to record_revenue_transaction', e);
+              try {
+                await supabase.rpc('record_revenue_transaction', {
+                  user_uuid: payoutRequest.creator_id,
+                  transaction_type_param: 'payout',
+                  amount_param: -Number(payoutRequest.amount),
+                  customer_name_param: 'SoundBridge Platform',
+                  stripe_payment_intent_id_param: payout.id,
+                });
+              } catch (e2) {
+                console.error('Wallet deduction fallback failed:', e2);
+              }
+            }
+
+            // Send creator email notification.
+            try {
+              const { data: creatorProfile } = await supabase
+                .from('profiles')
+                .select('email, display_name')
+                .eq('id', payoutRequest.creator_id)
+                .maybeSingle();
+
+              const email = creatorProfile?.email;
+              if (email) {
+                const currency = (payout.currency ?? 'NGN').toString();
+                const symbol =
+                  currency === 'NGN' ? '₦' :
+                  currency === 'GBP' ? '£' :
+                  currency === 'EUR' ? '€' :
+                  currency === 'GHS' ? '₵' :
+                  currency === 'KES' ? 'KSh' :
+                  '$';
+
+                const digits = String(payout.recipient_account_number ?? '').replace(/\D/g, '');
+                const maskedAccount = digits.length >= 4 ? `****${digits.slice(-4)}` : '****';
+                const destinationBank = payout.recipient_bank_name || payout.recipient_bank_code || payout.currency;
+                const country =
+                  currency === 'NGN' ? 'Nigeria' :
+                  currency === 'GHS' ? 'Ghana' :
+                  currency === 'KES' ? 'Kenya' :
+                  currency;
+
+                const amount = Number(payout.amount ?? 0);
+                const reference = payout.wise_transfer_id || payout.id;
+                const displayName = creatorProfile?.display_name || 'Creator';
+
+                const html = `
+                  <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.5;">
+                    <h2 style="margin: 0 0 10px;">Your SoundBridge payout has been sent</h2>
+                    <p style="margin: 0 0 8px;">Hi <b>${displayName}</b>,</p>
+                    <p style="margin: 0 0 8px;"><b>${symbol}${amount.toFixed(2)}</b> has been sent to your ${destinationBank} account in ${country}.</p>
+                    <p style="margin: 0 0 8px;">Destination account: <code>${maskedAccount}</code></p>
+                    <p style="margin: 0 0 8px;">Transaction reference: <code>${reference}</code></p>
+                    <p style="margin: 0 0 8px;">Estimated arrival: 2–5 business days.</p>
+                    <p style="margin-top: 16px; color: #666; font-size: 12px;">Support: contact@soundbridge.live</p>
+                  </div>
+                `;
+
+                await SendGridService.sendHtmlEmail(
+                  email,
+                  `Your SoundBridge payout of ${symbol}${amount.toFixed(2)} has been sent`,
+                  html
+                );
+              }
+            } catch (emailErr) {
+              console.error('Creator payout email failed:', emailErr);
+            }
+          }
+
+          if (newStatus === 'failed' && payoutRequest.status !== 'failed') {
+            await supabase
+              .from('payout_requests')
+              .update({
+                status: 'failed',
+                rejection_reason: payout.error_message || `Wise transfer ${currentState}`,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', payoutRequest.id);
+          }
+        }
+      } catch (syncErr) {
+        console.error('Error syncing payout_requests from wise webhook:', syncErr);
+      }
     }
 
     if (newStatus === 'completed') {
