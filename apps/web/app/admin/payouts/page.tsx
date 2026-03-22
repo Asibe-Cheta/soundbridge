@@ -60,7 +60,8 @@ export default function AdminPayoutsPage() {
   const [historyFailed, setHistoryFailed] = useState<WisePayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+  type ActionBusyKind = 'approve' | 'manual' | 'reject' | 'fund' | 'retry';
+  const [actionBusy, setActionBusy] = useState<{ id: string; kind: ActionBusyKind } | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
   type BatchResult = {
     processed: number;
@@ -125,7 +126,7 @@ export default function AdminPayoutsPage() {
   }, []);
 
   const approve = async (payoutRequestId: string) => {
-    setActionBusyId(payoutRequestId);
+    setActionBusy({ id: payoutRequestId, kind: 'approve' });
     try {
       const res = await fetch('/api/admin/payouts', {
         method: 'POST',
@@ -141,7 +142,34 @@ export default function AdminPayoutsPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to approve payout');
     } finally {
-      setActionBusyId(null);
+      setActionBusy(null);
+    }
+  };
+
+  const manualMarkPaid = async (payoutRequestId: string) => {
+    const ok = window.confirm(
+      'Mark this payout as manually paid?\n\n' +
+        'Use when you sent funds outside Wise (e.g. Tide, bank transfer). ' +
+        'This sets the request to completed and updates the creator balance — it does NOT call Wise.'
+    );
+    if (!ok) return;
+    setActionBusy({ id: payoutRequestId, kind: 'manual' });
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/payouts/manual-complete', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payout_request_id: payoutRequestId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || json.message || 'Failed to mark as paid');
+      if (json.warning) setError(`${json.warning}`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to mark as manually paid');
+    } finally {
+      setActionBusy(null);
     }
   };
 
@@ -174,7 +202,7 @@ export default function AdminPayoutsPage() {
   const reject = async (payoutRequestId: string) => {
     const reason = window.prompt('Rejection reason (shown internally):');
     if (!reason || !reason.trim()) return;
-    setActionBusyId(payoutRequestId);
+    setActionBusy({ id: payoutRequestId, kind: 'reject' });
     try {
       const res = await fetch('/api/admin/payouts/reject', {
         method: 'POST',
@@ -190,12 +218,12 @@ export default function AdminPayoutsPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to reject payout');
     } finally {
-      setActionBusyId(null);
+      setActionBusy(null);
     }
   };
 
   const fundProcessing = async (payoutRequestId: string) => {
-    setActionBusyId(payoutRequestId);
+    setActionBusy({ id: payoutRequestId, kind: 'fund' });
     setError(null);
     try {
       const res = await fetch('/api/admin/payouts/fund', {
@@ -210,12 +238,12 @@ export default function AdminPayoutsPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fund transfer');
     } finally {
-      setActionBusyId(null);
+      setActionBusy(null);
     }
   };
 
   const retryFailed = async (payoutRequestId: string) => {
-    setActionBusyId(payoutRequestId);
+    setActionBusy({ id: payoutRequestId, kind: 'retry' });
     setError(null);
     try {
       const res = await fetch('/api/admin/payouts/retry', {
@@ -230,7 +258,7 @@ export default function AdminPayoutsPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to re-queue payout');
     } finally {
-      setActionBusyId(null);
+      setActionBusy(null);
     }
   };
 
@@ -350,7 +378,7 @@ export default function AdminPayoutsPage() {
             <Clock className={`h-5 w-5 ${mutedClass}`} />
             <h2 className={`text-lg font-semibold ${textClass}`}>Pending requests</h2>
           </div>
-          <span className={`text-sm ${mutedClass}`}>Approve & send to Wise / Stripe Connect</span>
+          <span className={`text-sm ${mutedClass}`}>Approve via Wise, or mark paid manually if you sent funds outside Wise</span>
         </div>
 
         {loading ? (
@@ -367,7 +395,7 @@ export default function AdminPayoutsPage() {
                   <th className="text-left p-3 font-medium">Requested</th>
                   <th className="text-left p-3 font-medium">Bank</th>
                   <th className="text-left p-3 font-medium">Rail</th>
-                  <th className="w-48 text-right p-3 font-medium">Action</th>
+                  <th className="min-w-[280px] text-right p-3 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -398,9 +426,9 @@ export default function AdminPayoutsPage() {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2">
                         <button
-                          disabled={!!actionBusyId && actionBusyId === p.id}
+                          disabled={actionBusy !== null && actionBusy.id === p.id}
                           onClick={() => approve(p.id)}
                           className={`px-3 py-1.5 rounded text-xs font-medium ${
                             dark
@@ -408,10 +436,22 @@ export default function AdminPayoutsPage() {
                               : 'bg-green-600 hover:bg-green-500 text-white'
                           } disabled:opacity-60`}
                         >
-                          {actionBusyId === p.id ? 'Approving…' : 'Approve & Send'}
+                          {actionBusy?.id === p.id && actionBusy.kind === 'approve' ? 'Approving…' : 'Approve & Send'}
                         </button>
                         <button
-                          disabled={!!actionBusyId && actionBusyId === p.id}
+                          disabled={actionBusy !== null && actionBusy.id === p.id}
+                          onClick={() => manualMarkPaid(p.id)}
+                          className={`px-3 py-1.5 rounded text-xs font-medium ${
+                            dark
+                              ? 'bg-slate-600 hover:bg-slate-500 text-white'
+                              : 'bg-slate-600 hover:bg-slate-500 text-white'
+                          } disabled:opacity-60`}
+                          title="Use when funds were sent manually (Tide, bank, etc.) — no Wise API call"
+                        >
+                          {actionBusy?.id === p.id && actionBusy.kind === 'manual' ? 'Saving…' : 'Mark as manually paid'}
+                        </button>
+                        <button
+                          disabled={actionBusy !== null && actionBusy.id === p.id}
                           onClick={() => reject(p.id)}
                           className={`px-3 py-1.5 rounded text-xs font-medium ${
                             dark
@@ -419,7 +459,7 @@ export default function AdminPayoutsPage() {
                               : 'bg-red-600 hover:bg-red-500 text-white'
                           } disabled:opacity-60`}
                         >
-                          Reject
+                          {actionBusy?.id === p.id && actionBusy.kind === 'reject' ? 'Rejecting…' : 'Reject'}
                         </button>
                       </div>
                     </td>
@@ -478,7 +518,7 @@ export default function AdminPayoutsPage() {
                     </td>
                     <td className="p-3 text-right">
                       <button
-                        disabled={!!actionBusyId && actionBusyId === p.id}
+                        disabled={actionBusy !== null && actionBusy.id === p.id}
                         onClick={() => fundProcessing(p.id)}
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
                           dark
@@ -486,7 +526,7 @@ export default function AdminPayoutsPage() {
                             : 'bg-amber-600 hover:bg-amber-500 text-white'
                         } disabled:opacity-60`}
                       >
-                        {actionBusyId === p.id ? (
+                        {actionBusy?.id === p.id && actionBusy.kind === 'fund' ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Funding…
                           </>
@@ -550,7 +590,7 @@ export default function AdminPayoutsPage() {
                     </td>
                     <td className="p-3 text-right">
                       <button
-                        disabled={!!actionBusyId && actionBusyId === p.id}
+                        disabled={actionBusy !== null && actionBusy.id === p.id}
                         onClick={() => retryFailed(p.id)}
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
                           dark
@@ -558,7 +598,7 @@ export default function AdminPayoutsPage() {
                             : 'bg-green-600 hover:bg-green-500 text-white'
                         } disabled:opacity-60`}
                       >
-                        {actionBusyId === p.id ? (
+                        {actionBusy?.id === p.id && actionBusy.kind === 'retry' ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-queuing…
                           </>

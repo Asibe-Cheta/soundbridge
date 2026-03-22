@@ -208,3 +208,14 @@ Batch payments are funded from your Wise USD balance. Keep it topped up:
 - [ ] Keep Wise USD balance funded (min $500 recommended)
 - [ ] Build admin payout UI (`/admin/payouts`) — can come after cron
 - [ ] **NOW: Approve Merit's pending transfer manually in Wise dashboard**
+
+---
+
+## Manual payout (no Wise API)
+
+When Wise returns 403 or the API is unavailable, admins can mark a payout as paid **without** calling Wise:
+
+- **Endpoint:** `POST /api/admin/payouts/manual-complete` with body `{ "payout_request_id": "<uuid>" }` (admin session required).
+- **Effect:** Sets `payout_requests.status` to `completed`, deducts creator balance via `process_creator_payout` / `record_revenue_transaction` (same idea as Wise webhook), optional email to creator.
+- **Allowed statuses:** `pending`, `failed`, or `processing` (not `completed` / `rejected`).
+- **UI:** Admin `/admin/payouts` → **Mark as manually paid** (next to Approve & Send) for pending rows.
