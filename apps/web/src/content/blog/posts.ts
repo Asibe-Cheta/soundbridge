@@ -131,7 +131,7 @@ export const blogPosts: BlogPost[] = [
           ['Event promotion', 'Free, location-based', 'No', 'No'],
           ['Professional networking', 'Yes', 'No', 'Limited'],
           ['Collaboration tools', 'Yes', 'No', 'Limited'],
-          ['Revenue share', '95% tips, 90% sales, 88% services', 'Low payouts', 'Subscriptions'],
+          ['Revenue share', '85% creator share (15% platform fee)', 'Low payouts', 'Subscriptions'],
           ['Service marketplace', 'Yes', 'No', 'No'],
           ['Discovery algorithm', 'Quality-based', 'Follower-based', 'Follower-based'],
           ['Pricing', 'Free + Premium tiers', 'Free + Pro £4.99/mo', 'Free + Pro £10/mo']
@@ -175,7 +175,7 @@ export const blogPosts: BlogPost[] = [
         type: 'ul',
         items: [
           'Strengths: all-in-one, professional discovery, free event promotion.',
-          'Revenue share: 95% tips, 90% sales, 88% services.',
+          'Revenue share: 85% creator share (15% platform fee) on tips, sales, tickets & services.',
           'Weaknesses: new platform (launching April 2026).',
           'Pricing: Free + Premium tiers.'
         ]
@@ -400,7 +400,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'SoundBridge\'s innovation isn\'t inventing new technology. It\'s connecting existing technologies in a novel configuration: government economic APIs (first music platform to integrate for artist recommendations), ML prediction models (applied to music career geography), and location-based services (combined with economic data for career optimization). Four revenue streams: free event promotion, intelligent matching, professional networking (LinkedIn for audio creators), and direct fan monetization (95% artist retention). When artists earn more, SoundBridge earns more.'
+          'SoundBridge\'s innovation isn\'t inventing new technology. It\'s connecting existing technologies in a novel configuration: government economic APIs (first music platform to integrate for artist recommendations), ML prediction models (applied to music career geography), and location-based services (combined with economic data for career optimization). Four revenue streams: free event promotion, intelligent matching, professional networking (LinkedIn for audio creators), and direct fan monetization (85% artist retention, 15% platform fee). When artists earn more, SoundBridge earns more.'
       },
       { type: 'h2', text: 'Real-World Impact: Early Beta Results' },
       {

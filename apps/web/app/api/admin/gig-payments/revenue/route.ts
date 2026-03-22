@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     const data = rows.data ?? [];
     const creatorEarnings = data.reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
     const gross = creatorEarnings / 0.88;
-    const fees = gross * 0.12;
+    const fees = gross * 0.15;
     return { gig_count: data.length, gross_processed: Math.round(gross * 100) / 100, platform_fees: Math.round(fees * 100) / 100, creator_payouts: Math.round(creatorEarnings * 100) / 100 };
   };
 
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       country_code,
       gig_count: v.gig_count,
       gross: Math.round((v.creator_earnings / 0.88) * 100) / 100,
-      platform_fees: Math.round((v.creator_earnings / 0.88) * 0.12 * 100) / 100,
+      platform_fees: Math.round((v.creator_earnings / 0.85) * 0.15 * 100) / 100,
     })).sort((a, b) => b.gross - a.gross).slice(0, 10);
   }
 

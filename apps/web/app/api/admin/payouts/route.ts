@@ -73,7 +73,7 @@ function buildPayoutFailureResponse(err: unknown): NextResponse {
     String(e?.code) === '403' ||
     raw.includes('403');
   const isMissingConfig =
-    /WISE_API_TOKEN|WISE_WEBHOOK_SECRET|WISE_PROFILE_ID|environment variables/i.test(raw);
+    /WISE_API_TOKEN|WISE_PROFILE_ID|environment variables/i.test(raw);
 
   let message = raw;
   if (is403) {

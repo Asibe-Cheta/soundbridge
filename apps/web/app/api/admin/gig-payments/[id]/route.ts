@@ -43,7 +43,7 @@ export async function GET(
   const poster = posterProfile.data ?? {};
   const creator = creatorProfile.data ?? {};
   const gross = Number(project.agreed_amount ?? 0);
-  const fee = Number(project.platform_fee_amount ?? gross * 0.12);
+  const fee = Number(project.platform_fee_amount ?? gross * 0.15);
   const earnings = Number(project.creator_payout_amount ?? gross - fee);
   const postRow = post?.data ?? post;
   const paymentStatus = postRow?.payment_status ?? (project.status === 'completed' ? 'released' : project.status === 'disputed' ? 'disputed' : 'escrowed');

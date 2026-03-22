@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 import { SendGridService } from '@/src/lib/sendgrid-service';
+import { CREATOR_SHARE_DECIMAL, PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -168,11 +169,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate fees (doc: 5% platform for audio/content; internal 90/10 for now)
-    const platformFee = Math.round(price * 0.10 * 100) / 100;
-    const creatorEarnings = Math.round(price * 0.90 * 100) / 100;
+    // 15% platform / 85% creator (MOBILE_PRICING_MODEL_UPDATE.md)
+    const platformFee = Math.round(price * PLATFORM_FEE_DECIMAL * 100) / 100;
+    const creatorEarnings = Math.round(price * CREATOR_SHARE_DECIMAL * 100) / 100;
     const amountCents = Math.round(price * 100);
-    const platformFeeCents = Math.round(amountCents * 0.05); // 5% for Stripe Collected fees
+    const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_DECIMAL);
 
     // Create Stripe Payment Intent
     if (!stripe) {
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
         buyer_email: user.email || '',
         charge_type: 'audio_sale',
         platform_fee_amount: String(platformFeeCents),
-        platform_fee_percent: '5',
+        platform_fee_percent: String(PLATFORM_FEE_PERCENT),
         creator_payout_amount: String(creatorPayoutCents),
         reference_id: content_id,
         creator_user_id: creatorId || '',
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest) {
       p_charge_type: 'audio_sale',
       p_gross_amount: amountCents,
       p_platform_fee_amount: platformFeeCents,
-      p_platform_fee_percent: 5,
+      p_platform_fee_percent: PLATFORM_FEE_PERCENT,
       p_creator_payout_amount: amountCents - platformFeeCents,
       p_stripe_payment_intent_id: paymentIntent.id,
       p_reference_id: content_id,

@@ -222,18 +222,17 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
             ? [
                 '250MB storage (~30–40 tracks)',
                 'Unlimited event promotion',
-                'Create & sell event tickets',
+                'Upload & sell music — keep 85%',
+                'Receive tips & host paid events — keep 85%',
                 'Basic profile & networking',
-                'Receive tips (keep 95%)',
                 'Browse & discover music',
                 'Basic analytics',
                 'Community support',
               ]
             : subscription.tier === 'premium'
             ? [
-                'Host paid events (keep 95% of revenue)',
-                'Sell audio downloads',
                 '2GB storage (~250 tracks)',
+                'Sell audio downloads',
                 'Unlimited uploads*',
                 'Pro badge on profile',
                 'Custom profile URL',
@@ -255,7 +254,6 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
                 'Social media post generator',
                 'Custom promo codes',
                 'Email list export',
-                'Lower fees (3% vs 5%)',
                 'Highest priority support',
               ]
           ).map((label) => (

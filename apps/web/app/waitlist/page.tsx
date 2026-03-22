@@ -181,8 +181,8 @@ export default function WaitlistPage() {
   const benefits = [
     {
       icon: DollarSign,
-      headline: 'Keep 95% of Your Earnings',
-      description: 'Unlike streaming platforms that pay pennies, get tipped directly by fans. You keep 95%, we take 5% - that\'s it.'
+      headline: 'Keep 85% of Your Earnings',
+      description: 'Unlike streaming platforms that pay pennies, get tipped directly by fans. You keep 85%, we take 15% — that\'s it.'
     },
     {
       icon: Handshake,
@@ -223,7 +223,7 @@ export default function WaitlistPage() {
   ];
 
   const features = [
-    'Direct Fan Tipping - Fans support you directly, you keep 95%',
+    'Direct Fan Tipping - Fans support you directly, you keep 85%',
     'Professional Networking - Connect with producers, venues, DJs like LinkedIn',
     'Event Hosting - Host live sessions, coaching, podcast spaces',
     'Affordable Distribution - Upload music without breaking the bank',
@@ -517,7 +517,7 @@ export default function WaitlistPage() {
           <p className={`text-xl md:text-2xl mb-8 ${
             theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
           }`}>
-            Be among the first artists to earn 95% from tips, connect with industry professionals, and build your music career on your terms.
+            Be among the first artists to earn 85% from tips, connect with industry professionals, and build your music career on your terms.
           </p>
           
           {renderEmailForm('mb-6')}
@@ -684,7 +684,7 @@ export default function WaitlistPage() {
               </thead>
               <tbody>
                 {[
-                  { feature: 'Artist Revenue', spotify: '£0.003/stream', soundbridge: '95% of tips' },
+                  { feature: 'Artist Revenue', spotify: '£0.003/stream', soundbridge: '85% of tips' },
                   { feature: 'Professional Networking', spotify: false, soundbridge: true },
                   { feature: 'Upload Cost', spotify: '£20+/year', soundbridge: '3 free, 10 with subscription' },
                   { feature: 'Direct Fan Support', spotify: false, soundbridge: true },

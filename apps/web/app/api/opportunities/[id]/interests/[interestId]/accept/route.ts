@@ -3,18 +3,13 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import { getMonetizationPlatformFeePercent } from '@/src/lib/platform-fees';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
-
-/** Platform fee: 15% for free/pro, 8% for unlimited (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md). */
-function getPlatformFeePercent(tier: string): number {
-  const t = (tier || 'free').toLowerCase();
-  return t === 'unlimited' ? 8 : 15;
-}
 
 /**
  * POST /api/opportunities/:id/interests/:interestId/accept
@@ -163,8 +158,7 @@ export async function POST(
       );
     }
 
-    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', posterUserId).single();
-    const feePercent = getPlatformFeePercent(profile?.subscription_tier ?? 'free');
+    const feePercent = getMonetizationPlatformFeePercent();
     const agreed = Number(agreed_amount);
     const platformFeeAmount = Math.round(agreed * (feePercent / 100) * 100) / 100;
     const creatorPayoutAmount = Math.round((agreed - platformFeeAmount) * 100) / 100;

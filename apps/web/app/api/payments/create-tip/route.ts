@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 // Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; Wise converts at payout.
 const STRIPE_SUPPORTED_CURRENCIES = new Set([
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse request body — currency is determined by backend from creator's wallet, not from client
-    const { creatorId, amount, message, isAnonymous, userTier = 'free', paymentMethod = 'card' } = await request.json();
+    const { creatorId, amount, message, isAnonymous, userTier: _userTierIgnored = 'free', paymentMethod = 'card' } = await request.json();
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -163,9 +164,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate platform fee based on tipper's tier (userTier)
-    const normalizedTier = String(userTier || 'free').toLowerCase();
-    const platformFeeRate = normalizedTier === 'free' ? 0.10 : 0.08;
+    // Flat 15% platform fee for all tiers (MOBILE_PRICING_MODEL_UPDATE.md)
+    const normalizedTier = String(_userTierIgnored || 'free').toLowerCase();
+    const platformFeeRate = PLATFORM_FEE_DECIMAL;
     const analyticsTier = ['free', 'pro', 'enterprise'].includes(normalizedTier)
       ? normalizedTier
       : ['premium', 'unlimited'].includes(normalizedTier)
@@ -174,8 +175,7 @@ export async function POST(request: NextRequest) {
     const platformFee = Math.round(tipAmount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
 
-    // Stripe application_fee: 5% (doc); 3% for Unlimited tier
-    const stripeFeeRate = normalizedTier === 'unlimited' ? 0.03 : 0.05;
+    const stripeFeeRate = PLATFORM_FEE_DECIMAL;
 
     // Create real Stripe payment intent
     if (!stripe) {
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
         isAnonymous: (isAnonymous || false).toString(),
         charge_type: 'tip',
         platform_fee_amount: String(platformFeeMinor),
-        platform_fee_percent: String(Math.round(stripeFeeRate * 100)),
+        platform_fee_percent: String(PLATFORM_FEE_PERCENT),
         creator_payout_amount: String(creatorPayoutMinor),
         creator_id: creatorId,
         creator_user_id: creatorId,
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
         tip_amount: tipAmount,
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
-        fee_percentage: platformFeeRate * 100,
+        fee_percentage: PLATFORM_FEE_PERCENT,
         tip_message: message,
         is_anonymous: isAnonymous || false,
         stripe_payment_intent_id: paymentIntent.id,

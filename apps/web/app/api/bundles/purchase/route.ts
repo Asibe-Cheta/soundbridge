@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import { PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,7 +85,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user tier for fee calculation
     const { data: subscription } = await supabase
       .from('user_subscriptions')
       .select('tier')
@@ -94,10 +94,6 @@ export async function POST(request: NextRequest) {
 
     const userTier = subscription?.tier || 'free';
 
-    // Calculate fees
-    const PLATFORM_FEE_PERCENT = userTier === 'free' ? 5.0 :
-                                 userTier === 'pro' ? 3.5 : 2.5;
-    
     const bundlePrice = parseFloat(bundle.bundle_price || '0');
     const platformFee = bundlePrice * (PLATFORM_FEE_PERCENT / 100);
     const promoterRevenue = bundlePrice - platformFee;

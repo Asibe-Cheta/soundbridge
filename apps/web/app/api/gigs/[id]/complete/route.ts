@@ -112,7 +112,7 @@ export async function POST(
       gigId,
     });
 
-    const PLATFORM_FEE_PCT = 0.12;
+    const PLATFORM_FEE_PCT = 0.15;
     const grossAmount = creditResult.creditedAmount / (1 - PLATFORM_FEE_PCT);
     const platformFee = grossAmount * PLATFORM_FEE_PCT;
     let stripeReceiptUrl: string | null = null;

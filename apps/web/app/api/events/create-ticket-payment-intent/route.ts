@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import { PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,7 @@ const corsHeaders = {
 
 /**
  * POST /api/events/create-ticket-payment-intent
- * Create a Stripe Payment Intent for event ticket purchase with 5% platform fee
+ * Create a Stripe Payment Intent for event ticket purchase with 15% platform fee
  */
 export async function POST(request: NextRequest) {
   try {
@@ -159,10 +160,10 @@ export async function POST(request: NextRequest) {
     const amountPerTicket = Math.round(ticketPrice * 100);
     const totalAmount = amountPerTicket * quantity;
     
-    // Platform fee: 5% of total amount
-    const platformFeeAmount = Math.round(totalAmount * 0.05);
+    // Platform fee: 15% of total amount (MOBILE_PRICING_MODEL_UPDATE.md)
+    const platformFeeAmount = Math.round(totalAmount * 0.15);
     
-    // Organizer receives: 95% of total amount
+    // Organizer receives: 85% of total amount
     const organizerAmount = totalAmount - platformFeeAmount;
 
     // Create Stripe Payment Intent with application fee and transfer
@@ -177,12 +178,12 @@ export async function POST(request: NextRequest) {
         eventId: eventId,
         userId: user.id,
         quantity: quantity.toString(),
-        platformFeePercentage: '5',
+        platformFeePercentage: String(PLATFORM_FEE_PERCENT),
         ticketPrice: ticketPrice.toString(),
         currency: validCurrency,
         charge_type: 'event_ticket',
         platform_fee_amount: String(platformFeeAmount),
-        platform_fee_percent: '5',
+        platform_fee_percent: String(PLATFORM_FEE_PERCENT),
         creator_payout_amount: String(organizerAmount),
         reference_id: eventId,
         creator_user_id: (event as { creator_id?: string }).creator_id ?? '',

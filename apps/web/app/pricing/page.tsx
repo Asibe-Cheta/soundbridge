@@ -93,7 +93,7 @@ function PricingContent() {
         'Unlimited event promotion',
         'Create & sell event tickets',
         'Basic profile & networking',
-        'Receive tips (keep 95%)',
+        'Receive tips (keep 85%)',
         'Browse & discover music',
         'Basic analytics',
         'Community support'
@@ -111,9 +111,9 @@ function PricingContent() {
       borderColor: 'border-purple-200/50',
       buttonColor: 'bg-purple-600 hover:bg-purple-700',
       features: [
-        'Host paid events (keep 95% of revenue)',
-        'Sell audio downloads',
         '2GB storage (~250 tracks)',
+        'Same 85% creator share on sales, tips & tickets',
+        'Sell audio downloads',
         'Unlimited uploads*',
         'Pro badge on profile',
         'Custom profile URL',
@@ -149,7 +149,6 @@ function PricingContent() {
         'Social media post generator',
         'Custom promo codes',
         'Email list export',
-        'Lower fees (3% vs 5%)',
         'Highest priority support',
         '🛡️ 7-day money-back guarantee'
       ],
@@ -199,8 +198,8 @@ function PricingContent() {
       category: 'Monetization',
       icon: <DollarSign className="h-6 w-6 text-yellow-500" />,
       items: [
-        { name: 'Receive Tips', free: '✓ (95%)', premium: '✓ (95%)', unlimited: '✓ (95%)' },
-        { name: 'Sell Event Tickets', free: '✓ (95%)', premium: '✓ (95%)', unlimited: '✓ (95%)' },
+        { name: 'Receive Tips', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (85%)' },
+        { name: 'Sell Event Tickets', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (85%)' },
         { name: 'Service Provider', free: '✗', premium: '✓', unlimited: '✓' },
         { name: 'Payment Escrow', free: '✗', premium: '✓', unlimited: '✓' },
         { name: 'Promo Codes', free: '✗', premium: '✗', unlimited: '✓' },
@@ -290,8 +289,8 @@ function PricingContent() {
             </h1>
             
             <p className="text-xl text-white/70 max-w-3xl mx-auto mb-8">
-              Start free, upgrade when you're ready to unlock powerful professional tools and connect with unlimited opportunities. 
-              All Premium and Unlimited plans include a <span className="text-green-400 font-semibold">7-day money-back guarantee</span>.
+              Start earning for free. Upgrade for more space and pro tools — Premium and Unlimited include a{' '}
+              <span className="text-green-400 font-semibold">7-day money-back guarantee</span>.
             </p>
 
             {/* Error Display */}
@@ -627,7 +626,7 @@ function PricingContent() {
                 },
                 {
                   q: "How does revenue sharing work?",
-                  a: "Pro users keep 95% of their earnings. We handle all payment processing and taxes. You can request payouts once you reach $50."
+                  a: "Creators keep 85% of their earnings (15% platform fee). We handle payment processing. You can request payouts once you reach $50."
                 },
                 {
                   q: "Do you offer a free trial?",

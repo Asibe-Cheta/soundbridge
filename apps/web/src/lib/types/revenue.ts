@@ -159,10 +159,10 @@ export interface PayoutRequest {
   currency: string;
 }
 
-// Platform fee structure
+/** Flat platform fee on monetization — tier does not change rate (MOBILE_PRICING_MODEL_UPDATE.md). */
 export const PLATFORM_FEES = {
-  free: 0.10,      // 10% for free users
-  pro: 0.05        // 5% for pro users
+  free: 0.15,
+  pro: 0.15,
 } as const;
 
 // Minimum payout amounts

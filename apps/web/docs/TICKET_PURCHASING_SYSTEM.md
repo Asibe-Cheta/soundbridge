@@ -78,7 +78,7 @@ User → Event Detail Page → Buy Ticket Button → EventTicketPurchaseModal
 - Determines currency based on event's country or user preference
 - Validates event capacity and ticket availability
 - Creates Stripe payment intent with 5% application fee
-- Uses Stripe Connect to transfer 95% to event organizer
+- Uses Stripe Connect to transfer 85% to event organizer (15% platform fee)
 
 **Error Responses**:
 - `400`: Invalid currency, event sold out, insufficient capacity
@@ -452,7 +452,7 @@ SENDGRID_TICKET_CONFIRMATION_TEMPLATE_ID=d-xxx # If not set, uses HTML fallback
 - Ticket code generated (EVT-XXXXXX format)
 - Email sent to buyer
 - Event attendee count updated
-- Organizer receives 95% of amount
+- Organizer receives 85% of amount (15% platform fee)
 
 ### 2. Test Ticket Sales Dashboard
 
@@ -543,7 +543,7 @@ SENDGRID_TICKET_CONFIRMATION_TEMPLATE_ID=d-xxx
 ### Fee Structure
 
 - **Platform Fee**: 5% of ticket price
-- **Organizer Receives**: 95% of ticket price
+- **Organizer Receives**: 85% of ticket price (15% platform fee)
 
 ### Example
 

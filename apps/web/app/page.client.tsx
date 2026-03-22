@@ -489,7 +489,7 @@ export default function HomePageClient() {
                 Keep What You Earn
               </h3>
               <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
-                95% on tips, 90% on sales, 88% on services. Industry-best creator revenue share.
+                85% creator share on tips, sales, tickets & services (15% platform fee).
               </p>
             </div>
           </div>

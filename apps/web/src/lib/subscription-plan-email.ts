@@ -11,9 +11,9 @@ export const SUBSCRIPTION_PLAN_EMAIL = {
     plan_price_monthly: '£6.99/month',
     plan_price_yearly: '£69.99/year',
     features: [
-      'Host paid events (keep 95% of revenue)',
-      'Sell audio downloads',
       '2GB storage (~250 tracks)',
+      'Sell downloads & tips — same 85% creator share as Free',
+      'Sell audio downloads',
       'Pro badge on profile',
       'Featured on Discover 1×/month',
       'Advanced analytics',
@@ -32,7 +32,6 @@ export const SUBSCRIPTION_PLAN_EMAIL = {
       'Social media post generator',
       'Custom promo codes',
       'Email list export',
-      'Lower fees (3% vs 5%)',
     ],
   },
 } as const;

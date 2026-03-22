@@ -3,6 +3,7 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import { SubscriptionEmailService } from '@/src/services/SubscriptionEmailService';
+import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     if (existingTicket && !checkError) {
       // Ticket already created for this payment intent (amount_paid stored in major units)
-      const platformFeeAmount = Math.round((existingTicket.amount_paid * 0.05) * 100) / 100;
+      const platformFeeAmount = Math.round((existingTicket.amount_paid * PLATFORM_FEE_DECIMAL) * 100) / 100;
       const organizerAmount = Math.round((existingTicket.amount_paid - platformFeeAmount) * 100) / 100;
 
       return NextResponse.json(
@@ -142,8 +143,8 @@ export async function POST(request: NextRequest) {
       ticketCodes.push(codeData);
     }
 
-    // Calculate fees in major units (5% platform fee, 95% to organizer)
-    const platformFeeAmountMajor = Math.round(amountMajor * 0.05 * 100) / 100;
+    // 15% platform fee, 85% to organizer (MOBILE_PRICING_MODEL_UPDATE.md)
+    const platformFeeAmountMajor = Math.round(amountMajor * PLATFORM_FEE_DECIMAL * 100) / 100;
     const organizerAmountMajor = Math.round((amountMajor - platformFeeAmountMajor) * 100) / 100;
     const amountPerTicketMajor = amountMajor / quantity;
     const platformFeePerTicket = platformFeeAmountMajor / quantity;
@@ -177,13 +178,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const platformFeeMinor = Math.round(amountMinor * 0.05);
+    const platformFeeMinor = Math.round(amountMinor * PLATFORM_FEE_DECIMAL);
     const organizerMinor = amountMinor - platformFeeMinor;
     await supabaseAdmin.rpc('insert_platform_revenue', {
       p_charge_type: 'event_ticket',
       p_gross_amount: amountMinor,
       p_platform_fee_amount: platformFeeMinor,
-      p_platform_fee_percent: 5,
+      p_platform_fee_percent: PLATFORM_FEE_PERCENT,
       p_creator_payout_amount: organizerMinor,
       p_stripe_payment_intent_id: paymentIntentId,
       p_reference_id: eventId,

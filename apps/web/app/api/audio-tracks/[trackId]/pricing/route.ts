@@ -104,23 +104,7 @@ export async function PUT(
       );
     }
 
-    // Check subscription status
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier, subscription_end_date')
-      .eq('id', user.id)
-      .single();
-
-    const hasActiveSubscription = profile?.subscription_tier && 
-                                  ['premium', 'unlimited'].includes(profile.subscription_tier) &&
-                                  (!profile.subscription_end_date || new Date(profile.subscription_end_date) > new Date());
-
-    if (is_paid && !hasActiveSubscription) {
-      return NextResponse.json(
-        { success: false, message: 'Only subscribed creators (Premium or Unlimited) can sell content' },
-        { status: 403, headers: corsHeaders }
-      );
-    }
+    // All tiers may sell paid content (MOBILE_PRICING_MODEL_UPDATE.md).
 
     // Validate price if setting as paid
     if (is_paid) {

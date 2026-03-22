@@ -48,6 +48,18 @@ export { WiseClient, getWiseClient, type WiseApiError } from './client';
 // Config
 export { wiseConfig, getWiseConfig, resetWiseConfig, type WiseConfig } from './config';
 
+// Webhook verification: JOSE (ES256 + OAuth) with RSA PEM fallback — see webhook-signature.ts
+export {
+  verifyWiseIncomingWebhookSignature,
+  verifyWiseWebhookRsaSignature,
+  resolveWiseWebhookPublicKeyPem,
+  getWiseClientCredentialsAccessToken,
+  fetchWiseJosePayloadSigningPublicKeyJwk,
+  invalidateWiseJosePublicKeyCache,
+  WISE_WEBHOOK_PRODUCTION_PUBLIC_KEY_PEM,
+  WISE_WEBHOOK_SANDBOX_PUBLIC_KEY_PEM,
+} from './webhook-signature';
+
 // Transfers and Account Verification
 export {
   createTransfer,

@@ -12,9 +12,13 @@ The SoundBridge Wise Business account is on the **Basic (free) plan**, which alr
 
 **Batch payments are already unlocked. No plan upgrade needed.**
 
-The current problem (`POST /v3/profiles/{id}/transfers/{id}/payments` → 403) is because we're creating individual transfers and trying to fund them one by one. Each individual funding call requires SCA (Strong Customer Authentication) — meaning a push notification approval per transfer. This does not scale.
+**Important (Wise, via their UI):** The **team member approval** workflow in Wise **does not apply to API transfers**. Do not assume a 403 on **`POST /v1/transfers`** is “waiting for someone to approve in the app” — for API calls, **transfer creation is gated by the API token’s scopes**, not that approval system.
 
-**The fix: switch to Wise Batch Payments API.** One batch = one approval, regardless of whether it contains 1 or 1,000 transfers.
+**Confirmed production issue:** **`POST /v1/transfers` → 403** happens because the **API token has recipient-creation scope but not transfer-creation scope**. Fix: **regenerate the token with full permissions** (see **Troubleshooting §1** below).
+
+Separately, funding an existing transfer (`POST /v3/profiles/{id}/transfers/{id}/payments` → 403) can still involve **SCA / balance / permissions** — that is not the same as “team approval” for API transfers.
+
+**The fix for scale: Wise Batch Payments API** — one batch submission, then Wise’s own flow for that batch (e.g. notification to approve the batch), not the generic team-approval feature for manual UI transfers.
 
 ---
 
@@ -27,30 +31,39 @@ The current problem (`POST /v3/profiles/{id}/transfers/{id}/payments` → 403) i
 
 **Cause:** The Wise **API token** can create recipients but does **not** have permission to **create transfers**. Funding (SCA) is a separate issue — here Wise rejects **`POST /v1/transfers`** (or equivalent) before funding runs.
 
+**Confirmed root cause (production):** The token in use was created **without** the **Transfers: Create** scope. Wise exposes this as **permission checkboxes** when you create or regenerate a token. You cannot fix this by “using the same token harder” — you must **regenerate** the token with the correct permissions.
+
 **Fix:**
 
 1. Open **[wise.com/settings/api-tokens](https://wise.com/settings/api-tokens)** (profile → Settings → API tokens).
-2. Edit the token in use on Vercel (`WISE_API_TOKEN`) or **create a new token** with the right scopes.
-3. Ensure **Transfers: Create** (or equivalent “Transfers” / “Create transfer” permission) is **enabled**, not only recipient/recipient-related scopes.
-4. If you regenerate the token, update **`WISE_API_TOKEN`** in Vercel (or your host) and redeploy.
+2. **Create a new API token** (or regenerate per Wise’s flow — many accounts require a new token to add scopes).
+3. When Wise shows the **permission checkboxes**, ensure **Transfers: Create** (or equivalent “Transfers” / “Create transfer”) is **checked**, not only recipient-related scopes.
+4. **Until Wise grants full API access via their sales/account process**, set the **minimum** to: regenerate the token with **every permission Wise offers on that screen checked** (all available scopes). That avoids another missing scope blocking the next endpoint.
+5. Copy the new secret and set **`WISE_API_TOKEN`** in Vercel (Production + Preview if needed) — **replace the old value entirely** — then redeploy.
 
 ---
 
 ### 2) Webhook returns `401` — `Invalid webhook signature`
 
-**Symptom:** `POST /api/webhooks/wise` → **401** with `Invalid webhook signature` in logs.
+**Symptom:** `POST /api/webhooks/wise` → **401** with `Invalid webhook signature` on **every** delivery — **creator wallets never update** from webhooks.
 
-**Cause:** **`WISE_WEBHOOK_SECRET`** in env does **not** match the signing secret Wise uses for that webhook endpoint. (This is unrelated to the API token.)
+**Cause:** Verification uses **JOSE / asymmetric signing** (e.g. **ES256** compact JWS in `X-Signature-SHA256`), **not** a shared string. **`WISE_WEBHOOK_SECRET` has no role** — remove it from Vercel.
 
-**Fix:**
+**Fix (required for JOSE path):**
 
-1. In Wise: **Webhooks** (or developer / webhook settings for your app).
-2. Open the webhook that points to `https://www.soundbridge.live/api/webhooks/wise` (or your domain).
-3. Copy the **webhook signing secret / public key** Wise shows for verifying signatures (per Wise’s current UI — sometimes labeled “Signing secret”).
-4. Set **`WISE_WEBHOOK_SECRET`** in Vercel (Production + Preview if needed) to **exactly** that value, redeploy.
-5. Ensure there are no extra spaces or quotes; if Wise rotates the secret, update env again.
+1. Obtain **Wise OAuth client credentials** (**client ID + secret**) from Wise or from API onboarding — **separate from** the user **`WISE_API_TOKEN`**.
+2. Set on the server:
+   - **`WISE_OAUTH_CLIENT_ID`**
+   - **`WISE_OAUTH_CLIENT_SECRET`**
+3. The app uses **client_credentials** to get a token, then fetches and caches Wise’s public signing key:
+   - **`GET /v1/auth/jose/response/public-keys?scope=PAYLOAD_SIGNING&algorithm=ES256`**
+   - Docs: [Get Wise public signing key](https://docs.wise.com/api-reference/jose/joseresponsepublickeysget) (requires **client credentials** token, not the personal API token).
+4. Incoming webhooks are verified with that key against the **JOSE** signature header; on failure the key cache is invalidated once and the key refetched (per Wise’s “retry after failure” guidance).
+5. **Redeploy** after env changes.
 
-**Note:** Our route verifies the body with HMAC-SHA256 using `WISE_WEBHOOK_SECRET` — it must be the secret Wise documents for that webhook.
+**Fallback (legacy RSA):** If the signature is **not** a compact JWS, the code still supports **RSA-SHA256** + PEM (`WISE_WEBHOOK_PUBLIC_KEY_PEM`, subscription public-key fetch, or Wise’s published PEM from the [event handling guide](https://docs.wise.com/guides/developer/webhooks/event-handling)).
+
+**References:** [Client credentials token](https://docs.wise.com/api-reference/client-credentials-token), [Event handling](https://docs.wise.com/guides/developer/webhooks/event-handling).
 
 ---
 
@@ -168,7 +181,7 @@ Wise **changes navigation and labels** often; deep links may move. If **Settings
 - Ask **Wise Business support** to confirm API access and where **Webhooks** live for your account type.
 - **Revisit this doc** once you have screenshots / current paths from Wise — we’ll update the steps.
 
-*(Separate from code: webhook signing secret must match `WISE_WEBHOOK_SECRET` in Vercel.)*
+*(Webhooks: RSA verification — see §2 above; not a shared HMAC secret.)*
 
 ---
 
@@ -257,8 +270,8 @@ Batch payments are funded from your Wise USD balance. Keep it topped up:
 
 ## Summary Checklist
 
-- [ ] Find/verify Wise API token in account settings (wise.com/settings/api-tokens) — **must include Transfers: Create** (not only recipients)
-- [ ] If webhooks fail with 401: align **`WISE_WEBHOOK_SECRET`** with Wise Webhooks → signing secret for `/api/webhooks/wise`
+- [ ] **Regenerate** Wise API token (**[wise.com/settings/api-tokens](https://wise.com/settings/api-tokens)** as **contact@soundbridge.live**): **Transfers: Create** required; **current token has recipients only** (403 on `POST /v1/transfers`). Use **full permissions** on the token screen. If no tokens page: email **business@wise.com** for **Soundbridge Live Ltd** + transfer-creation scope.
+- [ ] Webhooks 401: configure **JOSE** — **`WISE_OAUTH_CLIENT_ID` + `WISE_OAUTH_CLIENT_SECRET`** → fetch ES256 `PAYLOAD_SIGNING` key (see §2). **Remove `WISE_WEBHOOK_SECRET`.**
 - [ ] Implement `POST /v1/batch-payments` instead of individual transfer funding
 - [ ] Store `wise_recipient_id` on `creator_bank_accounts` after first recipient creation
 - [ ] Set up daily cron to submit pending payouts as a batch

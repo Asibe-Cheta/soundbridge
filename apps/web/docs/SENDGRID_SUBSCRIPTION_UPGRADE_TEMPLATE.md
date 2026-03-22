@@ -89,7 +89,7 @@ Use this JSON so the preview shows real content. SendGrid expects a single objec
   "plan_name": "Premium",
   "plan_price": "£6.99/month",
   "plan_features": [
-    "Host paid events (keep 95% of revenue)",
+    "Host paid events (keep 85% of revenue, 15% platform fee)",
     "Sell audio downloads",
     "2GB storage (~250 tracks)",
     "Pro badge on profile",

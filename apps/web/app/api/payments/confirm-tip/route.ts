@@ -147,9 +147,9 @@ export async function POST(request: NextRequest) {
 
     const meta = paymentIntent.metadata as Record<string, string | undefined>;
     const grossMinor = paymentIntent.amount ?? 0;
-    const platformFeeMinor = meta.platform_fee_amount ? parseInt(meta.platform_fee_amount, 10) : Math.round(grossMinor * 0.05);
+    const platformFeeMinor = meta.platform_fee_amount ? parseInt(meta.platform_fee_amount, 10) : Math.round(grossMinor * 0.15);
     const creatorPayoutMinor = meta.creator_payout_amount ? parseInt(meta.creator_payout_amount, 10) : grossMinor - platformFeeMinor;
-    const feePct = meta.platform_fee_percent ? parseFloat(meta.platform_fee_percent) : 5;
+    const feePct = meta.platform_fee_percent ? parseFloat(meta.platform_fee_percent) : 15;
     const creatorIdForRevenue = tipsRow?.recipient_id || tipData.creator_id || meta.creator_user_id || null;
     await supabase.rpc('insert_platform_revenue', {
       p_charge_type: 'tip',

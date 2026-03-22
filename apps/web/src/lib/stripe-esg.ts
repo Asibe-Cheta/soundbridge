@@ -7,32 +7,15 @@ export const stripe: Stripe | null = key
   : null;
 
 
-// Base platform fees
+/** Flat 15% platform fee on service & venue bookings (aligned with MOBILE_PRICING_MODEL_UPDATE). */
 export const PLATFORM_FEES = {
-  service: 0.10, // Default 10% (can vary by service category)
-  venue: 0.08,
+  service: 0.15,
+  venue: 0.15,
 };
 
-// Service-type based platform fees (10-15% range per spec)
-export function getServicePlatformFee(serviceCategory: string): number {
-  const fees: Record<string, number> = {
-    mixing: 0.10,        // 10%
-    mastering: 0.10,     // 10%
-    production: 0.10,    // 10%
-    coaching: 0.15,      // 15% (higher touch service)
-    session_work: 0.10,  // 10%
-    songwriting: 0.10,   // 10%
-    arrangement: 0.10,   // 10%
-    sound_engineering: 0.10, // 10%
-    music_lessons: 0.15,  // 15% (higher touch)
-    mixing_mastering: 0.10, // 10%
-    session_musician: 0.10, // 10%
-    photography: 0.10,   // 10%
-    videography: 0.10,   // 10%
-    lighting: 0.10,      // 10%
-    event_management: 0.12, // 12% (moderate complexity)
-  };
-  return fees[serviceCategory] || 0.10; // Default 10% if category not found
+/** Flat 15% for all service categories (tiered 8–15% retired). */
+export function getServicePlatformFee(_serviceCategory: string): number {
+  return 0.15;
 }
 
 export function calculateFees(

@@ -73,7 +73,6 @@ export default function UnifiedUploadPage() {
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState<number>(2.99);
   const [currency, setCurrency] = useState<'USD' | 'GBP' | 'EUR'>('USD');
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   // Validation modal states
   const [showValidationModal, setShowValidationModal] = useState(false);
@@ -121,32 +120,6 @@ export default function UnifiedUploadPage() {
       setUserTier('free');
     }
   };
-
-  // Check subscription status for paid content
-  React.useEffect(() => {
-    const checkSubscription = async () => {
-      if (!user) return;
-      try {
-        const supabase = (await import('../../src/lib/supabase')).createBrowserClient();
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_tier, subscription_end_date, subscription_status')
-          .eq('id', user.id)
-          .single();
-        
-        const hasActive = profile?.subscription_tier && 
-                          ['premium', 'unlimited'].includes(profile.subscription_tier) &&
-                          profile.subscription_status === 'active' &&
-                          (!profile.subscription_end_date || new Date(profile.subscription_end_date) > new Date());
-        
-        setHasActiveSubscription(!!hasActive);
-      } catch (error) {
-        console.error('Failed to check subscription:', error);
-        setHasActiveSubscription(false);
-      }
-    };
-    checkSubscription();
-  }, [user]);
 
   // Load genres from API to match onboarding
   const loadGenres = async () => {
@@ -1546,7 +1519,7 @@ export default function UnifiedUploadPage() {
                 Pricing
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Only available for subscribed creators (Premium & Unlimited tiers)
+                Sell downloads on any plan — platform fee 15%, you keep 85%. Upgrade for more storage when you need it.
               </p>
 
               {/* Toggle for Paid Content */}
@@ -1556,7 +1529,7 @@ export default function UnifiedUploadPage() {
                     type="checkbox"
                     checked={isPaid}
                     onChange={(e) => setIsPaid(e.target.checked)}
-                    disabled={!hasActiveSubscription}
+                    disabled={!user}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -1606,13 +1579,13 @@ export default function UnifiedUploadPage() {
                         <span className="text-2xl">💰</span>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            You'll keep 90% of sales
+                            You keep 85% of each sale
                           </p>
                           <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">
-                            You'll earn {currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€'}{(price * 0.9).toFixed(2)} per sale
+                            You'll earn {currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '€'}{(price * 0.85).toFixed(2)} per sale
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            SoundBridge takes 10% platform fee
+                            Platform fee 15%
                           </p>
                         </div>
                       </div>
@@ -1621,22 +1594,13 @@ export default function UnifiedUploadPage() {
                 </>
               )}
 
-              {/* Non-Subscribed Warning */}
-              {!hasActiveSubscription && (
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-4 border-yellow-500">
-                  <div className="flex items-start space-x-3">
-                    <span className="text-xl">⚠️</span>
-                    <div>
-                      <p className="text-sm text-gray-900 dark:text-gray-100">
-                        Upgrade to Premium or Unlimited to sell your content.{' '}
-                        <Link href="/pricing" className="text-blue-600 dark:text-blue-400 hover:underline">
-                          View Plans
-                        </Link>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Need more than 250MB?{' '}
+                <Link href="/pricing" className="text-blue-600 dark:text-blue-400 hover:underline">
+                  Upgrade for 2GB or 10GB storage
+                </Link>
+                .
+              </p>
             </div>
           )}
 

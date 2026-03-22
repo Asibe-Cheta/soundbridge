@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import { CREATOR_SHARE_DECIMAL, PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -182,9 +183,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate fees (90/10 split)
-    const platformFee = Math.round(dbPrice * 0.10 * 100) / 100;
-    const creatorEarnings = Math.round(dbPrice * 0.90 * 100) / 100;
+    // 15% platform / 85% creator (MOBILE_PRICING_MODEL_UPDATE.md)
+    const platformFee = Math.round(dbPrice * PLATFORM_FEE_DECIMAL * 100) / 100;
+    const creatorEarnings = Math.round(dbPrice * CREATOR_SHARE_DECIMAL * 100) / 100;
 
     // Create Stripe Payment Intent
     if (!stripe) {
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
     const amountCents = Math.round(dbPrice * 100);
     const platformFeeCents = Math.round(platformFee * 100);
     const creatorPayoutCents = Math.round(creatorEarnings * 100);
-    const platformFeePercent = dbPrice > 0 ? Math.round((platformFee / dbPrice) * 100) : 10;
+    const platformFeePercent = dbPrice > 0 ? Math.round((platformFee / dbPrice) * 100) : PLATFORM_FEE_PERCENT;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountCents,

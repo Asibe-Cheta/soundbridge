@@ -329,7 +329,7 @@ function CreateUrgentGigPageContent() {
               <p className="text-xs text-muted-foreground mt-2">
                 This amount will be held in escrow until the service is confirmed complete.
               </p>
-              <p className="text-xs mt-1">Platform fee (12%): {paymentCurrency} {(Number(paymentAmount) * 0.12).toFixed(2)}</p>
+              <p className="text-xs mt-1">Platform fee (15%): {paymentCurrency} {(Number(paymentAmount) * 0.15).toFixed(2)}</p>
             </CardContent>
           </Card>
           {!clientSecret && (

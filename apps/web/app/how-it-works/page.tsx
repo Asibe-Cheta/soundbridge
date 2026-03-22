@@ -23,7 +23,7 @@ const steps = [
   },
   {
     title: 'Get Paid Directly',
-    description: 'Keep 90-95% of your revenue from tips, sales, and services.'
+    description: 'Keep 85% of your revenue from tips, sales, tickets, and services (15% platform fee).'
   }
 ];
 

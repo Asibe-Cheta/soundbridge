@@ -69,6 +69,11 @@ export default function AdminPayoutsPage() {
     submissionErrors: Array<{ sourceCurrency: string; error: string; payout_request_ids: string[] }>;
   };
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult | null>(null);
+  const [wiseUsd, setWiseUsd] = useState<{
+    amount: number | null;
+    error: string | null;
+    loading: boolean;
+  }>({ amount: null, error: null, loading: true });
 
   const cardClass = dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const textClass = dark ? 'text-white' : 'text-gray-900';

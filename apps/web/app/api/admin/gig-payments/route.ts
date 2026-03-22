@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     const escrowedTotal = (postsWithEscrow.data ?? []).reduce((sum: number, p: any) => sum + Number(p.payment_amount || 0), 0);
     const releasedToday = (releasedTodayRows.data ?? []).reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
     const creatorEarningsMtd = (platformFeesMtd.data ?? []).reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
-    const platformFeesMtdSum = creatorEarningsMtd * 0.12 / 0.88;
+    const platformFeesMtdSum = creatorEarningsMtd * 0.15 / 0.85;
 
     const summary = {
       escrowed_total: escrowedTotal,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         const poster = profileMap.get(g.poster_user_id);
         const creator = profileMap.get(g.creator_user_id);
         const gross = Number(g.agreed_amount ?? 0);
-        const fee = Number(g.platform_fee_amount ?? gross * 0.12);
+        const fee = Number(g.platform_fee_amount ?? gross * 0.15);
         const earnings = Number(g.creator_payout_amount ?? gross - fee);
         return {
           id: g.id,
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
       const poster = profileMap.get(g.poster_user_id);
       const creator = profileMap.get(g.creator_user_id);
       const gross = Number(g.agreed_amount ?? 0);
-      const fee = Number(g.platform_fee_amount ?? gross * 0.12);
+      const fee = Number(g.platform_fee_amount ?? gross * 0.15);
       const earnings = Number(g.creator_payout_amount ?? gross - fee);
       return {
         id: g.id,

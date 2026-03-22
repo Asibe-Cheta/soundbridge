@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import { PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,7 +78,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's subscription tier for fee calculation
     const { data: subscription } = await supabase
       .from('user_subscriptions')
       .select('tier')
@@ -87,15 +87,9 @@ export async function POST(request: NextRequest) {
 
     const userTier = subscription?.tier || 'free';
 
-    // Calculate fees based on tier
-    const PLATFORM_FEE_PERCENT = userTier === 'free' ? 5.0 :
-                                 userTier === 'pro' ? 3.5 : 2.5;
-    const FIXED_FEE = userTier === 'free' ? 1.00 :
-                      userTier === 'pro' ? 0.75 : 0.50;
-
     const ticketPrice = parseFloat(ticket.price_gbp || '0');
     const totalAmount = ticketPrice * quantity;
-    const platformFee = (totalAmount * PLATFORM_FEE_PERCENT / 100) + FIXED_FEE;
+    const platformFee = totalAmount * (PLATFORM_FEE_PERCENT / 100);
     const promoterRevenue = totalAmount - platformFee;
 
     // Verify promoter has Stripe Connect

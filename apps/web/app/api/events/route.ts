@@ -104,53 +104,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isPaidEvent = eventData.is_free === false || priceGbp > 0 || priceNgn > 0;
-    if (isPaidEvent) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('subscription_tier, subscription_status')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        return NextResponse.json(
-          { error: 'Failed to verify subscription status' },
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
-      const { data: legacySubscription } = await supabase
-        .from('user_subscriptions')
-        .select('tier, status')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const rawTier = String(profile.subscription_tier || legacySubscription?.tier || 'free').toLowerCase();
-      const normalizedTier = rawTier === 'pro' ? 'premium' : rawTier;
-      const subscriptionStatus = String(profile.subscription_status || legacySubscription?.status || 'active').toLowerCase();
-
-      if (!['premium', 'unlimited'].includes(normalizedTier)) {
-        return NextResponse.json(
-          {
-            error: 'SUBSCRIPTION_REQUIRED',
-            message: 'You need a Premium or Unlimited subscription to host paid events.',
-          },
-          { status: 403, headers: corsHeaders }
-        );
-      }
-
-      if (subscriptionStatus !== 'active') {
-        return NextResponse.json(
-          {
-            error: 'SUBSCRIPTION_INACTIVE',
-            message: 'Your subscription is not active. Please update your plan to host paid events.',
-          },
-          { status: 403, headers: corsHeaders }
-        );
-      }
-    }
+    // Paid events: all tiers may host (MOBILE_PRICING_MODEL_UPDATE.md) — no subscription gate.
 
     // Map mobile categories to database enum values
     const categoryMap: Record<string, string> = {
