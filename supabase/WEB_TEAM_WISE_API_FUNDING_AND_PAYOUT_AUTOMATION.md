@@ -18,6 +18,42 @@ The current problem (`POST /v3/profiles/{id}/transfers/{id}/payments` → 403) i
 
 ---
 
+## Troubleshooting — two common Wise config bugs (from production logs)
+
+### 1) Transfer creation returns 403 / `forbidden` (not only funding)
+
+**Symptom:** Logs show recipient created OK (`✅ recipient …`) then **transfer creation** fails, e.g.  
+`💸 Creating Wise transfer… ❌ Transfer creation failed: forbidden` on `POST /api/admin/payouts`.
+
+**Cause:** The Wise **API token** can create recipients but does **not** have permission to **create transfers**. Funding (SCA) is a separate issue — here Wise rejects **`POST /v1/transfers`** (or equivalent) before funding runs.
+
+**Fix:**
+
+1. Open **[wise.com/settings/api-tokens](https://wise.com/settings/api-tokens)** (profile → Settings → API tokens).
+2. Edit the token in use on Vercel (`WISE_API_TOKEN`) or **create a new token** with the right scopes.
+3. Ensure **Transfers: Create** (or equivalent “Transfers” / “Create transfer” permission) is **enabled**, not only recipient/recipient-related scopes.
+4. If you regenerate the token, update **`WISE_API_TOKEN`** in Vercel (or your host) and redeploy.
+
+---
+
+### 2) Webhook returns `401` — `Invalid webhook signature`
+
+**Symptom:** `POST /api/webhooks/wise` → **401** with `Invalid webhook signature` in logs.
+
+**Cause:** **`WISE_WEBHOOK_SECRET`** in env does **not** match the signing secret Wise uses for that webhook endpoint. (This is unrelated to the API token.)
+
+**Fix:**
+
+1. In Wise: **Webhooks** (or developer / webhook settings for your app).
+2. Open the webhook that points to `https://www.soundbridge.live/api/webhooks/wise` (or your domain).
+3. Copy the **webhook signing secret / public key** Wise shows for verifying signatures (per Wise’s current UI — sometimes labeled “Signing secret”).
+4. Set **`WISE_WEBHOOK_SECRET`** in Vercel (Production + Preview if needed) to **exactly** that value, redeploy.
+5. Ensure there are no extra spaces or quotes; if Wise rotates the secret, update env again.
+
+**Note:** Our route verifies the body with HMAC-SHA256 using `WISE_WEBHOOK_SECRET` — it must be the secret Wise documents for that webhook.
+
+---
+
 ## How Batch Payments Work
 
 Instead of:
@@ -201,7 +237,8 @@ Batch payments are funded from your Wise USD balance. Keep it topped up:
 
 ## Summary Checklist
 
-- [ ] Find/verify Wise API token in account settings (wise.com/settings/api-tokens)
+- [ ] Find/verify Wise API token in account settings (wise.com/settings/api-tokens) — **must include Transfers: Create** (not only recipients)
+- [ ] If webhooks fail with 401: align **`WISE_WEBHOOK_SECRET`** with Wise Webhooks → signing secret for `/api/webhooks/wise`
 - [ ] Implement `POST /v1/batch-payments` instead of individual transfer funding
 - [ ] Store `wise_recipient_id` on `creator_bank_accounts` after first recipient creation
 - [ ] Set up daily cron to submit pending payouts as a batch
