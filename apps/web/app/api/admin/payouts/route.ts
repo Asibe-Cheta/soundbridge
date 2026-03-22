@@ -43,6 +43,57 @@ function toPlaintext(stored: string | null | undefined): string {
   return v;
 }
 
+/** HTTP status code from Wise client errors (code may be string "403"). */
+function httpStatusFromError(err: unknown): number | undefined {
+  const c = (err as { code?: unknown })?.code;
+  if (c === undefined || c === null) return undefined;
+  const n = typeof c === 'string' ? parseInt(c, 10) : Number(c);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Wise / payout failures: always 422 (not 500) so the admin UI can show the reason without treating it as a server bug.
+ */
+function buildPayoutFailureResponse(err: unknown): NextResponse {
+  const e = err as {
+    message?: string;
+    error?: string;
+    code?: string | number;
+    details?: unknown;
+  };
+  const raw =
+    (typeof e?.message === 'string' && e.message.trim()
+      ? e.message
+      : typeof e?.error === 'string' && e.error.trim()
+        ? e.error
+        : null) ?? 'Payout could not be completed';
+  const http = httpStatusFromError(err);
+  const is403 =
+    http === 403 ||
+    String(e?.code) === '403' ||
+    raw.includes('403');
+  const isMissingConfig =
+    /WISE_API_TOKEN|WISE_WEBHOOK_SECRET|WISE_PROFILE_ID|environment variables/i.test(raw);
+
+  let message = raw;
+  if (is403) {
+    message =
+      'Wise funding failed (403 — often SCA/2FA on the funding step). Request re-queued to Pending. If a transfer was created, check In Progress and use Retry / Fund.';
+  } else if (isMissingConfig) {
+    message = `${raw} (configure env on the server and redeploy.)`;
+  }
+
+  const body: Record<string, unknown> = {
+    success: false,
+    error: message,
+    message,
+  };
+  if (e?.code != null) body.code = e.code;
+  if (e?.details != null) body.details = e.details;
+
+  return NextResponse.json(body, { status: 422, headers: corsHeaders });
+}
+
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
@@ -225,21 +276,7 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', payout_request_id);
         console.error('❌ Payout by request id error:', error);
-        const is403 =
-          error?.code === 403 ||
-          error?.status === 403 ||
-          String(error?.message ?? '').includes('403');
-        const message =
-          is403
-            ? 'Funding failed (403). Request re-queued to Pending. If a Wise transfer was created, check In Progress and use Retry / Fund.'
-            : (error?.message ?? 'Wise transfer failed');
-        const payload: { error: string; message: string; details?: unknown } = {
-          error: 'Payout failed',
-          message,
-        };
-        if (error?.details != null) payload.details = error.details;
-        else if (error != null) payload.details = { error: error?.error, message: error?.message, code: error?.code };
-        return NextResponse.json(payload, { status: 500, headers: corsHeaders });
+        return buildPayoutFailureResponse(error);
       }
     }
 
@@ -293,13 +330,7 @@ export async function POST(request: NextRequest) {
         );
       } catch (error: any) {
         console.error('❌ Batch payout error:', error);
-        return NextResponse.json(
-          {
-            error: 'Batch payout failed',
-            message: error.message,
-          },
-          { status: 500, headers: corsHeaders }
-        );
+        return buildPayoutFailureResponse(error);
       }
     }
 
@@ -362,13 +393,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('❌ Admin payout API error:', error);
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        message: error.message,
-      },
-      { status: 500, headers: corsHeaders }
-    );
+    return buildPayoutFailureResponse(error);
   }
 }
 
