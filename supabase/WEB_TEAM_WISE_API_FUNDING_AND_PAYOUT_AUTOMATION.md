@@ -160,6 +160,26 @@ If not visible: go directly to `wise.com/settings/api-tokens` in the browser.
 
 If the section is missing entirely, email Wise Business support to enable API access for the account — some Business accounts require explicit activation.
 
+### If you still can’t find API tokens or Webhooks in the UI
+
+Wise **changes navigation and labels** often; deep links may move. If **Settings → API tokens** or **Webhooks** isn’t visible:
+
+- Search [Wise Help](https://wise.com/help) for **“API token”** or **“webhook”**.
+- Ask **Wise Business support** to confirm API access and where **Webhooks** live for your account type.
+- **Revisit this doc** once you have screenshots / current paths from Wise — we’ll update the steps.
+
+*(Separate from code: webhook signing secret must match `WISE_WEBHOOK_SECRET` in Vercel.)*
+
+---
+
+## Wise USD balance — ops target ($300–500)
+
+**Recommendation:** Keep **$300–500 USD** (or more) in your Wise balance at all times so batch payouts and funding don’t fail mid-run. Top-ups (e.g. Tide → Wise) usually complete in minutes; if a batch fails for insufficient balance, fund Wise and **Process all pending** again.
+
+**Admin dashboard:** `/admin/payouts` shows **live Wise USD balance** (server calls Wise: `GET /v1/borderless-accounts?profileId=…`, with fallback to **v4 balances**). Check balance **before** clicking **Process all pending**.
+
+**API (for reference):** `GET /api/admin/payouts/wise-balance` (admin session) → `{ success, currency: 'USD', amount, profileId, source }`.
+
 ---
 
 ## Admin Payout Dashboard — What to Build

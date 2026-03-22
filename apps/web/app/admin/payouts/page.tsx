@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
-import { CheckCircle, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, RefreshCw, Wallet, XCircle } from 'lucide-react';
 
 type PendingPayoutRequest = {
   id: string;
@@ -77,14 +77,27 @@ export default function AdminPayoutsPage() {
   const load = async () => {
     setLoading(true);
     setError(null);
+    setWiseUsd((s) => ({ ...s, loading: true }));
     try {
-      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes] = await Promise.all([
+      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes, wiseBalRes] = await Promise.all([
         fetch('/api/admin/payouts?pending_requests=1&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?status=completed&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?status=failed&limit=50&offset=0', { credentials: 'include' }),
+        fetch('/api/admin/payouts/wise-balance', { credentials: 'include' }),
       ]);
+
+      if (wiseBalRes.ok) {
+        const wb = await wiseBalRes.json().catch(() => ({}));
+        if (wb.success && typeof wb.amount === 'number') {
+          setWiseUsd({ amount: wb.amount, error: null, loading: false });
+        } else {
+          setWiseUsd({ amount: null, error: wb.error || 'Could not load Wise balance', loading: false });
+        }
+      } else {
+        setWiseUsd({ amount: null, error: 'Wise balance request failed', loading: false });
+      }
 
       if (!pendingRes.ok) throw new Error('Failed to load pending payout requests');
 
@@ -115,6 +128,7 @@ export default function AdminPayoutsPage() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load payout data');
+      setWiseUsd((s) => ({ ...s, loading: false }));
     } finally {
       setLoading(false);
     }
@@ -265,6 +279,15 @@ export default function AdminPayoutsPage() {
   const completedCount = useMemo(() => historyCompleted.length, [historyCompleted]);
   const failedCount = useMemo(() => historyFailed.length, [historyFailed]);
 
+  /** Pending requests denominated in USD (batch source currency is often USD). */
+  const pendingUsdTotal = useMemo(
+    () =>
+      pending
+        .filter((p) => String(p.currency || '').toUpperCase() === 'USD')
+        .reduce((sum, p) => sum + Number(p.amount ?? 0), 0),
+    [pending]
+  );
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -352,10 +375,41 @@ export default function AdminPayoutsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className={`rounded-lg border p-4 ${cardClass}`}>
           <div className={`text-sm ${mutedClass}`}>Pending payout requests</div>
           <div className="text-3xl font-semibold text-white">{pending.length}</div>
+          {pendingUsdTotal > 0 && (
+            <div className={`text-xs mt-2 ${mutedClass}`}>
+              Total pending (USD requests): {formatMoney(pendingUsdTotal, 'USD')}
+            </div>
+          )}
+        </div>
+        <div className={`rounded-lg border p-4 ${cardClass}`}>
+          <div className="flex items-center gap-2 text-sm mb-1">
+            <Wallet className={`h-4 w-4 ${mutedClass}`} />
+            <span className={mutedClass}>Wise USD balance</span>
+          </div>
+          {wiseUsd.loading ? (
+            <div className={`text-sm ${mutedClass}`}>Loading…</div>
+          ) : wiseUsd.error ? (
+            <div className={`text-sm ${dark ? 'text-amber-300' : 'text-amber-700'}`} title={wiseUsd.error}>
+              {wiseUsd.error}
+            </div>
+          ) : (
+            <>
+              <div className="text-3xl font-semibold text-white">{formatMoney(wiseUsd.amount ?? 0, 'USD')}</div>
+              <div className={`text-xs mt-2 ${mutedClass}`}>
+                Keep <strong className="text-gray-300">$300–500+</strong> USD funded before batch payouts. Top up
+                (e.g. Tide → Wise) takes minutes; then retry <strong>Process all pending</strong>.
+              </div>
+              {wiseUsd.amount != null && pendingUsdTotal > 0 && wiseUsd.amount < pendingUsdTotal && (
+                <div className={`text-xs mt-2 ${dark ? 'text-amber-300' : 'text-amber-700'}`}>
+                  Balance may be below pending USD total ({formatMoney(pendingUsdTotal, 'USD')}) — fund Wise first.
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className={`rounded-lg border p-4 ${cardClass}`}>
           <div className={`text-sm ${mutedClass}`}>History (completed/failed)</div>
