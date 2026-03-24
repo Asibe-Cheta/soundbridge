@@ -1,53 +1,91 @@
-# Mobile team — Cloudflare R2 & audio URLs
+# Mobile team — Cloudflare R2 audio storage (full brief)
 
-This note replaces the earlier informal summary. **Production web env is already deployed** (all R2 + Supabase variables on Vercel). **Phase 5** (one-off migration of existing Supabase Storage audio to R2) is **implemented in-repo**; it must be run from a machine that has the **full** env (see below), not assumed to run inside Cursor’s sandbox.
-
----
-
-## 1. What `CLOUDFLARE.MD` asked for vs what shipped
-
-| Phase | Status |
-|-------|--------|
-| 1–2 | R2 client, upload path, validation (`apps/web/src/lib/r2-client.ts`, `audio-upload-security.ts`, `POST /api/upload/audio-file`) |
-| 3 | New uploads store **public R2 URLs** in `audio_tracks.file_url` |
-| 4 | Playback: any HTTPS audio URL; native players unchanged |
-| 5 | **Script:** `apps/web/scripts/migrate-to-r2.js` — `npm run migrate-files` |
+**Purpose:** One document you can share with mobile engineering. It matches the web team’s `CLOUDFLARE.MD` plan, describes what was built, what is live in production, and what mobile clients should do.
 
 ---
 
-## 2. Public URL shape (after migration / new uploads)
+## Executive summary
+
+- **Audio files** for the web upload flow are stored in **Cloudflare R2** (S3-compatible), not Supabase Storage, for **new uploads** and for **existing tracks we migrated**.
+- **Supabase** remains used for **database + auth** (and legacy storage objects until manually cleaned up).
+- **Production Vercel** already has all **server-side** R2 environment variables.
+- **Bucket:** `soundbridge-audio`. **Public URLs** use the Cloudflare **Public Development URL** (`https://pub-….r2.dev`) until/unless we attach a **custom domain** later.
+- **Phase 5 (one-time migration)** has been **run successfully** on the current dataset: **6** `audio_tracks` rows were moved from Supabase public URLs to R2; **`file_url`** in the database now points at R2. **Original files were not deleted from Supabase** (ops can remove them after QA).
+
+---
+
+## Mapping to `CLOUDFLARE.MD` phases
+
+| Phase | Intent | Status on web |
+|-------|--------|----------------|
+| **1** | R2 client, env, AWS SDK | `apps/web/src/lib/r2-client.ts`; dependency `@aws-sdk/client-s3` |
+| **2** | Upload to R2, validation, public URL | `POST /api/upload/audio-file` (`multipart/form-data`, field `audioFile`); `apps/web/src/lib/audio-upload-security.ts` (extensions: `.mp3`, `.wav`, `.m4a`, `.flac`, `.ogg`; max **50MB** for this path) |
+| **3** | Persist R2 URLs in DB | `audio_tracks.file_url` stores the returned public HTTPS URL |
+| **4** | Playback | Any normal HTTPS audio URL; players use `file_url` (or `audio_url` if your API exposes it) as today |
+| **5** | Migrate legacy Supabase files | `apps/web/scripts/migrate-to-r2.js` — `npm run migrate-files`; **executed** — 6/6 success, 0 failures |
+
+---
+
+## Repository reference (web)
+
+| Path | Role |
+|------|------|
+| `apps/web/src/lib/r2-client.ts` | S3 client for R2, `buildR2PublicUrl` |
+| `apps/web/src/lib/audio-upload-security.ts` | Validation + safe object key (`audio/<userId>/…`) |
+| `apps/web/app/api/upload/audio-file/route.ts` | Authenticated upload to R2 |
+| `apps/web/src/lib/upload-service.ts` | Web client upload uses `/api/upload/audio-file` |
+| `apps/web/app/api/upload/route.ts` | Legacy JSON path can upload base64 `fileData` to R2 |
+| `apps/web/app/upload/page.tsx` | Large-file ACR fingerprint temp upload uses same API |
+| `apps/web/scripts/migrate-to-r2.js` | Phase 5 migration |
+| `apps/web/docs/cloudflare-r2-migration.md` | Technical runbook for web/ops |
+
+---
+
+## Public URL formats
+
+**New uploads** (object key pattern):
 
 ```text
-{R2_PUBLIC_URL}/{R2_BUCKET_NAME}/{objectKey}
+{R2_PUBLIC_URL}/{R2_BUCKET_NAME}/audio/<userId>/<timestamp>-<slug>-<rand>.<ext>
 ```
 
-Example:
+**Migrated legacy rows** (preserves original storage path under a prefix):
 
 ```text
-https://pub-….r2.dev/soundbridge-audio/migrated/supabase-audio-tracks/<userId>/<file>.mp3
+{R2_PUBLIC_URL}/{R2_BUCKET_NAME}/migrated/supabase-audio-tracks/<original-supabase-path>
 ```
 
-Legacy rows may still show `https://…supabase.co/storage/v1/object/public/audio-tracks/…` until the migration script is executed successfully.
+Example pattern:
+
+```text
+https://pub-<hash>.r2.dev/soundbridge-audio/migrated/supabase-audio-tracks/<uuid>/<file>.mp3
+```
+
+**Old format** (only if a row were never migrated):
+
+```text
+https://<project>.supabase.co/storage/v1/object/public/audio-tracks/...
+```
 
 ---
 
-## 3. Production environment (already configured)
+## Production environment (complete)
 
-**These are live on Vercel** for the web app — no pending “add these” step for production:
+The following are **already set on Vercel** for the Next.js app (server secrets — **never** expose as `NEXT_PUBLIC_*`):
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_ACCESS_KEY_ID`
 - `CLOUDFLARE_SECRET_ACCESS_KEY`
-- `R2_BUCKET_NAME` (e.g. `soundbridge-audio`)
-- `R2_PUBLIC_URL` (e.g. `https://pub-….r2.dev` or a future custom audio domain)
+- `R2_BUCKET_NAME` → `soundbridge-audio`
+- `R2_PUBLIC_URL` → `https://pub-….r2.dev` (current dev public URL)
 
-Server-only — **never** `NEXT_PUBLIC_*` for secrets.
+No further “pending setup” for these five in production.
 
 ---
 
-## 4. R2 bucket CORS (web only)
+## R2 bucket CORS policy (web / WebView)
 
-For browsers / WebViews loading audio cross-origin from the R2 public host:
+Configured on the **`soundbridge-audio`** bucket for **browser** access. **Localhost is not included** (add only if you need local web QA).
 
 ```json
 [
@@ -56,8 +94,13 @@ For browsers / WebViews loading audio cross-origin from the R2 public host:
       "https://soundbridge.live",
       "https://www.soundbridge.live"
     ],
-    "AllowedMethods": ["GET", "HEAD"],
-    "AllowedHeaders": ["*"],
+    "AllowedMethods": [
+      "GET",
+      "HEAD"
+    ],
+    "AllowedHeaders": [
+      "*"
+    ],
     "ExposeHeaders": [
       "ETag",
       "Content-Length",
@@ -69,40 +112,77 @@ For browsers / WebViews loading audio cross-origin from the R2 public host:
 ]
 ```
 
-**Native iOS/Android** players streaming a plain HTTPS `file_url` are **not** gated by browser CORS the same way.
+**Uploads** from the browser go **via our backend** (`PutObject` with secrets), so CORS does **not** need `PUT`/`POST` for the R2 bucket for the current design.
+
+**Native mobile (AVPlayer, ExoPlayer, etc.):** streaming a direct `https://…` audio URL is **not** subject to browser CORS in the same way. If you use a **WebView** loading the **website**, browser rules apply.
 
 ---
 
-## 5. Mobile app behaviour
+## Mobile app — integration guidance
 
-- **Playback:** Keep using whatever API returns for `file_url` (or `audio_url` if exposed). Values may be Supabase **or** R2 URLs during transition.
-- **Uploads:** If mobile still uploads to Supabase and sends that URL to the API, those rows stay Supabase until migrated or re-uploaded. Align with backend when moving mobile uploads to the same server-side R2 path as web.
-- **Do not** embed R2 secret keys in the app.
+### Playback
+
+- Continue using **`file_url`** (and **`audio_url`** if your endpoints return it) exactly as today.
+- Values may be **Supabase** or **R2** depending on row age and migration; after migration on our side, **`file_url`** for the migrated set is **R2**.
+- If **`audio_url`** exists and was duplicated from `file_url` at insert time, confirm with backend whether a one-time sync from `file_url` is needed after migration (DB trigger may already keep them aligned).
+
+### Uploads
+
+- **Do not** ship R2 access keys in the app.
+- If mobile still uploads audio to **Supabase Storage** and posts that URL to an API, those flows are **unchanged** until product/engineering align on using the **same server-mediated R2 upload** as web (cookie/session vs token pattern TBD for native).
+
+### Testing
+
+- Pick a track returned by API whose `file_url` starts with `https://pub-` and verify **play**, **seek**, and **download/offline** if applicable.
+- Regression: a known **Supabase** URL should still play until that object is removed (we have **not** deleted Supabase objects yet).
 
 ---
 
-## 6. Phase 5 — running the migration
+## Phase 5 migration — outcome (this environment)
 
-**Script:** from `apps/web`:
+| Step | Result |
+|------|--------|
+| Dry run | 6 tracks eligible |
+| `npm run migrate-files` | **6 migrated**, **0** failures |
+| Follow-up `migrate-files --limit=100` | **0** eligible (all already R2) |
 
-```bash
-npm run migrate-files -- --dry-run
-npm run migrate-files
-npm run migrate-files -- --limit=100
+**Important:** Supabase **still contains** the original objects; deletion is **manual** after you’re happy with R2 playback and backups.
+
+---
+
+## API surface (for awareness)
+
+- **`POST /api/upload/audio-file`** — web-oriented; **`multipart/form-data`**, field **`audioFile`**; requires session/auth as implemented. **Not** documented here as the mobile contract; coordinate if native should use the same or a dedicated mobile upload route.
+
+Example **success** shape:
+
+```json
+{
+  "success": true,
+  "url": "https://pub-….r2.dev/soundbridge-audio/audio/<userId>/…",
+  "objectKey": "audio/<userId>/…",
+  "size": 10485760,
+  "contentType": "audio/mpeg"
+}
 ```
 
-**Env required locally (or in a secure runner):**
+---
 
-- `NEXT_PUBLIC_SUPABASE_URL` **or** `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- All five R2 variables (same names as Vercel)
+## Optional SQL if `audio_url` drifts from `file_url`
 
-If `.env.local` only has web vars and R2 lives only on Vercel, copy the R2 + service role values into `.env.local` **for that run** (or use `vercel env pull`), then execute. The migration **does not delete** Supabase objects.
+Only if your schema has **`audio_url`** and no trigger keeps it in sync:
 
-After migration: spot-check tracks; optionally backfill `audio_url` from `file_url` if your DB has no sync trigger.
+```sql
+UPDATE audio_tracks
+SET audio_url = file_url
+WHERE file_url IS NOT NULL
+  AND (audio_url IS DISTINCT FROM file_url);
+```
+
+Run only after confirming column semantics with backend.
 
 ---
 
-## 7. Operational note
+## Single point of contact
 
-Running `migrate-files` from this repo **on a developer machine** is expected. Automated runs from CI need injected secrets. **Dry-run** is safe to preview counts; real runs change `file_url` in the database.
+Questions: web/backend team. **Source doc in repo:** `apps/web/docs/MOBILE_TEAM_R2_MIGRATION.md` (this file).
