@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
+import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 
 interface Props {
   params: { albumId: string };
@@ -138,6 +139,11 @@ export default async function AlbumPage({ params }: Props) {
     notFound();
   }
 
+  const {
+    data: { user: albumViewer },
+  } = await supabase.auth.getUser();
+  const isAlbumOwner = !!albumViewer && albumViewer.id === album.creator_id;
+
   const creatorName = album.creator?.display_name || album.creator?.username || 'Unknown Artist';
 
   // Sort tracks by track_number
@@ -193,6 +199,20 @@ export default async function AlbumPage({ params }: Props) {
                 <div>
                   <span className="font-semibold">{album.total_likes?.toLocaleString() || 0}</span> likes
                 </div>
+              </div>
+
+              <div className="mt-6 w-full">
+                <SellContentSection
+                  resource="album"
+                  resourceId={album.id}
+                  isOwner={isAlbumOwner}
+                  initial={{
+                    is_paid: !!(album as { is_paid?: boolean }).is_paid,
+                    price: (album as { price?: number | null }).price ?? null,
+                    currency: (album as { currency?: string | null }).currency ?? null,
+                    total_sales_count: (album as { total_sales_count?: number | null }).total_sales_count ?? null,
+                  }}
+                />
               </div>
             </div>
           </div>

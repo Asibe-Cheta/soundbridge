@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import TrackActionsClient from '@/src/components/track/TrackActionsClient';
+import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 
 interface Props {
   params: { trackId: string };
@@ -184,6 +185,18 @@ export default async function TrackPage({ params }: Props) {
               <div className="text-sm text-gray-400">Likes</div>
             </div>
           </div>
+
+          <SellContentSection
+            resource="track"
+            resourceId={track.id}
+            isOwner={isOwner}
+            initial={{
+              is_paid: !!(track as { is_paid?: boolean }).is_paid,
+              price: (track as { price?: number | null }).price ?? null,
+              currency: (track as { currency?: string | null }).currency ?? null,
+              total_sales_count: (track as { total_sales_count?: number | null }).total_sales_count ?? null,
+            }}
+          />
 
           {/* Actions: report button for non-owners, copyright-removed state for owner */}
           <div className="mb-8">

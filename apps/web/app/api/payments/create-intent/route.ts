@@ -135,13 +135,40 @@ export async function POST(request: NextRequest) {
       creatorId = track.creator_id;
       dbPrice = Number(track.price);
       dbCurrency = track.currency || 'USD';
+    } else if (content_type === 'album') {
+      const { data: album, error: albumError } = await supabase
+        .from('albums')
+        .select('id, title, creator_id, is_paid, price, currency')
+        .eq('id', content_id)
+        .single();
+
+      if (albumError || !album) {
+        return NextResponse.json({ error: 'Content not found' }, { status: 404, headers: corsHeaders });
+      }
+
+      if (!album.is_paid) {
+        return NextResponse.json(
+          { error: 'This content is not available for purchase' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      if (album.creator_id === user.id) {
+        return NextResponse.json({ error: 'You cannot purchase your own content' }, { status: 400, headers: corsHeaders });
+      }
+
+      content = album;
+      creatorId = album.creator_id;
+      dbPrice = Number(album.price);
+      dbCurrency = album.currency || 'USD';
     } else {
-      // TODO: Handle albums and podcasts when those tables are available
       return NextResponse.json(
-        { error: 'Album and podcast purchases not yet implemented' },
+        { error: 'Podcast purchases not yet implemented' },
         { status: 501, headers: corsHeaders }
       );
     }
+
+    const chargeTypeMeta = content_type === 'album' ? 'album_sale' : 'audio_sale';
 
     // CRITICAL: Validate price matches database (never trust frontend)
     if (Math.abs(price - dbPrice) > 0.01) {
@@ -210,7 +237,7 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId || '',
         platform_fee: platformFee.toFixed(2),
         creator_earnings: creatorEarnings.toFixed(2),
-        charge_type: 'audio_sale',
+        charge_type: chargeTypeMeta,
         platform_fee_amount: String(platformFeeCents),
         platform_fee_percent: String(platformFeePercent),
         creator_payout_amount: String(creatorPayoutCents),

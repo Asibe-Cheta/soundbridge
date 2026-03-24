@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
 
 export async function OPTIONS() {
@@ -14,30 +16,54 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value, ...options });
-            } catch (error) {}
-          },
-          remove(name: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value: '', ...options, maxAge: 0 });
-            } catch (error) {}
-          },
-        },
-      }
-    );
+    let supabase;
+    const authHeader =
+      request.headers.get('authorization') ||
+      request.headers.get('Authorization') ||
+      request.headers.get('x-authorization') ||
+      request.headers.get('x-auth-token') ||
+      request.headers.get('x-supabase-token');
 
-    // Verify authentication
+    if (authHeader && (authHeader.startsWith('Bearer ') || request.headers.get('x-supabase-token'))) {
+      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          global: {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        }
+      );
+    } else {
+      const cookieStore = await cookies();
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value, ...options });
+              } catch {
+                /* ignore */
+              }
+            },
+            remove(name: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value: '', ...options, maxAge: 0 });
+              } catch {
+                /* ignore */
+              }
+            },
+          },
+        }
+      );
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -74,10 +100,17 @@ export async function GET(request: NextRequest) {
         .select('creator_id')
         .eq('id', contentId)
         .single();
-      
+
       isCreator = track?.creator_id === user.id;
+    } else if (contentType === 'album') {
+      const { data: album } = await supabase
+        .from('albums')
+        .select('creator_id')
+        .eq('id', contentId)
+        .single();
+
+      isCreator = album?.creator_id === user.id;
     }
-    // TODO: Add album and podcast creator checks when those tables are available
 
     // Check if user has purchased the content
     const { data: purchase } = await supabase

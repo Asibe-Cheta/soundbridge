@@ -153,13 +153,47 @@ export async function POST(request: NextRequest) {
       creatorId = track.creator_id;
       price = Number(track.price);
       currency = track.currency || 'USD';
+    } else if (content_type === 'album') {
+      const { data: album, error: albumError } = await supabase
+        .from('albums')
+        .select('id, title, creator_id, is_paid, price, currency')
+        .eq('id', content_id)
+        .single();
+
+      if (albumError || !album) {
+        return NextResponse.json(
+          { success: false, message: 'Content not found' },
+          { status: 404, headers: corsHeaders }
+        );
+      }
+
+      if (!album.is_paid) {
+        return NextResponse.json(
+          { success: false, message: 'This content is free' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      if (album.creator_id === user.id) {
+        return NextResponse.json(
+          { success: false, message: 'You cannot purchase your own content' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      content = album;
+      creatorId = album.creator_id;
+      price = Number(album.price);
+      currency = album.currency || 'USD';
     } else {
-      // TODO: Handle albums and podcasts when those tables are available
       return NextResponse.json(
-        { success: false, message: 'Album and podcast purchases not yet implemented' },
+        { success: false, message: 'Podcast purchases not yet implemented' },
         { status: 501, headers: corsHeaders }
       );
     }
+
+    const stripeChargeType = content_type === 'album' ? 'album_sale' : 'audio_sale';
+    const platformRevenueChargeType = content_type === 'album' ? 'album_sale' : 'audio_sale';
 
     // Validate price range
     if (price < 0.99 || price > 50.00) {
@@ -206,7 +240,7 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId || '',
         buyer_id: user.id,
         buyer_email: user.email || '',
-        charge_type: 'audio_sale',
+        charge_type: stripeChargeType,
         platform_fee_amount: String(platformFeeCents),
         platform_fee_percent: String(PLATFORM_FEE_PERCENT),
         creator_payout_amount: String(creatorPayoutCents),
@@ -257,7 +291,7 @@ export async function POST(request: NextRequest) {
     }
 
     await supabase.rpc('insert_platform_revenue', {
-      p_charge_type: 'audio_sale',
+      p_charge_type: platformRevenueChargeType,
       p_gross_amount: amountCents,
       p_platform_fee_amount: platformFeeCents,
       p_platform_fee_percent: PLATFORM_FEE_PERCENT,
@@ -299,7 +333,6 @@ export async function POST(request: NextRequest) {
 
     // Update content sales metrics
     if (content_type === 'track') {
-      // Get current values first
       const { data: currentTrack } = await supabase
         .from('audio_tracks')
         .select('total_sales_count, total_revenue')
@@ -316,7 +349,24 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('Error updating sales metrics:', updateError);
-        // Don't fail - purchase is complete
+      }
+    } else if (content_type === 'album') {
+      const { data: currentAlbum } = await supabase
+        .from('albums')
+        .select('total_sales_count, total_revenue')
+        .eq('id', content_id)
+        .single();
+
+      const { error: updateAlbumError } = await supabase
+        .from('albums')
+        .update({
+          total_sales_count: (currentAlbum?.total_sales_count || 0) + 1,
+          total_revenue: Number(currentAlbum?.total_revenue || 0) + price,
+        })
+        .eq('id', content_id);
+
+      if (updateAlbumError) {
+        console.error('Error updating album sales metrics:', updateAlbumError);
       }
     }
 

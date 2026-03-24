@@ -202,6 +202,24 @@ async function handlePaymentSucceeded(
       if (updateError) {
         console.error('Error updating sales metrics:', updateError);
       }
+    } else if (content_type === 'album') {
+      const { data: currentAlbum } = await supabase
+        .from('albums')
+        .select('total_sales_count, total_revenue')
+        .eq('id', content_id)
+        .single();
+
+      const { error: albumUpdateError } = await supabase
+        .from('albums')
+        .update({
+          total_sales_count: (currentAlbum?.total_sales_count || 0) + 1,
+          total_revenue: Number(currentAlbum?.total_revenue || 0) + (paymentIntent.amount / 100),
+        })
+        .eq('id', content_id);
+
+      if (albumUpdateError) {
+        console.error('Error updating album sales metrics:', albumUpdateError);
+      }
     }
 
     // Send email notifications (non-blocking)
@@ -228,6 +246,13 @@ async function handlePaymentSucceeded(
           .eq('id', content_id)
           .single();
         contentTitle = track?.title || 'Content';
+      } else if (content_type === 'album') {
+        const { data: album } = await supabase
+          .from('albums')
+          .select('title')
+          .eq('id', content_id)
+          .single();
+        contentTitle = album?.title || 'Content';
       }
 
       // Send purchase confirmation to buyer

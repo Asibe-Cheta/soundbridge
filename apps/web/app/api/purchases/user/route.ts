@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { enrichPurchaseWithContent } from '@/src/lib/enrich-content-purchase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -108,47 +109,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch content details for each purchase
     const purchasesWithContent = await Promise.all(
       (purchases || []).map(async (purchase) => {
-        let content: any = null;
-        let creator: any = null;
-
-        if (purchase.content_type === 'track') {
-          const { data: track } = await supabase
-            .from('audio_tracks')
-            .select('id, title, creator_id, cover_art_url, file_url')
-            .eq('id', purchase.content_id)
-            .single();
-
-          if (track) {
-            content = {
-              id: track.id,
-              title: track.title,
-              creator_id: track.creator_id,
-              cover_art_url: track.cover_art_url,
-              file_url: track.file_url,
-              duration: 0, // TODO: Get from track metadata
-            };
-
-            // Get creator info
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, username, display_name, avatar_url')
-              .eq('id', track.creator_id)
-              .single();
-
-            if (profile) {
-              creator = {
-                id: profile.id,
-                username: profile.username,
-                display_name: profile.display_name,
-                avatar_url: profile.avatar_url,
-              };
-            }
-          }
-        }
-        // TODO: Handle albums and podcasts
+        const { content, creator } = await enrichPurchaseWithContent(supabase, {
+          id: purchase.id,
+          content_id: purchase.content_id,
+          content_type: purchase.content_type,
+          price_paid: Number(purchase.price_paid),
+          currency: purchase.currency,
+          purchased_at: purchase.purchased_at,
+          download_count: purchase.download_count,
+        });
 
         return {
           id: purchase.id,
@@ -158,10 +129,12 @@ export async function GET(request: NextRequest) {
           currency: purchase.currency,
           purchased_at: purchase.purchased_at,
           download_count: purchase.download_count,
-          content: content ? {
-            ...content,
-            creator: creator || null,
-          } : null,
+          content: content
+            ? {
+                ...content,
+                creator: creator || null,
+              }
+            : null,
         };
       })
     );
