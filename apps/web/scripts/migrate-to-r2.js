@@ -5,7 +5,7 @@
  * Does NOT delete objects from Supabase (manual cleanup after verification).
  *
  * Prerequisites (same as web R2 uploads — already on Vercel / .env.local):
- *   SUPABASE_URL
+ *   SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  *   CLOUDFLARE_ACCOUNT_ID
  *   CLOUDFLARE_ACCESS_KEY_ID
@@ -100,7 +100,12 @@ function buildR2PublicUrl(publicBaseUrl, bucketName, objectKey) {
 }
 
 async function main() {
-  const supabaseUrl = requireEnv('SUPABASE_URL');
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) {
+    console.error('Missing SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL');
+    process.exit(1);
+  }
+
   const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const accountId = requireEnv('CLOUDFLARE_ACCOUNT_ID');
   const accessKeyId = requireEnv('CLOUDFLARE_ACCESS_KEY_ID');

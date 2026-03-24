@@ -76,7 +76,7 @@ Script: `apps/web/scripts/migrate-to-r2.js`
 
 **Requirements**
 
-- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (required for download + DB update)
+- `SUPABASE_URL` **or** `NEXT_PUBLIC_SUPABASE_URL`, plus `SUPABASE_SERVICE_ROLE_KEY` (required for download + DB update)
 - Same R2 env vars as production uploads (`CLOUDFLARE_*`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`)
 
 **Run** (from `apps/web/`):
