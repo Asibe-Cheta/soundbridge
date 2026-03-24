@@ -38,9 +38,9 @@ stripe.paymentIntents.create({
   currency: 'gbp',
   metadata: {
     charge_type: 'gig_payment',           // or 'tip', 'event_ticket', 'audio_sale'
-    platform_fee_amount: '300',           // £3.00 in pence
-    platform_fee_percent: '12',           // 12%
-    creator_payout_amount: '2200',        // £22.00 in pence
+    platform_fee_amount: '375',           // £3.75 in pence
+    platform_fee_percent: '15',           // 15%
+    creator_payout_amount: '2125',        // £21.25 in pence
     reference_id: 'opportunity_project_uuid',
     creator_user_id: 'user_uuid',
   },
@@ -105,7 +105,7 @@ For every completed transaction, ensure the `wallet_transactions` table (or a ne
 | `stripe_payment_intent_id` | For Stripe reconciliation |
 | `charge_type` | `gig_payment`, `tip`, `event_ticket`, `audio_sale` |
 
-Currently `platform_fee_percent` is being stored as `0` in `opportunity_projects` even when a fee was charged. **This must be fixed** — store the real percentage at payment creation time, not after the fact.
+Currently `platform_fee_percent` is being stored as `12` in existing `opportunity_projects` records. **Going forward this must be `15`** — update the payment creation logic to use 15% as the platform fee for all new transactions, and store the real percentage at payment creation time.
 
 ---
 
@@ -150,8 +150,8 @@ WHERE status = 'completed';
 ## Summary Checklist
 
 - [ ] Add `metadata` to all Stripe `PaymentIntent` creations (gigs, tips, tickets, audio sales)
-- [ ] Fix `platform_fee_percent` — store real value at payment creation, not 0
-- [ ] Add `platform_fee_amount` column to `opportunity_projects` and populate correctly
+- [ ] Fix `platform_fee_percent` — change to 15% for all new transactions (existing records used 12%)
+- [ ] Confirm `platform_fee_amount` column in `opportunity_projects` populates correctly at 15%
 - [ ] Create `platform_revenue` summary table or enrich `wallet_transactions` with fee columns
 - [ ] (Future) Evaluate Stripe Connect `application_fee_amount` for explicit Stripe-side fee tracking
 - [ ] Add monthly revenue reconciliation query to ops runbook

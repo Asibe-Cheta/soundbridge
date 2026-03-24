@@ -154,14 +154,13 @@ export class AudioUploadService {
     });
   }
 
-  // Upload audio file to Supabase storage
+  // Upload audio file to Cloudflare R2 via server API
   async uploadAudioFile(
     file: File,
     userId: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadResult> {
     try {
-      const fileName = `${userId}/${Date.now()}_${file.name}`;
       onProgress?.({
         loaded: 0,
         total: file.size,
@@ -171,20 +170,23 @@ export class AudioUploadService {
         canCancel: false
       });
 
-      const { data, error } = await this.supabase.storage
-        .from('audio-tracks')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const formData = new FormData();
+      formData.append('audioFile', file);
 
-      if (error) {
+      const response = await fetch('/api/upload/audio-file', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+      if (!response.ok || !responseData?.success || !responseData?.url) {
         return {
           success: false,
           error: {
             code: 'UPLOAD_ERROR',
-            message: error.message,
-            details: error
+            message: responseData?.error || 'Audio upload failed',
+            details: responseData
           }
         };
       }
@@ -198,14 +200,9 @@ export class AudioUploadService {
         canCancel: false
       });
 
-      // Get public URL for the uploaded file
-      const { data: urlData } = await this.supabase.storage
-        .from('audio-tracks')
-        .getPublicUrl(fileName);
-
       return {
         success: true,
-        url: urlData?.publicUrl || `https://aunxdbqukbxyyiusaeqi.supabase.co/storage/v1/object/public/audio-tracks/${fileName}`
+        url: responseData.url
       };
     } catch (error) {
       return {
@@ -657,9 +654,7 @@ export class AudioUploadService {
 
       if (!dbResult.success) {
         // Clean up uploaded files if database insert fails
-        if (audioResult.url) {
-          await this.deleteFile('audio-tracks', audioResult.url);
-        }
+        // Audio now uploads to R2 via server API. Cleanup is handled server-side if needed.
         if (coverArtUrl) {
           await this.deleteFile('cover-art', coverArtUrl);
         }

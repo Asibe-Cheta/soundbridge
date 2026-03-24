@@ -422,6 +422,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const creatorId = searchParams.get('creatorId');
     const pendingRequests = searchParams.get('pending_requests') === '1' || searchParams.get('pending_requests') === 'true';
+    const batchHistory = searchParams.get('batch_history') === '1' || searchParams.get('batch_history') === 'true';
 
     // List payout_requests (pending or processing) — no SQL needed
     if (pendingRequests) {
@@ -551,6 +552,73 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { success: true, payout_requests: enriched, limit, offset },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    if (batchHistory) {
+      const { data: wiseRows, error: wiseError } = await supabase
+        .from('wise_payouts')
+        .select('id, status, source_amount, source_currency, created_at, updated_at, metadata')
+        .order('created_at', { ascending: false })
+        .limit(2000);
+
+      if (wiseError) {
+        return NextResponse.json(
+          { error: 'Failed to fetch batch history' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      const grouped = new Map<string, any>();
+      for (const row of (wiseRows ?? []) as any[]) {
+        const meta = (row.metadata ?? {}) as Record<string, any>;
+        const batchId = typeof meta.wise_batch_id === 'string' ? meta.wise_batch_id : null;
+        if (!batchId) continue;
+        const existing = grouped.get(batchId) ?? {
+          batch_id: batchId,
+          source_currency: row.source_currency ?? 'USD',
+          count: 0,
+          total_amount: 0,
+          statuses: new Set<string>(),
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          wise_dashboard_url: typeof meta.wise_dashboard_url === 'string' ? meta.wise_dashboard_url : 'https://wise.com/home',
+        };
+        existing.count += 1;
+        existing.total_amount += Number(row.source_amount ?? 0);
+        existing.statuses.add(String(row.status ?? 'pending'));
+        if (!existing.created_at || new Date(row.created_at).getTime() < new Date(existing.created_at).getTime()) {
+          existing.created_at = row.created_at;
+        }
+        if (!existing.updated_at || new Date(row.updated_at).getTime() > new Date(existing.updated_at).getTime()) {
+          existing.updated_at = row.updated_at;
+        }
+        grouped.set(batchId, existing);
+      }
+
+      const batches = Array.from(grouped.values()).map((b) => {
+        const statuses = Array.from(b.statuses) as string[];
+        let statusSummary = 'funded';
+        if (statuses.some((s) => s === 'pending')) statusSummary = 'pending_batch';
+        else if (statuses.every((s) => s === 'completed')) statusSummary = 'completed';
+        else if (statuses.some((s) => s === 'failed' || s === 'cancelled')) statusSummary = 'failed';
+        return {
+          batch_id: b.batch_id,
+          source_currency: b.source_currency,
+          count: b.count,
+          total_amount: Math.round(b.total_amount * 100) / 100,
+          status: statusSummary,
+          created_at: b.created_at,
+          updated_at: b.updated_at,
+          wise_dashboard_url: b.wise_dashboard_url,
+        };
+      });
+
+      batches.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return NextResponse.json(
+        { success: true, batches: batches.slice(offset, offset + limit), limit, offset },
         { status: 200, headers: corsHeaders }
       );
     }

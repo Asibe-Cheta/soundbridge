@@ -25,6 +25,17 @@ type ProcessingPayoutRequest = PendingPayoutRequest & {
   stripe_transfer_id: string;
 };
 
+type BatchSummary = {
+  batch_id: string;
+  source_currency: string;
+  count: number;
+  total_amount: number;
+  status: 'pending_batch' | 'funded' | 'completed' | 'failed';
+  created_at?: string;
+  updated_at?: string;
+  wise_dashboard_url?: string;
+};
+
 type WisePayoutRow = {
   id: string;
   creator_id: string;
@@ -56,6 +67,7 @@ export default function AdminPayoutsPage() {
   const [pending, setPending] = useState<PendingPayoutRequest[]>([]);
   const [processing, setProcessing] = useState<ProcessingPayoutRequest[]>([]);
   const [failedRequests, setFailedRequests] = useState<PendingPayoutRequest[]>([]);
+  const [batchHistory, setBatchHistory] = useState<BatchSummary[]>([]);
   const [historyCompleted, setHistoryCompleted] = useState<WisePayoutRow[]>([]);
   const [historyFailed, setHistoryFailed] = useState<WisePayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,12 +96,13 @@ export default function AdminPayoutsPage() {
     setError(null);
     setWiseUsd((s) => ({ ...s, loading: true }));
     try {
-      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes, wiseBalRes] = await Promise.all([
+      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes, batchHistoryRes, wiseBalRes] = await Promise.all([
         fetch('/api/admin/payouts?pending_requests=1&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?status=completed&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts?status=failed&limit=50&offset=0', { credentials: 'include' }),
+        fetch('/api/admin/payouts?batch_history=1&limit=50&offset=0', { credentials: 'include' }),
         fetch('/api/admin/payouts/wise-balance', { credentials: 'include' }),
       ]);
 
@@ -130,6 +143,11 @@ export default function AdminPayoutsPage() {
       if (failedRes.ok) {
         const failedJson = await failedRes.json();
         setHistoryFailed(failedJson.payouts ?? []);
+      }
+
+      if (batchHistoryRes.ok) {
+        const batchesJson = await batchHistoryRes.json();
+        setBatchHistory(batchesJson.batches ?? []);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load payout data');
@@ -283,6 +301,10 @@ export default function AdminPayoutsPage() {
 
   const completedCount = useMemo(() => historyCompleted.length, [historyCompleted]);
   const failedCount = useMemo(() => historyFailed.length, [historyFailed]);
+  const currentUnfundedBatch = useMemo(
+    () => batchHistory.find((b) => b.status === 'pending_batch') ?? null,
+    [batchHistory]
+  );
 
   /** Pending requests denominated in USD (batch source currency is often USD). */
   const pendingUsdTotal = useMemo(
@@ -377,6 +399,29 @@ export default function AdminPayoutsPage() {
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {currentUnfundedBatch && (
+        <div className={`mb-6 rounded-lg border p-4 ${cardClass}`}>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className={`text-lg font-semibold ${textClass}`}>Current unfunded batch</h2>
+              <p className={`text-sm ${mutedClass}`}>
+                Batch <code>{currentUnfundedBatch.batch_id}</code> has {currentUnfundedBatch.count} payouts totaling{' '}
+                {formatMoney(currentUnfundedBatch.total_amount, currentUnfundedBatch.source_currency)}.
+              </p>
+              <p className={`text-xs mt-1 ${mutedClass}`}>Manual step required in Wise: click Fund batch.</p>
+            </div>
+            <a
+              href={currentUnfundedBatch.wise_dashboard_url || 'https://wise.com/home'}
+              target="_blank"
+              rel="noreferrer"
+              className={`inline-flex items-center px-3 py-2 rounded text-sm font-medium ${dark ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+            >
+              View in Wise
+            </a>
+          </div>
         </div>
       )}
 
@@ -739,6 +784,47 @@ export default function AdminPayoutsPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <div className={`rounded-lg border overflow-hidden mt-6 ${cardClass}`}>
+        <div className="p-4 border-b">
+          <h2 className={`text-lg font-semibold ${textClass}`}>Batch history</h2>
+          <p className={`text-sm ${mutedClass}`}>Past Wise batches: date, count, total, and status.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className={dark ? 'bg-gray-700/50' : 'bg-gray-50'}>
+              <tr>
+                <th className="text-left p-3 font-medium">Batch</th>
+                <th className="text-left p-3 font-medium">Date</th>
+                <th className="text-left p-3 font-medium">Count</th>
+                <th className="text-left p-3 font-medium">Total</th>
+                <th className="text-left p-3 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {batchHistory.length === 0 ? (
+                <tr>
+                  <td className="p-4 text-gray-500" colSpan={5}>No batch history yet.</td>
+                </tr>
+              ) : (
+                batchHistory.map((b) => (
+                  <tr key={b.batch_id} className={`border-t ${dark ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <td className="p-3">
+                      <code className={`${dark ? 'text-cyan-300' : 'text-cyan-700'}`}>{b.batch_id}</code>
+                    </td>
+                    <td className={`p-3 ${mutedClass}`}>{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</td>
+                    <td className="p-3 text-white">{b.count}</td>
+                    <td className="p-3 text-white">{formatMoney(b.total_amount, b.source_currency)}</td>
+                    <td className="p-3">
+                      <span className="inline-block px-2 py-0.5 rounded text-xs bg-gray-700/50 text-gray-200">{b.status}</span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

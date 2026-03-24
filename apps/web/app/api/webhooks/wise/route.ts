@@ -117,7 +117,7 @@ async function handleTransferStateChange(
 
     // Keep payout_requests in sync + notify creator when Wise confirms completion or failure.
     // Only set payout_requests to 'failed' when Wise confirms (webhook); never from API errors (e.g. 403 funding).
-    if (newStatus === 'completed' || newStatus === 'failed' || newStatus === 'cancelled') {
+    if (newStatus === 'processing' || newStatus === 'completed' || newStatus === 'failed' || newStatus === 'cancelled') {
       try {
         // Primary mapping: payout_requests.stripe_transfer_id = wise_payout.id
         let payoutRequest = await supabase
@@ -138,6 +138,16 @@ async function handleTransferStateChange(
         }
 
         if (payoutRequest) {
+          if (newStatus === 'processing' && payoutRequest.status === 'pending_batch') {
+            await supabase
+              .from('payout_requests')
+              .update({
+                status: 'funded',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', payoutRequest.id);
+          }
+
           if (newStatus === 'completed' && payoutRequest.status !== 'completed') {
             await supabase
               .from('payout_requests')

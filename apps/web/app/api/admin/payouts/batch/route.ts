@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
 import { submitWiseBatchGroupPayments, type WiseBatchGroupPayoutItem } from '@/src/lib/wise/batch-group-payout';
+import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
+import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -74,15 +76,10 @@ export async function POST(request: NextRequest) {
       banksByUser.set(b.user_id, list);
     });
 
-    // Mark all pending as processing to prevent duplicate submissions.
-    await supabase
-      .from('payout_requests')
-      .update({ status: 'processing', processed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .in('id', pending.map((p: any) => p.id));
-
     // Build Wise batch items grouped by source currency.
     const itemsBySource: Record<string, WiseBatchGroupPayoutItem[]> = {};
     const unsupported: Array<{ payout_request_id: string; reason: string }> = [];
+    const belowMinimum: Array<{ payout_request_id: string; reason: string }> = [];
 
     for (const pr of pending) {
       const creatorId = pr.creator_id;
@@ -116,6 +113,14 @@ export async function POST(request: NextRequest) {
 
       const sourceCurrency = (pr.currency ?? 'USD').toUpperCase();
       const sourceAmount = Number(pr.amount);
+      const minPayout = getMinPayoutForCurrency(sourceCurrency);
+      if (!Number.isFinite(sourceAmount) || sourceAmount < minPayout) {
+        belowMinimum.push({
+          payout_request_id: requestId,
+          reason: `Below minimum payout threshold (${sourceCurrency} ${minPayout.toFixed(2)})`,
+        });
+        continue;
+      }
 
       const items: WiseBatchGroupPayoutItem = {
         payoutRequestId: requestId,
@@ -137,16 +142,15 @@ export async function POST(request: NextRequest) {
       itemsBySource[key].push(items);
     }
 
-    // For unsupported requests, revert them back to pending so they can be processed via Stripe or later.
-    if (unsupported.length > 0) {
-      await supabase
-        .from('payout_requests')
-        .update({ status: 'pending', processed_at: null, updated_at: new Date().toISOString() })
-        .in('id', unsupported.map((u) => u.payout_request_id));
-    }
-
     const processed: Array<{ payout_request_id: string; wise_payout_id: string }> = [];
     const submissionErrors: Array<{ sourceCurrency: string; error: string; payout_request_ids: string[] }> = [];
+    const batchSummaries: Array<{
+      batchId: string;
+      sourceCurrency: string;
+      transferCount: number;
+      totalSourceAmount: number;
+      wiseDashboardUrl: string;
+    }> = [];
 
     for (const [sourceCurrencyKey, items] of Object.entries(itemsBySource)) {
       if (!items || items.length === 0) continue;
@@ -155,17 +159,31 @@ export async function POST(request: NextRequest) {
 
       const payoutRequestIds = items.map((i) => i.payoutRequestId);
       try {
-        const wisePayoutRows = await submitWiseBatchGroupPayments(items, sourceCurrency);
+        const submission = await submitWiseBatchGroupPayments(items, sourceCurrency);
+        const wisePayoutRows = submission.wisePayoutRows;
 
         await Promise.all(
           wisePayoutRows.map(async ({ payoutRequestId, wisePayout }) => {
             await supabase
               .from('payout_requests')
-              .update({ stripe_transfer_id: wisePayout.id, updated_at: new Date().toISOString() })
+              .update({
+                status: 'pending_batch',
+                processed_at: new Date().toISOString(),
+                stripe_transfer_id: wisePayout.id,
+                rejection_reason: null,
+                updated_at: new Date().toISOString(),
+              })
               .eq('id', payoutRequestId);
             processed.push({ payout_request_id: payoutRequestId, wise_payout_id: wisePayout.id });
           })
         );
+        batchSummaries.push({
+          batchId: submission.batchId,
+          sourceCurrency: submission.sourceCurrency,
+          transferCount: submission.transferCount,
+          totalSourceAmount: submission.totalSourceAmount,
+          wiseDashboardUrl: submission.wiseDashboardUrl,
+        });
       } catch (err: any) {
         await supabase
           .from('payout_requests')
@@ -184,7 +202,7 @@ export async function POST(request: NextRequest) {
           String(rawMessage).includes('403');
         const error =
           is403
-            ? `${rawMessage} — Requests re-queued to Pending. If Wise transfers were created, they may appear under In Progress; use Retry / Fund there.`
+            ? `${rawMessage} — Requests re-queued to Pending. Fund the batch manually in Wise dashboard once created.`
             : rawMessage;
 
         submissionErrors.push({
@@ -195,11 +213,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (batchSummaries.length > 0) {
+      const adminEmail = process.env.ADMIN_PAYOUT_EMAIL || process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        const totalCount = batchSummaries.reduce((sum, b) => sum + b.transferCount, 0);
+        const totalAmount = batchSummaries.reduce((sum, b) => sum + b.totalSourceAmount, 0);
+        const lines = batchSummaries
+          .map((b) => `<li><code>${b.batchId}</code> — ${b.transferCount} payouts — ${b.sourceCurrency} ${b.totalSourceAmount.toFixed(2)}</li>`)
+          .join('');
+        await SendGridService.sendHtmlEmail(
+          adminEmail,
+          `Wise payout batch ready to fund (${totalCount} payouts)`,
+          `<div style="font-family:Arial,sans-serif">
+            <h2>Wise payout batch created</h2>
+            <p>${totalCount} payouts have been queued via Wise Batch Payments.</p>
+            <p><strong>Total:</strong> ${totalAmount.toFixed(2)} (across currencies)</p>
+            <p>Manual step required: log in to Wise and click <strong>Fund batch</strong>.</p>
+            <ul>${lines}</ul>
+            <p><a href="https://wise.com/home">Open Wise dashboard</a></p>
+          </div>`
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
         processed,
         unsupported,
+        belowMinimum,
+        batches: batchSummaries,
         submissionErrors,
         totalPending: pending.length,
       },

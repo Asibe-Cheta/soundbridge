@@ -452,35 +452,24 @@ export default function UnifiedUploadPage() {
         });
 
         try {
-          const supabase = (await import('../../src/lib/supabase')).createBrowserClient();
           if (!user) {
             throw new Error('User not authenticated');
           }
 
-          // Generate unique filename
-          const timestamp = Date.now();
-          const randomString = Math.random().toString(36).substring(2, 15);
-          const fileExtension = file.name.split('.').pop() || 'mp3';
-          const fileName = `fingerprint-temp/${user.id}/${timestamp}_${randomString}.${fileExtension}`;
-
-          // Upload to Supabase storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('audio-tracks')
-            .upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-
-          if (uploadError) {
-            throw new Error(`Storage upload failed: ${uploadError.message}`);
+          // Upload to Cloudflare R2 via server endpoint and use URL for fingerprinting.
+          const formData = new FormData();
+          formData.append('audioFile', file);
+          const uploadResponse = await fetch('/api/upload/audio-file', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+          });
+          const uploadResult = await uploadResponse.json().catch(() => ({}));
+          if (!uploadResponse.ok || !uploadResult?.success || !uploadResult?.url) {
+            throw new Error(uploadResult?.error || 'Temporary upload failed');
           }
 
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from('audio-tracks')
-            .getPublicUrl(fileName);
-
-          audioFileUrl = urlData.publicUrl;
+          audioFileUrl = uploadResult.url;
           console.log('✅ File uploaded to storage, using URL for fingerprinting', {
             url: audioFileUrl,
             originalSize: file.size

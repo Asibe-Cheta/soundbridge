@@ -22,6 +22,15 @@ export interface WiseBatchGroupPayoutItem {
   reason?: string;
 }
 
+export interface WiseBatchSubmission {
+  batchId: string;
+  sourceCurrency: WiseBatchGroupPayoutItem['sourceCurrency'];
+  transferCount: number;
+  totalSourceAmount: number;
+  wiseDashboardUrl: string;
+  wisePayoutRows: Array<{ payoutRequestId: string; wisePayout: WisePayout }>;
+}
+
 async function resolveWiseProfileId(): Promise<number> {
   const fromConfig = wiseConfig().profileId;
   if (fromConfig) return fromConfig;
@@ -38,30 +47,35 @@ function formatBatchGroupName(sourceCurrency: string, count: number): string {
 }
 
 /**
- * Submit payouts as a single Wise Batch Group (funded once).
- * Note: Wise Batch Group funding may still be SCA protected, but should avoid one approval per transfer.
+ * Submit payouts as a single Wise Batch Payments group.
+ * IMPORTANT: This function only creates the batch + transfers.
+ * Funding happens manually in Wise dashboard (semi-automated flow).
  */
 export async function submitWiseBatchGroupPayments(
   items: WiseBatchGroupPayoutItem[],
   sourceCurrency: WiseBatchGroupPayoutItem['sourceCurrency']
-): Promise<Array<{ payoutRequestId: string; wisePayout: WisePayout }>> {
-  if (items.length === 0) return [];
+): Promise<WiseBatchSubmission> {
+  if (items.length === 0) {
+    throw new Error('No payouts provided for Wise batch submission');
+  }
 
   const client = getWiseClient();
   const profileId = await resolveWiseProfileId();
 
-  // Step 1: Create batch group
+  // Step 1: Create batch payments group
   const batchGroup = await client.post<{
     id: string;
-    version: number;
-  }>(`/v3/profiles/${profileId}/batch-groups`, {
+    status?: string;
+    version?: number;
+  }>(`/v3/profiles/${profileId}/batch-payments`, {
     name: formatBatchGroupName(sourceCurrency, items.length),
     sourceCurrency,
   });
 
-  // Step 2: Add transfers to batch group
+  // Step 2: Add transfers to batch payments
   // Order matters: Wise returns transferIds in the same sequence.
   const perTransfer: Array<{
+    transferId?: string;
     recipientId: string;
     quoteUuid: string;
     destinationAmount: number;
@@ -111,14 +125,18 @@ export async function submitWiseBatchGroupPayments(
       reference: `SoundBridge payout ${refShort}`,
     };
 
-    await client.post<unknown>(`/v3/profiles/${profileId}/batch-groups/${batchGroup.id}/transfers`, {
+    const transferResp = await client.post<{ id?: string | number }>(
+      `/v3/profiles/${profileId}/batch-payments/${batchGroup.id}/transfers`,
+      {
       customerTransactionId: item.payoutRequestId,
       quoteUuid: String(quoteUuid),
       targetAccount: targetAccountId,
       details,
-    });
+      }
+    );
 
     perTransfer.push({
+      transferId: transferResp?.id != null ? String(transferResp.id) : undefined,
       recipientId: String((recipient as any).id),
       quoteUuid: String(quoteUuid),
       destinationAmount: Number(quote.targetAmount ?? 0),
@@ -126,30 +144,9 @@ export async function submitWiseBatchGroupPayments(
     });
   }
 
-  // Step 3: Complete batch group (locks it for funding)
-  await client.patch(`/v3/profiles/${profileId}/batch-groups/${batchGroup.id}`, {
-    status: 'COMPLETED',
-    version: batchGroup.version,
-  });
-
-  // Step 4: Fund batch group once
-  const funded = await client.post<{
-    transferIds: string[];
-  }>(`/v3/profiles/${profileId}/batch-payments/${batchGroup.id}/payments`, {
-    type: 'BALANCE',
-  });
-
-  const transferIds = funded.transferIds ?? [];
-  if (transferIds.length !== items.length) {
-    throw new Error(
-      `Wise batch funding returned ${transferIds.length} transferIds, expected ${items.length}.`
-    );
-  }
-
-  // Step 5: Persist wise_payouts rows so Wise webhook updates can match by wise_transfer_id
+  // Step 3: Persist wise_payouts rows; admin funds batch manually in Wise dashboard.
   const wisePayouts = await Promise.all(
     items.map(async (item, idx) => {
-      const transferId = transferIds[idx];
       const t = perTransfer[idx];
 
       const reference = `payout_${item.payoutRequestId}_${Date.now()}`;
@@ -158,7 +155,7 @@ export async function submitWiseBatchGroupPayments(
         creator_id: item.creatorId,
         amount: t.destinationAmount,
         currency: t.destinationCurrency as WiseCurrency,
-        wise_transfer_id: transferId,
+        wise_transfer_id: t.transferId ?? null,
         wise_recipient_id: t.recipientId,
         wise_quote_id: t.quoteUuid,
         status: WisePayoutStatus.PENDING,
@@ -170,13 +167,25 @@ export async function submitWiseBatchGroupPayments(
         customer_transaction_id: item.payoutRequestId,
         source_amount: item.sourceAmount,
         source_currency: item.sourceCurrency,
-        // wise_response intentionally omitted; webhooks will populate wise_response.
+        metadata: {
+          wise_batch_id: batchGroup.id,
+          wise_batch_status: batchGroup.status ?? 'pending_batch',
+          wise_dashboard_url: `https://wise.com/home`,
+          manual_funding_required: true,
+        },
       });
 
       return { payoutRequestId: item.payoutRequestId, wisePayout };
     })
   );
 
-  return wisePayouts;
+  return {
+    batchId: batchGroup.id,
+    sourceCurrency,
+    transferCount: items.length,
+    totalSourceAmount: items.reduce((sum, i) => sum + Number(i.sourceAmount || 0), 0),
+    wiseDashboardUrl: 'https://wise.com/home',
+    wisePayoutRows: wisePayouts,
+  };
 }
 

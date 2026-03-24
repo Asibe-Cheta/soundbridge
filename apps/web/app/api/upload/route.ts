@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { uploadValidationService } from '../../../src/lib/upload-validation';
 import type { UploadValidationRequest } from '../../../src/lib/types/upload-validation';
 import { validateAudioFile, type AudioMetadata } from '../../../src/lib/audio-moderation-utils';
+import { createR2PutObjectCommand, buildR2PublicUrl, r2Client } from '@/src/lib/r2-client';
+import { createSafeObjectKey, validateAudioUploadInput } from '@/src/lib/audio-upload-security';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,9 +73,47 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!title || !artistName || !audioFileUrl) {
+    if (!title || !artistName) {
       return NextResponse.json(
-        { error: 'Title, artist name, and audio file are required' },
+        { error: 'Title and artist name are required' },
+        { status: 400 }
+      );
+    }
+
+    let resolvedAudioFileUrl = typeof audioFileUrl === 'string' ? audioFileUrl : '';
+
+    // If frontend did not pre-upload the file, upload from base64 payload to R2.
+    if (!resolvedAudioFileUrl && fileData) {
+      try {
+        const file = await createFileFromBase64(fileData);
+        const inputValidation = validateAudioUploadInput(file);
+        if (!inputValidation.valid) {
+          return NextResponse.json({ error: inputValidation.message }, { status: 400 });
+        }
+
+        const objectKey = createSafeObjectKey(user.id, file.name);
+        const body = Buffer.from(await file.arrayBuffer());
+        await r2Client.send(
+          createR2PutObjectCommand({
+            objectKey,
+            body,
+            contentType: file.type || 'application/octet-stream',
+            contentLength: body.byteLength,
+          })
+        );
+        resolvedAudioFileUrl = buildR2PublicUrl(objectKey);
+      } catch (r2UploadError) {
+        console.error('❌ Failed to upload audio payload to R2:', r2UploadError);
+        return NextResponse.json(
+          { error: 'Audio upload failed. Please retry your upload.' },
+          { status: 502 }
+        );
+      }
+    }
+
+    if (!resolvedAudioFileUrl) {
+      return NextResponse.json(
+        { error: 'Audio file is required' },
         { status: 400 }
       );
     }
@@ -333,7 +373,7 @@ export async function POST(request: NextRequest) {
       artist_name: artistName.trim(),
       description: description?.trim() || null,
       creator_id: user.id,
-      file_url: audioFileUrl,
+      file_url: resolvedAudioFileUrl,
       cover_art_url: coverArtUrl || null,
       duration: duration || 0,
       genre: genre || null,
@@ -445,6 +485,18 @@ async function createFileFromBase64(base64Data: string): Promise<File> {
     const [header, data] = base64Data.split(',');
     const mimeMatch = header.match(/data:([^;]+)/);
     const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mp3';
+    const extensionMap: Record<string, string> = {
+      'audio/mpeg': 'mp3',
+      'audio/mp3': 'mp3',
+      'audio/wav': 'wav',
+      'audio/x-wav': 'wav',
+      'audio/m4a': 'm4a',
+      'audio/x-m4a': 'm4a',
+      'audio/mp4': 'm4a',
+      'audio/flac': 'flac',
+      'audio/ogg': 'ogg',
+    };
+    const fileExtension = extensionMap[mimeType] || 'mp3';
     
     // Convert base64 to binary
     const binaryString = atob(data);
@@ -456,7 +508,7 @@ async function createFileFromBase64(base64Data: string): Promise<File> {
     
     // Create File object
     const blob = new Blob([bytes], { type: mimeType });
-    const file = new File([blob], 'uploaded-file', { type: mimeType });
+    const file = new File([blob], `uploaded-file.${fileExtension}`, { type: mimeType });
     
     return file;
   } catch (error) {
