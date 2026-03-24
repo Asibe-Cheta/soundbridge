@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
+import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
 
 interface Props {
   params: { albumId: string };
@@ -214,6 +215,18 @@ export default async function AlbumPage({ params }: Props) {
                   }}
                 />
               </div>
+
+              <ContentPurchaseSection
+                contentType="album"
+                contentId={album.id}
+                title={album.title}
+                price={Number((album as { price?: number | null }).price ?? 0)}
+                currency={(album as { currency?: string | null }).currency || 'USD'}
+                coverUrl={(album as { cover_image_url?: string | null }).cover_image_url}
+                creatorLabel={creatorName}
+                isOwner={isAlbumOwner}
+                isPaid={!!(album as { is_paid?: boolean }).is_paid}
+              />
             </div>
           </div>
 

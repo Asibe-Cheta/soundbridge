@@ -6,6 +6,7 @@ import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { CREATOR_SHARE_DECIMAL, PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { finalizeContentPurchaseFromPaymentIntent } from '@/src/lib/content-purchase-finalize';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,8 +82,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse request body
-    const { content_id, content_type, payment_method_id } = await request.json();
+    const body = await request.json().catch(() => ({}));
+
+    // Stripe Elements flow: PI already confirmed client-side (create-intent + confirmPayment)
+    if (body.payment_intent_id && typeof body.payment_intent_id === 'string') {
+      if (!stripe) {
+        return NextResponse.json(
+          { success: false, message: 'Payment system not configured' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+      const pi = await stripe.paymentIntents.retrieve(body.payment_intent_id);
+      if (pi.status !== 'succeeded') {
+        return NextResponse.json(
+          { success: false, message: 'Payment not completed' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      const result = await finalizeContentPurchaseFromPaymentIntent(supabase, user, pi);
+      if (!result.ok) {
+        return NextResponse.json(
+          { success: false, message: result.message },
+          { status: result.status, headers: corsHeaders }
+        );
+      }
+      const purchase = result.purchase as Record<string, string | number | null>;
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            purchase: {
+              id: purchase.id,
+              user_id: purchase.user_id,
+              content_id: purchase.content_id,
+              content_type: purchase.content_type,
+              price_paid: purchase.price_paid,
+              currency: purchase.currency,
+              platform_fee: purchase.platform_fee,
+              creator_earnings: purchase.creator_earnings,
+              transaction_id: purchase.transaction_id,
+              status: purchase.status,
+              purchased_at: purchase.purchased_at,
+              download_count: purchase.download_count,
+            },
+          },
+          message: result.alreadyCompleted ? 'Purchase already recorded' : 'Purchase successful',
+        },
+        { headers: corsHeaders }
+      );
+    }
+
+    const { content_id, content_type, payment_method_id } = body;
 
     if (!content_id || !content_type || !payment_method_id) {
       return NextResponse.json(

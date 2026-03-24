@@ -5,6 +5,7 @@ import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import TrackActionsClient from '@/src/components/track/TrackActionsClient';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
+import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
 
 interface Props {
   params: { trackId: string };
@@ -196,6 +197,22 @@ export default async function TrackPage({ params }: Props) {
               currency: (track as { currency?: string | null }).currency ?? null,
               total_sales_count: (track as { total_sales_count?: number | null }).total_sales_count ?? null,
             }}
+          />
+
+          <ContentPurchaseSection
+            contentType="track"
+            contentId={track.id}
+            title={track.title}
+            price={Number((track as { price?: number | null }).price ?? 0)}
+            currency={(track as { currency?: string | null }).currency || 'USD'}
+            coverUrl={
+              (track as { cover_image_url?: string | null }).cover_image_url ||
+              (track as { cover_art_url?: string | null }).cover_art_url ||
+              null
+            }
+            creatorLabel={creatorName}
+            isOwner={isOwner}
+            isPaid={!!(track as { is_paid?: boolean }).is_paid}
           />
 
           {/* Actions: report button for non-owners, copyright-removed state for owner */}

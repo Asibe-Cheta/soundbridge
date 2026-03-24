@@ -227,7 +227,17 @@ export async function POST(request: NextRequest) {
     const creatorPayoutCents = Math.round(creatorEarnings * 100);
     const platformFeePercent = dbPrice > 0 ? Math.round((platformFee / dbPrice) * 100) : PLATFORM_FEE_PERCENT;
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const { data: creatorBank } = creatorId
+      ? await supabase
+          .from('creator_bank_accounts')
+          .select('stripe_account_id')
+          .eq('user_id', creatorId)
+          .not('stripe_account_id', 'is', null)
+          .maybeSingle()
+      : { data: null };
+    const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
+
+    const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
       amount: amountCents,
       currency: dbCurrency.toLowerCase(),
       metadata: {
@@ -243,7 +253,13 @@ export async function POST(request: NextRequest) {
         creator_payout_amount: String(creatorPayoutCents),
       },
       description: `Purchase: ${content.title || 'Content'}`,
-    });
+    };
+    if (stripeAccountId && platformFeeCents > 0 && platformFeeCents < amountCents) {
+      piParams.application_fee_amount = platformFeeCents;
+      piParams.transfer_data = { destination: stripeAccountId };
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
     await addStripePaymentIntentIdToMetadata(stripe, paymentIntent.id, (paymentIntent.metadata ?? {}) as Record<string, string>);
 
     return NextResponse.json(
