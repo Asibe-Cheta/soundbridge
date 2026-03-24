@@ -11,9 +11,11 @@
     "start": "next start",
     "lint": "next lint",
     "setup-env": "node scripts/setup-env.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "migrate-files": "node scripts/migrate-to-r2.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1015.0",
     "@googleapis/androidpublisher": "^31.0.0",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-avatar": "^1.1.10",
