@@ -35,11 +35,52 @@ export async function POST(request: NextRequest) {
     const serviceSupabase = createServiceClient();
     const { data: fm } = await serviceSupabase
       .from('founding_members')
-      .select('id')
+      .select('id, claim_count, first_claimed_at')
       .eq('email', email)
       .maybeSingle();
 
     const found = !!fm;
+
+    // Track every claim check attempt for reporting.
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const candidateIp = forwardedFor ? forwardedFor.split(',')[0]?.trim() : null;
+    const userAgent = request.headers.get('user-agent');
+
+    const eventPayload = {
+      email,
+      founding_member_id: fm?.id ?? null,
+      found,
+      source: 'founding_member_page',
+      ip_address: candidateIp || null,
+      user_agent: userAgent || null,
+    };
+
+    const { error: claimEventError } = await serviceSupabase
+      .from('founding_member_claim_events')
+      .insert(eventPayload);
+
+    if (claimEventError) {
+      console.error('Failed to write founding member claim event:', claimEventError);
+    }
+
+    if (found && fm?.id) {
+      const nextClaimCount = typeof fm.claim_count === 'number' ? fm.claim_count + 1 : 1;
+      const updatePayload = {
+        claim_count: nextClaimCount,
+        last_claimed_at: new Date().toISOString(),
+        first_claimed_at: fm.first_claimed_at ?? new Date().toISOString(),
+      };
+
+      const { error: fmUpdateError } = await serviceSupabase
+        .from('founding_members')
+        .update(updatePayload)
+        .eq('id', fm.id);
+
+      if (fmUpdateError) {
+        console.error('Failed to update founding member claim counters:', fmUpdateError);
+      }
+    }
+
     return NextResponse.json(
       {
         found,
