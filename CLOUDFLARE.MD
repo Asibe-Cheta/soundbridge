@@ -148,7 +148,13 @@ Contact the founder for existing credentials before proceeding.
    - Under "Public Access" → Enable
    - Copy the public bucket URL: https://pub-xxxxx.r2.dev
 
-4. Add to .env.local:
+4. CORS policy on the bucket (required for browser / WebView audio playback):
+   - R2 → bucket → Settings → CORS policy
+   - Without CORS (or without Range-related ExposeHeaders), cross-origin **\<audio\>** / streaming can appear stuck at **0:00** on web and in WebViews.
+   - Apply a rule that allows **GET** and **HEAD**, and **ExposeHeaders**: `Content-Length`, `Content-Type`, `Accept-Ranges`, `Content-Range` (and optionally `ETag`). For broad compatibility use **AllowedOrigins**: `["*"]` for that rule; see `apps/web/docs/MOBILE_TEAM_R2_MIGRATION.md` for full JSON copies.
+   - Confirm a `file_url` from the DB opens in a new tab (200). **403** means public access or path is wrong before CORS.
+
+5. Add to .env.local:
    # Cloudflare R2 Configuration
    CLOUDFLARE_ACCOUNT_ID=your_account_id_here
    CLOUDFLARE_ACCESS_KEY_ID=your_access_key_here

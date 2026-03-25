@@ -83,9 +83,37 @@ No further “pending setup” for these five in production.
 
 ---
 
-## R2 bucket CORS policy (web / WebView)
+## R2 bucket CORS policy (web / WebView) — required for playback
 
-Configured on the **`soundbridge-audio`** bucket for **browser** access. **Localhost is not included** (add only if you need local web QA).
+Audio players use **HTTP Range** requests (`Accept-Ranges`, `Content-Range`, `Content-Length`). If the bucket has **no CORS**, or CORS omits **ExposeHeaders** for those, **browsers can fail to stream** cross-origin audio: UI may show **playing at 0:00** with no progress. **WebViews** that load the site are subject to the same rules as the browser.
+
+**Where to set:** Cloudflare Dashboard → **R2** → **`soundbridge-audio`** → **Settings** → **CORS policy**.
+
+### If playback is broken (web + mobile Web): apply this first (broad read access)
+
+Use this when you need **maximum compatibility** (production web, WebView, varied `Origin` headers). Bucket is **public read-only**; only **GET** / **HEAD** are allowed.
+
+```json
+[
+  {
+    "AllowedOrigins": ["*"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": [
+      "Content-Length",
+      "Content-Type",
+      "Accept-Ranges",
+      "Content-Range",
+      "ETag"
+    ],
+    "MaxAgeSeconds": 86400
+  }
+]
+```
+
+### Tighter option (production web origins only)
+
+Add **`http://localhost:3000`** (and any dev host) if local web QA needs it.
 
 ```json
 [
@@ -94,16 +122,12 @@ Configured on the **`soundbridge-audio`** bucket for **browser** access. **Local
       "https://soundbridge.live",
       "https://www.soundbridge.live"
     ],
-    "AllowedMethods": [
-      "GET",
-      "HEAD"
-    ],
-    "AllowedHeaders": [
-      "*"
-    ],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
     "ExposeHeaders": [
       "ETag",
       "Content-Length",
+      "Content-Type",
       "Content-Range",
       "Accept-Ranges"
     ],
@@ -112,9 +136,15 @@ Configured on the **`soundbridge-audio`** bucket for **browser** access. **Local
 ]
 ```
 
-**Uploads** from the browser go **via our backend** (`PutObject` with secrets), so CORS does **not** need `PUT`/`POST` for the R2 bucket for the current design.
+### Verify before/after
 
-**Native mobile (AVPlayer, ExoPlayer, etc.):** streaming a direct `https://…` audio URL is **not** subject to browser CORS in the same way. If you use a **WebView** loading the **website**, browser rules apply.
+1. Open a live **`file_url`** (or **`audio_url`**) in a **new browser tab** — expect **200** and file download/play. **403** → fix **public access** or URL path, not CORS alone.
+2. In DevTools **Network**, play the same URL in the app — confirm **GET** succeeds and **206 Partial Content** may appear for range requests.
+3. Check **Cloudflare WAF** is not blocking requests with **`Range`** headers to **`*.r2.dev`**.
+
+**Uploads** from the browser go **via our backend** (`PutObject` with secrets), so CORS does **not** need `PUT`/`POST` on the bucket for uploads.
+
+**Pure native players** (AVPlayer / ExoPlayer hitting `https://…` directly) are not browser CORS; if those still fail, suspect **URL**, **TLS**, **403**, or **redirect** — but **WebView + website audio** is CORS-sensitive like desktop Safari/Chrome.
 
 ---
 
