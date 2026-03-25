@@ -35,9 +35,15 @@ export const r2Client = new S3Client({
   },
 });
 
+/**
+ * Public URL for an object key.
+ * For R2 "Public Development URL" (https://pub-….r2.dev), the hostname is already
+ * tied to one bucket — the path must be ONLY the object key (no /bucket-name/ prefix).
+ * @see https://developers.cloudflare.com/r2/buckets/public-buckets/
+ */
 export function buildR2PublicUrl(objectKey: string): string {
   const cleanKey = objectKey.replace(/^\/+/, '');
-  return `${r2Config.publicBaseUrl}/${r2Config.bucketName}/${cleanKey}`;
+  return `${r2Config.publicBaseUrl}/${cleanKey}`;
 }
 
 export function createR2PutObjectCommand(args: {

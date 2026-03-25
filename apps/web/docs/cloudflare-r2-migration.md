@@ -47,7 +47,7 @@ R2_PUBLIC_URL=https://pub-your-account-hash.r2.dev
 ```json
 {
   "success": true,
-  "url": "https://pub-xxxx.r2.dev/soundbridge-audio/audio/<userId>/<timestamp>-<name>-<rand>.mp3",
+  "url": "https://pub-xxxx.r2.dev/audio/<userId>/<timestamp>-<name>-<rand>.mp3",
   "objectKey": "audio/<userId>/<timestamp>-<name>-<rand>.mp3",
   "size": 10485760,
   "contentType": "audio/mpeg"

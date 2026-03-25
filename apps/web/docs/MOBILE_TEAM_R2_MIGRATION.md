@@ -46,19 +46,21 @@
 **New uploads** (object key pattern):
 
 ```text
-{R2_PUBLIC_URL}/{R2_BUCKET_NAME}/audio/<userId>/<timestamp>-<slug>-<rand>.<ext>
+{R2_PUBLIC_URL}/audio/<userId>/<timestamp>-<slug>-<rand>.<ext>
 ```
+
+(`R2_PUBLIC_URL` is the bucket’s public base, e.g. `https://pub-<hash>.r2.dev` — **do not** add `/{bucket}/` in the path; Cloudflare maps the hostname to the bucket.)
 
 **Migrated legacy rows** (preserves original storage path under a prefix):
 
 ```text
-{R2_PUBLIC_URL}/{R2_BUCKET_NAME}/migrated/supabase-audio-tracks/<original-supabase-path>
+{R2_PUBLIC_URL}/migrated/supabase-audio-tracks/<original-supabase-path>
 ```
 
 Example pattern:
 
 ```text
-https://pub-<hash>.r2.dev/soundbridge-audio/migrated/supabase-audio-tracks/<uuid>/<file>.mp3
+https://pub-<hash>.r2.dev/migrated/supabase-audio-tracks/<uuid>/<file>.mp3
 ```
 
 **Old format** (only if a row were never migrated):
@@ -189,7 +191,7 @@ Example **success** shape:
 ```json
 {
   "success": true,
-  "url": "https://pub-….r2.dev/soundbridge-audio/audio/<userId>/…",
+  "url": "https://pub-….r2.dev/audio/<userId>/…",
   "objectKey": "audio/<userId>/…",
   "size": 10485760,
   "contentType": "audio/mpeg"

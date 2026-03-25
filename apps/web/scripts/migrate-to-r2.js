@@ -75,10 +75,17 @@ function isSupabasePublicAudioUrl(url) {
   );
 }
 
-function isAlreadyR2Url(url, publicBase, bucket) {
-  if (!url || !publicBase) return false;
+/** True if URL already uses correct R2 public shape (…r2.dev/<objectKey> with key starting migrated/ or audio/). */
+function isAlreadyR2Url(url, publicBase) {
+  if (!url || !publicBase || !url.includes('.r2.dev')) return false;
   const base = publicBase.replace(/\/$/, '');
-  return url.startsWith(`${base}/${bucket}/`) || url.includes('.r2.dev');
+  if (!url.startsWith(`${base}/`)) return false;
+  try {
+    const seg0 = new URL(url).pathname.split('/').filter(Boolean)[0] || '';
+    return seg0 === 'migrated' || seg0 === 'audio';
+  } catch {
+    return false;
+  }
 }
 
 function guessContentType(storagePath) {
@@ -93,10 +100,11 @@ function guessContentType(storagePath) {
   return map[ext] || 'application/octet-stream';
 }
 
-function buildR2PublicUrl(publicBaseUrl, bucketName, objectKey) {
+/** R2 public dev URL is bucket-scoped; path = object key only (no /bucket/ segment). */
+function buildR2PublicUrl(publicBaseUrl, objectKey) {
   const base = publicBaseUrl.replace(/\/$/, '');
   const cleanKey = objectKey.replace(/^\/+/, '');
-  return `${base}/${bucketName}/${cleanKey}`;
+  return `${base}/${cleanKey}`;
 }
 
 async function main() {
@@ -142,7 +150,7 @@ async function main() {
   }
 
   const candidates = (rows || []).filter(
-    (r) => r.file_url && isSupabasePublicAudioUrl(r.file_url) && !isAlreadyR2Url(r.file_url, r2Public, r2Bucket)
+    (r) => r.file_url && isSupabasePublicAudioUrl(r.file_url) && !isAlreadyR2Url(r.file_url, r2Public)
   );
 
   console.log(`Rows loaded: ${(rows || []).length}  |  To migrate (Supabase audio URLs): ${candidates.length}\n`);
@@ -200,7 +208,7 @@ async function main() {
         })
       );
 
-      const newUrl = buildR2PublicUrl(r2Public, r2Bucket, r2ObjectKey);
+      const newUrl = buildR2PublicUrl(r2Public, r2ObjectKey);
 
       const { error: upErr } = await supabase.from('audio_tracks').update({ file_url: newUrl }).eq('id', id);
 
