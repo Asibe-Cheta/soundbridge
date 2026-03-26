@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
-import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss, Compass, Music, Info, Briefcase, Wallet, MapPin } from 'lucide-react';
+import { User, Bell, Settings, LogOut, Search, Home, Menu, X, Upload, Calendar, MessageCircle, Radio, Users2, Rss, Compass, Music, Info, Briefcase, Wallet, MapPin, Sparkles } from 'lucide-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -462,6 +462,23 @@ export default function Navbar() {
                  <Compass size={18} color={pathname === '/discover' ? '#DC2626' : undefined} />
                  <span>Discover</span>
                </Link>
+              <Link href="/ai-advisor" style={{ 
+                textDecoration: 'none', 
+                color: pathname === '/ai-advisor' ? '#DC2626' : 'var(--text-primary)',
+                transition: 'all 0.3s ease',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontWeight: pathname === '/ai-advisor' ? '600' : '400'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = pathname === '/ai-advisor' ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
+              >
+                <Sparkles size={18} color={pathname === '/ai-advisor' ? '#DC2626' : undefined} />
+                <span>AI Advisor</span>
+              </Link>
                <Link href="/events" style={{ 
                  textDecoration: 'none', 
                  color: pathname === '/events' ? '#DC2626' : 'var(--text-primary)',
@@ -1032,6 +1049,30 @@ export default function Navbar() {
             >
               <Search size={20} style={{ color: '#EC4899' }} />
               Discover
+            </Link>
+
+            <Link 
+              href="/ai-advisor" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{ 
+                textDecoration: 'none',
+                color: 'white',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                fontSize: isMobile ? '0.9rem' : '17px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <Sparkles size={20} style={{ color: '#DC2626' }} />
+              AI Advisor
             </Link>
             
             {/* Mobile Search Option */}
