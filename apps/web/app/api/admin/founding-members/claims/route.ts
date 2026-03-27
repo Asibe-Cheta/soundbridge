@@ -14,8 +14,52 @@ export async function GET(request: NextRequest) {
     const status = (searchParams.get('status') || 'all').toLowerCase(); // all | claimed | unclaimed
     const search = (searchParams.get('search') || '').trim().toLowerCase();
     const eventLimit = Math.min(Math.max(parseInt(searchParams.get('eventLimit') || '50', 10), 1), 200);
+    const cohortLimit = Math.min(Math.max(parseInt(searchParams.get('cohortLimit') || '101', 10), 1), 500);
 
     const supabase = adminCheck.serviceClient;
+
+    const [cohortStatsRes, cohortMembersRes] = await Promise.all([
+      supabase.rpc('founding_cohort_account_stats', { p_limit: cohortLimit }),
+      supabase.rpc('founding_cohort_members_with_accounts', { p_limit: cohortLimit }),
+    ]);
+
+    if (cohortStatsRes.error) {
+      console.error('❌ founding_cohort_account_stats failed:', cohortStatsRes.error);
+    }
+    if (cohortMembersRes.error) {
+      console.error('❌ founding_cohort_members_with_accounts failed:', cohortMembersRes.error);
+    }
+
+    const cohortStatsRow = Array.isArray(cohortStatsRes.data) ? cohortStatsRes.data[0] : cohortStatsRes.data;
+    const cohortAccount =
+      !cohortStatsRes.error && !cohortMembersRes.error
+        ? {
+            cohortLimit,
+            stats: cohortStatsRow
+              ? {
+                  cohortSize: cohortStatsRow.cohort_size as number,
+                  withAccount: cohortStatsRow.with_account as number,
+                  withoutAccount: cohortStatsRow.without_account as number,
+                  accountRatePercent: Number(cohortStatsRow.account_rate_percent),
+                }
+              : null,
+            members: (cohortMembersRes.data || []) as Array<{
+              founding_member_id: string;
+              email: string;
+              waitlist_signed_up_at: string;
+              has_account: boolean;
+              account_created_at: string | null;
+            }>,
+          }
+        : {
+            cohortLimit,
+            stats: null as null,
+            members: [] as unknown[],
+            error:
+              cohortStatsRes.error?.message ||
+              cohortMembersRes.error?.message ||
+              'Cohort account stats unavailable (run latest DB migration?)',
+          };
 
     // Headline summary counters for dashboard cards.
     const [
@@ -88,6 +132,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      cohortAccount,
       summary: {
         totalMembers,
         claimedMembers,

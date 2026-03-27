@@ -12,6 +12,28 @@ type ClaimsSummary = {
   recentClaims24h: number;
 };
 
+type CohortAccountStats = {
+  cohortSize: number;
+  withAccount: number;
+  withoutAccount: number;
+  accountRatePercent: number;
+};
+
+type CohortMemberRow = {
+  founding_member_id: string;
+  email: string;
+  waitlist_signed_up_at: string;
+  has_account: boolean;
+  account_created_at: string | null;
+};
+
+type CohortAccountPayload = {
+  cohortLimit: number;
+  stats: CohortAccountStats | null;
+  members: CohortMemberRow[];
+  error?: string;
+};
+
 type FoundingMemberRow = {
   id: string;
   email: string;
@@ -50,12 +72,14 @@ const CLAIM_STATUS_OPTIONS = [
 export default function FoundingMembersAdminPage() {
   const { theme } = useTheme();
   const [summary, setSummary] = useState<ClaimsSummary | null>(null);
+  const [cohortAccount, setCohortAccount] = useState<CohortAccountPayload | null>(null);
   const [members, setMembers] = useState<FoundingMemberRow[]>([]);
   const [recentEvents, setRecentEvents] = useState<ClaimEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'all' | 'claimed' | 'unclaimed'>('all');
   const [search, setSearch] = useState('');
+  const [cohortLimit, setCohortLimit] = useState(101);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -78,6 +102,7 @@ export default function FoundingMembersAdminPage() {
         limit: '50',
         status: nextStatus,
         eventLimit: '25',
+        cohortLimit: String(cohortLimit),
       });
 
       if (nextSearch.trim()) {
@@ -94,6 +119,7 @@ export default function FoundingMembersAdminPage() {
       }
 
       setSummary(result.summary || null);
+      setCohortAccount(result.cohortAccount || null);
       setMembers(result.data || []);
       setRecentEvents(result.recentEvents || []);
       setTotalPages(result.pagination?.totalPages || 1);
@@ -123,7 +149,8 @@ export default function FoundingMembersAdminPage() {
                 Founding Member Claims
               </h1>
               <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Monitor who has claimed founding member access and who still needs follow-up.
+                Monitor founding-member claim checks, and how many of the first cohort (by waitlist order) have created
+                a SoundBridge account (matched by email to auth).
               </p>
             </div>
             <button
@@ -142,6 +169,118 @@ export default function FoundingMembersAdminPage() {
             <StatCard theme={theme} label="Unclaimed" value={summary.unclaimedMembers} />
             <StatCard theme={theme} label="Claim Rate" value={`${summary.claimRatePercent}%`} />
             <StatCard theme={theme} label="Claims (24h)" value={summary.recentClaims24h} />
+          </div>
+        )}
+
+        {cohortAccount?.error && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              theme === 'dark' ? 'bg-amber-950/40 border-amber-800 text-amber-100' : 'bg-amber-50 border-amber-200 text-amber-900'
+            }`}
+          >
+            Cohort account stats: {cohortAccount.error}
+          </div>
+        )}
+
+        {cohortAccount?.stats && (
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  Cohort: accounts created (first {cohortAccount.cohortLimit} by waitlist)
+                </h2>
+                <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  “Claimed” above counts visits to the founding-member check. This section counts real accounts (email
+                  match in auth), independent of claim.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Cohort size
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={cohortLimit}
+                  onChange={(e) => setCohortLimit(Math.min(500, Math.max(1, parseInt(e.target.value || '101', 10) || 101)))}
+                  className={`w-24 px-3 py-2 rounded-lg border text-sm ${
+                    theme === 'dark'
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => loadClaimsData({ nextPage: page })}
+                  className={`px-3 py-2 text-sm rounded ${
+                    theme === 'dark' ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <StatCard theme={theme} label="Cohort size" value={cohortAccount.stats.cohortSize} />
+              <StatCard theme={theme} label="With account" value={cohortAccount.stats.withAccount} />
+              <StatCard theme={theme} label="No account yet" value={cohortAccount.stats.withoutAccount} />
+              <StatCard theme={theme} label="Account rate" value={`${cohortAccount.stats.accountRatePercent}%`} />
+            </div>
+          </div>
+        )}
+
+        {cohortAccount?.stats && cohortAccount.members.length > 0 && (
+          <div className={`overflow-x-auto rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow`}>
+            <div className={`px-4 py-3 border-b ${theme === 'dark' ? 'border-gray-700 text-white' : 'border-gray-200 text-gray-900'} font-medium`}>
+              Cohort members (detail)
+            </div>
+            <table className={`min-w-full divide-y text-sm ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <thead className={theme === 'dark' ? 'bg-gray-900/40 divide-gray-700' : 'bg-gray-50 divide-gray-200'}>
+                <tr>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Email
+                  </th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Waitlist signup
+                  </th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Has account
+                  </th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Account created
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={theme === 'dark' ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
+                {cohortAccount.members.map((row) => (
+                  <tr key={row.founding_member_id}>
+                    <td className={`px-4 py-3 font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{row.email}</td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {formatDateTime(row.waitlist_signed_up_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          row.has_account
+                            ? theme === 'dark'
+                              ? 'bg-green-900 text-green-200'
+                              : 'bg-green-100 text-green-700'
+                            : theme === 'dark'
+                              ? 'bg-gray-700 text-gray-300'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {row.has_account ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {row.has_account ? formatDateTime(row.account_created_at) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
