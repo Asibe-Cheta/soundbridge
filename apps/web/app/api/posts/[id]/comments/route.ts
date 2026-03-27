@@ -130,7 +130,8 @@ export async function GET(
       });
     }
 
-    // Format comments with replies
+    // Format comments with replies (backward compatible: keep author/like_count for web,
+    // and add user/likes_count/replies_count for mobile)
     const formattedComments = comments.map((comment) => {
       const profile = profileMap.get(comment.user_id);
       const likeData = likesMap.get(comment.id) || { count: 0, user_liked: false };
@@ -157,19 +158,32 @@ export async function GET(
             })
         : [];
 
+      const authorLike = {
+        id: comment.user_id,
+        name: profile?.display_name || profile?.username || 'User',
+        username: profile?.username || null,
+        avatar_url: profile?.avatar_url || null,
+        is_verified: profile?.is_verified || false,
+      };
+
       return {
         id: comment.id,
+        post_id: comment.post_id,
+        user_id: comment.user_id,
         content: comment.content,
-        author: {
-          id: comment.user_id,
-          name: profile?.display_name || profile?.username || 'User',
-          username: profile?.username || null,
-          avatar_url: profile?.avatar_url || null,
-          is_verified: profile?.is_verified || false,
+        image_url: (comment as any).image_url || null,
+        user: {
+          id: authorLike.id,
+          display_name: profile?.display_name || profile?.username || 'User',
+          username: authorLike.username,
+          avatar_url: authorLike.avatar_url,
         },
+        author: authorLike,
         created_at: comment.created_at,
+        likes_count: likeData.count,
         like_count: likeData.count,
         user_liked: likeData.user_liked,
+        replies_count: commentReplies.length,
         replies: commentReplies,
       };
     });
@@ -297,7 +311,16 @@ export async function POST(
         data: {
           comment: {
             id: comment.id,
+            post_id: comment.post_id,
+            user_id: comment.user_id,
             content: comment.content,
+            image_url: (comment as any).image_url || null,
+            user: {
+              id: user.id,
+              display_name: profile?.display_name || profile?.username || 'Unknown',
+              username: profile?.username,
+              avatar_url: profile?.avatar_url,
+            },
             author: {
               id: user.id,
               name: profile?.display_name || profile?.username || 'Unknown',
@@ -305,8 +328,10 @@ export async function POST(
               avatar_url: profile?.avatar_url,
             },
             created_at: comment.created_at,
+            likes_count: 0,
             like_count: 0,
             user_liked: false,
+            replies_count: 0,
             replies: [],
           },
         },
