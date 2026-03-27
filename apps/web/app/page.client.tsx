@@ -647,23 +647,26 @@ export default function HomePageClient() {
               </p>
               <div
                 className={`inline-block px-4 py-2 rounded-lg mb-6 lg:mb-8 ${
-                  theme === 'dark' ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-yellow-100 border border-yellow-200'
+                  theme === 'dark' ? 'bg-green-500/20 border border-green-500/30' : 'bg-green-100 border border-green-200'
                 }`}
               >
-                <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                  Mobile App Coming Soon
+                <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>
+                  iOS App is Now Live
                 </p>
               </div>
+              <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Android version coming in mid-April.
+              </p>
               <div className="flex flex-wrap gap-4">
-                <button
-                  disabled
-                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all opacity-60 cursor-not-allowed ${
-                    theme === 'dark' ? 'bg-white/20 text-gray-400' : 'bg-gray-300 text-gray-500'
-                  }`}
+                <a
+                  href="https://apps.apple.com/gb/app/soundbridge-mobile/id6754335651"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600"
                 >
                   <Smartphone className="w-5 h-5" />
-                  Get the App
-                </button>
+                  Download on iOS
+                </a>
                 <a
                   href="/discover"
                   className={`px-6 py-3 rounded-lg font-semibold transition-all border ${
