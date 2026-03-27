@@ -46,15 +46,14 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    // Get comments (top-level only, no replies in this query)
-    const { data: comments, error: commentsError, count } = await supabase
+    // Load all comments for the post so we can build an unlimited-depth thread tree.
+    const { data: allComments, error: commentsError } = await supabase
       .from('post_comments')
-      .select('*', { count: 'exact' })
+      .select('*')
       .eq('post_id', postId)
-      .is('parent_comment_id', null)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      ;
 
     if (commentsError) {
       console.error('❌ Error fetching comments:', commentsError);
@@ -64,7 +63,7 @@ export async function GET(
       );
     }
 
-    if (!comments || comments.length === 0) {
+    if (!allComments || allComments.length === 0) {
       return NextResponse.json(
         {
           success: true,
@@ -73,7 +72,7 @@ export async function GET(
             pagination: {
               page,
               limit,
-              total: count || 0,
+              total: 0,
               has_more: false,
             },
           },
@@ -82,22 +81,11 @@ export async function GET(
       );
     }
 
-    // Get replies for each comment
-    const commentIds = comments.map((c) => c.id);
-    const { data: replies } = await supabase
-      .from('post_comments')
-      .select('*')
-      .in('parent_comment_id', commentIds)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: true });
+    const topLevel = allComments.filter((c) => !c.parent_comment_id);
+    const pagedTopLevel = topLevel.slice(offset, offset + limit);
 
     // Get user profiles
-    const userIds = [
-      ...new Set([
-        ...comments.map((c) => c.user_id),
-        ...(replies ? replies.map((r) => r.user_id) : []),
-      ]),
-    ];
+    const userIds = [...new Set(allComments.map((c) => c.user_id))];
 
     const { data: profiles } = await supabase
       .from('profiles')
@@ -105,10 +93,11 @@ export async function GET(
       .in('id', userIds);
 
     // Get comment likes
+    const allIds = allComments.map((c) => c.id);
     const { data: commentLikes } = await supabase
       .from('comment_likes')
       .select('comment_id, user_id')
-      .in('comment_id', [...commentIds, ...(replies ? replies.map((r) => r.id) : [])]);
+      .in('comment_id', allIds);
 
     // Build maps
     const profileMap = new Map();
@@ -130,33 +119,19 @@ export async function GET(
       });
     }
 
-    // Format comments with replies (backward compatible: keep author/like_count for web,
-    // and add user/likes_count/replies_count for mobile)
-    const formattedComments = comments.map((comment) => {
+    const childrenMap = new Map<string, any[]>();
+    allComments.forEach((c) => {
+      if (!c.parent_comment_id) return;
+      const arr = childrenMap.get(c.parent_comment_id) || [];
+      arr.push(c);
+      childrenMap.set(c.parent_comment_id, arr);
+    });
+    childrenMap.forEach((arr) => arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+
+    const buildCommentNode = (comment: any): any => {
       const profile = profileMap.get(comment.user_id);
       const likeData = likesMap.get(comment.id) || { count: 0, user_liked: false };
-      const commentReplies = replies
-        ? replies
-            .filter((r) => r.parent_comment_id === comment.id)
-            .map((reply) => {
-              const replyProfile = profileMap.get(reply.user_id);
-              const replyLikeData = likesMap.get(reply.id) || { count: 0, user_liked: false };
-              return {
-                id: reply.id,
-                content: reply.content,
-                author: {
-                  id: reply.user_id,
-                  name: replyProfile?.display_name || replyProfile?.username || 'User',
-                  username: replyProfile?.username || null,
-                  avatar_url: replyProfile?.avatar_url || null,
-                  is_verified: replyProfile?.is_verified || false,
-                },
-                created_at: reply.created_at,
-                like_count: replyLikeData.count,
-                user_liked: replyLikeData.user_liked,
-              };
-            })
-        : [];
+      const directChildren = (childrenMap.get(comment.id) || []).map((child) => buildCommentNode(child));
 
       const authorLike = {
         id: comment.user_id,
@@ -170,6 +145,7 @@ export async function GET(
         id: comment.id,
         post_id: comment.post_id,
         user_id: comment.user_id,
+        parent_comment_id: comment.parent_comment_id || null,
         content: comment.content,
         image_url: (comment as any).image_url || null,
         user: {
@@ -183,10 +159,11 @@ export async function GET(
         likes_count: likeData.count,
         like_count: likeData.count,
         user_liked: likeData.user_liked,
-        replies_count: commentReplies.length,
-        replies: commentReplies,
+        replies_count: directChildren.length,
+        replies: directChildren,
       };
-    });
+    };
+    const formattedComments = pagedTopLevel.map((comment) => buildCommentNode(comment));
 
     console.log(`✅ Fetched ${formattedComments.length} comments for post ${postId}`);
 
@@ -198,8 +175,8 @@ export async function GET(
           pagination: {
             page,
             limit,
-            total: count || 0,
-            has_more: (count || 0) > offset + limit,
+            total: topLevel.length,
+            has_more: topLevel.length > offset + limit,
           },
         },
       },

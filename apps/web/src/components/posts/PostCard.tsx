@@ -90,32 +90,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [commentPreview, setCommentPreview] = useState<Array<{
-    id: string;
-    content: string;
-    author: {
-      id: string;
-      name: string;
-      username?: string;
-      avatar_url?: string;
-    };
-    created_at: string;
-    like_count?: number;
-    user_liked?: boolean;
-    replies?: Array<{
-      id: string;
-      content: string;
-      author: {
-        id: string;
-        name: string;
-        username?: string;
-        avatar_url?: string;
-      };
-      created_at: string;
-      like_count?: number;
-      user_liked?: boolean;
-    }>;
-  }>>([]);
+  const [commentPreview, setCommentPreview] = useState<Array<any>>([]);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -123,6 +98,34 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
   const [showReplies, setShowReplies] = useState<Set<string>>(new Set());
+
+  const canDeleteComment = (authorId?: string) => {
+    if (!user?.id || !authorId) return false;
+    return user.id === authorId || user.id === post.user_id;
+  };
+
+  const addReplyToTree = (items: any[], targetId: string, newReply: any): any[] => {
+    return items.map((item) => {
+      if (item.id === targetId) {
+        const existing = item.replies || [];
+        return { ...item, replies: [...existing, newReply], replies_count: (item.replies_count || 0) + 1 };
+      }
+      if (item.replies?.length) {
+        return { ...item, replies: addReplyToTree(item.replies, targetId, newReply) };
+      }
+      return item;
+    });
+  };
+
+  const removeCommentFromTree = (items: any[], targetId: string): any[] => {
+    return items
+      .filter((item) => item.id !== targetId)
+      .map((item) =>
+        item.replies?.length
+          ? { ...item, replies: removeCommentFromTree(item.replies, targetId) }
+          : item
+      );
+  };
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [reactionFilter, setReactionFilter] = useState<'all' | 'support' | 'love' | 'fire' | 'congrats'>('all');
   const [reactionUsers, setReactionUsers] = useState<Array<any>>([]);
@@ -372,15 +375,8 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
           user_liked: false,
         };
         
-        // Add reply to the comment's replies array
-        setCommentPreview(prev => prev.map(comment => 
-          comment.id === commentId
-            ? {
-                ...comment,
-                replies: [...(comment.replies || []), newReply]
-              }
-            : comment
-        ));
+        // Add reply at any depth (unlimited thread depth)
+        setCommentPreview(prev => addReplyToTree(prev, commentId, newReply));
         
         // Show replies if not already shown
         if (!showReplies.has(commentId)) {
@@ -391,7 +387,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
         setReplyText({ ...replyText, [commentId]: '' });
         setReplyingTo(null);
         
-        // Update comment count
+        // Update visible comment count
         if ((post as any).comment_count) {
           (post as any).comment_count += 1;
         }
@@ -405,6 +401,29 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
     } catch (err: any) {
       console.error('Failed to post reply:', err);
       toast.error(err.message || 'Failed to post reply');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user?.id) {
+      router.push('/login');
+      return;
+    }
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || 'Failed to delete comment');
+      }
+      setCommentPreview((prev) => removeCommentFromTree(prev, commentId));
+      (post as any).comment_count = Math.max(0, ((post as any).comment_count || (post as any).comments_count || 1) - 1);
+      toast.success('Comment deleted');
+      if (onUpdate) onUpdate();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete comment');
     }
   };
 
@@ -1355,6 +1374,14 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                         >
                           Reply
                         </button>
+                        {canDeleteComment(comment.author?.id) && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="hover:text-red-400 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
                         {hasReplies && (
                           <button
                             onClick={() => {
@@ -1492,6 +1519,14 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                                   >
                                     Reply
                                   </button>
+                                  {canDeleteComment(reply.author?.id) && (
+                                    <button
+                                      onClick={() => handleDeleteComment(reply.id)}
+                                      className="hover:text-red-400 transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
                                 </div>
                                 
                                 {/* Reply Input for nested replies */}
@@ -1521,8 +1556,8 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                                         onKeyDown={(e) => {
                                           if (e.key === 'Enter' && !e.shiftKey && replyText[reply.id]?.trim()) {
                                             e.preventDefault();
-                                            // Replies to replies still go to the parent comment
-                                            handleReply(comment.id, replyText[reply.id]);
+                                            // Reply directly to this reply (unlimited depth)
+                                            handleReply(reply.id, replyText[reply.id]);
                                           }
                                         }}
                                       />
