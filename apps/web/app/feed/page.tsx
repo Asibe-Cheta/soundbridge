@@ -28,6 +28,8 @@ export default function FeedPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [bookmarksMap, setBookmarksMap] = useState<Map<string, boolean>>(new Map());
+  const [showFirstActionPrompt, setShowFirstActionPrompt] = useState(false);
+  const [onboardingUserType, setOnboardingUserType] = useState<any>(null);
   
   // CRITICAL: Use ref for user ID to avoid stale closures (Claude's Solution 1)
   const userIdRef = useRef<string | undefined>(user?.id);
