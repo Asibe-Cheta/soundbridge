@@ -22,6 +22,58 @@ export async function OPTIONS(request: NextRequest) {
   });
 }
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const postId = params.id;
+    const { supabase } = await getSupabaseRouteClient(request, false);
+
+    const { data: rows, error } = await supabase
+      .from('post_reactions')
+      .select('id, reaction_type, created_at, user_id, user:profiles!post_reactions_user_id_fkey(id, username, display_name, avatar_url, is_verified)')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to load reactions', details: error.message },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const reactions = rows || [];
+    const counts = {
+      support: 0,
+      love: 0,
+      fire: 0,
+      congrats: 0,
+    };
+    reactions.forEach((r: any) => {
+      const key = r.reaction_type as keyof typeof counts;
+      if (counts[key] !== undefined) counts[key] += 1;
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          reactions,
+          counts,
+          total: reactions.length,
+        },
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: 'Internal server error', details: error.message },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

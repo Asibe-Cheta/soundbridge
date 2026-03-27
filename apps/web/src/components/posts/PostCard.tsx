@@ -123,6 +123,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
   const [showReplies, setShowReplies] = useState<Set<string>>(new Set());
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [reactionFilter, setReactionFilter] = useState<'all' | 'support' | 'love' | 'fire' | 'congrats'>('all');
+  const [reactionUsers, setReactionUsers] = useState<Array<any>>([]);
+  const [loadingReactionUsers, setLoadingReactionUsers] = useState(false);
 
   // Update bookmark status if prop changes
   useEffect(() => {
@@ -413,6 +417,28 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
   const audioAttachment = post.attachments?.find(a => a.attachment_type === 'audio');
   const showSeeMore = hasContent && post.content.length > 200;
 
+  const openReactionsModal = async () => {
+    setShowReactionsModal(true);
+    setLoadingReactionUsers(true);
+    try {
+      const res = await fetch(`/api/posts/${post.id}/reactions`, { credentials: 'include' });
+      const data = await res.json();
+      if (data?.success && Array.isArray(data?.data?.reactions)) {
+        setReactionUsers(data.data.reactions);
+      } else {
+        setReactionUsers([]);
+      }
+    } catch {
+      setReactionUsers([]);
+    } finally {
+      setLoadingReactionUsers(false);
+    }
+  };
+
+  const filteredReactionUsers = reactionFilter === 'all'
+    ? reactionUsers
+    : reactionUsers.filter((r: any) => r.reaction_type === reactionFilter);
+
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 md:p-6 mb-4 hover:border-white/20 transition-all">
       {/* Repost Indicator */}
@@ -567,24 +593,10 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
         </div>
       )}
 
-      {/* Embedded Original Post Card (clickable) */}
+      {/* Embedded Original Post Card */}
       {(post.reposted_from as any) && (post.reposted_from as any).id && (
         <div
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            router.push(`/post/${(post.reposted_from as any).id}`);
-          }}
-          className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all group"
-          role="button"
-          tabIndex={0}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              router.push(`/post/${(post.reposted_from as any).id}`);
-            }
-          }}
-          aria-label={`View original post by ${(post.reposted_from as any).author?.display_name || (post.reposted_from as any).author?.username || 'User'}`}
+          className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4"
         >
           {/* Original Post Author */}
           <div className="flex items-center gap-3 mb-3">
@@ -648,10 +660,9 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
             </div>
           )}
 
-          {/* Visual indicator that it's clickable */}
-          <div className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-red-400 transition-colors">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
             <ExternalLink size={12} />
-            <span>Click to view original post</span>
+            <span>Original post preview</span>
           </div>
         </div>
       )}
@@ -1063,7 +1074,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
             {totalReactions > 0 && (
               <div className="mb-2">
                 <button
-                  onClick={() => setShowReactionPicker(true)}
+                  onClick={openReactionsModal}
                   className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-300 transition-colors"
                 >
                   {/* Show emojis for reactions that have counts */}
@@ -1532,13 +1543,78 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
         )}
       </div>
 
-      {/* View Post Link */}
+      {/* Inline actions footer (no page navigation from feed card) */}
       {!showFullContent && (
-        <Link href={`/post/${post.id}`}>
-          <button className="w-full mt-2 text-center text-sm text-gray-400 hover:text-red-400 transition-colors">
-            View post
-          </button>
-        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setShowCommentBox(true);
+            setShowAllComments(true);
+          }}
+          className="w-full mt-2 text-center text-sm text-gray-400 hover:text-red-400 transition-colors"
+        >
+          View all comments
+        </button>
+      )}
+
+      {/* Reactions modal (LinkedIn-style users list) */}
+      {showReactionsModal && (
+        <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-4" onClick={() => setShowReactionsModal(false)}>
+          <div className="w-full max-w-xl bg-gray-900 border border-white/10 rounded-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+              <div className="text-white font-semibold">Reactions</div>
+              <button className="text-gray-400 hover:text-white" onClick={() => setShowReactionsModal(false)}>✕</button>
+            </div>
+            <div className="px-4 py-2 border-b border-white/10 flex items-center gap-2 overflow-x-auto">
+              {([
+                ['all', `All ${reactionUsers.length}`],
+                ['support', `${reactionEmojis.support} ${reactions.support}`],
+                ['love', `${reactionEmojis.love} ${reactions.love}`],
+                ['fire', `${reactionEmojis.fire} ${reactions.fire}`],
+                ['congrats', `${reactionEmojis.congrats} ${reactions.congrats}`],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  className={`px-3 py-1.5 rounded-full text-sm border ${reactionFilter === key ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/10 text-gray-400'}`}
+                  onClick={() => setReactionFilter(key as any)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {loadingReactionUsers ? (
+                <div className="p-6 text-center text-gray-400 text-sm">Loading reactions…</div>
+              ) : filteredReactionUsers.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 text-sm">No reactions yet.</div>
+              ) : (
+                filteredReactionUsers.map((r: any) => {
+                  const reactionType = r.reaction_type as keyof typeof reactionEmojis;
+                  const profile = r.user || {};
+                  return (
+                    <div key={r.id} className="px-4 py-3 border-b border-white/5 flex items-center gap-3">
+                      <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                        {profile.avatar_url ? (
+                          <Image src={profile.avatar_url} alt={profile.display_name || profile.username || 'User'} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white text-sm font-semibold">
+                            {(profile.display_name || profile.username || 'U').charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/creator/${profile.username || profile.id}`} className="text-white text-sm font-medium hover:text-red-400">
+                          <NameWithBadge name={profile.display_name || profile.username || 'User'} isVerified={profile.is_verified} />
+                        </Link>
+                      </div>
+                      <div className="text-xl">{reactionEmojis[reactionType] || '👍'}</div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Block User Modal */}
