@@ -10,6 +10,8 @@ type ClaimsSummary = {
   unclaimedMembers: number;
   claimRatePercent: number;
   recentClaims24h: number;
+  /** Count of rows in auth.users (all registered accounts). Null if RPC unavailable. */
+  totalPlatformAccounts?: number | null;
 };
 
 type CohortAccountStats = {
@@ -163,11 +165,17 @@ export default function FoundingMembersAdminPage() {
         </div>
 
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-            <StatCard theme={theme} label="Total Members" value={summary.totalMembers} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+            <StatCard
+              theme={theme}
+              label="Total accounts (platform)"
+              value={summary.totalPlatformAccounts != null ? summary.totalPlatformAccounts : '—'}
+              hint="All registered users (auth.users)"
+            />
+            <StatCard theme={theme} label="Founding member rows" value={summary.totalMembers} hint="Rows in founding_members" />
             <StatCard theme={theme} label="Claimed" value={summary.claimedMembers} />
             <StatCard theme={theme} label="Unclaimed" value={summary.unclaimedMembers} />
-            <StatCard theme={theme} label="Claim Rate" value={`${summary.claimRatePercent}%`} />
+            <StatCard theme={theme} label="Claim rate" value={`${summary.claimRatePercent}%`} />
             <StatCard theme={theme} label="Claims (24h)" value={summary.recentClaims24h} />
           </div>
         )}
@@ -451,11 +459,24 @@ export default function FoundingMembersAdminPage() {
   );
 }
 
-function StatCard({ theme, label, value }: { theme: string; label: string; value: number | string }) {
+function StatCard({
+  theme,
+  label,
+  value,
+  hint,
+}: {
+  theme: string;
+  label: string;
+  value: number | string;
+  hint?: string;
+}) {
   return (
     <div className={`rounded-xl border p-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
       <p className={`text-xs font-medium uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{label}</p>
       <p className={`text-2xl font-semibold mt-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{value}</p>
+      {hint ? (
+        <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{hint}</p>
+      ) : null}
     </div>
   );
 }

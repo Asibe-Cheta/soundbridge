@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       claimedMembersRes,
       unclaimedMembersRes,
       recentClaimsRes,
+      totalAuthUsersRes,
     ] = await Promise.all([
       supabase.from('founding_members').select('*', { count: 'exact', head: true }),
       supabase.from('founding_members').select('*', { count: 'exact', head: true }).gt('claim_count', 0),
@@ -75,6 +76,7 @@ export async function GET(request: NextRequest) {
         .from('founding_member_claim_events')
         .select('*', { count: 'exact', head: true })
         .gte('claimed_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+      supabase.rpc('admin_total_auth_users_count'),
     ]);
 
     if (totalMembersRes.error || claimedMembersRes.error || unclaimedMembersRes.error || recentClaimsRes.error) {
@@ -86,6 +88,14 @@ export async function GET(request: NextRequest) {
       });
       return NextResponse.json({ success: false, error: 'Failed to fetch claim summary' }, { status: 500 });
     }
+
+    if (totalAuthUsersRes.error) {
+      console.error('❌ admin_total_auth_users_count failed:', totalAuthUsersRes.error);
+    }
+    const totalAuthRow = Array.isArray(totalAuthUsersRes.data) ? totalAuthUsersRes.data[0] : totalAuthUsersRes.data;
+    const rawTotal = totalAuthRow && typeof totalAuthRow === 'object' && 'total' in totalAuthRow ? (totalAuthRow as { total: unknown }).total : null;
+    const totalPlatformAccounts =
+      !totalAuthUsersRes.error && rawTotal != null && !Number.isNaN(Number(rawTotal)) ? Number(rawTotal) : null;
 
     let membersQuery = supabase
       .from('founding_members')
@@ -139,6 +149,7 @@ export async function GET(request: NextRequest) {
         unclaimedMembers,
         claimRatePercent,
         recentClaims24h: recentClaimsRes.count || 0,
+        totalPlatformAccounts,
       },
       filters: {
         status,
