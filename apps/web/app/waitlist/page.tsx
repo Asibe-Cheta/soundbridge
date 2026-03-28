@@ -654,7 +654,7 @@ export default function WaitlistPage() {
         <h2 className={`text-3xl md:text-4xl font-bold text-center mb-12 ${
           theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>
-          SoundBridge vs Traditional Platforms
+          SoundBridge vs other platforms
         </h2>
         <div className="max-w-4xl mx-auto overflow-x-auto">
           <div className={`rounded-2xl border overflow-hidden ${
@@ -673,7 +673,7 @@ export default function WaitlistPage() {
                   <th className={`px-6 py-4 text-center font-semibold ${
                     theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                   }`}>
-                    Spotify/YouTube
+                    Other platforms
                   </th>
                   <th className={`px-6 py-4 text-center font-semibold ${
                     theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
@@ -683,14 +683,55 @@ export default function WaitlistPage() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { feature: 'Artist Revenue', spotify: '£0.003/stream', soundbridge: '85% of tips' },
-                  { feature: 'Professional Networking', spotify: false, soundbridge: true },
-                  { feature: 'Upload Cost', spotify: '£20+/year', soundbridge: '3 free, 10 with subscription' },
-                  { feature: 'Direct Fan Support', spotify: false, soundbridge: true },
-                  { feature: 'Event Integration', spotify: false, soundbridge: true },
-                  { feature: 'Career Tools', spotify: false, soundbridge: true }
-                ].map((row, index) => (
+                {(
+                  [
+                    {
+                      feature: 'Creator revenue share',
+                      others: 'Often low per-play or heavy platform cut',
+                      soundbridge: '85% on tips, sales & tickets',
+                    },
+                    {
+                      feature: 'Uploads & storage (free tier)',
+                      others: 'Paywalls or tight caps common',
+                      soundbridge: '250MB free (~30–40 tracks); paid plans for more',
+                    },
+                    {
+                      feature: 'Professional connections',
+                      others: false,
+                      soundbridge: true,
+                    },
+                    {
+                      feature: 'AI career advisor',
+                      others: false,
+                      soundbridge: true,
+                    },
+                    {
+                      feature: 'Sell audio & paid content',
+                      others: false,
+                      soundbridge: true,
+                    },
+                    {
+                      feature: 'Free promotion (e.g. events)',
+                      others: false,
+                      soundbridge: true,
+                    },
+                    {
+                      feature: 'Genre-based matching & discovery',
+                      others: false,
+                      soundbridge: true,
+                    },
+                    {
+                      feature: 'Budgeting & earnings visibility',
+                      others: false,
+                      soundbridge: true,
+                    },
+                    {
+                      feature: 'Real-time, practical career guidance',
+                      others: false,
+                      soundbridge: true,
+                    },
+                  ] as const
+                ).map((row, index) => (
                   <tr
                     key={index}
                     className={`border-b ${
@@ -703,15 +744,15 @@ export default function WaitlistPage() {
                       {row.feature}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {typeof row.spotify === 'boolean' ? (
-                        row.spotify ? (
+                      {typeof row.others === 'boolean' ? (
+                        row.others ? (
                           <Check className="w-5 h-5 text-green-500 mx-auto" />
                         ) : (
                           <X className="w-5 h-5 text-red-500 mx-auto" />
                         )
                       ) : (
                         <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                          {row.spotify}
+                          {row.others}
                         </span>
                       )}
                     </td>
