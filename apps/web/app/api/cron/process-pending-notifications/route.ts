@@ -4,10 +4,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Expo, ExpoPushMessage } from 'expo-server-sdk';
+import { Expo, type ExpoPushMessage } from 'expo-server-sdk';
 import { formatNaturalNotificationDate } from '@/src/lib/notification-utils';
-
-const expo = new Expo();
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 
 function getCTA(event: any): string {
   const isPaid = (event?.price_gbp || 0) > 0 || (event?.price_ngn || 0) > 0;
@@ -268,7 +267,7 @@ export async function GET(request: NextRequest) {
     }
 
     const messages = sendQueue.map((item) => item.message);
-    const chunks = expo.chunkPushNotifications(messages);
+    const chunks = getExpoPushClient().chunkPushNotifications(messages);
     let successCount = 0;
     let failCount = 0;
     let offset = 0;
@@ -278,7 +277,7 @@ export async function GET(request: NextRequest) {
       offset += chunk.length;
 
       try {
-        const tickets = await expo.sendPushNotificationsAsync(chunk);
+        const tickets = await getExpoPushClient().sendPushNotificationsAsync(chunk);
 
         for (let i = 0; i < tickets.length; i++) {
           const ticket = tickets[i];

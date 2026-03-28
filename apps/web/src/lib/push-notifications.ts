@@ -4,12 +4,10 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Expo } from 'expo-server-sdk';
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 
-let _expo: Expo | null = null;
-function getExpo(): Expo {
-  if (!_expo) _expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN, useFcmV1: true });
-  return _expo;
+function getExpo() {
+  return getExpoPushClient();
 }
 
 function logPush(scope: string, payload: Record<string, unknown>) {

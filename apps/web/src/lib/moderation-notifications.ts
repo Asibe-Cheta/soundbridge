@@ -193,10 +193,12 @@ export async function sendPushNotification(data: ModerationNotificationData): Pr
 
     const message = pushMessages[data.type];
 
+    const expoToken = process.env.EXPO_ACCESS_TOKEN?.trim();
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(expoToken ? { Authorization: `Bearer ${expoToken}` } : {}),
       },
       body: JSON.stringify({
         to: profile.expo_push_token,

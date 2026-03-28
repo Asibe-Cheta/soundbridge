@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { stripe } from '../../../../src/lib/stripe';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
-import { Expo } from 'expo-server-sdk';
 import { SubscriptionEmailService } from '../../../../src/services/SubscriptionEmailService';
 import { sendExpoPush } from '../../../../src/lib/push-notifications';
 import {
@@ -13,8 +12,6 @@ import {
   sendSubscriptionCancelledEmail,
   sendSubscriptionPlanChangeEmail,
 } from '../../../../src/lib/subscription-invoice-email';
-
-const expo = new Expo();
 
 export async function POST(request: NextRequest) {
   const body = await request.text();

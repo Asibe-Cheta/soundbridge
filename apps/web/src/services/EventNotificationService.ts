@@ -6,9 +6,7 @@
 
 import { Expo, ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-server-sdk';
 import { createClient } from '@supabase/supabase-js';
-
-// Initialize Expo SDK
-const expo = new Expo();
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 
 // Supabase client for server-side operations (lazy so build can run without env)
 let _eventNotifSupabase: ReturnType<typeof createClient> | null = null;
@@ -290,13 +288,13 @@ class EventNotificationService {
       }
 
       // Send notifications in chunks
-      const chunks = expo.chunkPushNotifications(messages);
+      const chunks = getExpoPushClient().chunkPushNotifications(messages);
       let sentCount = 0;
       let failedCount = 0;
 
       for (const chunk of chunks) {
         try {
-          const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+          const ticketChunk = await getExpoPushClient().sendPushNotificationsAsync(chunk);
 
           // Process tickets
           for (let i = 0; i < ticketChunk.length; i++) {
@@ -398,7 +396,7 @@ class EventNotificationService {
         priority: 'high',
       };
 
-      const ticketChunk = await expo.sendPushNotificationsAsync([message]);
+      const ticketChunk = await getExpoPushClient().sendPushNotificationsAsync([message]);
       const ticket = ticketChunk[0];
 
       if (ticket.status === 'ok') {

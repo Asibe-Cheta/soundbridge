@@ -4,13 +4,11 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Expo } from 'expo-server-sdk';
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 import { canReceivePushOfKind } from '@/src/lib/notification-push-preferences';
 
-let _expo: Expo | null = null;
 function getExpo() {
-  if (!_expo) _expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN, useFcmV1: true });
-  return _expo;
+  return getExpoPushClient();
 }
 
 async function getPushTokenForUser(supabase: SupabaseClient, userId: string): Promise<string | null> {

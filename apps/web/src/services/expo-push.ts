@@ -3,13 +3,9 @@
  * Handles sending push notifications via Expo Push API
  */
 
-import { Expo, ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-server-sdk';
+import { ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-server-sdk';
 import { createClient } from '@supabase/supabase-js';
-
-const expo = new Expo({
-  accessToken: process.env.EXPO_ACCESS_TOKEN,
-  useFcmV1: true, // Use FCM V1 API
-});
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 
 let _expoSupabaseAdmin: ReturnType<typeof createClient> | null = null;
 function getSupabaseAdmin() {
@@ -160,13 +156,13 @@ export async function sendPushNotification(
     }));
     
     // Send notifications in chunks
-    const chunks = expo.chunkPushNotifications(messages);
+    const chunks = getExpoPushClient().chunkPushNotifications(messages);
     const tickets: ExpoPushTicket[] = [];
     const errors: string[] = [];
     
     for (const chunk of chunks) {
       try {
-        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        const ticketChunk = await getExpoPushClient().sendPushNotificationsAsync(chunk);
         tickets.push(...ticketChunk);
         
         // Check for errors
@@ -241,12 +237,12 @@ export async function checkNotificationReceipts(
   receiptIds: string[]
 ): Promise<Map<string, ExpoPushReceipt>> {
   try {
-    const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+    const receiptIdChunks = getExpoPushClient().chunkPushNotificationReceiptIds(receiptIds);
     const receipts = new Map<string, ExpoPushReceipt>();
     
     for (const chunk of receiptIdChunks) {
       try {
-        const receiptChunk = await expo.getPushNotificationReceiptsAsync(chunk);
+        const receiptChunk = await getExpoPushClient().getPushNotificationReceiptsAsync(chunk);
         
         // Process receipts
         for (const [id, receipt] of Object.entries(receiptChunk)) {

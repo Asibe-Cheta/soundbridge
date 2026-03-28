@@ -8,9 +8,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Expo } from 'expo-server-sdk';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { getPushToken } from '@/src/lib/push-notifications';
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       conversationId,
     };
 
-    const tickets = await expo.sendPushNotificationsAsync([
+    const tickets = await getExpoPushClient().sendPushNotificationsAsync([
       {
         to: pushToken,
         sound: 'default',
