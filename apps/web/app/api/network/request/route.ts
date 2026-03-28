@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { notifyConnectionRequest } from '@/src/lib/post-notifications';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -111,6 +113,20 @@ export async function POST(request: NextRequest) {
     notifyConnectionRequest(recipientId, requesterName, connectionRequest.id).catch((err) => {
       console.error('Connection request notification failed:', err);
     });
+
+    try {
+      const service = createServiceClient();
+      const { data: rp } = await service.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      const atLabel = rp?.username ? `@${rp.username}` : requesterName;
+      await sendExpoPushIfAllowed(service, recipientId, 'collaboration', {
+        title: `${atLabel} wants to connect`,
+        body: 'Tap to accept or decline',
+        data: { type: 'connection_request', requesterId: user.id },
+        channelId: 'social',
+      });
+    } catch (e) {
+      console.error('Connection request push:', e);
+    }
 
     return NextResponse.json(
       {

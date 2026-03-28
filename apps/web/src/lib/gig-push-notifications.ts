@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Expo } from 'expo-server-sdk';
+import { canReceivePushOfKind } from '@/src/lib/notification-push-preferences';
 
 let _expo: Expo | null = null;
 function getExpo() {
@@ -46,6 +47,7 @@ export async function sendUrgentGigPush(
     location_address: string | null;
   }
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, toUserId, 'gig_opportunity'))) return false;
   const token = await getPushTokenForUser(supabase, toUserId);
   if (!token) return false;
   const expo = getExpo();
@@ -87,6 +89,7 @@ export async function sendGigAcceptedPush(
   gigId: string,
   providerUserId: string
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, posterUserId, 'gig_transactional'))) return false;
   const token = await getPushTokenForUser(supabase, posterUserId);
   if (!token) return false;
   const expo = getExpo();
@@ -117,6 +120,7 @@ export async function sendGigConfirmedPush(
   title: string,
   dateNeeded: string
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, providerUserId, 'gig_transactional'))) return false;
   const token = await getPushTokenForUser(supabase, providerUserId);
   if (!token) return false;
   const expo = getExpo();
@@ -143,6 +147,7 @@ export async function sendGigExpiredPush(
   posterUserId: string,
   gigId: string
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, posterUserId, 'gig_transactional'))) return false;
   const token = await getPushTokenForUser(supabase, posterUserId);
   if (!token) return false;
   const expo = getExpo();
@@ -171,6 +176,7 @@ export async function sendGigStartingSoonPush(
   dateNeeded: string,
   address: string | null
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, userId, 'gig_transactional'))) return false;
   const token = await getPushTokenForUser(supabase, userId);
   if (!token) return false;
   const expo = getExpo();
@@ -198,6 +204,7 @@ export async function sendGigRatingPromptPush(
   gigId: string,
   projectId: string
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, recipientUserId, 'gig_transactional'))) return false;
   const token = await getPushTokenForUser(supabase, recipientUserId);
   if (!token) return false;
   const expo = getExpo();
@@ -223,6 +230,7 @@ export async function sendGigPaymentPush(
   creatorUserId: string,
   payload: { amount: number; currency: string; gigTitle: string; gigId: string }
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, creatorUserId, 'gig_wallet'))) return false;
   const token = await getPushTokenForUser(supabase, creatorUserId);
   if (!token) return false;
   const expo = getExpo();
@@ -253,6 +261,7 @@ export async function sendOpportunityPush(
   skill: string,
   city: string
 ): Promise<boolean> {
+  if (!(await canReceivePushOfKind(supabase, userId, 'gig_opportunity'))) return false;
   const token = await getPushTokenForUser(supabase, userId);
   if (!token) return false;
   const expo = getExpo();

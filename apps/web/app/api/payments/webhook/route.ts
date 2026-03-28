@@ -4,6 +4,7 @@ import { stripe } from '@/src/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { SendGridService } from '@/src/lib/sendgrid-service';
+import { notifyCreatorContentPurchasePush } from '@/src/lib/content-purchase-push';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -222,6 +223,23 @@ async function handlePaymentSucceeded(
       }
     }
 
+    let contentTitle = 'Content';
+    if (content_type === 'track') {
+      const { data: track } = await supabase
+        .from('audio_tracks')
+        .select('title')
+        .eq('id', content_id)
+        .single();
+      contentTitle = track?.title || 'Content';
+    } else if (content_type === 'album') {
+      const { data: album } = await supabase
+        .from('albums')
+        .select('title')
+        .eq('id', content_id)
+        .single();
+      contentTitle = album?.title || 'Content';
+    }
+
     // Send email notifications (non-blocking)
     try {
       // Get buyer and creator profiles
@@ -236,24 +254,6 @@ async function handlePaymentSucceeded(
         .select('email, username, display_name')
         .eq('id', creator_id)
         .single();
-
-      // Get content title
-      let contentTitle = 'Content';
-      if (content_type === 'track') {
-        const { data: track } = await supabase
-          .from('audio_tracks')
-          .select('title')
-          .eq('id', content_id)
-          .single();
-        contentTitle = track?.title || 'Content';
-      } else if (content_type === 'album') {
-        const { data: album } = await supabase
-          .from('albums')
-          .select('title')
-          .eq('id', content_id)
-          .single();
-        contentTitle = album?.title || 'Content';
-      }
 
       // Send purchase confirmation to buyer
       if (buyerProfile?.email) {
@@ -290,6 +290,16 @@ async function handlePaymentSucceeded(
       console.error('Error sending email notifications:', emailError);
       // Don't fail - emails are non-critical
     }
+
+    void notifyCreatorContentPurchasePush({
+      creatorId: creator_id,
+      buyerId: buyer_id,
+      contentId: content_id,
+      contentType: content_type,
+      title: contentTitle,
+      amount: paymentIntent.amount / 100,
+      currency: paymentIntent.currency.toUpperCase(),
+    });
 
     console.log('✅ Payment succeeded - purchase complete');
   } catch (error: any) {

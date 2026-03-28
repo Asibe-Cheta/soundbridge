@@ -137,14 +137,24 @@ export async function runUrgentGigMatching(
   }
 
   const userIds = availabilityRows.map((r) => r.user_id);
-  const [skillsRes, genresRes, ratingsRes, profilesRes] = await Promise.all([
+  const [skillsRes, genresRes, ratingsRes, profilesRes, npRes] = await Promise.all([
     supabase.from('profile_skills').select('user_id, skill').in('user_id', userIds).then((r) => (r.error ? { data: [] as { user_id: string; skill: string }[] } : r)),
     supabase.from('profiles').select('id, genres').in('id', userIds),
     supabase.from('gig_ratings').select('ratee_id, overall_rating').in('ratee_id', userIds),
     supabase.from('profiles').select('id, timezone, notification_preferences').in('id', userIds),
+    supabase
+      .from('notification_preferences')
+      .select('user_id, enabled, urgent_gig_notifications_enabled')
+      .in('user_id', userIds),
   ]);
   const profileByUser = new Map<string, { timezone?: string | null; notification_preferences?: Record<string, unknown> | null }>(
     (profilesRes.data ?? []).map((p: { id: string; timezone?: string; notification_preferences?: Record<string, unknown> }) => [p.id, { timezone: p.timezone, notification_preferences: p.notification_preferences }])
+  );
+  const npByUser = new Map<string, { enabled?: boolean | null; urgent_gig_notifications_enabled?: boolean | null }>(
+    (npRes.data ?? []).map((r: { user_id: string; enabled?: boolean | null; urgent_gig_notifications_enabled?: boolean | null }) => [
+      r.user_id,
+      { enabled: r.enabled, urgent_gig_notifications_enabled: r.urgent_gig_notifications_enabled },
+    ])
   );
 
   const skillsByUser = new Map<string, string[]>();
@@ -177,8 +187,12 @@ export async function runUrgentGigMatching(
     const profile = profileByUser.get(row.user_id);
     const tz = profile?.timezone || 'UTC';
     if (isInDndInTimezone(row.dnd_start, row.dnd_end, tz)) continue;
-    const urgentEnabled = profile?.notification_preferences?.urgentGigNotificationsEnabled;
-    if (urgentEnabled === false) continue;
+    const np = npByUser.get(row.user_id);
+    if (np?.enabled === false) continue;
+    const urgentOffTable = np?.urgent_gig_notifications_enabled === false;
+    const urgentOffProfile =
+      !np && profile?.notification_preferences?.urgentGigNotificationsEnabled === false;
+    if (urgentOffTable || urgentOffProfile) continue;
 
     const avgRating = ratingByUser.get(row.user_id);
     const avg = avgRating && avgRating.count > 0 ? avgRating.sum / avgRating.count : null;

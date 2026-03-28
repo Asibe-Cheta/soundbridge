@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { sendExpoPush } from '@/src/lib/push-notifications';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,10 +89,11 @@ export async function POST(
         .eq('id', user.id)
         .single();
       const displayName = followerProfile?.display_name || followerProfile?.username || 'Someone';
-      await sendExpoPush(service, targetUserId, {
-        title: 'New Follower',
-        body: `${displayName} started following you`,
-        data: { type: 'new_follower', followerId: user.id, userId: user.id },
+      const atLabel = followerProfile?.username ? `@${followerProfile.username}` : displayName;
+      await sendExpoPushIfAllowed(service, targetUserId, 'new_followers', {
+        title: `${atLabel} started following you`,
+        body: 'Tap to view their profile',
+        data: { type: 'new_follower', followerId: user.id },
         channelId: 'social',
       });
     } catch (pushErr) {

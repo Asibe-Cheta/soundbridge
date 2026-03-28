@@ -3,6 +3,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 export async function POST(request: NextRequest) {
   const corsHeaders = {
@@ -235,63 +237,43 @@ export async function POST(request: NextRequest) {
       // Don't fail the request, just log the error
     }
 
-    // Instant push notification for creator (non-blocking)
+    // Instant push notification for creator (non-blocking) — type: tip (not content_purchase)
     try {
-      const { data: creatorProfile } = await supabase
-        .from('profiles')
-        .select('username, expo_push_token')
-        .eq('id', creatorId)
-        .single();
-
-      const { data: creatorTokenRow } = await supabase
-        .from('user_push_tokens')
-        .select('push_token')
-        .eq('user_id', creatorId)
-        .eq('active', true)
-        .order('last_used_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
+      const service = createServiceClient();
       const { data: senderProfile } = await supabase
         .from('profiles')
         .select('username, display_name')
         .eq('id', senderId)
         .single();
 
-      const pushToken = creatorProfile?.expo_push_token || creatorTokenRow?.push_token;
       const senderUsername =
         senderProfile?.username ||
         user.user_metadata?.username ||
         user.user_metadata?.display_name ||
         (user.email ? user.email.split('@')[0] : 'someone');
-      const senderLabel = isAnonymous ? 'Someone' : `@${senderUsername}`;
       const formattedAmount =
         currency === 'USD' ? `$${amount.toFixed(2)}` : `${currency} ${amount.toFixed(2)}`;
-      const amountInCents = Math.round(amount * 100);
 
-      if (pushToken && (pushToken.startsWith('ExponentPushToken[') || pushToken.startsWith('ExpoPushToken['))) {
-        const buyerLabel = isAnonymous ? 'Someone' : (senderProfile?.display_name || senderUsername || 'Someone');
-        await fetch('https://exp.host/--/api/v2/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: pushToken,
-            title: 'Content Sold',
-            body: `${buyerLabel} purchased your content for ${formattedAmount}`,
-            data: {
-              type: 'content_purchase',
-              amount: amountInCents,
-              userId: senderId,
-              tipId: tipsRow?.id || tipAnalytics?.id || tipData.id,
-              currency,
-              deepLink: 'soundbridge://wallet/tips'
-            },
-            sound: 'default',
-            priority: 'high',
-            channelId: 'tips'
-          }),
-        });
-      }
+      const tipTitle = isAnonymous
+        ? `Someone tipped you ${formattedAmount}`
+        : senderProfile?.username
+          ? `@${senderProfile.username} tipped you ${formattedAmount}`
+          : `${senderProfile?.display_name || senderUsername} tipped you ${formattedAmount}`;
+
+      const tipRowId = tipsRow?.id || tipData.id;
+
+      await sendExpoPushIfAllowed(service, creatorId, 'tip', {
+        title: tipTitle,
+        body: 'Check your wallet',
+        data: {
+          type: 'tip',
+          amount: formattedAmount,
+          tipperId: isAnonymous ? 'anonymous' : senderId,
+          currency,
+          ...(tipRowId ? { tipId: tipRowId } : {}),
+        },
+        channelId: 'tips',
+      });
     } catch (notificationError) {
       console.error('Error sending tip notification:', notificationError);
     }

@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { notifyPostReaction } from '@/src/lib/post-notifications';
-import { sendExpoPush } from '@/src/lib/push-notifications';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -232,14 +232,22 @@ export async function POST(
           .single();
 
         const userName = userProfile?.display_name || userProfile?.username || 'Someone';
+        const atLabel = userProfile?.username ? `@${userProfile.username}` : userName;
+        const reactionEmoji: Record<string, string> = {
+          support: '👍',
+          love: '❤️',
+          fire: '🔥',
+          congrats: '🎉',
+        };
+        const emoji = reactionEmoji[reaction_type] || '❤️';
         notifyPostReaction(post.user_id, userName, postId, reaction_type).catch((err) => {
           console.error('Failed to send reaction notification:', err);
         });
         const service = createServiceClient();
-        sendExpoPush(service, post.user_id, {
-          title: 'New Reaction',
-          body: `${userName} reacted to your post`,
-          data: { type: 'reaction', postId, userId: user.id },
+        sendExpoPushIfAllowed(service, post.user_id, 'likes_on_posts', {
+          title: `${atLabel} reacted to your post`,
+          body: `${emoji} on your drop`,
+          data: { type: 'reaction', postId, reactionType: reaction_type },
           channelId: 'social',
         }).catch((err) => console.error('Reaction push:', err));
       }

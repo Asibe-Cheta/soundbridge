@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { notifyConnectionAccepted } from '@/src/lib/post-notifications';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,6 +135,20 @@ export async function POST(
       console.error('Failed to send connection accepted notification:', err);
       // Don't fail the request if notification fails
     });
+
+    try {
+      const service = createServiceClient();
+      const { data: ap } = await service.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      const atLabel = ap?.username ? `@${ap.username}` : accepterName;
+      await sendExpoPushIfAllowed(service, connectionRequest.requester_id, 'collaboration', {
+        title: `${atLabel} accepted your connection`,
+        body: "You're now connected",
+        data: { type: 'connection_accepted', userId: user.id },
+        channelId: 'social',
+      });
+    } catch (e) {
+      console.error('Connection accepted push:', e);
+    }
 
     console.log('✅ Connection request accepted:', requestId);
 

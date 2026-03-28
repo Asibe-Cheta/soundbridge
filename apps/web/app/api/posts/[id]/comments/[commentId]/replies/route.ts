@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { notifyCommentReply } from '@/src/lib/post-notifications';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -100,10 +102,20 @@ export async function POST(
     // Send notification to comment author (if not replying to own comment)
     if (parentComment.user_id !== user.id) {
       const userName = profile?.display_name || profile?.username || 'Someone';
+      const atLabel = profile?.username ? `@${profile.username}` : userName;
+      const preview =
+        content.trim().length > 100 ? `${content.trim().slice(0, 99)}…` : content.trim();
       notifyCommentReply(parentComment.user_id, userName, postId, commentId, reply.id).catch((err) => {
         console.error('Failed to send reply notification:', err);
         // Don't fail the request if notification fails
       });
+      const service = createServiceClient();
+      sendExpoPushIfAllowed(service, parentComment.user_id, 'comments_on_posts', {
+        title: `${atLabel} replied to your comment`,
+        body: preview,
+        data: { type: 'comment', postId, commentId: reply.id },
+        channelId: 'social',
+      }).catch((err) => console.error('Reply push:', err));
     }
 
     console.log('✅ Reply created successfully:', reply.id);

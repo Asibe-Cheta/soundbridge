@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { notifyConnectionAccepted } from '@/src/lib/post-notifications';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -73,6 +75,20 @@ export async function POST(
     const { data: accepterProfile } = await supabase.from('profiles').select('display_name, username').eq('id', user.id).single();
     const accepterName = accepterProfile?.display_name || accepterProfile?.username || 'Someone';
     notifyConnectionAccepted(connectionRequest.requester_id, accepterName, connection.id).catch(() => {});
+
+    try {
+      const service = createServiceClient();
+      const { data: ap } = await service.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      const atLabel = ap?.username ? `@${ap.username}` : accepterName;
+      await sendExpoPushIfAllowed(service, connectionRequest.requester_id, 'collaboration', {
+        title: `${atLabel} accepted your connection`,
+        body: "You're now connected",
+        data: { type: 'connection_accepted', userId: user.id },
+        channelId: 'social',
+      });
+    } catch (e) {
+      console.error('Connection accepted push:', e);
+    }
 
     return NextResponse.json({ success: true, data: { connection_id: connection.id } }, { headers: CORS });
   } catch (e) {

@@ -30,6 +30,10 @@ function mapToResponse(prefs: Record<string, unknown> | null) {
     locationCountry: prefs.location_country ?? null,
     urgentGigNotificationsEnabled: prefs.urgent_gig_notifications_enabled ?? true,
     urgentGigActionButtonsEnabled: prefs.urgent_gig_action_buttons_enabled ?? true,
+    commentsOnPosts: prefs.comments_on_posts ?? true,
+    likesOnPosts: prefs.likes_on_posts ?? true,
+    newFollowers: prefs.new_followers ?? true,
+    contentSales: prefs.content_sales ?? true,
   };
 }
 
@@ -74,6 +78,10 @@ export async function GET(request: NextRequest) {
           preferred_event_genres: [],
           urgent_gig_notifications_enabled: true,
           urgent_gig_action_buttons_enabled: true,
+          comments_on_posts: true,
+          likes_on_posts: true,
+          new_followers: true,
+          content_sales: true,
         })
       );
     }
@@ -124,6 +132,10 @@ export async function PUT(request: NextRequest) {
     if (updates.locationCountry !== undefined) payload.location_country = updates.locationCountry;
     if (updates.urgentGigNotificationsEnabled !== undefined) payload.urgent_gig_notifications_enabled = updates.urgentGigNotificationsEnabled;
     if (updates.urgentGigActionButtonsEnabled !== undefined) payload.urgent_gig_action_buttons_enabled = updates.urgentGigActionButtonsEnabled;
+    if (updates.commentsOnPosts !== undefined) payload.comments_on_posts = updates.commentsOnPosts;
+    if (updates.likesOnPosts !== undefined) payload.likes_on_posts = updates.likesOnPosts;
+    if (updates.newFollowers !== undefined) payload.new_followers = updates.newFollowers;
+    if (updates.contentSales !== undefined) payload.content_sales = updates.contentSales;
 
     const { data: prefs, error } = await supabase
       .from('notification_preferences')

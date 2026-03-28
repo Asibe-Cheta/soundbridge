@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import type { User, SupabaseClient } from '@supabase/supabase-js';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { CREATOR_SHARE_DECIMAL, PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { notifyCreatorContentPurchasePush } from '@/src/lib/content-purchase-push';
 
 export type FinalizeResult =
   | { ok: true; purchase: Record<string, unknown>; alreadyCompleted?: boolean }
@@ -241,6 +242,16 @@ export async function finalizeContentPurchaseFromPaymentIntent(
   } catch (emailError) {
     console.error('[finalizeContentPurchase] email:', emailError);
   }
+
+  void notifyCreatorContentPurchasePush({
+    creatorId: content.creator_id,
+    buyerId: user.id,
+    contentId,
+    contentType,
+    title: content.title || 'Content',
+    amount: price,
+    currency,
+  });
 
   return { ok: true, purchase: purchase as unknown as Record<string, unknown> };
 }
