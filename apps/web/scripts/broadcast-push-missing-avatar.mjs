@@ -2,16 +2,12 @@
 /**
  * One-time broadcast: Expo push to users with push token, no avatar, onboarding complete.
  *
- * Target (same as mobile):
- *   expo_push_token IS NOT NULL
- *   AND (avatar_url IS NULL OR avatar_url = '')
- *   AND onboarding_completed = true
+ * Run from apps/web (uses this package's node_modules):
+ *   npm run push:broadcast-missing-avatar:dry
+ *   npm run push:broadcast-missing-avatar
  *
- * Usage (from repo root):
- *   DRY_RUN=1 node --env-file=apps/web/.env.local scripts/broadcast-push-missing-avatar.mjs
- *   node --env-file=apps/web/.env.local scripts/broadcast-push-missing-avatar.mjs
- *
- * Required env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, EXPO_ACCESS_TOKEN
+ * Required env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * EXPO_ACCESS_TOKEN required for live send only (dry-run can omit it).
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -114,10 +110,6 @@ async function main() {
     console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
-  if (!expoToken) {
-    console.error('Missing EXPO_ACCESS_TOKEN');
-    process.exit(1);
-  }
 
   const dryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true';
 
@@ -142,6 +134,11 @@ async function main() {
   if (messages.length === 0) {
     console.log('Nothing to send.');
     process.exit(0);
+  }
+
+  if (!expoToken) {
+    console.error('Missing EXPO_ACCESS_TOKEN (required for live send)');
+    process.exit(1);
   }
 
   let sent = 0;
