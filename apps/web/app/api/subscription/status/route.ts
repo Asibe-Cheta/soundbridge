@@ -194,7 +194,12 @@ export async function GET(request: NextRequest) {
     // Get usage limits
     const { data: uploadLimit } = await supabase.rpc('check_upload_limit', { p_user_id: user.id });
     const { data: searchLimit } = await supabase.rpc('check_search_limit', { p_user_id: user.id });
-    const { data: messageLimit } = await supabase.rpc('check_message_limit', { p_user_id: user.id });
+    const unlimitedMessages = {
+      used: 0,
+      limit: null as number | null,
+      remaining: null as number | null,
+      is_unlimited: true,
+    };
 
     // Founding member: check by email (service client can read founding_members)
     let isFoundingMember = false;
@@ -219,7 +224,7 @@ export async function GET(request: NextRequest) {
         limits: {
           uploads: uploadLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false },
           searches: searchLimit || { used: 0, limit: 5, remaining: 5, is_unlimited: false },
-          messages: messageLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false }
+          messages: unlimitedMessages
         },
         moneyBackGuarantee: {
           eligible: finalSubscription?.money_back_guarantee_eligible || false,
@@ -232,7 +237,7 @@ export async function GET(request: NextRequest) {
           // Upload limits: Free=3 lifetime, Premium=7/month, Unlimited=unlimited
           unlimitedUploads: finalSubscription.tier === 'unlimited',
           unlimitedSearches: ['premium', 'unlimited'].includes(finalSubscription.tier),
-          unlimitedMessages: ['premium', 'unlimited'].includes(finalSubscription.tier),
+          unlimitedMessages: true,
           advancedAnalytics: ['premium', 'unlimited'].includes(finalSubscription.tier),
           customUsername: ['premium', 'unlimited'].includes(finalSubscription.tier),
           prioritySupport: ['premium', 'unlimited'].includes(finalSubscription.tier),

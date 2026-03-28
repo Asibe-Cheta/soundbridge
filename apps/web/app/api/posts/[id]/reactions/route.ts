@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { notifyPostReaction } from '@/src/lib/post-notifications';
-import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
+import { canReceivePushOfKind, sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -225,6 +225,20 @@ export async function POST(
 
       // Send notification to post author (if not reacting to own post)
       if (post.user_id !== user.id) {
+        const service = createServiceClient();
+        const prefsOk = await canReceivePushOfKind(service, post.user_id, 'likes_on_posts');
+        console.log(
+          '[post-reactions-push]',
+          JSON.stringify({
+            postId,
+            authorId: post.user_id,
+            actorId: user.id,
+            reaction_type,
+            branch: 'new_insert',
+            prefsAllowsLikesOnPosts: prefsOk,
+          })
+        );
+
         const { data: userProfile } = await supabase
           .from('profiles')
           .select('display_name, username')
@@ -243,13 +257,25 @@ export async function POST(
         notifyPostReaction(post.user_id, userName, postId, reaction_type).catch((err) => {
           console.error('Failed to send reaction notification:', err);
         });
-        const service = createServiceClient();
-        sendExpoPushIfAllowed(service, post.user_id, 'likes_on_posts', {
-          title: `${atLabel} reacted to your post`,
-          body: `${emoji} on your drop`,
-          data: { type: 'reaction', postId, reactionType: reaction_type },
-          channelId: 'social',
-        }).catch((err) => console.error('Reaction push:', err));
+        try {
+          const pushSent = await sendExpoPushIfAllowed(service, post.user_id, 'likes_on_posts', {
+            title: `${atLabel} reacted to your post`,
+            body: `${emoji} on your drop`,
+            data: { type: 'reaction', postId, reactionType: reaction_type },
+            channelId: 'social',
+          });
+          console.log(
+            '[post-reactions-push]',
+            JSON.stringify({
+              postId,
+              authorId: post.user_id,
+              actorId: user.id,
+              expoPushSent: pushSent,
+            })
+          );
+        } catch (err) {
+          console.error('[post-reactions-push] sendExpoPushIfAllowed failed:', err);
+        }
       }
     }
 

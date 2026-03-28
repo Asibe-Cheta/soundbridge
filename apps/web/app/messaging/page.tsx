@@ -204,20 +204,23 @@ export default function MessagingPage() {
               <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', margin: 0 }}>
                 Messages
               </h2>
-              <div style={{
-                background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-                color: 'white',
-                borderRadius: '50%',
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.75rem',
-                fontWeight: '600'
-              }}>
-                {unreadCount}
-              </div>
+              {unreadCount > 0 && (
+                <div style={{
+                  background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  minWidth: '24px',
+                  height: '24px',
+                  padding: '0 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </div>
+              )}
             </div>
 
             {/* Search */}

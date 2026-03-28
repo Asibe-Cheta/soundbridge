@@ -86,7 +86,7 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-green-400 flex-shrink-0" />
-                  <span className="text-sm">2 direct messages/month</span>
+                  <span className="text-sm">Unlimited direct messages</span>
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-green-400 flex-shrink-0" />

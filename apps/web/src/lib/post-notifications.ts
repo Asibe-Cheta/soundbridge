@@ -9,7 +9,15 @@ import { createServiceClient } from './supabase';
 
 interface CreatePostNotificationParams {
   userId: string;
-  type: 'post_reaction' | 'post_comment' | 'comment_reply' | 'connection_request' | 'connection_accepted' | 'repost';
+  type:
+    | 'post_reaction'
+    | 'post_comment'
+    | 'comment_reply'
+    | 'connection_request'
+    | 'connection_accepted'
+    | 'repost'
+    | 'new_follower'
+    | 'follow';
   title: string;
   message: string;
   relatedId?: string;
@@ -17,53 +25,66 @@ interface CreatePostNotificationParams {
   metadata?: Record<string, any>;
 }
 
+function relatedTypeForNotification(
+  type: CreatePostNotificationParams['type']
+): string | null {
+  if (['post_reaction', 'post_comment', 'comment_reply', 'repost'].includes(type)) return 'post';
+  if (type === 'new_follower' || type === 'follow') return 'user';
+  if (type === 'connection_request' || type === 'connection_accepted') return 'connection';
+  return null;
+}
+
 /**
- * Create a notification in the notification_logs table
+ * Persist to `notifications` (mobile in-app inbox + web bell) and best-effort `notification_logs`.
+ * Always writes `notifications` first — mobile reads this table; previously we only wrote here when notification_logs failed.
  */
 export async function createPostNotification(params: CreatePostNotificationParams) {
   try {
     const supabase = createServiceClient();
+    const dataPayload: Record<string, unknown> = {
+      ...(params.metadata ?? {}),
+      action_url: params.actionUrl ?? null,
+      notification_type: params.type,
+    };
 
-    // Check if notification_logs table exists (new notification system)
-    const { data: notificationLog, error: logError } = await supabase
-      .from('notification_logs')
+    const { data: inboxRow, error: notifError } = await supabase
+      .from('notifications')
       .insert({
         user_id: params.userId,
-        notification_type: params.type,
+        type: params.type,
         title: params.title,
-        message: params.message,
-        related_id: params.relatedId || null,
-        action_url: params.actionUrl || null,
-        metadata: params.metadata || null,
-        sent_at: new Date().toISOString(),
+        body: params.message,
+        related_id: params.relatedId ?? null,
+        related_type: relatedTypeForNotification(params.type),
+        action_url: params.actionUrl ?? null,
+        metadata: params.metadata ?? null,
+        data: dataPayload,
+        read: false,
       })
       .select()
       .single();
 
-    if (logError) {
-      // Fallback to old notifications table if notification_logs doesn't exist
-      console.log('⚠️ notification_logs not available, trying notifications table');
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: params.userId,
-          type: params.type,
-          title: params.title,
-          message: params.message,
-          related_id: params.relatedId || null,
-          action_url: params.actionUrl || null,
-          metadata: params.metadata || null,
-          is_read: false,
-          created_at: new Date().toISOString(),
-        });
-
-      if (notifError) {
-        console.error('❌ Error creating notification:', notifError);
-        return { success: false, error: notifError.message };
-      }
+    if (notifError) {
+      console.error('[createPostNotification] notifications insert:', notifError);
+      return { success: false, error: notifError.message };
     }
 
-    return { success: true, data: notificationLog };
+    const { error: logError } = await supabase.from('notification_logs').insert({
+      user_id: params.userId,
+      notification_type: params.type,
+      title: params.title,
+      message: params.message,
+      related_id: params.relatedId || null,
+      action_url: params.actionUrl || null,
+      metadata: params.metadata || null,
+      sent_at: new Date().toISOString(),
+    });
+
+    if (logError) {
+      console.warn('[createPostNotification] notification_logs (non-fatal):', logError.message);
+    }
+
+    return { success: true, data: inboxRow };
   } catch (error: any) {
     console.error('❌ Unexpected error creating notification:', error);
     return { success: false, error: error.message };
@@ -73,6 +94,30 @@ export async function createPostNotification(params: CreatePostNotificationParam
 /**
  * Notify post author when someone reacts to their post
  */
+/**
+ * New follower — same row shape as push (`new_follower`) for mobile inbox.
+ */
+export async function notifyNewFollower(
+  followedUserId: string,
+  followerId: string,
+  followerDisplayName: string,
+  followerUsername: string | null
+) {
+  const atLabel = followerUsername ? `@${followerUsername}` : followerDisplayName;
+  return createPostNotification({
+    userId: followedUserId,
+    type: 'new_follower',
+    title: 'New follower',
+    message: `${atLabel} started following you`,
+    relatedId: followerId,
+    actionUrl: `/user/${followerId}`,
+    metadata: {
+      followerId,
+      type: 'new_follower',
+    },
+  });
+}
+
 export async function notifyPostReaction(
   postAuthorId: string,
   reactorName: string,
@@ -98,7 +143,9 @@ export async function notifyPostReaction(
     actionUrl: `/posts/${postId}`,
     metadata: {
       post_id: postId,
+      postId,
       reaction_type: reactionType,
+      type: 'reaction',
     },
   });
 }
@@ -121,7 +168,10 @@ export async function notifyPostComment(
     actionUrl: `/posts/${postId}`,
     metadata: {
       post_id: postId,
+      postId,
       comment_id: commentId,
+      commentId,
+      type: 'comment',
     },
   });
 }
@@ -145,8 +195,12 @@ export async function notifyCommentReply(
     actionUrl: `/posts/${postId}`,
     metadata: {
       post_id: postId,
+      postId,
       comment_id: commentId,
+      commentId,
       reply_id: replyId,
+      replyId,
+      type: 'comment',
     },
   });
 }

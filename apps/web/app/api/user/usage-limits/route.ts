@@ -18,7 +18,7 @@ const corsHeaders = {
  *     "tier": "free" | "pro" | "enterprise",
  *     "uploads": { "used": 2, "limit": 3, "remaining": 1, "is_unlimited": false },
  *     "searches": { "used": 3, "limit": 5, "remaining": 2, "reset_date": "...", "is_unlimited": false },
- *     "messages": { "used": 1, "limit": 3, "remaining": 2, "reset_date": "...", "is_unlimited": false }
+ *     "messages": { "used": 0, "limit": null, "remaining": null, "is_unlimited": true }
  *   }
  * }
  */
@@ -54,9 +54,12 @@ export async function GET(request: NextRequest) {
     const { data: searchLimit } = await supabase
       .rpc('check_search_limit', { p_user_id: user.id });
 
-    // Get message limit
-    const { data: messageLimit } = await supabase
-      .rpc('check_message_limit', { p_user_id: user.id });
+    const unlimitedMessages = {
+      used: 0,
+      limit: null as number | null,
+      remaining: null as number | null,
+      is_unlimited: true,
+    };
 
     return NextResponse.json({
       success: true,
@@ -64,7 +67,7 @@ export async function GET(request: NextRequest) {
         tier,
         uploads: uploadLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false },
         searches: searchLimit || { used: 0, limit: 5, remaining: 5, is_unlimited: false },
-        messages: messageLimit || { used: 0, limit: 3, remaining: 3, is_unlimited: false }
+        messages: unlimitedMessages
       }
     }, { headers: corsHeaders });
 

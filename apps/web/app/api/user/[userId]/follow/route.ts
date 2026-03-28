@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
+import { notifyNewFollower } from '@/src/lib/post-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,6 +91,12 @@ export async function POST(
         .single();
       const displayName = followerProfile?.display_name || followerProfile?.username || 'Someone';
       const atLabel = followerProfile?.username ? `@${followerProfile.username}` : displayName;
+      notifyNewFollower(
+        targetUserId,
+        user.id,
+        displayName,
+        followerProfile?.username ?? null
+      ).catch((inboxErr) => console.error('Follow in-app notification:', inboxErr));
       await sendExpoPushIfAllowed(service, targetUserId, 'new_followers', {
         title: `${atLabel} started following you`,
         body: 'Tap to view their profile',

@@ -165,7 +165,7 @@ function PricingContent() {
       items: [
         { name: 'Track Uploads', free: '250MB (~30–40 tracks)', premium: '7/month', unlimited: 'Unlimited' },
         { name: 'Professional Searches', free: '5/month', premium: 'Unlimited', unlimited: 'Unlimited' },
-        { name: 'Direct Messages (sent)', free: '2/month', premium: 'Unlimited', unlimited: 'Unlimited' },
+        { name: 'Direct Messages (sent)', free: 'Unlimited', premium: 'Unlimited', unlimited: 'Unlimited' },
         { name: 'Storage Space', free: '250MB', premium: '2GB', unlimited: '10GB' },
         { name: 'Audio Previews in Posts', free: '30 seconds', premium: '60 seconds', unlimited: '60 seconds' },
         { name: 'Max File Size', free: '50MB', premium: '50MB', unlimited: '50MB' }

@@ -83,6 +83,16 @@ export async function sendExpoPushIfAllowed(
   options: SendExpoPushOptions
 ): Promise<boolean> {
   if (!(await canReceivePushOfKind(supabase, recipientUserId, kind))) {
+    console.log(
+      '[push:sendExpoPushIfAllowed]',
+      JSON.stringify({
+        recipientUserId,
+        kind,
+        dataType: options.data?.type,
+        result: 'skipped',
+        reason: 'notification_preferences',
+      })
+    );
     return false;
   }
   return sendExpoPush(supabase, recipientUserId, options);
