@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createServiceClient } from '@/src/lib/supabase';
 import { grantGracePeriod } from '@/src/lib/grace-period-service';
 import { stripe } from '@/src/lib/stripe';
+import { shouldSkipRevenueCatDowngradeToFree } from '@/src/lib/revenuecat-entitlements';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -144,30 +145,34 @@ export async function OPTIONS(request: NextRequest) {
  * Handle RevenueCat webhook events
  */
 async function handleRevenueCatWebhook(supabase: any, payload: any) {
-  const eventType = payload.type;
-  const event = payload.event;
+  const event = payload.event ?? payload;
+  const eventType =
+    payload.type ?? payload.event_type ?? event?.type ?? event?.event_type;
 
   console.log('🍎 REVENUECAT WEBHOOK:', eventType);
 
   // Extract user identifier (RevenueCat app_user_id should match our user ID)
-  const userId = event.app_user_id;
+  const userId = event?.app_user_id ?? event?.original_app_user_id;
   if (!userId) {
     console.error('❌ REVENUECAT: No app_user_id in webhook');
     return NextResponse.json({ error: 'Missing app_user_id' }, { status: 400, headers: corsHeaders });
   }
 
   // Extract subscription info
-  const productId = event.product_id; // e.g., "soundbridge_premium_monthly"
-  const expiresDate = event.expiration_at_ms ? new Date(event.expiration_at_ms) : null;
-  const purchaseDate = event.purchased_at_ms ? new Date(event.purchased_at_ms) : null;
+  const productId = event?.product_id ?? event?.new_product_id;
+  const expiresDate = event?.expiration_at_ms ? new Date(event.expiration_at_ms) : null;
+  const purchaseDate = event?.purchased_at_ms ? new Date(event.purchased_at_ms) : null;
 
-  // Determine tier and period from product ID
-  const { tier, period } = parseProductId(productId);
+  // Same parser as Stripe price IDs — handles RC product identifiers (e.g. soundbridge_premium_monthly)
+  const { tier, period } = parsePriceId(productId ?? '');
 
   switch (eventType) {
     case 'INITIAL_PURCHASE':
     case 'RENEWAL':
-      // User subscribed or renewed
+      if (tier !== 'premium' && tier !== 'unlimited') {
+        console.warn('⚠️ REVENUECAT: Unmapped product_id, skip activation:', productId, 'event:', eventType);
+        break;
+      }
       await handleSubscriptionActivated(supabase, {
         userId,
         tier,
@@ -472,6 +477,14 @@ async function handleSubscriptionExpired(supabase: any, data: {
   userId: string;
 }) {
   console.log('⏰ EXPIRING SUBSCRIPTION:', data.userId);
+
+  if (await shouldSkipRevenueCatDowngradeToFree(supabase, data.userId)) {
+    console.log(
+      '⏰ EXPIRATION skipped; promotional or DB-backed access still active:',
+      data.userId
+    );
+    return;
+  }
 
   // Get current tier before downgrading
   const { data: profile } = await supabase

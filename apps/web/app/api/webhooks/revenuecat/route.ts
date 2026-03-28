@@ -16,6 +16,7 @@ import {
   getPlanFeatures,
   type SubscriptionTier,
 } from '@/src/lib/subscription-plan-email';
+import { shouldSkipRevenueCatDowngradeToFree } from '@/src/lib/revenuecat-entitlements';
 
 const MANAGE_URL = 'https://soundbridge.live/settings/billing';
 const DUPLICATE_EMAIL_WINDOW_MS = 60 * 1000; // 60 seconds
@@ -75,8 +76,24 @@ export async function POST(request: NextRequest) {
       eventType === 'TEMPORARY_ENTITLEMENT_GRANT'
     ) {
       newTier = productIdToTier(productId);
+      if (eventType === 'TEMPORARY_ENTITLEMENT_GRANT' && newTier === 'free') {
+        newTier = 'premium';
+      }
     }
     // Ignore TEST, BILLING_ISSUE, etc. for tier updates unless you want to handle them
+
+    if (
+      newTier === 'free' &&
+      (eventType === 'CANCELLATION' || eventType === 'EXPIRATION') &&
+      (await shouldSkipRevenueCatDowngradeToFree(supabase, appUserId))
+    ) {
+      console.log(
+        '[webhooks/revenuecat] Skipping tier=free; promotional or DB-backed access still active:',
+        appUserId,
+        eventType
+      );
+      return NextResponse.json({ received: true });
+    }
 
     const { data: profile, error: fetchError } = await supabase
       .from('profiles')

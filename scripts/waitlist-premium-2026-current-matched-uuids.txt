@@ -1,0 +1,8 @@
+# One UUID per line — from step-2c export after seed (only users who already have Supabase accounts).
+# Re-run the export query as more waitlist signups create accounts; replace this file.
+# Generated batch (4 matches):
+
+03a36b1f-e96c-49b9-993d-b33ec452a81d
+245fa56f-9ebf-44e5-9001-9f2cec8660be
+bd8a455d-a54d-45c5-968d-e4cf5e8d928e
+ccaf292d-3578-4b37-828e-7504a64b4b8f

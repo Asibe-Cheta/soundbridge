@@ -128,4 +128,13 @@ For email content, pull from this source of truth:
 
 ---
 
+## Waitlist 3-month Premium (promotional) — Web ops
+
+- **RevenueCat REST (v2):** New **Secret API keys** only work with **API v2**. The grant script uses `POST /v2/projects/{project_id}/customers/{app_user_id}/actions/grant_entitlement` with `{ "entitlement_id": "<internal id>", "expires_at": <ms> }` (default `expires_at` = **2026-07-01 00:00 UTC**). Entitlement is resolved by lookup key (`premium_features` then `premium`) or `REVENUECAT_PREMIUM_ENTITLEMENT_ID` / `REVENUECAT_PROJECT_ID`.
+- **Secret key permissions:** The key must allow **customer_information:customers:read** (webhook guard) and **customer_information:customers:read_write** (grants). If grant returns 403, create a new Secret key in RevenueCat with **read_write** and put it in `REVENUECAT_SECRET_API_KEY` (Vercel + local `.env.local`).
+- **Bulk grant script:** From `apps/web`, run `node scripts/revenuecat-grant-waitlist-premium.js <uuid-list.txt>`. Loads repo-root `.env.local` then `apps/web/.env.local`. Optional `DRY_RUN=1`.
+- **Webhooks:** Downgrade guard uses **v2** `GET .../customers/{id}/active_entitlements` plus entitlement lookup keys (`REVENUECAT_PAID_ENTITLEMENT_LOOKUP_KEYS` optional). Falls back to DB promo window if RC is unavailable.
+
+---
+
 **Priority:** High — mobile users currently receive no confirmation after paying.
