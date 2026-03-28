@@ -56,6 +56,14 @@ type ClaimEvent = {
   user_agent: string | null;
 };
 
+type PlatformAccountRow = {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  username: string | null;
+  account_created_at: string;
+};
+
 const formatDateTime = (value: string | null) => {
   if (!value) return '—';
   try {
@@ -85,6 +93,52 @@ export default function FoundingMembersAdminPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  const [platformAccounts, setPlatformAccounts] = useState<PlatformAccountRow[]>([]);
+  const [platformPage, setPlatformPage] = useState(1);
+  const [platformTotalPages, setPlatformTotalPages] = useState(1);
+  const [platformTotal, setPlatformTotal] = useState(0);
+  const [platformSearch, setPlatformSearch] = useState('');
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+
+  const loadPlatformAccounts = async (opts?: { nextPage?: number; nextSearch?: string }) => {
+    const nextPage = opts?.nextPage ?? platformPage;
+    const nextSearch = opts?.nextSearch ?? platformSearch;
+
+    try {
+      setAccountsLoading(true);
+      setAccountsError(null);
+
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        limit: '50',
+      });
+      if (nextSearch.trim()) {
+        params.append('search', nextSearch.trim());
+      }
+
+      const response = await fetch(`/api/admin/users/accounts?${params.toString()}`, {
+        credentials: 'include',
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Failed to load platform accounts');
+      }
+
+      setPlatformAccounts(result.data || []);
+      setPlatformTotalPages(Math.max(result.pagination?.totalPages || 1, 1));
+      setPlatformTotal(result.pagination?.total || 0);
+      setPlatformPage(nextPage);
+      setPlatformSearch(nextSearch);
+    } catch (err) {
+      setAccountsError(err instanceof Error ? err.message : 'Failed to load platform accounts');
+      setPlatformAccounts([]);
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
 
   const loadClaimsData = async (opts?: {
     nextPage?: number;
@@ -138,6 +192,7 @@ export default function FoundingMembersAdminPage() {
 
   useEffect(() => {
     loadClaimsData({ nextPage: 1 });
+    loadPlatformAccounts({ nextPage: 1, nextSearch: '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -157,7 +212,10 @@ export default function FoundingMembersAdminPage() {
             </div>
             <button
               className={`px-3 py-2 text-sm rounded ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800'} text-white`}
-              onClick={() => loadClaimsData({ nextPage: page })}
+              onClick={() => {
+                loadClaimsData({ nextPage: page });
+                loadPlatformAccounts({ nextPage: platformPage });
+              }}
             >
               Refresh
             </button>
@@ -179,6 +237,118 @@ export default function FoundingMembersAdminPage() {
             <StatCard theme={theme} label="Claims (24h)" value={summary.recentClaims24h} />
           </div>
         )}
+
+        <div className={`rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow`}>
+          <div className={`px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div>
+              <h2 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>All platform accounts</h2>
+              <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                Names and emails from auth + profiles (paginated).
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={platformSearch}
+                onChange={(e) => setPlatformSearch(e.target.value)}
+                placeholder="Search email, name, username…"
+                className={`min-w-[200px] px-3 py-2 rounded-lg border text-sm ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => loadPlatformAccounts({ nextPage: 1 })}
+                className={`px-3 py-2 text-sm rounded ${
+                  theme === 'dark' ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                Search
+              </button>
+            </div>
+          </div>
+
+          {accountsError && <div className="px-4 py-2 text-sm text-red-500">{accountsError}</div>}
+
+          <div className="overflow-x-auto">
+            <table className={`min-w-full divide-y text-sm ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <thead className={theme === 'dark' ? 'bg-gray-900/40 divide-gray-700' : 'bg-gray-50 divide-gray-200'}>
+                <tr>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Display name
+                  </th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Username
+                  </th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Email</th>
+                  <th className={`px-4 py-3 text-left font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Account created
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={theme === 'dark' ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
+                {accountsLoading ? (
+                  <tr>
+                    <td colSpan={4} className={`px-4 py-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Loading accounts…
+                    </td>
+                  </tr>
+                ) : platformAccounts.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className={`px-4 py-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No accounts found.
+                    </td>
+                  </tr>
+                ) : (
+                  platformAccounts.map((row) => (
+                    <tr key={row.user_id}>
+                      <td className={`px-4 py-3 font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {row.display_name?.trim() ? row.display_name : '—'}
+                      </td>
+                      <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {row.username?.trim() ? row.username : '—'}
+                      </td>
+                      <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{row.email}</td>
+                      <td className={`px-4 py-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {formatDateTime(row.account_created_at)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={`px-4 py-3 border-t flex items-center justify-between text-sm ${theme === 'dark' ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+            <span>
+              {platformTotal} account{platformTotal === 1 ? '' : 's'}
+              {platformTotalPages > 1 ? ` · page ${platformPage} of ${platformTotalPages}` : ''}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => loadPlatformAccounts({ nextPage: Math.max(platformPage - 1, 1) })}
+                disabled={platformPage <= 1 || accountsLoading}
+                className={`px-3 py-1 rounded border disabled:opacity-50 ${
+                  theme === 'dark' ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => loadPlatformAccounts({ nextPage: Math.min(platformPage + 1, platformTotalPages) })}
+                disabled={platformPage >= platformTotalPages || accountsLoading}
+                className={`px-3 py-1 rounded border disabled:opacity-50 ${
+                  theme === 'dark' ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
 
         {cohortAccount?.error && (
           <div
