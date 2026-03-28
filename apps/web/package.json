@@ -12,7 +12,9 @@
     "lint": "next lint",
     "setup-env": "node scripts/setup-env.js",
     "type-check": "tsc --noEmit",
-    "migrate-files": "node scripts/migrate-to-r2.js"
+    "migrate-files": "node scripts/migrate-to-r2.js",
+    "push:broadcast-missing-avatar": "node --env-file=.env.local ../../scripts/broadcast-push-missing-avatar.mjs",
+    "push:broadcast-missing-avatar:dry": "DRY_RUN=1 node --env-file=.env.local ../../scripts/broadcast-push-missing-avatar.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1015.0",
