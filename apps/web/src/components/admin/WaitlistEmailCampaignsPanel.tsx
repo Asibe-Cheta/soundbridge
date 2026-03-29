@@ -5,6 +5,7 @@ import { Send, Eye, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { WAITLIST_EMAIL_VARIABLES } from '@/src/lib/waitlist-email-placeholders';
 
 const LAUNCH_CONFIRM = 'WAITLIST_LAUNCH_SEND_NOW';
+const LAUNCH_TEST_CONFIRM = 'WAITLIST_LAUNCH_TEST_SEND';
 const CUSTOM_CONFIRM = 'WAITLIST_CUSTOM_SEND_NOW';
 
 function headersWithSecret(secret: string): HeadersInit {
@@ -32,6 +33,12 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
   const [launchMeta, setLaunchMeta] = useState<string | null>(null);
   const [launchConfirm, setLaunchConfirm] = useState('');
   const [maxTest, setMaxTest] = useState('');
+
+  const [launchTestBusy, setLaunchTestBusy] = useState(false);
+  const [launchTestEmail, setLaunchTestEmail] = useState('');
+  const [launchTestMeta, setLaunchTestMeta] = useState<string | null>(null);
+  const [launchTestPreview, setLaunchTestPreview] = useState<string | null>(null);
+  const [launchTestConfirm, setLaunchTestConfirm] = useState('');
 
   const [customSubject, setCustomSubject] = useState('');
   const [customHtml, setCustomHtml] = useState('');
@@ -99,6 +106,74 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
       setLaunchMeta(e instanceof Error ? e.message : 'Request failed');
     } finally {
       setLaunchBusy(false);
+    }
+  };
+
+  const runLaunchTestDryRun = async () => {
+    const to = launchTestEmail.trim();
+    if (!to) {
+      setLaunchTestMeta('Enter the test recipient email first.');
+      return;
+    }
+    setLaunchTestBusy(true);
+    setLaunchTestPreview(null);
+    setLaunchTestMeta(null);
+    try {
+      const res = await fetch('/api/admin/waitlist/broadcast-launch', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headersWithSecret(broadcastSecret),
+        body: JSON.stringify({ dryRun: true, testToEmail: to }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLaunchTestMeta(data.error || `Error ${res.status}`);
+        return;
+      }
+      setLaunchTestMeta(
+        `Test preview for ${data.testToEmail}. Expand Sample HTML below. Confirm phrase: ${data.confirmPhrase}`
+      );
+      setLaunchTestPreview(data.sample?.html || '');
+    } catch (e) {
+      setLaunchTestMeta(e instanceof Error ? e.message : 'Request failed');
+    } finally {
+      setLaunchTestBusy(false);
+    }
+  };
+
+  const sendLaunchTest = async () => {
+    const to = launchTestEmail.trim();
+    if (!to) {
+      setLaunchTestMeta('Enter the test recipient email first.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Send the launch template to this address only?\n\n${to}\n\nNo other waitlist rows will be emailed.`
+      )
+    ) {
+      return;
+    }
+    setLaunchTestBusy(true);
+    setLaunchTestMeta(null);
+    try {
+      const res = await fetch('/api/admin/waitlist/broadcast-launch', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headersWithSecret(broadcastSecret),
+        body: JSON.stringify({ confirm: launchTestConfirm.trim(), testToEmail: to }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLaunchTestMeta(data.error || `Error ${res.status}`);
+        return;
+      }
+      setLaunchTestMeta(`Test sent to ${data.to || to}. Check spam/promotions if needed.`);
+      setLaunchTestConfirm('');
+    } catch (e) {
+      setLaunchTestMeta(e instanceof Error ? e.message : 'Request failed');
+    } finally {
+      setLaunchTestBusy(false);
     }
   };
 
@@ -173,7 +248,8 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           Email campaigns (waitlist only)
         </h3>
         <p className={`text-sm mt-1 ${mutedCls}`}>
-          Recipients always come from the waitlist table—no CSV. Optional: if{' '}
+          Bulk sends use the waitlist table only (no CSV). Use the “Test send” block below to mail the
+          launch template to one address. Optional: if{' '}
           <code className="text-xs">WAITLIST_BROADCAST_SECRET</code> is set in env, enter it below.
         </p>
         <input
@@ -191,16 +267,22 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           Preset: “SoundBridge is live” launch email
         </h4>
         <p className={`text-sm mt-1 ${mutedCls}`}>
-          Fixed HTML (dark theme, App Store button). Use Preview first, then type{' '}
-          <code className="text-xs">{LAUNCH_CONFIRM}</code> to send.
+          There is no compose box: the message is fixed HTML on the server (dark theme, App Store
+          button). After Preview, open <strong className="font-medium">Sample HTML</strong> to read it.
+          To broadcast, use Preview first, then type <code className="text-xs">{LAUNCH_CONFIRM}</code>{' '}
+          to send.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2 items-center">
+        <label className={`block text-sm font-medium mt-3 ${labelCls}`}>
+          Max waitlist recipients (optional cap for bulk only—not a test address)
+        </label>
+        <div className="mt-1 flex flex-wrap gap-2 items-center">
           <input
             type="text"
-            placeholder="Max recipients (optional test cap)"
+            inputMode="numeric"
+            placeholder="e.g. 50 or leave empty for all"
             value={maxTest}
             onChange={(e) => setMaxTest(e.target.value)}
-            className={`px-3 py-2 rounded-lg border text-sm w-48 ${inputCls}`}
+            className={`px-3 py-2 rounded-lg border text-sm w-56 ${inputCls}`}
           />
           <button
             type="button"
@@ -247,6 +329,75 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
             {launchBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send launch email
           </button>
+        </div>
+
+        <div className={`mt-6 pt-6 border-t ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h4 className={`font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>
+            Test send (one inbox)
+          </h4>
+          <p className={`text-sm mt-1 ${mutedCls}`}>
+            Sends the same launch template to the address below only. Your email does not need to be
+            on the waitlist. Use a different confirm phrase than bulk send:{' '}
+            <code className="text-xs">{LAUNCH_TEST_CONFIRM}</code>.
+          </p>
+          <label className={`block text-sm font-medium mt-3 ${labelCls}`}>Test recipient email</label>
+          <input
+            type="email"
+            autoComplete="off"
+            placeholder="you@example.com"
+            value={launchTestEmail}
+            onChange={(e) => setLaunchTestEmail(e.target.value)}
+            className={`mt-1 w-full max-w-md px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+          />
+          <div className="mt-3 flex flex-wrap gap-2 items-center">
+            <button
+              type="button"
+              disabled={launchTestBusy}
+              onClick={runLaunchTestDryRun}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
+                dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              } disabled:opacity-50`}
+            >
+              {launchTestBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+              Preview test (dry run)
+            </button>
+          </div>
+          {launchTestMeta && (
+            <p className={`text-sm mt-3 ${dark ? 'text-amber-200' : 'text-amber-800'}`}>{launchTestMeta}</p>
+          )}
+          {launchTestPreview && (
+            <details className="mt-3">
+              <summary className={`text-sm cursor-pointer ${labelCls}`}>Sample HTML (test)</summary>
+              <pre
+                className={`mt-2 text-xs p-3 rounded overflow-auto max-h-48 ${
+                  dark ? 'bg-black/40 text-gray-300' : 'bg-white text-gray-800 border border-gray-200'
+                }`}
+              >
+                {launchTestPreview.slice(0, 12000)}
+                {launchTestPreview.length > 12000 ? '…' : ''}
+              </pre>
+            </details>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2 items-center">
+            <input
+              type="text"
+              placeholder={`Type ${LAUNCH_TEST_CONFIRM}`}
+              value={launchTestConfirm}
+              onChange={(e) => setLaunchTestConfirm(e.target.value)}
+              className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+            />
+            <button
+              type="button"
+              disabled={launchTestBusy || launchTestConfirm.trim() !== LAUNCH_TEST_CONFIRM}
+              onClick={sendLaunchTest}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
+                dark ? 'bg-indigo-700 text-white hover:bg-indigo-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+              } disabled:opacity-40`}
+            >
+              {launchTestBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Send test email only
+            </button>
+          </div>
         </div>
       </div>
 

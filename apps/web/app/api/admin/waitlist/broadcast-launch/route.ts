@@ -10,8 +10,21 @@ import { loadWaitlistRecipients } from '@/src/lib/waitlist-broadcast-recipients'
 
 const ADMIN_ROLES = ['admin', 'super_admin'] as const;
 
-/** Body.confirm must match this to send (not dry run). */
+/** Body.confirm must match this to send to the waitlist (not dry run). */
 const CONFIRM_PHRASE = 'WAITLIST_LAUNCH_SEND_NOW';
+
+/** Send the same launch template to a single inbox only (does not use waitlist rows). */
+const TEST_CONFIRM_PHRASE = 'WAITLIST_LAUNCH_TEST_SEND';
+
+const MAX_EMAIL_LEN = 254;
+
+function parseTestEmail(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim().toLowerCase();
+  if (!t || t.length > MAX_EMAIL_LEN) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return null;
+  return t;
+}
 
 /**
  * POST /api/admin/waitlist/broadcast-launch
@@ -24,6 +37,8 @@ const CONFIRM_PHRASE = 'WAITLIST_LAUNCH_SEND_NOW';
  * - `dryRun: true` — returns count + sample only; no email.
  * - Live send requires `confirm: "WAITLIST_LAUNCH_SEND_NOW"`.
  * - Optional `maxRecipients` (e.g. 3) caps how many are sent (still requires confirm).
+ * - Optional `testToEmail`: dry run or send the launch template to that address only;
+ *   live send requires `confirm: "WAITLIST_LAUNCH_TEST_SEND"` (not the full-broadcast phrase).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +55,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const dryRun = body?.dryRun === true;
     const confirm = body?.confirm === CONFIRM_PHRASE;
+    const confirmTest = body?.confirm === TEST_CONFIRM_PHRASE;
+    const testToEmail = parseTestEmail(body?.testToEmail);
     const maxRecipients =
       typeof body?.maxRecipients === 'number' && body.maxRecipients > 0
         ? Math.min(body.maxRecipients, 10_000)
@@ -53,6 +70,67 @@ export async function POST(request: NextRequest) {
       'contact@soundbridge.live';
     const fromName =
       process.env.SENDGRID_WAITLIST_LAUNCH_FROM_NAME?.trim() || 'Justice @ SoundBridge';
+
+    if (testToEmail) {
+      const sampleName = displayNameFromEmail(testToEmail);
+      const html = buildWaitlistLaunchEmailHtml(sampleName, testToEmail, siteBase);
+      if (dryRun) {
+        return NextResponse.json({
+          success: true,
+          dryRun: true,
+          mode: 'single_test',
+          testToEmail,
+          totalInDb: null,
+          wouldSend: 1,
+          subject: WAITLIST_LAUNCH_EMAIL_SUBJECT,
+          sample: {
+            email: testToEmail,
+            displayName: sampleName,
+            html,
+          },
+          confirmPhrase: TEST_CONFIRM_PHRASE,
+        });
+      }
+      if (!confirmTest) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `To send a test to one inbox only, set confirm to "${TEST_CONFIRM_PHRASE}". Use dryRun: true first.`,
+            confirmPhrase: TEST_CONFIRM_PHRASE,
+          },
+          { status: 400 }
+        );
+      }
+      if (!process.env.SENDGRID_API_KEY) {
+        return NextResponse.json(
+          { success: false, error: 'SENDGRID_API_KEY is not configured' },
+          { status: 500 }
+        );
+      }
+      const ok = await SendGridService.sendHtmlEmail(testToEmail, WAITLIST_LAUNCH_EMAIL_SUBJECT, html, {
+        from: fromEmail,
+        fromName,
+        categories: ['waitlist_launch', 'product_update', 'waitlist_launch_test'],
+      });
+      console.log(
+        '[waitlist broadcast-launch test]',
+        JSON.stringify({ actorUserId: adminCheck.userId, testToEmail, ok })
+      );
+      if (!ok) {
+        return NextResponse.json(
+          { success: false, error: 'SendGrid failed to send test email' },
+          { status: 502 }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        mode: 'single_test',
+        sent: 1,
+        failed: 0,
+        to: testToEmail,
+        from: { email: fromEmail, name: fromName },
+      });
+    }
 
     const { recipients, error: loadError } = await loadWaitlistRecipients(
       adminCheck.serviceClient
