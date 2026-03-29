@@ -267,12 +267,17 @@ export async function POST(request: NextRequest) {
         body: 'Check your wallet',
         data: {
           type: 'tip',
+          entityId: tipRowId ?? paymentIntentId,
+          entityType: 'tip',
+          creatorId: isAnonymous ? '' : senderId,
+          username: senderProfile?.username ?? '',
           amount: formattedAmount,
           tipperId: isAnonymous ? 'anonymous' : senderId,
           currency,
           ...(tipRowId ? { tipId: tipRowId } : {}),
         },
         channelId: 'tips',
+        priority: 'high',
       });
     } catch (notificationError) {
       console.error('Error sending tip notification:', notificationError);

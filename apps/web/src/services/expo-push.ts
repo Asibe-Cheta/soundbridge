@@ -44,21 +44,46 @@ export interface PushNotificationResult {
 // =====================================================
 
 /**
- * Get active push tokens for a user
+ * Active Expo tokens for a user: prefer profiles.expo_push_token, then user_push_tokens (deduped).
+ * Matches @/src/lib/push-notifications getPushToken resolution, but returns all devices.
  */
 async function getUserPushTokens(userId: string): Promise<string[]> {
-  const { data, error } = await getSupabaseAdmin()
+  const supabase = getSupabaseAdmin();
+  const expo = getExpoPushClient();
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('expo_push_token')
+    .eq('id', userId)
+    .maybeSingle();
+  const profileToken = (profile as { expo_push_token?: string } | null)?.expo_push_token;
+  if (profileToken && expo.isExpoPushToken(profileToken)) {
+    seen.add(profileToken);
+    out.push(profileToken);
+  }
+
+  const { data, error } = await supabase
     .from('user_push_tokens')
     .select('push_token')
     .eq('user_id', userId)
     .eq('active', true);
-  
+
   if (error) {
     console.error('Error fetching push tokens:', error);
-    return [];
+    return out;
   }
-  
-  return data.map((row) => row.push_token).filter((token) => Expo.isExpoPushToken(token));
+
+  for (const row of data ?? []) {
+    const token = row.push_token;
+    if (token && expo.isExpoPushToken(token) && !seen.has(token)) {
+      seen.add(token);
+      out.push(token);
+    }
+  }
+
+  return out;
 }
 
 /**

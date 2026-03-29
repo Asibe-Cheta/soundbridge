@@ -5,9 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { createServiceClient } from '@/src/lib/supabase';
-import { notifyPostComment, notifyCommentReply } from '@/src/lib/post-notifications';
-import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
+import { notifyPostComment } from '@/src/lib/post-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -271,16 +269,14 @@ export async function POST(
       const atLabel = profile?.username ? `@${profile.username}` : userName;
       const preview =
         content.trim().length > 100 ? `${content.trim().slice(0, 99)}…` : content.trim();
-      notifyPostComment(post.user_id, userName, postId, comment.id).catch((err) => {
+      notifyPostComment(post.user_id, userName, postId, comment.id, {
+        actorUserId: user.id,
+        actorUsername: profile?.username ?? null,
+        pushTitle: `${atLabel} commented on your post`,
+        pushBody: preview,
+      }).catch((err) => {
         console.error('Failed to send comment notification:', err);
       });
-      const service = createServiceClient();
-      sendExpoPushIfAllowed(service, post.user_id, 'comments_on_posts', {
-        title: `${atLabel} commented on your post`,
-        body: preview,
-        data: { type: 'comment', postId, commentId: comment.id },
-        channelId: 'social',
-      }).catch((err) => console.error('Comment push:', err));
     }
 
     console.log('✅ Comment created successfully:', comment.id);

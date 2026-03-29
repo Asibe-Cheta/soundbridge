@@ -10,7 +10,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 import { notifyNewFollower } from '@/src/lib/post-notifications';
 
 const corsHeaders = {
@@ -81,7 +80,7 @@ export async function POST(
       );
     }
 
-    // Push: New Follower — notify User B (targetUserId)
+    // New follower — inbox + instant push (see createPostNotification)
     try {
       const service = createServiceClient();
       const { data: followerProfile } = await service
@@ -95,16 +94,14 @@ export async function POST(
         targetUserId,
         user.id,
         displayName,
-        followerProfile?.username ?? null
-      ).catch((inboxErr) => console.error('Follow in-app notification:', inboxErr));
-      await sendExpoPushIfAllowed(service, targetUserId, 'new_followers', {
-        title: `${atLabel} started following you`,
-        body: 'Tap to view their profile',
-        data: { type: 'new_follower', followerId: user.id },
-        channelId: 'social',
-      });
+        followerProfile?.username ?? null,
+        {
+          pushTitle: `${atLabel} started following you`,
+          pushBody: 'Tap to view their profile',
+        }
+      ).catch((inboxErr) => console.error('Follow notification:', inboxErr));
     } catch (pushErr) {
-      console.error('Follow push notification:', pushErr);
+      console.error('Follow notification:', pushErr);
     }
 
     const { count } = await supabase

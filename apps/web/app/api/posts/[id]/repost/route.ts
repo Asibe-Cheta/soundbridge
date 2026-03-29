@@ -282,12 +282,12 @@ export async function POST(
 
       const userName = userProfile?.display_name || userProfile?.username || 'Someone';
       
-      notifyPostRepost(
-        originalPost.user_id,
-        userName,
-        originalPost.id,
-        newPost.id
-      ).catch((err) => {
+      notifyPostRepost(originalPost.user_id, userName, originalPost.id, newPost.id, {
+        actorUserId: user.id,
+        actorUsername: userProfile?.username ?? null,
+        pushTitle: `${userProfile?.username ? `@${userProfile.username}` : userName} reposted your post`,
+        pushBody: 'Tap to view',
+      }).catch((err) => {
         console.error('Failed to send repost notification:', err);
         // Don't fail the request if notification fails
       });

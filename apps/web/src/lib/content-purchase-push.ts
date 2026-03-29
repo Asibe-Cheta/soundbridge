@@ -33,11 +33,16 @@ export async function notifyCreatorContentPurchasePush(params: {
       body: `${buyerName} bought "${title}" for ${amountStr}`,
       data: {
         type: 'content_purchase',
+        entityId: contentId,
+        entityType: contentType,
+        creatorId: buyerId,
+        username: buyer?.username ?? '',
         contentId,
         contentType,
         amount: amountStr,
       },
-      channelId: 'wallet',
+      channelId: 'tips',
+      priority: 'high',
     });
   } catch (err) {
     console.error('content purchase push:', err);

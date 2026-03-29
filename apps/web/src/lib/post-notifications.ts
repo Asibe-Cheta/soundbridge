@@ -1,11 +1,16 @@
 /**
  * Post Notification Helpers
- * 
+ *
  * Helper functions to create notifications for post-related activities
- * (reactions, comments, connection requests)
+ * (reactions, comments, connection requests). Persists to `notifications` then
+ * sends instant Expo push (priority high, correct channelId) — WEB_TEAM_PUSH_NOTIFICATION_INSTANT.md
  */
 
 import { createServiceClient } from './supabase';
+import {
+  sendExpoPushIfAllowed,
+  type PushPreferenceKind,
+} from '@/src/lib/notification-push-preferences';
 
 interface CreatePostNotificationParams {
   userId: string;
@@ -23,6 +28,12 @@ interface CreatePostNotificationParams {
   relatedId?: string;
   actionUrl?: string;
   metadata?: Record<string, any>;
+  /** Actor user id for Expo `data.creatorId` (and preference checks). */
+  actorUserId?: string;
+  actorUsername?: string | null;
+  /** Optional overrides for push only; inbox still uses title/message. */
+  pushTitle?: string;
+  pushBody?: string;
 }
 
 function relatedTypeForNotification(
@@ -34,9 +45,143 @@ function relatedTypeForNotification(
   return null;
 }
 
+function pushKindForType(
+  type: CreatePostNotificationParams['type']
+): PushPreferenceKind | null {
+  switch (type) {
+    case 'post_reaction':
+    case 'repost':
+      return 'likes_on_posts';
+    case 'post_comment':
+    case 'comment_reply':
+      return 'comments_on_posts';
+    case 'new_follower':
+    case 'follow':
+      return 'new_followers';
+    case 'connection_request':
+    case 'connection_accepted':
+      return 'collaboration';
+    default:
+      return null;
+  }
+}
+
+function channelIdForType(
+  type: CreatePostNotificationParams['type']
+): 'social' | 'collaboration' {
+  if (type === 'connection_request' || type === 'connection_accepted') return 'collaboration';
+  return 'social';
+}
+
+function buildMobilePushData(
+  params: CreatePostNotificationParams
+): Record<string, unknown> & { type: string } {
+  const m = params.metadata ?? {};
+  const creatorId = params.actorUserId ?? '';
+  const username = params.actorUsername ?? '';
+  const postId = (m.postId ?? m.post_id) as string | undefined;
+
+  switch (params.type) {
+    case 'post_comment':
+      return {
+        type: 'comment',
+        entityId: params.relatedId ?? '',
+        entityType: 'comment',
+        creatorId,
+        username,
+        ...(postId ? { postId } : {}),
+      };
+    case 'comment_reply':
+      return {
+        type: 'comment',
+        entityId: params.relatedId ?? '',
+        entityType: 'comment',
+        creatorId,
+        username,
+        ...(postId ? { postId } : {}),
+        ...(m.commentId || m.comment_id
+          ? { parentCommentId: m.commentId ?? m.comment_id }
+          : {}),
+      };
+    case 'post_reaction':
+      return {
+        type: 'reaction',
+        entityId: params.relatedId ?? '',
+        entityType: 'post',
+        creatorId,
+        username,
+        reactionType: m.reaction_type ?? m.reactionType,
+      };
+    case 'new_follower':
+    case 'follow':
+      return {
+        type: 'new_follower',
+        entityId: params.relatedId ?? '',
+        entityType: 'user',
+        creatorId,
+        username,
+        followerId: m.followerId ?? params.relatedId,
+      };
+    case 'repost':
+      return {
+        type: 'repost',
+        entityId: params.relatedId ?? '',
+        entityType: 'post',
+        creatorId,
+        username,
+        ...(m.repost_id ? { repostId: m.repost_id } : {}),
+      };
+    case 'connection_request':
+      return {
+        type: 'connection_request',
+        entityId: params.relatedId ?? '',
+        entityType: 'connection_request',
+        creatorId,
+        username,
+        requesterId: params.actorUserId,
+      };
+    case 'connection_accepted':
+      return {
+        type: 'connection_accepted',
+        entityId: params.relatedId ?? '',
+        entityType: 'connection',
+        creatorId,
+        username,
+        ...(params.actorUserId ? { userId: params.actorUserId } : {}),
+      };
+    default:
+      return { type: params.type, creatorId, username };
+  }
+}
+
+function sendInstantPush(
+  supabase: ReturnType<typeof createServiceClient>,
+  params: CreatePostNotificationParams
+): void {
+  const kind = pushKindForType(params.type);
+  if (!kind) return;
+
+  if (params.actorUserId && params.userId === params.actorUserId) return;
+
+  const title = params.pushTitle ?? params.title;
+  const body = params.pushBody ?? params.message;
+  const data = buildMobilePushData(params);
+  const channelId = channelIdForType(params.type);
+
+  void sendExpoPushIfAllowed(supabase, params.userId, kind, {
+    title,
+    body,
+    data,
+    channelId,
+    priority: 'high',
+  }).catch((err) => {
+    console.error('[createPostNotification] instant push:', err);
+  });
+}
+
 /**
  * Persist to `notifications` (mobile in-app inbox + web bell) and best-effort `notification_logs`.
- * Always writes `notifications` first — mobile reads this table; previously we only wrote here when notification_logs failed.
+ * Then sends Expo push immediately (non-blocking) when preferences allow.
  */
 export async function createPostNotification(params: CreatePostNotificationParams) {
   try {
@@ -84,6 +229,8 @@ export async function createPostNotification(params: CreatePostNotificationParam
       console.warn('[createPostNotification] notification_logs (non-fatal):', logError.message);
     }
 
+    sendInstantPush(supabase, params);
+
     return { success: true, data: inboxRow };
   } catch (error: any) {
     console.error('❌ Unexpected error creating notification:', error);
@@ -92,16 +239,14 @@ export async function createPostNotification(params: CreatePostNotificationParam
 }
 
 /**
- * Notify post author when someone reacts to their post
- */
-/**
  * New follower — same row shape as push (`new_follower`) for mobile inbox.
  */
 export async function notifyNewFollower(
   followedUserId: string,
   followerId: string,
   followerDisplayName: string,
-  followerUsername: string | null
+  followerUsername: string | null,
+  opts?: { pushTitle?: string; pushBody?: string }
 ) {
   const atLabel = followerUsername ? `@${followerUsername}` : followerDisplayName;
   return createPostNotification({
@@ -111,6 +256,10 @@ export async function notifyNewFollower(
     message: `${atLabel} started following you`,
     relatedId: followerId,
     actionUrl: `/user/${followerId}`,
+    actorUserId: followerId,
+    actorUsername: followerUsername,
+    pushTitle: opts?.pushTitle,
+    pushBody: opts?.pushBody,
     metadata: {
       followerId,
       type: 'new_follower',
@@ -122,11 +271,14 @@ export async function notifyPostReaction(
   postAuthorId: string,
   reactorName: string,
   postId: string,
-  reactionType: string
+  reactionType: string,
+  opts: {
+    actorUserId: string;
+    actorUsername?: string | null;
+    pushTitle?: string;
+    pushBody?: string;
+  }
 ) {
-  // Don't notify if user reacted to their own post
-  // (This check should be done in the API endpoint before calling this)
-
   const reactionEmoji: Record<string, string> = {
     support: '👍',
     love: '❤️',
@@ -141,6 +293,10 @@ export async function notifyPostReaction(
     message: `${reactorName} reacted ${reactionEmoji[reactionType] || '👍'} to your post`,
     relatedId: postId,
     actionUrl: `/posts/${postId}`,
+    actorUserId: opts.actorUserId,
+    actorUsername: opts.actorUsername ?? null,
+    pushTitle: opts.pushTitle,
+    pushBody: opts.pushBody,
     metadata: {
       post_id: postId,
       postId,
@@ -157,7 +313,13 @@ export async function notifyPostComment(
   postAuthorId: string,
   commenterName: string,
   postId: string,
-  commentId: string
+  commentId: string,
+  opts: {
+    actorUserId: string;
+    actorUsername?: string | null;
+    pushTitle?: string;
+    pushBody?: string;
+  }
 ) {
   return createPostNotification({
     userId: postAuthorId,
@@ -166,6 +328,10 @@ export async function notifyPostComment(
     message: `${commenterName} commented on your post`,
     relatedId: commentId,
     actionUrl: `/posts/${postId}`,
+    actorUserId: opts.actorUserId,
+    actorUsername: opts.actorUsername ?? null,
+    pushTitle: opts.pushTitle,
+    pushBody: opts.pushBody,
     metadata: {
       post_id: postId,
       postId,
@@ -184,7 +350,13 @@ export async function notifyCommentReply(
   replierName: string,
   postId: string,
   commentId: string,
-  replyId: string
+  replyId: string,
+  opts: {
+    actorUserId: string;
+    actorUsername?: string | null;
+    pushTitle?: string;
+    pushBody?: string;
+  }
 ) {
   return createPostNotification({
     userId: commentAuthorId,
@@ -193,6 +365,10 @@ export async function notifyCommentReply(
     message: `${replierName} replied to your comment`,
     relatedId: replyId,
     actionUrl: `/posts/${postId}`,
+    actorUserId: opts.actorUserId,
+    actorUsername: opts.actorUsername ?? null,
+    pushTitle: opts.pushTitle,
+    pushBody: opts.pushBody,
     metadata: {
       post_id: postId,
       postId,
@@ -211,7 +387,10 @@ export async function notifyCommentReply(
 export async function notifyConnectionRequest(
   recipientId: string,
   requesterName: string,
-  requestId: string
+  requestId: string,
+  requesterUserId: string,
+  requesterUsername?: string | null,
+  opts?: { pushTitle?: string; pushBody?: string }
 ) {
   return createPostNotification({
     userId: recipientId,
@@ -220,6 +399,10 @@ export async function notifyConnectionRequest(
     message: `${requesterName} wants to connect with you`,
     relatedId: requestId,
     actionUrl: '/network',
+    actorUserId: requesterUserId,
+    actorUsername: requesterUsername ?? null,
+    pushTitle: opts?.pushTitle,
+    pushBody: opts?.pushBody,
     metadata: {
       request_id: requestId,
     },
@@ -232,7 +415,10 @@ export async function notifyConnectionRequest(
 export async function notifyConnectionAccepted(
   requesterId: string,
   accepterName: string,
-  connectionId: string
+  connectionId: string,
+  accepterUserId: string,
+  accepterUsername?: string | null,
+  opts?: { pushTitle?: string; pushBody?: string }
 ) {
   return createPostNotification({
     userId: requesterId,
@@ -241,6 +427,10 @@ export async function notifyConnectionAccepted(
     message: `${accepterName} accepted your connection request`,
     relatedId: connectionId,
     actionUrl: '/network',
+    actorUserId: accepterUserId,
+    actorUsername: accepterUsername ?? null,
+    pushTitle: opts?.pushTitle,
+    pushBody: opts?.pushBody,
     metadata: {
       connection_id: connectionId,
     },
@@ -254,11 +444,14 @@ export async function notifyPostRepost(
   postAuthorId: string,
   reposterName: string,
   postId: string,
-  repostId: string
+  repostId: string,
+  opts: {
+    actorUserId: string;
+    actorUsername?: string | null;
+    pushTitle?: string;
+    pushBody?: string;
+  }
 ) {
-  // Don't notify if user reposted their own post
-  // (This check should be done in the API endpoint before calling this)
-
   return createPostNotification({
     userId: postAuthorId,
     type: 'repost',
@@ -266,10 +459,13 @@ export async function notifyPostRepost(
     message: `${reposterName} reposted your post`,
     relatedId: postId,
     actionUrl: `/post/${postId}`,
+    actorUserId: opts.actorUserId,
+    actorUsername: opts.actorUsername ?? null,
+    pushTitle: opts.pushTitle,
+    pushBody: opts.pushBody,
     metadata: {
       post_id: postId,
       repost_id: repostId,
     },
   });
 }
-
