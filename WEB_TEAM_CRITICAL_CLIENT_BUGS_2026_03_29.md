@@ -155,3 +155,46 @@ After changes, run an end-to-end test signup with a fresh address and confirm in
 - Script: **`scripts/early-adopter-premium-grant-2026.sql`** — preview queries + commented apply blocks aligned with **`waitlist_premium_3mo_2026`** and the existing premium dates pattern. Uncomment and run in SQL Editor after verifying previews; for a single user (e.g. lagcitykeys), use section 4 with their **email** (replace placeholder).
 
 **Badge UI:** there was no `early_adopter` column in repo before this migration; mobile can read **`profiles.early_adopter`** (and existing **`subscription_tier`**) once migration is applied. If the app expected a separate “verification_badges” table, align that product-side — this migration is the profile flag for the cohort.
+
+---
+
+## Mobile team — status update (follow-up)
+
+### Bug 2 — Password reset (web **done**; Supabase **required** for E2E)
+
+Web flow is deployed. **Last steps in Supabase Dashboard:**
+
+1. **Authentication → Email Templates → “Reset password”** (or your custom recovery template): set the action / recovery link to exactly:
+   ```text
+   https://www.soundbridge.live/reset-password?token_hash={{ .TokenHash }}&type=recovery
+   ```
+2. **Authentication → URL Configuration → Redirect URLs**: add  
+   **`https://www.soundbridge.live`**  
+   (and any wildcard patterns you already use, e.g. `https://www.soundbridge.live/**`, if your project requires them).
+
+Until both are saved, links from email may still fail or redirect incorrectly.
+
+### Bug 3 — Google OAuth + biometric (**mobile done**)
+
+Mobile fix is shipped (OTA on iOS and Android): OAuth accounts (`app_metadata.provider !== 'email'`) skip the password prompt; biometrics use device + active Supabase session with an oauth marker in SecureStore.
+
+Web still offers optional **“Set a password”** under **Settings → Security** for OAuth-only users who want an email/password credential.
+
+### Bug 4 — Early adopter grants (**Supabase / ops**)
+
+1. Apply migration **`20260329120000_profiles_early_adopter.sql`** if not already applied.  
+2. Run preview queries, then **`scripts/early-adopter-premium-grant-steps-1-2-3.sql`** (or **`early-adopter-premium-grant-2026.sql`**) — STEP 3 for cohort; §4 in the older script for a **single email** (set **lagcitykeys**’ real signup email).  
+3. **Confirm directly with the user** once their row shows `premium` + `early_adopter` as expected.
+
+### Bug 1 — Email verification (**most urgent — Supabase config**)
+
+Blocked until Auth is configured:
+
+| Check | Action |
+|-------|--------|
+| Confirm signup | **Authentication → Email Templates → “Confirm signup”** — enabled / not suppressed |
+| SMTP | **SendGrid** connected under Auth → **SMTP** (or equivalent); credentials valid |
+| Site URL | **`https://www.soundbridge.live`** under **Authentication → URL Configuration** |
+| Test | New signup with a **fresh** address; check inbox + spam |
+
+Code paths (e.g. auth hook `confirmation_url` to `/auth/callback`) only help **after** Supabase actually sends the message.
