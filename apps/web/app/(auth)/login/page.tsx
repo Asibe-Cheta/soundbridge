@@ -740,7 +740,7 @@ function LoginContent() {
           {/* Forgot Password */}
           <div style={{ textAlign: 'right' }}>
             <Link
-              href="/reset-password"
+              href="/forgot-password"
               style={{
                 color: '#EC4899',
                 textDecoration: 'none',

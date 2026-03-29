@@ -14,6 +14,7 @@ import UploadEducationModal from '../../src/components/upload/UploadEducationMod
 import RightsVerificationForm from '../../src/components/upload/RightsVerificationForm';
 import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types/audio-quality';
 import { Toaster } from '../../src/components/ui/Toast';
+import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 import { toast as hotToast } from 'react-hot-toast';
 import { Upload, Music, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
 
@@ -110,7 +111,7 @@ export default function UnifiedUploadPage() {
   // Load user tier for quality selection
   const loadUserTier = async () => {
     try {
-      const response = await fetch('/api/user/subscription');
+      const response = await fetchWithSupabaseAuth('/api/user/subscription');
       if (response.ok) {
         const data = await response.json();
         setUserTier(data.tier || 'free');

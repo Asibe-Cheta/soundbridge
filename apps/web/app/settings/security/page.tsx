@@ -23,6 +23,7 @@ import {
   Info,
   ExternalLink
 } from 'lucide-react';
+import { createBrowserClient } from '@/src/lib/supabase';
 
 interface TwoFactorStatus {
   enabled: boolean;
@@ -274,6 +275,36 @@ export default function SecuritySettingsPage() {
   };
 
   // Download backup codes
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordMessage(null);
+    if (newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+    try {
+      setPasswordSaving(true);
+      const supabase = createBrowserClient();
+      const { error: updErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (updErr) {
+        setPasswordError(updErr.message);
+        return;
+      }
+      setPasswordMessage('Password saved. You can now use it to sign in or enable biometric unlock where supported.');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Failed to set password');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   const handleDownloadBackupCodes = () => {
     if (backupCodes) {
       const blob = new Blob(
@@ -356,6 +387,57 @@ export default function SecuritySettingsPage() {
             >
               <X size={20} />
             </button>
+          </div>
+        )}
+
+        {oauthOnly && (
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-6">
+            <div className="flex items-start gap-3 mb-4">
+              <Lock className="text-pink-400 flex-shrink-0 mt-1" size={22} />
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">Account password</h2>
+                <p className="text-white/70 text-sm">
+                  You signed in with a social account and don&apos;t have a password yet. Set one here to use email login
+                  or device security features that ask for a password.
+                </p>
+              </div>
+            </div>
+            <form onSubmit={handleSetPassword} className="space-y-4 max-w-md">
+              <div>
+                <label className="block text-white/80 text-sm mb-1">New password</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40"
+                  placeholder="At least 6 characters"
+                />
+              </div>
+              <div>
+                <label className="block text-white/80 text-sm mb-1">Confirm password</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40"
+                />
+              </div>
+              {passwordError && (
+                <p className="text-red-400 text-sm">{passwordError}</p>
+              )}
+              {passwordMessage && (
+                <p className="text-green-400 text-sm">{passwordMessage}</p>
+              )}
+              <button
+                type="submit"
+                disabled={passwordSaving}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 text-white font-medium disabled:opacity-50"
+              >
+                {passwordSaving ? 'Saving…' : 'Set password'}
+              </button>
+            </form>
           </div>
         )}
 

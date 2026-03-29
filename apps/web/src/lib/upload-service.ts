@@ -1,4 +1,5 @@
 import { createBrowserClient } from './supabase';
+import { fetchWithSupabaseAuth } from './fetch-with-supabase-auth';
 import type {
   UploadFile,
   UploadProgress,
@@ -170,24 +171,55 @@ export class AudioUploadService {
         canCancel: false
       });
 
-      const formData = new FormData();
-      formData.append('audioFile', file);
-
-      const response = await fetch('/api/upload/audio-file', {
+      const contentType = file.type || 'application/octet-stream';
+      const presignResponse = await fetchWithSupabaseAuth('/api/upload/audio-file/presign', {
         method: 'POST',
-        body: formData,
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileSize: file.size,
+          contentType,
+        }),
       });
 
-      const responseData = await response.json().catch(() => ({}));
-      if (!response.ok || !responseData?.success || !responseData?.url) {
+      const presignData = await presignResponse.json().catch(() => ({}));
+      if (!presignResponse.ok || !presignData?.success || !presignData?.uploadUrl || !presignData?.url) {
         return {
           success: false,
           error: {
             code: 'UPLOAD_ERROR',
-            message: responseData?.error || 'Audio upload failed',
-            details: responseData
-          }
+            message: presignData?.error || 'Audio upload failed',
+            details: presignData,
+          },
+        };
+      }
+
+      onProgress?.({
+        loaded: 0,
+        total: file.size,
+        percentage: 10,
+        stage: 'upload',
+        message: 'Uploading to storage...',
+        canCancel: false,
+      });
+
+      const putRes = await fetch(presignData.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': presignData.contentType || contentType,
+        },
+      });
+
+      if (!putRes.ok) {
+        const errText = await putRes.text().catch(() => '');
+        return {
+          success: false,
+          error: {
+            code: 'UPLOAD_ERROR',
+            message: `Direct upload failed (${putRes.status})`,
+            details: errText,
+          },
         };
       }
 
@@ -197,12 +229,12 @@ export class AudioUploadService {
         percentage: 100,
         stage: 'upload',
         message: 'Audio upload complete',
-        canCancel: false
+        canCancel: false,
       });
 
       return {
         success: true,
-        url: responseData.url
+        url: presignData.url as string,
       };
     } catch (error) {
       return {

@@ -24,6 +24,7 @@ import type { ExternalLink } from '../../../src/lib/types/external-links';
 import { PLATFORM_METADATA } from '../../../src/lib/external-links-validation';
 import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe, Star } from 'lucide-react';
 import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
+import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
 
 interface CreatorProfileClientProps {
   username: string;
@@ -148,7 +149,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
       if (!user) return;
       
       try {
-        const response = await fetch('/api/user/subscription');
+        const response = await fetchWithSupabaseAuth('/api/user/subscription');
         if (response.ok) {
           const data = await response.json();
           setUserTier(data.tier || 'free');

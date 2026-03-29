@@ -7,6 +7,7 @@ import { Footer } from '../../src/components/layout/Footer';
 import { Package, Download, Globe, Music, Mic, Calendar, ArrowLeft, Home, User, Settings, LogOut, Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 
 export default function DistributionPage() {
   const { user, loading, signOut } = useAuth();
@@ -24,7 +25,7 @@ export default function DistributionPage() {
 
   const loadUserTier = async () => {
     try {
-      const response = await fetch('/api/user/subscription');
+      const response = await fetchWithSupabaseAuth('/api/user/subscription');
       if (response.ok) {
         const data = await response.json();
         setUserTier(data.tier || 'free');

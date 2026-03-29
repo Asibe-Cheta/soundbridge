@@ -45,12 +45,9 @@ export async function middleware(req: NextRequest) {
     );
 
     // Define auth routes that should redirect authenticated users
-    const authRoutes = [
-      '/login', 
-      '/signup', 
-      '/register',
-      '/reset-password'
-    ];
+    // /reset-password is NOT listed here: recovery links must work even when a session exists
+    // (OAuth users resetting password while logged in). See app/(auth)/reset-password/page.tsx
+    const authRoutes = ['/login', '/signup', '/register', '/forgot-password'];
     
     const isAuthRoute = authRoutes.some(route => 
       req.nextUrl.pathname.startsWith(route)

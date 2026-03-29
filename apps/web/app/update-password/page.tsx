@@ -337,7 +337,7 @@ function UpdatePasswordContent() {
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Link href="/reset-password" style={{ textDecoration: 'none' }}>
+            <Link href="/forgot-password" style={{ textDecoration: 'none' }}>
               <button
                 style={{
                   background: 'linear-gradient(45deg, #DC2626, #EC4899)',

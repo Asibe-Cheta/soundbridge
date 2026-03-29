@@ -78,9 +78,12 @@ export async function POST(request: NextRequest) {
       
       // Build proper reset URL with token
       let resetUrl;
+      let authCallbackRecoveryUrl: string | undefined;
       if (email_data.token && email_data.token_hash) {
-        // Use Supabase's built-in reset URL structure
-        resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/auth/callback?token_hash=${email_data.token_hash}&type=recovery&next=/update-password`;
+        const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live';
+        // Deep-link: client verifies OTP then routes to /update-password (reset-password/page.tsx).
+        resetUrl = `${site}/reset-password?token_hash=${encodeURIComponent(email_data.token_hash)}&type=recovery`;
+        authCallbackRecoveryUrl = `${site}/auth/callback?token_hash=${encodeURIComponent(email_data.token_hash)}&type=recovery&next=/update-password`;
       } else if (email_data.redirect_to) {
         // Fallback to redirect_to if available
         resetUrl = email_data.redirect_to;
@@ -92,6 +95,7 @@ export async function POST(request: NextRequest) {
       dynamicData = {
         user_name: userEmail.split('@')[0] || 'User',
         reset_url: resetUrl,
+        ...(authCallbackRecoveryUrl ? { auth_callback_recovery_url: authCallbackRecoveryUrl } : {}),
         email: userEmail
       };
     } else {

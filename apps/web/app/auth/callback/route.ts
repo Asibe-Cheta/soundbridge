@@ -389,7 +389,7 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         console.error('Password reset error:', error);
-        return NextResponse.redirect(new URL(`/reset-password?error=reset_failed&message=${encodeURIComponent(error.message)}`, request.url));
+        return NextResponse.redirect(new URL(`/forgot-password?error=reset_failed&message=${encodeURIComponent(error.message)}`, request.url));
       }
 
       if (data.user) {

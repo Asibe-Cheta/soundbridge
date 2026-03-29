@@ -38,6 +38,43 @@ export function createSafeObjectKey(userId: string, originalFileName: string): s
   return `audio/${userId}/${timestamp}-${safeBase}-${unique}.${extension || 'mp3'}`;
 }
 
+/** JSON body for presigned direct-to-R2 upload (avoids Vercel request body limits). */
+export function validateAudioPresignPayload(body: {
+  fileName?: unknown;
+  fileSize?: unknown;
+  contentType?: unknown;
+}): { valid: true; fileName: string; fileSize: number; contentType: string } | { valid: false; message: string } {
+  const fileName = typeof body.fileName === 'string' ? body.fileName.trim() : '';
+  const fileSize = typeof body.fileSize === 'number' && Number.isFinite(body.fileSize) ? body.fileSize : NaN;
+  const contentType =
+    typeof body.contentType === 'string' && body.contentType.trim()
+      ? body.contentType.trim()
+      : 'application/octet-stream';
+
+  if (!fileName) {
+    return { valid: false, message: 'fileName is required.' };
+  }
+  if (fileSize <= 0 || !Number.isInteger(fileSize)) {
+    return { valid: false, message: 'fileSize must be a positive integer.' };
+  }
+  if (fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
+    return { valid: false, message: 'Audio file too large. Maximum allowed size is 50MB.' };
+  }
+
+  const extension = getFileExtension(fileName);
+  const mime = contentType.toLowerCase();
+
+  if (!ALLOWED_AUDIO_EXTENSIONS.has(extension)) {
+    return { valid: false, message: 'Invalid audio file extension. Allowed: .mp3, .wav, .m4a, .flac, .ogg' };
+  }
+
+  if (mime !== 'application/octet-stream' && !ALLOWED_AUDIO_MIME_TYPES.has(mime)) {
+    return { valid: false, message: `Invalid audio MIME type: ${mime}` };
+  }
+
+  return { valid: true, fileName, fileSize, contentType };
+}
+
 export function validateAudioUploadInput(file: File): { valid: true } | { valid: false; message: string } {
   const extension = getFileExtension(file.name);
   const mime = (file.type || '').toLowerCase();
