@@ -22,9 +22,39 @@ import type { CreatorProfile, AudioTrack, Event, Message } from '../../../src/li
 import type { AvailabilitySlot, CreateCollaborationRequestData } from '../../../src/lib/types/availability';
 import type { ExternalLink } from '../../../src/lib/types/external-links';
 import { PLATFORM_METADATA } from '../../../src/lib/external-links-validation';
-import { Music, Calendar, User, MessageCircle, Share2, MapPin, Send, UserPlus, UserMinus, AlertCircle, Loader2, Mic, Play, Pause, Instagram, Youtube, Cloud, Globe, Star } from 'lucide-react';
+import {
+  Music,
+  ListMusic,
+  Calendar,
+  User,
+  MessageCircle,
+  Share2,
+  MapPin,
+  Send,
+  UserPlus,
+  UserMinus,
+  AlertCircle,
+  Loader2,
+  Mic,
+  Play,
+  Pause,
+  Instagram,
+  Youtube,
+  Cloud,
+  Globe,
+  Star,
+  Disc,
+} from 'lucide-react';
 import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
 import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
+
+type CreatorAlbumCard = {
+  id: string;
+  title: string;
+  cover_image_url: string | null;
+  tracks_count: number | null;
+  created_at: string;
+};
 
 interface CreatorProfileClientProps {
   username: string;
@@ -32,7 +62,7 @@ interface CreatorProfileClientProps {
 }
 
 export function CreatorProfileClient({ username, initialCreator }: CreatorProfileClientProps) {
-  const [activeTab, setActiveTab] = useState('music');
+  const [activeTab, setActiveTab] = useState('drops');
   const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
   const [isMobile, setIsMobile] = useState(false);
   const [collaborationSubject, setCollaborationSubject] = useState('');
@@ -51,6 +81,9 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const [isLoadingFollow, setIsLoadingFollow] = useState(false);
   const [isLoadingMessage, setIsLoadingMessage] = useState(false);
   const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([]);
+  const [creatorAlbums, setCreatorAlbums] = useState<CreatorAlbumCard[]>([]);
+  const [albumsLoading, setAlbumsLoading] = useState(true);
+  const [albumsError, setAlbumsError] = useState<string | null>(null);
 
   
   // Availability states
@@ -66,12 +99,14 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
   const router = useRouter();
 
   const tabs = [
-    { id: 'music', label: 'Music', icon: Music },
+    { id: 'drops', label: 'Drops', icon: Music },
+    { id: 'tracks', label: 'Tracks', icon: ListMusic },
+    { id: 'albums', label: 'Albums', icon: Disc },
+    { id: 'about', label: 'About', icon: User },
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'podcasts', label: 'Podcasts', icon: Mic },
-    { id: 'about', label: 'About', icon: User },
     { id: 'collaborate', label: 'Collaborate', icon: Send },
-    { id: 'messages', label: 'Messages', icon: MessageCircle }
+    { id: 'messages', label: 'Messages', icon: MessageCircle },
   ];
 
 
@@ -609,7 +644,7 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
 
         {/* Tab Content */}
         <div className={`bg-gray-800 rounded-lg border border-gray-700 shadow-lg min-h-[400px] ${isMobile ? 'p-4' : 'p-6'}`}>
-          {activeTab === 'music' && (
+          {activeTab === 'drops' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Latest Release */}
               <div>
@@ -752,6 +787,126 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'tracks' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">All tracks</h2>
+                {tracks.length > 0 && (
+                  <Link
+                    href={`/creator/${username}/music`}
+                    className="text-red-400 hover:text-red-300 transition-colors text-sm font-medium flex items-center"
+                  >
+                    Open full page
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                )}
+              </div>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-red-500" />
+                  <span className="ml-3 text-gray-400">Loading tracks...</span>
+                </div>
+              ) : tracks.length === 0 ? (
+                <div className="bg-gray-700 rounded-lg p-8 border border-gray-600 text-center">
+                  <ListMusic className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No tracks yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-1">
+                  {tracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors group cursor-pointer border border-transparent hover:border-gray-600"
+                      onClick={() => handlePlayTrack(track)}
+                    >
+                      <div className="w-12 h-12 flex-shrink-0">
+                        {track.cover_art_url ? (
+                          <img
+                            src={track.cover_art_url}
+                            alt={track.title}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center">
+                            <Music className="h-5 w-5 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-white truncate">{track.title}</h4>
+                        <p className="text-sm text-gray-400 truncate">
+                          {track.genre || 'Music'} · {new Date(track.created_at || Date.now()).getFullYear()}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlayTrack(track);
+                        }}
+                        className="w-8 h-8 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        {currentTrack?.id === track.id && isPlaying ? (
+                          <Pause className="h-4 w-4 text-white" />
+                        ) : (
+                          <Play className="h-4 w-4 text-white" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'albums' && (
+            <div>
+              {albumsLoading ? (
+                <div className="flex justify-center items-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-red-500" />
+                  <span className="ml-3 text-gray-400">Loading albums...</span>
+                </div>
+              ) : albumsError ? (
+                <p className="text-center text-red-400 py-8">{albumsError}</p>
+              ) : creatorAlbums.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Disc className="h-12 w-12 text-gray-500 mb-4" />
+                  <p className="text-gray-400">No albums yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 md:gap-6">
+                  {creatorAlbums.map((album) => (
+                    <Link
+                      key={album.id}
+                      href={`/album/${album.id}`}
+                      className="group block rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                    >
+                      <div className="aspect-square w-full rounded-lg overflow-hidden bg-gray-700 border border-gray-600 mb-2 flex items-center justify-center group-hover:border-gray-500 transition-colors">
+                        {album.cover_image_url ? (
+                          <img
+                            src={album.cover_image_url}
+                            alt={album.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Disc className="h-14 w-14 text-gray-500" aria-hidden />
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-white truncate group-hover:text-red-400 transition-colors">
+                        {album.title}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {album.tracks_count ?? 0} track{(album.tracks_count ?? 0) !== 1 ? 's' : ''}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

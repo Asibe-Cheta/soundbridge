@@ -53,40 +53,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, description, cover_image_url, release_date, status, genre, is_public } = body;
 
-    // Get user's subscription tier
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
-
-    const tier = profile?.subscription_tier || 'free';
-
-    // Check tier limits
-    if (tier === 'free') {
-      return NextResponse.json(
-        { error: 'Albums feature is not available on Free tier. Upgrade to Premium or Unlimited.' },
-        { status: 403, headers: corsHeaders }
-      );
-    }
-
-    if (tier === 'premium') {
-      // Check if user already has 2 published albums
-      const { count } = await supabase
-        .from('albums')
-        .select('*', { count: 'exact', head: true })
-        .eq('creator_id', user.id)
-        .eq('status', 'published');
-
-      if (count && count >= 2) {
-        return NextResponse.json(
-          { error: 'Premium users can have maximum 2 published albums. Upgrade to Unlimited for more.' },
-          { status: 403, headers: corsHeaders }
-        );
-      }
-    }
-
-    // Create album
+    // Create album (all tiers; storage quota is enforced elsewhere on uploads)
     const { data: album, error: createError } = await supabase
       .from('albums')
       .insert({

@@ -106,25 +106,6 @@ export async function POST(
       );
     }
 
-    // Check tier limits for Premium users
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
-
-    const tier = profile?.subscription_tier || 'free';
-
-    if (tier === 'premium') {
-      // Premium tier limited to 7 tracks per album
-      if (album.tracks_count >= 7) {
-        return NextResponse.json(
-          { error: 'Premium users can have maximum 7 tracks per album. Upgrade to Unlimited for more.' },
-          { status: 403, headers: corsHeaders }
-        );
-      }
-    }
-
     // Determine track number if not provided
     let finalTrackNumber = track_number;
     if (!finalTrackNumber) {

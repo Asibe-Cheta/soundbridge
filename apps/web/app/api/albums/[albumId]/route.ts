@@ -170,41 +170,6 @@ export async function PUT(
       );
     }
 
-    // If changing status to 'published', validate tier limits
-    if (status === 'published' && album.status !== 'published') {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_tier')
-        .eq('id', user.id)
-        .single();
-
-      const tier = profile?.subscription_tier || 'free';
-
-      if (tier === 'free') {
-        return NextResponse.json(
-          { error: 'Albums feature is not available on Free tier. Upgrade to Premium or Unlimited.' },
-          { status: 403, headers: corsHeaders }
-        );
-      }
-
-      if (tier === 'premium') {
-        // Check if user already has 2 published albums (excluding current one)
-        const { count } = await supabase
-          .from('albums')
-          .select('*', { count: 'exact', head: true })
-          .eq('creator_id', user.id)
-          .eq('status', 'published')
-          .neq('id', albumId);
-
-        if (count && count >= 2) {
-          return NextResponse.json(
-            { error: 'Premium users can have maximum 2 published albums. Upgrade to Unlimited for more.' },
-            { status: 403, headers: corsHeaders }
-          );
-        }
-      }
-    }
-
     // Update album
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;

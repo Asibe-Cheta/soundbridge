@@ -78,8 +78,10 @@ export async function GET(
       query = query.eq('status', status);
     }
 
-    // Sort by published_at for published albums, created_at otherwise
-    if (status === 'published' || !isOwner) {
+    // Public profile: ORDER BY created_at DESC (spec). Owner drafts: created_at; published filter: published_at
+    if (!isOwner) {
+      query = query.order('created_at', { ascending: false });
+    } else if (status === 'published') {
       query = query.order('published_at', { ascending: false });
     } else {
       query = query.order('created_at', { ascending: false });
