@@ -472,23 +472,6 @@ export class AudioUploadService {
     }
   }
 
-  async flagContentForReview(title: string, reason: string, risk: 'low' | 'medium' | 'high') {
-    try {
-      await fetch('/api/copyright/flag', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          trackId: 'pending', // Will be updated after upload
-          reason: reason,
-          risk: risk,
-          flaggedBy: 'system'
-        })
-      });
-    } catch (error) {
-      console.error('Failed to flag content for review:', error);
-    }
-  }
-
   // Complete upload process with copyright checking and quality processing
   async uploadTrack(
     trackData: TrackUploadData,
@@ -532,8 +515,7 @@ export class AudioUploadService {
 
       if (copyrightCheck.requiresReview) {
         console.log('📋 Content flagged for review:', copyrightCheck.reason);
-        // Flag content for review but allow upload to proceed
-        await this.flagContentForReview(trackData.title, copyrightCheck.reason, copyrightCheck.risk);
+        // /api/copyright/flag requires a real track UUID — flag after DB insert (see below)
       }
 
       console.log('✅ Copyright check passed');
@@ -697,26 +679,48 @@ export class AudioUploadService {
         };
       }
 
+      // Pre-upload flow asked for manual review — flag now that we have a track id (API requires UUID)
+      if (copyrightCheck.requiresReview && dbResult.data?.id) {
+        try {
+          const risk: 'low' | 'medium' | 'high' = ['low', 'medium', 'high'].includes(
+            copyrightCheck.risk as string
+          )
+            ? (copyrightCheck.risk as 'low' | 'medium' | 'high')
+            : 'medium';
+          await fetch('/api/copyright/flag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              trackId: dbResult.data.id,
+              reason: `${trackData.title}: ${copyrightCheck.reason}`,
+              risk,
+            }),
+          });
+        } catch (flagErr) {
+          console.error('Failed to flag content for review:', flagErr);
+        }
+      }
+
       // Perform copyright check after successful upload
       try {
-        const copyrightCheck = await copyrightService.checkCopyrightViolation(
+        const postUploadCopyright = await copyrightService.checkCopyrightViolation(
           dbResult.data.id,
           userId,
           trackData.audioFile.file
         );
 
         // Handle copyright check results
-        if (copyrightCheck.isViolation) {
-          console.warn('Copyright violation detected:', copyrightCheck);
+        if (postUploadCopyright.isViolation) {
+          console.warn('Copyright violation detected:', postUploadCopyright);
           
           // Update copyright protection status based on recommendation
-          if (copyrightCheck.recommendation === 'block') {
+          if (postUploadCopyright.recommendation === 'block') {
             await copyrightService.updateCopyrightStatus(dbResult.data.id, 'blocked');
             
             // Optionally, you could delete the track here or mark it as blocked
             // For now, we'll just log the violation
             console.log('Track blocked due to copyright violation');
-          } else if (copyrightCheck.recommendation === 'flag') {
+          } else if (postUploadCopyright.recommendation === 'flag') {
             await copyrightService.updateCopyrightStatus(dbResult.data.id, 'flagged');
             console.log('Track flagged for copyright review');
           }
