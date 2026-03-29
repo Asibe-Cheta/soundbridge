@@ -13,6 +13,7 @@ import {
 import { Shield, AlertTriangle, Flag, Users, Clock, CheckCircle, X, Eye, User, Mail, Calendar, Filter, Search, RefreshCw, TrendingUp, FileText, Copyright, BarChart3, Settings, UserCheck, Music, Calendar as CalendarIcon, MessageSquare, DollarSign, Activity, Database, Server, Globe } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
+import { WaitlistEmailCampaignsPanel } from '../../../src/components/admin/WaitlistEmailCampaignsPanel';
 
 interface ReviewQueueItem {
   id: string;
@@ -2517,6 +2518,7 @@ function ItemDetailModal({
 
 // Waitlist Modal Component
 function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void }) {
+  const [waitlistSubTab, setWaitlistSubTab] = useState<'list' | 'email'>('list');
   const [waitlistData, setWaitlistData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -2639,14 +2641,51 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
               Total: {total} signups
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              className={`flex rounded-lg overflow-hidden border ${
+                theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setWaitlistSubTab('list')}
+                className={`px-3 py-1.5 text-sm font-medium ${
+                  waitlistSubTab === 'list'
+                    ? theme === 'dark'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-red-600 text-white'
+                    : theme === 'dark'
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Signups
+              </button>
+              <button
+                type="button"
+                onClick={() => setWaitlistSubTab('email')}
+                className={`px-3 py-1.5 text-sm font-medium border-l ${
+                  theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                } ${
+                  waitlistSubTab === 'email'
+                    ? 'bg-red-600 text-white'
+                    : theme === 'dark'
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Email
+              </button>
+            </div>
             <button
               onClick={exportToCSV}
+              disabled={waitlistSubTab !== 'list'}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 theme === 'dark'
                   ? 'bg-gray-700 text-white hover:bg-gray-600'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              } disabled:opacity-40`}
             >
               Export CSV
             </button>
@@ -2659,7 +2698,14 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
           </div>
         </div>
 
+        {waitlistSubTab === 'email' && (
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <WaitlistEmailCampaignsPanel theme={theme} />
+          </div>
+        )}
+
         {/* Search Bar */}
+        {waitlistSubTab === 'list' && (
         <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="relative">
             <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -2679,8 +2725,10 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
             />
           </div>
         </div>
+        )}
 
         {/* Content */}
+        {waitlistSubTab === 'list' && (
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -2789,9 +2837,10 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
             </div>
           )}
         </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {waitlistSubTab === 'list' && totalPages > 1 && (
           <div className={`px-6 py-4 border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} flex items-center justify-between`}>
             <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} signups

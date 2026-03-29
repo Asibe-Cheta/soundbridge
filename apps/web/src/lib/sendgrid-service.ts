@@ -638,7 +638,13 @@ export class SendGridService {
     to: string,
     subject: string,
     html: string,
-    options?: { from?: string; fromName?: string }
+    options?: {
+      from?: string;
+      fromName?: string;
+      replyTo?: string;
+      categories?: string[];
+      headers?: Record<string, string>;
+    }
   ): Promise<boolean> {
     try {
       const sgMail = await getSgMail();
@@ -648,14 +654,78 @@ export class SendGridService {
       await sgMail.send({
         to,
         from: { email: fromEmail, name: fromName },
-        replyTo: 'contact@soundbridge.live',
+        replyTo: options?.replyTo ?? 'contact@soundbridge.live',
         subject,
         html,
+        categories: options?.categories,
+        headers: {
+          'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          ...(options?.headers || {}),
+        },
       });
       return true;
     } catch (error) {
       console.error('Error sending HTML email:', error);
       return false;
     }
+  }
+
+  /**
+   * Batch HTML sends (SendGrid allows many messages per request; chunk to stay under limits).
+   */
+  static async sendHtmlEmailBatch(
+    messages: Array<{
+      to: string;
+      subject: string;
+      html: string;
+      from?: string;
+      fromName?: string;
+      replyTo?: string;
+      categories?: string[];
+    }>,
+    chunkSize = 100
+  ): Promise<{ sent: number; failed: number; errors: string[] }> {
+    const sgMail = await getSgMail();
+    if (!sgMail || messages.length === 0) {
+      return {
+        sent: 0,
+        failed: messages.length,
+        errors: [!sgMail ? 'SENDGRID_API_KEY missing' : 'no messages'],
+      };
+    }
+
+    const defaultFrom = this.fromEmail;
+    const defaultName = this.fromName;
+    const errors: string[] = [];
+    let sent = 0;
+    let failed = 0;
+
+    for (let i = 0; i < messages.length; i += chunkSize) {
+      const slice = messages.slice(i, i + chunkSize);
+      const payloads = slice.map((m) => ({
+        to: m.to,
+        from: { email: m.from ?? defaultFrom, name: m.fromName ?? defaultName },
+        replyTo: m.replyTo ?? 'contact@soundbridge.live',
+        subject: m.subject,
+        html: m.html,
+        categories: m.categories ?? ['waitlist_launch'],
+        headers: {
+          'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      }));
+
+      try {
+        await sgMail.send(payloads);
+        sent += payloads.length;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.push(`chunk ${i}-${i + slice.length}: ${msg}`);
+        failed += slice.length;
+      }
+    }
+
+    return { sent, failed, errors };
   }
 }

@@ -9,6 +9,13 @@ SENDGRID_SIGNUP_TEMPLATE_ID=your_signup_template_id
 SENDGRID_RESET_TEMPLATE_ID=your_reset_template_id
 SENDGRID_FROM_EMAIL=contact@soundbridge.live
 SENDGRID_FROM_NAME=SoundBridge Team
+# Waitlist launch broadcast (POST /api/admin/waitlist/broadcast-launch) — optional overrides
+# SENDGRID_WAITLIST_LAUNCH_FROM_EMAIL=contact@soundbridge.live
+# SENDGRID_WAITLIST_LAUNCH_FROM_NAME=Justice @ SoundBridge
+# Custom waitlist HTML (POST /api/admin/waitlist/send-custom); falls back to launch/from above
+# SENDGRID_WAITLIST_CUSTOM_FROM_EMAIL=
+# SENDGRID_WAITLIST_CUSTOM_FROM_NAME=
+# WAITLIST_BROADCAST_SECRET=set-to-require-x-waitlist-broadcast-secret-header-on-broadcast
 # Subscription upgrade (mobile/RevenueCat) - WEB_TEAM_SUBSCRIPTION_UPGRADE_EMAIL.md
 SENDGRID_SUBSCRIPTION_UPGRADE_TEMPLATE_ID=your_subscription_upgrade_template_id
 # Optional: separate templates per plan
