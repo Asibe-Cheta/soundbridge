@@ -369,6 +369,10 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
               Preview test (dry run)
             </button>
           </div>
+          <p className={`text-xs mt-2 ${mutedCls}`}>
+            Dry run does not email anyone—it only loads the HTML preview below. To receive a real message,
+            use <code className="text-xs">{LAUNCH_TEST_CONFIRM}</code> and <strong className="font-medium">Send test email only</strong>.
+          </p>
           {launchTestMeta && (
             <p className={`text-sm mt-3 ${dark ? 'text-amber-200' : 'text-amber-800'}`}>{launchTestMeta}</p>
           )}
