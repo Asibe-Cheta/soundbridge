@@ -254,12 +254,19 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         </p>
         <input
           type="password"
-          autoComplete="off"
+          name="sb-waitlist-broadcast-secret"
+          autoComplete="new-password"
           placeholder="Broadcast secret (only if configured)"
           value={broadcastSecret}
           onChange={(e) => setBroadcastSecret(e.target.value)}
           className={`mt-3 w-full max-w-md px-3 py-2 rounded-lg border text-sm ${inputCls}`}
         />
+        <p className={`text-xs mt-2 max-w-xl ${mutedCls}`}>
+          Must match <code className="text-xs">WAITLIST_BROADCAST_SECRET</code> for this exact deployment
+          (e.g. Production in Vercel only applies on your production URL). Test send uses this same field—if
+          you see a secret error, clear the field and paste again; password managers sometimes fill it with
+          your login password instead.
+        </p>
       </div>
 
       <div className={`rounded-lg border p-4 ${cardCls}`}>

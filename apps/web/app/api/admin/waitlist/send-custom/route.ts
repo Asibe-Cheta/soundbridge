@@ -3,19 +3,12 @@ import { requireAdmin } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { loadWaitlistRecipients } from '@/src/lib/waitlist-broadcast-recipients';
 import { substituteWaitlistPlaceholders } from '@/src/lib/waitlist-email-placeholders';
+import { waitlistBroadcastSecretError } from '@/src/lib/waitlist-broadcast-secret-check';
 
 const ADMIN_ROLES = ['admin', 'super_admin'] as const;
 const CONFIRM_PHRASE = 'WAITLIST_CUSTOM_SEND_NOW';
 const MAX_SUBJECT_LEN = 200;
 const MAX_HTML_LEN = 500_000;
-
-function checkBroadcastSecret(request: NextRequest): NextResponse | null {
-  const secret = process.env.WAITLIST_BROADCAST_SECRET?.trim();
-  if (secret && request.headers.get('x-waitlist-broadcast-secret') !== secret) {
-    return NextResponse.json({ error: 'Invalid broadcast secret' }, { status: 403 });
-  }
-  return null;
-}
 
 /**
  * POST /api/admin/waitlist/send-custom
@@ -31,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
-    const secretErr = checkBroadcastSecret(request);
+    const secretErr = waitlistBroadcastSecretError(request);
     if (secretErr) return secretErr;
 
     const body = await request.json().catch(() => ({}));

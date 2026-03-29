@@ -7,6 +7,7 @@ import {
   WAITLIST_LAUNCH_EMAIL_SUBJECT,
 } from '@/src/lib/emails/waitlist-launch-email';
 import { loadWaitlistRecipients } from '@/src/lib/waitlist-broadcast-recipients';
+import { waitlistBroadcastSecretError } from '@/src/lib/waitlist-broadcast-secret-check';
 
 const ADMIN_ROLES = ['admin', 'super_admin'] as const;
 
@@ -47,10 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
-    const secret = process.env.WAITLIST_BROADCAST_SECRET?.trim();
-    if (secret && request.headers.get('x-waitlist-broadcast-secret') !== secret) {
-      return NextResponse.json({ error: 'Invalid broadcast secret' }, { status: 403 });
-    }
+    const secretErr = waitlistBroadcastSecretError(request);
+    if (secretErr) return secretErr;
 
     const body = await request.json().catch(() => ({}));
     const dryRun = body?.dryRun === true;
