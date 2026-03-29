@@ -198,3 +198,38 @@ Blocked until Auth is configured:
 | Test | New signup with a **fresh** address; check inbox + spam |
 
 Code paths (e.g. auth hook `confirmation_url` to `/auth/callback`) only help **after** Supabase actually sends the message.
+
+---
+
+## Mobile team — email issues (Supabase configuration)
+
+Mobile uses `signUp` with `emailRedirectTo: 'soundbridge://auth/callback'`. **Supabase** must allow that redirect and actually send mail; no mobile code change required for the items below.
+
+### Issue #1 — Signup confirmation not sending
+
+Mobile app code is fine. Check **Supabase Dashboard**:
+
+| Step | Where | What to verify |
+|------|--------|----------------|
+| 1 | **Authentication → Providers → Email** | **Confirm email** toggle is **ON** |
+| 2 | **Authentication → Email Templates → Confirm signup** | Template saved; if using SendGrid hook, dynamic data uses `confirmation_url` (see `send-email` route). |
+| 3 | **Project Settings → Auth → SMTP** (or **Authentication** SMTP) | If using **custom SMTP** (SendGrid, Resend, etc.), credentials are valid and **Test** succeeds |
+| 4 | **Authentication → Logs** | Filter **signup**; look for errors on the email send step |
+| 5 | Rate limits | On **free** tier, Supabase **built-in** email is heavily rate-limited (~**4 emails/hour** per project). Use **custom SMTP** (e.g. Resend/SendGrid) for production volume |
+
+**Send Email hook:** If auth mail goes through `/api/auth/send-email`, the hook must be **enabled** in **Authentication → Auth Hooks**.
+
+### Issue #2 — Password reset link opens web instead of the app
+
+**Cause:** Supabase only honors `redirectTo` from `resetPasswordForEmail` if that URL is in the **allowed Redirect URLs** list. If `soundbridge://auth/callback` is not allowed, Supabase falls back to **Site URL** (`https://www.soundbridge.live`), so `{{ reset_url }}` in the email becomes a **web** URL.
+
+**Fix — Authentication → URL Configuration → Redirect URLs** — add:
+
+```text
+soundbridge://auth/callback
+soundbridge://**
+```
+
+After this, `resetPasswordForEmail(..., { redirectTo: 'soundbridge://auth/callback' })` is honored, recovery emails can contain the **deep link**, and the app can handle **PASSWORD_RECOVERY** in AuthContext. **No** mobile code or SendGrid HTML changes required for this specific issue—purely **Supabase URL allowlist**.
+
+**Web users** still use `https://www.soundbridge.live/...` recovery links; keep existing **https** redirect entries as well.

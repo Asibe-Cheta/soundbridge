@@ -184,7 +184,9 @@ export async function GET() {
     instructions: {
       note: 'This auth hook needs to be configured in Supabase Dashboard',
       url: 'https://supabase.com/dashboard → Authentication → Settings → Auth Hooks',
-      hookUrl: 'https://soundbridge.live/api/auth/send-email'
+      hookUrl: 'https://www.soundbridge.live/api/auth/send-email',
+      warning:
+        'Use www hostname. Apex soundbridge.live redirects (307); POST+redirect can break Supabase Auth hook delivery.',
     }
   });
 }
