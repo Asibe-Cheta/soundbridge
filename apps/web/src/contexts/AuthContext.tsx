@@ -16,6 +16,10 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_DEBUG = process.env.NODE_ENV !== 'production';
+const authDebug = (...args: unknown[]) => {
+  if (AUTH_DEBUG) console.log(...args);
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    console.log('AuthProvider: Initializing...');
+    authDebug('AuthProvider: Initializing...');
     
     // Get initial session with timeout protection (shorter timeout for mobile)
     const getInitialSession = async () => {
@@ -56,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const hasAuthCookie = document.cookie.includes('sb-') || 
                                     document.cookie.includes('supabase.auth.token');
               if (hasAuthCookie) {
-                console.log('AuthProvider: Timeout but cookies exist - keeping user state and waiting for onAuthStateChange');
+                authDebug('AuthProvider: Timeout but cookies exist - keeping user state and waiting for onAuthStateChange');
                 // Don't set user to null - let onAuthStateChange handle it
                 // This prevents redirect loops when getSession() is just slow
                 waitingForAuthEventRef.current = true;
@@ -70,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   }, 8000);
                 }
               } else {
-                console.log('AuthProvider: Timeout and no cookies - no session');
+                authDebug('AuthProvider: Timeout and no cookies - no session');
                 setLoading(false);
               }
             }
@@ -81,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       try {
-        console.log('AuthProvider: Getting initial session...');
+        authDebug('AuthProvider: Getting initial session...');
         
         // Smaller delay for mobile
         const delay = isMobile ? 100 : 200;
@@ -105,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const hasAuthCookie = document.cookie.includes('sb-') || 
                                   document.cookie.includes('supabase.auth.token');
             if (hasAuthCookie) {
-              console.log('AuthProvider: Timeout but cookies exist - waiting for onAuthStateChange');
+              authDebug('AuthProvider: Timeout but cookies exist - waiting for onAuthStateChange');
               // Don't set user to null - let onAuthStateChange handle it
               return;
             }
@@ -128,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Trust the session from getSession() - don't validate immediately
         // The session will be validated by onAuthStateChange if it's invalid
         if (session) {
-          console.log('AuthProvider: Session found:', session.user?.email);
+          authDebug('AuthProvider: Session found:', session.user?.email);
           setSession(session);
           setUser(session.user);
         } else {
@@ -137,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const hasAuthCookie = document.cookie.includes('sb-') || 
                                   document.cookie.includes('supabase.auth.token');
             if (hasAuthCookie) {
-              console.log('AuthProvider: No session but cookies exist - waiting for onAuthStateChange');
+              authDebug('AuthProvider: No session but cookies exist - waiting for onAuthStateChange');
               // Don't set user to null - let onAuthStateChange handle it
               waitingForAuthEventRef.current = true;
               if (!fallbackTimeoutRef.current) {
@@ -152,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return;
             }
           }
-          console.log('AuthProvider: No session found');
+          authDebug('AuthProvider: No session found');
           setSession(null);
           setUser(null);
         }
@@ -171,12 +175,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         // Always set loading to false in finally block
         if (!completed && !waitingForAuthEventRef.current) {
-          console.log('AuthProvider: Setting loading to false');
+          authDebug('AuthProvider: Setting loading to false');
           setLoading(false);
         } else {
           // Even if timeout completed, ensure loading is false
           if (!waitingForAuthEventRef.current) {
-            console.log('AuthProvider: Ensuring loading is false (timeout case)');
+            authDebug('AuthProvider: Ensuring loading is false (timeout case)');
             setLoading(false);
           }
         }
@@ -188,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        authDebug('Auth state changed:', event, session?.user?.email);
         
         // Handle sign out events
         if (event === 'SIGNED_OUT' || !session) {
@@ -206,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // For INITIAL_SESSION or SIGNED_IN events, trust the session immediately
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           // Set session immediately - don't validate to avoid delays
-          console.log('AuthProvider: Setting session from', event, 'event');
+          authDebug('AuthProvider: Setting session from', event, 'event');
           waitingForAuthEventRef.current = false;
           if (fallbackTimeoutRef.current) {
             clearTimeout(fallbackTimeoutRef.current);
@@ -322,7 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Check if it's a session_not_found error (403)
         if (error.message?.includes('session_not_found') || error.message?.includes('Session from session_id')) {
-          console.log('Session already invalid - clearing local state');
+          authDebug('Session already invalid - clearing local state');
         }
       }
       

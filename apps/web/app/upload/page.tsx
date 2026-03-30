@@ -21,6 +21,11 @@ import { Upload, Music, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play
 type ContentType = 'music' | 'podcast';
 
 export default function UnifiedUploadPage() {
+  const UPLOAD_DEBUG = process.env.NODE_ENV !== 'production';
+  const uploadDebug = (...args: unknown[]) => {
+    if (UPLOAD_DEBUG) console.log(...args);
+  };
+
   const { user, loading, signOut } = useAuth();
   const { theme } = useTheme();
   const [uploadState, uploadActions] = useAudioUpload();
@@ -183,7 +188,7 @@ export default function UnifiedUploadPage() {
   };
 
   const handleFileUpload = (file: File) => {
-    console.log('🎵 Processing file upload:', {
+    uploadDebug('🎵 Processing file upload:', {
       name: file.name,
       size: file.size,
       type: file.type,
@@ -204,13 +209,13 @@ export default function UnifiedUploadPage() {
     setOriginalSongTitle('');
     setIsOriginalConfirmed(false);
     
-    console.log('✅ File set in upload state, title auto-filled:', fileName);
+    uploadDebug('✅ File set in upload state, title auto-filled:', fileName);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      console.log('🎵 File selected:', {
+      uploadDebug('🎵 File selected:', {
         name: file.name,
         size: file.size,
         type: file.type,
@@ -346,7 +351,7 @@ export default function UnifiedUploadPage() {
 
         // ✅ ISRC matches ACRCloud detection - verification complete!
         // No need to check MusicBrainz since ACRCloud already confirmed it's valid
-        console.log('✅ ISRC verified via ACRCloud match');
+        uploadDebug('✅ ISRC verified via ACRCloud match');
         setIsrcVerificationStatus('success');
         setIsrcVerificationError(null);
         setIsrcVerificationData({
@@ -506,16 +511,16 @@ export default function UnifiedUploadPage() {
         return;
       }
 
-      console.log('📦 Staging audio for ACRCloud (storage-first, all sizes)', {
+      uploadDebug('📦 Staging audio for ACRCloud (storage-first, all sizes)', {
         fileName: file.name,
         fileSize: file.size,
         fileSizeMB: fileSizeMB.toFixed(2),
       });
 
       const audioFileUrl = await stageAudioForFingerprint(file);
-      console.log('✅ Staged for fingerprinting', { url: audioFileUrl, originalSize: file.size });
+      uploadDebug('✅ Staged for fingerprinting', { url: audioFileUrl, originalSize: file.size });
 
-      console.log('🎵 Sending fingerprint request (JSON + URL)', {
+      uploadDebug('🎵 Sending fingerprint request (JSON + URL)', {
         fileName: file.name,
         fileSizeMB: fileSizeMB.toFixed(2),
         hasArtistName: !!artistName?.trim(),
@@ -576,7 +581,7 @@ export default function UnifiedUploadPage() {
         // SECURITY: DO NOT auto-check "cover song" - user must consciously decide
         // The detected ISRC is stored in acrcloudData but NOT shown to user
 
-        console.log('🎵 ACRCloud match found:', {
+        uploadDebug('🎵 ACRCloud match found:', {
           detectedArtist: data.detectedArtist,
           detectedTitle: data.detectedTitle,
           artistMatch: data.artistMatch?.match
@@ -585,7 +590,7 @@ export default function UnifiedUploadPage() {
         // No match - appears to be unreleased/original
         setAcrcloudStatus('no_match');
         setAcrcloudData(data);
-        console.log('✅ ACRCloud: No match found - appears to be original/unreleased');
+        uploadDebug('✅ ACRCloud: No match found - appears to be original/unreleased');
       }
     } catch (error: any) {
       console.error('❌ ACRCloud fingerprinting error:', error);
@@ -696,8 +701,8 @@ export default function UnifiedUploadPage() {
 
   // Handle publish with validation
   const handlePublish = async () => {
-    console.log('🚀 Publish button clicked');
-    console.log('📊 Current state:', {
+    uploadDebug('🚀 Publish button clicked');
+    uploadDebug('📊 Current state:', {
       user: user?.id,
       audioFile: uploadState.audioFile?.name,
       title: title,
@@ -712,7 +717,7 @@ export default function UnifiedUploadPage() {
       return;
     }
 
-    console.log('✅ Validation passed');
+    uploadDebug('✅ Validation passed');
     // Show education modal first
     setShowEducationModal(true);
   };
@@ -724,7 +729,7 @@ export default function UnifiedUploadPage() {
     setShowRightsVerification(false);
     
     // Proceed with validation
-    console.log('🎯 Starting validation...');
+    uploadDebug('🎯 Starting validation...');
     setShowValidationModal(true);
     setIsValidating(true);
     setValidationResult(null);
