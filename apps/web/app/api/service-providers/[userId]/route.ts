@@ -4,6 +4,12 @@ import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/crea
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import {
+  enrichAvailabilityRow,
+  enrichServiceOfferingRow,
+  enrichServicePortfolioItemRow,
+  enrichServiceReviewRow,
+} from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
@@ -83,7 +89,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    response.offerings = offerings ?? [];
+    response.offerings = (offerings ?? []).map((o) =>
+      enrichServiceOfferingRow(o as Record<string, unknown>),
+    );
   }
 
   if (includes.has('portfolio')) {
@@ -127,7 +135,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    response.availability = availability ?? [];
+    response.availability = (availability ?? []).map((a) =>
+      enrichAvailabilityRow(a as Record<string, unknown>),
+    );
   }
 
   if (includes.has('reviews')) {
@@ -160,7 +170,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    response.reviews = reviews ?? [];
+    response.reviews = (reviews ?? []).map((r) =>
+      enrichServiceReviewRow(r as Record<string, unknown>),
+    );
   }
 
   return NextResponse.json(response, { headers: corsHeaders });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichServicePortfolioItemRow } from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
 
 type PortfolioItemRow = Database['public']['Tables']['service_portfolio_items']['Row'];
@@ -11,6 +12,8 @@ interface PortfolioItemPayload {
   thumbnailUrl?: string | null;
   caption?: string | null;
   displayOrder?: number | null;
+  sortOrder?: number | null;
+  display_order?: number | null;
 }
 
 const corsHeaders = {
@@ -51,7 +54,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 
-  return NextResponse.json({ items: data ?? [] }, { headers: corsHeaders });
+  const rows = (data ?? []) as Record<string, unknown>[];
+  return NextResponse.json(
+    { items: rows.map((r) => enrichServicePortfolioItemRow(r)!) },
+    { headers: corsHeaders },
+  );
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
@@ -68,23 +75,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const supabaseClient = supabase as any;
 
-  let body: PortfolioItemPayload;
+  let body: PortfolioItemPayload & Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400, headers: corsHeaders });
   }
 
-  if (!body.mediaUrl || typeof body.mediaUrl !== 'string') {
-    return NextResponse.json({ error: 'mediaUrl is required' }, { status: 400, headers: corsHeaders });
+  const mediaUrl = (body.media_url ?? body.mediaUrl) as string | undefined;
+  if (!mediaUrl || typeof mediaUrl !== 'string') {
+    return NextResponse.json({ error: 'mediaUrl (or media_url) is required' }, { status: 400, headers: corsHeaders });
   }
+
+  const orderRaw =
+    body.sort_order ?? body.sortOrder ?? body.display_order ?? body.displayOrder ?? 0;
+  const displayOrder =
+    typeof orderRaw === 'number' && Number.isFinite(orderRaw)
+      ? orderRaw
+      : parseInt(String(orderRaw), 10) || 0;
 
   const payload: PortfolioItemInsert = {
     provider_id: userId,
-    media_url: body.mediaUrl,
-    thumbnail_url: body.thumbnailUrl ?? null,
-    caption: body.caption ?? null,
-    display_order: body.displayOrder ?? 0,
+    media_url: mediaUrl,
+    thumbnail_url: (body.thumbnail_url ?? body.thumbnailUrl) as string | null | undefined ?? null,
+    caption: (body.caption as string | null | undefined) ?? null,
+    display_order: displayOrder,
   };
 
   const { data: insertData, error: insertError } = await supabaseClient
@@ -102,6 +117,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  return NextResponse.json({ item: data }, { status: 201, headers: corsHeaders });
+  return NextResponse.json(
+    { item: enrichServicePortfolioItemRow(data as unknown as Record<string, unknown>) },
+    { status: 201, headers: corsHeaders },
+  );
 }
 

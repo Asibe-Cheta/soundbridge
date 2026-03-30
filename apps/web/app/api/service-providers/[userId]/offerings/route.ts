@@ -3,19 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/creatorTypes';
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichServiceOfferingRow } from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
 
 type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
 type ServiceOfferingInsert = Database['public']['Tables']['service_offerings']['Insert'];
 
-interface CreateOfferingPayload {
-  title: string;
-  category: string;
-  description?: string | null;
-  rateAmount?: number | null;
-  rateCurrency?: string | null;
-  rateUnit?: string;
-  isActive?: boolean;
+function coerceNumber(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 const corsHeaders = {
@@ -57,7 +54,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 
-  return NextResponse.json({ offerings: data ?? [] }, { headers: corsHeaders });
+  const rows = (data ?? []) as Record<string, unknown>[];
+  return NextResponse.json(
+    { offerings: rows.map((r) => enrichServiceOfferingRow(r)!) },
+    { headers: corsHeaders },
+  );
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
@@ -74,22 +75,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const supabaseClient = supabase as any;
 
-  let body: CreateOfferingPayload;
+  let raw: Record<string, unknown>;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400, headers: corsHeaders });
   }
 
-  const {
-    title,
-    category,
-    description = null,
-    rateAmount = null,
-    rateCurrency = null,
-    rateUnit = 'hour',
-    isActive = true,
-  } = body;
+  const title = typeof raw.title === 'string' ? raw.title : '';
+  const category = typeof raw.category === 'string' ? raw.category : '';
+  const description =
+    raw.description === undefined || raw.description === null
+      ? null
+      : String(raw.description);
+  const rateAmount = coerceNumber(raw.rate_amount ?? raw.rateAmount);
+  const rateCurrency =
+    raw.rate_currency === undefined || raw.rate_currency === null
+      ? null
+      : String(raw.rate_currency);
+  const rateUnit = String(raw.rate_unit ?? raw.rateUnit ?? 'hour');
+  const isActive = raw.is_active !== undefined ? Boolean(raw.is_active) : raw.isActive !== undefined ? Boolean(raw.isActive) : true;
 
   if (!title || typeof title !== 'string') {
     return NextResponse.json({ error: 'title is required' }, { status: 400, headers: corsHeaders });
@@ -136,6 +141,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  return NextResponse.json({ offering: data }, { status: 201, headers: corsHeaders });
+  return NextResponse.json(
+    { offering: enrichServiceOfferingRow(data as unknown as Record<string, unknown>) },
+    { status: 201, headers: corsHeaders },
+  );
 }
 

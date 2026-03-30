@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichServiceBookingRow } from '@/src/lib/service-provider-response';
 import { calculateFees } from '@/src/lib/stripe-esg';
 import type { Database } from '@/src/lib/types';
 import { bookingNotificationService } from '@/src/services/BookingNotificationService';
@@ -36,9 +37,6 @@ export async function GET(
   }
 
   const supabaseClient = supabase as any;
-  type ServiceBookingRow = Database['public']['Tables']['service_bookings']['Row'];
-  type ServiceBookingInsert = Database['public']['Tables']['service_bookings']['Insert'];
-  type ServiceBookingUpdate = Database['public']['Tables']['service_bookings']['Update'];
 
   const { data, error: queryError } = await supabaseClient
     .from('service_bookings')
@@ -76,7 +74,10 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ bookings: data ?? [] }, { headers: corsHeaders });
+  const bookings = (data ?? []).map((row) =>
+    enrichServiceBookingRow(row as Record<string, unknown>),
+  );
+  return NextResponse.json({ bookings }, { headers: corsHeaders });
 }
 
 interface CreateBookingRequest {
@@ -399,6 +400,7 @@ export async function PATCH(
     console.error('Failed to queue booking status notification', notificationError);
   }
 
-  return NextResponse.json({ booking: hydratedBooking ?? updatedBooking }, { headers: corsHeaders });
+  const raw = (hydratedBooking ?? updatedBooking) as Record<string, unknown> | null;
+  return NextResponse.json({ booking: enrichServiceBookingRow(raw) }, { headers: corsHeaders });
 }
 

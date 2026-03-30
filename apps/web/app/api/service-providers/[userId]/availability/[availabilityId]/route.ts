@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichAvailabilityRow } from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
@@ -28,14 +29,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'You can only update your own availability slots' }, { status: 403, headers: corsHeaders });
   }
 
-  let body: Partial<{
-    startTime: string;
-    endTime: string;
-    isRecurring: boolean;
-    recurrenceRule: string | null;
-    isBookable: boolean;
-  }>;
-
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -55,40 +49,49 @@ export async function PATCH(
     updated_at: new Date().toISOString(),
   };
 
-  if (body.startTime !== undefined) {
-    const startDate = new Date(body.startTime);
+  const startStr = body.start_time ?? body.startTime;
+  const endStr = body.end_time ?? body.endTime;
+
+  if (startStr !== undefined) {
+    const startDate = new Date(String(startStr));
     if (Number.isNaN(startDate.getTime())) {
-      return NextResponse.json({ error: 'startTime must be a valid ISO string' }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: 'start_time must be a valid ISO string' }, { status: 400, headers: corsHeaders });
     }
     updatePayload.start_time = startDate.toISOString();
   }
 
-  if (body.endTime !== undefined) {
-    const endDate = new Date(body.endTime);
+  if (endStr !== undefined) {
+    const endDate = new Date(String(endStr));
     if (Number.isNaN(endDate.getTime())) {
-      return NextResponse.json({ error: 'endTime must be a valid ISO string' }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: 'end_time must be a valid ISO string' }, { status: 400, headers: corsHeaders });
     }
     updatePayload.end_time = endDate.toISOString();
   }
 
-  if (body.startTime && body.endTime) {
-    const startDate = new Date(body.startTime);
-    const endDate = new Date(body.endTime);
+  if (startStr !== undefined && endStr !== undefined) {
+    const startDate = new Date(String(startStr));
+    const endDate = new Date(String(endStr));
     if (endDate <= startDate) {
-      return NextResponse.json({ error: 'endTime must be after startTime' }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: 'end_time must be after start_time' }, { status: 400, headers: corsHeaders });
     }
   }
 
-  if (body.isRecurring !== undefined) {
-    updatePayload.is_recurring = body.isRecurring;
+  if (body.is_recurring !== undefined || body.isRecurring !== undefined) {
+    updatePayload.is_recurring = Boolean(body.is_recurring ?? body.isRecurring);
   }
 
-  if (body.recurrenceRule !== undefined) {
-    updatePayload.recurrence_rule = body.recurrenceRule;
+  if (body.recurrence !== undefined || body.recurrenceRule !== undefined) {
+    const raw = body.recurrence ?? body.recurrenceRule;
+    updatePayload.recurrence_rule =
+      raw === null || raw === undefined
+        ? null
+        : String(raw).trim() === ''
+          ? null
+          : String(raw);
   }
 
-  if (body.isBookable !== undefined) {
-    updatePayload.is_bookable = body.isBookable;
+  if (body.is_bookable !== undefined || body.isBookable !== undefined) {
+    updatePayload.is_bookable = Boolean(body.is_bookable ?? body.isBookable);
   }
 
   const { data: updateData, error: updateError } = await supabaseClient
@@ -108,7 +111,10 @@ export async function PATCH(
     );
   }
 
-  return NextResponse.json({ availability: data }, { headers: corsHeaders });
+  return NextResponse.json(
+    { availability: enrichAvailabilityRow(data as unknown as Record<string, unknown>) },
+    { headers: corsHeaders },
+  );
 }
 
 export async function DELETE(

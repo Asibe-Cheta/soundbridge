@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichAvailabilityRow } from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
-
-interface AvailabilityPayload {
-  startTime: string;
-  endTime: string;
-  isRecurring?: boolean;
-  recurrenceRule?: string | null;
-  isBookable?: boolean;
-}
 
 type AvailabilityRow = Database['public']['Tables']['service_provider_availability']['Row'];
 type AvailabilityInsert = Database['public']['Tables']['service_provider_availability']['Insert'];
@@ -51,7 +44,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 
-  return NextResponse.json({ availability: data ?? [] }, { headers: corsHeaders });
+  const rows = (data ?? []) as Record<string, unknown>[];
+  return NextResponse.json(
+    { availability: rows.map((r) => enrichAvailabilityRow(r)!) },
+    { headers: corsHeaders },
+  );
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
@@ -68,21 +65,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const supabaseClient = supabase as any;
 
-  let body: AvailabilityPayload;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400, headers: corsHeaders });
   }
 
-  const { startTime, endTime, isRecurring = false, recurrenceRule = null, isBookable = true } = body;
+  const startTime = body.start_time ?? body.startTime;
+  const endTime = body.end_time ?? body.endTime;
+  const recurrenceRaw = body.recurrence ?? body.recurrenceRule ?? null;
+  const recurrenceRule =
+    recurrenceRaw === null || recurrenceRaw === undefined
+      ? null
+      : String(recurrenceRaw).trim() === ''
+        ? null
+        : String(recurrenceRaw);
+  const isRecurring = Boolean(
+    body.is_recurring ?? body.isRecurring ?? (recurrenceRule && recurrenceRule.toLowerCase() !== 'none'),
+  );
+  const isBookable = body.is_bookable !== undefined ? Boolean(body.is_bookable) : body.isBookable !== undefined ? Boolean(body.isBookable) : true;
 
   if (!startTime || !endTime) {
-    return NextResponse.json({ error: 'startTime and endTime are required' }, { status: 400, headers: corsHeaders });
+    return NextResponse.json(
+      { error: 'start_time/end_time (or startTime/endTime) are required' },
+      { status: 400, headers: corsHeaders },
+    );
   }
 
-  const startDate = new Date(startTime);
-  const endDate = new Date(endTime);
+  const startDate = new Date(String(startTime));
+  const endDate = new Date(String(endTime));
 
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
     return NextResponse.json({ error: 'startTime and endTime must be valid ISO strings' }, { status: 400, headers: corsHeaders });
@@ -117,6 +129,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  return NextResponse.json({ availability: data }, { status: 201, headers: corsHeaders });
+  return NextResponse.json(
+    { availability: enrichAvailabilityRow(data as unknown as Record<string, unknown>) },
+    { status: 201, headers: corsHeaders },
+  );
 }
 

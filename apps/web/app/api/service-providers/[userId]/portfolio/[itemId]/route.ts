@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichServicePortfolioItemRow } from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
@@ -34,9 +35,13 @@ export async function PATCH(
 
   let body: Partial<{
     mediaUrl: string;
+    media_url: string;
     thumbnailUrl: string | null;
+    thumbnail_url: string | null;
     caption: string | null;
     displayOrder: number | null;
+    display_order: number | null;
+    sort_order: number | null;
   }>;
 
   try {
@@ -87,7 +92,10 @@ export async function PATCH(
     );
   }
 
-  return NextResponse.json({ item: data }, { headers: corsHeaders });
+  return NextResponse.json(
+    { item: enrichServicePortfolioItemRow(data as unknown as Record<string, unknown>) },
+    { headers: corsHeaders },
+  );
 }
 
 export async function DELETE(

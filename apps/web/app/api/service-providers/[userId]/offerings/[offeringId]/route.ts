@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/creatorTypes';
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { enrichServiceOfferingRow } from '@/src/lib/service-provider-response';
 import type { Database } from '@/src/lib/types';
+
+function coerceNumber(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,16 +41,7 @@ export async function PATCH(
   type ServiceOfferingRow = Database['public']['Tables']['service_offerings']['Row'];
   type ServiceOfferingUpdate = Database['public']['Tables']['service_offerings']['Update'];
 
-  let body: Partial<{
-    title: string;
-    category: string;
-    description: string | null;
-    rateAmount: number | null;
-    rateCurrency: string | null;
-    rateUnit: string;
-    isActive: boolean;
-  }>;
-
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -59,49 +57,55 @@ export async function PATCH(
   };
 
   if (body.title !== undefined) {
-    if (!body.title || typeof body.title !== 'string') {
+    const t = typeof body.title === 'string' ? body.title : '';
+    if (!t) {
       return NextResponse.json({ error: 'title must be a non-empty string' }, { status: 400, headers: corsHeaders });
     }
-    updatePayload.title = body.title.trim();
+    updatePayload.title = t.trim();
   }
 
   if (body.category !== undefined) {
-    if (!isValidServiceCategory(body.category)) {
+    const c = typeof body.category === 'string' ? body.category : '';
+    if (!isValidServiceCategory(c)) {
       return NextResponse.json(
-        { error: `Invalid service category: ${body.category}`, validCategories: SERVICE_CATEGORIES },
+        { error: `Invalid service category: ${c}`, validCategories: SERVICE_CATEGORIES },
         { status: 400, headers: corsHeaders },
       );
     }
-    updatePayload.category = body.category;
+    updatePayload.category = c;
   }
 
   if (body.description !== undefined) {
-    updatePayload.description = body.description;
+    updatePayload.description =
+      body.description === null ? null : String(body.description);
   }
 
-  if (body.rateAmount !== undefined) {
-    if (body.rateAmount !== null && typeof body.rateAmount !== 'number') {
-      return NextResponse.json({ error: 'rateAmount must be a number or null' }, { status: 400, headers: corsHeaders });
+  if (body.rate_amount !== undefined || body.rateAmount !== undefined) {
+    const raw = body.rate_amount ?? body.rateAmount;
+    if (raw !== null && raw !== undefined && typeof raw !== 'number' && typeof raw !== 'string') {
+      return NextResponse.json({ error: 'rate_amount must be a number or null' }, { status: 400, headers: corsHeaders });
     }
-    updatePayload.rate_amount = body.rateAmount;
+    updatePayload.rate_amount = coerceNumber(raw);
   }
 
-  if (body.rateCurrency !== undefined) {
-    if (body.rateCurrency && !isSupportedCurrency(body.rateCurrency)) {
+  if (body.rate_currency !== undefined || body.rateCurrency !== undefined) {
+    const rc = body.rate_currency ?? body.rateCurrency;
+    const rcStr = rc === null || rc === undefined ? null : String(rc);
+    if (rcStr && !isSupportedCurrency(rcStr)) {
       return NextResponse.json(
-        { error: `Unsupported currency ${body.rateCurrency}`, validCurrencies: SUPPORTED_CURRENCIES },
+        { error: `Unsupported currency ${rcStr}`, validCurrencies: SUPPORTED_CURRENCIES },
         { status: 400, headers: corsHeaders },
       );
     }
-    updatePayload.rate_currency = body.rateCurrency || null;
+    updatePayload.rate_currency = rcStr;
   }
 
-  if (body.rateUnit !== undefined) {
-    updatePayload.rate_unit = body.rateUnit || 'hour';
+  if (body.rate_unit !== undefined || body.rateUnit !== undefined) {
+    updatePayload.rate_unit = String(body.rate_unit ?? body.rateUnit ?? 'hour');
   }
 
-  if (body.isActive !== undefined) {
-    updatePayload.is_active = body.isActive;
+  if (body.is_active !== undefined || body.isActive !== undefined) {
+    updatePayload.is_active = Boolean(body.is_active ?? body.isActive);
   }
 
   const { data: updateData, error: updateError } = await supabaseClient
@@ -121,7 +125,10 @@ export async function PATCH(
     );
   }
 
-  return NextResponse.json({ offering: data }, { headers: corsHeaders });
+  return NextResponse.json(
+    { offering: enrichServiceOfferingRow(data as unknown as Record<string, unknown>) },
+    { headers: corsHeaders },
+  );
 }
 
 export async function DELETE(

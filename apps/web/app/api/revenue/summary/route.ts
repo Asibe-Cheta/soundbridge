@@ -72,54 +72,99 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get recent transactions
-    const { data: transactions, error: transactionsError } = await supabase
+    const earningTypes = ['tip_received', 'gig_payment', 'content_sale', 'deposit'] as const;
+
+    const { data: completedEarnings, error: completedErr } = await supabase
+      .from('wallet_transactions')
+      .select('amount, currency')
+      .eq('user_id', user.id)
+      .in('transaction_type', [...earningTypes])
+      .eq('status', 'completed');
+
+    if (completedErr) {
+      console.error('Error fetching completed earnings:', completedErr);
+      return NextResponse.json(
+        { error: 'Failed to fetch earnings' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const { data: pendingEarningsRows, error: pendingErr } = await supabase
+      .from('wallet_transactions')
+      .select('amount, currency')
+      .eq('user_id', user.id)
+      .in('transaction_type', [...earningTypes])
+      .eq('status', 'pending');
+
+    if (pendingErr) {
+      console.error('Error fetching pending earnings:', pendingErr);
+      return NextResponse.json(
+        { error: 'Failed to fetch pending earnings' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const walletCurrency = wallet?.currency || 'USD',
+      sumAmount = (rows: { amount: number | null; currency?: string | null }[] | null) =>
+        (rows ?? []).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+    const totalEarnings = sumAmount(completedEarnings ?? []);
+    const pendingEarnings = sumAmount(pendingEarningsRows ?? []);
+
+    const { data: lastPayoutRow, error: payoutErr } = await supabase
+      .from('wallet_transactions')
+      .select('amount, created_at')
+      .eq('user_id', user.id)
+      .eq('transaction_type', 'payout')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (payoutErr) {
+      console.error('Error fetching last payout:', payoutErr);
+    }
+
+    const { data: recentTx, error: recentErr } = await supabase
       .from('wallet_transactions')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (transactionsError) {
-      console.error('Error fetching transactions:', transactionsError);
-      return NextResponse.json(
-        { error: 'Failed to fetch transaction history' },
-        { status: 500, headers: corsHeaders }
-      );
+    if (recentErr) {
+      console.error('Error fetching recent transactions:', recentErr);
     }
 
-    // Calculate totals
-    const totalEarnings = transactions
-      ?.filter(t => t.type === 'earning' && t.status === 'completed')
-      .reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-
-    const pendingEarnings = transactions
-      ?.filter(t => t.type === 'earning' && t.status === 'pending')
-      .reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-
-    const lastPayout = transactions
-      ?.find(t => t.type === 'withdrawal' && t.status === 'completed');
-
-    // Calculate next payout date (assuming monthly payouts on the 15th)
     const now = new Date();
     const nextPayoutDate = new Date(now.getFullYear(), now.getMonth() + 1, 15);
 
     return NextResponse.json(
       {
         success: true,
+        user_id: user.id,
+        total_earnings: totalEarnings,
+        pending_earnings: pendingEarnings,
+        last_payout: lastPayoutRow?.amount ?? null,
+        last_payout_date: lastPayoutRow?.created_at ?? null,
+        next_payout_date: nextPayoutDate.toISOString(),
+        currency: walletCurrency,
         revenue: {
-          totalEarnings: totalEarnings,
-          pendingEarnings: pendingEarnings,
+          totalEarnings,
+          pendingEarnings,
           availableBalance: wallet?.balance || 0,
-          currency: wallet?.currency || 'USD',
-          lastPayout: lastPayout ? {
-            amount: lastPayout.amount,
-            date: lastPayout.created_at
-          } : null,
+          currency: walletCurrency,
+          lastPayout: lastPayoutRow
+            ? {
+                amount: lastPayoutRow.amount,
+                date: lastPayoutRow.created_at,
+              }
+            : null,
           nextPayout: {
-            date: nextPayoutDate.toISOString()
-          }
-        }
+            date: nextPayoutDate.toISOString(),
+          },
+          recentTransactions: recentTx ?? [],
+        },
       },
       { status: 200, headers: corsHeaders }
     );
