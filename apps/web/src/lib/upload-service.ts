@@ -12,6 +12,22 @@ import { copyrightService } from './copyright-service';
 import type { AudioQualitySettings } from './types/audio-quality';
 import { audioProcessingService } from './audio-processing-service';
 
+function isLikelyR2CorsFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('load failed') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network request failed')
+  );
+}
+
+function r2CorsHelpMessage(context: 'upload' | 'staging'): string {
+  const label = context === 'staging' ? 'staging upload' : 'audio upload';
+  return `${label} blocked by Cloudflare R2 CORS (preflight). Ask web team to allow origin https://www.soundbridge.live with methods GET, PUT, HEAD and AllowedHeaders ['*'] on bucket soundbridge-audio.`;
+}
+
 // Audio upload service for SoundBridge
 export class AudioUploadService {
   private _supabase: ReturnType<typeof createBrowserClient> | null = null;
@@ -203,21 +219,37 @@ export class AudioUploadService {
         canCancel: false,
       });
 
-      const putRes = await fetch(presignData.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': presignData.contentType || contentType,
-        },
-      });
+      let putRes: Response;
+      try {
+        putRes = await fetch(presignData.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': presignData.contentType || contentType,
+          },
+        });
+      } catch (error) {
+        if (isLikelyR2CorsFailure(error)) {
+          return {
+            success: false,
+            error: {
+              code: 'UPLOAD_ERROR',
+              message: r2CorsHelpMessage('upload'),
+              details: error,
+            },
+          };
+        }
+        throw error;
+      }
 
       if (!putRes.ok) {
         const errText = await putRes.text().catch(() => '');
+        const r2Cors403 = putRes.status === 403;
         return {
           success: false,
           error: {
             code: 'UPLOAD_ERROR',
-            message: `Direct upload failed (${putRes.status})`,
+            message: r2Cors403 ? r2CorsHelpMessage('upload') : `Direct upload failed (${putRes.status})`,
             details: errText,
           },
         };

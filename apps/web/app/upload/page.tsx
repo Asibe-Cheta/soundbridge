@@ -430,6 +430,20 @@ export default function UnifiedUploadPage() {
   // ACRCloud fingerprinting — aligned with mobile: always storage-first, then JSON { audioFileUrl, artistName }.
   // Mobile uploads to Supabase Storage and POSTs the public URL; web uploads via POST /api/upload/audio-file (R2)
   // so the fingerprint route never receives a huge multipart body (avoids Vercel limits for all file sizes).
+  const isLikelyR2CorsFailure = (error: unknown): boolean => {
+    if (!(error instanceof Error)) return false;
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes('load failed') ||
+      msg.includes('failed to fetch') ||
+      msg.includes('networkerror') ||
+      msg.includes('network request failed')
+    );
+  };
+
+  const r2CorsHelpMessage =
+    'Cloudflare R2 CORS blocked staging upload (preflight). Web team needs to allow https://www.soundbridge.live with methods GET, PUT, HEAD and AllowedHeaders ["*"] on bucket soundbridge-audio.';
+
   const stageAudioForFingerprint = async (file: File): Promise<string> => {
     const contentType = file.type || 'application/octet-stream';
     const presignResponse = await fetchWithSupabaseAuth('/api/upload/audio-file/presign', {
@@ -446,15 +460,26 @@ export default function UnifiedUploadPage() {
       throw new Error(presignData?.error || `Failed to prepare staging upload (${presignResponse.status})`);
     }
 
-    const putRes = await fetch(presignData.uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': presignData.contentType || contentType,
-      },
-    });
+    let putRes: Response;
+    try {
+      putRes = await fetch(presignData.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': presignData.contentType || contentType,
+        },
+      });
+    } catch (error) {
+      if (isLikelyR2CorsFailure(error)) {
+        throw new Error(r2CorsHelpMessage);
+      }
+      throw error;
+    }
     if (!putRes.ok) {
       const errText = await putRes.text().catch(() => '');
+      if (putRes.status === 403) {
+        throw new Error(r2CorsHelpMessage);
+      }
       throw new Error(`Direct storage upload failed (${putRes.status}) ${errText}`.trim());
     }
 
@@ -565,7 +590,9 @@ export default function UnifiedUploadPage() {
     } catch (error: any) {
       console.error('❌ ACRCloud fingerprinting error:', error);
       setAcrcloudStatus('error');
-      setAcrcloudError(error.message || 'Fingerprinting failed. You can still proceed with upload.');
+      setAcrcloudError(
+        error.message || 'Fingerprinting failed. You can still proceed with upload.'
+      );
       setAcrcloudData({ requiresManualReview: true });
     }
   };
