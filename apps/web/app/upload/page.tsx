@@ -430,6 +430,37 @@ export default function UnifiedUploadPage() {
   // ACRCloud fingerprinting — aligned with mobile: always storage-first, then JSON { audioFileUrl, artistName }.
   // Mobile uploads to Supabase Storage and POSTs the public URL; web uploads via POST /api/upload/audio-file (R2)
   // so the fingerprint route never receives a huge multipart body (avoids Vercel limits for all file sizes).
+  const stageAudioForFingerprint = async (file: File): Promise<string> => {
+    const contentType = file.type || 'application/octet-stream';
+    const presignResponse = await fetchWithSupabaseAuth('/api/upload/audio-file/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileSize: file.size,
+        contentType,
+      }),
+    });
+    const presignData = await presignResponse.json().catch(() => ({}));
+    if (!presignResponse.ok || !presignData?.success || !presignData?.uploadUrl || !presignData?.url) {
+      throw new Error(presignData?.error || `Failed to prepare staging upload (${presignResponse.status})`);
+    }
+
+    const putRes = await fetch(presignData.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': presignData.contentType || contentType,
+      },
+    });
+    if (!putRes.ok) {
+      const errText = await putRes.text().catch(() => '');
+      throw new Error(`Direct storage upload failed (${putRes.status}) ${errText}`.trim());
+    }
+
+    return presignData.url as string;
+  };
+
   const fingerprintAudio = async (file: File) => {
     if (contentType !== 'music') {
       // Only fingerprint music tracks
@@ -456,24 +487,7 @@ export default function UnifiedUploadPage() {
         fileSizeMB: fileSizeMB.toFixed(2),
       });
 
-      const stageForm = new FormData();
-      stageForm.append('audioFile', file);
-      const uploadResponse = await fetchWithSupabaseAuth('/api/upload/audio-file', {
-        method: 'POST',
-        body: stageForm,
-      });
-      const uploadResult = await uploadResponse.json().catch(() => ({}));
-      if (!uploadResponse.ok || !uploadResult?.success || !uploadResult?.url) {
-        console.error('❌ Staging upload for fingerprint failed', uploadResult);
-        setAcrcloudStatus('error');
-        setAcrcloudError(
-          uploadResult?.error || 'Could not stage file for verification. You can still try publishing.'
-        );
-        setAcrcloudData({ requiresManualReview: true });
-        return;
-      }
-
-      const audioFileUrl = uploadResult.url as string;
+      const audioFileUrl = await stageAudioForFingerprint(file);
       console.log('✅ Staged for fingerprinting', { url: audioFileUrl, originalSize: file.size });
 
       console.log('🎵 Sending fingerprint request (JSON + URL)', {
