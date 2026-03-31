@@ -140,6 +140,8 @@ export default async function TrackPage({ params }: Props) {
 
   const isOwner = !!user && user.id === track.creator_id;
   const creatorName = track.creator?.display_name || track.creator?.username || 'Unknown Artist';
+  const mixedByName = (track as { dj_name?: string | null }).dj_name || null;
+  const isMixtape = !!(track as { is_mixtape?: boolean | null }).is_mixtape;
   const trackUrl = `https://soundbridge.live/track/${params.trackId}`;
 
   // Fetch latest takedown (if any) for this track so owner can submit counter-notice
