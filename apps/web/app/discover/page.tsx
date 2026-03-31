@@ -882,7 +882,7 @@ export default function DiscoverPage() {
                             <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>{provider.headline}</p>
                           )}
                         </div>
-                        {provider.is_verified && (
+                        {provider.badge_active && (
                           <span
                             style={{
                               fontSize: '0.7rem',
@@ -890,11 +890,11 @@ export default function DiscoverPage() {
                               textTransform: 'uppercase',
                               padding: '0.2rem 0.6rem',
                               borderRadius: '999px',
-                              background: 'rgba(34,197,94,0.18)',
-                              color: '#34d399',
+                              background: 'rgba(245,158,11,0.2)',
+                              color: '#fbbf24',
                             }}
                           >
-                            Verified
+                            Verified Professional
                           </span>
                         )}
                       </div>

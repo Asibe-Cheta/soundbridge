@@ -798,6 +798,12 @@ export class SearchService {
           .from('service_bookings')
           .select('provider_id, status')
           .in('provider_id', providerIds);
+        const { data: paidSubs } = await this.supabase
+          .from('user_subscriptions')
+          .select('user_id, tier, status, updated_at')
+          .in('user_id', providerIds)
+          .eq('status', 'active')
+          .in('tier', ['premium', 'unlimited']);
         
         console.log(`✅ Bookings loaded: ${bookings?.length || 0} bookings (${Date.now() - startTime}ms)`);
 
@@ -809,6 +815,11 @@ export class SearchService {
           acc[booking.provider_id].push(booking);
           return acc;
         }, {} as Record<string, any[]>);
+        const premiumMap = (paidSubs || []).reduce((acc, sub: any) => {
+          if (!sub?.user_id) return acc;
+          if (!acc[sub.user_id]) acc[sub.user_id] = true;
+          return acc;
+        }, {} as Record<string, boolean>);
 
         // Calculate trending score for each provider
         const providersWithScore = providersResult.data.map((provider) => {
@@ -819,7 +830,8 @@ export class SearchService {
           
           const rating = provider.average_rating ?? 0;
           const reviewCount = provider.review_count ?? 0;
-          const isVerified = provider.is_verified ? 1 : 0;
+          const badgeActive = !!provider.is_verified && !!premiumMap[provider.user_id];
+          const isVerified = badgeActive ? 1 : 0;
           
           // Recency score: more recent updates get higher score
           const daysSinceUpdate = provider.updated_at
@@ -840,6 +852,7 @@ export class SearchService {
             ...provider,
             trendingScore,
             completedBookings,
+            badge_active: badgeActive,
           };
         });
 
@@ -860,6 +873,7 @@ export class SearchService {
           review_count: provider.review_count ?? 0,
           status: provider.status,
           is_verified: provider.is_verified,
+          badge_active: provider.badge_active,
           badge_tier: (provider as any).badge_tier || 'new_provider',
           completed_booking_count: provider.completedBookings,
           created_at: provider.created_at,

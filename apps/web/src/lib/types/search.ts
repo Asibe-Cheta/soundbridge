@@ -158,6 +158,7 @@ export interface ServiceProviderSummary {
   review_count: number;
   status: string;
   is_verified: boolean;
+  badge_active?: boolean;
   created_at: string;
   updated_at: string;
 }

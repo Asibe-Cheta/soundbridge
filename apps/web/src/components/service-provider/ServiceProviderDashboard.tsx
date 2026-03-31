@@ -265,6 +265,9 @@ interface ProviderBadgeInsights {
   firstBookingDiscountEnabled: boolean;
   firstBookingDiscountPercent: number;
   firstBookingDiscountEligible: boolean;
+  activePremium: boolean;
+  verifiedProfessionalBadgeActive: boolean;
+  verifiedProfessionalState: 'verified_premium' | 'verified_downgraded' | 'premium_not_verified' | 'free_not_verified';
   badges: ProviderBadgeState[];
   nextBadge: {
     tier: ProviderBadgeTier;
@@ -453,6 +456,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   const [loadingVerification, setLoadingVerification] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
+  const [startingPersonaVerification, setStartingPersonaVerification] = useState(false);
   const [submittingVerification, setSubmittingVerification] = useState(false);
   const [verificationForm, setVerificationForm] = useState<VerificationFormState>({
     governmentIdFile: null,
@@ -1186,6 +1190,44 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     }
   };
 
+  const handleStartPersonaVerification = async () => {
+    try {
+      setStartingPersonaVerification(true);
+      setVerificationError(null);
+      setVerificationSuccess(null);
+
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+
+      const response = await fetch('/api/verification/start', {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: JSON.stringify({ user_id: userId }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to start verification');
+      }
+
+      if (data?.session_url && typeof window !== 'undefined') {
+        window.open(data.session_url, '_blank', 'noopener,noreferrer');
+        setVerificationSuccess('Verification started. Complete the Persona flow in the new tab.');
+      } else if (data?.pending) {
+        setVerificationSuccess('A verification inquiry is already pending review.');
+      } else if (data?.already_verified) {
+        setVerificationSuccess('You are already verified. The badge appears when Premium is active.');
+      } else {
+        setVerificationSuccess('Verification start prepared. Persona hosted flow URL was not returned.');
+      }
+    } catch (err) {
+      setVerificationError(err instanceof Error ? err.message : 'Failed to start verification.');
+    } finally {
+      setStartingPersonaVerification(false);
+    }
+  };
+
   const handleFileSelect = (field: 'governmentId' | 'selfie' | 'businessDoc', file: File | null) => {
     if (!file) {
       if (field === 'governmentId') {
@@ -1903,6 +1945,36 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       verificationStatus.verificationStatus !== 'pending' &&
       verificationStatus.verificationStatus !== 'approved' &&
       Object.values(verificationStatus.prerequisites).every((item) => item.met);
+    const badgeState = badgeInsights?.verifiedProfessionalState ?? 'free_not_verified';
+    const badgeStateCopy: Record<
+      'verified_premium' | 'verified_downgraded' | 'premium_not_verified' | 'free_not_verified',
+      { tone: 'success' | 'warning' | 'info'; title: string; body: string; cta?: { label: string; href?: string; action?: 'start_verification' } }
+    > = {
+      verified_premium: {
+        tone: 'success',
+        title: 'Verified Professional active',
+        body: 'Your verification is approved and your Premium subscription is active. The badge is visible on your profile.',
+      },
+      verified_downgraded: {
+        tone: 'warning',
+        title: 'Badge hidden (subscription inactive)',
+        body: 'Your verification is retained, but the badge is hidden until Premium/Unlimited is active again.',
+        cta: { label: 'Reactivate Premium', href: '/pricing' },
+      },
+      premium_not_verified: {
+        tone: 'info',
+        title: 'Premium active — verification opens May 2026',
+        body: 'You are eligible for Verified Professional. Start verification when the Persona flow launches.',
+        cta: { label: startingPersonaVerification ? 'Starting…' : 'Get Verified Professional', action: 'start_verification' },
+      },
+      free_not_verified: {
+        tone: 'info',
+        title: 'Upgrade to unlock verification',
+        body: 'Verified Professional is available on Premium and Unlimited plans.',
+        cta: { label: 'Upgrade to Premium', href: '/pricing' },
+      },
+    };
+    const verifiedCard = badgeStateCopy[badgeState];
 
     return (
       <SectionCard
@@ -1915,6 +1987,48 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           </HelperPill>
         }
       >
+        <div
+          style={{
+            borderRadius: '0.9rem',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            background: 'rgba(245, 158, 11, 0.1)',
+            padding: '0.9rem 1rem',
+            display: 'grid',
+            gap: '0.45rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem', flexWrap: 'wrap' }}>
+            <HelperPill tone={verifiedCard.tone}>
+              <ShieldCheck size={14} />
+              Verified Professional
+            </HelperPill>
+            {verifiedCard.cta?.action === 'start_verification' ? (
+              <button
+                type="button"
+                disabled={startingPersonaVerification}
+                onClick={handleStartPersonaVerification}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#fbbf24',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: startingPersonaVerification ? 'not-allowed' : 'pointer',
+                  opacity: startingPersonaVerification ? 0.7 : 1,
+                }}
+              >
+                {verifiedCard.cta.label}
+              </button>
+            ) : verifiedCard.cta?.href ? (
+              <Link href={verifiedCard.cta.href} style={{ color: '#fbbf24', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>
+                {verifiedCard.cta.label}
+              </Link>
+            ) : null}
+          </div>
+          <div style={{ color: '#fef3c7', fontSize: '0.9rem', fontWeight: 600 }}>{verifiedCard.title}</div>
+          <div style={{ color: '#fde68a', fontSize: '0.82rem' }}>{verifiedCard.body}</div>
+        </div>
+
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{meta.description}</p>
 
         {verificationError && (

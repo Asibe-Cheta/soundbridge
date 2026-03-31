@@ -70,6 +70,7 @@ type ProviderRecord = ServiceProviderSummary & {
   first_booking_discount_enabled: boolean;
   first_booking_discount_percent: number;
   id_verified: boolean;
+  badge_active?: boolean;
 };
 
 const BADGE_COPY: Record<ProviderBadgeTier, { label: string; blurb: string }> = {
@@ -174,6 +175,18 @@ const fetchProvider = async (userId: string) => {
     return null;
   }
 
+  const { data: premiumSub } = await supabase
+    .from('user_subscriptions')
+    .select('tier,status')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .in('tier', ['premium', 'unlimited'])
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const badgeActive = !!data.is_verified && !!premiumSub;
+
   const provider: ProviderRecord = {
     user_id: data.user_id,
     display_name: data.display_name,
@@ -193,6 +206,7 @@ const fetchProvider = async (userId: string) => {
     first_booking_discount_enabled: data.first_booking_discount_enabled ?? false,
     first_booking_discount_percent: Number(data.first_booking_discount_percent ?? 0),
     id_verified: data.id_verified ?? false,
+    badge_active: badgeActive,
     created_at: data.created_at,
     updated_at: data.updated_at,
     offerings: (data.offerings as ProviderRecord['offerings']) || [],
@@ -302,7 +316,7 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                 >
                   <Sparkles size={14} /> {badgeInfo.label}
                 </span>
-                {provider.is_verified && (
+                {provider.badge_active && (
                   <span
                     style={{
                       display: 'inline-flex',
@@ -310,13 +324,13 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                       gap: '0.35rem',
                       padding: '0.25rem 0.6rem',
                       borderRadius: '999px',
-                      background: 'rgba(34,197,94,0.18)',
-                      color: '#34d399',
+                      background: 'rgba(245,158,11,0.2)',
+                      color: '#fbbf24',
                       fontSize: '0.75rem',
                       fontWeight: 600,
                     }}
                   >
-                    <CheckCircle2 size={14} /> Verified
+                    <Shield size={14} /> Verified Professional
                   </span>
                 )}
                 {provider.id_verified && (

@@ -69,6 +69,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     provider,
   };
 
+  const { data: activeSubscription } = await serviceSupabase
+    .from('user_subscriptions')
+    .select('tier,status')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .in('tier', ['premium', 'unlimited'])
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  response.provider = {
+    ...provider,
+    active_premium: !!activeSubscription,
+    badge_active: !!provider.is_verified && !!activeSubscription,
+  };
+
   if (includes.has('offerings')) {
     let offeringsQuery = serviceSupabase
       .from('service_offerings')

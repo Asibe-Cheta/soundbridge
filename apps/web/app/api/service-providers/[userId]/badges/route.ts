@@ -211,6 +211,27 @@ async function fetchBadgeInsights(
     return null;
   }
 
+  const { data: activeSubscription } = await supabaseClient
+    .from('user_subscriptions')
+    .select('tier, status')
+    .eq('user_id', providerId)
+    .eq('status', 'active')
+    .in('tier', ['premium', 'unlimited'])
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const activePremium = !!activeSubscription;
+  const verifiedProfessionalBadgeActive = !!provider.is_verified && activePremium;
+  const verificationState =
+    provider.is_verified && activePremium
+      ? 'verified_premium'
+      : provider.is_verified && !activePremium
+        ? 'verified_downgraded'
+        : !provider.is_verified && activePremium
+          ? 'premium_not_verified'
+          : 'free_not_verified';
+
   const { data: history, error: historyError } = await supabaseClient
     .from('provider_badge_history')
     .select('id, previous_tier, new_tier, created_at, reason')
@@ -240,6 +261,9 @@ async function fetchBadgeInsights(
     firstBookingDiscountEnabled: provider.first_booking_discount_enabled,
     firstBookingDiscountPercent: Number(provider.first_booking_discount_percent ?? 0),
     firstBookingDiscountEligible: completedBookings === 0,
+    activePremium,
+    verifiedProfessionalBadgeActive,
+    verifiedProfessionalState: verificationState,
     badges: states,
     nextBadge,
     history: (history ?? []).map((entry) => ({
