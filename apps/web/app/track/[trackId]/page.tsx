@@ -57,6 +57,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const creatorName = track.creator?.display_name || track.creator?.username || 'Unknown Artist';
+  const mixedByName = (track as { dj_name?: string | null }).dj_name || null;
+  const isMixtape = !!(track as { is_mixtape?: boolean | null }).is_mixtape;
   const trackUrl = `https://soundbridge.live/track/${params.trackId}`;
 
   return {
@@ -165,13 +167,32 @@ export default async function TrackPage({ params }: Props) {
 
           {/* Track Info */}
           <h1 className="text-4xl font-bold text-center mb-2">{track.title}</h1>
-          <p className="text-xl text-gray-300 text-center mb-6">by {creatorName}</p>
+          <p className="text-xl text-gray-300 text-center mb-3">
+            {isMixtape && mixedByName ? `Mixed by: ${mixedByName}` : `by ${creatorName}`}
+          </p>
+
+          {isMixtape && (
+            <div className="flex justify-center mb-3">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                Mix
+              </span>
+            </div>
+          )}
 
           {track.genre && (
             <div className="flex justify-center mb-6">
               <span className="px-4 py-2 bg-purple-600/30 rounded-full text-sm">
                 {track.genre}
               </span>
+            </div>
+          )}
+
+          {(track as { tracklist?: string | null }).tracklist && (
+            <div className="mb-6 rounded-lg border border-gray-700 bg-gray-900/40 p-4">
+              <h3 className="text-sm font-semibold text-amber-300 mb-2">Tracklist</h3>
+              <pre className="whitespace-pre-wrap text-sm text-gray-300 font-sans">
+                {(track as { tracklist?: string | null }).tracklist}
+              </pre>
             </div>
           )}
 

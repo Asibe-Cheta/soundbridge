@@ -66,6 +66,9 @@ export async function GET(
       play_count: track.play_count || 0,
       likes_count: track.likes_count || 0,
       genre: track.genre,
+      is_mixtape: track.is_mixtape || false,
+      dj_name: track.dj_name || null,
+      tracklist: track.tracklist || null,
       created_at: track.created_at,
       is_liked: user ? likedTrackIds.includes(track.id) : false,
       is_owner: user?.id === userId

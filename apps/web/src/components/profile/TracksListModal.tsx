@@ -17,6 +17,9 @@ interface Track {
   play_count: number;
   likes_count: number;
   genre: string | null;
+  is_mixtape?: boolean;
+  dj_name?: string | null;
+  tracklist?: string | null;
   created_at: string;
   is_liked: boolean;
   is_owner: boolean;
@@ -330,7 +333,7 @@ export function TracksListModal({ isOpen, onClose, userId, currentUserId, isOwnP
                             {track.title}
                           </h3>
                           <p className="text-sm text-gray-400 truncate">
-                            {track.artist_name}
+                            {track.is_mixtape && track.dj_name ? `Mixed by: ${track.dj_name}` : track.artist_name}
                           </p>
                         </div>
                         {/* Price Badge */}
@@ -347,6 +350,11 @@ export function TracksListModal({ isOpen, onClose, userId, currentUserId, isOwnP
                         )}
                       </div>
                       <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
+                        {track.is_mixtape && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            Mix
+                          </span>
+                        )}
                         <span className="flex items-center space-x-1">
                           <Play className="h-3 w-3" />
                           <span>{track.play_count.toLocaleString()}</span>

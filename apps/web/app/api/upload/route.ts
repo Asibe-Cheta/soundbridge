@@ -69,15 +69,23 @@ export async function POST(request: NextRequest) {
       channels,
       codec,
       // ACRCloud fields
-      acrcloudData
+      acrcloudData,
+      contentType,
+      is_mixtape,
+      dj_name,
+      tracklist
     } = body;
 
     // Validate required fields
-    if (!title || !artistName) {
+    const isMixtapeUpload = contentType === 'mixtape' || is_mixtape === true;
+    if (!title || (!isMixtapeUpload && !artistName) || (isMixtapeUpload && !(dj_name || artistName))) {
       return NextResponse.json(
         { error: 'Title and artist name are required' },
         { status: 400 }
       );
+    }
+    if (isMixtapeUpload && !tracklist?.trim()) {
+      return NextResponse.json({ error: 'tracklist is required for mixtape uploads' }, { status: 400 });
     }
 
     let resolvedAudioFileUrl = typeof audioFileUrl === 'string' ? audioFileUrl : '';
@@ -86,7 +94,7 @@ export async function POST(request: NextRequest) {
     if (!resolvedAudioFileUrl && fileData) {
       try {
         const file = await createFileFromBase64(fileData);
-        const inputValidation = validateAudioUploadInput(file);
+        const inputValidation = validateAudioUploadInput(file, isMixtapeUpload ? 'mixtape' : 'music');
         if (!inputValidation.valid) {
           return NextResponse.json({ error: inputValidation.message }, { status: 400 });
         }
@@ -119,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Cover/original metadata: original artist/title required when cover
-    if (isCover) {
+    if (isCover && !isMixtapeUpload) {
       if (!original_artist_name || !String(original_artist_name).trim()) {
         return NextResponse.json(
           { error: 'Original artist name is required for cover songs' },
@@ -331,10 +339,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Resolve ISRC per WEB_TEAM_ISRC_AUTO_ASSIGNMENT: acrcloud_detected | user_provided | soundbridge_generated
+    // Mixtapes intentionally do not require ISRC assignment.
     const registrantCode = (process.env.ISRC_REGISTRANT_CODE || 'SBR').trim() || 'SBR';
     let assignedIsrc: string | null = null;
-    let assignedSource: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated' = 'soundbridge_generated';
-    if (isrc_source === 'acrcloud_detected' && acrcloudData?.detectedISRC) {
+    let assignedSource: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated' | null = null;
+    if (isMixtapeUpload) {
+      assignedIsrc = null;
+      assignedSource = null;
+    } else if (isrc_source === 'acrcloud_detected' && acrcloudData?.detectedISRC) {
       assignedIsrc = String(acrcloudData.detectedISRC).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
       assignedSource = 'acrcloud_detected';
     } else if (isrc_source === 'user_provided' && isrcCode?.trim()) {
@@ -370,7 +382,7 @@ export async function POST(request: NextRequest) {
 
     const trackData: any = {
       title: title.trim(),
-      artist_name: artistName.trim(),
+      artist_name: (isMixtapeUpload ? (dj_name || artistName) : artistName).trim(),
       description: description?.trim() || null,
       creator_id: user.id,
       file_url: resolvedAudioFileUrl,
@@ -382,7 +394,7 @@ export async function POST(request: NextRequest) {
       lyrics_language: lyricsLanguage || 'en',
       is_public: suspected_duplicate ? false : (privacy === 'public'),
       // Cover song fields
-      is_cover: isCover || false,
+      is_cover: isMixtapeUpload ? false : (isCover || false),
       isrc_code: assignedIsrc,
       isrc_source: assignedSource,
       isrc_soundbridge_generated: assignedSource === 'soundbridge_generated',
@@ -393,7 +405,7 @@ export async function POST(request: NextRequest) {
       original_song_title: original_song_title?.trim() || null,
       suspected_duplicate: !!suspected_duplicate,
       // ACRCloud fields
-      acrcloud_checked: acrcloudData ? true : false,
+      acrcloud_checked: isMixtapeUpload ? false : (acrcloudData ? true : false),
       acrcloud_match_found: acrcloudData?.matchFound || false,
       acrcloud_detected_artist: acrcloudData?.detectedArtist || null,
       acrcloud_detected_title: acrcloudData?.detectedTitle || null,
@@ -429,7 +441,10 @@ export async function POST(request: NextRequest) {
         format: audioMetadata.format,
         codec: audioMetadata.codec,
         size: audioMetadata.size
-      } : null
+      } : null,
+      is_mixtape: isMixtapeUpload,
+      dj_name: isMixtapeUpload ? String(dj_name || artistName || '').trim() : null,
+      tracklist: isMixtapeUpload ? String(tracklist || '').trim() : null
     };
 
     const { data: track, error: insertError } = await (supabase

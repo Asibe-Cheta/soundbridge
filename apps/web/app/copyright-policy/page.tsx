@@ -37,6 +37,24 @@ export default function CopyrightPolicyPage() {
               </div>
             </section>
 
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">DJ Mixes &amp; Remixes</h2>
+              <div className="bg-amber-50 p-6 rounded-lg border-l-4 border-amber-500">
+                <p className="text-amber-900 font-semibold mb-3">
+                  SoundBridge allows DJ mixes for promotional, non-commercial use.
+                </p>
+                <ul className="list-disc ml-6 space-y-2 text-amber-800">
+                  <li>Mixes may contain third-party recordings that uploaders do not own.</li>
+                  <li>Rights holders can submit valid DMCA notices for removal.</li>
+                  <li>We respond to valid notices and notify uploaders promptly.</li>
+                  <li>Repeated infringement can result in content removal or account suspension.</li>
+                </ul>
+                <p className="text-amber-900 mt-4">
+                  DMCA contact: <a href="mailto:dmca@soundbridge.live" className="underline font-medium">dmca@soundbridge.live</a>
+                </p>
+              </div>
+            </section>
+
             {/* DMCA Takedown Process */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">

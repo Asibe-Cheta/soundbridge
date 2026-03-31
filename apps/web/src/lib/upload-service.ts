@@ -37,18 +37,16 @@ export class AudioUploadService {
   }
 
   // Validate audio file
-  validateAudioFile(file: File, userTier: 'free' | 'premium' | 'unlimited' = 'free'): { isValid: boolean; errors: string[]; warnings?: string[] } {
+  validateAudioFile(
+    file: File,
+    _userTier: 'free' | 'premium' | 'unlimited' = 'free',
+    uploadContentType: 'music' | 'podcast' | 'mixtape' = 'music',
+  ): { isValid: boolean; errors: string[]; warnings?: string[] } {
     const errors: string[] = [];
     const warnings: string[] = [];
     
-    // File size limits by subscription tier (matching mobile app)
-    const FILE_SIZE_LIMITS = {
-      free: 50 * 1024 * 1024,      // 50MB
-      premium: 200 * 1024 * 1024,   // 200MB
-      unlimited: 500 * 1024 * 1024, // 500MB
-    };
-    
-    const maxSize = FILE_SIZE_LIMITS[userTier] || FILE_SIZE_LIMITS.free;
+    const typeMaxSize = uploadContentType === 'mixtape' ? 200 * 1024 * 1024 : 100 * 1024 * 1024;
+    const maxSize = typeMaxSize;
     const allowedTypes = [
       'audio/mpeg',
       'audio/mp3',
@@ -73,7 +71,9 @@ export class AudioUploadService {
     if (file.size > maxSize) {
       const limitMB = (maxSize / (1024 * 1024)).toFixed(0);
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      errors.push(`File size (${fileSizeMB}MB) exceeds your ${userTier} plan limit (${limitMB}MB). Upgrade your plan to upload larger files.`);
+      errors.push(
+        `File size (${fileSizeMB}MB) exceeds the ${uploadContentType === 'mixtape' ? 'mixtape' : 'audio'} limit (${limitMB}MB).`,
+      );
     }
 
     // Only validate MIME type if it's set and not empty
@@ -175,6 +175,7 @@ export class AudioUploadService {
   async uploadAudioFile(
     file: File,
     userId: string,
+    uploadContentType: 'music' | 'podcast' | 'mixtape' = 'music',
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadResult> {
     try {
@@ -195,6 +196,7 @@ export class AudioUploadService {
           fileName: file.name,
           fileSize: file.size,
           contentType,
+          uploadContentType,
         }),
       });
 
@@ -406,6 +408,9 @@ export class AudioUploadService {
     original_artist_name?: string | null;
     original_song_title?: string | null;
     suspected_duplicate?: boolean;
+    is_mixtape?: boolean;
+    dj_name?: string | null;
+    tracklist?: string | null;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const insertData = {
@@ -594,6 +599,7 @@ export class AudioUploadService {
       const audioResult = await this.uploadAudioFile(
         processedFile,
         userId,
+        (trackData.contentType as 'music' | 'podcast' | 'mixtape') || 'music',
         (progress) => onProgress?.('audio', progress)
       );
 
@@ -627,7 +633,10 @@ export class AudioUploadService {
 
       const td = trackData as any;
       const acr = td.acrcloudData;
-      const isrcSource = td.isrc_source || (acr?.detectedISRC ? 'acrcloud_detected' : (td.isrcCode ? 'user_provided' : 'soundbridge_generated'));
+      const isMixtape = td.contentType === 'mixtape' || td.is_mixtape === true;
+      const isrcSource = isMixtape
+        ? null
+        : (td.isrc_source || (acr?.detectedISRC ? 'acrcloud_detected' : (td.isrcCode ? 'user_provided' : 'soundbridge_generated')));
       let resolvedIsrc: string | null = null;
       if (isrcSource === 'acrcloud_detected' && acr?.detectedISRC) {
         resolvedIsrc = String(acr.detectedISRC).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
@@ -644,7 +653,7 @@ export class AudioUploadService {
           return { success: false, error: { code: 'ISRC_ERROR', message: 'Failed to generate ISRC' } };
         }
       }
-      const suspectedDup = !!td.suspected_duplicate;
+      const suspectedDup = isMixtape ? false : !!td.suspected_duplicate;
 
       // Create database record
       const dbResult = await this.createAudioTrackRecord({
@@ -687,15 +696,22 @@ export class AudioUploadService {
           artist_name_match_confidence: acr.artistMatchConfidence || null
         } : {}),
         // Cover song fields
-        is_cover: td.isCover || false,
+        is_cover: isMixtape ? false : (td.isCover || false),
         isrc_code: resolvedIsrc,
         isrc_source: isrcSource,
         isrc_soundbridge_generated: isrcSource === 'soundbridge_generated',
-        isrc_verified: isrcSource === 'acrcloud_detected' ? !!acr?.detectedISRCVerified : (isrcSource === 'user_provided'),
-        isrc_verified_at: (isrcSource === 'acrcloud_detected' && acr?.detectedISRCVerified) || isrcSource === 'user_provided' ? new Date().toISOString() : null,
-        original_artist_name: td.original_artist_name?.trim() || null,
-        original_song_title: td.original_song_title?.trim() || null,
-        suspected_duplicate: suspectedDup
+        isrc_verified: isMixtape ? false : (isrcSource === 'acrcloud_detected' ? !!acr?.detectedISRCVerified : (isrcSource === 'user_provided')),
+        isrc_verified_at: isMixtape
+          ? null
+          : ((isrcSource === 'acrcloud_detected' && acr?.detectedISRCVerified) || isrcSource === 'user_provided'
+            ? new Date().toISOString()
+            : null),
+        original_artist_name: isMixtape ? null : (td.original_artist_name?.trim() || null),
+        original_song_title: isMixtape ? null : (td.original_song_title?.trim() || null),
+        suspected_duplicate: suspectedDup,
+        is_mixtape: isMixtape,
+        dj_name: isMixtape ? (td.djName?.trim() || td.artistName?.trim() || null) : null,
+        tracklist: isMixtape ? (td.tracklist?.trim() || null) : null
       });
 
       if (!dbResult.success) {

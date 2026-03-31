@@ -16,9 +16,9 @@ import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types
 import { Toaster } from '../../src/components/ui/Toast';
 import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 import { toast as hotToast } from 'react-hot-toast';
-import { Upload, Music, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
+import { Upload, Music, Mic, Disc, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
 
-type ContentType = 'music' | 'podcast';
+type ContentType = 'music' | 'podcast' | 'mixtape';
 
 export default function UnifiedUploadPage() {
   const UPLOAD_DEBUG = process.env.NODE_ENV !== 'production';
@@ -70,6 +70,8 @@ export default function UnifiedUploadPage() {
   // Podcast-specific states
   const [episodeNumber, setEpisodeNumber] = useState('');
   const [podcastCategory, setPodcastCategory] = useState('');
+  const [djName, setDjName] = useState('');
+  const [mixtapeTracklist, setMixtapeTracklist] = useState('');
 
   // Audio quality states
   const [selectedQuality, setSelectedQuality] = useState<AudioQualitySettings | null>(null);
@@ -195,7 +197,7 @@ export default function UnifiedUploadPage() {
       user: user?.id
     });
     
-    uploadActions.setAudioFile(file);
+    uploadActions.setAudioFile(file, contentType);
     
     // Auto-fill title from filename
     const fileName = file.name.replace(/\.[^/.]+$/, '');
@@ -250,6 +252,8 @@ export default function UnifiedUploadPage() {
     setLyricsLanguage('en');
     setEpisodeNumber('');
     setPodcastCategory('');
+    setDjName('');
+    setMixtapeTracklist('');
     setIsCover(false);
     setIsrcCode('');
     setIsrcVerificationStatus('idle');
@@ -270,6 +274,9 @@ export default function UnifiedUploadPage() {
     if (contentType === 'music' && !genre.trim()) return 'Genre selection is required for music tracks';
     if (contentType === 'podcast' && !episodeNumber.trim()) return 'Episode number is required';
     if (contentType === 'podcast' && !podcastCategory.trim()) return 'Category selection is required for podcast episodes';
+    if (contentType === 'mixtape' && !djName.trim()) return 'DJ / Artist Name is required for mixtapes';
+    if (contentType === 'mixtape' && !genre.trim()) return 'Genre selection is required for mixtapes';
+    if (contentType === 'mixtape' && !mixtapeTracklist.trim()) return 'Tracklist is required for mixtapes';
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!uploadState.coverArtFile) return 'Cover art is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
@@ -458,6 +465,7 @@ export default function UnifiedUploadPage() {
         fileName: file.name,
         fileSize: file.size,
         contentType,
+        uploadContentType: contentType,
       }),
     });
     const presignData = await presignResponse.json().catch(() => ({}));
@@ -766,6 +774,7 @@ export default function UnifiedUploadPage() {
         scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined,
         // Content-specific data
         ...(contentType === 'music' ? {
+          contentType: 'music' as const,
           artistName: artistName.trim(),
           genre: genre.trim(),
           lyrics: lyrics.trim(),
@@ -784,7 +793,21 @@ export default function UnifiedUploadPage() {
           codec: 'mp3',
           // ACRCloud data
           acrcloudData: acrcloudData || null
+        } : contentType === 'mixtape' ? {
+          contentType: 'mixtape' as const,
+          artistName: djName.trim(),
+          genre: genre.trim(),
+          djName: djName.trim(),
+          tracklist: mixtapeTracklist.trim(),
+          isCover: false,
+          isrcCode: undefined,
+          isrc_source: undefined,
+          original_artist_name: undefined,
+          original_song_title: undefined,
+          suspected_duplicate: false,
+          acrcloudData: null
         } : {
+          contentType: 'podcast' as const,
           episodeNumber: episodeNumber.trim(),
           category: podcastCategory.trim()
         })
@@ -864,6 +887,8 @@ export default function UnifiedUploadPage() {
         setLyricsLanguage('en');
         setEpisodeNumber('');
         setPodcastCategory('');
+        setDjName('');
+        setMixtapeTracklist('');
         setIsPaid(false);
         setPrice(2.99);
         setCurrency('USD');
@@ -902,6 +927,13 @@ export default function UnifiedUploadPage() {
       icon: Mic,
       description: 'Share your podcast episodes and audio content',
       color: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)'
+    },
+    {
+      id: 'mixtape' as ContentType,
+      label: 'DJ Mixtape',
+      icon: Disc,
+      description: 'Upload DJ mixes and continuous sets',
+      color: 'linear-gradient(135deg, #F59E0B 0%, #f97316 100%)'
     }
   ];
 
@@ -945,7 +977,7 @@ export default function UnifiedUploadPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">Upload Content</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {contentTypes.map((type) => (
               <div
                 key={type.id}
@@ -1044,7 +1076,7 @@ export default function UnifiedUploadPage() {
                   className="hidden"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Supports MP3, WAV, M4A, AAC, OGG, WEBM, FLAC, MP4 (Max 100MB)
+                  Supports MP3, WAV, M4A, AAC, OGG, WEBM, FLAC, MP4 (Max {contentType === 'mixtape' ? '200MB' : '100MB'})
                 </p>
               </div>
             ) : (
@@ -1492,6 +1524,52 @@ export default function UnifiedUploadPage() {
                 </>
               )}
 
+              {contentType === 'mixtape' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      DJ / Artist Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={djName}
+                      onChange={(e) => setDjName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g. DJ Justice"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Genre *
+                    </label>
+                    <select
+                      value={genre}
+                      onChange={(e) => setGenre(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                      disabled={loadingGenres}
+                    >
+                      <option value="">{loadingGenres ? 'Loading genres...' : 'Select a genre'}</option>
+                      {genres.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Tracklist *
+                    </label>
+                    <textarea
+                      value={mixtapeTracklist}
+                      onChange={(e) => setMixtapeTracklist(e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                      placeholder={'One track per line, e.g.\nArtist - Title'}
+                    />
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tags
@@ -1740,11 +1818,11 @@ export default function UnifiedUploadPage() {
                 required
               />
               <label htmlFor="copyright-agreement" className="text-sm text-gray-700 dark:text-gray-300">
-                I confirm that I own all rights to this music and it does not infringe any 
-                third-party copyrights. I understand that uploading copyrighted content may 
-                result in account suspension or termination.{' '}
+                {contentType === 'mixtape'
+                  ? 'I confirm this mix is shared for promotional, non-commercial purposes. I understand I do not own the underlying recordings and that rights holders may request removal. SoundBridge complies with all valid DMCA takedown requests. Uploading content that infringes copyright may result in removal or account suspension. '
+                  : 'I confirm that I own all rights to this music and it does not infringe any third-party copyrights. I understand that uploading copyrighted content may result in account suspension or termination. '}
                 <Link href="/copyright-policy" className="text-blue-600 hover:text-blue-800 underline">
-                  Read our Copyright Policy
+                  Learn more about our copyright policy
                 </Link>
               </label>
             </div>
@@ -1790,7 +1868,7 @@ export default function UnifiedUploadPage() {
                   <span>Validating...</span>
                 </>
               ) : (
-                <span>Publish {contentType === 'music' ? 'Track' : 'Episode'}</span>
+                <span>Publish {contentType === 'music' ? 'Track' : contentType === 'podcast' ? 'Episode' : 'Mix'}</span>
               )}
             </button>
           </div>
@@ -1820,7 +1898,7 @@ export default function UnifiedUploadPage() {
               </h2>
               <RightsVerificationForm
                 trackTitle={title}
-                artistName={artistName}
+                artistName={contentType === 'mixtape' ? djName : artistName}
                 onVerify={handleRightsVerification}
                 onCancel={() => setShowRightsVerification(false)}
               />

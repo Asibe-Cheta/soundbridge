@@ -11,7 +11,8 @@ const ALLOWED_AUDIO_MIME_TYPES = new Set([
   'audio/ogg',
 ]);
 
-export const MAX_AUDIO_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+export const MAX_AUDIO_FILE_SIZE_BYTES = 200 * 1024 * 1024;
+export const DEFAULT_AUDIO_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 
 export function getFileExtension(fileName: string): string {
   return fileName.split('.').pop()?.toLowerCase() || '';
@@ -43,6 +44,7 @@ export function validateAudioPresignPayload(body: {
   fileName?: unknown;
   fileSize?: unknown;
   contentType?: unknown;
+  uploadContentType?: unknown;
 }): { valid: true; fileName: string; fileSize: number; contentType: string } | { valid: false; message: string } {
   const fileName = typeof body.fileName === 'string' ? body.fileName.trim() : '';
   const fileSize = typeof body.fileSize === 'number' && Number.isFinite(body.fileSize) ? body.fileSize : NaN;
@@ -57,8 +59,17 @@ export function validateAudioPresignPayload(body: {
   if (fileSize <= 0 || !Number.isInteger(fileSize)) {
     return { valid: false, message: 'fileSize must be a positive integer.' };
   }
-  if (fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
-    return { valid: false, message: 'Audio file too large. Maximum allowed size is 50MB.' };
+  const uploadContentType =
+    typeof body.uploadContentType === 'string' ? body.uploadContentType.trim().toLowerCase() : '';
+  const maxSize = uploadContentType === 'mixtape' ? MAX_AUDIO_FILE_SIZE_BYTES : DEFAULT_AUDIO_FILE_SIZE_BYTES;
+  if (fileSize > maxSize) {
+    return {
+      valid: false,
+      message:
+        uploadContentType === 'mixtape'
+          ? 'Audio file too large. Maximum allowed size is 200MB for mixtapes.'
+          : 'Audio file too large. Maximum allowed size is 100MB.',
+    };
   }
 
   const extension = getFileExtension(fileName);
@@ -75,7 +86,10 @@ export function validateAudioPresignPayload(body: {
   return { valid: true, fileName, fileSize, contentType };
 }
 
-export function validateAudioUploadInput(file: File): { valid: true } | { valid: false; message: string } {
+export function validateAudioUploadInput(
+  file: File,
+  uploadContentType?: 'music' | 'podcast' | 'mixtape',
+): { valid: true } | { valid: false; message: string } {
   const extension = getFileExtension(file.name);
   const mime = (file.type || '').toLowerCase();
 
@@ -83,8 +97,15 @@ export function validateAudioUploadInput(file: File): { valid: true } | { valid:
     return { valid: false, message: 'File is empty.' };
   }
 
-  if (file.size > MAX_AUDIO_FILE_SIZE_BYTES) {
-    return { valid: false, message: 'Audio file too large. Maximum allowed size is 50MB.' };
+  const maxSize = uploadContentType === 'mixtape' ? MAX_AUDIO_FILE_SIZE_BYTES : DEFAULT_AUDIO_FILE_SIZE_BYTES;
+  if (file.size > maxSize) {
+    return {
+      valid: false,
+      message:
+        uploadContentType === 'mixtape'
+          ? 'Audio file too large. Maximum allowed size is 200MB for mixtapes.'
+          : 'Audio file too large. Maximum allowed size is 100MB.',
+    };
   }
 
   if (!ALLOWED_AUDIO_EXTENSIONS.has(extension)) {

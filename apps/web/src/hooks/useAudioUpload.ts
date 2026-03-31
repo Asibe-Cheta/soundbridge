@@ -20,7 +20,7 @@ export interface UploadState {
 }
 
 export interface UploadActions {
-  setAudioFile: (file: File | null) => void;
+  setAudioFile: (file: File | null, uploadContentType?: 'music' | 'podcast' | 'mixtape') => void;
   setCoverArtFile: (file: File | null) => void;
   uploadTrack: (
     trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>,
@@ -50,7 +50,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const setAudioFile = useCallback((file: File | null) => {
+  const setAudioFile = useCallback((file: File | null, uploadContentType: 'music' | 'podcast' | 'mixtape' = 'music') => {
     if (!file) {
       setState(prev => ({ ...prev, audioFile: null, audioMetadata: undefined }));
       return;
@@ -100,7 +100,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       }
 
       // Validate audio file with user tier
-      const validation = audioUploadService.validateAudioFile(file, userTier);
+      const validation = audioUploadService.validateAudioFile(file, userTier, uploadContentType);
     
       // Check file extension as fallback if MIME type validation fails
       const fileExtension = file.name.toLowerCase().split('.').pop();

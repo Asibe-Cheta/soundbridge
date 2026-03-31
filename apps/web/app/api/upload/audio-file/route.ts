@@ -35,11 +35,14 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const audioFile = formData.get('audioFile');
+    const uploadContentTypeRaw = formData.get('uploadContentType');
+    const uploadContentType =
+      uploadContentTypeRaw === 'mixtape' ? 'mixtape' : uploadContentTypeRaw === 'podcast' ? 'podcast' : 'music';
     if (!(audioFile instanceof File)) {
       return NextResponse.json({ error: 'audioFile is required' }, { status: 400 });
     }
 
-    const validation = validateAudioUploadInput(audioFile);
+    const validation = validateAudioUploadInput(audioFile, uploadContentType);
     if (!validation.valid) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
