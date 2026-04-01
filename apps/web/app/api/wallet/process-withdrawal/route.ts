@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 import { isWiseCurrency } from '@/src/lib/wise-currencies';
+import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -220,23 +221,38 @@ export async function POST(request: NextRequest) {
 async function processBankTransfer(transaction: any, method: any) {
   try {
     const details = method.encrypted_details;
-    
-    // Create Stripe transfer to connected account
-    const transfer = await getStripe().transfers.create({
-      amount: Math.abs(transaction.amount) * 100, // Convert to cents
-      currency: transaction.currency.toLowerCase(),
-      destination: method.stripe_account_id, // User's Stripe Connect account
-      transfer_group: `withdrawal_${transaction.id}`,
-      metadata: {
-        transaction_id: transaction.id,
-        user_id: transaction.user_id,
-        withdrawal_method: 'bank_transfer'
-      }
-    });
+
+    const currency = String(transaction.currency || method.currency || '').toUpperCase();
+    let transferId = '';
+    if (isFincraCurrency(currency)) {
+      const transfer = await createFincraTransfer({
+        amount: Math.abs(Number(transaction.amount)),
+        currency,
+        accountNumber: String(details?.account_number || ''),
+        bankCode: String(details?.bank_code || details?.routing_number || ''),
+        accountName: String(details?.account_holder_name || details?.account_name || 'Account Holder'),
+        reference: `wallet_withdrawal_${transaction.id}_${Date.now()}`,
+        narration: 'SoundBridge wallet withdrawal',
+      });
+      transferId = transfer.id;
+    } else {
+      const transfer = await getStripe().transfers.create({
+        amount: Math.abs(transaction.amount) * 100, // Convert to cents
+        currency: transaction.currency.toLowerCase(),
+        destination: method.stripe_account_id, // User's Stripe Connect account
+        transfer_group: `withdrawal_${transaction.id}`,
+        metadata: {
+          transaction_id: transaction.id,
+          user_id: transaction.user_id,
+          withdrawal_method: 'bank_transfer'
+        }
+      });
+      transferId = transfer.id;
+    }
 
     return {
       success: true,
-      transferId: transfer.id
+      transferId
     };
   } catch (error: any) {
     return {

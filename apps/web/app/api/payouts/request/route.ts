@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const { amount, currency = 'USD' } = await request.json();
     const minPayout = getMinPayoutForCurrency(currency);
 
-    // Validate required fields (currency-aware minimum: $30 Wise, $20 others)
+    // Validate required fields (currency-aware minimum)
     if (!amount || typeof amount !== 'number' || amount < minPayout) {
       return NextResponse.json(
         { error: `Minimum withdrawal amount is $${minPayout}.00 for ${currency || 'your account'}.` },

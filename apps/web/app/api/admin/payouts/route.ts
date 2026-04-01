@@ -3,16 +3,14 @@
  * 
  * POST /api/admin/payouts/initiate
  * 
- * Allows admins to initiate payouts to creators via Wise.
+ * Allows admins to initiate payouts to creators via Fincra.
  * Supports both single and batch payouts.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
-import { payoutToCreator } from '@/src/lib/wise/payout';
-import { batchPayout, type BatchPayoutItem } from '@/src/lib/wise/batch-payout';
-import type { PayoutToCreatorParams } from '@/src/lib/wise/payout';
 import { decryptSecret } from '@/src/lib/encryption';
+import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +26,7 @@ function looksEncrypted(value: string): boolean {
   return parts.length === 3 && parts.every((p) => /^[0-9a-fA-F]+$/.test(p));
 }
 
-/** Return plaintext for Wise: decrypt if we stored encrypted, else use as-is. */
+/** Return plaintext for payout provider: decrypt if we stored encrypted, else use as-is. */
 function toPlaintext(stored: string | null | undefined): string {
   const v = (stored ?? '').trim();
   if (!v) return '';
@@ -43,7 +41,7 @@ function toPlaintext(stored: string | null | undefined): string {
   return v;
 }
 
-/** HTTP status code from Wise client errors (code may be string "403"). */
+/** HTTP status code from provider errors (code may be string "403"). */
 function httpStatusFromError(err: unknown): number | undefined {
   const c = (err as { code?: unknown })?.code;
   if (c === undefined || c === null) return undefined;
@@ -52,7 +50,7 @@ function httpStatusFromError(err: unknown): number | undefined {
 }
 
 /**
- * Wise / payout failures: always 422 (not 500) so the admin UI can show the reason without treating it as a server bug.
+ * Payout failures: always 422 (not 500) so the admin UI can show the reason without treating it as a server bug.
  */
 function buildPayoutFailureResponse(err: unknown): NextResponse {
   const e = err as {
@@ -72,13 +70,12 @@ function buildPayoutFailureResponse(err: unknown): NextResponse {
     http === 403 ||
     String(e?.code) === '403' ||
     raw.includes('403');
-  const isMissingConfig =
-    /WISE_API_TOKEN|WISE_PROFILE_ID|environment variables/i.test(raw);
+  const isMissingConfig = /FINCRA_API_KEY|FINCRA_|environment variables/i.test(raw);
 
   let message = raw;
   if (is403) {
     message =
-      'Wise funding failed (403 — often SCA/2FA on the funding step). Request re-queued to Pending. If a transfer was created, check In Progress and use Retry / Fund.';
+      'Fincra payout failed with 403. Request re-queued to Pending so admin can retry.';
   } else if (isMissingConfig) {
     message = `${raw} (configure env on the server and redeploy.)`;
   }
@@ -94,6 +91,27 @@ function buildPayoutFailureResponse(err: unknown): NextResponse {
   return NextResponse.json(body, { status: 422, headers: corsHeaders });
 }
 
+async function initiateFincraPayout(params: {
+  payoutRequestId: string;
+  amount: number;
+  currency: 'NGN' | 'GHS' | 'KES';
+  bankAccountNumber: string;
+  bankCode: string;
+  accountHolderName: string;
+  reason?: string;
+}) {
+  const reference = `fincra_${params.payoutRequestId}_${Date.now()}`;
+  return createFincraTransfer({
+    amount: params.amount,
+    currency: params.currency,
+    accountNumber: params.bankAccountNumber,
+    bankCode: params.bankCode,
+    accountName: params.accountHolderName,
+    reference,
+    narration: params.reason ?? 'SoundBridge payout',
+  });
+}
+
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
@@ -107,7 +125,7 @@ export async function OPTIONS() {
  * {
  *   "payout_request_id": "<uuid from payout_requests>"
  * }
- * Looks up request, creator's verified bank account, then Wise with sourceCurrency USD, sourceAmount, targetCurrency from bank.
+ * Looks up request, creator's verified bank account, then initiates Fincra payout.
  * 
  * Body (single payout):
  * {
@@ -207,12 +225,12 @@ export async function POST(request: NextRequest) {
       const targetCurrency = (bank.currency || 'NGN').toUpperCase();
       if (!['NGN', 'GHS', 'KES'].includes(targetCurrency)) {
         return NextResponse.json(
-          { error: `Bank currency ${targetCurrency} is not supported for Wise payout` },
+          { error: `Bank currency ${targetCurrency} is not supported for Fincra payout` },
           { status: 400, headers: corsHeaders }
         );
       }
 
-      // Use plaintext for Wise: we currently store plaintext; if we switch to encrypting, toPlaintext decrypts.
+      // Use plaintext for payout provider: we currently store plaintext; if encrypted, toPlaintext decrypts.
       const accountNumber = toPlaintext(bank.account_number_encrypted);
       const bankCode = toPlaintext(bank.routing_number_encrypted) || (targetCurrency === 'NGN' ? '033' : '');
       const accountHolderName = (bank.account_holder_name ?? 'Account Holder').trim();
@@ -229,20 +247,17 @@ export async function POST(request: NextRequest) {
         .eq('id', payout_request_id);
 
       try {
-        const payoutParams: PayoutToCreatorParams = {
-          creatorId: pr.creator_id,
-          amount: 0,
+        const payout = await initiateFincraPayout({
+          payoutRequestId: String(payout_request_id),
+          amount: Number(pr.amount),
           currency: targetCurrency as 'NGN' | 'GHS' | 'KES',
           bankAccountNumber: accountNumber,
           bankCode,
           accountHolderName,
           reason: `Payout request ${payout_request_id}`,
-          sourceCurrency: (pr.currency || 'USD') as 'USD',
-          sourceAmount: Number(pr.amount),
-        };
-        const payout = await payoutToCreator(payoutParams);
-        // Store mapping payout_requests -> wise_payouts.
-        // Do NOT mark completed here: wait for the Wise webhook to confirm transfer completion.
+        });
+        // Store mapping payout_requests -> provider transfer reference.
+        // Do NOT mark completed here: wait for webhook to confirm transfer completion.
         await supabase
           .from('payout_requests')
           .update({
@@ -262,9 +277,8 @@ export async function POST(request: NextRequest) {
           { status: 200, headers: corsHeaders }
         );
       } catch (error: any) {
-        // Do NOT set status to 'failed': only Wise webhook (transfer.failed / transfer.cancelled) should set failed.
-        // Revert to pending so admin can retry. If a Wise transfer was created but funding failed (e.g. 403),
-        // the transfer may still exist and need manual funding via "Retry / Fund" on a processing row.
+        // Do NOT set status to 'failed': only provider webhook should set failed.
+        // Revert to pending so admin can retry.
         await supabase
           .from('payout_requests')
           .update({
@@ -272,7 +286,7 @@ export async function POST(request: NextRequest) {
             processed_at: null,
             stripe_transfer_id: null,
             updated_at: new Date().toISOString(),
-            rejection_reason: error?.message ?? 'Last attempt failed (retry or fund transfer if it exists)',
+            rejection_reason: error?.message ?? 'Last attempt failed (retry payout)',
           })
           .eq('id', payout_request_id);
         console.error('❌ Payout by request id error:', error);
@@ -282,56 +296,10 @@ export async function POST(request: NextRequest) {
 
     // Handle batch payout
     if (batch && Array.isArray(payouts)) {
-      console.log(`📦 Admin ${userId} initiating batch payout: ${payouts.length} creators`);
-
-      // Validate batch structure
-      if (payouts.length === 0) {
-        return NextResponse.json(
-          { error: 'Payouts array cannot be empty' },
-          { status: 400, headers: corsHeaders }
-        );
-      }
-
-      // Validate each payout item
-      for (const payout of payouts) {
-        if (!payout.creatorId || !payout.amount || !payout.currency || !payout.bankDetails) {
-          return NextResponse.json(
-            { error: 'Invalid payout item: missing required fields' },
-            { status: 400, headers: corsHeaders }
-          );
-        }
-      }
-
-      try {
-        const batchPayoutItems: BatchPayoutItem[] = payouts.map((p: any) => ({
-          creatorId: p.creatorId,
-          amount: p.amount,
-          currency: p.currency,
-          bankDetails: {
-            accountNumber: p.bankDetails.accountNumber,
-            bankCode: p.bankDetails.bankCode,
-            accountHolderName: p.bankDetails.accountHolderName,
-          },
-          reason: p.reason,
-        }));
-
-        const results = await batchPayout(batchPayoutItems, {
-          continueOnError: true, // Continue processing even if some fail
-          maxConcurrent: 5, // Process 5 payouts concurrently
-        });
-
-        return NextResponse.json(
-          {
-            success: true,
-            message: `Batch payout processed: ${results.successful} successful, ${results.failedCount} failed`,
-            results,
-          },
-          { status: 200, headers: corsHeaders }
-        );
-      } catch (error: any) {
-        console.error('❌ Batch payout error:', error);
-        return buildPayoutFailureResponse(error);
-      }
+      return NextResponse.json(
+        { error: 'Use /api/admin/payouts/batch for Fincra batch processing.' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     // Handle single payout (only when not payout_request_id and not batch)
@@ -352,20 +320,23 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // When sourceCurrency + sourceAmount are provided (e.g. USD payout request), Wise converts at live rate to target (currency).
-        const payoutParams: PayoutToCreatorParams = {
-          creatorId: singlePayoutParams.creatorId,
-          amount: singlePayoutParams.amount,
-          currency: singlePayoutParams.currency as 'NGN' | 'GHS' | 'KES',
-          bankAccountNumber: singlePayoutParams.bankAccountNumber,
-          bankCode: singlePayoutParams.bankCode,
-          accountHolderName: singlePayoutParams.accountHolderName,
-          reason: singlePayoutParams.reason,
-          sourceCurrency: singlePayoutParams.sourceCurrency || 'GBP',
-          ...(singlePayoutParams.sourceAmount != null && { sourceAmount: singlePayoutParams.sourceAmount }),
-        };
+        const currency = String(singlePayoutParams.currency ?? '').toUpperCase();
+        if (!isFincraCurrency(currency)) {
+          return NextResponse.json(
+            { error: `Unsupported payout currency for Fincra: ${currency}` },
+            { status: 400, headers: corsHeaders }
+          );
+        }
 
-        const payout = await payoutToCreator(payoutParams);
+        const payout = await initiateFincraPayout({
+          payoutRequestId: `manual_${Date.now()}`,
+          amount: Number(singlePayoutParams.amount),
+          currency,
+          bankAccountNumber: String(singlePayoutParams.bankAccountNumber),
+          bankCode: String(singlePayoutParams.bankCode),
+          accountHolderName: String(singlePayoutParams.accountHolderName),
+          reason: typeof singlePayoutParams.reason === 'string' ? singlePayoutParams.reason : undefined,
+        });
 
         return NextResponse.json(
           {
@@ -527,7 +498,7 @@ export async function GET(request: NextRequest) {
 
         const payoutRail =
           bankCurrency && ['NGN', 'GHS', 'KES'].includes(bankCurrency)
-            ? 'Wise'
+            ? 'Fincra'
             : 'Stripe Connect';
 
         const displayName = (creator?.display_name ?? '').trim() || null;
@@ -623,7 +594,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Wise payout history
+      // Legacy payout history table (wise_payouts) reused for provider payout records.
     let query = supabase
       .from('wise_payouts')
       .select('*')

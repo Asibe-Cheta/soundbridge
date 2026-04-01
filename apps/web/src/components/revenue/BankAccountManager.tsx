@@ -460,7 +460,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             const isWiseAccount = isWiseCurrency(bankAccount.currency);
             return (
               <>
-                {/* Wise: Ready for Withdrawals (no Stripe UI) */}
+                {/* Fincra: Ready for Withdrawals (no Stripe UI) */}
                 {isWiseAccount && (
                   <>
                     <div className="mb-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
@@ -469,7 +469,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                         <div className="flex-1">
                           <h4 className="font-medium text-green-300 mb-1">Ready for Withdrawals</h4>
                           <p className="text-green-200 text-sm">
-                            Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {bankAccount.currency} via Wise — typically arriving within 1–3 business days. Minimum withdrawal is $30. No further verification needed.
+                            Your bank account is set up and ready. When you earn from gigs, tips, or content, funds land in your SoundBridge wallet first. You can then withdraw to your local bank in {bankAccount.currency} via Fincra (Africa rail). No further verification needed.
                           </p>
                         </div>
                       </div>
@@ -480,7 +480,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                         <div className="flex-1">
                           <h4 className="font-medium text-blue-300 mb-1">Lower fees with a UK, EU, or US account</h4>
                           <p className="text-blue-200 text-sm">
-                            Have a UK, EU, or US bank account? Add it to receive your earnings with significantly lower fees, then transfer to your local account using an app like Lemfi, Wise Personal, or your bank&apos;s international transfer.
+                            Have a UK, EU, or US bank account? Add it to receive your earnings with lower fees, then transfer to your local account using your preferred remittance method.
                           </p>
                         </div>
                       </div>
@@ -521,7 +521,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                   </div>
                 )}
 
-                {/* Complete Verification Button (Stripe users only — never for Wise) */}
+                {/* Complete Verification Button (Stripe users only — never for Fincra rail) */}
                 {!isWiseAccount && bankAccount && bankAccount.stripe_account_id && bankAccount.verification_status === 'pending' && (
                   <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
                     <div className="flex items-start space-x-3">
@@ -724,7 +724,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                   <h4 className="font-medium text-blue-300 text-sm">Why Stripe Connect?</h4>
                   <ul className="text-blue-200 text-xs mt-1 space-y-1">
                     <li>• Secure and trusted payment processing</li>
-                    <li>• Payouts via Wise typically arrive in 1–3 business days</li>
+                    <li>• African payouts are processed via Fincra (NGN, GHS, KES)</li>
                     <li>• Lower fees compared to manual transfers</li>
                     <li>• Automatic tax reporting and compliance</li>
                   </ul>

@@ -3,6 +3,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
+import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
+import { decryptSecret } from '@/src/lib/encryption';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,9 +97,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (method !== 'stripe') {
+    if (method !== 'stripe' && method !== 'fincra') {
       return NextResponse.json(
-        { error: 'Only Stripe payouts are currently supported' },
+        { error: 'Supported payout methods are stripe and fincra' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -140,16 +142,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Stripe Connect account
+    // Get payout account details
     const { data: bankAccount, error: bankError } = await supabase
       .from('creator_bank_accounts')
-      .select('stripe_account_id, is_verified')
+      .select('stripe_account_id, is_verified, currency, account_number_encrypted, routing_number_encrypted, account_holder_name')
       .eq('user_id', user.id)
       .single();
 
-    if (bankError || !bankAccount || !bankAccount.stripe_account_id) {
+    if (bankError || !bankAccount) {
       return NextResponse.json(
-        { error: 'Stripe Connect account not found. Please complete onboarding first.' },
+        { error: 'Payout account not found. Please complete onboarding first.' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -161,17 +163,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Stripe transfer
-    const transfer = await stripe.transfers.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: currency.toLowerCase(),
-      destination: bankAccount.stripe_account_id,
-      description: `Payout to creator`,
-      metadata: {
-        creator_id: user.id,
-        payout_type: 'creator_earnings',
-      },
-    });
+    let transferId = '';
+    if (method === 'stripe') {
+      if (!bankAccount.stripe_account_id) {
+        return NextResponse.json(
+          { error: 'Stripe Connect account not found. Please complete onboarding first.' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      const transfer = await stripe.transfers.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: currency.toLowerCase(),
+        destination: bankAccount.stripe_account_id,
+        description: `Payout to creator`,
+        metadata: {
+          creator_id: user.id,
+          payout_type: 'creator_earnings',
+        },
+      });
+      transferId = transfer.id;
+    } else {
+      const payoutCurrency = String(bankAccount.currency || currency).toUpperCase();
+      if (!isFincraCurrency(payoutCurrency)) {
+        return NextResponse.json(
+          { error: `Fincra payouts support NGN, GHS, and KES only. Got ${payoutCurrency}.` },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+      const accountNumberEncrypted = String(bankAccount.account_number_encrypted || '');
+      const bankCodeEncrypted = String(bankAccount.routing_number_encrypted || '');
+      const accountNumber = accountNumberEncrypted.includes(':') ? decryptSecret(accountNumberEncrypted) : accountNumberEncrypted;
+      const bankCode = bankCodeEncrypted.includes(':') ? decryptSecret(bankCodeEncrypted) : bankCodeEncrypted;
+      const accountName = String(bankAccount.account_holder_name || 'Account Holder');
+      const reference = `fincra_payout_${user.id}_${Date.now()}`;
+      const transfer = await createFincraTransfer({
+        amount: Number(amount),
+        currency: payoutCurrency,
+        accountNumber,
+        bankCode,
+        accountName,
+        reference,
+        narration: 'SoundBridge creator payout',
+      });
+      transferId = transfer.id;
+    }
 
     // Deduct from wallet balance
     const { error: walletUpdateError } = await supabase
@@ -179,10 +214,10 @@ export async function POST(request: NextRequest) {
         user_uuid: user.id,
         transaction_type: 'payout',
         amount: -amount, // Negative amount for payout
-        description: `Payout via Stripe`,
-        reference_id: transfer.id,
+        description: `Payout via ${method === 'fincra' ? 'Fincra' : 'Stripe'}`,
+        reference_id: transferId,
         metadata: {
-          method: 'stripe',
+          method,
           currency: currency,
         }
       });
@@ -199,9 +234,9 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         amount: amount,
         currency: currency.toUpperCase(),
-        method: 'stripe',
+        method,
         status: 'pending',
-        stripe_transfer_id: transfer.id,
+        stripe_transfer_id: transferId,
       })
       .select()
       .single();

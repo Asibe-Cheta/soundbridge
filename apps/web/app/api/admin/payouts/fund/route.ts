@@ -1,12 +1,11 @@
 /**
- * Admin: Fund an existing Wise transfer (e.g. batch-created but not yet funded).
+ * Admin: Legacy fund endpoint.
  * POST /api/admin/payouts/fund
  * Body: { payout_request_id: string }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
-import { fundTransfer } from '@/src/lib/wise/transfers';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,23 +58,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const transferId = pr.stripe_transfer_id;
-    if (!transferId) {
-      return NextResponse.json(
-        { error: 'No Wise transfer ID on this payout request' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    await fundTransfer(transferId);
-
     return NextResponse.json(
-      { success: true, message: 'Transfer funded', payout_request_id: payoutRequestId, transfer_id: transferId },
+      {
+        success: true,
+        message: 'No manual funding required for Fincra payouts. This endpoint is kept for backward compatibility.',
+        payout_request_id: payoutRequestId,
+      },
       { status: 200, headers: corsHeaders }
     );
   } catch (error: any) {
-    console.error('Admin fund transfer error:', error);
-    const message = error?.message ?? error?.error ?? 'Failed to fund transfer';
+    console.error('Admin fund endpoint error:', error);
+    const message = error?.message ?? error?.error ?? 'Request failed';
     return NextResponse.json(
       { error: 'Fund failed', message },
       { status: 500, headers: corsHeaders }

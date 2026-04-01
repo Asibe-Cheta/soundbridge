@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
-import { submitWiseBatchGroupPayments, type WiseBatchGroupPayoutItem } from '@/src/lib/wise/batch-group-payout';
+import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
-import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -76,33 +75,37 @@ export async function POST(request: NextRequest) {
       banksByUser.set(b.user_id, list);
     });
 
-    // Build Wise batch items grouped by source currency.
-    const itemsBySource: Record<string, WiseBatchGroupPayoutItem[]> = {};
     const unsupported: Array<{ payout_request_id: string; reason: string }> = [];
     const belowMinimum: Array<{ payout_request_id: string; reason: string }> = [];
-
+    const processed: Array<{ payout_request_id: string; transfer_id: string }> = [];
+    const submissionErrors: Array<{ payout_request_id: string; error: string }> = [];
     for (const pr of pending) {
       const creatorId = pr.creator_id;
       const requestId = pr.id;
-      const bank =
-        pr.bank_account_id ? banksById.get(pr.bank_account_id) : (banksByUser.get(creatorId) ?? [])[0];
+      const bank = pr.bank_account_id ? banksById.get(pr.bank_account_id) : (banksByUser.get(creatorId) ?? [])[0];
+      const currency = String(bank?.currency ?? '').toUpperCase();
 
-      const targetCurrency = (bank?.currency ?? '').toUpperCase();
-      const supportedTargets = ['NGN', 'GHS', 'KES'];
-
-      if (!bank || !supportedTargets.includes(targetCurrency)) {
+      if (!bank || !isFincraCurrency(currency)) {
         unsupported.push({
           payout_request_id: requestId,
-          reason: bank ? `Unsupported bank currency: ${targetCurrency}` : 'No verified bank account found',
+          reason: bank ? `Unsupported bank currency: ${currency}` : 'No verified bank account found',
+        });
+        continue;
+      }
+
+      const sourceAmount = Number(pr.amount);
+      const minPayout = getMinPayoutForCurrency(pr.currency);
+      if (!Number.isFinite(sourceAmount) || sourceAmount < minPayout) {
+        belowMinimum.push({
+          payout_request_id: requestId,
+          reason: `Below minimum payout threshold (${String(pr.currency ?? 'USD').toUpperCase()} ${minPayout.toFixed(2)})`,
         });
         continue;
       }
 
       const accountNumber = toPlaintext(bank.account_number_encrypted);
-      const routingPlain = toPlaintext(bank.routing_number_encrypted);
-      const bankCode = routingPlain || (targetCurrency === 'NGN' ? '033' : '');
+      const bankCode = toPlaintext(bank.routing_number_encrypted);
       const accountHolderName = (bank.account_holder_name ?? 'Account Holder').trim();
-
       if (!accountNumber || !bankCode || !accountHolderName) {
         unsupported.push({
           payout_request_id: requestId,
@@ -111,128 +114,35 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const sourceCurrency = (pr.currency ?? 'USD').toUpperCase();
-      const sourceAmount = Number(pr.amount);
-      const minPayout = getMinPayoutForCurrency(sourceCurrency);
-      if (!Number.isFinite(sourceAmount) || sourceAmount < minPayout) {
-        belowMinimum.push({
-          payout_request_id: requestId,
-          reason: `Below minimum payout threshold (${sourceCurrency} ${minPayout.toFixed(2)})`,
-        });
-        continue;
-      }
-
-      const items: WiseBatchGroupPayoutItem = {
-        payoutRequestId: requestId,
-        creatorId,
-        sourceCurrency: sourceCurrency === 'USD' ? 'USD' : (sourceCurrency === 'GBP' ? 'GBP' : 'EUR'),
-        sourceAmount: Number.isFinite(sourceAmount) ? sourceAmount : 0,
-        targetCurrency: targetCurrency as WiseBatchGroupPayoutItem['targetCurrency'],
-        bankDetails: {
+      try {
+        const reference = `fincra_${requestId}_${Date.now()}`;
+        const transfer = await createFincraTransfer({
+          amount: sourceAmount,
+          currency,
           accountNumber,
           bankCode,
-          accountHolderName,
-          bankName: bank.bank_name ?? null,
-        },
-        reason: 'Batch payouts',
-      };
-
-      const key = sourceCurrency;
-      itemsBySource[key] = itemsBySource[key] ?? [];
-      itemsBySource[key].push(items);
-    }
-
-    const processed: Array<{ payout_request_id: string; wise_payout_id: string }> = [];
-    const submissionErrors: Array<{ sourceCurrency: string; error: string; payout_request_ids: string[] }> = [];
-    const batchSummaries: Array<{
-      batchId: string;
-      sourceCurrency: string;
-      transferCount: number;
-      totalSourceAmount: number;
-      wiseDashboardUrl: string;
-    }> = [];
-
-    for (const [sourceCurrencyKey, items] of Object.entries(itemsBySource)) {
-      if (!items || items.length === 0) continue;
-
-      const sourceCurrency = sourceCurrencyKey === 'USD' ? 'USD' : sourceCurrencyKey === 'GBP' ? 'GBP' : 'EUR';
-
-      const payoutRequestIds = items.map((i) => i.payoutRequestId);
-      try {
-        const submission = await submitWiseBatchGroupPayments(items, sourceCurrency);
-        const wisePayoutRows = submission.wisePayoutRows;
-
-        await Promise.all(
-          wisePayoutRows.map(async ({ payoutRequestId, wisePayout }) => {
-            await supabase
-              .from('payout_requests')
-              .update({
-                status: 'pending_batch',
-                processed_at: new Date().toISOString(),
-                stripe_transfer_id: wisePayout.id,
-                rejection_reason: null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', payoutRequestId);
-            processed.push({ payout_request_id: payoutRequestId, wise_payout_id: wisePayout.id });
-          })
-        );
-        batchSummaries.push({
-          batchId: submission.batchId,
-          sourceCurrency: submission.sourceCurrency,
-          transferCount: submission.transferCount,
-          totalSourceAmount: submission.totalSourceAmount,
-          wiseDashboardUrl: submission.wiseDashboardUrl,
+          accountName: accountHolderName,
+          reference,
+          narration: `Payout request ${requestId}`,
         });
-      } catch (err: any) {
+
         await supabase
           .from('payout_requests')
           .update({
-            status: 'pending',
-            processed_at: null,
-            stripe_transfer_id: null,
+            status: 'processing',
+            processed_at: new Date().toISOString(),
+            stripe_transfer_id: transfer.id,
+            rejection_reason: null,
             updated_at: new Date().toISOString(),
           })
-          .in('id', payoutRequestIds);
+          .eq('id', requestId);
 
-        const rawMessage = err?.message || 'Batch submission failed';
-        const is403 =
-          err?.code === 403 ||
-          err?.status === 403 ||
-          String(rawMessage).includes('403');
-        const error =
-          is403
-            ? `${rawMessage} — Requests re-queued to Pending. Fund the batch manually in Wise dashboard once created.`
-            : rawMessage;
-
+        processed.push({ payout_request_id: requestId, transfer_id: transfer.id });
+      } catch (err: any) {
         submissionErrors.push({
-          sourceCurrency,
-          error,
-          payout_request_ids: payoutRequestIds,
+          payout_request_id: requestId,
+          error: err?.message || 'Fincra payout submission failed',
         });
-      }
-    }
-
-    if (batchSummaries.length > 0) {
-      const adminEmail = process.env.ADMIN_PAYOUT_EMAIL || process.env.ADMIN_EMAIL;
-      if (adminEmail) {
-        const totalCount = batchSummaries.reduce((sum, b) => sum + b.transferCount, 0);
-        const totalAmount = batchSummaries.reduce((sum, b) => sum + b.totalSourceAmount, 0);
-        const lines = batchSummaries
-          .map((b) => `<li><code>${b.batchId}</code> — ${b.transferCount} payouts — ${b.sourceCurrency} ${b.totalSourceAmount.toFixed(2)}</li>`)
-          .join('');
-        await SendGridService.sendHtmlEmail(
-          adminEmail,
-          `Wise payout batch ready to fund (${totalCount} payouts)`,
-          `<div style="font-family:Arial,sans-serif">
-            <h2>Wise payout batch created</h2>
-            <p>${totalCount} payouts have been queued via Wise Batch Payments.</p>
-            <p><strong>Total:</strong> ${totalAmount.toFixed(2)} (across currencies)</p>
-            <p>Manual step required: log in to Wise and click <strong>Fund batch</strong>.</p>
-            <ul>${lines}</ul>
-            <p><a href="https://wise.com/home">Open Wise dashboard</a></p>
-          </div>`
-        );
       }
     }
 
@@ -242,7 +152,6 @@ export async function POST(request: NextRequest) {
         processed,
         unsupported,
         belowMinimum,
-        batches: batchSummaries,
         submissionErrors,
         totalPending: pending.length,
       },

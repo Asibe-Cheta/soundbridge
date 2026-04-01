@@ -1,17 +1,16 @@
 /**
- * Wise-routed currencies (payouts via Wise, not Stripe Connect).
- * @see WEB_TEAM_WISE_VERIFICATION_STATUS_FIX.md
+ * Fincra-routed currencies (African payouts via Fincra, not Stripe Connect).
+ * Kept backwards-compatible exports to avoid broad refactors.
  */
-export const WISE_CURRENCIES = [
-  'NGN', 'GHS', 'KES', 'ZAR', 'TZS', 'UGX', 'EGP', 'RWF', 'XOF', 'XAF',
-  'INR', 'IDR', 'MYR', 'PHP', 'THB', 'VND', 'BDT', 'PKR', 'LKR', 'NPR', 'CNY', 'KRW',
-  'BRL', 'MXN', 'ARS', 'CLP', 'COP', 'CRC', 'UYU',
-  'TRY', 'ILS', 'MAD', 'UAH', 'GEL',
-] as const;
+export const FINCRA_CURRENCIES = ['NGN', 'GHS', 'KES'] as const;
+export type FincraCurrency = (typeof FINCRA_CURRENCIES)[number];
 
-export type WiseCurrency = (typeof WISE_CURRENCIES)[number];
-
-export function isWiseCurrency(currency: string | null | undefined): boolean {
+export function isFincraCurrency(currency: string | null | undefined): boolean {
   if (!currency) return false;
-  return WISE_CURRENCIES.includes(currency.toUpperCase() as WiseCurrency);
+  return FINCRA_CURRENCIES.includes(currency.toUpperCase() as FincraCurrency);
 }
+
+// Backward-compat aliases used across existing payout code paths.
+export const WISE_CURRENCIES = FINCRA_CURRENCIES;
+export type WiseCurrency = FincraCurrency;
+export const isWiseCurrency = isFincraCurrency;
