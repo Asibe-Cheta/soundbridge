@@ -3,7 +3,7 @@
  * Handles sending push notifications via Expo Push API
  */
 
-import { ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-server-sdk';
+import { Expo, ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-server-sdk';
 import { createClient } from '@supabase/supabase-js';
 import { getExpoPushClient } from '@/src/lib/expo-push-client';
 
@@ -49,7 +49,6 @@ export interface PushNotificationResult {
  */
 async function getUserPushTokens(userId: string): Promise<string[]> {
   const supabase = getSupabaseAdmin();
-  const expo = getExpoPushClient();
   const out: string[] = [];
   const seen = new Set<string>();
 
@@ -59,7 +58,7 @@ async function getUserPushTokens(userId: string): Promise<string[]> {
     .eq('id', userId)
     .maybeSingle();
   const profileToken = (profile as { expo_push_token?: string } | null)?.expo_push_token;
-  if (profileToken && expo.isExpoPushToken(profileToken)) {
+  if (profileToken && Expo.isExpoPushToken(profileToken)) {
     seen.add(profileToken);
     out.push(profileToken);
   }
@@ -77,7 +76,7 @@ async function getUserPushTokens(userId: string): Promise<string[]> {
 
   for (const row of data ?? []) {
     const token = row.push_token;
-    if (token && expo.isExpoPushToken(token) && !seen.has(token)) {
+    if (token && Expo.isExpoPushToken(token) && !seen.has(token)) {
       seen.add(token);
       out.push(token);
     }

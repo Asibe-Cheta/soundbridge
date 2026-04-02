@@ -4,7 +4,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getExpoPushClient } from '@/src/lib/expo-push-client';
+import { getExpoPushClient, isValidExpoPushToken } from '@/src/lib/expo-push-client';
 import { canReceivePushOfKind } from '@/src/lib/notification-push-preferences';
 
 function getExpo() {
@@ -20,10 +20,10 @@ async function getPushTokenForUser(supabase: SupabaseClient, userId: string): Pr
     .limit(1)
     .maybeSingle();
   const token = (tokenRow as { push_token?: string } | null)?.push_token ?? null;
-  if (token && getExpo().isExpoPushToken(token)) return token;
+  if (token && isValidExpoPushToken(token)) return token;
   const { data: profile } = await supabase.from('profiles').select('expo_push_token').eq('id', userId).maybeSingle();
   const profileToken = (profile as { expo_push_token?: string } | null)?.expo_push_token ?? null;
-  if (profileToken && getExpo().isExpoPushToken(profileToken)) return profileToken;
+  if (profileToken && isValidExpoPushToken(profileToken)) return profileToken;
   return null;
 }
 

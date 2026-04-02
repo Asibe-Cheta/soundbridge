@@ -7,6 +7,11 @@ import { Expo } from 'expo-server-sdk';
 
 let _expo: Expo | null = null;
 
+/** expo-server-sdk exposes token validation as a static method only — do not call on an instance. */
+export function isValidExpoPushToken(token: unknown): token is string {
+  return Expo.isExpoPushToken(token);
+}
+
 export function getExpoPushClient(): Expo {
   if (!_expo) {
     _expo = new Expo({

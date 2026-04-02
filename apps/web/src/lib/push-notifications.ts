@@ -4,7 +4,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getExpoPushClient } from '@/src/lib/expo-push-client';
+import { getExpoPushClient, isValidExpoPushToken } from '@/src/lib/expo-push-client';
 
 function getExpo() {
   return getExpoPushClient();
@@ -16,7 +16,7 @@ function logPush(scope: string, payload: Record<string, unknown>) {
 
 /**
  * Get recipient's Expo push token. Prefer profiles.expo_push_token, then user_push_tokens (active).
- * Only returns if token is valid (Expo.isExpoPushToken).
+ * Only returns if token is valid (Expo static isExpoPushToken via isValidExpoPushToken).
  */
 export async function getPushToken(
   supabase: SupabaseClient,
@@ -28,7 +28,7 @@ export async function getPushToken(
     .eq('id', userId)
     .maybeSingle();
   const profileToken = (profile as { expo_push_token?: string } | null)?.expo_push_token ?? null;
-  if (profileToken && getExpo().isExpoPushToken(profileToken)) return profileToken;
+  if (profileToken && isValidExpoPushToken(profileToken)) return profileToken;
 
   const { data: tokenRow } = await supabase
     .from('user_push_tokens')
@@ -39,7 +39,7 @@ export async function getPushToken(
     .limit(1)
     .maybeSingle();
   const token = (tokenRow as { push_token?: string } | null)?.push_token ?? null;
-  if (token && getExpo().isExpoPushToken(token)) return token;
+  if (token && isValidExpoPushToken(token)) return token;
   return null;
 }
 

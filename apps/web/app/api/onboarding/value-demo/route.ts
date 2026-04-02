@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         role,
         followers_count,
         total_plays,
-        verified,
+        is_verified,
         genres
       `)
       .eq('role', 'creator')
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       stats: {
         connections: profile.followers_count || 0,
         tracks: 0, // Would need to count from audio_tracks table
-        verified: profile.verified || false
+        verified: profile.is_verified || false
       }
     }));
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
           role,
           followers_count,
           total_plays,
-          verified,
+          is_verified,
           genres
         `)
         .eq('role', 'creator')
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
           stats: {
             connections: profile.followers_count || 0,
             tracks: 0,
-            verified: profile.verified || false
+            verified: profile.is_verified || false
           }
         }));
 

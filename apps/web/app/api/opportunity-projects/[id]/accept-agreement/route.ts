@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { getExpoPushClient } from '@/src/lib/expo-push-client';
+import { getExpoPushClient, isValidExpoPushToken } from '@/src/lib/expo-push-client';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -74,7 +74,7 @@ export async function POST(
       .single();
 
     const expo = getExpoPushClient();
-    if (tokenRow?.push_token && expo.isExpoPushToken(tokenRow.push_token)) {
+    if (tokenRow?.push_token && isValidExpoPushToken(tokenRow.push_token)) {
       try {
         await expo.sendPushNotificationsAsync([
           {

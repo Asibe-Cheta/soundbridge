@@ -36,6 +36,13 @@ interface CreatePostNotificationParams {
   pushBody?: string;
 }
 
+function safeUuidForRelatedEntity(id: string | null | undefined): string | null {
+  if (!id || typeof id !== 'string') return null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+    ? id
+    : null;
+}
+
 function relatedTypeForNotification(
   type: CreatePostNotificationParams['type']
 ): string | null {
@@ -212,14 +219,20 @@ export async function createPostNotification(params: CreatePostNotificationParam
       return { success: false, error: notifError.message };
     }
 
+    // Align with production notification_logs schema (body + data + related_entity_*), not legacy message/action_url columns.
     const { error: logError } = await supabase.from('notification_logs').insert({
       user_id: params.userId,
       notification_type: params.type,
       title: params.title,
-      message: params.message,
-      related_id: params.relatedId || null,
-      action_url: params.actionUrl || null,
-      metadata: params.metadata || null,
+      body: params.message || params.title,
+      data: {
+        ...(params.metadata ?? {}),
+        action_url: params.actionUrl ?? null,
+        related_id: params.relatedId ?? null,
+        notification_type: params.type,
+      },
+      related_entity_type: relatedTypeForNotification(params.type),
+      related_entity_id: safeUuidForRelatedEntity(params.relatedId),
       sent_at: new Date().toISOString(),
     });
 
