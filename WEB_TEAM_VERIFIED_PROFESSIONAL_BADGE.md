@@ -155,3 +155,16 @@ Show the Verified Professional badge on service provider cards in search/discove
 - The Persona React Native SDK will be wired on mobile in April once the backend endpoints are live
 - Badge name is **"Verified Professional"** — not "Verified" or a blue tick. This distinction matters for user trust
 - Re-verification is never required after the first successful verification, even if the user cancels and re-subscribes
+
+---
+
+## API Contract Note (Mobile Wiring)
+
+`GET /api/service-providers/[userId]/badges` now returns premium-gated verification fields that should drive badge logic directly:
+
+- `verifiedProfessionalBadgeActive: boolean`
+- `verifiedProfessionalState: 'verified_premium' | 'verified_downgraded' | 'premium_not_verified' | 'free_not_verified'`
+- `activePremium: boolean`
+
+Mobile should pass these fields through from `fetchBadgeInsights` in `creatorExpansionService.ts`.
+Do not rely only on `profile.is_verified` for badge display, since badge visibility is subscription-gated.
