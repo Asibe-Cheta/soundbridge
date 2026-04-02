@@ -90,7 +90,7 @@ export async function POST(
         .single();
       const displayName = followerProfile?.display_name || followerProfile?.username || 'Someone';
       const atLabel = followerProfile?.username ? `@${followerProfile.username}` : displayName;
-      notifyNewFollower(
+      await notifyNewFollower(
         targetUserId,
         user.id,
         displayName,
@@ -99,7 +99,7 @@ export async function POST(
           pushTitle: `${atLabel} started following you`,
           pushBody: 'Tap to view their profile',
         }
-      ).catch((inboxErr) => console.error('Follow notification:', inboxErr));
+      );
     } catch (pushErr) {
       console.error('Follow notification:', pushErr);
     }

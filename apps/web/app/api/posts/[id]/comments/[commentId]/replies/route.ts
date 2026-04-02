@@ -103,15 +103,17 @@ export async function POST(
       const atLabel = profile?.username ? `@${profile.username}` : userName;
       const preview =
         content.trim().length > 100 ? `${content.trim().slice(0, 99)}…` : content.trim();
-      notifyCommentReply(parentComment.user_id, userName, postId, commentId, reply.id, {
-        actorUserId: user.id,
-        actorUsername: profile?.username ?? null,
-        pushTitle: `${atLabel} replied to your comment`,
-        pushBody: preview,
-      }).catch((err) => {
+      try {
+        await notifyCommentReply(parentComment.user_id, userName, postId, commentId, reply.id, {
+          actorUserId: user.id,
+          actorUsername: profile?.username ?? null,
+          pushTitle: `${atLabel} replied to your comment`,
+          pushBody: preview,
+        });
+      } catch (err) {
         console.error('Failed to send reply notification:', err);
         // Don't fail the request if notification fails
-      });
+      }
     }
 
     console.log('✅ Reply created successfully:', reply.id);

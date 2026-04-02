@@ -238,14 +238,16 @@ export async function POST(
           congrats: '🎉',
         };
         const emoji = reactionEmoji[reaction_type] || '❤️';
-        notifyPostReaction(post.user_id, userName, postId, reaction_type, {
-          actorUserId: user.id,
-          actorUsername: userProfile?.username ?? null,
-          pushTitle: `${atLabel} reacted to your post`,
-          pushBody: `${emoji} on your drop`,
-        }).catch((err) => {
+        try {
+          await notifyPostReaction(post.user_id, userName, postId, reaction_type, {
+            actorUserId: user.id,
+            actorUsername: userProfile?.username ?? null,
+            pushTitle: `${atLabel} reacted to your post`,
+            pushBody: `${emoji} on your drop`,
+          });
+        } catch (err) {
           console.error('Failed to send reaction notification:', err);
-        });
+        }
       }
     }
 

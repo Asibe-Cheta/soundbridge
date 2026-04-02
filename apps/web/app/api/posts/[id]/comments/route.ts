@@ -269,14 +269,16 @@ export async function POST(
       const atLabel = profile?.username ? `@${profile.username}` : userName;
       const preview =
         content.trim().length > 100 ? `${content.trim().slice(0, 99)}…` : content.trim();
-      notifyPostComment(post.user_id, userName, postId, comment.id, {
-        actorUserId: user.id,
-        actorUsername: profile?.username ?? null,
-        pushTitle: `${atLabel} commented on your post`,
-        pushBody: preview,
-      }).catch((err) => {
+      try {
+        await notifyPostComment(post.user_id, userName, postId, comment.id, {
+          actorUserId: user.id,
+          actorUsername: profile?.username ?? null,
+          pushTitle: `${atLabel} commented on your post`,
+          pushBody: preview,
+        });
+      } catch (err) {
         console.error('Failed to send comment notification:', err);
-      });
+      }
     }
 
     console.log('✅ Comment created successfully:', comment.id);

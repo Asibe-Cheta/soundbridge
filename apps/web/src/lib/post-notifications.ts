@@ -154,10 +154,10 @@ function buildMobilePushData(
   }
 }
 
-function sendInstantPush(
+async function sendInstantPush(
   supabase: ReturnType<typeof createServiceClient>,
   params: CreatePostNotificationParams
-): void {
+): Promise<void> {
   const kind = pushKindForType(params.type);
   if (!kind) return;
 
@@ -168,14 +168,12 @@ function sendInstantPush(
   const data = buildMobilePushData(params);
   const channelId = channelIdForType(params.type);
 
-  void sendExpoPushIfAllowed(supabase, params.userId, kind, {
+  await sendExpoPushIfAllowed(supabase, params.userId, kind, {
     title,
     body,
     data,
     channelId,
     priority: 'high',
-  }).catch((err) => {
-    console.error('[createPostNotification] instant push:', err);
   });
 }
 
@@ -229,7 +227,11 @@ export async function createPostNotification(params: CreatePostNotificationParam
       console.warn('[createPostNotification] notification_logs (non-fatal):', logError.message);
     }
 
-    sendInstantPush(supabase, params);
+    try {
+      await sendInstantPush(supabase, params);
+    } catch (pushError) {
+      console.error('[createPostNotification] instant push:', pushError);
+    }
 
     return { success: true, data: inboxRow };
   } catch (error: any) {
