@@ -12,10 +12,23 @@ jobs:
     
     steps:
       - name: Send queued notifications
+        env:
+          # Must match apps/web send-queued route: CRON_SECRET || SUPABASE_SERVICE_ROLE_KEY
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          curl -X POST https://soundbridge.live/api/notifications/send-queued \
+          if [ -n "${CRON_SECRET}" ]; then
+            TOKEN="${CRON_SECRET}"
+          else
+            TOKEN="${SUPABASE_SERVICE_ROLE_KEY}"
+          fi
+          if [ -z "${TOKEN}" ]; then
+            echo "Missing GitHub Actions secret: set CRON_SECRET (same as Vercel) and/or SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+          curl -X POST "https://www.soundbridge.live/api/notifications/send-queued" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${TOKEN}" \
             --fail-with-body
         
       - name: Log result
