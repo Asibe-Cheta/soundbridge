@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/((?!\\.well-known|api|wise-web-hook).+)",
+      "has": [{ "type": "host", "value": "soundbridge.live" }],
+      "destination": "https://www.soundbridge.live/$1",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/moderate-content",
