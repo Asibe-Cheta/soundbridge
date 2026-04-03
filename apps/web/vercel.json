@@ -14,7 +14,11 @@
     },
     {
       "path": "/api/cron/process-pending-notifications",
-      "schedule": "*/5 * * * *"
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/send-event-push-queue",
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/expire-grace-periods",

@@ -1,6 +1,5 @@
-// Vercel Cron Job: Process Pending Event Notifications
-// Runs every 5 minutes to send scheduled event notifications
-// Endpoint: /api/cron/process-pending-notifications
+// Vercel Cron Job: Process pending rows in scheduled_notifications (event reminders, legacy paths).
+// Schedule: every minute (vercel.json). True instant paths use direct Expo send or Supabase pg_net → /api/internal/push/*.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
