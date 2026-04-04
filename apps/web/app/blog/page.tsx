@@ -82,13 +82,13 @@ export default function BlogPage() {
             Start your SoundBridge journey
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Join the waitlist to connect professionally, promote events for free, and keep 90% of your revenue.
+            Download SoundBridge on iOS — connect professionally, promote events for free, and keep 90% of your revenue.
           </p>
           <Link
-            href="/waitlist"
+            href="/app"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
           >
-            Join Waitlist
+            Download for iOS
           </Link>
         </div>
 

@@ -99,7 +99,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'If you are tired of the DM problem, join the SoundBridge waitlist today. We are launching in April 2026 and building a community that values professionalism, quality, and fair creator economics.'
+          'If you are tired of the DM problem, download SoundBridge on iOS today. We are building a community that values professionalism, quality, and fair creator economics.'
       }
     ]
   },
@@ -192,7 +192,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'SoundBridge is designed for creators who want a career, not just a profile. If that is you, join the waitlist and be part of the launch.'
+          'SoundBridge is designed for creators who want a career, not just a profile. If that is you, get the app and be part of the launch.'
       }
     ]
   },
@@ -302,7 +302,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'Join the waitlist to be part of the launch and start building your professional network before April 2026.'
+          'Download the app to be part of the launch and start building your professional network.'
       }
     ]
   },
@@ -432,7 +432,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'SoundBridge launches publicly in April 2026. Early adopters get priority onboarding, lifetime 15% discount (£59.50/year vs £70 standard), direct founder access, and beta access to new features. We\'re not a streaming app, a TikTok alternative, or a replacement for Spotify — we\'re career infrastructure that complements distribution. Sign up at soundbridge.live/waitlist.'
+          'SoundBridge launches publicly in April 2026. Early adopters get priority onboarding, lifetime 15% discount (£59.50/year vs £70 standard), direct founder access, and beta access to new features. We\'re not a streaming app, a TikTok alternative, or a replacement for Spotify — we\'re career infrastructure that complements distribution. Get the iOS app at soundbridge.live/app.'
       },
       { type: 'h2', text: 'The Bottom Line' },
       {

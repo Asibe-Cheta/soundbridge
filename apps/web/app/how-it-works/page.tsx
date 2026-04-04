@@ -59,10 +59,10 @@ export default function HowItWorksPage() {
 
         <div className="mt-12 text-center">
           <Link
-            href="/waitlist"
+            href="/app"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
           >
-            Join Waitlist
+            Get the app
           </Link>
         </div>
       </main>

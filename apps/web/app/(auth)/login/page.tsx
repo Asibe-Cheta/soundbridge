@@ -106,8 +106,8 @@ function LoginContent() {
     const hasBetaAccess = localStorage.getItem('beta_access') === 'granted';
 
     if (isBetaMode && !hasBetaAccess) {
-      // No beta access - redirect to waitlist
-      router.push('/waitlist');
+      // No beta access - redirect to app download
+      router.push('/app');
       return;
     }
   }, [router]);

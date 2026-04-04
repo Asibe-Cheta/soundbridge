@@ -6,7 +6,7 @@ import { useTheme } from '@/src/contexts/ThemeContext';
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
 
-const DEFAULT_WAITLIST_PATH = '/waitlist';
+const DEFAULT_QR_PATH = '/app';
 const PREVIEW_SIZE = 280;
 const DOWNLOAD_SIZE = 1024; // High-quality for print/banner
 const DEFAULT_DARK = '#000000';
@@ -28,7 +28,7 @@ export default function QRGeneratorPage() {
       typeof window !== 'undefined'
         ? window.location.origin
         : 'https://soundbridge.live';
-    const path = url.trim() || DEFAULT_WAITLIST_PATH;
+    const path = url.trim() || DEFAULT_QR_PATH;
     const full = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
     setResolvedUrl(full);
   }, [url]);
@@ -73,7 +73,7 @@ export default function QRGeneratorPage() {
         errorCorrectionLevel: 'H',
       });
       const link = document.createElement('a');
-      link.download = `soundbridge-waitlist-qr-${Date.now()}.png`;
+      link.download = `soundbridge-app-qr-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } catch (e) {
@@ -99,7 +99,7 @@ export default function QRGeneratorPage() {
             QR Code Generator
           </span>
           <Link
-            href="/waitlist"
+            href="/app"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
               isDark
                 ? 'text-white hover:bg-white/10'
@@ -107,7 +107,7 @@ export default function QRGeneratorPage() {
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Waitlist</span>
+            <span className="hidden sm:inline">App download page</span>
           </Link>
         </div>
       </header>
@@ -122,9 +122,9 @@ export default function QRGeneratorPage() {
           <p
             className={`text-base mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
           >
-            Generate a high-quality QR code for the SoundBridge waitlist page —
-            ideal for event banners (e.g. University of Bedfordshire). Preview
-            updates as you type; change colours below then download PNG for print.
+            Generate a high-quality QR code for any SoundBridge URL — e.g. the app
+            download page for event banners. Preview updates as you type; change colours
+            below then download PNG for print.
           </p>
 
           {/* URL input */}
@@ -132,13 +132,13 @@ export default function QRGeneratorPage() {
             <label
               className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
             >
-              Waitlist URL (path or full URL)
+              Target URL (path or full URL)
             </label>
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder={DEFAULT_WAITLIST_PATH}
+              placeholder={DEFAULT_QR_PATH}
               className={`w-full px-4 py-3 rounded-xl border text-base placeholder-gray-500 ${
                 isDark
                   ? 'bg-white/10 border-white/20 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'

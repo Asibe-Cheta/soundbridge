@@ -29,8 +29,6 @@ export default function HomePageClient() {
   const { theme } = useTheme();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -59,24 +57,6 @@ export default function HomePageClient() {
 
     return () => clearTimeout(timeout);
   }, [loading, isMobile]);
-
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const response = await fetch('/api/waitlist/count');
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            setWaitlistCount(result.data.total);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch waitlist count:', error);
-      }
-    };
-
-    fetchCount();
-  }, []);
 
   if (loading && !loadingTimeout) {
     return (
@@ -373,10 +353,6 @@ export default function HomePageClient() {
     );
   }
 
-  const waitlistHeadline = waitlistCount
-    ? `Join ${waitlistCount.toLocaleString()}+ musicians, podcasters, and producers preparing for launch`
-    : 'Join 12,000+ musicians, podcasters, and producers preparing for launch';
-
   return (
     <div
       className={`min-h-screen ${
@@ -415,7 +391,7 @@ export default function HomePageClient() {
             }`}
           >
             <Sparkles className="w-4 h-4 text-pink-500" />
-            Launching April 2026
+            iOS app live · Android soon
           </div>
           <h1 className={`text-4xl lg:text-6xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             LinkedIn for Audio Creators
@@ -426,10 +402,10 @@ export default function HomePageClient() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="/waitlist"
+              href="/app"
               className="px-8 py-4 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all font-semibold"
             >
-              Join Waitlist
+              Get the app
             </Link>
             <a
               href="#features"
@@ -526,10 +502,10 @@ export default function HomePageClient() {
             }`}
           >
             <CheckCircle className="w-4 h-4 text-green-500" />
-            {waitlistHeadline}
+            Built for musicians, podcasters & producers
           </div>
           <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Be first to get early access, featured placement, and launch updates.
+            Professional networking, free event promotion, and creator-first earnings — on mobile and web.
           </p>
         </section>
 
@@ -545,13 +521,13 @@ export default function HomePageClient() {
             Start Your SoundBridge Journey
           </h2>
           <p className={`text-lg mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            Join the waitlist to access professional networking, free event promotion, and creator-first monetization.
+            Download SoundBridge on iPhone — Android is coming mid-April 2026.
           </p>
           <Link
-            href="/waitlist"
+            href="/app"
             className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all font-semibold"
           >
-            Join Waitlist
+            Download for iOS
             <ArrowRight className="w-5 h-5" />
           </Link>
         </section>

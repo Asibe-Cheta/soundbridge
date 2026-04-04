@@ -69,8 +69,8 @@ function SignupContent() {
 
     // Check if beta mode is active and user doesn't have access
     if (isBetaMode && !hasBetaAccess) {
-      // No beta access - redirect to waitlist
-      router.push('/waitlist');
+      // No beta access - redirect to app download
+      router.push('/app');
       return;
     }
   }, [router, searchParams]);

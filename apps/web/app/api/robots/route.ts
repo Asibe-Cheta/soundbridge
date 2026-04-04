@@ -26,7 +26,7 @@ Allow: /legal/
 Allow: /blog/
 Allow: /about/
 Allow: /how-it-works/
-Allow: /waitlist/
+Allow: /app/
 
 # Crawl delay for respectful crawling
 Crawl-delay: 1

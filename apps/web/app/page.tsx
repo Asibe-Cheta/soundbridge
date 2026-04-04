@@ -4,7 +4,7 @@ import HomePageClient from './page.client';
 export const metadata: Metadata = {
   title: 'SoundBridge - Professional Network for Audio Creators | LinkedIn for Musicians',
   description:
-    'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 90% of your revenue. Join 12,000+ creators.',
+    'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 90% of your revenue. Get the iOS app.',
   keywords: [
     'audio creators platform',
     'musician networking',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SoundBridge - Professional Network for Audio Creators',
     description:
-      'Promote events for free, find collaborators, and keep 90% of your revenue. Join the waitlist.'
+      'Promote events for free, find collaborators, and keep 90% of your revenue. Download the app on iOS.'
   }
 };
 

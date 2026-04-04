@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           dynamicTemplateData: {
             subject: 'Welcome to SoundBridge Waitlist! 🎵',
             name: email.split('@')[0], // Basic name from email
-            waitlist_link: 'https://soundbridge.live/waitlist',
+            waitlist_link: 'https://soundbridge.live/app',
             social_media_link: 'https://twitter.com/soundbridge', // Update with actual social link
             founder_name: 'Justice Asibe',
             contact_email: CONTACT_EMAIL,

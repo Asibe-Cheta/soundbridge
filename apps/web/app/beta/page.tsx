@@ -35,9 +35,9 @@ function BetaContent() {
       return;
     }
 
-    // If no code provided, redirect to waitlist
+    // If no code provided, redirect to app download
     if (!code) {
-      router.push('/waitlist');
+      router.push('/app');
       return;
     }
 
@@ -50,8 +50,8 @@ function BetaContent() {
       // Redirect to login
       router.push('/login');
     } else {
-      // Invalid code - redirect to waitlist
-      router.push('/waitlist');
+      // Invalid code - redirect to app download
+      router.push('/app');
     }
   }, [code, router]);
 
