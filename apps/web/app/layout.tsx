@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import '../src/styles/themes.css';
 import { AudioPlayerProvider } from "@/src/contexts/AudioPlayerContext";
-import { GlobalAudioPlayer } from "@/src/components/audio/GlobalAudioPlayer";
+import { GlobalAudioPlayerGate } from "@/src/components/audio/GlobalAudioPlayerGate";
 import { CookieConsentScripts } from "@/src/components/privacy/CookieConsentScripts";
 import { CookieConsentToast } from "@/src/components/privacy/CookieConsentToast";
 import WaitlistJoinModal from "@/src/components/waitlist/WaitlistJoinModal";
@@ -171,7 +171,7 @@ export default function RootLayout({
                 <AudioPlayerProvider>
                   <Navbar />
                   {children}
-                  <GlobalAudioPlayer />
+                  <GlobalAudioPlayerGate />
                   <OnboardingManager />
                   <CookieConsentToast />
                   <CookieConsentScripts />

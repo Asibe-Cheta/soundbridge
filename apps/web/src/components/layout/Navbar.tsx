@@ -90,6 +90,10 @@ export default function Navbar() {
     }
   };
 
+  if (pathname === '/app') {
+    return null;
+  }
+
   return (
     <>
       {/* Header */}
