@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eventNotificationService } from '@/src/services/EventNotificationService';
 
+/** Vercel cron uses CRON_SECRET; GitHub Actions may send SUPABASE_SERVICE_ROLE_KEY only. Accept either. */
+function isSendQueuedAuthorized(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return false;
+  const token = authHeader.slice('Bearer '.length).trim();
+  const secrets = [process.env.CRON_SECRET, process.env.SUPABASE_SERVICE_ROLE_KEY].filter(
+    (s): s is string => typeof s === 'string' && s.length > 0
+  );
+  return secrets.some((s) => token === s);
+}
+
 /**
  * POST /api/notifications/send-queued
  * Send queued event notifications via Expo Push API
@@ -10,11 +21,7 @@ import { eventNotificationService } from '@/src/services/EventNotificationServic
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify authorization (cron job secret or service key)
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    if (!isSendQueuedAuthorized(request)) {
       console.error('❌ Unauthorized access attempt to send-queued endpoint');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -64,11 +71,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authorization
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    if (!isSendQueuedAuthorized(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
