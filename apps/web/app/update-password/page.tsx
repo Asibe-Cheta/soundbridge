@@ -2,14 +2,23 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, Lock, CheckCircle, ArrowLeft, KeyRound } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
 import Image from 'next/image';
 
+function isPasswordReauthError(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes('reauthentication') || m.includes('re-authentication');
+}
+
+function isCurrentPasswordRequiredError(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes('current password') || m.includes('current_password');
+}
+
 function UpdatePasswordContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +30,10 @@ function UpdatePasswordContent() {
     password: '',
     confirmPassword: '',
   });
+  const [awaitingReauthNonce, setAwaitingReauthNonce] = useState(false);
+  const [reauthNonce, setReauthNonce] = useState('');
+  const [reauthInfo, setReauthInfo] = useState<string | null>(null);
+  const [resendingCode, setResendingCode] = useState(false);
 
   useEffect(() => {
     // Check if user has a valid session (they should be signed in via password reset link)
@@ -75,16 +88,71 @@ function UpdatePasswordContent() {
 
     try {
       const supabase = createBrowserClient();
-      
-      // Update password using the access token
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: formData.password
-      });
 
-      if (updateError) {
-        setError(updateError.message);
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        setError(userError?.message ?? 'Unable to verify your account. Please open the reset link again.');
         setIsLoading(false);
         return;
+      }
+      const userEmail = userData.user.email;
+
+      if (awaitingReauthNonce) {
+        const code = reauthNonce.trim();
+        if (!code) {
+          setError('Enter the verification code from your email.');
+          setIsLoading(false);
+          return;
+        }
+        if (!userEmail) {
+          setError('Your account has no email on file. Contact support to reset your password.');
+          setIsLoading(false);
+          return;
+        }
+        const { error: updateWithNonceError } = await supabase.auth.updateUser({
+          email: userEmail,
+          nonce: code,
+          password: formData.password,
+        });
+        if (updateWithNonceError) {
+          setError(updateWithNonceError.message);
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        await supabase.auth.refreshSession().catch(() => undefined);
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: formData.password,
+        });
+
+        if (updateError) {
+          if (isCurrentPasswordRequiredError(updateError.message)) {
+            setError(
+              'Your project requires your current password to change it. Finish reset using only the link from your email (stay signed out of other sessions), or sign in and change password from account settings.'
+            );
+            setIsLoading(false);
+            return;
+          }
+          if (isPasswordReauthError(updateError.message)) {
+            const { error: reauthError } = await supabase.auth.reauthenticate();
+            if (reauthError) {
+              setError(reauthError.message);
+              setIsLoading(false);
+              return;
+            }
+            setAwaitingReauthNonce(true);
+            setReauthInfo(
+              'We sent a verification code to your email. Enter it below, then submit again to set your new password.'
+            );
+            setError(null);
+            setIsLoading(false);
+            return;
+          }
+          setError(updateError.message);
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Success!
@@ -108,6 +176,24 @@ function UpdatePasswordContent() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleResendReauthCode = async () => {
+    setError(null);
+    setResendingCode(true);
+    try {
+      const supabase = createBrowserClient();
+      const { error: reauthError } = await supabase.auth.reauthenticate();
+      if (reauthError) {
+        setError(reauthError.message);
+        return;
+      }
+      setReauthInfo('A new verification code was sent to your email.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not resend the code.');
+    } finally {
+      setResendingCode(false);
+    }
   };
 
   if (success) {
@@ -479,6 +565,21 @@ function UpdatePasswordContent() {
           </div>
         )}
 
+        {reauthInfo && (
+          <div style={{
+            background: 'rgba(59, 130, 246, 0.12)',
+            border: '1px solid rgba(59, 130, 246, 0.35)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            color: '#BFDBFE',
+            fontSize: '0.9rem',
+            lineHeight: 1.5
+          }}>
+            {reauthInfo}
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* New Password Field */}
@@ -595,6 +696,65 @@ function UpdatePasswordContent() {
             </div>
           </div>
 
+          {awaitingReauthNonce && (
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+                Email verification code
+              </label>
+              <div style={{ position: 'relative' }}>
+                <KeyRound
+                  size={20}
+                  style={{
+                    position: 'absolute',
+                    left: '1rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#999'
+                  }}
+                />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={reauthNonce}
+                  onChange={(e) => setReauthNonce(e.target.value)}
+                  required={awaitingReauthNonce}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1rem 1rem 3rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '12px',
+                    color: 'white',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#DC2626'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+                  placeholder="Enter the code from your email"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleResendReauthCode}
+                disabled={resendingCode}
+                style={{
+                  marginTop: '0.75rem',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#EC4899',
+                  cursor: resendingCode ? 'not-allowed' : 'pointer',
+                  fontSize: '0.85rem',
+                  padding: 0,
+                  opacity: resendingCode ? 0.6 : 1
+                }}
+              >
+                {resendingCode ? 'Sending…' : 'Resend code'}
+              </button>
+            </div>
+          )}
+
           {/* Submit Button */}
           <button
             type="submit"
@@ -614,7 +774,13 @@ function UpdatePasswordContent() {
             onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-2px)', e.currentTarget.style.boxShadow = '0 10px 25px rgba(220, 38, 38, 0.4)')}
             onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)', e.currentTarget.style.boxShadow = 'none')}
           >
-            {isLoading ? 'Updating Password...' : 'Update Password'}
+            {isLoading
+              ? awaitingReauthNonce
+                ? 'Updating password…'
+                : 'Updating Password...'
+              : awaitingReauthNonce
+                ? 'Verify code and update password'
+                : 'Update Password'}
           </button>
         </form>
 
