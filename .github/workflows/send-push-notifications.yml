@@ -1,37 +1,46 @@
 name: Send Queued Push Notifications
 
 # Backup only: Vercel calls /api/cron/send-event-push-queue every minute (event_notifications).
+# Reads CRON_SECRET / SUPABASE_SERVICE_ROLE_KEY from repo Actions secrets OR from the
+# GitHub Environment (secrets or variables). Job must use the same environment name you
+# configured (e.g. Production).
 on:
   schedule:
     - cron: '*/30 * * * *'
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
   send-notifications:
     runs-on: ubuntu-latest
-    
+    environment: Production
+
     steps:
       - name: Send queued notifications
         env:
-          # Must match apps/web send-queued route: CRON_SECRET || SUPABASE_SERVICE_ROLE_KEY
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON_FROM_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_FROM_VAR: ${{ vars.CRON_SECRET }}
+          SRK_FROM_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SRK_FROM_VAR: ${{ vars.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          CRON_SECRET="${CRON_FROM_SECRET:-${CRON_FROM_VAR}}"
+          SUPABASE_SERVICE_ROLE_KEY="${SRK_FROM_SECRET:-${SRK_FROM_VAR}}"
           if [ -n "${CRON_SECRET}" ]; then
             TOKEN="${CRON_SECRET}"
           else
             TOKEN="${SUPABASE_SERVICE_ROLE_KEY}"
           fi
           if [ -z "${TOKEN}" ]; then
-            echo "Missing GitHub Actions secret: set CRON_SECRET (same as Vercel) and/or SUPABASE_SERVICE_ROLE_KEY"
+            echo "Missing credentials: add CRON_SECRET and/or SUPABASE_SERVICE_ROLE_KEY to"
+            echo "  • Repo Settings → Secrets and variables → Actions (repository secrets), or"
+            echo "  • Settings → Environments → Production → Environment secrets or variables"
+            echo "Environment name in this workflow must match (currently: Production)."
             exit 1
           fi
           curl -X POST "https://www.soundbridge.live/api/notifications/send-queued" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${TOKEN}" \
             --fail-with-body
-        
+
       - name: Log result
         if: always()
         run: echo "Notification job completed at $(date)"
-
