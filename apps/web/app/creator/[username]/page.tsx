@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createServiceClient } from '@/src/lib/supabase';
 import { getCreatorByUsername } from '@/src/lib/creator';
 import { CreatorProfileClient } from './CreatorProfileClient';
@@ -11,6 +12,8 @@ interface CreatorPageProps {
 
 export default async function CreatorPage({ params }: CreatorPageProps) {
   const { username } = await params;
+  const headerList = await headers();
+  const fromAtShare = headerList.get('x-sb-open-app-banner') === '1';
   
   try {
     console.log('🔥 Creator page loading for username:', username);
@@ -47,6 +50,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
       <CreatorProfileClient 
         username={username}
         initialCreator={creator as any}
+        fromAtShare={fromAtShare}
       />
     );
   } catch (error) {

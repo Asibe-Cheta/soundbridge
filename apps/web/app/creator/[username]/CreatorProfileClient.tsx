@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
 import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
+import { OpenInAppProfileBanner } from '../../../src/components/app/OpenInAppProfileBanner';
 
 type CreatorAlbumCard = {
   id: string;
@@ -59,9 +60,11 @@ type CreatorAlbumCard = {
 interface CreatorProfileClientProps {
   username: string;
   initialCreator: CreatorProfile;
+  /** True when the request was rewritten from /@username (mobile share link). */
+  fromAtShare?: boolean;
 }
 
-export function CreatorProfileClient({ username, initialCreator }: CreatorProfileClientProps) {
+export function CreatorProfileClient({ username, initialCreator, fromAtShare }: CreatorProfileClientProps) {
   const [activeTab, setActiveTab] = useState('drops');
   const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
   const [isMobile, setIsMobile] = useState(false);
@@ -469,6 +472,14 @@ export function CreatorProfileClient({ username, initialCreator }: CreatorProfil
       } text-white`}>
         {/* Main Content */}
         <div className={`container mx-auto ${isMobile ? 'px-2 py-4' : 'px-4 py-8'}`}>
+        {fromAtShare && creator.id ? (
+          <div className="md:hidden">
+            <OpenInAppProfileBanner
+              profileId={creator.id}
+              displayName={creator.display_name || creator.username}
+            />
+          </div>
+        ) : null}
         {/* Creator Header */}
         <div className={`bg-gray-800 rounded-lg border border-gray-700 shadow-xl ${isMobile ? 'p-4 mb-4' : 'p-6 mb-8'}`}>
           <div className={`flex ${isMobile ? 'flex-col items-center text-center space-y-4' : 'flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6'}`}>
