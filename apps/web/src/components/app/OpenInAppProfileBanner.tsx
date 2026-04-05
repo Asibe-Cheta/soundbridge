@@ -9,6 +9,7 @@ const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.sound
 const storageKey = (profileId: string) => `sb_dismiss_open_app_profile:${profileId}`;
 
 type Props = {
+  /** `profiles.id` (UUID). Must not be username — mobile `soundbridge://profile/<id>` expects a UUID. */
   profileId: string;
   displayName: string;
 };
