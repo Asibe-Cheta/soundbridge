@@ -2,6 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_CONFIG } from '../config/supabase';
 import { Database } from '../types/database';
+import { userMessageForSupabaseEmailSendError } from './supabase-auth-user-message';
+
+/** Web URL allowed in Supabase Auth redirect URLs for recovery links from the app. */
+const PASSWORD_RESET_REDIRECT_TO =
+  'https://soundbridge.live/auth/callback?type=recovery&next=/update-password';
 
 // Use configuration from config file
 const supabaseUrl = SUPABASE_CONFIG.url;
@@ -129,6 +134,25 @@ export class MobileAuthService {
   // Listen to auth state changes
   onAuthStateChange(callback: (event: string, session: any) => void) {
     return supabase.auth.onAuthStateChange(callback);
+  }
+
+  /** Request password reset email (opens web flow to set a new password). */
+  async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: PASSWORD_RESET_REDIRECT_TO,
+      });
+      if (error) {
+        return {
+          success: false,
+          error: userMessageForSupabaseEmailSendError(error.message, error.code ?? null),
+        };
+      }
+      return { success: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { success: false, error: userMessageForSupabaseEmailSendError(msg) };
+    }
   }
 }
 

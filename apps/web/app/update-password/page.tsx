@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, CheckCircle, ArrowLeft, KeyRound } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
+import { userMessageForSupabaseEmailSendError } from '@/src/lib/supabase-auth-user-message';
 import Image from 'next/image';
 
 function isPasswordReauthError(message: string): boolean {
@@ -115,7 +116,12 @@ function UpdatePasswordContent() {
           password: formData.password,
         });
         if (updateWithNonceError) {
-          setError(updateWithNonceError.message);
+          setError(
+            userMessageForSupabaseEmailSendError(
+              updateWithNonceError.message,
+              updateWithNonceError.code ?? null
+            )
+          );
           setIsLoading(false);
           return;
         }
@@ -137,7 +143,9 @@ function UpdatePasswordContent() {
           if (isPasswordReauthError(updateError.message)) {
             const { error: reauthError } = await supabase.auth.reauthenticate();
             if (reauthError) {
-              setError(reauthError.message);
+              setError(
+                userMessageForSupabaseEmailSendError(reauthError.message, reauthError.code ?? null)
+              );
               setIsLoading(false);
               return;
             }
@@ -185,7 +193,7 @@ function UpdatePasswordContent() {
       const supabase = createBrowserClient();
       const { error: reauthError } = await supabase.auth.reauthenticate();
       if (reauthError) {
-        setError(reauthError.message);
+        setError(userMessageForSupabaseEmailSendError(reauthError.message, reauthError.code ?? null));
         return;
       }
       setReauthInfo('A new verification code was sent to your email.');

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
+import { userMessageForSupabaseEmailSendError } from '@/src/lib/supabase-auth-user-message';
 import Image from 'next/image';
 
 /**
@@ -29,7 +30,9 @@ export default function ForgotPasswordPage() {
       });
 
       if (resetError) {
-        setError(resetError.message);
+        setError(
+          userMessageForSupabaseEmailSendError(resetError.message, resetError.code ?? null)
+        );
       } else {
         setSuccess(true);
       }

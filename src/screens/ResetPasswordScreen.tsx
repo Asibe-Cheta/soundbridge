@@ -113,7 +113,13 @@ export default function ResetPasswordScreen() {
       const { success, error } = await resetPassword(email);
       
       if (!success) {
-        Alert.alert('Reset Failed', error?.message || 'Failed to send reset email');
+        const msg =
+          typeof error === 'string'
+            ? error
+            : error instanceof Error
+              ? error.message
+              : 'Failed to send reset email';
+        Alert.alert('Reset Failed', msg);
       } else {
         Alert.alert(
           'Reset Email Sent', 

@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata?: any) => Promise<{ success: boolean; error?: any }>;
   signOut: () => Promise<{ success: boolean; error?: any }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: any }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -309,6 +310,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      return await authService.resetPassword(email);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send reset email';
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -318,6 +328,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signUp,
     signOut,
     signInWithGoogle,
+    resetPassword,
   };
 
   return (
