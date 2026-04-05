@@ -133,11 +133,27 @@ export function useSocial() {
     setError(null);
 
     try {
-      const result = await socialService.toggleLike(user.id, request);
-      if (result.error) {
-        setError(result.error.message || 'Failed to toggle like');
+      // Use API route so track likes run notifyTrackLiked (service role) server-side
+      const res = await fetch('/api/social/likes', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content_id: request.content_id,
+          content_type: request.content_type,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const errRaw = json.error ?? 'Failed to toggle like';
+        const errMsg =
+          typeof errRaw === 'string'
+            ? errRaw
+            : errRaw?.message || JSON.stringify(errRaw) || 'Failed to toggle like';
+        setError(errMsg);
+        return { data: null, error: errRaw };
       }
-      return result;
+      return { data: json.data ?? null, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to toggle like';
       setError(errorMessage);

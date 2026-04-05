@@ -5,6 +5,12 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { buildR2PublicUrl, r2Client, r2Config } from '@/src/lib/r2-client';
 import { createSafeObjectKey, validateAudioPresignPayload } from '@/src/lib/audio-upload-security';
 
+/**
+ * If uploads go to Supabase Storage, raise Dashboard → Storage → max file size (default 50MB)
+ * or you will see: "The object exceeded the maximum allowed size". Audio to R2 uses presign + PUT.
+ */
+export const maxDuration = 60;
+
 const MAX_UPLOADS_PER_MINUTE = 5;
 const PRESIGN_EXPIRES_SECONDS = 900;
 

@@ -45,6 +45,9 @@ export function validateAudioPresignPayload(body: {
   fileSize?: unknown;
   contentType?: unknown;
   uploadContentType?: unknown;
+  /** Mobile may send mixtape flag without uploadContentType string. */
+  is_mixtape?: unknown;
+  isMixtape?: unknown;
 }): { valid: true; fileName: string; fileSize: number; contentType: string } | { valid: false; message: string } {
   const fileName = typeof body.fileName === 'string' ? body.fileName.trim() : '';
   const fileSize = typeof body.fileSize === 'number' && Number.isFinite(body.fileSize) ? body.fileSize : NaN;
@@ -61,14 +64,17 @@ export function validateAudioPresignPayload(body: {
   }
   const uploadContentType =
     typeof body.uploadContentType === 'string' ? body.uploadContentType.trim().toLowerCase() : '';
-  const maxSize = uploadContentType === 'mixtape' ? MAX_AUDIO_FILE_SIZE_BYTES : DEFAULT_AUDIO_FILE_SIZE_BYTES;
+  const isMixtape =
+    uploadContentType === 'mixtape' ||
+    body.is_mixtape === true ||
+    body.isMixtape === true;
+  const maxSize = isMixtape ? MAX_AUDIO_FILE_SIZE_BYTES : DEFAULT_AUDIO_FILE_SIZE_BYTES;
   if (fileSize > maxSize) {
     return {
       valid: false,
-      message:
-        uploadContentType === 'mixtape'
-          ? 'Audio file too large. Maximum allowed size is 200MB for mixtapes.'
-          : 'Audio file too large. Maximum allowed size is 100MB.',
+      message: isMixtape
+        ? 'Audio file too large. Maximum allowed size is 200MB for mixtapes.'
+        : 'Audio file too large. Maximum allowed size is 100MB.',
     };
   }
 

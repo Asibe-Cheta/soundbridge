@@ -3,7 +3,10 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createR2PutObjectCommand, buildR2PublicUrl, r2Client } from '@/src/lib/r2-client';
 import { createSafeObjectKey, validateAudioUploadInput } from '@/src/lib/audio-upload-security';
 
-const UPLOAD_TIMEOUT_MS = 20000;
+/** Large multipart uploads: allow long R2 puts (Vercel still caps request body ~4.5MB on many plans — prefer presigned PUT). */
+export const maxDuration = 300;
+
+const UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_UPLOADS_PER_MINUTE = 5;
 
 export async function POST(request: NextRequest) {

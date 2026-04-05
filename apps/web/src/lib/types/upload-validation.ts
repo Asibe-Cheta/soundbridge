@@ -130,6 +130,8 @@ export interface UploadValidationRequest {
   userId: string;
   userTier: 'free' | 'pro';
   config: UploadValidationConfig;
+  /** DJ mixtapes use 200MB cap for all tiers (aligned with audio_upload_security + mobile). */
+  isMixtape?: boolean;
 }
 
 export interface UploadValidationResponse {
@@ -173,6 +175,8 @@ export const VALIDATION_CONSTANTS = {
   FILE_SIZES: {
     FREE_MAX: 50 * 1024 * 1024, // 50MB
     PREMIUM_MAX: 200 * 1024 * 1024, // 200MB
+    /** Same as PREMIUM_MAX; explicit alias for mixtape uploads. */
+    MIXTAPE_MAX: 200 * 1024 * 1024, // 200MB
     UNLIMITED_MAX: 500 * 1024 * 1024, // 500MB
     MIN: 1024 * 1024, // 1MB
   },

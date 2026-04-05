@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { socialService } from '@/src/lib/social-service';
+import { notifyTrackLiked } from '@/src/lib/track-like-notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,14 @@ export async function POST(request: NextRequest) {
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    if (content_type === 'track' && result.data) {
+      try {
+        await notifyTrackLiked({ trackId: content_id, likerUserId: user.id });
+      } catch (e) {
+        console.error('[api/social/likes] notifyTrackLiked:', e);
+      }
     }
 
     return NextResponse.json({ data: result.data });

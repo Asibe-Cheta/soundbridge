@@ -217,6 +217,7 @@ export async function POST(request: NextRequest) {
           },
           userId: user.id,
           userTier: userTier as 'free' | 'pro',
+          isMixtape: isMixtapeUpload,
           config: {
             enableCopyrightCheck: false, // Start with basic validation
             enableContentModeration: false,

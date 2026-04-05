@@ -59,7 +59,7 @@ const VALIDATION_RULES: UploadValidationRules = {
       storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.FREE
     },
     pro: {
-      fileSize: { max: VALIDATION_CONSTANTS.FILE_SIZES.PRO_MAX },
+      fileSize: { max: VALIDATION_CONSTANTS.FILE_SIZES.PREMIUM_MAX },
       processing: 'priority',
       copyrightCheck: 'advanced',
       moderation: 'priority',
@@ -69,14 +69,14 @@ const VALIDATION_RULES: UploadValidationRules = {
       storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.PRO
     },
     enterprise: {
-      fileSize: { max: VALIDATION_CONSTANTS.FILE_SIZES.ENTERPRISE_MAX },
+      fileSize: { max: VALIDATION_CONSTANTS.FILE_SIZES.UNLIMITED_MAX },
       processing: 'instant',
       copyrightCheck: 'ai-powered',
       moderation: 'human-ai',
       quality: 'lossless',
-      concurrentUploads: VALIDATION_CONSTANTS.CONCURRENT_UPLOADS.ENTERPRISE,
+      concurrentUploads: VALIDATION_CONSTANTS.CONCURRENT_UPLOADS.PRO,
       uploadLimit: VALIDATION_CONSTANTS.UPLOAD_LIMITS.ENTERPRISE,
-      storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.ENTERPRISE
+      storageLimit: VALIDATION_CONSTANTS.STORAGE_LIMITS.PRO
     }
   }
 };
@@ -128,18 +128,25 @@ export class UploadValidationService {
    * Validate file size against tier-based limits
    */
   private validateFileSize(
-    file: File, 
-    tier: keyof UploadValidationRules['tierBased']
+    file: File,
+    tier: keyof UploadValidationRules['tierBased'],
+    opts?: { isMixtape?: boolean }
   ): UploadValidationError | null {
     const tierRules = VALIDATION_RULES.tierBased[tier];
-    const maxSize = tierRules.fileSize.max;
-    
+    const maxSize = opts?.isMixtape
+      ? VALIDATION_CONSTANTS.FILE_SIZES.MIXTAPE_MAX
+      : tierRules.fileSize.max;
+
     if (file.size > maxSize) {
       return {
         code: VALIDATION_ERROR_CODES.FILE_SIZE_EXCEEDED,
-        message: ERROR_MESSAGES[VALIDATION_ERROR_CODES.FILE_SIZE_EXCEEDED],
+        message: opts?.isMixtape
+          ? 'Mixtape file exceeds the 200MB limit.'
+          : ERROR_MESSAGES[VALIDATION_ERROR_CODES.FILE_SIZE_EXCEEDED],
         severity: 'error',
-        suggestion: SUGGESTIONS[VALIDATION_ERROR_CODES.FILE_SIZE_EXCEEDED]
+        suggestion: opts?.isMixtape
+          ? 'Export or compress your mix to 200MB or less, or split into parts.'
+          : SUGGESTIONS[VALIDATION_ERROR_CODES.FILE_SIZE_EXCEEDED]
       };
     }
     
@@ -236,15 +243,17 @@ export class UploadValidationService {
     file: File,
     metadata: UploadValidationRequest['metadata'],
     tier: keyof UploadValidationRules['tierBased'],
-    audioMetadata?: Partial<FileValidationMetadata>
+    audioMetadata?: Partial<FileValidationMetadata>,
+    isMixtape?: boolean
   ): AppliedValidationRules {
     const tierRules = VALIDATION_RULES.tierBased[tier];
-    
+    const sizeLimit = isMixtape ? VALIDATION_CONSTANTS.FILE_SIZES.MIXTAPE_MAX : tierRules.fileSize.max;
+
     return {
       fileSize: {
-        limit: tierRules.fileSize.max,
+        limit: sizeLimit,
         actual: file.size,
-        tier
+        tier: isMixtape ? `${String(tier)}+mixtape` : tier
       },
       format: {
         allowed: VALIDATION_RULES.universal.formats,
@@ -275,7 +284,7 @@ export class UploadValidationService {
    * Main validation function
    */
   async validateUpload(request: UploadValidationRequest): Promise<UploadValidationResponse> {
-    const { file, metadata, userTier, config } = request;
+    const { file, metadata, userTier, config, isMixtape } = request;
     const errors: UploadValidationError[] = [];
     const warnings: UploadValidationWarning[] = [];
     
@@ -292,7 +301,7 @@ export class UploadValidationService {
       progress.progress = 20;
       progress.message = 'Validating file size...';
       
-      const sizeError = this.validateFileSize(file, userTier);
+      const sizeError = this.validateFileSize(file, userTier, { isMixtape });
       if (sizeError) errors.push(sizeError);
       
       // Step 2: File type validation
@@ -337,7 +346,7 @@ export class UploadValidationService {
       progress.canCancel = false;
       
       const isValid = errors.length === 0;
-      const appliedRules = this.getAppliedRules(file, metadata, userTier, audioMetadata);
+      const appliedRules = this.getAppliedRules(file, metadata, userTier, audioMetadata, isMixtape);
       
       const result: UploadValidationResult = {
         isValid,

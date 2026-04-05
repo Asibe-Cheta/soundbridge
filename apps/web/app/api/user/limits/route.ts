@@ -110,6 +110,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       tier: userTier,
       limits: userLimits,
+      /** Max audio file for normal tracks/podcasts (presign + R2). */
+      standardTrackFileSizeLimit: 100 * 1024 * 1024,
+      /** Max audio file for DJ mixtapes (all tiers); align with audio_upload_security + presign. */
+      mixtapeFileSizeLimit: 200 * 1024 * 1024,
       usage: currentUsage,
       usagePercentage,
       limitsExceeded,

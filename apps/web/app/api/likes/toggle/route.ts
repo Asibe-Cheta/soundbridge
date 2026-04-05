@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
+import { notifyTrackLiked } from '@/src/lib/track-like-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,6 +126,14 @@ export async function POST(request: NextRequest) {
 
       // Increment like count based on content type
       await incrementLikeCount(supabase, content_id, content_type);
+
+      if (content_type === 'track') {
+        try {
+          await notifyTrackLiked({ trackId: content_id, likerUserId: user.id });
+        } catch (e) {
+          console.error('[api/likes/toggle] notifyTrackLiked:', e);
+        }
+      }
     }
 
     return NextResponse.json(
