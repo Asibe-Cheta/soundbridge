@@ -280,10 +280,13 @@ export default function LiveSessionsPage() {
           <span>Mobile app required</span>
         </div>
         
-        <button className="bg-gradient-to-r from-[#DC2626] to-[#EC4899] text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center gap-2">
+        <Link
+          href="/app"
+          className="bg-gradient-to-r from-[#DC2626] to-[#EC4899] text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+        >
           <Download size={16} />
           {isLive ? 'Join Now' : 'Get App'}
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -308,10 +311,13 @@ export default function LiveSessionsPage() {
               <h3 className="text-lg font-semibold mb-1">Download the SoundBridge App</h3>
               <p className="text-white/80">Join live sessions, interact with creators, and send tips in real-time.</p>
             </div>
-            <button className="bg-white text-[#DC2626] px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <Link
+              href="/app"
+              className="bg-white text-[#DC2626] px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2"
+            >
               <Download size={20} />
               Download App
-            </button>
+            </Link>
           </div>
         </div>
       </div>
