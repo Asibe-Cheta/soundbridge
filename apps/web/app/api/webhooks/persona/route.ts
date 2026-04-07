@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
     findDeepString(body, ['data', 'attributes', 'payload', 'data', 'attributes', 'status']) || '';
 
   const supabase = createServiceClient();
-  const ev = String(eventName).toLowerCase();
+  /** Persona webhook "Key inflection" Kebab sends e.g. `inquiry-completed`; Camel uses `inquiry.completed`. */
+  const ev = String(eventName).toLowerCase().trim().replace(/-/g, '.');
   const now = new Date().toISOString();
 
   if (!inquiryId) {
