@@ -1072,12 +1072,16 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         setVerificationSuccess(
           'Your verification is with Persona for review. We’ll update your status when they finish — check back shortly.',
         );
-      } else if (data?.pending) {
-        setVerificationSuccess('A verification inquiry is already in progress. If no tab opened, try again in a moment.');
       } else if (data?.already_verified) {
         setVerificationSuccess('You are already verified. The badge appears when Premium is active.');
+      } else if (data?.pending) {
+        setVerificationError(
+          'Persona did not return a resume link. Allow pop-ups for this site, wait a few seconds, and try again. If it keeps failing, contact support.',
+        );
       } else {
-        setVerificationSuccess('Verification start prepared. Persona hosted flow URL was not returned.');
+        setVerificationError(
+          'Persona did not return a verification link. Check that server Persona env vars are set, then try again.',
+        );
       }
     } catch (err) {
       setVerificationError(err instanceof Error ? err.message : 'Failed to start verification.');

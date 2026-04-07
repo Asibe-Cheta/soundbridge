@@ -1,7 +1,62 @@
 import { createServiceClient } from '@/src/lib/supabase';
 import { userHasActivePremiumAccess } from '@/src/lib/subscription-premium-access';
 
-const PERSONA_API_BASE = 'https://withpersona.com/api/v1';
+const PERSONA_API_BASE = process.env.PERSONA_API_BASE?.trim() || 'https://withpersona.com/api/v1';
+const PERSONA_API_BASE_FALLBACK = 'https://api.withpersona.com/api/v1';
+
+function pickHostedUrlFromAttributes(attrs: Record<string, unknown> | undefined): string | null {
+  if (!attrs) return null;
+  const keys = [
+    'inquiry-url',
+    'hosted-url',
+    'inquiry_url',
+    'hosted_url',
+    'inquiryUrl',
+    'hostedUrl',
+  ] as const;
+  for (const k of keys) {
+    const v = attrs[k as string];
+    if (typeof v === 'string' && v.startsWith('http')) return v;
+  }
+  return null;
+}
+
+function pickOneTimeLinkFromMeta(personaJson: unknown): string | null {
+  const j = personaJson as { meta?: Record<string, unknown> };
+  const meta = j?.meta;
+  if (!meta || typeof meta !== 'object') return null;
+  const u =
+    meta['one-time-link'] ??
+    meta['one_time_link'] ??
+    meta.oneTimeLink ??
+    meta['one-time-link-short'];
+  return typeof u === 'string' && u.startsWith('http') ? u : null;
+}
+
+/** Persona: POST generate-one-time-link — preferred when GET inquiry omits hosted URL (e.g. resume). */
+async function generatePersonaOneTimeLink(inquiryId: string): Promise<string | null> {
+  const personaApiKey = process.env.PERSONA_API_KEY;
+  if (!personaApiKey) return null;
+
+  const path = `/inquiries/${encodeURIComponent(inquiryId)}/generate-one-time-link`;
+  const headers = {
+    Authorization: `Bearer ${personaApiKey}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  let res = await fetch(`${PERSONA_API_BASE}${path}`, { method: 'POST', headers, body: '{}' });
+  if (res.status === 404 && !PERSONA_API_BASE.includes('api.withpersona.com')) {
+    res = await fetch(`${PERSONA_API_BASE_FALLBACK}${path}`, { method: 'POST', headers, body: '{}' });
+  }
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    console.warn('[Persona] generate-one-time-link failed', res.status, inquiryId);
+    return null;
+  }
+  return pickOneTimeLinkFromMeta(json) || pickHostedUrlFromAttributes((json as { data?: { attributes?: Record<string, unknown> } })?.data?.attributes);
+}
 
 export interface PersonaStartData {
   inquiry_url: string | null;
@@ -41,13 +96,9 @@ export async function fetchPersonaInquiryHostedUrl(inquiryId: string): Promise<s
   }
 
   const attrs = personaJson?.data?.attributes as Record<string, unknown> | undefined;
-  if (!attrs) return null;
-  const url =
-    (typeof attrs['hosted-url'] === 'string' && attrs['hosted-url']) ||
-    (typeof attrs['inquiry-url'] === 'string' && attrs['inquiry-url']) ||
-    (typeof attrs.hosted_url === 'string' && attrs.hosted_url) ||
-    null;
-  return url || null;
+  const fromAttrs = pickHostedUrlFromAttributes(attrs);
+  if (fromAttrs) return fromAttrs;
+  return pickOneTimeLinkFromMeta(personaJson);
 }
 
 type StartResult =
@@ -113,7 +164,10 @@ export async function startPersonaProviderVerification(userId: string): Promise<
       };
     }
 
-    const inquiryUrl = (await fetchPersonaInquiryHostedUrl(inquiryId)) || null;
+    let inquiryUrl = (await fetchPersonaInquiryHostedUrl(inquiryId)) || null;
+    if (!inquiryUrl) {
+      inquiryUrl = await generatePersonaOneTimeLink(inquiryId);
+    }
     return {
       ok: true,
       data: {
@@ -136,6 +190,8 @@ export async function startPersonaProviderVerification(userId: string): Promise<
         attributes: {
           'inquiry-template-id': templateId,
           'reference-id': userId,
+          /** Ensures meta.one-time-link (or inquiry URL) is returned when Persona omits inquiry-url on create. */
+          'auto-create-one-time-link': true,
           // Optional: set PERSONA_INQUIRY_REDIRECT_URI=https://www.soundbridge.live/... (must be allowlisted in Persona).
           ...(process.env.PERSONA_INQUIRY_REDIRECT_URI?.trim()
             ? { 'redirect-uri': process.env.PERSONA_INQUIRY_REDIRECT_URI.trim() }
@@ -153,17 +209,16 @@ export async function startPersonaProviderVerification(userId: string): Promise<
   }
 
   const inquiryId = (personaJson as { data?: { id?: string } })?.data?.id as string | undefined;
-  const inquiryUrl =
-    ((personaJson as { data?: { attributes?: Record<string, string> } })?.data?.attributes?.[
-      'inquiry-url'
-    ] as string | undefined) ||
-    ((personaJson as { data?: { attributes?: Record<string, string> } })?.data?.attributes?.[
-      'hosted-url'
-    ] as string | undefined) ||
-    null;
+  const attrs = (personaJson as { data?: { attributes?: Record<string, unknown> } })?.data?.attributes;
+  let inquiryUrl =
+    pickOneTimeLinkFromMeta(personaJson) || pickHostedUrlFromAttributes(attrs) || null;
 
   if (!inquiryId) {
     return jsonError('Persona response missing inquiry id', 502);
+  }
+
+  if (!inquiryUrl) {
+    inquiryUrl = await generatePersonaOneTimeLink(inquiryId);
   }
 
   const now = new Date().toISOString();
