@@ -80,42 +80,142 @@ export async function POST(request: NextRequest) {
     findDeepString(body, ['data', 'attributes', 'payload', 'data', 'attributes', 'status']) || '';
 
   const supabase = createServiceClient();
+  const ev = String(eventName).toLowerCase();
+  const now = new Date().toISOString();
 
-  if (eventName === 'inquiry.completed' || String(eventName).includes('inquiry.completed')) {
+  if (!inquiryId) {
+    return NextResponse.json({ received: true, note: 'no inquiry id' }, { status: 200, headers: corsHeaders });
+  }
+
+  /** Mobile / ProviderVerificationService: not_requested | pending | approved | rejected */
+  async function syncProfileForUser(
+    userId: string,
+    profile: {
+      verification_status: 'not_requested' | 'pending' | 'approved' | 'rejected';
+      is_verified: boolean;
+      verified_at: string | null;
+    },
+  ) {
+    await supabase
+      .from('service_provider_profiles')
+      .update({
+        verification_status: profile.verification_status,
+        is_verified: profile.is_verified,
+        verified_at: profile.verified_at,
+        verification_provider: 'persona',
+        verification_reviewed_at: now,
+        updated_at: now,
+      })
+      .eq('user_id', userId);
+  }
+
+  const { data: sessionRow } = await supabase
+    .from('provider_verification_sessions')
+    .select('user_id')
+    .eq('session_id', inquiryId)
+    .maybeSingle();
+
+  const userId = sessionRow?.user_id as string | undefined;
+
+  // Explicit event types (Persona dashboard)
+  if (ev === 'inquiry.approved' || ev.includes('inquiry.approved')) {
+    await supabase
+      .from('provider_verification_sessions')
+      .update({
+        status: 'approved',
+        completed_at: now,
+        updated_at: now,
+        verification_data: body as Record<string, unknown>,
+      })
+      .eq('session_id', inquiryId);
+    if (userId) {
+      await syncProfileForUser(userId, {
+        verification_status: 'approved',
+        is_verified: true,
+        verified_at: now,
+      });
+    }
+    return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+  }
+
+  if (ev === 'inquiry.declined' || ev.includes('inquiry.declined')) {
+    await supabase
+      .from('provider_verification_sessions')
+      .update({
+        status: 'declined',
+        completed_at: now,
+        updated_at: now,
+        verification_data: body as Record<string, unknown>,
+      })
+      .eq('session_id', inquiryId);
+    if (userId) {
+      await syncProfileForUser(userId, {
+        verification_status: 'rejected',
+        is_verified: false,
+        verified_at: null,
+      });
+    }
+    return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+  }
+
+  if (ev === 'inquiry.expired' || ev.includes('inquiry.expired')) {
+    await supabase
+      .from('provider_verification_sessions')
+      .update({
+        status: 'expired',
+        updated_at: now,
+        verification_data: body as Record<string, unknown>,
+      })
+      .eq('session_id', inquiryId);
+    if (userId) {
+      await syncProfileForUser(userId, {
+        verification_status: 'not_requested',
+        is_verified: false,
+        verified_at: null,
+      });
+    }
+    return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+  }
+
+  // inquiry.completed — status may be approved, declined, or pending review inside Persona
+  if (ev === 'inquiry.completed' || ev.includes('inquiry.completed')) {
     const approved = inquiryStatus === 'approved' || inquiryStatus === 'passed';
     const declined = inquiryStatus === 'declined' || inquiryStatus === 'failed';
 
-    if (inquiryId) {
-      const sessionStatus = approved ? 'approved' : declined ? 'declined' : 'needs_review';
-      const now = new Date().toISOString();
-      await supabase
-        .from('provider_verification_sessions')
-        .update({
-          status: sessionStatus,
-          completed_at: now,
-          updated_at: now,
-          verification_data: body as Record<string, unknown>,
-        })
-        .eq('session_id', inquiryId);
-    }
+    const sessionStatus = approved ? 'approved' : declined ? 'declined' : 'needs_review';
+    await supabase
+      .from('provider_verification_sessions')
+      .update({
+        status: sessionStatus,
+        completed_at: now,
+        updated_at: now,
+        verification_data: body as Record<string, unknown>,
+      })
+      .eq('session_id', inquiryId);
 
-    if (approved && inquiryId) {
-      const { data: session } = await supabase
-        .from('provider_verification_sessions')
-        .select('user_id')
-        .eq('session_id', inquiryId)
-        .maybeSingle();
-
-      if (session?.user_id) {
+    if (userId) {
+      if (approved) {
+        await syncProfileForUser(userId, {
+          verification_status: 'approved',
+          is_verified: true,
+          verified_at: now,
+        });
+      } else if (declined) {
+        await syncProfileForUser(userId, {
+          verification_status: 'rejected',
+          is_verified: false,
+          verified_at: null,
+        });
+      } else {
         await supabase
           .from('service_provider_profiles')
           .update({
-            is_verified: true,
-            verified_at: new Date().toISOString(),
+            verification_status: 'pending',
             verification_provider: 'persona',
-            updated_at: new Date().toISOString(),
+            verification_reviewed_at: null,
+            updated_at: now,
           })
-          .eq('user_id', session.user_id);
+          .eq('user_id', userId);
       }
     }
   }
