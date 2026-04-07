@@ -9,8 +9,6 @@ import {
   CheckCircle, 
   Clock, 
   AlertCircle,
-  FileText,
-  Camera,
   Upload,
   ArrowLeft,
   HelpCircle,
@@ -135,7 +133,7 @@ export default function ServiceVerificationPage() {
               <p className={`text-lg leading-relaxed mb-6 ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                Before you can submit a verification request, you need to complete these prerequisites:
+                Before you can start verification with Persona, you need to complete these prerequisites:
               </p>
               <div className="space-y-4">
                 {[
@@ -207,11 +205,16 @@ export default function ServiceVerificationPage() {
             <h2 className={`text-3xl font-bold mb-4 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
             }`}>
-              How to Submit Verification
+              How to Verify (Persona)
             </h2>
             <div className={`prose prose-lg max-w-none ${
               theme === 'dark' ? 'prose-invert' : ''
             }`}>
+              <p className={`text-lg leading-relaxed mb-6 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Identity checks are completed through <strong>Persona</strong> in a new browser tab. You do not upload ID or selfie files on SoundBridge.
+              </p>
               <ol className={`space-y-4 ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>
@@ -222,7 +225,7 @@ export default function ServiceVerificationPage() {
                     1
                   </span>
                   <div>
-                    <strong>Complete All Prerequisites</strong> - Make sure you've met all the requirements listed above. You can check your progress in the Verification section of your dashboard.
+                    <strong>Complete prerequisites &amp; Premium</strong> — Meet the requirements above and have an active Premium or Unlimited plan. Check progress in the Verification section of your Service Provider dashboard.
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -232,14 +235,7 @@ export default function ServiceVerificationPage() {
                     2
                   </span>
                   <div>
-                    <strong>Prepare Your Documents</strong> - You'll need:
-                    <ul className={`mt-2 space-y-1 ml-4 ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      <li>• Government-issued ID (driver's license, passport, etc.)</li>
-                      <li>• Selfie holding your ID</li>
-                      <li>• Optional: Business registration document (if applicable)</li>
-                    </ul>
+                    <strong>Start or continue Persona</strong> — In the Verification section, choose <strong>Start verification with Persona</strong> (or <strong>Continue with Persona</strong> if you already began). Allow the new tab and follow Persona’s steps.
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -249,14 +245,7 @@ export default function ServiceVerificationPage() {
                     3
                   </span>
                   <div>
-                    <strong>Upload Documents</strong> - In your Service Provider dashboard, go to the Verification section and upload:
-                    <ul className={`mt-2 space-y-1 ml-4 ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      <li>• Government ID image (clear, readable)</li>
-                      <li>• Selfie with ID (your face and ID both visible)</li>
-                      <li>• Business document (if you have one)</li>
-                    </ul>
+                    <strong>Finish in Persona</strong> — Persona will guide you through government ID and selfie capture. Use good lighting and a current, unexpired ID.
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -266,17 +255,7 @@ export default function ServiceVerificationPage() {
                     4
                   </span>
                   <div>
-                    <strong>Add Notes (Optional)</strong> - Include any additional information that might help with verification, such as your business website or professional credentials.
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <span className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                    theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    5
-                  </span>
-                  <div>
-                    <strong>Submit Request</strong> - Click "Submit Verification Request" and wait for review. Our team aims to respond within 3 business days.
+                    <strong>Wait for status</strong> — When Persona completes review, your dashboard status updates. If something is still in progress, use <strong>Continue with Persona</strong> from the same section.
                   </div>
                 </li>
               </ol>
@@ -294,13 +273,13 @@ export default function ServiceVerificationPage() {
               {[
                 {
                   status: 'Not Requested',
-                  description: 'You haven\'t submitted a verification request yet. Complete the prerequisites to get started.',
+                  description: 'You haven’t started Persona verification yet. Complete the prerequisites, then start from the Verification section.',
                   icon: HelpCircle,
                   color: 'gray'
                 },
                 {
-                  status: 'Pending Review',
-                  description: 'Your verification request is being reviewed by our team. We aim to respond within 3 business days.',
+                  status: 'In progress / review',
+                  description: 'You may still need to finish steps in Persona, or Persona is reviewing your inquiry. Use Continue with Persona if the flow isn’t complete.',
                   icon: Clock,
                   color: 'yellow'
                 },
@@ -311,8 +290,8 @@ export default function ServiceVerificationPage() {
                   color: 'green'
                 },
                 {
-                  status: 'Rejected',
-                  description: 'We found an issue with your submission. Review the feedback and submit an updated request.',
+                  status: 'Not verified',
+                  description: 'Verification did not pass. When you’re ready, you can try again with Persona from the Verification section.',
                   icon: AlertCircle,
                   color: 'red'
                 }
@@ -371,12 +350,12 @@ export default function ServiceVerificationPage() {
               <ul className={`space-y-3 ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                <li>📸 <strong>Clear Photos:</strong> Make sure your ID and selfie are clear, well-lit, and readable. Avoid blurry or dark images.</li>
-                <li>📄 <strong>Valid ID:</strong> Use a current, government-issued ID that hasn't expired.</li>
-                <li>👤 <strong>Match Your Profile:</strong> The name on your ID should match your profile name (or be clearly related).</li>
-                <li>💼 <strong>Complete Profile:</strong> A complete, professional profile increases your chances of approval.</li>
-                <li>⭐ <strong>Good Reviews:</strong> Having positive reviews from clients helps demonstrate your legitimacy.</li>
-                <li>📝 <strong>Add Context:</strong> Use the notes field to explain any discrepancies or provide additional context.</li>
+                <li>🪟 <strong>New tab:</strong> Persona opens in a separate tab—keep it open until you finish, and disable strict pop-up blockers for this site if the tab doesn’t open.</li>
+                <li>📸 <strong>Clear photos:</strong> In Persona, use good lighting so your ID and selfie are readable.</li>
+                <li>📄 <strong>Valid ID:</strong> Use a current, government-issued ID that hasn&apos;t expired.</li>
+                <li>👤 <strong>Match your profile:</strong> The name on your ID should match your profile name (or be clearly related).</li>
+                <li>💼 <strong>Complete profile:</strong> A complete, professional profile supports a smooth verification experience.</li>
+                <li>⭐ <strong>Good reviews:</strong> Positive client reviews help demonstrate your legitimacy.</li>
               </ul>
             </div>
           </section>

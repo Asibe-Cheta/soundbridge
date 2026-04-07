@@ -166,38 +166,12 @@ interface VerificationPrerequisiteEntry {
   label: string;
 }
 
-interface VerificationFormState {
-  governmentIdFile: File | null;
-  governmentIdPreview: string | null;
-  selfieFile: File | null;
-  selfiePreview: string | null;
-  businessDocFile: File | null;
-  businessDocPreview: string | null;
-  notes: string;
-}
-
 interface VerificationStatusResponse {
   verificationStatus: 'not_requested' | 'pending' | 'approved' | 'rejected';
   isVerified: boolean;
   verificationNotes: string | null;
   verificationRequestedAt: string | null;
   verificationReviewedAt: string | null;
-  latestRequest: {
-    id: string;
-    status: 'pending' | 'approved' | 'rejected' | 'cancelled';
-    submitted_at: string;
-    reviewed_at: string | null;
-    reviewer_id: string | null;
-    reviewer_notes: string | null;
-    provider_notes: string | null;
-    documents: Array<{
-      id: string;
-      doc_type: string;
-      storage_path: string;
-      metadata: Record<string, unknown> | null;
-      created_at: string;
-    }>;
-  } | null;
   prerequisites: {
     profileComplete: VerificationPrerequisite;
     offeringsPublished: VerificationPrerequisite;
@@ -326,12 +300,12 @@ const verificationStatusMeta: Record<
   not_requested: {
     label: 'Not requested',
     tone: 'default',
-    description: 'Complete the checklist below to unlock verification.',
+    description: 'Complete the prerequisites below, then start verification with Persona (opens in a new tab).',
   },
   pending: {
-    label: 'Pending review',
+    label: 'In progress / review',
     tone: 'warning',
-    description: 'Our team is reviewing your submission. We aim to respond within 3 business days.',
+    description: 'Finish or resume the Persona flow, or wait while Persona completes review.',
   },
   approved: {
     label: 'Verified',
@@ -339,9 +313,9 @@ const verificationStatusMeta: Record<
     description: 'You’re verified! Your badge is live and you’ll surface higher in discovery.',
   },
   rejected: {
-    label: 'Needs revision',
+    label: 'Not verified',
     tone: 'critical',
-    description: 'We spotted an issue. Review the feedback and submit an updated request.',
+    description: 'Verification did not pass. You can try again with Persona when you are ready.',
   },
 };
 
@@ -457,21 +431,6 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
   const [startingPersonaVerification, setStartingPersonaVerification] = useState(false);
-  const [submittingVerification, setSubmittingVerification] = useState(false);
-  const [verificationForm, setVerificationForm] = useState<VerificationFormState>({
-    governmentIdFile: null,
-    governmentIdPreview: null,
-    selfieFile: null,
-    selfiePreview: null,
-    businessDocFile: null,
-    businessDocPreview: null,
-    notes: '',
-  });
-  const [uploadingFiles, setUploadingFiles] = useState({
-    governmentId: false,
-    selfie: false,
-    businessDoc: false,
-  });
   const [profileDraft, setProfileDraft] = useState({
     displayName: '',
     headline: '',
@@ -1081,115 +1040,6 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
     }
   };
 
-  const uploadFileToCloudinary = async (file: File, folder: string, resourceType: 'image' | 'raw'): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', folder);
-    formData.append('resourceType', resourceType);
-
-    const headers: HeadersInit = {};
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
-
-    const response = await fetch('/api/upload/cloudinary', {
-      method: 'POST',
-      credentials: 'include',
-      headers,
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data?.error || 'Failed to upload file');
-    }
-
-    return data.url;
-  };
-
-  const handleSubmitVerification = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (submittingVerification) return;
-
-    if (!verificationForm.governmentIdFile || !verificationForm.selfieFile) {
-      setVerificationError('Government ID and selfie images are required.');
-      return;
-    }
-
-    setSubmittingVerification(true);
-    setVerificationError(null);
-    setVerificationSuccess(null);
-    setUploadingFiles({ governmentId: true, selfie: true, businessDoc: false });
-
-    try {
-      // Upload files to Cloudinary
-      const [governmentIdUrl, selfieUrl, businessDocUrl] = await Promise.all([
-        uploadFileToCloudinary(verificationForm.governmentIdFile, 'verification-documents', 'image'),
-        uploadFileToCloudinary(verificationForm.selfieFile, 'verification-documents', 'image'),
-        verificationForm.businessDocFile
-          ? uploadFileToCloudinary(verificationForm.businessDocFile, 'verification-documents', 'raw')
-          : Promise.resolve(null),
-      ]);
-
-      setUploadingFiles({ governmentId: false, selfie: false, businessDoc: false });
-
-      // Submit verification request with Cloudinary URLs
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(`/api/service-providers/${userId}/verification/request`, {
-        method: 'POST',
-        credentials: 'include',
-        headers,
-        body: JSON.stringify({
-          notes: verificationForm.notes || undefined,
-          documents: [
-            { docType: 'government_id', storagePath: governmentIdUrl },
-            { docType: 'selfie', storagePath: selfieUrl },
-            ...(businessDocUrl ? [{ docType: 'business_document', storagePath: businessDocUrl }] : []),
-          ],
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Failed to submit verification request.');
-      }
-
-      setVerificationSuccess('Verification request submitted! We will notify you as soon as the review is complete.');
-      setVerificationForm({
-        governmentIdFile: null,
-        governmentIdPreview: null,
-        selfieFile: null,
-        selfiePreview: null,
-        businessDocFile: null,
-        businessDocPreview: null,
-        notes: '',
-      });
-      setProfileData((prev) =>
-        prev
-          ? {
-              ...prev,
-              verification_status: 'pending',
-            }
-          : prev,
-      );
-      await loadVerificationStatus();
-    } catch (submitError) {
-      console.error(submitError);
-      setUploadingFiles({ governmentId: false, selfie: false, businessDoc: false });
-      setVerificationError(
-        submitError instanceof Error ? submitError.message : 'Failed to submit verification request.',
-      );
-    } finally {
-      setSubmittingVerification(false);
-    }
-  };
-
   const handleStartPersonaVerification = async () => {
     try {
       setStartingPersonaVerification(true);
@@ -1233,53 +1083,6 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       setVerificationError(err instanceof Error ? err.message : 'Failed to start verification.');
     } finally {
       setStartingPersonaVerification(false);
-    }
-  };
-
-  const handleFileSelect = (field: 'governmentId' | 'selfie' | 'businessDoc', file: File | null) => {
-    if (!file) {
-      if (field === 'governmentId') {
-        setVerificationForm((prev) => ({ ...prev, governmentIdFile: null, governmentIdPreview: null }));
-      } else if (field === 'selfie') {
-        setVerificationForm((prev) => ({ ...prev, selfieFile: null, selfiePreview: null }));
-      } else {
-        setVerificationForm((prev) => ({ ...prev, businessDocFile: null, businessDocPreview: null }));
-      }
-      return;
-    }
-
-    // Validate file type
-    if (field === 'businessDoc') {
-      // Allow PDF and common document types
-      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
-        setVerificationError('Business document must be a PDF or Word document.');
-        return;
-      }
-    } else {
-      // For images
-      if (!file.type.startsWith('image/')) {
-        setVerificationError(`${field === 'governmentId' ? 'Government ID' : 'Selfie'} must be an image file.`);
-        return;
-      }
-    }
-
-    // Validate file size
-    const maxSize = field === 'businessDoc' ? 20 * 1024 * 1024 : 10 * 1024 * 1024; // 20MB for docs, 10MB for images
-    if (file.size > maxSize) {
-      setVerificationError(`File size must be less than ${maxSize / 1024 / 1024}MB.`);
-      return;
-    }
-
-    // Create preview URL for images
-    const previewUrl = field !== 'businessDoc' ? URL.createObjectURL(file) : null;
-
-    if (field === 'governmentId') {
-      setVerificationForm((prev) => ({ ...prev, governmentIdFile: file, governmentIdPreview: previewUrl }));
-    } else if (field === 'selfie') {
-      setVerificationForm((prev) => ({ ...prev, selfieFile: file, selfiePreview: previewUrl }));
-    } else {
-      setVerificationForm((prev) => ({ ...prev, businessDocFile: file, businessDocPreview: previewUrl }));
     }
   };
 
@@ -1948,11 +1751,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       verificationStatus?.prerequisites
         ? verificationPrerequisiteEntries.filter(({ id }) => !verificationStatus.prerequisites[id].met)
         : [];
-    const canSubmit =
+    const canStartPersona =
       verificationStatus &&
       verificationStatus.verificationStatus !== 'pending' &&
       verificationStatus.verificationStatus !== 'approved' &&
       Object.values(verificationStatus.prerequisites).every((item) => item.met);
+    const showPersonaButton =
+      verificationStatus &&
+      (derivedStatus === 'pending' || (canStartPersona && (badgeInsights?.activePremium ?? false)));
     const badgeState = badgeInsights?.verifiedProfessionalState ?? 'free_not_verified';
     const badgeStateCopy: Record<
       'verified_premium' | 'verified_downgraded' | 'premium_not_verified' | 'free_not_verified',
@@ -1971,8 +1777,8 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       },
       premium_not_verified: {
         tone: 'info',
-        title: 'Premium active — verification opens May 2026',
-        body: 'You are eligible for Verified Professional. Start verification when the Persona flow launches.',
+        title: 'Premium active — verify with Persona',
+        body: 'You are eligible for Verified Professional. Complete identity verification in Persona (new tab); ID and selfie are collected there.',
         cta: { label: startingPersonaVerification ? 'Starting…' : 'Get Verified Professional', action: 'start_verification' },
       },
       free_not_verified: {
@@ -2126,309 +1932,61 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               </div>
             </div>
 
-            {verificationStatus?.latestRequest && (
-              <div
-                style={{
-                  display: 'grid',
-                  gap: '0.6rem',
-                  padding: '1rem',
-                  borderRadius: '1rem',
-                  border: '1px solid rgba(148,163,184,0.25)',
-                  background: 'rgba(15,23,42,0.35)',
-                  color: '#cbd5f5',
-                  fontSize: '0.85rem',
-                }}
-              >
-                <div style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '0.95rem' }}>Last submission</div>
-                <div>Submitted {new Date(verificationStatus.latestRequest.submitted_at).toLocaleString()}</div>
-                {verificationStatus.latestRequest.reviewer_notes && (
-                  <div style={{ color: '#fca5a5' }}>
-                    Admin feedback: {verificationStatus.latestRequest.reviewer_notes}
-                  </div>
-                )}
-                {verificationStatus.latestRequest.provider_notes && (
-                  <div style={{ color: '#94a3b8' }}>
-                    Your notes: {verificationStatus.latestRequest.provider_notes}
-                  </div>
-                )}
-                {verificationStatus.latestRequest.documents.length > 0 && (
-                  <div style={{ display: 'grid', gap: '0.35rem' }}>
-                    Supporting documents:
-                    {verificationStatus.latestRequest.documents.map((doc) => (
-                      <a
-                        key={doc.id}
-                        href={doc.storage_path}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: 500 }}
-                      >
-                        {doc.doc_type.replace('_', ' ')}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             {verificationStatus ? (
               <>
-                <form onSubmit={handleSubmitVerification} style={{ display: 'grid', gap: '1rem' }}>
-                  <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-                    {/* Government ID Upload */}
-                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                        Government ID <span style={{ color: '#fca5a5' }}>*</span>
-                      </label>
-                      <div
+                {showPersonaButton && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gap: '0.75rem',
+                      padding: '1rem',
+                      borderRadius: '1rem',
+                      border: '1px solid rgba(148,163,184,0.25)',
+                      background: 'rgba(15,23,42,0.35)',
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#cbd5f5', lineHeight: 1.55 }}>
+                      Verification is handled by Persona in a new browser tab. Government ID and selfie are not uploaded on Soundbridge.
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        disabled={startingPersonaVerification}
+                        onClick={handleStartPersonaVerification}
                         style={{
-                          border: '2px dashed rgba(148,163,184,0.3)',
-                          borderRadius: '0.75rem',
-                          padding: '1rem',
-                          textAlign: 'center',
-                          cursor: 'pointer',
-                          background: verificationForm.governmentIdPreview ? 'transparent' : 'rgba(15,23,42,0.35)',
-                          transition: 'all 0.2s',
+                          padding: '0.75rem 1.4rem',
+                          borderRadius: '0.9rem',
+                          border: 'none',
+                          background: 'linear-gradient(135deg, #dc2626, #ec4899)',
+                          color: 'white',
+                          fontWeight: 600,
+                          cursor: startingPersonaVerification ? 'not-allowed' : 'pointer',
+                          opacity: startingPersonaVerification ? 0.7 : 1,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
                         }}
-                        onClick={() => document.getElementById('government-id-input')?.click()}
                       >
-                        <input
-                          id="government-id-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileSelect('governmentId', e.target.files?.[0] || null)}
-                          style={{ display: 'none' }}
-                        />
-                        {verificationForm.governmentIdPreview ? (
-                          <div style={{ position: 'relative' }}>
-                            <img
-                              src={verificationForm.governmentIdPreview}
-                              alt="Government ID preview"
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: '200px',
-                                borderRadius: '0.5rem',
-                                marginBottom: '0.5rem',
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFileSelect('governmentId', null);
-                              }}
-                              style={{
-                                position: 'absolute',
-                                top: '0.5rem',
-                                right: '0.5rem',
-                                background: 'rgba(0,0,0,0.7)',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '24px',
-                                height: '24px',
-                                color: 'white',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
+                        {startingPersonaVerification ? (
+                          <Loader2 size={16} className="animate-spin" />
                         ) : (
-                          <div>
-                            <Upload size={32} style={{ marginBottom: '0.5rem', color: '#94a3b8' }} />
-                            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                              {uploadingFiles.governmentId ? 'Uploading...' : 'Click to upload image'}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Max 10MB</div>
-                          </div>
+                          <ShieldCheck size={16} />
                         )}
-                      </div>
-                    </div>
-
-                    {/* Selfie Upload */}
-                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                        Selfie with ID <span style={{ color: '#fca5a5' }}>*</span>
-                      </label>
-                      <div
-                        style={{
-                          border: '2px dashed rgba(148,163,184,0.3)',
-                          borderRadius: '0.75rem',
-                          padding: '1rem',
-                          textAlign: 'center',
-                          cursor: 'pointer',
-                          background: verificationForm.selfiePreview ? 'transparent' : 'rgba(15,23,42,0.35)',
-                          transition: 'all 0.2s',
-                        }}
-                        onClick={() => document.getElementById('selfie-input')?.click()}
-                      >
-                        <input
-                          id="selfie-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileSelect('selfie', e.target.files?.[0] || null)}
-                          style={{ display: 'none' }}
-                        />
-                        {verificationForm.selfiePreview ? (
-                          <div style={{ position: 'relative' }}>
-                            <img
-                              src={verificationForm.selfiePreview}
-                              alt="Selfie preview"
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: '200px',
-                                borderRadius: '0.5rem',
-                                marginBottom: '0.5rem',
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFileSelect('selfie', null);
-                              }}
-                              style={{
-                                position: 'absolute',
-                                top: '0.5rem',
-                                right: '0.5rem',
-                                background: 'rgba(0,0,0,0.7)',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '24px',
-                                height: '24px',
-                                color: 'white',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload size={32} style={{ marginBottom: '0.5rem', color: '#94a3b8' }} />
-                            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                              {uploadingFiles.selfie ? 'Uploading...' : 'Click to upload image'}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Max 10MB</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Business Document Upload */}
-                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                        Optional business document
-                      </label>
-                      <div
-                        style={{
-                          border: '2px dashed rgba(148,163,184,0.3)',
-                          borderRadius: '0.75rem',
-                          padding: '1rem',
-                          textAlign: 'center',
-                          cursor: 'pointer',
-                          background: verificationForm.businessDocFile ? 'transparent' : 'rgba(15,23,42,0.35)',
-                          transition: 'all 0.2s',
-                        }}
-                        onClick={() => document.getElementById('business-doc-input')?.click()}
-                      >
-                        <input
-                          id="business-doc-input"
-                          type="file"
-                          accept="application/pdf,.doc,.docx"
-                          onChange={(e) => handleFileSelect('businessDoc', e.target.files?.[0] || null)}
-                          style={{ display: 'none' }}
-                        />
-                        {verificationForm.businessDocFile ? (
-                          <div style={{ position: 'relative' }}>
-                            <div style={{ fontSize: '0.85rem', color: '#cbd5f5', marginBottom: '0.5rem' }}>
-                              {verificationForm.businessDocFile.name}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFileSelect('businessDoc', null);
-                              }}
-                              style={{
-                                background: 'rgba(220,38,38,0.2)',
-                                border: '1px solid rgba(220,38,38,0.4)',
-                                borderRadius: '0.5rem',
-                                padding: '0.4rem 0.75rem',
-                                color: '#fca5a5',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                              }}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload size={32} style={{ marginBottom: '0.5rem', color: '#94a3b8' }} />
-                            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                              {uploadingFiles.businessDoc ? 'Uploading...' : 'Click to upload document'}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                              PDF or Word (Max 20MB)
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        {startingPersonaVerification
+                          ? 'Starting…'
+                          : derivedStatus === 'pending'
+                            ? 'Continue with Persona'
+                            : 'Start verification with Persona'}
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  <label style={{ display: 'grid', gap: '0.45rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Notes for review (optional)</span>
-                    <textarea
-                      value={verificationForm.notes}
-                      onChange={(event) => setVerificationForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      rows={3}
-                      placeholder="Add context that helps the review team (eg. links to past work or credentials)"
-                      style={{
-                        resize: 'vertical',
-                        padding: '0.75rem',
-                        borderRadius: '0.75rem',
-                        border: '1px solid var(--border-primary)',
-                        background: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                      }}
-                    />
-                  </label>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="submit"
-                      disabled={!canSubmit || submittingVerification}
-                      style={{
-                        padding: '0.75rem 1.4rem',
-                        borderRadius: '0.9rem',
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #dc2626, #ec4899)',
-                        color: 'white',
-                        fontWeight: 600,
-                        cursor: !canSubmit || submittingVerification ? 'not-allowed' : 'pointer',
-                        opacity: !canSubmit || submittingVerification ? 0.7 : 1,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                      }}
-                    >
-                      {submittingVerification ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                      {submittingVerification ? 'Submitting…' : 'Request verification'}
-                    </button>
-                    {!canSubmit && (
-                      <span style={{ fontSize: '0.8rem', color: '#fda4af' }}>
-                        Complete all prerequisites to enable the verification request.
-                      </span>
-                    )}
-                  </div>
-                </form>
+                {!showPersonaButton && canStartPersona && !badgeInsights?.activePremium && (
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#fda4af' }}>
+                    Upgrade to Premium to start Persona verification once prerequisites are complete.
+                  </p>
+                )}
 
                 {unmetPrerequisites.length > 0 && (
                   <div style={{ fontSize: '0.8rem', color: '#fca5a5' }}>
