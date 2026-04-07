@@ -17,6 +17,7 @@ export default function AdminLayout({
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/dashboard">Dashboard</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/moderation">Moderation</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/verification">Provider Verification</a>
+            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/persona-verification">Persona providers</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/verification-users">User Badges</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/account-deletions">Account Deletions</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/ratings">Ratings</a>
