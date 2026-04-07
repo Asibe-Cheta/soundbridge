@@ -1213,9 +1213,17 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
       if (data?.session_url && typeof window !== 'undefined') {
         window.open(data.session_url, '_blank', 'noopener,noreferrer');
-        setVerificationSuccess('Verification started. Complete the Persona flow in the new tab.');
+        setVerificationSuccess(
+          data?.pending
+            ? 'Resume verification in the new tab — continue where you left off.'
+            : 'Verification started. Complete the Persona flow in the new tab (ID + selfie are handled by Persona in the browser).',
+        );
+      } else if (data?.under_review) {
+        setVerificationSuccess(
+          'Your verification is with Persona for review. We’ll update your status when they finish — check back shortly.',
+        );
       } else if (data?.pending) {
-        setVerificationSuccess('A verification inquiry is already pending review.');
+        setVerificationSuccess('A verification inquiry is already in progress. If no tab opened, try again in a moment.');
       } else if (data?.already_verified) {
         setVerificationSuccess('You are already verified. The badge appears when Premium is active.');
       } else {
