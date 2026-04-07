@@ -3,10 +3,13 @@
 import React, { useState } from 'react';
 import { Send, Eye, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { WAITLIST_EMAIL_VARIABLES } from '@/src/lib/waitlist-email-placeholders';
+import { USER_BROADCAST_EMAIL_VARIABLES } from '@/src/lib/user-broadcast-placeholders';
 
 const LAUNCH_CONFIRM = 'WAITLIST_LAUNCH_SEND_NOW';
 const LAUNCH_TEST_CONFIRM = 'WAITLIST_LAUNCH_TEST_SEND';
 const CUSTOM_CONFIRM = 'WAITLIST_CUSTOM_SEND_NOW';
+const REG_CONFIRM = 'REGISTERED_USERS_BROADCAST_SEND_NOW';
+const REG_TEST_CONFIRM = 'REGISTERED_USERS_BROADCAST_TEST_SEND';
 
 function headersWithSecret(secret: string): HeadersInit {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -47,9 +50,24 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
   const [customMeta, setCustomMeta] = useState<string | null>(null);
   const [customConfirm, setCustomConfirm] = useState('');
 
+  const [regSubject, setRegSubject] = useState('');
+  const [regHtml, setRegHtml] = useState('');
+  const [regBusy, setRegBusy] = useState(false);
+  const [regPreview, setRegPreview] = useState<string | null>(null);
+  const [regMeta, setRegMeta] = useState<string | null>(null);
+  const [regConfirm, setRegConfirm] = useState('');
+  const [regMaxCap, setRegMaxCap] = useState('');
+  const [regTestEmail, setRegTestEmail] = useState('');
+  const [regTestConfirm, setRegTestConfirm] = useState('');
+
   const parseMax = () => {
     const n = parseInt(maxTest, 10);
     return Number.isFinite(n) && n > 0 ? Math.min(n, 10_000) : undefined;
+  };
+
+  const parseRegMax = () => {
+    const n = parseInt(regMaxCap, 10);
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 50_000) : undefined;
   };
 
   const runLaunchDryRun = async () => {
@@ -241,16 +259,123 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
     }
   };
 
+  const runRegDryRun = async () => {
+    setRegBusy(true);
+    setRegPreview(null);
+    setRegMeta(null);
+    try {
+      const res = await fetch('/api/admin/users/broadcast-email', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headersWithSecret(broadcastSecret),
+        body: JSON.stringify({
+          dryRun: true,
+          subject: regSubject,
+          html: regHtml,
+          maxRecipients: parseRegMax(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegMeta(data.error || `Error ${res.status}`);
+        return;
+      }
+      setRegMeta(
+        `Registered accounts: would email ${data.wouldSend} of ${data.totalInDb}. Test phrase: ${data.testConfirmPhrase}. Full send phrase: ${data.confirmPhrase}`
+      );
+      setRegPreview(data.sample?.html || '');
+    } catch (e) {
+      setRegMeta(e instanceof Error ? e.message : 'Request failed');
+    } finally {
+      setRegBusy(false);
+    }
+  };
+
+  const sendRegBroadcast = async () => {
+    if (
+      !window.confirm(
+        'Send this message to all registered SoundBridge accounts (every row in auth with an email), subject to any cap you set?'
+      )
+    ) {
+      return;
+    }
+    setRegBusy(true);
+    setRegMeta(null);
+    try {
+      const res = await fetch('/api/admin/users/broadcast-email', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headersWithSecret(broadcastSecret),
+        body: JSON.stringify({
+          confirm: regConfirm.trim(),
+          subject: regSubject,
+          html: regHtml,
+          maxRecipients: parseRegMax(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegMeta(data.error || `Error ${res.status}`);
+        return;
+      }
+      setRegMeta(
+        `Sent: ${data.sent}, failed: ${data.failed}. ${(data.errors || []).join('; ') || 'OK'}`
+      );
+      setRegConfirm('');
+    } catch (e) {
+      setRegMeta(e instanceof Error ? e.message : 'Request failed');
+    } finally {
+      setRegBusy(false);
+    }
+  };
+
+  const sendRegTest = async () => {
+    const to = regTestEmail.trim();
+    if (!to) {
+      setRegMeta('Enter a test recipient email first.');
+      return;
+    }
+    if (!window.confirm(`Send one test only to ${to}?`)) return;
+    setRegBusy(true);
+    setRegMeta(null);
+    try {
+      const res = await fetch('/api/admin/users/broadcast-email', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headersWithSecret(broadcastSecret),
+        body: JSON.stringify({
+          testToEmail: to,
+          confirm: regTestConfirm.trim(),
+          subject: regSubject,
+          html: regHtml,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegMeta(data.error || `Error ${res.status}`);
+        return;
+      }
+      setRegMeta(`Test sent to ${data.to || to}. Check spam/promotions.`);
+      setRegTestConfirm('');
+    } catch (e) {
+      setRegMeta(e instanceof Error ? e.message : 'Request failed');
+    } finally {
+      setRegBusy(false);
+    }
+  };
+
   return (
     <div className={`px-6 py-5 space-y-6 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
       <div>
         <h3 className={`text-lg font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
-          Email campaigns (waitlist only)
+          Email campaigns
         </h3>
         <p className={`text-sm mt-1 ${mutedCls}`}>
-          Bulk sends use the waitlist table only (no CSV). Use the “Test send” block below to mail the
-          launch template to one address. Optional: if{' '}
-          <code className="text-xs">WAITLIST_BROADCAST_SECRET</code> is set in env, enter it below.
+          Waitlist blocks below use the <code className="text-xs">waitlist</code> table only. The{' '}
+          <strong className="font-medium text-inherit">Registered accounts</strong> section emails everyone
+          with a SoundBridge login (auth email). Optional: if{' '}
+          <code className="text-xs">WAITLIST_BROADCAST_SECRET</code> is set in env, enter it below for any
+          bulk send.
         </p>
         <input
           type="password"
@@ -422,13 +547,30 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           Placeholders for custom emails
         </button>
         {varsOpen && (
-          <ul className={`mt-3 text-sm space-y-1.5 ${mutedCls}`}>
-            {WAITLIST_EMAIL_VARIABLES.map((v) => (
-              <li key={v.key}>
-                <code className={dark ? 'text-pink-300' : 'text-pink-700'}>{v.key}</code> — {v.description}
-              </li>
-            ))}
-          </ul>
+          <div className={`mt-3 text-sm space-y-4 ${mutedCls}`}>
+            <div>
+              <p className={`font-medium mb-2 ${dark ? 'text-gray-200' : 'text-gray-800'}`}>Waitlist</p>
+              <ul className="space-y-1.5">
+                {WAITLIST_EMAIL_VARIABLES.map((v) => (
+                  <li key={v.key}>
+                    <code className={dark ? 'text-pink-300' : 'text-pink-700'}>{v.key}</code> — {v.description}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className={`font-medium mb-2 ${dark ? 'text-gray-200' : 'text-gray-800'}`}>
+                Registered SoundBridge accounts
+              </p>
+              <ul className="space-y-1.5">
+                {USER_BROADCAST_EMAIL_VARIABLES.map((v) => (
+                  <li key={v.key}>
+                    <code className={dark ? 'text-pink-300' : 'text-pink-700'}>{v.key}</code> — {v.description}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         )}
       </div>
 
@@ -504,6 +646,131 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           >
             {customBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send custom email
+          </button>
+        </div>
+      </div>
+
+      <div className={`rounded-lg border p-4 ${cardCls}`}>
+        <h4 className={`font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>
+          Registered accounts (all users with a login)
+        </h4>
+        <p className={`text-sm mt-1 ${mutedCls}`}>
+          Uses auth emails (same list as admin user search). Include{' '}
+          <code className="text-xs">{'{{unsubscribe_link}}'}</code> for compliance. Preview first, then send a
+          single test to your inbox with <code className="text-xs">{REG_TEST_CONFIRM}</code>, or broadcast
+          with <code className="text-xs">{REG_CONFIRM}</code>.
+        </p>
+        <label className={`block text-sm font-medium mt-3 ${labelCls}`}>Subject</label>
+        <input
+          type="text"
+          value={regSubject}
+          onChange={(e) => setRegSubject(e.target.value)}
+          placeholder="Update from SoundBridge — {{name}}"
+          className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+        />
+        <label className={`block text-sm font-medium mt-3 ${labelCls}`}>HTML body</label>
+        <textarea
+          value={regHtml}
+          onChange={(e) => setRegHtml(e.target.value)}
+          rows={10}
+          placeholder={`<!DOCTYPE html><html><body style="background:#0A0A0A;color:#eee;font-family:sans-serif;padding:24px;">
+<p>Hey {{name}},</p>
+<p>Quick update: you can always find us at <a href="{{site_url}}" style="color:#EC4899">soundbridge.live</a>.</p>
+<p>{{unsubscribe_link}}</p>
+</body></html>`}
+          className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm font-mono ${inputCls}`}
+        />
+        <label className={`block text-sm font-medium mt-3 ${labelCls}`}>
+          Max recipients (optional cap — leave empty for everyone)
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="e.g. 500 or leave empty"
+          value={regMaxCap}
+          onChange={(e) => setRegMaxCap(e.target.value)}
+          className={`mt-1 w-full max-w-xs px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={regBusy}
+            onClick={runRegDryRun}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
+              dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+            } disabled:opacity-50`}
+          >
+            {regBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+            Preview (dry run)
+          </button>
+        </div>
+        {regMeta && (
+          <p className={`text-sm mt-3 ${dark ? 'text-amber-200' : 'text-amber-800'}`}>{regMeta}</p>
+        )}
+        {regPreview && (
+          <details className="mt-3">
+            <summary className={`text-sm cursor-pointer ${labelCls}`}>Sample rendered HTML</summary>
+            <pre
+              className={`mt-2 text-xs p-3 rounded overflow-auto max-h-48 ${
+                dark ? 'bg-black/40 text-gray-300' : 'bg-white text-gray-800 border border-gray-200'
+              }`}
+            >
+              {regPreview.slice(0, 12000)}
+              {regPreview.length > 12000 ? '…' : ''}
+            </pre>
+          </details>
+        )}
+
+        <div className={`mt-6 pt-6 border-t ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h5 className={`text-sm font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>Test one inbox</h5>
+          <input
+            type="email"
+            autoComplete="off"
+            placeholder="your@email.com"
+            value={regTestEmail}
+            onChange={(e) => setRegTestEmail(e.target.value)}
+            className={`mt-2 w-full max-w-md px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+          />
+          <div className="mt-3 flex flex-wrap gap-2 items-center">
+            <input
+              type="text"
+              placeholder={`Type ${REG_TEST_CONFIRM}`}
+              value={regTestConfirm}
+              onChange={(e) => setRegTestConfirm(e.target.value)}
+              className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+            />
+            <button
+              type="button"
+              disabled={regBusy || regTestConfirm.trim() !== REG_TEST_CONFIRM || !regSubject.trim() || !regHtml.trim()}
+              onClick={sendRegTest}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
+                dark ? 'bg-indigo-700 text-white hover:bg-indigo-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+              } disabled:opacity-40`}
+            >
+              {regBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Send test only
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            placeholder={`Type ${REG_CONFIRM}`}
+            value={regConfirm}
+            onChange={(e) => setRegConfirm(e.target.value)}
+            className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+          />
+          <button
+            type="button"
+            disabled={
+              regBusy || regConfirm.trim() !== REG_CONFIRM || !regSubject.trim() || !regHtml.trim()
+            }
+            onClick={sendRegBroadcast}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-700 text-white hover:bg-red-600 disabled:opacity-40"
+          >
+            {regBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Send to all registered users
           </button>
         </div>
       </div>
