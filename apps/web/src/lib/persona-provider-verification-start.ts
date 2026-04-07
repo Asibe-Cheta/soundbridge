@@ -144,6 +144,10 @@ export async function startPersonaProviderVerification(userId: string): Promise<
         attributes: {
           'inquiry-template-id': templateId,
           'reference-id': userId,
+          // Optional: set PERSONA_INQUIRY_REDIRECT_URI=https://www.soundbridge.live/... (must be allowlisted in Persona).
+          ...(process.env.PERSONA_INQUIRY_REDIRECT_URI?.trim()
+            ? { 'redirect-uri': process.env.PERSONA_INQUIRY_REDIRECT_URI.trim() }
+            : {}),
         },
       },
     }),
