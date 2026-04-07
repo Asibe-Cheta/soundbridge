@@ -6,6 +6,7 @@ import { ArrowLeft, Briefcase, CheckCircle2, Clock, Layers, Shield, Sparkles, St
 import BookProviderDialog from '@/src/components/bookings/BookProviderDialog';
 import { PortfolioItem } from '@/src/components/service-provider/PortfolioItem';
 import { createServiceClient } from '@/src/lib/supabase';
+import { userHasActivePremiumAccess } from '@/src/lib/subscription-premium-access';
 import type { ServiceProviderSummary } from '@/src/lib/types/search';
 import type { ProviderBadgeTier } from '@/src/lib/types';
 
@@ -175,17 +176,8 @@ const fetchProvider = async (userId: string) => {
     return null;
   }
 
-  const { data: premiumSub } = await supabase
-    .from('user_subscriptions')
-    .select('tier,status')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .in('tier', ['premium', 'unlimited'])
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const badgeActive = !!data.is_verified && !!premiumSub;
+  const activePremium = await userHasActivePremiumAccess(supabase, userId);
+  const badgeActive = !!data.is_verified && activePremium;
 
   const provider: ProviderRecord = {
     user_id: data.user_id,

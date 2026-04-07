@@ -4,6 +4,7 @@ import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/crea
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { userHasActivePremiumAccess } from '@/src/lib/subscription-premium-access';
 import {
   enrichAvailabilityRow,
   enrichServiceOfferingRow,
@@ -69,20 +70,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     provider,
   };
 
-  const { data: activeSubscription } = await serviceSupabase
-    .from('user_subscriptions')
-    .select('tier,status')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .in('tier', ['premium', 'unlimited'])
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const activePremium = await userHasActivePremiumAccess(serviceSupabase, userId);
 
   response.provider = {
     ...provider,
-    active_premium: !!activeSubscription,
-    badge_active: !!provider.is_verified && !!activeSubscription,
+    active_premium: activePremium,
+    badge_active: !!provider.is_verified && activePremium,
   };
 
   if (includes.has('offerings')) {

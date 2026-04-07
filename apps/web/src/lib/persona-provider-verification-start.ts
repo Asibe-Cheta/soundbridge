@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/src/lib/supabase';
+import { userHasActivePremiumAccess } from '@/src/lib/subscription-premium-access';
 
 const PERSONA_API_BASE = 'https://withpersona.com/api/v1';
 
@@ -16,16 +17,7 @@ function jsonError(message: string, status: number, details?: string) {
 
 async function hasActivePremium(userId: string): Promise<boolean> {
   const supabase = createServiceClient();
-  const { data: activeSub } = await supabase
-    .from('user_subscriptions')
-    .select('tier,status')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .in('tier', ['premium', 'unlimited'])
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return !!activeSub;
+  return userHasActivePremiumAccess(supabase, userId);
 }
 
 /** GET inquiry — resolve hosted URL for resume (Persona JSON:API). */

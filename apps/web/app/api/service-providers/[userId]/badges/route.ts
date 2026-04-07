@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { userHasActivePremiumAccess } from '@/src/lib/subscription-premium-access';
 import type {
   ProviderBadgeTier,
   ServiceProviderProfileTable,
@@ -211,17 +212,7 @@ async function fetchBadgeInsights(
     return null;
   }
 
-  const { data: activeSubscription } = await supabaseClient
-    .from('user_subscriptions')
-    .select('tier, status')
-    .eq('user_id', providerId)
-    .eq('status', 'active')
-    .in('tier', ['premium', 'unlimited'])
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const activePremium = !!activeSubscription;
+  const activePremium = await userHasActivePremiumAccess(supabaseClient, providerId);
   const verifiedProfessionalBadgeActive = !!provider.is_verified && activePremium;
   const verificationState =
     provider.is_verified && activePremium
