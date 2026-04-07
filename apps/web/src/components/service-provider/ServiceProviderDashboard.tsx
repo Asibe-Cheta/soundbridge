@@ -1783,8 +1783,8 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       },
       free_not_verified: {
         tone: 'info',
-        title: 'Upgrade to unlock verification',
-        body: 'Verified Professional is available on Premium and Unlimited plans.',
+        title: 'Upgrade to start Persona verification',
+        body: 'Verified Professional uses Persona (ID + selfie in a new tab). Subscribe to Premium or Unlimited, then complete prerequisites below.',
         cta: { label: 'Upgrade to Premium', href: '/pricing' },
       },
     };
@@ -1792,7 +1792,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
     return (
       <SectionCard
-        title="Verification"
+        title="Identity verification (Persona)"
         helpLink="/help/service-verification"
         action={
           <HelperPill tone={meta.tone}>
@@ -1842,6 +1842,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           <div style={{ color: '#fef3c7', fontSize: '0.9rem', fontWeight: 600 }}>{verifiedCard.title}</div>
           <div style={{ color: '#fde68a', fontSize: '0.82rem' }}>{verifiedCard.body}</div>
         </div>
+
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0, lineHeight: 1.5, opacity: 0.95 }}>
+          <strong>Persona</strong> runs the ID and selfie check in a secure browser tab. There is no manual document upload on SoundBridge.
+        </p>
 
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{meta.description}</p>
 
