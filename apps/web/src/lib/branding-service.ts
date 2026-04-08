@@ -102,12 +102,12 @@ export class BrandingService {
         };
       }
 
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `custom-logos/${userId}/${Date.now()}.${fileExt}`;
+      // Upload to dedicated branding bucket; RLS: first path segment must be auth uid (matches mobile).
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `${userId}/branding/logo_${Date.now()}.${fileExt}`;
 
       const { data, error } = await this.supabase.storage
-        .from('profile-images')
+        .from('branding')
         .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false
@@ -123,7 +123,7 @@ export class BrandingService {
 
       // Get public URL
       const { data: urlData } = this.supabase.storage
-        .from('profile-images')
+        .from('branding')
         .getPublicUrl(fileName);
 
       return {
