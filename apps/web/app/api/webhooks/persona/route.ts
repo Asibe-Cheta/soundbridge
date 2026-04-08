@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 import { createServiceClient } from '@/src/lib/supabase';
 
 /**
@@ -84,6 +85,27 @@ export async function POST(request: NextRequest) {
   const ev = String(eventName).toLowerCase().trim().replace(/-/g, '.');
   const now = new Date().toISOString();
 
+  async function sendVerificationPush(userId: string, outcome: 'approved' | 'declined') {
+    const payload =
+      outcome === 'approved'
+        ? {
+            title: "You're Verified! ✓",
+            body: 'Your Verified Professional badge is now live on your profile. Clients can see it when browsing services.',
+            data: { type: 'verification_approved' as const, outcome: 'approved' as const },
+          }
+        : {
+            title: 'Verification Unsuccessful',
+            body: "We couldn't verify your identity. Please try again from your Service Provider Dashboard.",
+            data: { type: 'verification_declined' as const, outcome: 'declined' as const },
+          };
+
+    await sendExpoPushIfAllowed(supabase, userId, 'verification', {
+      ...payload,
+      channelId: 'tips',
+      priority: 'high',
+    });
+  }
+
   if (!inquiryId) {
     return NextResponse.json({ received: true, note: 'no inquiry id' }, { status: 200, headers: corsHeaders });
   }
@@ -112,11 +134,12 @@ export async function POST(request: NextRequest) {
 
   const { data: sessionRow } = await supabase
     .from('provider_verification_sessions')
-    .select('user_id')
+    .select('user_id,status')
     .eq('session_id', inquiryId)
     .maybeSingle();
 
   const userId = sessionRow?.user_id as string | undefined;
+  const previousSessionStatus = (sessionRow?.status as string | undefined) ?? null;
 
   // Explicit event types (Persona dashboard)
   if (ev === 'inquiry.approved' || ev.includes('inquiry.approved')) {
@@ -135,6 +158,9 @@ export async function POST(request: NextRequest) {
         is_verified: true,
         verified_at: now,
       });
+      if (previousSessionStatus !== 'approved') {
+        await sendVerificationPush(userId, 'approved');
+      }
     }
     return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
   }
@@ -155,6 +181,9 @@ export async function POST(request: NextRequest) {
         is_verified: false,
         verified_at: null,
       });
+      if (previousSessionStatus !== 'declined') {
+        await sendVerificationPush(userId, 'declined');
+      }
     }
     return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
   }
@@ -201,12 +230,18 @@ export async function POST(request: NextRequest) {
           is_verified: true,
           verified_at: now,
         });
+        if (previousSessionStatus !== 'approved') {
+          await sendVerificationPush(userId, 'approved');
+        }
       } else if (declined) {
         await syncProfileForUser(userId, {
           verification_status: 'rejected',
           is_verified: false,
           verified_at: null,
         });
+        if (previousSessionStatus !== 'declined') {
+          await sendVerificationPush(userId, 'declined');
+        }
       } else {
         await supabase
           .from('service_provider_profiles')

@@ -18,7 +18,9 @@ export type PushPreferenceKind =
   /** Gig lifecycle where user is already a party (accepted, confirmed, reminders, rating) */
   | 'gig_transactional'
   /** Wallet credit from gig completion */
-  | 'gig_wallet';
+  | 'gig_wallet'
+  /** Verification lifecycle updates (approved / declined). */
+  | 'verification';
 
 function rowAllows(row: Record<string, unknown> | null | undefined, key: string): boolean {
   if (!row) return true;
@@ -71,6 +73,8 @@ export async function canReceivePushOfKind(
       if (row.wallet_notifications_enabled === false) return false;
       return rowAllows(row, 'enabled');
     }
+    case 'verification':
+      return rowAllows(row, 'enabled');
     default:
       return true;
   }
