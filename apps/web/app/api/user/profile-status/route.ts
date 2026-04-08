@@ -120,14 +120,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Determine if onboarding is needed
-    const needsOnboarding = !profile?.onboarding_completed || !profile?.role;
+    // Authoritative cross-platform gate: onboarding is complete iff profiles.onboarding_completed is true.
+    const onboardingCompleted = profile?.onboarding_completed === true;
+    const needsOnboarding = !onboardingCompleted;
     
     console.log('📊 Profile status check result:', {
       userId: user.id,
       hasProfile: !!profile,
       role: profile?.role,
-      onboardingCompleted: profile?.onboarding_completed,
+      onboardingCompleted,
       needsOnboarding,
       currentStep: profile?.onboarding_step
     });
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
       needsOnboarding,
       profile: profile || null,
       onboarding: {
-        completed: profile?.onboarding_completed || false,
+        completed: onboardingCompleted,
         step: profile?.onboarding_step || 'role_selection',
         profileCompleted: profile?.profile_completed || false
       }

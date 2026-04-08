@@ -113,8 +113,9 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     profileCompleted: storedState?.profileCompleted || false,
     firstActionCompleted: storedState?.firstActionCompleted || false,
     selectedTier: storedState?.selectedTier || null,
-    isOnboardingActive: (user && session && storedState?.isOnboardingActive) || false,
-    showOnboarding: (user && session && storedState?.showOnboarding) || false,
+    // Do not auto-open onboarding from local storage; always confirm with server truth first.
+    isOnboardingActive: false,
+    showOnboarding: false,
   });
 
   // Save state to localStorage whenever it changes

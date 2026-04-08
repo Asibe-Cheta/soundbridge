@@ -78,39 +78,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Determine if onboarding is needed
-    // Check if user is on old flow steps (legacy flow)
-    const isOldFlow = profile?.onboarding_step && ['role_selection', 'profile_setup', 'first_action'].includes(profile.onboarding_step);
-    const isNewFlow = profile?.onboarding_step && ['welcome', 'userType', 'quickSetup', 'valueDemo', 'tierSelection', 'payment', 'welcomeConfirmation'].includes(profile.onboarding_step);
-
-    // CRITICAL FIX: If user has an active subscription (premium/unlimited with active status),
-    // they should NEVER see onboarding again, even if onboarding_completed is false
-    const hasActiveSubscription = profile?.subscription_tier &&
-                                   ['premium', 'unlimited'].includes(profile.subscription_tier) &&
-                                   profile?.subscription_status === 'active';
-
-    // User needs onboarding if:
-    // 1. They DON'T have an active subscription (premium/unlimited users skip onboarding), AND
-    // 2. Onboarding is not completed, OR
-    // 3. They're on the old flow and missing a role (old flow requires role), OR
-    // 4. They're on the new flow and missing both role AND onboarding_user_type (role gets set when QuickSetup completes)
-    // Note:
-    // - Old flow: requires `role` field (creator/listener)
-    // - New flow: uses `onboarding_user_type` for categorization, but still sets `role` when profile is completed
-    // - The `role` field is ALWAYS used for permissions (creator can upload, listener cannot)
-    const needsOnboarding = !hasActiveSubscription &&
-                            (!profile?.onboarding_completed ||
-                            (isOldFlow && !profile?.role) ||
-                            (isNewFlow && !profile?.role && !profile?.onboarding_user_type));
+    // Authoritative cross-platform gate: onboarding is complete iff profiles.onboarding_completed is true.
+    const onboardingCompleted = profile?.onboarding_completed === true;
+    const needsOnboarding = !onboardingCompleted;
     
     console.log('📊 Onboarding status check result:', {
       userId: user.id,
       hasProfile: !!profile,
       role: profile?.role,
-      onboardingCompleted: profile?.onboarding_completed,
-      subscriptionTier: profile?.subscription_tier,
-      subscriptionStatus: profile?.subscription_status,
-      hasActiveSubscription,
+      onboardingCompleted,
       needsOnboarding,
       currentStep: profile?.onboarding_step
     });
@@ -122,7 +98,7 @@ export async function GET(request: NextRequest) {
       needsOnboarding,
       profile: profile || null,
       onboarding: {
-        completed: profile?.onboarding_completed || false,
+        completed: onboardingCompleted,
         step: profile?.onboarding_step || 'welcome',  // NEW: Default to welcome screen
         profileCompleted: profile?.profile_completed || false
       }
