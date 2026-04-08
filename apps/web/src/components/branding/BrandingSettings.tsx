@@ -373,15 +373,17 @@ export function BrandingSettings({ userId, onClose }: BrandingSettingsProps) {
                   {branding.watermark_enabled && (
                     <div>
                       <label className="block text-white font-medium mb-2">
-                        Watermark Opacity: {Math.round(branding.watermark_opacity * 100)}%
+                        Watermark Opacity: {Math.round(branding.watermark_opacity)}%
                       </label>
                       <input
                         type="range"
                         min="0"
-                        max="1"
-                        step="0.1"
+                        max="100"
+                        step="1"
                         value={branding.watermark_opacity}
-                        onChange={(e) => handleSave({ watermark_opacity: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          handleSave({ watermark_opacity: parseInt(e.target.value, 10) })
+                        }
                         disabled={saving}
                         className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
                       />

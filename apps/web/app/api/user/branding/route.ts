@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { normalizeBrandingRpcResult } from '../../../../src/lib/branding-rpc-normalize';
+import { DEFAULT_BRANDING } from '../../../../src/lib/types/branding';
 import type { BrandingUpdateRequest } from '../../../../src/lib/types/branding';
 
 export async function GET(request: NextRequest) {
@@ -28,27 +30,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!data || data.length === 0) {
-      // Return default branding if none exists
+    const normalized = normalizeBrandingRpcResult(data, user.id);
+    if (!normalized) {
       return NextResponse.json({
-        custom_logo_url: null,
-        custom_logo_width: 120,
-        custom_logo_height: 40,
-        custom_logo_position: 'top-left',
-        primary_color: '#DC2626',
-        secondary_color: '#EC4899',
-        accent_color: '#F97316',
-        background_gradient: 'from-gray-900 via-gray-800 to-gray-900',
-        layout_style: 'default',
-        show_powered_by: true,
-        watermark_enabled: true,
-        watermark_opacity: 0.1,
-        watermark_position: 'bottom-right',
-        user_tier: 'free'
+        ...DEFAULT_BRANDING,
+        user_id: user.id,
+        custom_logo_url: undefined,
       });
     }
 
-    return NextResponse.json(data[0]);
+    return NextResponse.json(normalized);
     
   } catch (error) {
     console.error('Error in branding GET:', error);
@@ -74,25 +65,31 @@ export async function PUT(request: NextRequest) {
     
     // Parse request body
     const branding: BrandingUpdateRequest = await request.json();
-    
-    // Update user branding
-    const { data, error } = await supabase
-      .rpc('update_user_branding', {
-        user_uuid: user.id,
-        custom_logo_url_param: branding.custom_logo_url,
-        custom_logo_width_param: branding.custom_logo_width,
-        custom_logo_height_param: branding.custom_logo_height,
-        custom_logo_position_param: branding.custom_logo_position,
-        primary_color_param: branding.primary_color,
-        secondary_color_param: branding.secondary_color,
-        accent_color_param: branding.accent_color,
-        background_gradient_param: branding.background_gradient,
-        layout_style_param: branding.layout_style,
-        show_powered_by_param: branding.show_powered_by,
-        watermark_enabled_param: branding.watermark_enabled,
-        watermark_opacity_param: branding.watermark_opacity,
-        watermark_position_param: branding.watermark_position
-      });
+
+    const wm = branding.watermark_opacity;
+    const watermark_opacity =
+      wm === undefined ? undefined : wm <= 1 ? Math.round(wm * 100) : Math.round(wm);
+
+    const { error } = await supabase.rpc('update_user_branding', {
+      user_uuid: user.id,
+      custom_logo_url: branding.custom_logo_url,
+      custom_logo_width: branding.custom_logo_width,
+      custom_logo_height: branding.custom_logo_height,
+      custom_logo_position: branding.custom_logo_position,
+      primary_color: branding.primary_color,
+      secondary_color: branding.secondary_color,
+      accent_color: branding.accent_color,
+      background_gradient: branding.background_gradient,
+      layout_style: branding.layout_style,
+      show_powered_by: branding.show_powered_by,
+      watermark_enabled: branding.watermark_enabled,
+      watermark_opacity,
+      watermark_position: branding.watermark_position,
+      avatar_border_type: branding.avatar_border_type,
+      avatar_border_color: branding.avatar_border_color ?? undefined,
+      avatar_border_gradient_start: branding.avatar_border_gradient_start ?? undefined,
+      avatar_border_gradient_end: branding.avatar_border_gradient_end ?? undefined,
+    });
 
     if (error) {
       console.error('Error updating user branding:', error);

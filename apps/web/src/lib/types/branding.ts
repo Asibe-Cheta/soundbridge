@@ -20,8 +20,15 @@ export interface CustomBranding {
   
   // Watermark Settings
   watermark_enabled: boolean;
-  watermark_opacity: number; // 0.0 to 1.0
+  /** Stored as 0–100 (matches `profiles.watermark_opacity` and RPC). */
+  watermark_opacity: number;
   watermark_position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+
+  // Profile avatar border (Premium/Unlimited; optional until loaded from RPC)
+  avatar_border_type?: 'none' | 'single' | 'gradient';
+  avatar_border_color?: string | null;
+  avatar_border_gradient_start?: string | null;
+  avatar_border_gradient_end?: string | null;
   
   // Metadata
   created_at?: string;
@@ -43,6 +50,10 @@ export interface BrandingUpdateRequest {
   watermark_enabled?: boolean;
   watermark_opacity?: number;
   watermark_position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+  avatar_border_type?: 'none' | 'single' | 'gradient';
+  avatar_border_color?: string | null;
+  avatar_border_gradient_start?: string | null;
+  avatar_border_gradient_end?: string | null;
 }
 
 export interface BrandingValidationError {
@@ -61,15 +72,16 @@ export const DEFAULT_BRANDING: CustomBranding = {
   custom_logo_width: 120,
   custom_logo_height: 40,
   custom_logo_position: 'top-left',
-  primary_color: '#DC2626',
-  secondary_color: '#EC4899',
-  accent_color: '#F97316',
+  primary_color: '#EF4444',
+  secondary_color: '#1F2937',
+  accent_color: '#F59E0B',
   background_gradient: 'from-gray-900 via-gray-800 to-gray-900',
   layout_style: 'default',
   show_powered_by: true,
-  watermark_enabled: true,
-  watermark_opacity: 0.1,
+  watermark_enabled: false,
+  watermark_opacity: 30,
   watermark_position: 'bottom-right',
+  avatar_border_type: 'single',
   user_tier: 'free'
 };
 

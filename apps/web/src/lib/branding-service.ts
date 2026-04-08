@@ -1,5 +1,8 @@
 import { createBrowserClient } from './supabase';
+import { normalizeBrandingRpcResult } from './branding-rpc-normalize';
 import type { CustomBranding, BrandingUpdateRequest, BrandingValidationResult, BrandingValidationError } from './types/branding';
+
+export { normalizeBrandingRpcResult } from './branding-rpc-normalize';
 
 export class BrandingService {
   private _supabase: ReturnType<typeof createBrowserClient> | null = null;
@@ -21,11 +24,7 @@ export class BrandingService {
         return null;
       }
 
-      if (!data || data.length === 0) {
-        return null;
-      }
-
-      return data[0] as CustomBranding;
+      return normalizeBrandingRpcResult(data, userId);
     } catch (error) {
       console.error('Error in getUserBranding:', error);
       return null;
@@ -46,23 +45,34 @@ export class BrandingService {
         };
       }
 
-      const { data, error } = await this.supabase
-        .rpc('update_user_branding', {
-          user_uuid: userId,
-          custom_logo_url_param: branding.custom_logo_url,
-          custom_logo_width_param: branding.custom_logo_width,
-          custom_logo_height_param: branding.custom_logo_height,
-          custom_logo_position_param: branding.custom_logo_position,
-          primary_color_param: branding.primary_color,
-          secondary_color_param: branding.secondary_color,
-          accent_color_param: branding.accent_color,
-          background_gradient_param: branding.background_gradient,
-          layout_style_param: branding.layout_style,
-          show_powered_by_param: branding.show_powered_by,
-          watermark_enabled_param: branding.watermark_enabled,
-          watermark_opacity_param: branding.watermark_opacity,
-          watermark_position_param: branding.watermark_position
-        });
+      const wm = branding.watermark_opacity;
+      const watermark_opacity =
+        wm === undefined
+          ? undefined
+          : wm <= 1
+            ? Math.round(wm * 100)
+            : Math.round(wm);
+
+      const { error } = await this.supabase.rpc('update_user_branding', {
+        user_uuid: userId,
+        custom_logo_url: branding.custom_logo_url,
+        custom_logo_width: branding.custom_logo_width,
+        custom_logo_height: branding.custom_logo_height,
+        custom_logo_position: branding.custom_logo_position,
+        primary_color: branding.primary_color,
+        secondary_color: branding.secondary_color,
+        accent_color: branding.accent_color,
+        background_gradient: branding.background_gradient,
+        layout_style: branding.layout_style,
+        show_powered_by: branding.show_powered_by,
+        watermark_enabled: branding.watermark_enabled,
+        watermark_opacity,
+        watermark_position: branding.watermark_position,
+        avatar_border_type: branding.avatar_border_type,
+        avatar_border_color: branding.avatar_border_color ?? undefined,
+        avatar_border_gradient_start: branding.avatar_border_gradient_start ?? undefined,
+        avatar_border_gradient_end: branding.avatar_border_gradient_end ?? undefined,
+      });
 
       if (error) {
         console.error('Error updating user branding:', error);
@@ -169,10 +179,14 @@ export class BrandingService {
 
     // Validate opacity
     if (branding.watermark_opacity !== undefined) {
-      if (branding.watermark_opacity < 0 || branding.watermark_opacity > 1) {
+      const pct =
+        branding.watermark_opacity <= 1
+          ? branding.watermark_opacity * 100
+          : branding.watermark_opacity;
+      if (pct < 0 || pct > 100) {
         errors.push({
           field: 'watermark_opacity',
-          message: 'Watermark opacity must be between 0.0 and 1.0'
+          message: 'Watermark opacity must be between 0 and 100 (or 0.0–1.0 for legacy requests)'
         });
       }
     }

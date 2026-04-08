@@ -77,7 +77,7 @@ export function CustomBranding({ userId, children, className = '' }: CustomBrand
       {branding.watermark_enabled && (
         <div 
           className={`absolute z-0 pointer-events-none ${getWatermarkPositionClass(branding.watermark_position)}`}
-          style={{ opacity: branding.watermark_opacity }}
+          style={{ opacity: branding.watermark_opacity / 100 }}
         >
           <Image
             src="/images/logos/logo-white-lockup.png"
