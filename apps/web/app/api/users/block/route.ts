@@ -1,320 +1,180 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Supabase env not configured');
-  return createClient(url, key);
-}
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
-// Validation schema for block requests
 const BlockUserSchema = z.object({
-  blockedUserId: z.string().uuid('Valid user ID is required'),
-  reason: z.string().optional()
+  blockedUserId: z.string().uuid('valid blockedUserId is required'),
+  reason: z.string().max(500).optional(),
 });
 
-// Helper to get authenticated user (supabase from getSupabase() in handler)
-async function getAuthenticatedUser(request: NextRequest, supabase: ReturnType<typeof createClient>) {
-  const authHeader = request.headers.get('authorization');
-  const cookieHeader = request.headers.get('cookie');
-  
-  // Try bearer token first
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (user && !error) return user;
-  }
-  
-  // Try cookie-based auth
-  if (cookieHeader) {
-    const { createServerClient } = await import('@supabase/ssr');
-    const { cookies } = await import('next/headers');
-    const cookieStore = await cookies();
-    
-    const client = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-    
-    const { data: { user }, error } = await client.auth.getUser();
-    if (user && !error) return user;
-  }
-  
-  return null;
-}
-
-// POST /api/users/block - Block a user
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase();
-    const user = await getAuthenticatedUser(request, supabase);
-    
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const validationResult = BlockUserSchema.safeParse(body);
-    
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid request data', details: validationResult.error.errors },
-        { status: 400 }
-      );
+    const body = await request.json().catch(() => ({}));
+    const parsed = BlockUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request data', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { blockedUserId, reason } = validationResult.data;
-
-    // Prevent users from blocking themselves
-    if (user.id === blockedUserId) {
-      return NextResponse.json(
-        { success: false, error: 'You cannot block yourself' },
-        { status: 400 }
-      );
+    const { blockedUserId, reason } = parsed.data;
+    if (blockedUserId === user.id) {
+      return NextResponse.json({ error: 'cannot block yourself' }, { status: 400 });
     }
 
-    // Check if user exists
-    const { data: blockedUser, error: userError } = await supabase
-      .from('profiles')
-      .select('id, display_name')
-      .eq('id', blockedUserId)
-      .single();
+    const service = createServiceClient();
 
-    if (userError || !blockedUser) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
+    const { data: target } = await service.from('profiles').select('id').eq('id', blockedUserId).maybeSingle();
+    if (!target) {
+      return NextResponse.json({ error: 'target user not found' }, { status: 404 });
     }
 
-    // Check if already blocked
-    const { data: existingBlock, error: checkError } = await supabase
-      .from('blocked_users')
+    const { data: existing } = await service
+      .from('user_blocks')
       .select('id')
       .eq('blocker_id', user.id)
       .eq('blocked_id', blockedUserId)
-      .single();
-
-    if (existingBlock) {
-      return NextResponse.json(
-        { success: false, error: 'User is already blocked' },
-        { status: 409 }
-      );
+      .maybeSingle();
+    if (existing) {
+      return NextResponse.json({ error: 'already blocked' }, { status: 409 });
     }
 
-    // Create block
-    const { data: block, error: blockError } = await supabase
-      .from('blocked_users')
-      .insert({
-        blocker_id: user.id,
-        blocked_id: blockedUserId,
-        reason: reason || null
-      })
-      .select()
+    const { data, error } = await service
+      .from('user_blocks')
+      .insert({ blocker_id: user.id, blocked_id: blockedUserId, reason: reason?.trim() || null })
+      .select('id, blocker_id, blocked_id, reason, created_at')
       .single();
 
-    if (blockError) {
-      console.error('Error creating block:', blockError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to block user' },
-        { status: 500 }
-      );
+    if (error || !data) {
+      console.error('POST /api/users/block:', error);
+      return NextResponse.json({ error: 'Failed to block user' }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: `You have blocked ${blockedUser.display_name || 'this user'}`,
-      data: block
+      message: 'User blocked successfully',
+      data,
     });
-
-  } catch (error: any) {
-    console.error('Block user API error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error('POST /api/users/block:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE /api/users/block - Unblock a user
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = getSupabase();
-    const user = await getAuthenticatedUser(request, supabase);
-    
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const blockedUserId = searchParams.get('userId');
-
-    if (!blockedUserId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID is required' },
-        { status: 400 }
-      );
+    const userId = new URL(request.url).searchParams.get('userId');
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    // Check if block exists
-    const { data: existingBlock, error: checkError } = await supabase
-      .from('blocked_users')
-      .select('id, blocked:profiles!blocked_users_blocked_id_fkey(id, display_name)')
+    const service = createServiceClient();
+    const { data: existing } = await service
+      .from('user_blocks')
+      .select('id')
       .eq('blocker_id', user.id)
-      .eq('blocked_id', blockedUserId)
-      .single();
-
-    if (checkError || !existingBlock) {
-      return NextResponse.json(
-        { success: false, error: 'User is not blocked' },
-        { status: 404 }
-      );
+      .eq('blocked_id', userId)
+      .maybeSingle();
+    if (!existing) {
+      return NextResponse.json({ error: 'block record not found' }, { status: 404 });
     }
 
-    // Remove block
-    const { error: deleteError } = await supabase
-      .from('blocked_users')
+    const { error } = await service
+      .from('user_blocks')
       .delete()
       .eq('blocker_id', user.id)
-      .eq('blocked_id', blockedUserId);
-
-    if (deleteError) {
-      console.error('Error removing block:', deleteError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to unblock user' },
-        { status: 500 }
-      );
+      .eq('blocked_id', userId);
+    if (error) {
+      console.error('DELETE /api/users/block:', error);
+      return NextResponse.json({ error: 'Failed to unblock user' }, { status: 500 });
     }
 
-    const blockedUser = existingBlock.blocked as any;
-
-    return NextResponse.json({
-      success: true,
-      message: `You have unblocked ${blockedUser?.display_name || 'this user'}`,
-    });
-
-  } catch (error: any) {
-    console.error('Unblock user API error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, message: 'User unblocked successfully' });
+  } catch (error) {
+    console.error('DELETE /api/users/block:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// GET /api/users/block - Check block status and get blocked users list
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabase();
-    const user = await getAuthenticatedUser(request, supabase);
-    
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const service = createServiceClient();
+    const searchParams = new URL(request.url).searchParams;
     const checkUserId = searchParams.get('checkUserId');
-    const listType = searchParams.get('list') || 'blocked'; // 'blocked' or 'blockers'
+    const list = searchParams.get('list');
 
-    // Check if specific user is blocked
     if (checkUserId) {
-      const { data: block, error } = await supabase
-        .from('blocked_users')
-        .select('id, reason, created_at')
-        .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${checkUserId}),and(blocker_id.eq.${checkUserId},blocked_id.eq.${user.id})`)
-        .maybeSingle();
-
+      const { data: rows, error } = await service
+        .from('user_blocks')
+        .select('id, blocker_id, blocked_id, reason, created_at')
+        .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${checkUserId}),and(blocker_id.eq.${checkUserId},blocked_id.eq.${user.id})`);
       if (error) {
-        console.error('Error checking block status:', error);
-        return NextResponse.json(
-          { success: false, error: 'Failed to check block status' },
-          { status: 500 }
-        );
+        console.error('GET /api/users/block check:', error);
+        return NextResponse.json({ error: 'Failed to check block status' }, { status: 500 });
       }
 
+      const isBlockingRow = (rows || []).find((r) => r.blocker_id === user.id && r.blocked_id === checkUserId) || null;
+      const isBlockedBy = (rows || []).some((r) => r.blocker_id === checkUserId && r.blocked_id === user.id);
+      const isBlocking = !!isBlockingRow;
       return NextResponse.json({
         success: true,
-        isBlocked: !!block,
-        isBlockedBy: block?.blocker_id === checkUserId,
-        isBlocking: block?.blocker_id === user.id,
-        block: block || null
+        isBlocked: isBlocking || isBlockedBy,
+        isBlockedBy,
+        isBlocking,
+        block: isBlockingRow
+          ? {
+              id: isBlockingRow.id,
+              reason: isBlockingRow.reason,
+              created_at: isBlockingRow.created_at,
+            }
+          : null,
       });
     }
 
-    // Get list of blocked users or users who blocked me
-    let query = supabase
-      .from('blocked_users')
-      .select(`
-        id,
-        reason,
-        created_at,
-        blocked:profiles!blocked_users_blocked_id_fkey(
+    if (list === 'blocked') {
+      const { data, error } = await service
+        .from('user_blocks')
+        .select(
+          `
           id,
-          display_name,
-          username,
-          avatar_url
-        ),
-        blocker:profiles!blocked_users_blocker_id_fkey(
-          id,
-          display_name,
-          username,
-          avatar_url
+          reason,
+          created_at,
+          blocked:profiles!user_blocks_blocked_id_fkey(
+            id,
+            display_name,
+            username,
+            avatar_url
+          )
+        `,
         )
-      `);
-
-    if (listType === 'blocked') {
-      // Users I've blocked
-      query = query.eq('blocker_id', user.id);
-    } else if (listType === 'blockers') {
-      // Users who blocked me
-      query = query.eq('blocked_id', user.id);
-    } else {
-      return NextResponse.json(
-        { success: false, error: 'Invalid list type. Use "blocked" or "blockers"' },
-        { status: 400 }
-      );
+        .eq('blocker_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('GET /api/users/block list=blocked:', error);
+        return NextResponse.json({ error: 'Failed to fetch blocked users' }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, data: data || [], count: data?.length || 0 });
     }
 
-    const { data: blocks, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching blocked users:', error);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch blocked users' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: blocks || [],
-      count: blocks?.length || 0
-    });
-
-  } catch (error: any) {
-    console.error('Get blocked users API error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Invalid query. Use list=blocked or checkUserId=<userId>' }, { status: 400 });
+  } catch (error) {
+    console.error('GET /api/users/block:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

@@ -23,6 +23,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -101,6 +102,17 @@ export async function GET(request: NextRequest) {
     }
 
     const searchTerm = `%${query.trim()}%`;
+    const service = createServiceClient();
+    const { data: blockRows } = await service
+      .from('user_blocks')
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`);
+    const blockedUserIds = new Set<string>();
+    for (const row of blockRows ?? []) {
+      if (row.blocker_id === user.id) blockedUserIds.add(row.blocked_id);
+      if (row.blocked_id === user.id) blockedUserIds.add(row.blocker_id);
+    }
+    const blockedList = Array.from(blockedUserIds);
 
     const results: {
       posts: any[];
@@ -123,8 +135,9 @@ export async function GET(request: NextRequest) {
         .range(offset, offset + limit - 1);
 
       if (!postsError && posts) {
-        const postIds = posts.map((p) => p.id);
-        const userIds = [...new Set(posts.map((p) => p.user_id))];
+        const visiblePosts = blockedList.length > 0 ? posts.filter((p) => !blockedUserIds.has(p.user_id)) : posts;
+        const postIds = visiblePosts.map((p) => p.id);
+        const userIds = [...new Set(visiblePosts.map((p) => p.user_id))];
 
         // Get authors
         const { data: authors } = await supabase
@@ -163,7 +176,7 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        results.posts = posts.map((post) => {
+        results.posts = visiblePosts.map((post) => {
           const author = authorMap.get(post.user_id);
           return {
             id: post.id,
@@ -194,7 +207,8 @@ export async function GET(request: NextRequest) {
         .range(offset, offset + limit - 1);
 
       if (!profError && professionals) {
-        results.professionals = professionals.map((prof) => ({
+        const visibleProfessionals = blockedList.length > 0 ? professionals.filter((p) => !blockedUserIds.has(p.id)) : professionals;
+        results.professionals = visibleProfessionals.map((prof) => ({
           id: prof.id,
           name: prof.display_name || prof.username || 'Unknown',
           username: prof.username,
@@ -218,7 +232,8 @@ export async function GET(request: NextRequest) {
         .range(offset, offset + limit - 1);
 
       if (!oppError && opportunities) {
-        const userIds = [...new Set(opportunities.map((o) => o.user_id))];
+        const visibleOpportunities = blockedList.length > 0 ? opportunities.filter((o) => !blockedUserIds.has(o.user_id)) : opportunities;
+        const userIds = [...new Set(visibleOpportunities.map((o) => o.user_id))];
         const { data: authors } = await supabase
           .from('profiles')
           .select('id, username, display_name, avatar_url')
@@ -229,7 +244,7 @@ export async function GET(request: NextRequest) {
           authors.forEach((a) => authorMap.set(a.id, a));
         }
 
-        results.opportunities = opportunities.map((opp) => {
+        results.opportunities = visibleOpportunities.map((opp) => {
           const author = authorMap.get(opp.user_id);
           return {
             id: opp.id,

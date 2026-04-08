@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { withAuthTimeout, withQueryTimeout, logPerformance, createErrorResponse } from '@/lib/api-helpers';
 
 // CRITICAL: Force dynamic rendering to prevent Vercel edge caching
@@ -58,6 +59,16 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ User authenticated:', user.id);
+    const service = createServiceClient();
+    const { data: blockRows } = await service
+      .from('user_blocks')
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`);
+    const blockedUserIds = new Set<string>();
+    for (const row of blockRows ?? []) {
+      if (row.blocker_id === user.id) blockedUserIds.add(row.blocked_id);
+      if (row.blocked_id === user.id) blockedUserIds.add(row.blocker_id);
+    }
 
     // Verify Supabase client has correct user context for RLS
     const { data: userCheck, error: userCheckError } = await supabase.auth.getUser();
@@ -107,10 +118,12 @@ export async function GET(request: NextRequest) {
 
     // Execute with increased timeout to match client 30s timeout
     const { data: posts, error: postsError } = await withQueryTimeout(query, 20000) as any;
+    const filteredPosts = (posts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
 
     // Enhanced logging for debugging
     console.log('📊 Query result:', {
       postsCount: posts?.length || 0,
+      filteredPostsCount: filteredPosts.length,
       hasError: !!postsError,
       errorMessage: postsError?.message || null,
       errorCode: postsError?.code || null,
@@ -118,9 +131,9 @@ export async function GET(request: NextRequest) {
     });
 
     // If we got posts, fetch authors and repost status separately (faster than JOIN)
-    if (posts && posts.length > 0) {
-      const userIds = [...new Set(posts.map((p: any) => p.user_id))];
-      const postIds = posts.map((p: any) => p.id);
+    if (filteredPosts.length > 0) {
+      const userIds = [...new Set(filteredPosts.map((p: any) => p.user_id))];
+      const postIds = filteredPosts.map((p: any) => p.id);
 
       try {
         // Fetch authors
@@ -139,7 +152,7 @@ export async function GET(request: NextRequest) {
             headline: a.professional_headline || null,
             bio: a.bio || null,
           }]));
-          posts.forEach((post: any) => {
+          filteredPosts.forEach((post: any) => {
             const author = authorsMap.get(post.user_id);
             if (author) {
               post.author = {
@@ -178,14 +191,14 @@ export async function GET(request: NextRequest) {
         }
 
         // Add user_reposted and user_repost_id to each post
-        posts.forEach((post: any) => {
+        filteredPosts.forEach((post: any) => {
           const repostPostId = repostsMap.get(post.id);
           post.user_reposted = !!repostPostId;
           post.user_repost_id = repostPostId || null;
         });
 
         // Fetch original posts for reposts (reposted_from object)
-        const repostedFromIds = posts
+        const repostedFromIds = filteredPosts
           .map((p: any) => p.reposted_from_id)
           .filter((id: any) => id !== null && id !== undefined);
         
@@ -265,7 +278,7 @@ export async function GET(request: NextRequest) {
               }
 
               // Map reposted_from object to each repost
-              posts.forEach((post: any) => {
+              filteredPosts.forEach((post: any) => {
                 if (post.reposted_from_id) {
                   const originalPost = originalPostsMap.get(post.reposted_from_id);
                   if (originalPost) {
@@ -327,7 +340,7 @@ export async function GET(request: NextRequest) {
               });
             } else {
               // No original posts found - set reposted_from to null
-              posts.forEach((post: any) => {
+              filteredPosts.forEach((post: any) => {
                 if (post.reposted_from_id) {
                   post.reposted_from = null;
                 } else {
@@ -338,20 +351,20 @@ export async function GET(request: NextRequest) {
           } catch (repostError) {
             console.warn('⚠️ Failed to fetch reposted_from data, continuing without:', repostError);
             // Set reposted_from to null for all posts if fetch fails
-            posts.forEach((post: any) => {
+            filteredPosts.forEach((post: any) => {
               post.reposted_from = null;
             });
           }
         } else {
           // No reposts in this batch - set reposted_from to null for all
-          posts.forEach((post: any) => {
+          filteredPosts.forEach((post: any) => {
             post.reposted_from = null;
           });
         }
       } catch (fetchError) {
         console.warn('⚠️ Failed to fetch authors/reposts, continuing without:', fetchError);
         // Continue without authors/reposts - posts will have null author and user_reposted = false
-        posts.forEach((post: any) => {
+        filteredPosts.forEach((post: any) => {
           post.user_reposted = false;
           post.user_repost_id = null;
           post.reposted_from = null;
@@ -379,15 +392,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`📊 Found ${posts?.length || 0} posts`);
+    console.log(`📊 Found ${filteredPosts.length || 0} posts after block filter`);
     
     // Additional debug: Log first post if available
-    if (posts && posts.length > 0) {
+    if (filteredPosts.length > 0) {
       console.log('✅ Sample post:', {
-        id: posts[0].id,
-        userId: posts[0].user_id,
-        visibility: posts[0].visibility,
-        contentPreview: posts[0].content?.substring(0, 50) || 'N/A',
+        id: filteredPosts[0].id,
+        userId: filteredPosts[0].user_id,
+        visibility: filteredPosts[0].visibility,
+        contentPreview: filteredPosts[0].content?.substring(0, 50) || 'N/A',
       });
     } else {
       console.warn('⚠️ No posts returned - checking RLS policy...');
@@ -406,8 +419,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Estimate pagination without expensive count
-    const hasMore = posts && posts.length === safeLimit;
-    const estimatedTotal = hasMore ? offset + safeLimit + 1 : offset + (posts?.length || 0);
+    const hasMore = filteredPosts.length === safeLimit;
+    const estimatedTotal = hasMore ? offset + safeLimit + 1 : offset + filteredPosts.length;
 
     logPerformance('/api/posts/feed', startTime);
 
@@ -416,7 +429,7 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         data: {
-          posts: posts || [],
+          posts: filteredPosts || [],
           pagination: {
             page,
             limit: safeLimit,

@@ -55,6 +55,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: blockRows } = await adminClient
+      .from('user_blocks')
+      .select('id')
+      .or(
+        `and(blocker_id.eq.${message.sender_id},blocked_id.eq.${message.recipient_id}),and(blocker_id.eq.${message.recipient_id},blocked_id.eq.${message.sender_id})`,
+      );
+    if ((blockRows || []).length > 0) {
+      return NextResponse.json({ error: 'Messaging is blocked between these users' }, { status: 403 });
+    }
+
     // Prefer notification_preferences (aligned with mobile); fallback to user_notification_preferences
     let messageNotificationsEnabled: boolean | null = null;
     const { data: np } = await adminClient

@@ -1775,6 +1775,16 @@ export default function SettingsPage() {
           <h3 className="card-title">Interaction Privacy</h3>
         </div>
         <div className="space-y-6">
+          <div className="flex items-center justify-between rounded-lg border border-gray-700/70 bg-gray-800/40 p-3">
+            <div>
+              <div className="font-medium text-white">Blocked Users</div>
+              <div className="text-sm text-gray-400">Manage people you blocked and unblock anytime.</div>
+            </div>
+            <Link href="/settings/blocked-users" className="btn-secondary">
+              Manage
+            </Link>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Allow Messages</label>
             <select
