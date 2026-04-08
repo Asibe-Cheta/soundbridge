@@ -1062,7 +1062,12 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       }
 
       if (data?.session_url && typeof window !== 'undefined') {
-        window.open(data.session_url, '_blank', 'noopener,noreferrer');
+        const popup = window.open(data.session_url, '_blank', 'noopener,noreferrer');
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          // Safari may block new-tab popups; fallback to same-tab navigation so verification can continue.
+          window.location.assign(data.session_url);
+          return;
+        }
         setVerificationSuccess(
           data?.pending
             ? 'Resume verification in the new tab — continue where you left off.'
