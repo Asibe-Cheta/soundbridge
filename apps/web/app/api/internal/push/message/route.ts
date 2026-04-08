@@ -32,6 +32,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ sent: false, reason: 'message_not_found' });
     }
 
+    const { data: blockRows } = await supabase
+      .from('user_blocks')
+      .select('id')
+      .or(
+        `and(blocker_id.eq.${message.sender_id},blocked_id.eq.${message.recipient_id}),and(blocker_id.eq.${message.recipient_id},blocked_id.eq.${message.sender_id})`,
+      );
+    if ((blockRows || []).length > 0) {
+      return NextResponse.json({ sent: false, reason: 'messaging_blocked' });
+    }
+
     // Keep fallback behavior aligned with existing API route and mobile preferences.
     let messageNotificationsEnabled: boolean | null = null;
     const { data: np } = await supabase

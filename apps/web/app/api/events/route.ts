@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -188,6 +189,19 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { supabase } = await getSupabaseRouteClient(request, false);
+    const { data: { user: viewer } } = await supabase.auth.getUser();
+    const blockedUserIds = new Set<string>();
+    if (viewer?.id) {
+      const service = createServiceClient();
+      const { data: blockRows } = await service
+        .from('user_blocks')
+        .select('blocker_id, blocked_id')
+        .or(`blocker_id.eq.${viewer.id},blocked_id.eq.${viewer.id}`);
+      for (const row of blockRows ?? []) {
+        if (row.blocker_id === viewer.id) blockedUserIds.add(row.blocked_id);
+        if (row.blocked_id === viewer.id) blockedUserIds.add(row.blocker_id);
+      }
+    }
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
@@ -288,16 +302,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform events data
-    const transformedEvents = events?.map(event => ({
-      ...event,
-      attendeeCount: event.attendees?.length || 0,
-      isAttending: event.attendees?.some((a: { status: string }) => a.status === 'attending') || false,
-      isInterested: event.attendees?.some((a: { status: string }) => a.status === 'interested') || false,
-      formattedDate: formatEventDate(event.event_date),
-      formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
-      isFeatured: isFeaturedEvent(event),
-      rating: calculateEventRating(event)
-    })) || [];
+    const transformedEvents = events?.map(event => {
+      const visibleAttendees = blockedUserIds.size > 0
+        ? (event.attendees || []).filter((a: { user_id: string }) => !blockedUserIds.has(a.user_id))
+        : (event.attendees || []);
+      return {
+        ...event,
+        attendees: visibleAttendees,
+        attendeeCount: visibleAttendees.length,
+        isAttending: viewer?.id
+          ? visibleAttendees.some((a: { status: string; user_id: string }) => a.user_id === viewer.id && a.status === 'attending')
+          : false,
+        isInterested: viewer?.id
+          ? visibleAttendees.some((a: { status: string; user_id: string }) => a.user_id === viewer.id && a.status === 'interested')
+          : false,
+        formattedDate: formatEventDate(event.event_date),
+        formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
+        isFeatured: isFeaturedEvent(event),
+        rating: calculateEventRating(event)
+      };
+    }) || [];
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export async function GET(
   request: NextRequest,
@@ -9,6 +10,19 @@ export async function GET(
   try {
     const supabase = createRouteHandlerClient({ cookies });
     const resolvedParams = await params;
+    const { data: { user: viewer } } = await supabase.auth.getUser();
+    const blockedUserIds = new Set<string>();
+    if (viewer?.id) {
+      const service = createServiceClient();
+      const { data: blockRows } = await service
+        .from('user_blocks')
+        .select('blocker_id, blocked_id')
+        .or(`blocker_id.eq.${viewer.id},blocked_id.eq.${viewer.id}`);
+      for (const row of blockRows ?? []) {
+        if (row.blocker_id === viewer.id) blockedUserIds.add(row.blocked_id);
+        if (row.blocked_id === viewer.id) blockedUserIds.add(row.blocker_id);
+      }
+    }
 
     const { data: event, error } = await supabase
       .from('events')
@@ -55,12 +69,17 @@ export async function GET(
       );
     }
 
+    const visibleAttendees = blockedUserIds.size > 0
+      ? (event.attendees || []).filter((a: { user_id: string }) => !blockedUserIds.has(a.user_id))
+      : (event.attendees || []);
+
     // Transform event data
     const transformedEvent = {
       ...event,
-      attendeeCount: event.attendees?.length || 0,
-      attendingUsers: event.attendees?.filter((a: { status: string }) => a.status === 'attending') || [],
-      interestedUsers: event.attendees?.filter((a: { status: string }) => a.status === 'interested') || [],
+      attendees: visibleAttendees,
+      attendeeCount: visibleAttendees.length,
+      attendingUsers: visibleAttendees.filter((a: { status: string }) => a.status === 'attending') || [],
+      interestedUsers: visibleAttendees.filter((a: { status: string }) => a.status === 'interested') || [],
       formattedDate: formatEventDate(event.event_date),
       formattedPrice: formatPrice(event.price_gbp, event.price_ngn),
       isFeatured: isFeaturedEvent(event),
