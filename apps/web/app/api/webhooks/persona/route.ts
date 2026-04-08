@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
         ? {
             title: "You're Verified! ✓",
             body: 'Your Verified Professional badge is now live on your profile. Clients can see it when browsing services.',
-            data: { type: 'verification_approved' as const, outcome: 'approved' as const },
+            /** Must match notifications.type CHECK + mobile NotificationType (identity_verified). */
+            data: { type: 'identity_verified' as const, outcome: 'approved' as const },
           }
         : {
             title: 'Verification Unsuccessful',
@@ -130,6 +131,18 @@ export async function POST(request: NextRequest) {
         updated_at: now,
       })
       .eq('user_id', userId);
+
+    // Public profile badge + mobile GET /api/verification/status read from profiles + provider tables.
+    const { error: publicProfileError } = await supabase
+      .from('profiles')
+      .update({
+        is_verified: profile.is_verified,
+        updated_at: now,
+      })
+      .eq('id', userId);
+    if (publicProfileError) {
+      console.error('[persona webhook] Failed to sync profiles.is_verified:', publicProfileError);
+    }
   }
 
   const { data: sessionRow } = await supabase
