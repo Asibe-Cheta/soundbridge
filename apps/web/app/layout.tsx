@@ -7,6 +7,7 @@ import { GlobalAudioPlayerGate } from "@/src/components/audio/GlobalAudioPlayerG
 import { CookieConsentScripts } from "@/src/components/privacy/CookieConsentScripts";
 import { CookieConsentToast } from "@/src/components/privacy/CookieConsentToast";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { OnlinePresenceProvider } from "@/src/contexts/OnlinePresenceContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
 import { OnboardingManager } from "@/src/components/onboarding/OnboardingManager";
@@ -166,16 +167,18 @@ export default function RootLayout({
         <ErrorBoundary>
           <ThemeProvider>
             <AuthProvider>
-              <OnboardingProvider>
-                <AudioPlayerProvider>
-                  <Navbar />
-                  {children}
-                  <GlobalAudioPlayerGate />
-                  <OnboardingManager />
-                  <CookieConsentToast />
-                  <CookieConsentScripts />
-                </AudioPlayerProvider>
-              </OnboardingProvider>
+              <OnlinePresenceProvider>
+                <OnboardingProvider>
+                  <AudioPlayerProvider>
+                    <Navbar />
+                    {children}
+                    <GlobalAudioPlayerGate />
+                    <OnboardingManager />
+                    <CookieConsentToast />
+                    <CookieConsentScripts />
+                  </AudioPlayerProvider>
+                </OnboardingProvider>
+              </OnlinePresenceProvider>
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>

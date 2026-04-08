@@ -766,6 +766,13 @@ export default function SettingsPage() {
       }
 
       setPrivacySettings(data.settings);
+      if (typeof data.settings?.showOnlineStatus === 'boolean' && typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('online-presence:visibility-changed', {
+            detail: { showOnlineStatus: data.settings.showOnlineStatus },
+          }),
+        );
+      }
       setPrivacySuccess(true);
       setIsPrivacyLoading(false);
 

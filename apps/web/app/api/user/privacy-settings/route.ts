@@ -46,13 +46,24 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const { data: profilePresence } = await supabase
+      .from('profiles')
+      .select('show_online_status')
+      .eq('id', user.id as any)
+      .maybeSingle() as { data: any; error: any };
+
+    const showOnlineStatusValue =
+      typeof profilePresence?.show_online_status === 'boolean'
+        ? profilePresence.show_online_status
+        : (privacySettings?.show_online_status !== false);
+
     const settings = privacySettings ? {
       profileVisibility: privacySettings.profile_visibility || 'public',
       showEmail: privacySettings.show_email || false,
       showPhone: privacySettings.show_phone || false,
       allowMessages: privacySettings.allow_messages || 'everyone',
       allowComments: privacySettings.allow_comments || 'everyone',
-      showOnlineStatus: privacySettings.show_online_status !== false,
+      showOnlineStatus: showOnlineStatusValue,
       showListeningActivity: privacySettings.show_listening_activity !== false
     } : {
       profileVisibility: 'public',
@@ -60,7 +71,7 @@ export async function GET(request: NextRequest) {
       showPhone: false,
       allowMessages: 'everyone',
       allowComments: 'everyone',
-      showOnlineStatus: true,
+      showOnlineStatus: showOnlineStatusValue,
       showListeningActivity: true
     };
 
@@ -154,6 +165,20 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Failed to update privacy settings' },
         { status: 500 }
       );
+    }
+
+    // Mirror online visibility preference into profiles for cross-platform presence.
+    if (typeof showOnlineStatus === 'boolean') {
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({
+          show_online_status: showOnlineStatus,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', user.id as any);
+      if (profileUpdateError) {
+        console.error('⚠️ Failed to sync profiles.show_online_status:', profileUpdateError);
+      }
     }
 
     console.log('✅ Privacy settings updated:', {

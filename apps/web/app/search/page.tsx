@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAudioPlayer } from '../../src/contexts/AudioPlayerContext';
+import { useOnlinePresence } from '../../src/contexts/OnlinePresenceContext';
 import type { AudioTrack } from '../../src/lib/types/audio';
 import { Footer } from '../../src/components/layout/Footer';
 import { Search, Filter, X, MapPin, Music, Users, Calendar, Mic, Play, Pause, Heart, Share2, ArrowLeft, Sliders, Loader2, AlertCircle, User, Clock, Eye } from 'lucide-react';
@@ -43,6 +44,7 @@ function SearchContent() {
   
   // Audio player integration
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
+  const { isUserOnline } = useOnlinePresence();
 
   // Mobile responsiveness detection
   useEffect(() => {
@@ -303,6 +305,7 @@ function SearchContent() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{
+                      position: 'relative',
                       width: '60px',
                       height: '60px',
                       borderRadius: '50%',
@@ -325,6 +328,18 @@ function SearchContent() {
                       ) : (
                         creator.display_name?.charAt(0)?.toUpperCase() || 'U'
                       )}
+                      <span
+                        style={{
+                          position: 'absolute',
+                          right: 2,
+                          bottom: 2,
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '9999px',
+                          background: isUserOnline(creator.id) ? '#4CAF50' : '#666',
+                          border: '2px solid rgba(31, 41, 55, 0.9)',
+                        }}
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>

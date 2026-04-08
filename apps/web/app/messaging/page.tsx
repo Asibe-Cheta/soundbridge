@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Footer } from '../../src/components/layout/Footer';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useOnlinePresence } from '../../src/contexts/OnlinePresenceContext';
 import { useMessaging } from '../../src/hooks/useMessaging';
 import type { Conversation, ConversationParticipant } from '../../src/lib/types/messaging';
 import { MessageCircle, Search, ArrowLeft, Bell, Settings, AlertCircle, Send, MoreVertical, User, LogOut, Menu } from 'lucide-react';
 
 export default function MessagingPage() {
   const { user, signOut } = useAuth();
+  const { isUserOnline } = useOnlinePresence();
   const {
     conversations,
     selectedConversationId,
@@ -288,6 +290,7 @@ export default function MessagingPage() {
               ) : (
                 conversations.map((conversation) => {
                   const otherUser = getOtherParticipant(conversation);
+                  const isOtherUserOnline = isUserOnline(otherUser?.id);
                   return (
                     <div
                       key={conversation.id}
@@ -320,6 +323,7 @@ export default function MessagingPage() {
                     >
                       {/* Avatar */}
                       <div style={{
+                        position: 'relative',
                         width: '48px',
                         height: '48px',
                         borderRadius: '50%',
@@ -333,6 +337,18 @@ export default function MessagingPage() {
                         flexShrink: 0
                       }}>
                         {otherUser?.display_name?.charAt(0) || otherUser?.username?.charAt(0) || '?'}
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: 1,
+                            right: 1,
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '9999px',
+                            background: isOtherUserOnline ? '#4CAF50' : '#666',
+                            border: '2px solid rgba(17, 24, 39, 0.9)',
+                          }}
+                        />
                       </div>
 
                       {/* Content */}
@@ -444,7 +460,13 @@ export default function MessagingPage() {
                         })()}
                       </h3>
                       <p style={{ color: '#999', fontSize: '0.85rem', margin: 0 }}>
-                        {typingUsers.length > 0 ? 'Typing...' : 'Online'}
+                        {typingUsers.length > 0
+                          ? 'Typing...'
+                          : (() => {
+                              const conversation = conversations.find(c => c.id === selectedConversationId);
+                              const otherUser = conversation ? getOtherParticipant(conversation) : null;
+                              return isUserOnline(otherUser?.id) ? 'Online' : 'Offline';
+                            })()}
                       </p>
                     </div>
                   </div>

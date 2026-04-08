@@ -8,6 +8,7 @@ import { Footer } from '../../../src/components/layout/Footer';
 import { CreatorProfileSkeleton } from '../../../src/components/ui/Skeleton';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
+import { useOnlinePresence } from '../../../src/contexts/OnlinePresenceContext';
 import { useAudioPlayer } from '../../../src/contexts/AudioPlayerContext';
 import { CustomBranding } from '../../../src/components/branding/CustomBranding';
 import { TipCreator } from '../../../src/components/revenue/TipCreator';
@@ -97,6 +98,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   const { user } = useAuth();
+  const { isUserOnline } = useOnlinePresence();
   const { theme } = useTheme();
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const [availabilityState, availabilityActions] = useAvailability();
@@ -517,6 +519,19 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                     </div>
                   )}
                   <p className={`mb-2 text-gray-300 ${isMobile ? 'text-sm' : ''}`}>@{creator.username}</p>
+                  {user && user.id !== creator.id && (
+                    <div className="mb-2 inline-flex items-center gap-2 text-xs text-gray-300">
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '9999px',
+                          background: isUserOnline(creator.id) ? '#4CAF50' : '#666',
+                        }}
+                      />
+                      {isUserOnline(creator.id) ? 'Online' : 'Offline'}
+                    </div>
+                  )}
                   {(creator as Record<string, unknown>).rating_count != null && Number((creator as Record<string, unknown>).rating_count) > 0 && (
                     <div className="flex items-center gap-1.5 mb-2 text-amber-400">
                       <Star className="h-4 w-4 fill-current" />

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
+import { useOnlinePresence } from '@/src/contexts/OnlinePresenceContext';
 
 // Search suggestion types
 interface SearchSuggestion {
@@ -21,6 +22,7 @@ interface SearchDropdownProps {
 }
 
 export default function SearchDropdown({ placeholder = "Search creators, events, podcasts...", className = "", onFocusSuccess, onSuggestionClick }: SearchDropdownProps) {
+  const { isUserOnline } = useOnlinePresence();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -362,6 +364,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {/* Type Icon */}
                     <div style={{
+                      position: 'relative',
                       width: '32px',
                       height: '32px',
                       borderRadius: '6px',
@@ -378,6 +381,20 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                       {suggestion.type === 'music' ? '🎵' :
                        suggestion.type === 'creator' ? '👤' :
                        suggestion.type === 'event' ? '📅' : '🎙️'}
+                      {suggestion.type === 'creator' && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            right: -2,
+                            bottom: -2,
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '9999px',
+                            background: isUserOnline(suggestion.id) ? '#4CAF50' : '#666',
+                            border: '2px solid #1f2937',
+                          }}
+                        />
+                      )}
                     </div>
 
                     {/* Content */}
