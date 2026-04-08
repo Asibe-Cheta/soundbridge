@@ -4,6 +4,8 @@
 
 SELECT
   id,
+  username,
+  early_adopter,
   subscription_tier,
   subscription_status,
   subscription_period_end,

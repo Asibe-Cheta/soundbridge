@@ -18,9 +18,26 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
+function mapAvailabilityDbError(error: { code?: string; message?: string } | null | undefined) {
+  const code = error?.code ?? '';
+  if (code === '42P01') {
+    return {
+      status: 503,
+      error: 'Availability service is not configured yet. Please ask support to run urgent gigs migrations.',
+    };
+  }
+  if (code === '23503') {
+    return {
+      status: 404,
+      error: 'Profile not found. Complete onboarding before setting urgent gig availability.',
+    };
+  }
+  return { status: 500, error: 'Server error. Please try again later.' };
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401, headers: CORS });
     }
@@ -34,7 +51,8 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('user_availability GET:', error);
-      return NextResponse.json({ success: false, error: 'Failed to load availability' }, { status: 500, headers: CORS });
+      const mapped = mapAvailabilityDbError(error);
+      return NextResponse.json({ success: false, error: mapped.error }, { status: mapped.status, headers: CORS });
     }
 
     if (!row) {
@@ -52,7 +70,8 @@ export async function GET(request: NextRequest) {
         .single();
       if (insertErr) {
         console.error('user_availability insert:', insertErr);
-        return NextResponse.json({ success: false, error: 'Failed to create availability' }, { status: 500, headers: CORS });
+        const mapped = mapAvailabilityDbError(insertErr);
+        return NextResponse.json({ success: false, error: mapped.error }, { status: mapped.status, headers: CORS });
       }
       row = inserted;
     }
@@ -72,7 +91,7 @@ const PATCH_FIELDS = [
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401, headers: CORS });
     }
@@ -87,6 +106,23 @@ export async function PATCH(request: NextRequest) {
     }
 
     const service = createServiceClient();
+    const { data: profileRow, error: profileErr } = await service
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profileErr) {
+      console.error('user_availability PATCH profile check:', profileErr);
+      const mapped = mapAvailabilityDbError(profileErr);
+      return NextResponse.json({ success: false, error: mapped.error }, { status: mapped.status, headers: CORS });
+    }
+    if (!profileRow) {
+      return NextResponse.json(
+        { success: false, error: 'Profile not found. Complete onboarding before setting urgent gig availability.' },
+        { status: 404, headers: CORS },
+      );
+    }
+
     const { data, error } = await service
       .from('user_availability')
       .upsert({ user_id: user.id, ...update }, { onConflict: 'user_id' })
@@ -95,7 +131,8 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('user_availability PATCH:', error);
-      return NextResponse.json({ success: false, error: 'Failed to update availability' }, { status: 500, headers: CORS });
+      const mapped = mapAvailabilityDbError(error);
+      return NextResponse.json({ success: false, error: mapped.error }, { status: mapped.status, headers: CORS });
     }
     return NextResponse.json({ success: true, data }, { headers: CORS });
   } catch (e) {

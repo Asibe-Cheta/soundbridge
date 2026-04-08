@@ -13,6 +13,7 @@ export interface CreatorProfile {
   created_at: string;
   updated_at: string;
   is_verified?: boolean;
+  early_adopter?: boolean;
   // Computed fields
   followers_count?: number;
   following_count?: number;

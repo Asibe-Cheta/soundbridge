@@ -87,6 +87,10 @@ export async function GET(request: NextRequest) {
         onboarding_completed,
         onboarding_step,
         profile_completed,
+        early_adopter,
+        subscription_tier,
+        subscription_status,
+        subscription_period_end,
         created_at,
         updated_at
       `)

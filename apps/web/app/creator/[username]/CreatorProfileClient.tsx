@@ -44,6 +44,7 @@ import {
   Globe,
   Star,
   Disc,
+  Sparkles,
 } from 'lucide-react';
 import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
 import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
@@ -509,6 +510,12 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                       </span>
                     )}
                   </h1>
+                  {creator.early_adopter && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-400/40 bg-amber-500/15 text-amber-300 text-xs font-medium mb-2">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Early Adopter
+                    </div>
+                  )}
                   <p className={`mb-2 text-gray-300 ${isMobile ? 'text-sm' : ''}`}>@{creator.username}</p>
                   {(creator as Record<string, unknown>).rating_count != null && Number((creator as Record<string, unknown>).rating_count) > 0 && (
                     <div className="flex items-center gap-1.5 mb-2 text-amber-400">

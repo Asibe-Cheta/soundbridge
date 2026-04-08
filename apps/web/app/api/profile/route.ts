@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Get profile with timeout
     const queryPromise = supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline, location, bio, website, phone, genres, experience_level, followers_count, following_count, total_plays, subscription_tier')
+      .select('id, username, display_name, avatar_url, professional_headline, location, bio, website, phone, genres, experience_level, followers_count, following_count, total_plays, subscription_tier, subscription_status, subscription_period_end, early_adopter')
       .eq('id', targetUserId)
       .single();
 
