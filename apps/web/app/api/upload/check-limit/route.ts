@@ -40,9 +40,16 @@ export async function GET(request: NextRequest) {
     // Get user's tier for additional context
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier, subscription_renewal_date')
+      .select('subscription_tier, subscription_renewal_date, early_adopter, subscription_period_end')
       .eq('id', user.id)
       .single();
+
+    const periodEndMs =
+      profile?.subscription_period_end ? Date.parse(profile.subscription_period_end as string) : NaN;
+    const effectiveTier =
+      profile?.early_adopter === true && Number.isFinite(periodEndMs) && periodEndMs > Date.now()
+        ? 'premium'
+        : (profile?.subscription_tier || 'free');
 
     const result = data[0]; // RPC returns array
 
@@ -53,13 +60,13 @@ export async function GET(request: NextRequest) {
         uploads_limit: result.uploads_limit,
         limit_type: result.limit_type, // 'lifetime', 'monthly', 'unlimited'
         reset_date: result.reset_date,
-        subscription_tier: profile?.subscription_tier || 'free',
+        subscription_tier: effectiveTier,
         message: getUploadLimitMessage(
           result.can_upload,
           result.uploads_used,
           result.uploads_limit,
           result.limit_type,
-          profile?.subscription_tier
+          effectiveTier
         ),
       },
       { headers: corsHeaders }

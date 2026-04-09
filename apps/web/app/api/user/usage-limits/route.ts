@@ -34,7 +34,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user tier
+    // Resolve effective tier from profiles first (covers early-adopter premium grants),
+    // then fall back to active subscription row.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, early_adopter, subscription_period_end')
+      .eq('id', user.id)
+      .maybeSingle();
+
     const { data: subscription } = await supabase
       .from('user_subscriptions')
       .select('tier')
@@ -42,9 +49,18 @@ export async function GET(request: NextRequest) {
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    const tier = subscription?.tier || 'free';
+    const periodEndMs =
+      profile?.subscription_period_end ? Date.parse(profile.subscription_period_end as string) : NaN;
+    const earlyAdopterPremiumActive =
+      profile?.early_adopter === true && Number.isFinite(periodEndMs) && periodEndMs > Date.now();
+
+    const tier = earlyAdopterPremiumActive
+      ? 'premium'
+      : (profile?.subscription_tier as string | null | undefined) ||
+        (subscription?.tier as string | null | undefined) ||
+        'free';
 
     // Get upload limit
     const { data: uploadLimit } = await supabase
