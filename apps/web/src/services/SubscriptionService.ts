@@ -1,6 +1,4 @@
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
 export interface SubscriptionPlan {
   name: string;
@@ -54,7 +52,7 @@ export class SubscriptionService {
         window.location.href = url;
       } else {
         // Fallback: use Stripe.js to redirect
-        const stripe = await stripePromise;
+        const stripe = await getStripeJsPromise();
         if (!stripe) throw new Error('Stripe failed to load');
         
         const { error } = await stripe.redirectToCheckout({ sessionId });

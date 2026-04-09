@@ -35,6 +35,8 @@ Sentry.init({
     'Error invoking enableButtonsClickedMetaDataLogging: Java object is gone',
     /enableButtonsClickedMetaDataLogging.*Java object is gone/,
     /Java object is gone/,
+    // Stripe.js blocked or failed to load (ad blockers, flaky network, CSP)
+    'Failed to load Stripe.js',
   ],
 
   // Enable logs to be sent to Sentry

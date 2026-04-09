@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { X, CreditCard, Loader2, CheckCircle, AlertCircle, Ticket } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripeJsPromise();
 
 interface EventTicketPurchaseModalProps {
   isOpen: boolean;

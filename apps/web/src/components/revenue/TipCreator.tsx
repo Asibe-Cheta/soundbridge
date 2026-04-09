@@ -14,6 +14,7 @@ declare global {
   }
 }
 import { revenueService } from '../../lib/revenue-service';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import type { TipFormData } from '../../lib/types/revenue';
 import { Gift, Heart, Send, DollarSign, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, X, CreditCard, Smartphone, Shield } from 'lucide-react';
 
@@ -148,9 +149,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
 
       // Step 2: Process payment with Stripe
       console.log('Loading Stripe...');
-      const stripe = await import('@stripe/stripe-js').then(({ loadStripe }) => 
-        loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-      );
+      const stripe = await getStripeJsPromise();
 
       if (!stripe) {
         console.error('Stripe not loaded');

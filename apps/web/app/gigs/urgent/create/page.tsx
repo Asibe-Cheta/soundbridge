@@ -3,17 +3,15 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { ArrowLeft, Loader2, Search } from 'lucide-react';
 import { Button, Card, CardContent, Input } from '@/src/components/ui';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createUrgentGig } from '@/src/services/urgentGigService';
 import { geocodeAddress } from '@/src/lib/geocoding';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
 
 const SKILLS = [
   'Trumpeter', 'Vocalist', 'Drummer', 'DJ', 'Sound Engineer', 'Pianist', 'Guitarist', 'Bassist',

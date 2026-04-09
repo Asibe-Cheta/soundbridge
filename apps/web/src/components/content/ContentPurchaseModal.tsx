@@ -2,13 +2,11 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { X, ShoppingCart, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
 
 export interface ContentPurchaseModalProps {
   isOpen: boolean;
@@ -168,6 +166,12 @@ export function ContentPurchaseModal({
 
     (async () => {
       try {
+        const stripe = await stripePromise!;
+        if (!stripe) {
+          if (!cancelled) setLoadError('Payment system unavailable. Check your network or try disabling content blockers.');
+          return;
+        }
+
         const ownRes = await fetch(
           `/api/content/ownership?content_id=${encodeURIComponent(contentId)}&content_type=${encodeURIComponent(contentType)}`,
           { credentials: 'include' }

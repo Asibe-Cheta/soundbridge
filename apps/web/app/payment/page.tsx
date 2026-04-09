@@ -2,14 +2,12 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
-// Make sure to call `loadStripe` outside of a component's render to avoid
-// recreating the `Stripe` object on every render.
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripeJsPromise();
 
 function CheckoutForm({ clientSecret, returnUrl }: { clientSecret: string; returnUrl?: string | null }) {
   const stripe = useStripe();

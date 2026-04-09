@@ -7,18 +7,10 @@ export const stripe = process.env.STRIPE_SECRET_KEY
     })
   : null;
 
-// Client-side Stripe instance
+// Client-side Stripe (delegates to shared loader so failures never reject)
 export const getStripe = async () => {
-  const { loadStripe } = await import('@stripe/stripe-js');
-  
-  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-  
-  if (!publishableKey) {
-    console.warn('Stripe publishable key not found. Please add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to your environment variables.');
-    return null;
-  }
-  
-  return loadStripe(publishableKey);
+  const { getStripeJsPromise } = await import('./stripe-js-client');
+  return getStripeJsPromise();
 };
 
 // Map plan names to Stripe Price IDs

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { X, Ticket, Users, Tag, Sparkles } from 'lucide-react';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripeJsPromise();
 
 interface TicketType {
   id: string;

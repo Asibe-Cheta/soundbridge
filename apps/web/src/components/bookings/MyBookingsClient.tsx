@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { CalendarClock, CalendarCheck, CalendarX, CheckCircle, CreditCard, Loader2, ShieldAlert, X, RefreshCcw } from 'lucide-react';
 
 import { BOOKING_STATUS_META, type BookingStatus } from '@/src/constants/bookings';
+import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+const stripePromise = publishableKey ? getStripeJsPromise() : null;
 
 interface ProfileSummary {
   user_id: string;
