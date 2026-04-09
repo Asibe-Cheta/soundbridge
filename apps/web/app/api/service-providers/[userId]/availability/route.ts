@@ -72,8 +72,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400, headers: corsHeaders });
   }
 
-  const startTime = body.start_time ?? body.startTime;
-  const endTime = body.end_time ?? body.endTime;
+  const startTime = body.start_time ?? body.startTime ?? body.start_at ?? body.startAt;
+  const endTime = body.end_time ?? body.endTime ?? body.end_at ?? body.endAt;
   const recurrenceRaw = body.recurrence ?? body.recurrenceRule ?? null;
   const recurrenceRule =
     recurrenceRaw === null || recurrenceRaw === undefined
@@ -81,10 +81,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       : String(recurrenceRaw).trim() === ''
         ? null
         : String(recurrenceRaw);
+  const recurrenceNormalized = recurrenceRule?.toLowerCase() ?? null;
+  const allowedRecurrence = new Set(['none', 'daily', 'weekly', 'monthly']);
+  if (recurrenceNormalized && !allowedRecurrence.has(recurrenceNormalized)) {
+    return NextResponse.json(
+      { error: "recurrence must be one of: 'none', 'daily', 'weekly', 'monthly'" },
+      { status: 400, headers: corsHeaders },
+    );
+  }
   const isRecurring = Boolean(
     body.is_recurring ?? body.isRecurring ?? (recurrenceRule && recurrenceRule.toLowerCase() !== 'none'),
   );
   const isBookable = body.is_bookable !== undefined ? Boolean(body.is_bookable) : body.isBookable !== undefined ? Boolean(body.isBookable) : true;
+  const timezoneRaw = body.timezone;
+  const timezone =
+    timezoneRaw === null || timezoneRaw === undefined || String(timezoneRaw).trim() === ''
+      ? 'UTC'
+      : String(timezoneRaw);
 
   if (!startTime || !endTime) {
     return NextResponse.json(
@@ -104,13 +117,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'endTime must be after startTime' }, { status: 400, headers: corsHeaders });
   }
 
-  const payload: AvailabilityInsert = {
+  const payload: AvailabilityInsert & { timezone?: string } = {
     provider_id: userId,
     start_time: startDate.toISOString(),
     end_time: endDate.toISOString(),
     is_recurring: isRecurring,
-    recurrence_rule: recurrenceRule,
+    recurrence_rule: recurrenceNormalized === 'none' ? 'none' : recurrenceRule,
     is_bookable: isBookable,
+    timezone,
     updated_at: new Date().toISOString(),
   };
 

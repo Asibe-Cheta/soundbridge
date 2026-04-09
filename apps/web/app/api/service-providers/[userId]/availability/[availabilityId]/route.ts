@@ -49,8 +49,8 @@ export async function PATCH(
     updated_at: new Date().toISOString(),
   };
 
-  const startStr = body.start_time ?? body.startTime;
-  const endStr = body.end_time ?? body.endTime;
+  const startStr = body.start_time ?? body.startTime ?? body.start_at ?? body.startAt;
+  const endStr = body.end_time ?? body.endTime ?? body.end_at ?? body.endAt;
 
   if (startStr !== undefined) {
     const startDate = new Date(String(startStr));
@@ -82,16 +82,30 @@ export async function PATCH(
 
   if (body.recurrence !== undefined || body.recurrenceRule !== undefined) {
     const raw = body.recurrence ?? body.recurrenceRule;
-    updatePayload.recurrence_rule =
+    const recurrence =
       raw === null || raw === undefined
         ? null
         : String(raw).trim() === ''
           ? null
           : String(raw);
+    const normalized = recurrence?.toLowerCase() ?? null;
+    if (normalized && !new Set(['none', 'daily', 'weekly', 'monthly']).has(normalized)) {
+      return NextResponse.json(
+        { error: "recurrence must be one of: 'none', 'daily', 'weekly', 'monthly'" },
+        { status: 400, headers: corsHeaders },
+      );
+    }
+    updatePayload.recurrence_rule = normalized === 'none' ? 'none' : recurrence;
   }
 
   if (body.is_bookable !== undefined || body.isBookable !== undefined) {
     updatePayload.is_bookable = Boolean(body.is_bookable ?? body.isBookable);
+  }
+
+  if (body.timezone !== undefined) {
+    const tzRaw = body.timezone;
+    updatePayload.timezone =
+      tzRaw === null || tzRaw === undefined || String(tzRaw).trim() === '' ? 'UTC' : String(tzRaw);
   }
 
   const { data: updateData, error: updateError } = await supabaseClient

@@ -88,12 +88,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     raw.description === undefined || raw.description === null
       ? null
       : String(raw.description);
-  const rateAmount = coerceNumber(raw.rate_amount ?? raw.rateAmount);
+  const rateAmount = coerceNumber(raw.rate_amount ?? raw.rateAmount ?? raw.rate);
   const rateCurrency =
     raw.rate_currency === undefined || raw.rate_currency === null
       ? null
       : String(raw.rate_currency);
-  const rateUnit = String(raw.rate_unit ?? raw.rateUnit ?? 'hour');
+  const rateUnit = String(raw.rate_unit ?? raw.rateUnit ?? raw.unit ?? 'hour');
   const isActive = raw.is_active !== undefined ? Boolean(raw.is_active) : raw.isActive !== undefined ? Boolean(raw.isActive) : true;
 
   if (!title || typeof title !== 'string') {

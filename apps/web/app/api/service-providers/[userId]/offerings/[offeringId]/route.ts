@@ -80,8 +80,8 @@ export async function PATCH(
       body.description === null ? null : String(body.description);
   }
 
-  if (body.rate_amount !== undefined || body.rateAmount !== undefined) {
-    const raw = body.rate_amount ?? body.rateAmount;
+  if (body.rate_amount !== undefined || body.rateAmount !== undefined || body.rate !== undefined) {
+    const raw = body.rate_amount ?? body.rateAmount ?? body.rate;
     if (raw !== null && raw !== undefined && typeof raw !== 'number' && typeof raw !== 'string') {
       return NextResponse.json({ error: 'rate_amount must be a number or null' }, { status: 400, headers: corsHeaders });
     }
@@ -100,8 +100,8 @@ export async function PATCH(
     updatePayload.rate_currency = rcStr;
   }
 
-  if (body.rate_unit !== undefined || body.rateUnit !== undefined) {
-    updatePayload.rate_unit = String(body.rate_unit ?? body.rateUnit ?? 'hour');
+  if (body.rate_unit !== undefined || body.rateUnit !== undefined || body.unit !== undefined) {
+    updatePayload.rate_unit = String(body.rate_unit ?? body.rateUnit ?? body.unit ?? 'hour');
   }
 
   if (body.is_active !== undefined || body.isActive !== undefined) {
