@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAMID.com.soundbridge.mobile",
+        "appID": "PVQF78H486.com.soundbridge.mobile",
         "paths": [
           "/auth/mobile-callback*",
           "/auth/callback*",
@@ -12,15 +12,23 @@
           "/track/*",
           "/album/*",
           "/playlist/*",
+          "/profile/*",
+          "/@*",
           "/creator/*",
-          "/event/*"
+          "/event/*",
+          "/post/*",
+          "/live/*",
+          "/messages/*",
+          "/wallet/*",
+          "/opportunity/*",
+          "/collaboration/*"
         ]
       }
     ]
   },
   "webcredentials": {
     "apps": [
-      "TEAMID.com.soundbridge.mobile"
+      "PVQF78H486.com.soundbridge.mobile"
     ]
   }
 }
