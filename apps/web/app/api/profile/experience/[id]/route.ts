@@ -60,14 +60,30 @@ export async function PUT(
 
     // Parse request body
     const body = await request.json();
-    const { title, company, description, start_date, end_date, is_current, location, collaborators } = body;
+    const { title, role, company, description, start_date, end_date, is_current, location, collaborators } = body;
 
     // Build update object
     const updateData: any = {
       updated_at: new Date().toISOString(),
     };
 
-    if (title !== undefined) updateData.title = title.trim();
+    if (title !== undefined || role !== undefined) {
+      const titleValue =
+        typeof title === 'string' && title.trim().length > 0
+          ? title.trim()
+          : typeof role === 'string' && role.trim().length > 0
+            ? role.trim()
+            : null;
+      if (titleValue) {
+        updateData.title = titleValue;
+      }
+      if (role !== undefined) {
+        updateData.role =
+          typeof role === 'string' && role.trim().length > 0
+            ? role.trim()
+            : titleValue;
+      }
+    }
     if (company !== undefined) updateData.company = company ? company.trim() : null;
     if (description !== undefined) updateData.description = description ? description.trim() : null;
     if (start_date !== undefined) updateData.start_date = start_date;
@@ -95,11 +111,17 @@ export async function PUT(
 
     console.log('✅ Experience updated successfully');
 
+    const mappedUpdated = {
+      ...updatedExperience,
+      title: (updatedExperience as any)?.title ?? (updatedExperience as any)?.role ?? null,
+      role: (updatedExperience as any)?.role ?? (updatedExperience as any)?.title ?? null,
+    };
+
     return NextResponse.json(
       {
         success: true,
         data: {
-          experience: updatedExperience,
+          experience: mappedUpdated,
         },
       },
       { headers: corsHeaders }

@@ -48,11 +48,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const mappedExperience = (experience || []).map((entry: any) => ({
+      ...entry,
+      title: entry?.title ?? entry?.role ?? null,
+      role: entry?.role ?? entry?.title ?? null,
+    }));
+
     return NextResponse.json(
       {
         success: true,
         data: {
-          experience: experience || [],
+          experience: mappedExperience,
         },
       },
       { headers: corsHeaders }
@@ -82,10 +88,13 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { title, company, description, start_date, end_date, is_current, location, collaborators } = body;
+    const { title, role, company, description, start_date, end_date, is_current, location, collaborators } = body;
+    const effectiveTitle =
+      (typeof title === 'string' && title.trim().length > 0 ? title.trim() : null) ??
+      (typeof role === 'string' && role.trim().length > 0 ? role.trim() : null);
 
     // Validation
-    if (!title || title.trim().length === 0) {
+    if (!effectiveTitle) {
       return NextResponse.json(
         { success: false, error: 'Title is required' },
         { status: 400, headers: corsHeaders }
@@ -111,7 +120,8 @@ export async function POST(request: NextRequest) {
       .from('profile_experience')
       .insert({
         user_id: user.id,
-        title: title.trim(),
+        title: effectiveTitle,
+        role: (typeof role === 'string' && role.trim().length > 0 ? role.trim() : effectiveTitle),
         company: company ? company.trim() : null,
         description: description ? description.trim() : null,
         start_date: start_date,
@@ -135,11 +145,17 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Experience created successfully:', experience.id);
 
+    const mappedCreated = {
+      ...experience,
+      title: (experience as any)?.title ?? (experience as any)?.role ?? null,
+      role: (experience as any)?.role ?? (experience as any)?.title ?? null,
+    };
+
     return NextResponse.json(
       {
         success: true,
         data: {
-          experience,
+          experience: mappedCreated,
         },
       },
       { headers: corsHeaders }
