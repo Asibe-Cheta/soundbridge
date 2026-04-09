@@ -9,10 +9,10 @@ export interface CustomBranding {
   custom_logo_position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
   
   // Theme Customization
-  primary_color: string;
-  secondary_color: string;
-  accent_color: string;
-  background_gradient: string;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+  background_gradient: string | null;
   
   // Layout Options
   layout_style: 'default' | 'minimal' | 'creative' | 'professional';
@@ -41,10 +41,10 @@ export interface BrandingUpdateRequest {
   custom_logo_width?: number;
   custom_logo_height?: number;
   custom_logo_position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
-  primary_color?: string;
-  secondary_color?: string;
-  accent_color?: string;
-  background_gradient?: string;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  accent_color?: string | null;
+  background_gradient?: string | null;
   layout_style?: 'default' | 'minimal' | 'creative' | 'professional';
   show_powered_by?: boolean;
   watermark_enabled?: boolean;
@@ -72,12 +72,12 @@ export const DEFAULT_BRANDING: CustomBranding = {
   custom_logo_width: 120,
   custom_logo_height: 40,
   custom_logo_position: 'top-left',
-  primary_color: '#EF4444',
-  secondary_color: '#1F2937',
-  accent_color: '#F59E0B',
-  background_gradient: 'from-gray-900 via-gray-800 to-gray-900',
+  primary_color: null,
+  secondary_color: null,
+  accent_color: null,
+  background_gradient: null,
   layout_style: 'default',
-  show_powered_by: true,
+  show_powered_by: false,
   watermark_enabled: false,
   watermark_opacity: 30,
   watermark_position: 'bottom-right',

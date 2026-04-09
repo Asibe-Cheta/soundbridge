@@ -40,14 +40,14 @@ export function CustomBranding({ userId, children, className = '' }: CustomBrand
 
   // Apply custom styling based on branding
   const customStyles: React.CSSProperties = {
-    '--brand-primary': branding.primary_color,
-    '--brand-secondary': branding.secondary_color,
-    '--brand-accent': branding.accent_color,
+    ...(branding.primary_color ? { '--brand-primary': branding.primary_color } : {}),
+    ...(branding.secondary_color ? { '--brand-secondary': branding.secondary_color } : {}),
+    ...(branding.accent_color ? { '--brand-accent': branding.accent_color } : {}),
   } as React.CSSProperties;
 
   const backgroundClass = branding.background_gradient 
     ? `bg-gradient-to-br ${branding.background_gradient}` 
-    : 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900';
+    : 'bg-gray-900';
 
   return (
     <div 
