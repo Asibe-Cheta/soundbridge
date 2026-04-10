@@ -360,6 +360,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null }; // Return success since we cleared local state
     } catch (error) {
       console.error('Unexpected error signing out:', error);
+
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('2fa_required');
+          sessionStorage.removeItem('2fa_session_token');
+          sessionStorage.removeItem('login_email');
+          sessionStorage.removeItem('login_password');
+        } catch {
+          /* ignore */
+        }
+      }
       
       // Still clear local state on unexpected errors
       setSession(null);

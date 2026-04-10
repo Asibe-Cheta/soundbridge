@@ -10,6 +10,19 @@ import { createClient } from '@supabase/supabase-js';
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
 
+function looksLikeVerificationSessionUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+function clearLogin2FAStaging(): void {
+  try {
+    sessionStorage.removeItem('2fa_required');
+    sessionStorage.removeItem('2fa_session_token');
+  } catch {
+    /* ignore */
+  }
+}
+
 // Loading fallback component
 function LoginLoading() {
   return (
@@ -154,6 +167,54 @@ function LoginContent() {
       }
     }
   }, [requires2FA, twoFASessionToken]);
+
+  // After DB resets (or expiry), sessionStorage can still show 2FA UI while the row is gone — clear stale state on load.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let cancelled = false;
+    const required = sessionStorage.getItem('2fa_required') === 'true';
+    const token = sessionStorage.getItem('2fa_session_token');
+
+    if (required && !token) {
+      clearLogin2FAStaging();
+      setRequires2FA(false);
+      setTwoFASessionToken(null);
+      setTwoFAError(null);
+      return;
+    }
+
+    if (!required || !token) return;
+
+    const body = looksLikeVerificationSessionUuid(token)
+      ? { verificationSessionId: token }
+      : { sessionToken: token };
+
+    (async () => {
+      try {
+        const res = await fetch('/api/user/2fa/verification-session-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = (await res.json()) as { valid?: boolean };
+        if (cancelled) return;
+        if (!data.valid) {
+          clearLogin2FAStaging();
+          setRequires2FA(false);
+          setTwoFASessionToken(null);
+          setTwoFACode('');
+          setTwoFAError(null);
+        }
+      } catch {
+        // Keep UI if offline; user can retry. Stale DB state still fixed on next successful response.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -395,6 +456,13 @@ function LoginContent() {
           setTwoFAError('Login failed after verification. Please try again.');
         }
       } else {
+        const errCode = verifyData.code as string | undefined;
+        if (errCode === 'INVALID_SESSION' || verifyResponse.status === 401) {
+          clearLogin2FAStaging();
+          setRequires2FA(false);
+          setTwoFASessionToken(null);
+          setTwoFACode('');
+        }
         setTwoFAError(verifyData.error || 'Invalid code. Please try again.');
       }
     } catch (error) {
