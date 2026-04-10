@@ -317,7 +317,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: new Error('Supabase client not initialized') };
     }
     try {
-      const { error } = await supabase.auth.signOut();
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('2fa_required');
+          sessionStorage.removeItem('2fa_session_token');
+          sessionStorage.removeItem('login_email');
+          sessionStorage.removeItem('login_password');
+        } catch {
+          /* ignore */
+        }
+      }
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       // Even if there's an error (like 403 - session not found), 
       // we should still clear local state since the session is invalid anyway

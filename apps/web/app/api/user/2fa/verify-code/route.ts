@@ -401,15 +401,19 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Invalid verification code. Please try again.',
-          code: 'INVALID_CODE',
-          remainingAttempts: MAX_FAILED_ATTEMPTS - failedAttempts,
-        },
-        { status: 400 }
-      );
+      const invalidPayload: Record<string, unknown> = {
+        success: false,
+        error: 'Invalid verification code. Please try again.',
+        code: 'INVALID_CODE',
+        remainingAttempts: MAX_FAILED_ATTEMPTS - failedAttempts,
+      };
+      if (process.env.TWO_FA_VERIFY_DEBUG === '1') {
+        invalidPayload.debug = {
+          serverTimeIso: new Date().toISOString(),
+          secretLength: decryptedSecret.length,
+        };
+      }
+      return NextResponse.json(invalidPayload, { status: 400 });
     }
     
     console.log('✅ TOTP code verified successfully');

@@ -13,6 +13,7 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { encryptSecret } from '@/src/lib/encryption';
+import { extractBase32SecretFromOtpauthUrl } from '@/src/lib/totp-verify';
 
 export async function POST(request: NextRequest) {
   try {
@@ -88,7 +89,9 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 4. Encrypt the secret for database storage
     // ================================================
-    const encryptedSecret = encryptSecret(secret.base32);
+    const secretForDb =
+      extractBase32SecretFromOtpauthUrl(secret.otpauth_url) ?? secret.base32;
+    const encryptedSecret = encryptSecret(secretForDb);
     console.log('✅ Secret encrypted');
     
     // ================================================
@@ -157,7 +160,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        secret: secret.base32, // User needs this as backup if QR doesn't work
+        secret: secretForDb,
         qrCode: qrCodeDataUrl, // Data URL: "data:image/png;base64,..."
         otpauthUrl: secret.otpauth_url, // For advanced users who want to manually add
       },

@@ -27,6 +27,8 @@ declare module 'speakeasy' {
     window?: number;
     time?: number;
     step?: number;
+    digits?: number;
+    algorithm?: string;
   }
 
   export interface HotpVerifyOptions {
