@@ -28,13 +28,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import speakeasy from 'speakeasy';
 import { createClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/src/lib/supabase';
-import { decryptSecret, encryptSecret } from '@/src/lib/encryption';
+import { decryptSecret } from '@/src/lib/encryption';
+import { normalizeTotpCodeInput, verifyTotpWithClockSkew } from '@/src/lib/totp-verify';
 
 function getSupabaseAdmin() {
   return createServiceClient();
+}
+
+/** UUID v4 (login-initiate returns verificationSessionId; some clients wrongly send it as sessionToken). */
+function looksLikeUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
 }
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -48,9 +53,9 @@ export async function POST(request: NextRequest) {
     // 1. Parse and validate request
     // ================================================
     const body = await request.json();
-    const { sessionToken, verificationSessionId, code } = body;
+    const { sessionToken, verificationSessionId, code: rawCode } = body;
     
-    // Either sessionToken (legacy) or verificationSessionId (new) must be provided
+    // Either sessionToken (legacy hex) or verificationSessionId (UUID from login-initiate) must be provided
     if (!sessionToken && !verificationSessionId) {
       return NextResponse.json(
         { 
@@ -62,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (!code || typeof code !== 'string') {
+    if (!rawCode || typeof rawCode !== 'string') {
       return NextResponse.json(
         { 
           success: false,
@@ -72,8 +77,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const code = normalizeTotpCodeInput(rawCode);
     
-    // Validate code format (6 digits)
+    // Validate code format (6 digits) after normalizing spaces/dashes
     if (!/^\d{6}$/.test(code)) {
       return NextResponse.json(
         { 
@@ -93,21 +100,30 @@ export async function POST(request: NextRequest) {
     let session;
     let sessionError;
     
+    const admin = getSupabaseAdmin();
+
     if (verificationSessionId) {
-      // New flow: lookup by UUID id
-      const result = await getSupabaseAdmin()
+      const result = await admin
         .from('two_factor_verification_sessions')
         .select('*')
-        .eq('id', verificationSessionId)
+        .eq('id', String(verificationSessionId).trim())
+        .maybeSingle();
+      session = result.data;
+      sessionError = result.error;
+    } else if (sessionToken && looksLikeUuid(String(sessionToken))) {
+      // Mobile/web sometimes sends verificationSessionId in the sessionToken field
+      const result = await admin
+        .from('two_factor_verification_sessions')
+        .select('*')
+        .eq('id', String(sessionToken).trim())
         .maybeSingle();
       session = result.data;
       sessionError = result.error;
     } else {
-      // Legacy flow: lookup by session_token
-      const result = await getSupabaseAdmin()
+      const result = await admin
         .from('two_factor_verification_sessions')
         .select('*')
-        .eq('session_token', sessionToken)
+        .eq('session_token', String(sessionToken).trim())
         .maybeSingle();
       session = result.data;
       sessionError = result.error;
@@ -217,7 +233,7 @@ export async function POST(request: NextRequest) {
         // Legacy flow: use generateLink + verifyOtp
         console.log('✅ Using legacy generateLink flow for already verified session');
         
-        const { data: userDataForVerified, error: userErrorForVerified } = await getSupabaseAdmin().auth.admin.getUserById(
+        const { data: userDataForVerified, error: userErrorForVerified } = await admin.auth.admin.getUserById(
           session.user_id
         );
         
@@ -236,7 +252,7 @@ export async function POST(request: NextRequest) {
         userEmail = userDataForVerified.user.email!;
         
         // Generate magic link to get hashed token
-        const { data: linkDataForVerified, error: linkErrorForVerified } = await getSupabaseAdmin().auth.admin.generateLink({
+        const { data: linkDataForVerified, error: linkErrorForVerified } = await admin.auth.admin.generateLink({
           type: 'magiclink',
           email: userEmail,
         });
@@ -291,7 +307,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 6. Retrieve user's encrypted TOTP secret
     // ================================================
-    const { data: secretRecord, error: fetchError } = await getSupabaseAdmin()
+    const { data: secretRecord, error: fetchError } = await admin
       .from('two_factor_secrets')
       .select('encrypted_secret')
       .eq('user_id', session.user_id)
@@ -334,12 +350,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 8. Verify TOTP code
     // ================================================
-    const isValid = speakeasy.totp.verify({
-      secret: decryptedSecret,
-      encoding: 'base32',
-      token: code,
-      window: 2, // Allow 2 time windows (±1 minute tolerance)
-    });
+    const isValid = verifyTotpWithClockSkew(decryptedSecret, code);
     
     // ================================================
     // 9. Handle verification result
@@ -352,7 +363,7 @@ export async function POST(request: NextRequest) {
       const shouldLock = failedAttempts >= MAX_FAILED_ATTEMPTS;
       
       // Update session with failed attempt
-      await getSupabaseAdmin()
+      await admin
         .from('two_factor_verification_sessions')
         .update({
           failed_attempts: failedAttempts,
@@ -363,7 +374,7 @@ export async function POST(request: NextRequest) {
         .eq('id', session.id);
       
       // Log failed verification
-      await getSupabaseAdmin()
+      await admin
         .from('two_factor_audit_log')
         .insert({
           user_id: session.user_id,
@@ -406,7 +417,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 10. Mark session as verified
     // ================================================
-    await getSupabaseAdmin()
+    await admin
       .from('two_factor_verification_sessions')
       .update({
         verified: true,
@@ -462,7 +473,7 @@ export async function POST(request: NextRequest) {
       // Legacy flow: use generateLink + verifyOtp
       console.log('✅ Using legacy generateLink flow');
       
-      const { data: userData, error: userError } = await getSupabaseAdmin().auth.admin.getUserById(
+      const { data: userData, error: userError } = await admin.auth.admin.getUserById(
         session.user_id
       );
       
@@ -479,7 +490,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Generate magic link to get hashed token
-      const { data: linkData, error: linkError } = await getSupabaseAdmin().auth.admin.generateLink({
+      const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: 'magiclink',
         email: userData.user.email!,
       });
@@ -523,7 +534,7 @@ export async function POST(request: NextRequest) {
     // ================================================
     // 12. Log successful verification
     // ================================================
-    await getSupabaseAdmin()
+    await admin
       .from('two_factor_audit_log')
       .insert({
         user_id: session.user_id,
