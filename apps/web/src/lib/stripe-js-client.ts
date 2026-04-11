@@ -16,12 +16,14 @@ export function getStripeJsPromise(): Promise<Stripe | null> {
     return Promise.resolve(null);
   }
   if (!cached) {
-    cached = import('@stripe/stripe-js')
-      .then(({ loadStripe }) => loadStripe(publishableKey))
-      .catch((cause: unknown) => {
+    cached = import('@stripe/stripe-js').then(async (mod) => {
+      try {
+        return await mod.loadStripe(publishableKey);
+      } catch (cause: unknown) {
         console.warn('[Stripe] Failed to load Stripe.js', cause);
         return null;
-      });
+      }
+    });
   }
   return cached;
 }

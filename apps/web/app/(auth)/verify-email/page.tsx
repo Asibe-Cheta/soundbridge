@@ -1,19 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
 export default function VerifyEmailPage() {
-  const [email] = useState(() => {
-    // Get email from URL params or localStorage
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('email') || localStorage.getItem('signup_email') || '';
-    }
-    return '';
-  });
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setEmail(urlParams.get('email') || localStorage.getItem('signup_email') || '');
+  }, []);
 
   const handleResendEmail = async () => {
     // TODO: Implement resend email functionality
