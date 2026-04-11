@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveCreatorProfileBySlug } from '@/src/lib/creator-profile-slug';
 
 export async function GET(
   request: NextRequest,
@@ -7,23 +8,22 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const { username } = resolvedParams;
+    const { username: slug } = resolvedParams;
 
     const supabase = createServiceClient();
+    const resolved = await resolveCreatorProfileBySlug(
+      supabase,
+      decodeURIComponent(slug)
+    );
 
-    // First, get the creator's profile
-    const { data: creator, error: creatorError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', username as any)
-      .single() as { data: any; error: any };
-
-    if (creatorError || !creator) {
+    if (!resolved) {
       return NextResponse.json(
         { success: false, error: 'Creator not found' },
         { status: 404 }
       );
     }
+
+    const creator = { id: resolved.profile.id };
 
     // Get all tracks for this creator - simplified query first
     const { data, error } = await supabase

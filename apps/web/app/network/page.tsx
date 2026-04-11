@@ -13,6 +13,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { dataService } from '@/src/lib/data-service';
+import { getCreatorProfilePath } from '@/src/lib/profile-links';
 
 interface ConnectionRequest {
   id: string;
@@ -432,7 +433,7 @@ export default function NetworkPage() {
                     className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-6"
                   >
                     <div className="flex items-start gap-4">
-                      <Link href={`/creator/${request.requester.username || request.requester.id}`}>
+                      <Link href={getCreatorProfilePath({ username: request.requester.username, id: request.requester.id })}>
                         <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
                           {request.requester.avatar_url ? (
                             <Image
@@ -449,7 +450,7 @@ export default function NetworkPage() {
                         </div>
                       </Link>
                       <div className="flex-1">
-                        <Link href={`/creator/${request.requester.username || request.requester.id}`}>
+                        <Link href={getCreatorProfilePath({ username: request.requester.username, id: request.requester.id })}>
                           <h3 className="text-white font-semibold hover:text-red-400 transition-colors">
                             {request.requester.name}
                           </h3>
@@ -511,7 +512,7 @@ export default function NetworkPage() {
                     className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 hover:border-white/20 transition-colors"
                   >
                     <div className="flex items-start gap-4">
-                      <Link href={`/creator/${suggestion.user.username || suggestion.user.id}`}>
+                      <Link href={getCreatorProfilePath({ username: suggestion.user.username, id: suggestion.user.id })}>
                         <div className="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
                           {suggestion.user.avatar_url ? (
                             <Image
@@ -528,7 +529,7 @@ export default function NetworkPage() {
                         </div>
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <Link href={`/creator/${suggestion.user.username || suggestion.user.id}`}>
+                        <Link href={getCreatorProfilePath({ username: suggestion.user.username, id: suggestion.user.id })}>
                           <h3 className="text-white font-semibold hover:text-red-400 transition-colors mb-1">
                             {suggestion.user.name}
                           </h3>
@@ -622,7 +623,7 @@ export default function NetworkPage() {
                     className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 hover:border-white/20 transition-colors"
                   >
                     <div className="flex items-start gap-4">
-                      <Link href={`/creator/${connection.username || connection.id}`}>
+                      <Link href={getCreatorProfilePath({ username: connection.username, id: connection.id })}>
                         <div className="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
                           {connection.avatar_url ? (
                             <Image
@@ -639,7 +640,7 @@ export default function NetworkPage() {
                         </div>
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <Link href={`/creator/${connection.username || connection.id}`}>
+                        <Link href={getCreatorProfilePath({ username: connection.username, id: connection.id })}>
                           <h3 className="text-white font-semibold hover:text-red-400 transition-colors mb-1">
                             {connection.name}
                           </h3>
@@ -654,7 +655,7 @@ export default function NetworkPage() {
                           </p>
                         )}
                         <Link
-                          href={`/creator/${connection.username || connection.id}`}
+                          href={getCreatorProfilePath({ username: connection.username, id: connection.id })}
                           className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 text-sm font-medium"
                         >
                           View Profile

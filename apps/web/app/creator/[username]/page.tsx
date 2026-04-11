@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createServiceClient } from '@/src/lib/supabase';
-import { getCreatorByUsername } from '@/src/lib/creator';
+import { resolveCreatorProfileBySlug } from '@/src/lib/creator-profile-slug';
 import { CreatorProfileClient } from './CreatorProfileClient';
 
 interface CreatorPageProps {
@@ -11,50 +11,28 @@ interface CreatorPageProps {
 }
 
 export default async function CreatorPage({ params }: CreatorPageProps) {
-  const { username } = await params;
+  const { username: slug } = await params;
   const headerList = await headers();
   const fromAtShare = headerList.get('x-sb-open-app-banner') === '1';
-  
-  try {
-    console.log('🔥 Creator page loading for username:', username);
-    
-    // Get the creator data
-    let { data: creator, error } = await getCreatorByUsername(username);
-    
-    // If not found and username starts with 'user', try to find by ID
-    if ((error || !creator) && username.startsWith('user')) {
-      const userId = username.replace('user', '');
-      console.log('🔥 Trying to find creator by ID:', userId);
-      
-      const supabase = createServiceClient();
-      const { data: creatorById, error: idError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .eq('role', 'creator')
-        .single() as { data: any; error: any };
-      
-      if (!idError && creatorById) {
-        creator = creatorById;
-        error = null;
-        console.log('🔥 Found creator by ID:', creatorById.display_name);
-      }
-    }
-    
-    if (error || !creator) {
-      console.error('Error fetching creator:', error);
-      notFound();
-    }
 
-    return (
-      <CreatorProfileClient 
-        username={username}
-        initialCreator={creator as any}
-        fromAtShare={fromAtShare}
-      />
-    );
-  } catch (error) {
-    console.error('Error in CreatorPage:', error);
+  const supabase = createServiceClient();
+  const decodedSlug = decodeURIComponent(slug);
+  const resolved = await resolveCreatorProfileBySlug(supabase, decodedSlug);
+
+  if (!resolved) {
     notFound();
   }
+
+  const { profile, canonicalSlug } = resolved;
+  if (decodedSlug !== canonicalSlug) {
+    redirect(`/creator/${encodeURIComponent(canonicalSlug)}`);
+  }
+
+  return (
+    <CreatorProfileClient
+      username={canonicalSlug}
+      initialCreator={profile as any}
+      fromAtShare={fromAtShare}
+    />
+  );
 }

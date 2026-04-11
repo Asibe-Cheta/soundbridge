@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { MessagingWidget } from './MessagingWidget';
 import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
+import { getCreatorProfilePath } from '@/src/lib/profile-links';
 
 interface ConnectionSuggestion {
   id: string;
@@ -244,7 +245,10 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
                 {suggestions.map((suggestion) => (
                   <Link
                     key={suggestion.id}
-                    href={`/creator/${suggestion.user.username || suggestion.user.id}`}
+                    href={getCreatorProfilePath({
+                      username: suggestion.user.username,
+                      id: suggestion.user.id,
+                    })}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
                   >
                     <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">

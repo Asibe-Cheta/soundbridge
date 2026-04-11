@@ -1,28 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveCreatorProfileBySlug } from '@/src/lib/creator-profile-slug';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const { username } = await params;
+    const { username: slug } = await params;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     
     const supabase = createServiceClient();
+    const resolved = await resolveCreatorProfileBySlug(
+      supabase,
+      decodeURIComponent(slug)
+    );
 
-    // First, get the creator by username
-    const { data: creator, error: creatorError } = await supabase
-      .from('profiles')
-      .select('id, username, display_name')
-      .eq('username', username as any)
-      .eq('role', 'creator' as any)
-      .single() as { data: any; error: any };
-
-    if (creatorError || !creator) {
+    if (!resolved) {
       return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
     }
+
+    const creator = resolved.profile as {
+      id: string;
+      username: string;
+      display_name: string;
+    };
 
     // Get top songs based on play count and like count
     const { data: topSongs, error: songsError } = await supabase
