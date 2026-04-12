@@ -286,9 +286,25 @@ async function finalizeTipFromSucceededPaymentIntentInner(
   ).toUpperCase();
   const platformFee =
     Number(tipAnalytics?.platform_fee) || Number(meta.platformFee || meta.platform_fee || 0);
-  const creatorEarnings =
-    Number(tipAnalytics?.creator_earnings) ||
-    Number(meta.creatorEarnings || meta.creator_earnings || Math.max(0, amount - platformFee));
+
+  /** Prefer Stripe PI metadata for this charge — tip_analytics rows can be wrong or cumulative. */
+  let creatorEarnings = NaN;
+  const metaEarningsStr = meta.creatorEarnings ?? meta.creator_earnings;
+  if (metaEarningsStr !== undefined && metaEarningsStr !== null && String(metaEarningsStr).trim() !== '') {
+    creatorEarnings = Number(metaEarningsStr);
+  }
+  if (!Number.isFinite(creatorEarnings) || creatorEarnings < 0) {
+    const minor = meta.creator_payout_amount != null ? parseInt(String(meta.creator_payout_amount), 10) : NaN;
+    if (Number.isFinite(minor) && minor >= 0) {
+      creatorEarnings = minor / 100;
+    }
+  }
+  if (!Number.isFinite(creatorEarnings) || creatorEarnings < 0) {
+    creatorEarnings =
+      Number(tipAnalytics?.creator_earnings) ||
+      Number(updatedTips?.creator_earnings) ||
+      Math.max(0, amount - platformFee);
+  }
 
   const tipMessage = updatedTips?.message || tipData?.message || meta.tipMessage || '';
   const isAnonymous = Boolean(updatedTips?.is_anonymous ?? tipData?.is_anonymous ?? meta.isAnonymous === 'true');
@@ -309,6 +325,7 @@ async function finalizeTipFromSucceededPaymentIntentInner(
       metadata: {
         tipper_id: senderId,
         original_amount: amount,
+        creator_earnings: creatorEarnings,
         platform_fee: platformFee,
         tip_message: tipMessage,
         is_anonymous: isAnonymous,

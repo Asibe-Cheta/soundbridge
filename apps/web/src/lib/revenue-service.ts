@@ -10,13 +10,21 @@ function mapWalletRowToRevenueTransaction(w: Record<string, unknown>): RevenueTr
   if (raw === 'tip_received') displayType = 'tip';
   if (raw === 'content_sale') displayType = 'track_sale';
 
+  const rawAmount = Number(w.amount ?? 0);
+  const metaCreator =
+    md.creator_earnings != null && md.creator_earnings !== ''
+      ? Number(md.creator_earnings)
+      : NaN;
+  const displayAmount =
+    raw === 'tip_received' && Number.isFinite(metaCreator) && metaCreator > 0 ? metaCreator : rawAmount;
+
   return {
     id: w.id as string,
     user_id: w.user_id as string,
     transaction_type: displayType,
-    amount: Number(w.amount ?? 0),
+    amount: displayAmount,
     platform_fee: Number(md.platform_fee ?? 0),
-    creator_earnings: Number(w.amount ?? 0),
+    creator_earnings: displayAmount,
     currency: String(w.currency || 'USD'),
     stripe_payment_intent_id: (w.stripe_payment_intent_id as string) || undefined,
     status: String(w.status || 'completed'),
