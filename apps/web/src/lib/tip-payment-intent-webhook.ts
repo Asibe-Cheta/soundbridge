@@ -1,0 +1,208 @@
+import type Stripe from 'stripe';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/src/lib/supabase';
+import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
+
+/**
+ * create-tip sets metadata.charge_type = 'tip'. Main Stripe webhook must finalize tips
+ * when confirm-tip is never called (mobile error) or user-scoped RLS blocks updates.
+ */
+export function isTipPaymentIntent(pi: Stripe.PaymentIntent): boolean {
+  return pi.metadata?.charge_type === 'tip';
+}
+
+export type FinalizeTipResult = { ok: true } | { ok: false; reason: string };
+
+/**
+ * Idempotent: safe to call on every payment_intent.succeeded for tip PIs.
+ * Expects service-role Supabase client (bypasses RLS on tips / creator_tips updates).
+ */
+export async function finalizeTipFromSucceededPaymentIntent(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: SupabaseClient
+): Promise<FinalizeTipResult> {
+  if (!isTipPaymentIntent(paymentIntent)) return { ok: true };
+
+  const paymentIntentId = paymentIntent.id;
+  const meta = paymentIntent.metadata || {};
+
+  const { data: creatorTip } = await supabase
+    .from('creator_tips')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+
+  const { data: tipsRow } = await supabase
+    .from('tips')
+    .select('*')
+    .eq('payment_intent_id', paymentIntentId)
+    .maybeSingle();
+
+  const { data: tipAnalytics } = await supabase
+    .from('tip_analytics')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+
+  if (!creatorTip && !tipsRow) {
+    console.error(
+      '[finalizeTip] No tip rows for PaymentIntent — create-tip may have failed after Stripe charge:',
+      paymentIntentId
+    );
+    return { ok: false, reason: 'no_tip_rows' };
+  }
+
+  if (creatorTip?.status === 'completed' && tipsRow?.status === 'completed') {
+    console.log('[finalizeTip] Already completed (idempotent):', paymentIntentId);
+    return { ok: true };
+  }
+
+  const tipData = creatorTip;
+  if (tipData?.id) {
+    await supabase.from('creator_tips').update({ status: 'completed' }).eq('id', tipData.id);
+  }
+
+  let updatedTips = tipsRow;
+  if (tipsRow?.id) {
+    const { data: t } = await supabase
+      .from('tips')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('payment_intent_id', paymentIntentId)
+      .select()
+      .single();
+    if (t) updatedTips = t;
+  }
+
+  if (tipAnalytics?.id) {
+    await supabase.from('tip_analytics').update({ status: 'completed' }).eq('id', tipAnalytics.id);
+  }
+
+  const grossMinor = paymentIntent.amount ?? 0;
+  const platformFeeMinor = meta.platform_fee_amount ? parseInt(meta.platform_fee_amount, 10) : Math.round(grossMinor * 0.15);
+  const creatorPayoutMinor = meta.creator_payout_amount
+    ? parseInt(meta.creator_payout_amount, 10)
+    : grossMinor - platformFeeMinor;
+  const feePct = meta.platform_fee_percent ? parseFloat(meta.platform_fee_percent) : 15;
+
+  const creatorId =
+    updatedTips?.recipient_id || tipData?.creator_id || meta.creator_user_id || meta.creatorId || null;
+  const senderId = updatedTips?.sender_id || tipData?.tipper_id || meta.tipperId || null;
+
+  if (!creatorId || !senderId) {
+    console.error('[finalizeTip] Missing creator or tipper id for', paymentIntentId);
+    return { ok: false, reason: 'missing_ids' };
+  }
+
+  await supabase
+    .rpc('insert_platform_revenue', {
+      p_charge_type: 'tip',
+      p_gross_amount: grossMinor,
+      p_platform_fee_amount: platformFeeMinor,
+      p_platform_fee_percent: feePct,
+      p_creator_payout_amount: creatorPayoutMinor,
+      p_stripe_payment_intent_id: paymentIntentId,
+      p_reference_id: paymentIntentId,
+      p_creator_user_id: creatorId,
+      p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
+    })
+    .catch((err) => console.error('[finalizeTip] insert_platform_revenue:', err));
+
+  const amount = Number(
+    tipAnalytics?.tip_amount ?? updatedTips?.amount ?? tipData?.amount ?? (paymentIntent.amount ? paymentIntent.amount / 100 : 0)
+  );
+  const currency = String(
+    updatedTips?.currency || tipData?.currency || paymentIntent.currency || 'usd'
+  ).toUpperCase();
+  const platformFee =
+    Number(tipAnalytics?.platform_fee) || Number(meta.platformFee || meta.platform_fee || 0);
+  const creatorEarnings =
+    Number(tipAnalytics?.creator_earnings) ||
+    Number(meta.creatorEarnings || meta.creator_earnings || Math.max(0, amount - platformFee));
+
+  const tipMessage = updatedTips?.message || tipData?.message || meta.tipMessage || '';
+  const isAnonymous = Boolean(updatedTips?.is_anonymous ?? tipData?.is_anonymous ?? meta.isAnonymous === 'true');
+
+  const { data: tipperProfile } = await supabase
+    .from('profiles')
+    .select('email, username, display_name')
+    .eq('id', senderId)
+    .maybeSingle();
+
+  try {
+    const { error: walletError } = await supabase.rpc('add_wallet_transaction', {
+      user_uuid: creatorId,
+      transaction_type: 'tip_received',
+      amount: creatorEarnings,
+      description: `Tip received${tipMessage ? `: ${tipMessage}` : ''}`,
+      reference_id: paymentIntentId,
+      metadata: {
+        tipper_id: senderId,
+        original_amount: amount,
+        platform_fee: platformFee,
+        tip_message: tipMessage,
+        is_anonymous: isAnonymous,
+      },
+    });
+    if (walletError) {
+      console.error('[finalizeTip] add_wallet_transaction:', walletError);
+    }
+  } catch (e) {
+    console.error('[finalizeTip] wallet:', e);
+  }
+
+  try {
+    await supabase.rpc('record_revenue_transaction', {
+      user_uuid: creatorId,
+      transaction_type_param: 'tip',
+      amount_param: amount,
+      customer_email_param: tipperProfile?.email || '',
+      customer_name_param: tipperProfile?.display_name || tipperProfile?.username || 'Supporter',
+      stripe_payment_intent_id_param: paymentIntentId,
+    });
+  } catch (e) {
+    console.error('[finalizeTip] record_revenue_transaction:', e);
+  }
+
+  try {
+    const service = createServiceClient();
+    const senderProfile = tipperProfile;
+    const senderUsername =
+      senderProfile?.username ||
+      (meta.tipperId ? String(meta.tipperId).slice(0, 8) : 'someone');
+    const formattedAmount = currency === 'USD' ? `$${amount.toFixed(2)}` : `${currency} ${amount.toFixed(2)}`;
+
+    const tipTitle = isAnonymous
+      ? `Someone tipped you ${formattedAmount}`
+      : senderProfile?.username
+        ? `@${senderProfile.username} tipped you ${formattedAmount}`
+        : `${senderProfile?.display_name || senderUsername} tipped you ${formattedAmount}`;
+
+    const tipRowId = updatedTips?.id || tipData?.id;
+
+    await sendExpoPushIfAllowed(service, creatorId, 'tip', {
+      title: tipTitle,
+      body: 'Check your wallet',
+      data: {
+        type: 'tip',
+        entityId: tipRowId ?? paymentIntentId,
+        entityType: 'tip',
+        creatorId: isAnonymous ? '' : senderId,
+        username: senderProfile?.username ?? '',
+        amount: formattedAmount,
+        tipperId: isAnonymous ? 'anonymous' : senderId,
+        currency,
+        ...(tipRowId ? { tipId: tipRowId } : {}),
+      },
+      channelId: 'tips',
+      priority: 'high',
+    });
+  } catch (e) {
+    console.error('[finalizeTip] push:', e);
+  }
+
+  console.log('✅ [finalizeTip] Tip finalized for PI', paymentIntentId);
+  return { ok: true };
+}

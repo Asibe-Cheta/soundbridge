@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
@@ -57,6 +57,18 @@ function stripeAmountInMinorUnits(amountMajor: number, currencyLower: string): n
   return Math.round(amountMajor * 100);
 }
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
+  };
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405, headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -95,10 +107,36 @@ export async function POST(request: NextRequest) {
       user = userData.user;
       authError = userError;
     } else {
-      // Web app authentication
-      supabase = createRouteHandlerClient({ cookies });
-      
-      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
+      const cookieStore = await cookies();
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value, ...options });
+              } catch {
+                /* ignore */
+              }
+            },
+            remove(name: string, options: CookieOptions) {
+              try {
+                cookieStore.set({ name, value: '', ...options, maxAge: 0 });
+              } catch {
+                /* ignore */
+              }
+            },
+          },
+        }
+      );
+      const {
+        data: { user: userData },
+        error: userError,
+      } = await supabase.auth.getUser();
       user = userData;
       authError = userError;
     }
@@ -110,8 +148,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Parse request body — currency is determined by backend from creator's wallet, not from client
-    const { creatorId, amount, message, isAnonymous, userTier: _userTierIgnored = 'free', paymentMethod = 'card' } = await request.json();
+    const raw = await request.text();
+    let body: {
+      creatorId?: string;
+      amount?: number;
+      message?: string;
+      isAnonymous?: boolean;
+      userTier?: string;
+      paymentMethod?: string;
+    };
+    try {
+      body = raw ? (JSON.parse(raw) as typeof body) : {};
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: corsHeaders });
+    }
+    const {
+      creatorId,
+      amount,
+      message,
+      isAnonymous,
+      userTier: _userTierIgnored = 'free',
+      paymentMethod = 'card',
+    } = body;
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -179,10 +237,7 @@ export async function POST(request: NextRequest) {
 
     // Create real Stripe payment intent
     if (!stripe) {
-      return NextResponse.json(
-        { error: 'Stripe not configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Stripe not configured' }, { status: 500, headers: corsHeaders });
     }
 
     const amountMinor = stripeAmountInMinorUnits(tipAmount, tipCurrencyLower);
@@ -305,6 +360,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (legacyTipError) {
+      console.error('Error creating creator_tips row:', legacyTipError);
+      return NextResponse.json(
+        { error: 'Failed to create tip record (creator_tips)' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       paymentIntentId: paymentIntent.id,
@@ -319,18 +382,8 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Error in create-tip:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
-    });
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500, headers: corsHeaders }
-    );
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Internal server error', details: message }, { status: 500, headers: corsHeaders });
   }
 }
 

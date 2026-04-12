@@ -6,6 +6,10 @@ import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 import { CREATOR_SHARE_DECIMAL, PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
+/** Stripe server SDK requires Node; avoids edge/runtime HTML error pages on failure. */
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -14,6 +18,10 @@ const corsHeaders = {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
+}
+
+export async function GET() {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405, headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
@@ -80,8 +88,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse request body
-    const { content_id, content_type, price, currency } = await request.json();
+    const raw = await request.text();
+    let parsed: { content_id?: string; content_type?: string; price?: number; currency?: string };
+    try {
+      parsed = raw ? (JSON.parse(raw) as typeof parsed) : {};
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: corsHeaders });
+    }
+    const { content_id, content_type, price, currency } = parsed;
 
     if (!content_id || !content_type || price === undefined || !currency) {
       return NextResponse.json(
@@ -272,11 +286,9 @@ export async function POST(request: NextRequest) {
       { headers: corsHeaders }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating payment intent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500, headers: corsHeaders }
-    );
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500, headers: corsHeaders });
   }
 }

@@ -12,6 +12,14 @@ import {
   sendSubscriptionCancelledEmail,
   sendSubscriptionPlanChangeEmail,
 } from '../../../../src/lib/subscription-invoice-email';
+import {
+  isContentSalePaymentIntent,
+  recordContentSaleFromPaymentIntent,
+} from '../../../../src/lib/content-purchase-payment-intent-webhook';
+import {
+  isTipPaymentIntent,
+  finalizeTipFromSucceededPaymentIntent,
+} from '../../../../src/lib/tip-payment-intent-webhook';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -130,6 +138,10 @@ export async function POST(request: NextRequest) {
         const piSucceeded = event.data.object as Stripe.PaymentIntent;
         if (piSucceeded.metadata?.project_source === 'opportunity') {
           await handleOpportunityProjectPaymentSucceeded(piSucceeded, supabase);
+        } else if (isTipPaymentIntent(piSucceeded)) {
+          await finalizeTipFromSucceededPaymentIntent(piSucceeded, supabase);
+        } else if (isContentSalePaymentIntent(piSucceeded)) {
+          await recordContentSaleFromPaymentIntent(piSucceeded, supabase);
         }
         break;
       }
@@ -138,6 +150,10 @@ export async function POST(request: NextRequest) {
         const pi = event.data.object as Stripe.PaymentIntent;
         if (pi.metadata?.project_source === 'opportunity') {
           await handleOpportunityProjectPaymentSucceeded(pi, supabase);
+        } else if (isTipPaymentIntent(pi)) {
+          await finalizeTipFromSucceededPaymentIntent(pi, supabase);
+        } else if (isContentSalePaymentIntent(pi)) {
+          await recordContentSaleFromPaymentIntent(pi, supabase);
         }
         break;
       }
