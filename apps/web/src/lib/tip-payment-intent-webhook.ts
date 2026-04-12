@@ -12,6 +12,134 @@ export function isTipPaymentIntent(pi: Stripe.PaymentIntent): boolean {
 
 export type FinalizeTipResult = { ok: true } | { ok: false; reason: string };
 
+/** When both legacy tables exist and are completed, skip (wallet RPCs should be idempotent per PI). */
+function bothTipTablesCompleted(
+  creatorTip: { status?: string } | null,
+  tipsRow: { status?: string } | null
+): boolean {
+  return (
+    !!creatorTip &&
+    !!tipsRow &&
+    creatorTip.status === 'completed' &&
+    tipsRow.status === 'completed'
+  );
+}
+
+/**
+ * create-tip can fail after Stripe charges; metadata still has creatorId, tipperId, amounts.
+ * Inserts pending rows so finalize can complete wallet + push.
+ */
+async function recoverMissingTipRowsFromMetadata(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: SupabaseClient
+): Promise<{
+  creatorTip: Record<string, unknown> | null;
+  tipsRow: Record<string, unknown> | null;
+  tipAnalytics: Record<string, unknown> | null;
+} | null> {
+  const meta = paymentIntent.metadata || {};
+  const paymentIntentId = paymentIntent.id;
+  const creatorId = String(meta.creatorId || meta.creator_id || meta.creator_user_id || '').trim();
+  const tipperId = String(meta.tipperId || '').trim();
+  if (!creatorId || !tipperId) {
+    console.error('[finalizeTip] recover: missing creatorId or tipperId in metadata');
+    return null;
+  }
+
+  const gross = paymentIntent.amount ?? 0;
+  const amountMajor = gross > 0 ? gross / 100 : 0;
+  if (!(amountMajor > 0)) {
+    console.error('[finalizeTip] recover: invalid PaymentIntent amount');
+    return null;
+  }
+
+  const platformFee = parseFloat(String(meta.platformFee ?? '0'));
+  const creatorEarnings = parseFloat(String(meta.creatorEarnings ?? '0'));
+  const rawTier = String(meta.userTier || 'free').toLowerCase();
+  const analyticsTier = ['free', 'pro', 'enterprise'].includes(rawTier)
+    ? rawTier
+    : ['premium', 'unlimited'].includes(rawTier)
+      ? 'pro'
+      : 'free';
+  const feePct = parseFloat(String(meta.platform_fee_percent ?? '15'));
+  const currency = (paymentIntent.currency || 'usd').toUpperCase();
+  const message = typeof meta.tipMessage === 'string' ? meta.tipMessage : '';
+  const isAnonymous = meta.isAnonymous === 'true';
+
+  const { error: ctErr } = await supabase.from('creator_tips').insert({
+    creator_id: creatorId,
+    tipper_id: tipperId,
+    amount: amountMajor,
+    currency,
+    message: message || null,
+    is_anonymous: isAnonymous,
+    stripe_payment_intent_id: paymentIntentId,
+    status: 'pending',
+  });
+  if (ctErr && (ctErr as { code?: string }).code !== '23505') {
+    console.error('[finalizeTip] recover creator_tips insert:', ctErr);
+  }
+
+  const { error: tipsErr } = await supabase.from('tips').insert({
+    sender_id: tipperId,
+    recipient_id: creatorId,
+    amount: amountMajor,
+    currency,
+    message: message || null,
+    is_anonymous: isAnonymous,
+    status: 'pending',
+    payment_intent_id: paymentIntentId,
+    platform_fee: platformFee,
+    creator_earnings: creatorEarnings,
+  });
+  if (tipsErr && (tipsErr as { code?: string }).code !== '23505') {
+    console.error('[finalizeTip] recover tips insert:', tipsErr);
+  }
+
+  const { error: taErr } = await supabase.from('tip_analytics').insert({
+    creator_id: creatorId,
+    tipper_id: tipperId,
+    tipper_tier: analyticsTier,
+    tip_amount: amountMajor,
+    platform_fee: platformFee,
+    creator_earnings: creatorEarnings,
+    fee_percentage: feePct,
+    tip_message: message || null,
+    is_anonymous: isAnonymous,
+    stripe_payment_intent_id: paymentIntentId,
+    status: 'pending',
+  });
+  if (taErr && (taErr as { code?: string }).code !== '23505') {
+    console.error('[finalizeTip] recover tip_analytics insert:', taErr);
+  }
+
+  const { data: creatorTip } = await supabase
+    .from('creator_tips')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+  const { data: tipsRow } = await supabase
+    .from('tips')
+    .select('*')
+    .eq('payment_intent_id', paymentIntentId)
+    .maybeSingle();
+  const { data: tipAnalytics } = await supabase
+    .from('tip_analytics')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+
+  if (!creatorTip && !tipsRow) {
+    return null;
+  }
+  console.log('[finalizeTip] recovered DB rows from Stripe metadata for', paymentIntentId);
+  return {
+    creatorTip: creatorTip as Record<string, unknown> | null,
+    tipsRow: tipsRow as Record<string, unknown> | null,
+    tipAnalytics: tipAnalytics as Record<string, unknown> | null,
+  };
+}
+
 /**
  * Idempotent: safe to call on every payment_intent.succeeded for tip PIs.
  * Expects service-role Supabase client (bypasses RLS on tips / creator_tips updates).
@@ -49,34 +177,44 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     .eq('payment_intent_id', paymentIntentId)
     .maybeSingle();
 
-  const { data: tipAnalytics } = await supabase
+  let { data: tipAnalytics } = await supabase
     .from('tip_analytics')
     .select('*')
     .eq('stripe_payment_intent_id', paymentIntentId)
     .maybeSingle();
 
-  if (!creatorTip && !tipsRow) {
+  let creatorTipResolved = creatorTip;
+  let tipsRowResolved = tipsRow;
+
+  if (!creatorTipResolved && !tipsRowResolved) {
+    const recovered = await recoverMissingTipRowsFromMetadata(paymentIntent, supabase);
+    if (recovered) {
+      creatorTipResolved = recovered.creatorTip as typeof creatorTip;
+      tipsRowResolved = recovered.tipsRow as typeof tipsRow;
+      tipAnalytics = recovered.tipAnalytics as typeof tipAnalytics;
+    }
+  }
+
+  if (!creatorTipResolved && !tipsRowResolved) {
     console.error(
-      '[finalizeTip] No tip rows for PaymentIntent — create-tip may have failed after Stripe charge:',
+      '[finalizeTip] No tip rows and could not recover from metadata:',
       paymentIntentId
     );
     return { ok: false, reason: 'no_tip_rows' };
   }
 
-  const creatorDone = !creatorTip || creatorTip.status === 'completed';
-  const tipsDone = !tipsRow || tipsRow.status === 'completed';
-  if (creatorDone && tipsDone) {
+  if (bothTipTablesCompleted(creatorTipResolved, tipsRowResolved)) {
     console.log('[finalizeTip] Already completed (idempotent):', paymentIntentId);
     return { ok: true };
   }
 
-  const tipData = creatorTip;
+  const tipData = creatorTipResolved;
   if (tipData?.id) {
     await supabase.from('creator_tips').update({ status: 'completed' }).eq('id', tipData.id);
   }
 
-  let updatedTips = tipsRow;
-  if (tipsRow?.id) {
+  let updatedTips = tipsRowResolved;
+  if (tipsRowResolved?.id) {
     const { data: updatedList, error: tipsUpdErr } = await supabase
       .from('tips')
       .update({
