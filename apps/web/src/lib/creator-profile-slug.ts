@@ -32,12 +32,12 @@ export async function resolveCreatorProfileBySlug(
   supabase: SupabaseClient,
   slug: string
 ): Promise<ResolvedCreatorRoute | null> {
-  const id = extractProfileIdFromCreatorSlug(slug);
-  if (id) {
+  const idFromSlug = extractProfileIdFromCreatorSlug(slug);
+  if (idFromSlug) {
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', id)
+      .eq('id', idFromSlug)
       .maybeSingle();
     if (error || !profile) return null;
     const u = typeof profile.username === 'string' ? profile.username.trim() : '';
