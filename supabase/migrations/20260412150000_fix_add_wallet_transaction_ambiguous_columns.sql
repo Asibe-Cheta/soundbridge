@@ -1,23 +1,5 @@
--- Wallet credit RPC: idempotent on reference_id or stripe_payment_intent_id; multi-currency wallets.
--- Replaces 6-arg add_wallet_transaction. Existing JS callers keep passing 6 keys (defaults for p_currency / p_stripe_payment_intent_id).
---
--- Drop/revoke uses pg_proc so we do not depend on exact typmod spelling (varchar(255) vs text, etc.).
-
-DO $drop$
-DECLARE
-  r RECORD;
-BEGIN
-  FOR r IN
-    SELECT p.oid::regprocedure AS sig
-    FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public'
-      AND p.proname = 'add_wallet_transaction'
-  LOOP
-    EXECUTE format('DROP FUNCTION IF EXISTS %s', r.sig);
-  END LOOP;
-END;
-$drop$;
+-- Fix 42702: column reference "transaction_type" is ambiguous (PL/pgSQL param vs wallet_transactions columns).
+-- Copy param names into locals before INSERT/UPDATE so VALUES(...) is unambiguous.
 
 CREATE OR REPLACE FUNCTION public.add_wallet_transaction(
   user_uuid UUID,
@@ -129,14 +111,9 @@ BEGIN
     AND p.pronargs = 8;
 
   IF fn IS NULL THEN
-    RAISE EXCEPTION 'add_wallet_transaction (8 parameters) not found after CREATE';
+    RAISE EXCEPTION 'add_wallet_transaction(8 args) not found after CREATE OR REPLACE';
   END IF;
 
-  EXECUTE format(
-    'COMMENT ON FUNCTION %s IS %L',
-    fn,
-    'Credits user_wallets; idempotent on reference_id or stripe_payment_intent_id per transaction_type.'
-  );
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', fn);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', fn);
 END;
