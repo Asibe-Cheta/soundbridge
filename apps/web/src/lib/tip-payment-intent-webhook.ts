@@ -12,6 +12,59 @@ export function isTipPaymentIntent(pi: Stripe.PaymentIntent): boolean {
 
 export type FinalizeTipResult = { ok: true } | { ok: false; reason: string };
 
+type TipperProfileRow = {
+  email?: string | null;
+  username?: string | null;
+  display_name?: string | null;
+} | null;
+
+/**
+ * Notification title: never use first 8 chars of UUID. Prefer profiles, then auth.users
+ * user_metadata (common for mobile signups), then email local-part. Requires service-role client.
+ */
+async function resolveTipperDisplayForPush(
+  supabase: SupabaseClient,
+  senderId: string,
+  profile: TipperProfileRow
+): Promise<{ atHandle: string | null; titleName: string }> {
+  const rawU = profile?.username?.trim();
+  const cleanHandle = rawU ? rawU.replace(/^@/, '') : null;
+  if (cleanHandle) return { atHandle: cleanHandle, titleName: cleanHandle };
+
+  const d = profile?.display_name?.trim();
+  if (d) return { atHandle: null, titleName: d };
+
+  const localPart = profile?.email?.split('@')[0]?.trim();
+  if (localPart && localPart.length > 0) return { atHandle: null, titleName: localPart };
+
+  try {
+    const { data, error } = await supabase.auth.admin.getUserById(senderId);
+    if (!error && data?.user) {
+      const meta = (data.user.user_metadata || {}) as Record<string, unknown>;
+      const fromMetaUser =
+        (typeof meta.username === 'string' && meta.username.trim()) ||
+        (typeof meta.preferred_username === 'string' && meta.preferred_username.trim());
+      if (fromMetaUser) {
+        const h = fromMetaUser.replace(/^@/, '');
+        return { atHandle: h, titleName: h };
+      }
+      const fromMetaName =
+        (typeof meta.full_name === 'string' && meta.full_name.trim()) ||
+        (typeof meta.name === 'string' && meta.name.trim()) ||
+        (typeof meta.display_name === 'string' && meta.display_name.trim());
+      if (fromMetaName) return { atHandle: null, titleName: fromMetaName };
+      if (data.user.email) {
+        const el = data.user.email.split('@')[0]?.trim();
+        if (el && el.length > 0) return { atHandle: null, titleName: el };
+      }
+    }
+  } catch {
+    // non-fatal
+  }
+
+  return { atHandle: null, titleName: 'Someone' };
+}
+
 /** True if creator was already credited for this Stripe PI (idempotency for webhooks + resends). */
 async function tipWalletAlreadyCredited(
   supabase: SupabaseClient,
@@ -320,6 +373,8 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     .eq('id', senderId)
     .maybeSingle();
 
+  const tipperDisplay = await resolveTipperDisplayForPush(supabase, senderId, tipperProfile);
+
   try {
     const { error: walletError } = await supabase.rpc('add_wallet_transaction', {
       user_uuid: creatorId,
@@ -353,7 +408,11 @@ async function finalizeTipFromSucceededPaymentIntentInner(
       transaction_type_param: 'tip',
       amount_param: amount,
       customer_email_param: tipperProfile?.email || '',
-      customer_name_param: tipperProfile?.display_name || tipperProfile?.username || 'Supporter',
+      customer_name_param: isAnonymous
+        ? 'Anonymous'
+        : tipperProfile?.display_name?.trim() ||
+          tipperProfile?.username?.trim() ||
+          tipperDisplay.titleName,
       stripe_payment_intent_id_param: paymentIntentId,
     });
   } catch (e) {
@@ -361,19 +420,20 @@ async function finalizeTipFromSucceededPaymentIntentInner(
   }
 
   try {
-    const senderProfile = tipperProfile;
-    const senderUsername =
-      senderProfile?.username ||
-      (meta.tipperId ? String(meta.tipperId).slice(0, 8) : 'someone');
     const formattedAmount = currency === 'USD' ? `$${amount.toFixed(2)}` : `${currency} ${amount.toFixed(2)}`;
 
     const tipTitle = isAnonymous
       ? `Someone tipped you ${formattedAmount}`
-      : senderProfile?.username
-        ? `@${senderProfile.username} tipped you ${formattedAmount}`
-        : `${senderProfile?.display_name || senderUsername} tipped you ${formattedAmount}`;
+      : tipperDisplay.atHandle
+        ? `@${tipperDisplay.atHandle} tipped you ${formattedAmount}`
+        : `${tipperDisplay.titleName} tipped you ${formattedAmount}`;
 
     const tipRowId = updatedTips?.id || tipData?.id;
+
+    const pushUsername =
+      tipperDisplay.atHandle ||
+      tipperProfile?.username?.replace(/^@/, '') ||
+      (tipperDisplay.titleName !== 'Someone' ? tipperDisplay.titleName : '');
 
     // Use the same service-role client (webhook/admin pass service client; no second createClient).
     await sendExpoPushIfAllowed(supabase, creatorId, 'tip', {
@@ -384,7 +444,7 @@ async function finalizeTipFromSucceededPaymentIntentInner(
         entityId: tipRowId ?? paymentIntentId,
         entityType: 'tip',
         creatorId: isAnonymous ? '' : senderId,
-        username: senderProfile?.username ?? '',
+        username: isAnonymous ? '' : pushUsername,
         amount: formattedAmount,
         tipperId: isAnonymous ? 'anonymous' : senderId,
         currency,
