@@ -164,6 +164,8 @@ export async function finalizeContentPurchaseFromPaymentIntent(
         original_price: price,
         platform_fee: platformFee,
       },
+      p_currency: currency.toUpperCase(),
+      p_stripe_payment_intent_id: paymentIntent.id,
     });
   } catch (e) {
     console.error('[finalizeContentPurchase] wallet:', e);

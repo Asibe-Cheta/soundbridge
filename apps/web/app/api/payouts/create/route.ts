@@ -219,7 +219,8 @@ export async function POST(request: NextRequest) {
         metadata: {
           method,
           currency: currency,
-        }
+        },
+        p_currency: String(currency || 'USD').toUpperCase(),
       });
 
     if (walletUpdateError) {

@@ -1,6 +1,30 @@
 import { createBrowserClient } from './supabase';
 import { mergeCreatorRevenueSummaryWithWallet } from './creator-revenue-summary-merge';
 import { isWiseCurrency } from './wise-currencies';
+
+/** Map wallet ledger rows to Revenue dashboard list (tips/sales hit user_wallets first). */
+function mapWalletRowToRevenueTransaction(w: Record<string, unknown>): RevenueTransaction {
+  const md = (w.metadata as Record<string, unknown> | null) || {};
+  const raw = String(w.transaction_type || '');
+  let displayType = raw;
+  if (raw === 'tip_received') displayType = 'tip';
+  if (raw === 'content_sale') displayType = 'track_sale';
+
+  return {
+    id: w.id as string,
+    user_id: w.user_id as string,
+    transaction_type: displayType,
+    amount: Number(w.amount ?? 0),
+    platform_fee: Number(md.platform_fee ?? 0),
+    creator_earnings: Number(w.amount ?? 0),
+    currency: String(w.currency || 'USD'),
+    stripe_payment_intent_id: (w.stripe_payment_intent_id as string) || undefined,
+    status: String(w.status || 'completed'),
+    transaction_date: (w.created_at as string) || undefined,
+    created_at: w.created_at as string | undefined,
+    source_title: typeof w.description === 'string' ? w.description : undefined,
+  };
+}
 import type { 
   CreatorRevenue, 
   RevenueTransaction, 
@@ -53,6 +77,20 @@ export class RevenueService {
     offset: number = 0
   ): Promise<RevenueTransaction[]> {
     try {
+      const { data: walletRows, error: walletErr } = await this.supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (!walletErr && walletRows && walletRows.length > 0) {
+        return walletRows.map((w) => mapWalletRowToRevenueTransaction(w as Record<string, unknown>));
+      }
+      if (walletErr) {
+        console.error('Error fetching wallet_transactions for revenue list:', walletErr);
+      }
+
       const { data, error } = await this.supabase
         .from('revenue_transactions')
         .select('*')

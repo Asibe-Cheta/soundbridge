@@ -313,6 +313,8 @@ async function finalizeTipFromSucceededPaymentIntentInner(
         tip_message: tipMessage,
         is_anonymous: isAnonymous,
       },
+      p_currency: currency,
+      p_stripe_payment_intent_id: paymentIntentId,
     });
     if (walletError) {
       console.error('[finalizeTip] add_wallet_transaction:', walletError);

@@ -180,6 +180,8 @@ async function handleRefund(
           amount: -purchase.creator_earnings, // Negative amount
           description: `Refund: Content purchase`,
           reference_id: charge.id,
+          p_currency: String(purchase.currency || 'USD').toUpperCase(),
+          p_stripe_payment_intent_id: String(charge.payment_intent ?? ''),
         });
     }
 

@@ -92,6 +92,8 @@ export async function recordContentSaleFromPaymentIntent(
         original_price: paymentIntent.amount / 100,
         platform_fee: parseFloat(platform_fee || '0'),
       },
+      p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
+      p_stripe_payment_intent_id: paymentIntent.id,
     });
 
     if (walletError) {

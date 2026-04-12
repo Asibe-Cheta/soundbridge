@@ -369,7 +369,9 @@ export async function POST(request: NextRequest) {
               buyer_username: user.user_metadata?.username || user.email,
               original_price: price,
               platform_fee: platformFee,
-            }
+            },
+            p_currency: currency.toUpperCase(),
+            p_stripe_payment_intent_id: paymentIntent.id,
           });
 
         if (walletError) {
