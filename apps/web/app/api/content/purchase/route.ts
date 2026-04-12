@@ -340,17 +340,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await supabase.rpc('insert_platform_revenue', {
-      p_charge_type: platformRevenueChargeType,
-      p_gross_amount: amountCents,
-      p_platform_fee_amount: platformFeeCents,
-      p_platform_fee_percent: PLATFORM_FEE_PERCENT,
-      p_creator_payout_amount: amountCents - platformFeeCents,
-      p_stripe_payment_intent_id: paymentIntent.id,
-      p_reference_id: content_id,
-      p_creator_user_id: creatorId || null,
-      p_currency: currency.toUpperCase(),
-    }).catch((err) => console.error('[content/purchase] insert_platform_revenue:', err));
+    try {
+      const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
+        p_charge_type: platformRevenueChargeType,
+        p_gross_amount: amountCents,
+        p_platform_fee_amount: platformFeeCents,
+        p_platform_fee_percent: PLATFORM_FEE_PERCENT,
+        p_creator_payout_amount: amountCents - platformFeeCents,
+        p_stripe_payment_intent_id: paymentIntent.id,
+        p_reference_id: content_id,
+        p_creator_user_id: creatorId || null,
+        p_currency: currency.toUpperCase(),
+      });
+      if (insertPrErr) {
+        console.error('[content/purchase] insert_platform_revenue:', insertPrErr);
+      }
+    } catch (err) {
+      console.error('[content/purchase] insert_platform_revenue:', err);
+    }
 
     // Transfer earnings to creator's wallet
     if (creatorId) {

@@ -180,17 +180,24 @@ export async function POST(request: NextRequest) {
 
     const platformFeeMinor = Math.round(amountMinor * PLATFORM_FEE_DECIMAL);
     const organizerMinor = amountMinor - platformFeeMinor;
-    await supabaseAdmin.rpc('insert_platform_revenue', {
-      p_charge_type: 'event_ticket',
-      p_gross_amount: amountMinor,
-      p_platform_fee_amount: platformFeeMinor,
-      p_platform_fee_percent: PLATFORM_FEE_PERCENT,
-      p_creator_payout_amount: organizerMinor,
-      p_stripe_payment_intent_id: paymentIntentId,
-      p_reference_id: eventId,
-      p_creator_user_id: (event as { creator_id?: string }).creator_id ?? null,
-      p_currency: currency.toUpperCase(),
-    }).catch((err) => console.error('[confirm-ticket-purchase] insert_platform_revenue:', err));
+    try {
+      const { error: insertPrErr } = await supabaseAdmin.rpc('insert_platform_revenue', {
+        p_charge_type: 'event_ticket',
+        p_gross_amount: amountMinor,
+        p_platform_fee_amount: platformFeeMinor,
+        p_platform_fee_percent: PLATFORM_FEE_PERCENT,
+        p_creator_payout_amount: organizerMinor,
+        p_stripe_payment_intent_id: paymentIntentId,
+        p_reference_id: eventId,
+        p_creator_user_id: (event as { creator_id?: string }).creator_id ?? null,
+        p_currency: currency.toUpperCase(),
+      });
+      if (insertPrErr) {
+        console.error('[confirm-ticket-purchase] insert_platform_revenue:', insertPrErr);
+      }
+    } catch (err) {
+      console.error('[confirm-ticket-purchase] insert_platform_revenue:', err);
+    }
 
     // Update event attendee count
     if (event.max_attendees) {

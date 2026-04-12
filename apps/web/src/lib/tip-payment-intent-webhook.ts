@@ -264,8 +264,8 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     return { ok: false, reason: 'missing_ids' };
   }
 
-  await supabase
-    .rpc('insert_platform_revenue', {
+  try {
+    const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
       p_charge_type: 'tip',
       p_gross_amount: grossMinor,
       p_platform_fee_amount: platformFeeMinor,
@@ -275,8 +275,13 @@ async function finalizeTipFromSucceededPaymentIntentInner(
       p_reference_id: paymentIntentId,
       p_creator_user_id: creatorId,
       p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
-    })
-    .catch((err) => console.error('[finalizeTip] insert_platform_revenue:', err));
+    });
+    if (insertPrErr) {
+      console.error('[finalizeTip] insert_platform_revenue:', insertPrErr);
+    }
+  } catch (err) {
+    console.error('[finalizeTip] insert_platform_revenue:', err);
+  }
 
   const amount = Number(
     tipAnalytics?.tip_amount ?? updatedTips?.amount ?? tipData?.amount ?? (paymentIntent.amount ? paymentIntent.amount / 100 : 0)

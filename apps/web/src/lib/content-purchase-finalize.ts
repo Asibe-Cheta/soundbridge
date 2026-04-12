@@ -135,8 +135,8 @@ export async function finalizeContentPurchaseFromPaymentIntent(
     return { ok: false, status: 500, message: 'Could not record purchase. Contact support if you were charged.' };
   }
 
-  await supabase
-    .rpc('insert_platform_revenue', {
+  try {
+    const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
       p_charge_type: platformRevenueChargeType,
       p_gross_amount: amountCents,
       p_platform_fee_amount: platformFeeCents,
@@ -146,8 +146,13 @@ export async function finalizeContentPurchaseFromPaymentIntent(
       p_reference_id: contentId,
       p_creator_user_id: content.creator_id,
       p_currency: currency.toUpperCase(),
-    })
-    .catch((err) => console.error('[finalizeContentPurchase] insert_platform_revenue:', err));
+    });
+    if (insertPrErr) {
+      console.error('[finalizeContentPurchase] insert_platform_revenue:', insertPrErr);
+    }
+  } catch (err) {
+    console.error('[finalizeContentPurchase] insert_platform_revenue:', err);
+  }
 
   try {
     await supabase.rpc('add_wallet_transaction', {

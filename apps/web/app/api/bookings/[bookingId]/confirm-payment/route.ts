@@ -189,17 +189,24 @@ export async function POST(
   const platformFeeMinor = Math.round(Number(booking.platform_fee) * 100);
   const creatorPayoutMinor = Math.round(Number(booking.provider_payout ?? 0) * 100);
   const feePct = grossMinor > 0 ? (platformFeeMinor / grossMinor) * 100 : 0;
-  await service.rpc('insert_platform_revenue', {
-    p_charge_type: 'gig_payment',
-    p_gross_amount: grossMinor,
-    p_platform_fee_amount: platformFeeMinor,
-    p_platform_fee_percent: Math.round(feePct * 100) / 100,
-    p_creator_payout_amount: creatorPayoutMinor,
-    p_stripe_payment_intent_id: paymentIntent.id,
-    p_reference_id: booking.id,
-    p_creator_user_id: booking.provider_id,
-    p_currency: (booking.currency ?? 'USD').toUpperCase(),
-  }).catch((err) => console.error('[confirm-payment] insert_platform_revenue:', err));
+  try {
+    const { error: insertPrErr } = await service.rpc('insert_platform_revenue', {
+      p_charge_type: 'gig_payment',
+      p_gross_amount: grossMinor,
+      p_platform_fee_amount: platformFeeMinor,
+      p_platform_fee_percent: Math.round(feePct * 100) / 100,
+      p_creator_payout_amount: creatorPayoutMinor,
+      p_stripe_payment_intent_id: paymentIntent.id,
+      p_reference_id: booking.id,
+      p_creator_user_id: booking.provider_id,
+      p_currency: (booking.currency ?? 'USD').toUpperCase(),
+    });
+    if (insertPrErr) {
+      console.error('[confirm-payment] insert_platform_revenue:', insertPrErr);
+    }
+  } catch (err) {
+    console.error('[confirm-payment] insert_platform_revenue:', err);
+  }
 
   const { data: hydratedBooking, error: hydrateError } = await supabaseClient
     .from('service_bookings')
