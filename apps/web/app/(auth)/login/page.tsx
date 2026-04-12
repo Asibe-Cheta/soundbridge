@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createClient } from '@supabase/supabase-js';
+import { OAUTH_DUPLICATE_USER_MESSAGE } from '@/src/lib/oauth-duplicate-guard';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,7 @@ function LoginLoading() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const nextAfterAuth = searchParams.get('redirectTo') || '/dashboard';
   const { signIn, signInWithProvider, signOut } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,6 +138,12 @@ function LoginContent() {
       setError('Invalid confirmation link. Please request a new confirmation email.');
     } else if (urlError === 'callback_failed') {
       setError('Confirmation process failed. Please try again.');
+    } else if (urlError === 'account_exists_wrong_provider') {
+      setError(
+        urlMessage ? decodeURIComponent(urlMessage) : OAUTH_DUPLICATE_USER_MESSAGE
+      );
+    } else if (urlError === 'oauth_failed' || urlError === 'oauth_session_failed') {
+      setError(urlMessage ? decodeURIComponent(urlMessage) : 'Sign-in with that provider failed. Please try again.');
     }
   }, [searchParams]);
 
@@ -485,7 +493,7 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      const { error } = await signInWithProvider(provider);
+      const { error } = await signInWithProvider(provider, { next: nextAfterAuth });
       if (error) {
         setError(error.message);
       }
@@ -857,9 +865,18 @@ function LoginContent() {
           <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
         </div>
 
-        {/* Social Login - Google Only */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+        {/* Social login — Google + Apple (Supabase dashboard must enable Apple + redirect URLs) */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '0.75rem',
+            marginBottom: '2rem',
+          }}
+        >
           <button
+            type="button"
             onClick={() => handleSocialLogin('google')}
             disabled={isLoading}
             style={{
@@ -873,13 +890,37 @@ function LoginContent() {
               fontSize: '0.9rem',
               opacity: isLoading ? 0.6 : 1,
               transform: 'translateY(0)',
-              minWidth: '200px',
-              fontWeight: '500'
+              minWidth: '160px',
+              fontWeight: '500',
             }}
             onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = '#f9fafb', e.currentTarget.style.borderColor = '#d1d5db', e.currentTarget.style.transform = 'translateY(-1px)')}
             onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = '#ffffff', e.currentTarget.style.borderColor = '#e5e7eb', e.currentTarget.style.transform = 'translateY(0)')}
           >
             Google
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSocialLogin('apple')}
+            disabled={isLoading}
+            style={{
+              background: '#000000',
+              border: '1px solid #374151',
+              borderRadius: '12px',
+              padding: '0.75rem 2rem',
+              color: '#ffffff',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              fontSize: '0.9rem',
+              opacity: isLoading ? 0.6 : 1,
+              minWidth: '160px',
+              fontWeight: '500',
+            }}
+            onMouseEnter={(e) =>
+              !isLoading && (e.currentTarget.style.background = '#1f2937')
+            }
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = '#000000')}
+          >
+            Apple
           </button>
         </div>
 

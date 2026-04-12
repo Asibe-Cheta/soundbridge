@@ -12,7 +12,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signUp: (email: string, password: string, metadata?: any) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
-  signInWithProvider: (provider: 'google' | 'facebook' | 'apple') => Promise<{ data: any; error: any }>;
+  signInWithProvider: (
+    provider: 'google' | 'facebook' | 'apple',
+    options?: { next?: string }
+  ) => Promise<{ data: any; error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -393,20 +396,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithProvider = async (provider: 'google' | 'facebook' | 'apple') => {
+  const signInWithProvider = async (
+    provider: 'google' | 'facebook' | 'apple',
+    options?: { next?: string }
+  ) => {
     if (!supabase) {
       return { data: null, error: new Error('Supabase client not initialized') };
     }
     try {
-      // Standard Supabase OAuth with PKCE
-      // Supabase handles the OAuth flow via its callback endpoint, then redirects to our site
+      const nextPath =
+        options?.next && options.next.startsWith('/') ? options.next : '/dashboard';
+      // Same entry as mobile spec: `/auth/callback` (add `?next=` for post-login). Whitelist in
+      // Supabase Auth → URL Configuration (e.g. https://www.soundbridge.live/auth/callback**).
+      // Apple web uses a Services ID + Supabase Apple provider; callback to Supabase is separate.
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/`, // Redirect to home after OAuth completes
+          redirectTo,
         },
       });
-      
+
       return { data, error };
     } catch (error) {
       console.error(`Error signing in with ${provider}:`, error);

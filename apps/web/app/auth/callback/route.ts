@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import {
+  rollbackIfOAuthEmailDuplicate,
+  oauthDuplicateLoginRedirectUrl,
+} from '@/src/lib/oauth-duplicate-guard';
+import { extractOAuthDisplayNameParts } from '@/src/lib/oauth-user-display-name';
 
 export async function GET(request: NextRequest) {
   try {
@@ -154,7 +159,16 @@ export async function GET(request: NextRequest) {
         if (data.session && data.user) {
           console.log('✅ OAuth login successful for user:', data.user.email);
           console.log('✅ Session cookies automatically set by createRouteHandlerClient');
-          
+
+          const duplicate = await rollbackIfOAuthEmailDuplicate({
+            email: data.user.email,
+            currentUserId: data.user.id,
+          });
+          if (duplicate) {
+            await supabase.auth.signOut();
+            return NextResponse.redirect(oauthDuplicateLoginRedirectUrl(request.url));
+          }
+
           // Create profile if it doesn't exist for OAuth users
           try {
             const { data: existingProfile } = await supabase
@@ -165,12 +179,8 @@ export async function GET(request: NextRequest) {
 
             if (!existingProfile) {
               console.log('Creating profile for OAuth user:', data.user.id);
-              
-              // Extract name from user metadata (Google provides full_name)
-              const fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || '';
-              const firstName = fullName.split(' ')[0] || '';
-              const lastName = fullName.split(' ').slice(1).join(' ') || '';
-              const displayName = fullName || data.user.email?.split('@')[0] || 'New User';
+
+              const { displayName, firstName, lastName } = extractOAuthDisplayNameParts(data.user);
               
               // Create profile with OAuth user data
               const { error: profileError } = await supabase

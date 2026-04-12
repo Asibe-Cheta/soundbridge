@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/src/lib/supabase';
+import { OAUTH_DUPLICATE_USER_MESSAGE } from '@/src/lib/oauth-duplicate-guard';
+import { extractOAuthDisplayNameParts } from '@/src/lib/oauth-user-display-name';
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -40,6 +42,23 @@ function OAuthCallbackContent() {
         }
 
         if (data.user) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+          if (accessToken) {
+            const guardRes = await fetch('/api/auth/oauth-duplicate-guard', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const guardJson = (await guardRes.json().catch(() => ({}))) as { duplicate?: boolean };
+            if (guardJson.duplicate) {
+              await supabase.auth.signOut();
+              router.push(
+                `/login?error=account_exists_wrong_provider&message=${encodeURIComponent(OAUTH_DUPLICATE_USER_MESSAGE)}`
+              );
+              return;
+            }
+          }
+
           console.log('✅ OAuth login successful for user:', data.user.email);
           setStatus('success');
 
@@ -53,12 +72,8 @@ function OAuthCallbackContent() {
 
             if (!existingProfile) {
               console.log('Creating profile for OAuth user:', data.user.id);
-              
-              // Extract name from user metadata (Google provides full_name)
-              const fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || '';
-              const firstName = fullName.split(' ')[0] || '';
-              const lastName = fullName.split(' ').slice(1).join(' ') || '';
-              const displayName = fullName || data.user.email?.split('@')[0] || 'New User';
+
+              const { displayName, firstName, lastName } = extractOAuthDisplayNameParts(data.user);
               
               // Create profile with OAuth user data
               const { error: profileError } = await supabase

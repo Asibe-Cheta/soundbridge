@@ -157,7 +157,7 @@ function SignupContent() {
     setIsLoading(true);
 
     try {
-      const { error } = await signInWithProvider(provider);
+      const { error } = await signInWithProvider(provider, { next: '/dashboard' });
       if (error) {
         setError(error.message);
       }
@@ -532,9 +532,18 @@ function SignupContent() {
             <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
           </div>
 
-          {/* Social Login - Google Only */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+          {/* Social login — Google + Apple */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              marginBottom: '2rem',
+            }}
+          >
             <button
+              type="button"
               onClick={() => handleSocialLogin('google')}
               disabled={isLoading}
               style={{
@@ -548,13 +557,35 @@ function SignupContent() {
                 fontSize: '0.9rem',
                 opacity: isLoading ? 0.6 : 1,
                 transform: 'translateY(0)',
-                minWidth: '200px',
-                fontWeight: '500'
+                minWidth: '160px',
+                fontWeight: '500',
               }}
               onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = '#f9fafb', e.currentTarget.style.borderColor = '#d1d5db', e.currentTarget.style.transform = 'translateY(-1px)')}
               onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = '#ffffff', e.currentTarget.style.borderColor = '#e5e7eb', e.currentTarget.style.transform = 'translateY(0)')}
             >
               Google
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSocialLogin('apple')}
+              disabled={isLoading}
+              style={{
+                background: '#000000',
+                border: '1px solid #374151',
+                borderRadius: '12px',
+                padding: '0.75rem 2rem',
+                color: '#ffffff',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '0.9rem',
+                opacity: isLoading ? 0.6 : 1,
+                minWidth: '160px',
+                fontWeight: '500',
+              }}
+              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = '#1f2937')}
+              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.background = '#000000')}
+            >
+              Apple
             </button>
           </div>
 
