@@ -1,6 +1,5 @@
 import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createServiceClient } from '@/src/lib/supabase';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 /**
@@ -18,6 +17,18 @@ export type FinalizeTipResult = { ok: true } | { ok: false; reason: string };
  * Expects service-role Supabase client (bypasses RLS on tips / creator_tips updates).
  */
 export async function finalizeTipFromSucceededPaymentIntent(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: SupabaseClient
+): Promise<FinalizeTipResult> {
+  try {
+    return await finalizeTipFromSucceededPaymentIntentInner(paymentIntent, supabase);
+  } catch (e) {
+    console.error('[finalizeTip] unhandled exception (must not throw to Stripe webhook):', e);
+    return { ok: false, reason: 'exception' };
+  }
+}
+
+async function finalizeTipFromSucceededPaymentIntentInner(
   paymentIntent: Stripe.PaymentIntent,
   supabase: SupabaseClient
 ): Promise<FinalizeTipResult> {
@@ -52,7 +63,9 @@ export async function finalizeTipFromSucceededPaymentIntent(
     return { ok: false, reason: 'no_tip_rows' };
   }
 
-  if (creatorTip?.status === 'completed' && tipsRow?.status === 'completed') {
+  const creatorDone = !creatorTip || creatorTip.status === 'completed';
+  const tipsDone = !tipsRow || tipsRow.status === 'completed';
+  if (creatorDone && tipsDone) {
     console.log('[finalizeTip] Already completed (idempotent):', paymentIntentId);
     return { ok: true };
   }
@@ -64,15 +77,18 @@ export async function finalizeTipFromSucceededPaymentIntent(
 
   let updatedTips = tipsRow;
   if (tipsRow?.id) {
-    const { data: t } = await supabase
+    const { data: updatedList, error: tipsUpdErr } = await supabase
       .from('tips')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
       })
       .eq('payment_intent_id', paymentIntentId)
-      .select()
-      .single();
+      .select();
+    if (tipsUpdErr) {
+      console.error('[finalizeTip] tips update:', tipsUpdErr);
+    }
+    const t = updatedList?.[0];
     if (t) updatedTips = t;
   }
 
@@ -167,7 +183,6 @@ export async function finalizeTipFromSucceededPaymentIntent(
   }
 
   try {
-    const service = createServiceClient();
     const senderProfile = tipperProfile;
     const senderUsername =
       senderProfile?.username ||
@@ -182,7 +197,8 @@ export async function finalizeTipFromSucceededPaymentIntent(
 
     const tipRowId = updatedTips?.id || tipData?.id;
 
-    await sendExpoPushIfAllowed(service, creatorId, 'tip', {
+    // Use the same service-role client (webhook/admin pass service client; no second createClient).
+    await sendExpoPushIfAllowed(supabase, creatorId, 'tip', {
       title: tipTitle,
       body: 'Check your wallet',
       data: {

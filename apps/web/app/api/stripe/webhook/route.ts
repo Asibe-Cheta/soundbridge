@@ -139,9 +139,20 @@ export async function POST(request: NextRequest) {
         if (piSucceeded.metadata?.project_source === 'opportunity') {
           await handleOpportunityProjectPaymentSucceeded(piSucceeded, supabase);
         } else if (isTipPaymentIntent(piSucceeded)) {
-          await finalizeTipFromSucceededPaymentIntent(piSucceeded, supabase);
+          try {
+            const tipResult = await finalizeTipFromSucceededPaymentIntent(piSucceeded, supabase);
+            if (!tipResult.ok) {
+              console.error('[webhook] finalizeTip result:', tipResult.reason, piSucceeded.id);
+            }
+          } catch (tipErr) {
+            console.error('[webhook] finalizeTip threw:', tipErr);
+          }
         } else if (isContentSalePaymentIntent(piSucceeded)) {
-          await recordContentSaleFromPaymentIntent(piSucceeded, supabase);
+          try {
+            await recordContentSaleFromPaymentIntent(piSucceeded, supabase);
+          } catch (contentErr) {
+            console.error('[webhook] recordContentSale threw:', contentErr);
+          }
         }
         break;
       }
@@ -151,9 +162,20 @@ export async function POST(request: NextRequest) {
         if (pi.metadata?.project_source === 'opportunity') {
           await handleOpportunityProjectPaymentSucceeded(pi, supabase);
         } else if (isTipPaymentIntent(pi)) {
-          await finalizeTipFromSucceededPaymentIntent(pi, supabase);
+          try {
+            const tipResult = await finalizeTipFromSucceededPaymentIntent(pi, supabase);
+            if (!tipResult.ok) {
+              console.error('[webhook] finalizeTip result:', tipResult.reason, pi.id);
+            }
+          } catch (tipErr) {
+            console.error('[webhook] finalizeTip threw:', tipErr);
+          }
         } else if (isContentSalePaymentIntent(pi)) {
-          await recordContentSaleFromPaymentIntent(pi, supabase);
+          try {
+            await recordContentSaleFromPaymentIntent(pi, supabase);
+          } catch (contentErr) {
+            console.error('[webhook] recordContentSale threw:', contentErr);
+          }
         }
         break;
       }
