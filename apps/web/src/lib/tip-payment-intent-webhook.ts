@@ -316,9 +316,11 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     });
     if (walletError) {
       console.error('[finalizeTip] add_wallet_transaction:', walletError);
+      return { ok: false, reason: 'wallet_failed' };
     }
   } catch (e) {
     console.error('[finalizeTip] wallet:', e);
+    return { ok: false, reason: 'wallet_failed' };
   }
 
   try {

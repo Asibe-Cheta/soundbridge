@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { mergeCreatorRevenueSummaryWithWallet } from '@/src/lib/creator-revenue-summary-merge';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,13 +10,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers':
     'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
 };
-
-function toNumber(v: unknown): number {
-  if (typeof v === 'number' && !Number.isNaN(v)) return v;
-  if (v === null || v === undefined) return 0;
-  const n = Number(v);
-  return Number.isNaN(n) ? 0 : n;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,18 +86,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const merged = await mergeCreatorRevenueSummaryWithWallet(supabase, user.id, row as Record<string, unknown>);
     return NextResponse.json(
       {
         revenue: {
-          totalEarned: toNumber(row.total_earned),
-          totalPaidOut: toNumber(row.total_paid_out),
-          pendingBalance: toNumber(row.pending_balance),
-          availableBalance: toNumber(row.available_balance),
-          thisMonthEarnings: toNumber(row.this_month_earnings),
-          lastMonthEarnings: toNumber(row.last_month_earnings),
-          totalTips: toNumber(row.total_tips),
-          totalTrackSales: toNumber(row.total_track_sales),
-          totalSubscriptions: toNumber(row.total_subscriptions),
+          totalEarned: merged.total_earned,
+          totalPaidOut: merged.total_paid_out,
+          pendingBalance: merged.pending_balance,
+          availableBalance: merged.available_balance,
+          thisMonthEarnings: merged.this_month_earnings,
+          lastMonthEarnings: merged.last_month_earnings,
+          totalTips: merged.total_tips,
+          totalTrackSales: merged.total_track_sales,
+          totalSubscriptions: merged.total_subscriptions,
         },
       },
       { status: 200, headers: corsHeaders }

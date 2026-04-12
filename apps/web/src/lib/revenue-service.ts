@@ -1,4 +1,5 @@
 import { createBrowserClient } from './supabase';
+import { mergeCreatorRevenueSummaryWithWallet } from './creator-revenue-summary-merge';
 import { isWiseCurrency } from './wise-currencies';
 import type { 
   CreatorRevenue, 
@@ -34,7 +35,9 @@ export class RevenueService {
         return null;
       }
 
-      return data?.[0] || null;
+      const row = data?.[0];
+      if (!row) return null;
+      return mergeCreatorRevenueSummaryWithWallet(this.supabase, userId, row as Record<string, unknown>);
     } catch (error) {
       console.error('Error in getRevenueSummary:', error);
       return null;
