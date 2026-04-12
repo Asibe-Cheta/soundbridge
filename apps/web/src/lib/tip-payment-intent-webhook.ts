@@ -12,17 +12,29 @@ export function isTipPaymentIntent(pi: Stripe.PaymentIntent): boolean {
 
 export type FinalizeTipResult = { ok: true } | { ok: false; reason: string };
 
-/** When both legacy tables exist and are completed, skip (wallet RPCs should be idempotent per PI). */
-function bothTipTablesCompleted(
-  creatorTip: { status?: string } | null,
-  tipsRow: { status?: string } | null
-): boolean {
-  return (
-    !!creatorTip &&
-    !!tipsRow &&
-    creatorTip.status === 'completed' &&
-    tipsRow.status === 'completed'
-  );
+/** True if creator was already credited for this Stripe PI (idempotency for webhooks + resends). */
+async function tipWalletAlreadyCredited(
+  supabase: SupabaseClient,
+  paymentIntentId: string
+): Promise<boolean> {
+  const { data: byRef, error: errRef } = await supabase
+    .from('wallet_transactions')
+    .select('id')
+    .eq('transaction_type', 'tip_received')
+    .eq('reference_id', paymentIntentId)
+    .maybeSingle();
+  if (errRef) {
+    console.warn('[finalizeTip] wallet lookup by reference_id:', errRef.message);
+  }
+  if (byRef) return true;
+
+  const { data: byPi } = await supabase
+    .from('wallet_transactions')
+    .select('id')
+    .eq('transaction_type', 'tip_received')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+  return !!byPi;
 }
 
 /**
@@ -203,18 +215,18 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     return { ok: false, reason: 'no_tip_rows' };
   }
 
-  if (bothTipTablesCompleted(creatorTipResolved, tipsRowResolved)) {
-    console.log('[finalizeTip] Already completed (idempotent):', paymentIntentId);
+  if (await tipWalletAlreadyCredited(supabase, paymentIntentId)) {
+    console.log('[finalizeTip] Wallet already credited for PI (idempotent):', paymentIntentId);
     return { ok: true };
   }
 
   const tipData = creatorTipResolved;
-  if (tipData?.id) {
+  if (tipData?.id && tipData.status !== 'completed') {
     await supabase.from('creator_tips').update({ status: 'completed' }).eq('id', tipData.id);
   }
 
   let updatedTips = tipsRowResolved;
-  if (tipsRowResolved?.id) {
+  if (tipsRowResolved?.id && tipsRowResolved.status !== 'completed') {
     const { data: updatedList, error: tipsUpdErr } = await supabase
       .from('tips')
       .update({
@@ -230,9 +242,11 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     if (t) updatedTips = t;
   }
 
-  if (tipAnalytics?.id) {
+  if (tipAnalytics?.id && tipAnalytics.status !== 'completed') {
     await supabase.from('tip_analytics').update({ status: 'completed' }).eq('id', tipAnalytics.id);
   }
+
+  console.log('[finalizeTip] Crediting wallet + revenue for PI', paymentIntentId);
 
   const grossMinor = paymentIntent.amount ?? 0;
   const platformFeeMinor = meta.platform_fee_amount ? parseInt(meta.platform_fee_amount, 10) : Math.round(grossMinor * 0.15);
