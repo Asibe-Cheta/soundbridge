@@ -24,16 +24,15 @@ const authDebug = (...args: unknown[]) => {
   if (AUTH_DEBUG) console.log(...args);
 };
 
+/** Only used to unblock the UI if getSession() never completes (should be rare). Never clears session. */
+const SESSION_LOAD_SAFETY_MS = 45_000;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const waitingForAuthEventRef = React.useRef(false);
-  const fallbackTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
-  // Create Supabase client with cookie-based session storage
-  // This ensures sessions work across both client and server
+
   const [supabase] = useState(() => createClient());
 
   useEffect(() => {
@@ -43,230 +42,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     authDebug('AuthProvider: Initializing...');
-    
-    // Get initial session with timeout protection (shorter timeout for mobile)
-    const getInitialSession = async () => {
-      let timeoutId: NodeJS.Timeout | null = null;
-      let completed = false;
 
-      // Detect mobile ONLY by user agent (not window width - Mac can have narrow windows)
-      const isMobile = typeof window !== 'undefined' && 
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const timeoutDuration = isMobile ? 4000 : 10000; // 4s for mobile, 10s for desktop (increased for slow networks)
+    let cancelled = false;
 
-      const timeoutPromise = new Promise<void>((resolve) => {
-        timeoutId = setTimeout(() => {
-          if (!completed) {
-            console.warn(`AuthProvider: Session check timeout (${timeoutDuration}ms) - setting loading to false (will wait for onAuthStateChange)`);
-            // Check cookies before giving up
-            if (typeof window !== 'undefined') {
-              const hasAuthCookie = document.cookie.includes('sb-') || 
-                                    document.cookie.includes('supabase.auth.token');
-              if (hasAuthCookie) {
-                authDebug('AuthProvider: Timeout but cookies exist - keeping user state and waiting for onAuthStateChange');
-                // Don't set user to null - let onAuthStateChange handle it
-                // This prevents redirect loops when getSession() is just slow
-                waitingForAuthEventRef.current = true;
-                if (!fallbackTimeoutRef.current) {
-                  fallbackTimeoutRef.current = setTimeout(() => {
-                    if (waitingForAuthEventRef.current) {
-                      console.warn('AuthProvider: Auth event timeout fallback - setting loading to false');
-                      waitingForAuthEventRef.current = false;
-                      setLoading(false);
-                    }
-                  }, 8000);
-                }
-              } else {
-                authDebug('AuthProvider: Timeout and no cookies - no session');
-                setLoading(false);
-              }
-            }
-            completed = true;
-          }
-          resolve();
-        }, timeoutDuration);
-      });
+    // 1) Subscribe first so INITIAL_SESSION / SIGNED_IN are never missed (listener must exist before hydration).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (cancelled) return;
+      authDebug('Auth state changed:', event, nextSession?.user?.email);
 
+      if (event === 'SIGNED_OUT' || !nextSession) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      setSession(nextSession);
+      setUser(nextSession.user);
+      setLoading(false);
+    });
+
+    // 2) Hydrate from storage after the listener is attached (Supabase-recommended order).
+    const hydrate = async () => {
       try {
-        authDebug('AuthProvider: Getting initial session...');
-        
-        // Smaller delay for mobile
-        const delay = isMobile ? 100 : 200;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        // Wrap getSession in a timeout-aware promise
-        const sessionPromise = supabase.auth.getSession().catch((err) => {
-          console.error('AuthProvider: getSession error:', err);
-          return { data: { session: null }, error: err };
-        });
-        
-        const result = await Promise.race([
-          sessionPromise,
-          timeoutPromise.then(() => ({ data: { session: null }, timedOut: true }))
-        ]) as { data: { session: any }; timedOut?: boolean };
-        
-        if (completed) {
-          // Timeout already handled - but check cookies as fallback
-          if (result.timedOut && typeof window !== 'undefined') {
-            // Check if we have auth cookies as a fallback
-            const hasAuthCookie = document.cookie.includes('sb-') || 
-                                  document.cookie.includes('supabase.auth.token');
-            if (hasAuthCookie) {
-              authDebug('AuthProvider: Timeout but cookies exist - waiting for onAuthStateChange');
-              // Don't set user to null - let onAuthStateChange handle it
-              return;
-            }
-          }
-          return; // Timeout already handled
+        authDebug('AuthProvider: getSession() after listener registered');
+        const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (sessionError) {
+          console.error('AuthProvider: getSession error:', sessionError);
+          setError('Failed to get initial session');
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
         }
-
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        completed = true;
-        waitingForAuthEventRef.current = false;
-        if (fallbackTimeoutRef.current) {
-          clearTimeout(fallbackTimeoutRef.current);
-          fallbackTimeoutRef.current = null;
-        }
-        
-        const { data: { session } } = result;
-        
-        // Trust the session from getSession() - don't validate immediately
-        // The session will be validated by onAuthStateChange if it's invalid
-        if (session) {
-          authDebug('AuthProvider: Session found:', session.user?.email);
-          setSession(session);
-          setUser(session.user);
+        // May match what INITIAL_SESSION already applied; keeps state in sync if listener order varies.
+        if (s) {
+          authDebug('AuthProvider: Session from getSession:', s.user?.email);
+          setSession(s);
+          setUser(s.user);
         } else {
-          // Check cookies as fallback before setting user to null
-          if (typeof window !== 'undefined') {
-            const hasAuthCookie = document.cookie.includes('sb-') || 
-                                  document.cookie.includes('supabase.auth.token');
-            if (hasAuthCookie) {
-              authDebug('AuthProvider: No session but cookies exist - waiting for onAuthStateChange');
-              // Don't set user to null - let onAuthStateChange handle it
-              waitingForAuthEventRef.current = true;
-              if (!fallbackTimeoutRef.current) {
-                fallbackTimeoutRef.current = setTimeout(() => {
-                  if (waitingForAuthEventRef.current) {
-                    console.warn('AuthProvider: Auth event timeout fallback - setting loading to false');
-                    waitingForAuthEventRef.current = false;
-                    setLoading(false);
-                  }
-                }, 8000);
-              }
-              return;
-            }
-          }
-          authDebug('AuthProvider: No session found');
+          authDebug('AuthProvider: No session from getSession');
           setSession(null);
           setUser(null);
         }
-      } catch (error) {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        completed = true;
-        console.error('Error getting initial session:', error);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Error getting initial session:', err);
         setError('Failed to get initial session');
         setSession(null);
         setUser(null);
       } finally {
-        if (timeoutId && !completed) {
-          clearTimeout(timeoutId);
-        }
-        // Always set loading to false in finally block
-        if (!completed && !waitingForAuthEventRef.current) {
-          authDebug('AuthProvider: Setting loading to false');
+        if (!cancelled) {
           setLoading(false);
-        } else {
-          // Even if timeout completed, ensure loading is false
-          if (!waitingForAuthEventRef.current) {
-            authDebug('AuthProvider: Ensuring loading is false (timeout case)');
-            setLoading(false);
-          }
         }
       }
     };
 
-    getInitialSession();
+    const safetyTimer = setTimeout(() => {
+      if (cancelled) return;
+      setLoading((stillLoading) => {
+        if (stillLoading) {
+          console.warn(
+            `AuthProvider: Session load safety timeout (${SESSION_LOAD_SAFETY_MS}ms) — clearing loading only; session left to Supabase`
+          );
+        }
+        return false;
+      });
+    }, SESSION_LOAD_SAFETY_MS);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        authDebug('Auth state changed:', event, session?.user?.email);
-        
-        // Handle sign out events
-        if (event === 'SIGNED_OUT' || !session) {
-          waitingForAuthEventRef.current = false;
-          if (fallbackTimeoutRef.current) {
-            clearTimeout(fallbackTimeoutRef.current);
-            fallbackTimeoutRef.current = null;
-          }
-          setSession(null);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-        
-        // For INITIAL_SESSION or SIGNED_IN events, trust the session immediately
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-          // Set session immediately - don't validate to avoid delays
-          authDebug('AuthProvider: Setting session from', event, 'event');
-          waitingForAuthEventRef.current = false;
-          if (fallbackTimeoutRef.current) {
-            clearTimeout(fallbackTimeoutRef.current);
-            fallbackTimeoutRef.current = null;
-          }
-          setSession(session);
-          setUser(session.user);
-          setLoading(false);
-          return;
-        }
-        
-        // For TOKEN_REFRESHED events, just update the session
-        if (event === 'TOKEN_REFRESHED' && session) {
-          waitingForAuthEventRef.current = false;
-          if (fallbackTimeoutRef.current) {
-            clearTimeout(fallbackTimeoutRef.current);
-            fallbackTimeoutRef.current = null;
-          }
-          setSession(session);
-          setUser(session.user);
-          setLoading(false);
-          return;
-        }
-
-        // For any other events with a session, trust the session from onAuthStateChange
-        if (session) {
-          waitingForAuthEventRef.current = false;
-          if (fallbackTimeoutRef.current) {
-            clearTimeout(fallbackTimeoutRef.current);
-            fallbackTimeoutRef.current = null;
-          }
-          setSession(session);
-          setUser(session.user);
-          setLoading(false);
-          return;
-        }
-
-        waitingForAuthEventRef.current = false;
-        if (fallbackTimeoutRef.current) {
-          clearTimeout(fallbackTimeoutRef.current);
-          fallbackTimeoutRef.current = null;
-        }
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-      }
-    );
+    void hydrate().finally(() => {
+      clearTimeout(safetyTimer);
+    });
 
     return () => {
-      if (fallbackTimeoutRef.current) {
-        clearTimeout(fallbackTimeoutRef.current);
-        fallbackTimeoutRef.current = null;
-      }
+      cancelled = true;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [supabase]);
@@ -280,14 +131,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      
+
       if (error) {
         return { data: null, error };
       }
-      
-      // @supabase/ssr automatically handles cookies via createBrowserClientSSR
-      // No manual sync needed - the library manages cookies automatically
-      
+
       return { data, error: null };
     } catch (error) {
       console.error('Error signing in:', error);
@@ -331,36 +179,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      // Even if there's an error (like 403 - session not found), 
-      // we should still clear local state since the session is invalid anyway
+
       if (error) {
         console.warn('Sign out error (clearing local state anyway):', error.message);
-        
-        // Check if it's a session_not_found error (403)
+
         if (error.message?.includes('session_not_found') || error.message?.includes('Session from session_id')) {
           authDebug('Session already invalid - clearing local state');
         }
       }
-      
-      // Always clear local state regardless of error
+
       setSession(null);
       setUser(null);
-      
-      // Clear localStorage manually to ensure cleanup
+
       try {
         localStorage.removeItem('soundbridge-auth');
         localStorage.removeItem('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
       } catch (e) {
         // Ignore localStorage errors
       }
-      
-      // Redirect to home/login page
+
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }
-      
-      return { error: null }; // Return success since we cleared local state
+
+      return { error: null };
     } catch (error) {
       console.error('Unexpected error signing out:', error);
 
@@ -374,24 +216,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           /* ignore */
         }
       }
-      
-      // Still clear local state on unexpected errors
+
       setSession(null);
       setUser(null);
-      
-      // Clear localStorage
+
       try {
         localStorage.removeItem('soundbridge-auth');
         localStorage.removeItem('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
       } catch (e) {
         // Ignore localStorage errors
       }
-      
-      // Redirect anyway
+
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }
-      
+
       return { error };
     }
   };
@@ -406,9 +245,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const nextPath =
         options?.next && options.next.startsWith('/') ? options.next : '/dashboard';
-      // Same entry as mobile spec: `/auth/callback` (add `?next=` for post-login). Whitelist in
-      // Supabase Auth → URL Configuration (e.g. https://www.soundbridge.live/auth/callback**).
-      // Apple web uses a Services ID + Supabase Apple provider; callback to Supabase is separate.
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -448,4 +284,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}
