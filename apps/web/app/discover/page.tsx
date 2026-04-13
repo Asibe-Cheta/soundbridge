@@ -15,6 +15,7 @@ import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { useSearch } from '../../src/hooks/useSearch';
 import { searchCreators } from '../../src/lib/creator';
+import { createBrowserClient } from '@/src/lib/supabase';
 import type { Event } from '../../src/lib/types/creator';
 import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search';
 import type { AudioTrack } from '../../src/lib/types/audio';
@@ -37,13 +38,18 @@ export default function DiscoverPage() {
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('trending');
   const [activeTab, setActiveTab] = useState('music');
+  const supabase = React.useMemo(() => createBrowserClient(), []);
+  const allowedModerationStatuses = React.useMemo(
+    () => ['pending_check', 'checking', 'clean', 'approved'],
+    []
+  );
 
   // Handle URL parameters for tab selection
   useEffect(() => {
     if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
-    if (tabParam && ['music', 'creators', 'events', 'podcasts'].includes(tabParam)) {
+    if (tabParam && ['music', 'albums', 'creators', 'events', 'podcasts', 'mixtapes'].includes(tabParam)) {
       setActiveTab(tabParam);
       }
     }
@@ -60,6 +66,10 @@ export default function DiscoverPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [showFirstActionPrompt, setShowFirstActionPrompt] = useState(false);
   const [onboardingUserType, setOnboardingUserType] = useState<string | null>(null);
+  const [discoverAlbums, setDiscoverAlbums] = useState<any[]>([]);
+  const [discoverPodcasts, setDiscoverPodcasts] = useState<any[]>([]);
+  const [discoverMixtapes, setDiscoverMixtapes] = useState<any[]>([]);
+  const [discoverTabLoading, setDiscoverTabLoading] = useState(false);
 
   // Use the search hook for trending content
   const {
@@ -143,11 +153,13 @@ export default function DiscoverPage() {
 
   const categories = [
     { id: 'music', label: 'Music', icon: Music },
+    { id: 'albums', label: 'Albums', icon: Music },
     { id: 'creators', label: 'Creators', icon: Users },
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'services', label: 'Services', icon: Briefcase },
     { id: 'venues', label: 'Venues', icon: Home },
-    { id: 'podcasts', label: 'Podcasts', icon: Mic }
+    { id: 'podcasts', label: 'Podcasts', icon: Mic },
+    { id: 'mixtapes', label: 'Mixtapes', icon: Music }
   ];
 
   const genres = [
@@ -300,6 +312,65 @@ export default function DiscoverPage() {
 
     loadCreators();
   }, [selectedGenre, selectedLocation]);
+
+  // Keep web Discover tabs consistent with mobile filters:
+  // Albums: albums.is_public=true AND status='published'
+  // Podcasts: audio_tracks.is_public=true AND content_type='podcast' AND moderation_status in allowlist
+  // Mixtapes: audio_tracks.is_public=true AND is_mixtape=true AND moderation_status in allowlist
+  useEffect(() => {
+    const loadDiscoverTabData = async () => {
+      try {
+        setDiscoverTabLoading(true);
+        const [albumsRes, podcastsRes, mixtapesRes] = await Promise.all([
+          supabase
+            .from('albums')
+            .select(`
+              id, title, description, cover_image_url, release_date, genre,
+              tracks_count, total_duration, total_plays, total_likes, created_at, published_at,
+              creator:profiles!albums_creator_id_fkey(id, username, display_name, avatar_url, role)
+            `)
+            .eq('is_public', true)
+            .eq('status', 'published')
+            .order('total_plays', { ascending: false })
+            .limit(20),
+          supabase
+            .from('audio_tracks')
+            .select(`
+              id, title, description, audio_url, file_url, cover_art_url, duration,
+              play_count, like_count, created_at,
+              creator:profiles!audio_tracks_creator_id_fkey(id, username, display_name, avatar_url)
+            `)
+            .eq('is_public', true)
+            .eq('content_type', 'podcast')
+            .in('moderation_status', allowedModerationStatuses)
+            .order('created_at', { ascending: false })
+            .limit(20),
+          supabase
+            .from('audio_tracks')
+            .select(`
+              id, title, description, audio_url, file_url, cover_art_url, duration,
+              play_count, like_count, created_at,
+              creator:profiles!audio_tracks_creator_id_fkey(id, username, display_name, avatar_url)
+            `)
+            .eq('is_public', true)
+            .eq('is_mixtape', true)
+            .in('moderation_status', allowedModerationStatuses)
+            .order('created_at', { ascending: false })
+            .limit(20),
+        ]);
+
+        if (!albumsRes.error) setDiscoverAlbums(albumsRes.data || []);
+        if (!podcastsRes.error) setDiscoverPodcasts(podcastsRes.data || []);
+        if (!mixtapesRes.error) setDiscoverMixtapes(mixtapesRes.data || []);
+      } catch (err) {
+        console.error('Error loading discover tabs:', err);
+      } finally {
+        setDiscoverTabLoading(false);
+      }
+    };
+
+    loadDiscoverTabData();
+  }, [supabase, allowedModerationStatuses]);
 
   const handleClearFilters = () => {
     setSearchQuery('');
@@ -1036,7 +1107,7 @@ export default function DiscoverPage() {
       case 'podcasts':
         return (
           <div className="grid grid-4">
-            {trendingLoading ? (
+            {discoverTabLoading ? (
               // Loading skeleton
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="card">
@@ -1092,8 +1163,8 @@ export default function DiscoverPage() {
                   Try Again
                 </button>
               </div>
-            ) : trendingResults?.podcasts && trendingResults.podcasts.length > 0 ? (
-              trendingResults.podcasts.map((podcast) => (
+            ) : discoverPodcasts.length > 0 ? (
+              discoverPodcasts.map((podcast) => (
                 <div key={podcast.id} className="card" style={{ cursor: 'pointer' }}>
                   <div className="card-image" style={{ position: 'relative' }}>
                     {podcast.cover_art_url ? (
@@ -1213,12 +1284,130 @@ export default function DiscoverPage() {
                   <div style={{ fontWeight: '600' }}>{podcast.title}</div>
                   <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.creator?.display_name || 'Unknown Creator'}</div>
                   <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                    {podcast.formatted_duration} • {podcast.formatted_play_count} plays
+                    {podcast.duration ? `${Math.floor(podcast.duration / 60)}:${String(podcast.duration % 60).padStart(2, '0')}` : '--:--'} • {(podcast.play_count || 0).toLocaleString()} plays
                   </div>
                 </div>
               ))
             ) : (
               renderEmptyState('podcasts')
+            )}
+          </div>
+        );
+
+      case 'albums':
+        return (
+          <div className="grid grid-4">
+            {discoverTabLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card">
+                  <div className="card-image" />
+                  <div style={{ fontWeight: '600' }}>Loading...</div>
+                </div>
+              ))
+            ) : discoverAlbums.length > 0 ? (
+              discoverAlbums.map((album) => (
+                <Link key={album.id} href={`/album/${album.id}`} style={{ textDecoration: 'none' }}>
+                  <div className="card" style={{ cursor: 'pointer' }}>
+                    <div className="card-image">
+                      {album.cover_image_url ? (
+                        <Image
+                          src={album.cover_image_url}
+                          alt={album.title}
+                          width={200}
+                          height={200}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '2rem'
+                        }}>
+                          <Music size={32} />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontWeight: '600' }}>{album.title}</div>
+                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{album.creator?.display_name || 'Unknown Creator'}</div>
+                    <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                      {(album.tracks_count || 0).toLocaleString()} tracks • {(album.total_plays || 0).toLocaleString()} plays
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              renderEmptyState('music')
+            )}
+          </div>
+        );
+
+      case 'mixtapes':
+        return (
+          <div className="grid grid-4">
+            {discoverTabLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card">
+                  <div className="card-image" />
+                  <div style={{ fontWeight: '600' }}>Loading...</div>
+                </div>
+              ))
+            ) : discoverMixtapes.length > 0 ? (
+              discoverMixtapes.map((mix) => (
+                <div key={mix.id} className="card" style={{ cursor: 'pointer' }}>
+                  <div className="card-image" style={{ position: 'relative' }}>
+                    {mix.cover_art_url ? (
+                      <Image
+                        src={mix.cover_art_url}
+                        alt={mix.title}
+                        width={200}
+                        height={200}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '2rem'
+                      }}>
+                        <Music size={32} />
+                      </div>
+                    )}
+                    <div
+                      className="play-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePlayTrack(mix);
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        backgroundColor: currentTrack?.id === mix.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
+                      }}
+                    >
+                      {currentTrack?.id === mix.id && isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: '600' }}>{mix.title}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{mix.creator?.display_name || 'Unknown Creator'}</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    {mix.duration ? `${Math.floor(mix.duration / 60)}:${String(mix.duration % 60).padStart(2, '0')}` : '--:--'} • {(mix.play_count || 0).toLocaleString()} plays
+                  </div>
+                </div>
+              ))
+            ) : (
+              renderEmptyState('music')
             )}
           </div>
         );
