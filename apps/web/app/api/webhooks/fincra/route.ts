@@ -8,6 +8,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, X-Fincra-Signature, x-fincra-signature',
 };
 
+function getRequesterIp(request: NextRequest): string {
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0].trim();
+  return (
+    request.headers.get('x-real-ip') ||
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-vercel-forwarded-for') ||
+    ''
+  ).trim();
+}
+
+function isAllowedFincraIp(ip: string): boolean {
+  const enabled = (process.env.FINCRA_WEBHOOK_IP_WHITELIST_ENABLED || '').toLowerCase() === 'true';
+  if (!enabled) return true;
+  const allowlistRaw =
+    process.env.FINCRA_WEBHOOK_IP_ALLOWLIST ||
+    // Fincra update (Apr 8, 2026): new source IP.
+    '54.171.93.87';
+  const allowlist = new Set(
+    allowlistRaw
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+  );
+  return allowlist.has(ip);
+}
+
 function normalizeStatus(status: string): 'completed' | 'failed' | 'pending' {
   const s = String(status || '').toLowerCase();
   if (s === 'completed' || s === 'successful' || s === 'success') return 'completed';
@@ -20,6 +47,11 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+  const requesterIp = getRequesterIp(request);
+  if (!isAllowedFincraIp(requesterIp)) {
+    return NextResponse.json({ error: 'Forbidden source IP' }, { status: 403, headers: corsHeaders });
+  }
+
   const rawBody = await request.text();
   const signature =
     request.headers.get('x-fincra-signature') ||
