@@ -11,6 +11,16 @@ interface Props {
   params: { trackId: string };
 }
 
+const SITE_URL = 'https://soundbridge.live';
+const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-image.jpg`;
+
+function toAbsoluteUrl(url: string | undefined): string {
+  if (!url) return DEFAULT_OG_IMAGE;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${SITE_URL}${url}`;
+  return `${SITE_URL}/${url}`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cookieStore = await cookies();
   const supabase = createServerClient<Database>(
@@ -40,11 +50,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select(`
       id,
       title,
+      description,
+      duration,
       cover_image_url,
       genre,
+      updated_at,
       creator:profiles!audio_tracks_creator_id_fkey(
         username,
-        display_name
+        display_name,
+        avatar_url,
+        bio
       )
     `)
     .eq('id', params.trackId)
@@ -57,21 +72,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const creatorName = track.creator?.display_name || track.creator?.username || 'Unknown Artist';
-  const mixedByName = (track as { dj_name?: string | null }).dj_name || null;
-  const isMixtape = !!(track as { is_mixtape?: boolean | null }).is_mixtape;
-  const trackUrl = `https://soundbridge.live/track/${params.trackId}`;
+  const trackUrl = `${SITE_URL}/track/${params.trackId}`;
+  const description =
+    track.description?.trim() ||
+    track.creator?.bio?.trim() ||
+    `Listen to "${track.title}" by ${creatorName} on SoundBridge.`;
+  const imageUrl = toAbsoluteUrl(track.cover_image_url || track.creator?.avatar_url || undefined);
 
   return {
-    title: `${track.title} by ${creatorName} - SoundBridge`,
-    description: `Listen to "${track.title}" by ${creatorName} on SoundBridge. ${track.genre ? `Genre: ${track.genre}` : ''}`,
+    title: `${track.title} by ${creatorName} — SoundBridge`,
+    description,
     openGraph: {
-      title: `${track.title} by ${creatorName}`,
-      description: `Listen to "${track.title}" by ${creatorName} on SoundBridge`,
+      title: `${track.title} by ${creatorName} — SoundBridge`,
+      description,
       url: trackUrl,
       siteName: 'SoundBridge',
       images: [
         {
-          url: track.cover_image_url || 'https://soundbridge.live/default-track-cover.jpg',
+          url: imageUrl,
           width: 1200,
           height: 1200,
           alt: `${track.title} cover art`,
@@ -81,9 +99,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${track.title} by ${creatorName}`,
-      description: `Listen to "${track.title}" by ${creatorName} on SoundBridge`,
-      images: [track.cover_image_url || 'https://soundbridge.live/default-track-cover.jpg'],
+      title: `${track.title} by ${creatorName} — SoundBridge`,
+      description,
+      images: [imageUrl],
     },
     alternates: {
       canonical: trackUrl,
@@ -142,7 +160,33 @@ export default async function TrackPage({ params }: Props) {
   const creatorName = track.creator?.display_name || track.creator?.username || 'Unknown Artist';
   const mixedByName = (track as { dj_name?: string | null }).dj_name || null;
   const isMixtape = !!(track as { is_mixtape?: boolean | null }).is_mixtape;
-  const trackUrl = `https://soundbridge.live/track/${params.trackId}`;
+  const trackUrl = `${SITE_URL}/track/${params.trackId}`;
+  const trackDescription =
+    (track as { description?: string | null }).description?.trim() ||
+    `Listen to "${track.title}" by ${creatorName} on SoundBridge.`;
+  const imageUrl = toAbsoluteUrl(
+    (track as { cover_image_url?: string | null }).cover_image_url ||
+      (track.creator as { avatar_url?: string | null })?.avatar_url ||
+      undefined
+  );
+  const durationSeconds = Number((track as { duration?: number | null }).duration || 0);
+  const durationIso =
+    durationSeconds > 0
+      ? `PT${Math.floor(durationSeconds / 60)}M${durationSeconds % 60}S`
+      : undefined;
+  const trackJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicRecording',
+    name: track.title,
+    byArtist: {
+      '@type': 'MusicGroup',
+      name: creatorName,
+    },
+    url: trackUrl,
+    ...(trackDescription ? { description: trackDescription } : {}),
+    ...(imageUrl ? { image: imageUrl } : {}),
+    ...(durationIso ? { duration: durationIso } : {}),
+  };
 
   // Fetch latest takedown (if any) for this track so owner can submit counter-notice
   const { data: takedown } = await supabase
@@ -156,6 +200,10 @@ export default async function TrackPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center p-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(trackJsonLd) }}
+      />
       <div className="max-w-2xl w-full">
         <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl">
           {/* Cover Image */}

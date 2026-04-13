@@ -10,6 +10,16 @@ interface Props {
   params: { albumId: string };
 }
 
+const SITE_URL = 'https://soundbridge.live';
+const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-image.jpg`;
+
+function toAbsoluteUrl(url: string | undefined): string {
+  if (!url) return DEFAULT_OG_IMAGE;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${SITE_URL}${url}`;
+  return `${SITE_URL}/${url}`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cookieStore = await cookies();
   const supabase = createServerClient<Database>(
@@ -43,9 +53,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       cover_image_url,
       genre,
       tracks_count,
+      updated_at,
       creator:profiles!albums_creator_id_fkey(
         username,
-        display_name
+        display_name,
+        avatar_url,
+        bio
       )
     `)
     .eq('id', params.albumId)
@@ -58,19 +71,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const creatorName = album.creator?.display_name || album.creator?.username || 'Unknown Artist';
-  const albumUrl = `https://soundbridge.live/album/${params.albumId}`;
+  const albumUrl = `${SITE_URL}/album/${params.albumId}`;
+  const description =
+    album.description?.trim() ||
+    album.creator?.bio?.trim() ||
+    `Listen to the album "${album.title}" by ${creatorName} on SoundBridge.`;
+  const imageUrl = toAbsoluteUrl(album.cover_image_url || album.creator?.avatar_url || undefined);
 
   return {
-    title: `${album.title} by ${creatorName} - SoundBridge`,
-    description: album.description || `Listen to the album "${album.title}" by ${creatorName} on SoundBridge. ${album.tracks_count} tracks.`,
+    title: `${album.title} by ${creatorName} — SoundBridge`,
+    description,
     openGraph: {
-      title: `${album.title} by ${creatorName}`,
-      description: album.description || `Listen to "${album.title}" by ${creatorName} on SoundBridge`,
+      title: `${album.title} by ${creatorName} — SoundBridge`,
+      description,
       url: albumUrl,
       siteName: 'SoundBridge',
       images: [
         {
-          url: album.cover_image_url || 'https://soundbridge.live/default-album-cover.jpg',
+          url: imageUrl,
           width: 1200,
           height: 1200,
           alt: `${album.title} cover art`,
@@ -80,9 +98,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${album.title} by ${creatorName}`,
-      description: album.description || `Listen to "${album.title}" by ${creatorName} on SoundBridge`,
-      images: [album.cover_image_url || 'https://soundbridge.live/default-album-cover.jpg'],
+      title: `${album.title} by ${creatorName} — SoundBridge`,
+      description,
+      images: [imageUrl],
     },
     alternates: {
       canonical: albumUrl,
@@ -146,6 +164,15 @@ export default async function AlbumPage({ params }: Props) {
   const isAlbumOwner = !!albumViewer && albumViewer.id === album.creator_id;
 
   const creatorName = album.creator?.display_name || album.creator?.username || 'Unknown Artist';
+  const albumUrl = `${SITE_URL}/album/${params.albumId}`;
+  const albumDescription =
+    (album as { description?: string | null }).description?.trim() ||
+    `Listen to the album "${album.title}" by ${creatorName} on SoundBridge.`;
+  const albumImageUrl = toAbsoluteUrl(
+    (album as { cover_image_url?: string | null }).cover_image_url ||
+      (album.creator as { avatar_url?: string | null })?.avatar_url ||
+      undefined
+  );
 
   // Sort tracks by track_number
   const sortedTracks = album.album_tracks?.sort((a, b) => a.track_number - b.track_number) || [];
@@ -157,8 +184,26 @@ export default async function AlbumPage({ params }: Props) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const albumJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicAlbum',
+    name: album.title,
+    byArtist: {
+      '@type': 'MusicGroup',
+      name: creatorName,
+    },
+    url: albumUrl,
+    numTracks: sortedTracks.length || Number((album as { tracks_count?: number | null }).tracks_count || 0),
+    ...(albumDescription ? { description: albumDescription } : {}),
+    ...(albumImageUrl ? { image: albumImageUrl } : {}),
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center p-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(albumJsonLd) }}
+      />
       <div className="max-w-4xl w-full">
         <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-8 mb-8">
