@@ -1,4 +1,7 @@
 import { Metadata } from 'next';
+import { getSiteUrl } from '@/src/lib/site-url';
+
+const site = getSiteUrl();
 
 export const metadata: Metadata = {
   title: 'Service Providers - Hire Music Professionals',
@@ -19,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Service Providers - Hire Music Professionals | SoundBridge',
     description: 'Find and hire professional music service providers. Sound engineers, music teachers, photographers, videographers, and more.',
-    url: 'https://soundbridge.live/service-providers',
+    url: `${site}/service-providers`,
     type: 'website',
   },
   twitter: {

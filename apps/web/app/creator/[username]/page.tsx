@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createServiceClient } from '@/src/lib/supabase';
 import { resolveCreatorProfileBySlug } from '@/src/lib/creator-profile-slug';
+import { getSiteUrl } from '@/src/lib/site-url';
 import { CreatorProfileClient } from './CreatorProfileClient';
 
 interface CreatorPageProps {
@@ -11,7 +12,7 @@ interface CreatorPageProps {
   }>;
 }
 
-const SITE_URL = 'https://soundbridge.live';
+const SITE_URL = getSiteUrl();
 const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-image.jpg`;
 
 function toAbsoluteUrl(url: string | undefined): string | undefined {

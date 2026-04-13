@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { blogPosts } from '@/src/content/blog/posts';
 import { createServiceClient } from '@/src/lib/supabase';
+import { getSiteUrl } from '@/src/lib/site-url';
 
-const BASE_URL = 'https://soundbridge.live';
+const BASE_URL = getSiteUrl();
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 function toDate(value: unknown): Date | null {
@@ -18,7 +19,6 @@ function isRecent(value: unknown): boolean {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
-  const baseUrl = 'https://soundbridge.live';
   const currentDate = new Date().toISOString();
   const allowedModerationStatuses = ['pending_check', 'checking', 'clean', 'approved'];
 
@@ -85,73 +85,73 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: baseUrl,
+      url: BASE_URL,
       lastModified: currentDate,
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/discover`,
+      url: `${BASE_URL}/discover`,
       lastModified: currentDate,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/events`,
+      url: `${BASE_URL}/events`,
       lastModified: currentDate,
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/creators`,
+      url: `${BASE_URL}/creators`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/help`,
+      url: `${BASE_URL}/help`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/help/service-provider-guide`,
+      url: `${BASE_URL}/help/service-provider-guide`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/become-service-provider`,
+      url: `${BASE_URL}/become-service-provider`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/about`,
+      url: `${BASE_URL}/about`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/how-it-works`,
+      url: `${BASE_URL}/how-it-works`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/app`,
+      url: `${BASE_URL}/app`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/blog`,
+      url: `${BASE_URL}/blog`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     ...blogPosts.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
+      url: `${BASE_URL}/blog/${post.slug}`,
       lastModified: currentDate,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
@@ -161,25 +161,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...dropEntries,
     ...albumEntries,
     {
-      url: `${baseUrl}/contact`,
+      url: `${BASE_URL}/contact`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/legal/privacy`,
+      url: `${BASE_URL}/legal/privacy`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/legal/terms`,
+      url: `${BASE_URL}/legal/terms`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/help/account-deletion`,
+      url: `${BASE_URL}/help/account-deletion`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.5,

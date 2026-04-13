@@ -1,34 +1,36 @@
 'use client';
 
+import { getSiteUrl } from '@/src/lib/site-url';
 
 export function HomePageSEO() {
+  const site = getSiteUrl();
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'SoundBridge',
-    url: 'https://soundbridge.live',
+    url: site,
     description: 'Connect with music creators, discover amazing events, and be part of a vibrant music community',
     publisher: {
       '@type': 'Organization',
       name: 'SoundBridge',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://soundbridge.live/images/logos/logo-white-lockup.png',
+        url: `${site}/images/logos/logo-white-lockup.png`,
       },
     },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://soundbridge.live/search?q={search_term_string}',
+        urlTemplate: `${site}/search?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
     mainEntity: {
       '@type': 'Organization',
       name: 'SoundBridge',
-      url: 'https://soundbridge.live',
-      logo: 'https://soundbridge.live/images/logos/logo-white-lockup.png',
+      url: site,
+      logo: `${site}/images/logos/logo-white-lockup.png`,
       description: 'Connect with music creators, discover amazing events, and be part of a vibrant music community',
       sameAs: [
         'https://twitter.com/soundbridge',

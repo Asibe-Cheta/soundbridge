@@ -11,6 +11,7 @@ import { Footer } from '@/src/components/layout/Footer';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { ArrowLeft, Calendar, MapPin, Clock, Users, Loader2, AlertCircle, User, Upload, Bell, Settings, Home, Mic, Menu, X, LogOut, MoreHorizontal, Copy } from 'lucide-react';
+import { getSiteUrl } from '@/src/lib/site-url';
 
 interface EventsPageProps {
   params: Promise<{ username: string }>;
@@ -65,8 +66,7 @@ export default function EventsPage({ params }: EventsPageProps) {
 
   const copyEventLink = async (event: Event) => {
     try {
-      // Always use the public event page URL from soundbridge.live
-      const eventUrl = `https://soundbridge.live/events/${event.id}`;
+      const eventUrl = `${getSiteUrl()}/events/${event.id}`;
       
       console.log('Attempting to copy:', eventUrl);
       

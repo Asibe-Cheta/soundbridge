@@ -6,12 +6,13 @@ import { notFound } from 'next/navigation';
 import TrackActionsClient from '@/src/components/track/TrackActionsClient';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
+import { getSiteUrl } from '@/src/lib/site-url';
 
 interface Props {
   params: { trackId: string };
 }
 
-const SITE_URL = 'https://soundbridge.live';
+const SITE_URL = getSiteUrl();
 const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-image.jpg`;
 
 function toAbsoluteUrl(url: string | undefined): string {

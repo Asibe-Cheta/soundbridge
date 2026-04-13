@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { getSiteUrl } from '@/src/lib/site-url';
 
 export default function robots(): MetadataRoute.Robots {
+  const site = getSiteUrl();
   return {
     rules: [
       {
@@ -16,7 +18,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: ['/', '/profile/', '/creator/', '/drop/', '/track/', '/album/'],
       },
     ],
-    sitemap: 'https://www.soundbridge.live/sitemap.xml',
-    host: 'https://www.soundbridge.live',
+    sitemap: `${site}/sitemap.xml`,
+    host: site,
   };
 }

@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import HomePageClient from './page.client';
+import { getSiteUrl } from '@/src/lib/site-url';
+
+const site = getSiteUrl();
 
 export const metadata: Metadata = {
   title: 'SoundBridge - Professional Network for Audio Creators | LinkedIn for Musicians',
@@ -20,7 +23,7 @@ export const metadata: Metadata = {
     title: 'SoundBridge - Professional Network for Audio Creators | LinkedIn for Musicians',
     description:
       'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 90% of your revenue.',
-    url: 'https://soundbridge.live',
+    url: site,
     type: 'website'
   },
   twitter: {

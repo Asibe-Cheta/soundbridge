@@ -10,6 +10,7 @@ import { Footer } from '@/src/components/layout/Footer';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { ArrowLeft, Mic, Play, Pause, Heart, Share2, MoreHorizontal, Loader2, AlertCircle, Clock, Copy, User, Upload, Bell, Settings, Home, Calendar, Users, Menu, X, LogOut } from 'lucide-react';
+import { getSiteUrl } from '@/src/lib/site-url';
 
 interface Podcast {
   id: string;
@@ -182,8 +183,7 @@ export default function PodcastsPage({ params }: PodcastsPageProps) {
 
   const copyPodcastLink = async (podcast: Podcast) => {
     try {
-      // Always use the public podcast page URL from soundbridge.live
-      const podcastUrl = `https://soundbridge.live/podcast/${podcast.id}`;
+      const podcastUrl = `${getSiteUrl()}/podcast/${podcast.id}`;
       
       console.log('Attempting to copy:', podcastUrl);
       

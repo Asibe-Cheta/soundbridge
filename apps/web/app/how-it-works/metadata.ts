@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import { getSiteUrl } from '@/src/lib/site-url';
+
+const site = getSiteUrl();
 
 export const metadata: Metadata = {
   title: 'How SoundBridge Works - Professional Networking for Audio Creators',
@@ -8,7 +11,7 @@ export const metadata: Metadata = {
     title: 'How SoundBridge Works',
     description:
       'See how SoundBridge helps audio creators build a professional profile, promote events for free, and get paid directly.',
-    url: 'https://soundbridge.live/how-it-works',
+    url: `${site}/how-it-works`,
     type: 'website'
   },
   twitter: {

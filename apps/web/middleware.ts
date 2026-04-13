@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getSiteHostname, isSoundBridgeProductionHost } from '@/src/lib/site-url';
 
 const AT_PROFILE = /^\/@([^/]+)\/?$/;
 
@@ -8,6 +9,18 @@ const AT_PROFILE = /^\/@([^/]+)\/?$/;
  * Next.js cannot use a literal `app/@/…` route (conflicts with parallel routes), so we rewrite here.
  */
 export function middleware(request: NextRequest) {
+  const host = request.headers.get('host');
+  const hostNoPort = host?.split(':')[0]?.toLowerCase();
+  const canonicalHost = getSiteHostname();
+
+  if (hostNoPort && isSoundBridgeProductionHost(hostNoPort) && hostNoPort !== canonicalHost) {
+    const dest = new URL(request.url);
+    dest.hostname = canonicalHost;
+    dest.protocol = 'https:';
+    dest.port = '';
+    return NextResponse.redirect(dest, 308);
+  }
+
   const pathname = request.nextUrl.pathname;
   const match = pathname.match(AT_PROFILE);
   if (!match?.[1]) {
@@ -38,6 +51,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  /** Single path segment starting with @ (e.g. /@handle) */
-  matcher: ['/@:handle', '/@:handle/'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
+  ],
 };

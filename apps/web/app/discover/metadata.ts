@@ -1,4 +1,7 @@
 import { Metadata } from 'next';
+import { getSiteUrl } from '@/src/lib/site-url';
+
+const site = getSiteUrl();
 
 export const metadata: Metadata = {
   title: 'Discover Music, Creators, Events & Services',
@@ -18,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Discover Music, Creators, Events & Services | SoundBridge',
     description: 'Discover trending music, connect with creators, find music events, and hire professional music services on SoundBridge.',
-    url: 'https://soundbridge.live/discover',
+    url: `${site}/discover`,
     type: 'website',
   },
   twitter: {

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { createServiceClient } from '@/src/lib/supabase';
 import { notFound } from 'next/navigation';
+import { getSiteUrl } from '@/src/lib/site-url';
 
 interface Props {
   params: { id: string };
 }
 
-const SITE_URL = 'https://soundbridge.live';
+const SITE_URL = getSiteUrl();
 const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-image.jpg`;
 
 function toAbsoluteUrl(url: string | undefined): string {

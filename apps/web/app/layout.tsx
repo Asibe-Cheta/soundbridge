@@ -13,6 +13,7 @@ import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
 import { OnboardingManager } from "@/src/components/onboarding/OnboardingManager";
 import Navbar from "@/src/components/layout/Navbar";
 import { StructuredData, organizationStructuredData, websiteStructuredData } from "@/src/components/seo/StructuredData";
+import { getSiteUrl } from '@/src/lib/site-url';
 import ErrorBoundary from "@/src/components/ErrorBoundary";
 import { GlobalErrorHandler } from "@/src/components/GlobalErrorHandler";
 
@@ -70,14 +71,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://soundbridge.live'),
+  metadataBase: new URL(getSiteUrl()),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'SoundBridge - Connect Through Music',
     description: 'Join SoundBridge to connect with music creators, discover amazing events, hire professional services, and be part of a vibrant music community.',
-    url: 'https://soundbridge.live',
+    url: getSiteUrl(),
     siteName: 'SoundBridge',
     images: [
       {

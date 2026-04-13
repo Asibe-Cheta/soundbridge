@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { notFound } from 'next/navigation';
 import { blogPosts, getBlogPost, type BlogBlock } from '@/src/content/blog/posts';
+import { getSiteUrl } from '@/src/lib/site-url';
 
 const renderBlock = (block: BlogBlock, index: number) => {
   switch (block.type) {
@@ -85,6 +86,7 @@ const readingTime = (blocks: BlogBlock[]) => Math.max(3, Math.ceil(countWords(bl
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = getBlogPost(params.slug);
   if (!post) return {};
+  const site = getSiteUrl();
 
   return {
     title: post.title,
@@ -127,7 +129,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       name: 'SoundBridge Live',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://soundbridge.live/images/logos/logo-white-lockup.png'
+        url: `${site}/images/logos/logo-white-lockup.png`
       }
     },
     datePublished: post.date,

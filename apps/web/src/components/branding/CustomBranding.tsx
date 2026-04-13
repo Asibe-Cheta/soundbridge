@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { brandingService } from '../../lib/branding-service';
+import { getSiteUrl } from '@/src/lib/site-url';
 import type { CustomBranding } from '../../lib/types/branding';
 
 interface CustomBrandingProps {
@@ -101,7 +102,7 @@ export function CustomBranding({ userId, children, className = '' }: CustomBrand
             <p className="text-gray-400 text-sm">
               Powered by{' '}
               <a 
-                href="https://soundbridge.live" 
+                href={getSiteUrl()} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-white hover:text-gray-300 transition-colors"
