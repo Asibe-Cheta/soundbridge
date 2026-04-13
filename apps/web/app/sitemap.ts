@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
   const baseUrl = 'https://soundbridge.live';
   const currentDate = new Date().toISOString();
+  const allowedModerationStatuses = ['pending_check', 'checking', 'clean', 'approved'];
 
   const { data: profiles } = await supabase
     .from('profiles')
@@ -30,13 +31,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const { data: tracks } = await supabase
     .from('audio_tracks')
-    .select('id, updated_at, created_at, moderation_status')
-    .neq('moderation_status', 'removed');
+    .select('id, updated_at, created_at, moderation_status, is_public')
+    .eq('is_public', true)
+    .in('moderation_status', allowedModerationStatuses);
 
   const { data: albums } = await supabase
     .from('albums')
-    .select('id, updated_at, created_at, is_published')
-    .eq('is_published', true);
+    .select('id, updated_at, created_at, is_public, status')
+    .eq('is_public', true)
+    .eq('status', 'published');
 
   const profileEntries: MetadataRoute.Sitemap = (profiles ?? [])
     .filter((p) => p.username && String(p.username).trim().length > 0 && p.is_public !== false)
