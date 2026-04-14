@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: corsHeaders });
   }
 
-  const eventName =
+  const eventNameRaw =
     findDeepString(body, ['data', 'attributes', 'name']) ||
     findDeepString(body, ['type']) ||
     '';
@@ -77,12 +77,11 @@ export async function POST(request: NextRequest) {
     findInquiryId(body) ||
     null;
 
-  const inquiryStatus =
-    findDeepString(body, ['data', 'attributes', 'payload', 'data', 'attributes', 'status']) || '';
+  const inquiryStatus = extractInquiryStatus(body);
 
   const supabase = createServiceClient();
-  /** Persona webhook "Key inflection" Kebab sends e.g. `inquiry-completed`; Camel uses `inquiry.completed`. */
-  const ev = String(eventName).toLowerCase().trim().replace(/-/g, '.');
+  /** Persona: `inquiry.completed`, `inquiry-completed`, or legacy `inquiryCompleted` (mobile naming). */
+  const ev = normalizePersonaEventName(eventNameRaw);
   const now = new Date().toISOString();
 
   async function sendVerificationPush(userId: string, outcome: 'approved' | 'declined') {
@@ -151,8 +150,17 @@ export async function POST(request: NextRequest) {
     .eq('session_id', inquiryId)
     .maybeSingle();
 
-  const userId = sessionRow?.user_id as string | undefined;
+  let userId = sessionRow?.user_id as string | undefined;
   const previousSessionStatus = (sessionRow?.status as string | undefined) ?? null;
+
+  /** Persona create-inquiry sets reference-id = our user UUID; use if session row missing or mismatched. */
+  if (!userId) {
+    const ref = extractReferenceUserId(body);
+    if (ref) {
+      userId = ref;
+      console.log('[persona webhook] resolved user_id from inquiry reference-id');
+    }
+  }
 
   // Explicit event types (Persona dashboard)
   if (ev === 'inquiry.approved' || ev.includes('inquiry.approved')) {
@@ -223,7 +231,11 @@ export async function POST(request: NextRequest) {
   // inquiry.completed — status may be approved, declined, or pending review inside Persona
   if (ev === 'inquiry.completed' || ev.includes('inquiry.completed')) {
     const approved = inquiryStatus === 'approved' || inquiryStatus === 'passed';
-    const declined = inquiryStatus === 'declined' || inquiryStatus === 'failed';
+    const declined =
+      inquiryStatus === 'declined' ||
+      inquiryStatus === 'failed' ||
+      inquiryStatus === 'rejected' ||
+      inquiryStatus === 'canceled';
 
     const sessionStatus = approved ? 'approved' : declined ? 'declined' : 'needs_review';
     await supabase
@@ -296,6 +308,48 @@ function findInquiryId(obj: unknown, depth = 0): string | null {
   for (const k of Object.keys(o)) {
     const f = findInquiryId(o[k], depth + 1);
     if (f) return f;
+  }
+  return null;
+}
+
+/** Normalize dashboard / API / legacy event labels to dotted lower-case. */
+function normalizePersonaEventName(raw: string): string {
+  let s = String(raw).toLowerCase().trim().replace(/-/g, '.');
+  if (s === 'inquirycompleted') s = 'inquiry.completed';
+  if (s === 'inquiryapproved') s = 'inquiry.approved';
+  if (s === 'inquirydeclined') s = 'inquiry.declined';
+  if (s === 'inquiryexpired') s = 'inquiry.expired';
+  return s;
+}
+
+/** Persona inquiry.completed payload may nest `status` under payload.data or payload only. */
+function extractInquiryStatus(body: unknown): string {
+  const paths = [
+    ['data', 'attributes', 'payload', 'data', 'attributes', 'status'],
+    ['data', 'attributes', 'payload', 'attributes', 'status'],
+  ];
+  for (const path of paths) {
+    const v = findDeepString(body, path);
+    if (v) return v.toLowerCase().trim();
+  }
+  return '';
+}
+
+function isUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+/** inquiry create sets reference-id to SoundBridge user id — fallback when DB session row is missing. */
+function extractReferenceUserId(body: unknown): string | null {
+  const candidates = [
+    findDeepString(body, ['data', 'attributes', 'payload', 'data', 'attributes', 'reference-id']),
+    findDeepString(body, ['data', 'attributes', 'payload', 'data', 'attributes', 'reference_id']),
+    findDeepString(body, ['data', 'attributes', 'payload', 'attributes', 'reference-id']),
+    findDeepString(body, ['data', 'attributes', 'payload', 'attributes', 'reference_id']),
+  ];
+  for (const c of candidates) {
+    const t = (c || '').trim();
+    if (t && isUuid(t)) return t;
   }
   return null;
 }
