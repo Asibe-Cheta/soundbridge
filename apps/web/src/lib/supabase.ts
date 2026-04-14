@@ -212,56 +212,6 @@ const getCookieOptions = () => {
   };
 };
 
-const AUTH_COOKIE_STORAGE_PREFIX = 'sb-auth-cookie:';
-
-const getCookieValue = (name: string) => {
-  if (typeof document === 'undefined') return null;
-  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
-  const match = document.cookie.match(new RegExp(`(?:^|; )${escapedName}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-};
-
-const getLocalStorageCookie = (name: string) => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(`${AUTH_COOKIE_STORAGE_PREFIX}${name}`);
-  } catch {
-    return null;
-  }
-};
-
-const setLocalStorageCookie = (name: string, value: string) => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(`${AUTH_COOKIE_STORAGE_PREFIX}${name}`, value);
-  } catch {
-    // Ignore localStorage errors (e.g. blocked)
-  }
-};
-
-const removeLocalStorageCookie = (name: string) => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(`${AUTH_COOKIE_STORAGE_PREFIX}${name}`);
-  } catch {
-    // Ignore localStorage errors
-  }
-};
-
-const buildCookieString = (name: string, value: string, options: any = {}) => {
-  const parts = [`${name}=${encodeURIComponent(value)}`];
-  if (options.maxAge !== undefined) parts.push(`Max-Age=${options.maxAge}`);
-  if (options.expires) {
-    const expires = options.expires instanceof Date ? options.expires.toUTCString() : options.expires;
-    parts.push(`Expires=${expires}`);
-  }
-  if (options.domain) parts.push(`Domain=${options.domain}`);
-  parts.push(`Path=${options.path || '/'}`);
-  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
-  if (options.secure) parts.push('Secure');
-  return parts.join('; ');
-};
-
 const getGlobalClient = () => {
   if (!_globalSupabaseClient) {
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -276,44 +226,16 @@ const getGlobalClient = () => {
     if (typeof window !== 'undefined') {
       const cookieOptions = getCookieOptions();
 
-      // Let @supabase/ssr handle cookies automatically with our domain settings
-      // The library will use document.cookie automatically when no cookies option is provided
-      // We only provide cookieOptions to set the domain correctly
-      _globalSupabaseClient = createBrowserClientSSR<any>(
-        supabaseUrl,
-        supabaseAnonKey,
-        {
-          cookieOptions,
-          cookies: {
-            get(name) {
-              const cookieValue = getCookieValue(name);
-              if (cookieValue) {
-                return cookieValue;
-              }
-              const fallbackValue = getLocalStorageCookie(name);
-              if (fallbackValue && cookieOptions) {
-                document.cookie = buildCookieString(name, fallbackValue, cookieOptions);
-              }
-              return fallbackValue ?? undefined;
-            },
-            set(name, value, options) {
-              const mergedOptions = { ...(cookieOptions || {}), ...(options || {}) };
-              document.cookie = buildCookieString(name, value, mergedOptions);
-              setLocalStorageCookie(name, value);
-            },
-            remove(name, options) {
-              const mergedOptions = { ...(cookieOptions || {}), ...(options || {}), maxAge: 0, expires: new Date(0) };
-              document.cookie = buildCookieString(name, '', mergedOptions);
-              removeLocalStorageCookie(name);
-            },
-          },
-          auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            detectSessionInUrl: true,
-          },
-        }
-      );
+      // Let @supabase/ssr manage browser cookie I/O directly.
+      // Custom cookie adapters can interfere with session hydration timing in some browsers.
+      _globalSupabaseClient = createBrowserClientSSR<any>(supabaseUrl, supabaseAnonKey, {
+        cookieOptions,
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+        },
+      });
     } else {
       // Server-side: use the old client (this should rarely be used)
       _globalSupabaseClient = createClient<any>(supabaseUrl, supabaseAnonKey, {
