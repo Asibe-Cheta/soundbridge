@@ -136,6 +136,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { data: null, error };
       }
 
+      // Optimistically sync auth context immediately after successful password login.
+      // This avoids login->dashboard bounces when auth events/session hydration are delayed.
+      if (data?.session && data?.user) {
+        setSession(data.session);
+        setUser(data.user);
+        setLoading(false);
+        setError(null);
+      }
+
       return { data, error: null };
     } catch (error) {
       console.error('Error signing in:', error);
