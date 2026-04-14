@@ -336,7 +336,8 @@ function LoginContent() {
 
         const redirectTo = searchParams.get('redirectTo') || '/dashboard';
         console.log('✅ Redirecting to:', redirectTo);
-        window.location.href = redirectTo;
+        router.replace(redirectTo);
+        return;
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -443,7 +444,8 @@ function LoginContent() {
 
           const redirectTo = searchParams.get('redirectTo') || '/dashboard';
           console.log('✅ Redirecting to:', redirectTo);
-          window.location.href = redirectTo;
+          router.replace(redirectTo);
+          return;
         } else {
           setTwoFAError('Login failed after verification. Please try again.');
         }

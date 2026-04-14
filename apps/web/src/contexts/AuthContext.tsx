@@ -50,10 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       authDebug('Auth state changed:', event, nextSession?.user?.email);
 
-      if (event === 'SIGNED_OUT' || !nextSession) {
+      if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
         setLoading(false);
+        return;
+      }
+
+      if (!nextSession) {
+        // Ignore null-session transient events that are not explicit sign-outs.
+        // getSession() hydration will set the canonical session/null state.
+        authDebug('AuthProvider: ignoring null session for non-SIGNED_OUT event:', event);
         return;
       }
 

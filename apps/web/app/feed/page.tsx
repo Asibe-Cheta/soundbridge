@@ -40,7 +40,7 @@ export default function FeedPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user?.id) {
-      router.push('/login?redirect=/feed');
+      router.push('/login?redirectTo=/feed');
     }
   }, [user?.id, authLoading, router]); // ✅ Use user?.id instead of user object
 
