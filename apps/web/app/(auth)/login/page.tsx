@@ -265,16 +265,8 @@ function LoginContent() {
             console.error('❌ 2FA check failed with status:', check2FAResponse.status);
             const errorData = await check2FAResponse.json().catch(() => ({ error: 'Unknown error' }));
             console.error('❌ Error response:', errorData);
-
-            // Sign out the user since we can't verify their 2FA status
-            try {
-              await signOut();
-              console.log('🚪 Signed out user due to 2FA check failure');
-            } catch (signOutError) {
-              console.warn('Error signing out after 2FA check failure:', signOutError);
-            }
-
-            // Don't proceed with login if 2FA check fails - user might have 2FA enabled
+            // Do not force sign-out here. A transient API/network failure right after sign-in
+            // was causing immediate logout loops and auth rate limiting.
             setError('Failed to verify 2FA status. Please try again.');
             setIsLoading(false);
             return;
@@ -329,15 +321,7 @@ function LoginContent() {
           }
         } catch (checkError) {
           console.error('❌ Error checking 2FA:', checkError);
-
-          // Sign out the user since we can't verify their 2FA status
-          try {
-            await signOut();
-            console.log('🚪 Signed out user due to 2FA check error');
-          } catch (signOutError) {
-            console.warn('Error signing out after 2FA check error:', signOutError);
-          }
-
+          // Do not force sign-out on check failure; this creates login/logout loops.
           setError('Failed to check 2FA status. Please try again.');
           setIsLoading(false);
           return;
