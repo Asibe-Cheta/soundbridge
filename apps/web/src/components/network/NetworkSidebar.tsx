@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { fetchNetworkSidebarStats } from '@/src/lib/network-stats';
 import { 
   Users, UserPlus, Users2, Calendar, BookOpen, 
   Briefcase, Loader2 
@@ -31,17 +32,10 @@ export function NetworkSidebar() {
 
   const loadStats = async () => {
     try {
-      // Get connection count
-      const connectionsRes = await fetch('/api/connections?limit=1');
-      const connectionsData = await connectionsRes.json();
-      
-      // Get pending requests
-      const requestsRes = await fetch('/api/connections/requests?type=received');
-      const requestsData = await requestsRes.json();
-
+      const sidebarStats = await fetchNetworkSidebarStats();
       setStats({
-        connections: connectionsData.success ? connectionsData.data?.total || 0 : 0,
-        pendingRequests: requestsData.success ? requestsData.data?.requests?.length || 0 : 0,
+        connections: sidebarStats.connections,
+        pendingRequests: sidebarStats.pendingRequests,
       });
     } catch (error) {
       console.error('Error loading network stats:', error);

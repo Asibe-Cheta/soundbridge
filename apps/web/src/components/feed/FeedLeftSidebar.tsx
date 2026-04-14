@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { dataService } from '@/src/lib/data-service';
+import { fetchNetworkSidebarStats } from '@/src/lib/network-stats';
 import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 import {
   User, Bookmark, Activity, Radio, Calendar, Briefcase,
@@ -89,25 +89,14 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
     if (!effectiveUserId) return;
 
     try {
-      console.log('🚀 Loading sidebar stats using direct Supabase queries...');
+      console.log('Loading sidebar stats via API...');
       const startTime = Date.now();
 
-      // Mobile-style follows counts
-      const [{ data: followers }, { data: following }] = await Promise.all([
-        dataService.getConnections(effectiveUserId, 'followers', 1000),
-        dataService.getConnections(effectiveUserId, 'following', 1000),
-      ]);
-
-      // Get pending requests using direct query
-      const { data: requests } = await dataService.getConnectionRequests(effectiveUserId, 'received');
-
-      const uniqueConnectionIds = new Set<string>();
-      (followers || []).forEach((c: any) => uniqueConnectionIds.add(c.user?.id || c.id));
-      (following || []).forEach((c: any) => uniqueConnectionIds.add(c.user?.id || c.id));
+      const sidebarStats = await fetchNetworkSidebarStats();
 
       setStats({
-        connectionCount: uniqueConnectionIds.size,
-        pendingRequests: requests?.length || 0,
+        connectionCount: sidebarStats.connections,
+        pendingRequests: sidebarStats.pendingRequests,
       });
 
       console.log(`✅ Sidebar stats loaded in ${Date.now() - startTime}ms`);
