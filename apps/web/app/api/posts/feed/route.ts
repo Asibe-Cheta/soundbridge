@@ -132,21 +132,87 @@ export async function GET(request: NextRequest) {
       8000
     ) as any;
 
-    // 7) Reposted originals
+    // 7) Reposted originals — full nested shape for mobile + web (author + post_type required)
     const repostedFromIds = Array.from(new Set(postRows.map((p: any) => p.reposted_from_id).filter(Boolean)));
-    let repostedMap = new Map<string, any>();
+    let repostedRows: any[] = [];
     if (repostedFromIds.length > 0) {
       const { data: repostedPosts } = await withQueryTimeout(
         service
           .from('posts')
-          .select('id, user_id, content, created_at, visibility')
-          .in('id', repostedFromIds),
+          .select('id, user_id, content, post_type, visibility, created_at')
+          .in('id', repostedFromIds)
+          .is('deleted_at', null),
         8000
       ) as any;
-      repostedMap = new Map((repostedPosts || []).map((p: any) => [p.id, p]));
+      repostedRows = repostedPosts || [];
     }
 
     const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
+
+    const repostAuthorIds = Array.from(new Set(repostedRows.map((p: any) => p.user_id).filter(Boolean)));
+    const missingRepostAuthorIds = repostAuthorIds.filter((id) => !authorsMap.has(id));
+    if (missingRepostAuthorIds.length > 0) {
+      const { data: repostAuthors } = await withQueryTimeout(
+        service
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, role, bio, professional_headline, subscription_tier, is_verified')
+          .in('id', missingRepostAuthorIds),
+        8000
+      ) as any;
+      for (const a of repostAuthors || []) {
+        authorsMap.set(a.id, a);
+      }
+    }
+
+    const repostAttachmentsMap = new Map<string, { imageUrls: string[]; audioUrl: string | null }>();
+    if (repostedFromIds.length > 0) {
+      const { data: repostAtts } = await withQueryTimeout(
+        service
+          .from('post_attachments')
+          .select('post_id, attachment_type, file_url')
+          .in('post_id', repostedFromIds),
+        8000
+      ) as any;
+      for (const att of repostAtts || []) {
+        if (!repostAttachmentsMap.has(att.post_id)) {
+          repostAttachmentsMap.set(att.post_id, { imageUrls: [], audioUrl: null });
+        }
+        const entry = repostAttachmentsMap.get(att.post_id)!;
+        if (att.attachment_type === 'image') entry.imageUrls.push(att.file_url);
+        if (att.attachment_type === 'audio' && !entry.audioUrl) entry.audioUrl = att.file_url;
+      }
+    }
+
+    function buildRepostedFromNested(original: any): any | null {
+      if (!original?.id) return null;
+      const origAuthor = authorsMap.get(original.user_id);
+      const atts = repostAttachmentsMap.get(original.id) || { imageUrls: [], audioUrl: null };
+      return {
+        id: original.id,
+        content: original.content ?? '',
+        post_type: original.post_type ?? null,
+        visibility: original.visibility ?? null,
+        created_at: original.created_at,
+        author: {
+          id: origAuthor?.id || original.user_id,
+          username: origAuthor?.username ?? null,
+          display_name: origAuthor?.display_name || origAuthor?.username || 'User',
+          avatar_url: origAuthor?.avatar_url ?? null,
+          role: origAuthor?.role ?? null,
+          headline: origAuthor?.professional_headline ?? null,
+          bio: origAuthor?.bio ?? null,
+          subscription_tier: origAuthor?.subscription_tier ?? null,
+          is_verified: Boolean(origAuthor?.is_verified),
+        },
+        image_url: atts.imageUrls[0] || null,
+        image_urls: atts.imageUrls.length > 0 ? atts.imageUrls : null,
+        audio_url: atts.audioUrl,
+      };
+    }
+
+    const repostedMap = new Map<string, any>(
+      repostedRows.map((p: any) => [p.id, buildRepostedFromNested(p)])
+    );
     const attachmentsMap = new Map<string, { imageUrls: string[]; audioUrl: string | null }>();
     for (const att of attachments || []) {
       if (!attachmentsMap.has(att.post_id)) {
