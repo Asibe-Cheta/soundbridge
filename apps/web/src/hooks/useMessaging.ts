@@ -26,6 +26,19 @@ export function useMessaging() {
 
   const subscriptionsRef = useRef<{ [key: string]: any }>({});
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }, []);
 
   // Load conversations
   const loadConversations = useCallback(async () => {
@@ -35,7 +48,11 @@ export function useMessaging() {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await messagingService.getConversations(user.id);
+      const { data, error } = await withTimeout(
+        messagingService.getConversations(user.id),
+        10000,
+        'loadConversations'
+      );
 
       if (error) {
         setError('Failed to load conversations');
@@ -306,7 +323,11 @@ export function useMessaging() {
     if (!user) return;
 
     try {
-      const { data, error } = await messagingService.getUnreadCount(user.id);
+      const { data, error } = await withTimeout(
+        messagingService.getUnreadCount(user.id),
+        8000,
+        'loadUnreadCount'
+      );
 
       if (!error) {
         setUnreadCount(data);
@@ -314,7 +335,7 @@ export function useMessaging() {
     } catch (err) {
       console.error('Failed to load unread count:', err);
     }
-  }, [user]);
+  }, [user, withTimeout]);
 
   // Initialize messaging
   useEffect(() => {

@@ -130,22 +130,59 @@ export async function GET(request: NextRequest) {
       errorDetails: postsError?.details || null,
     });
 
-    // Fallback: if user-context/RLS query returns empty, try public feed with service role.
+    // Fallback: if user-context/RLS query returns empty, try service-role feed with explicit visibility rules.
     if (filteredPosts.length === 0) {
       try {
-        const { data: publicPosts } = await withQueryTimeout(
-          service
-            .from('posts')
-            .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
-            .is('deleted_at', null)
-            .or('is_private.is.null,is_private.eq.false')
-            .eq('visibility', 'public')
-            .order('created_at', { ascending: false })
-            .range(offset, offset + safeLimit - 1),
+        const connectedIds = new Set<string>();
+        connectedIds.add(user.id);
+
+        // connections table path
+        const { data: connectionRows } = await service
+          .from('connections')
+          .select('user_id, connected_user_id, status')
+          .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
+          .limit(200);
+        for (const row of connectionRows ?? []) {
+          const status = (row as any).status;
+          if (status && status !== 'accepted') continue;
+          if ((row as any).user_id === user.id) connectedIds.add((row as any).connected_user_id);
+          if ((row as any).connected_user_id === user.id) connectedIds.add((row as any).user_id);
+        }
+
+        // follows table path (legacy/social graph)
+        const { data: followRows } = await service
+          .from('follows')
+          .select('follower_id, following_id')
+          .or(`follower_id.eq.${user.id},following_id.eq.${user.id}`)
+          .limit(200);
+        for (const row of followRows ?? []) {
+          if ((row as any).follower_id === user.id) connectedIds.add((row as any).following_id);
+          if ((row as any).following_id === user.id) connectedIds.add((row as any).follower_id);
+        }
+
+        const connectedArray = Array.from(connectedIds);
+        let fallbackQuery = service
+          .from('posts')
+          .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
+          .is('deleted_at', null)
+          .or('is_private.is.null,is_private.eq.false')
+          .order('created_at', { ascending: false });
+
+        if (connectedArray.length > 0) {
+          const csv = connectedArray.join(',');
+          fallbackQuery = fallbackQuery.or(
+            `visibility.eq.public,and(visibility.eq.connections,user_id.in.(${csv})),user_id.eq.${user.id}`
+          );
+        } else {
+          fallbackQuery = fallbackQuery.eq('visibility', 'public');
+        }
+
+        const { data: fallbackPosts } = await withQueryTimeout(
+          fallbackQuery.range(offset, offset + safeLimit - 1),
           10000
         ) as any;
-        filteredPosts = (publicPosts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
-        console.log('🛟 Service-role public fallback posts:', filteredPosts.length);
+        filteredPosts = (fallbackPosts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
+        console.log('🛟 Service-role visibility fallback posts:', filteredPosts.length);
       } catch (fallbackErr) {
         console.warn('⚠️ Public feed fallback failed:', fallbackErr);
       }

@@ -625,12 +625,31 @@ class DataService {
         return { data: [], error: followsError };
       }
 
-      if (!follows || follows.length === 0) {
+      let workingFollows = follows || [];
+
+      // Fallback: some environments rely on `connections` (accepted) instead of `follows`.
+      if (workingFollows.length === 0) {
+        const { data: connections } = await this.supabase
+          .from('connections')
+          .select('user_id, connected_user_id, status, created_at')
+          .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`)
+          .limit(limit * 3);
+
+        workingFollows = (connections || [])
+          .filter((c: any) => !c.status || c.status === 'accepted')
+          .map((c: any) => ({
+            follower_id: c.user_id,
+            following_id: c.connected_user_id,
+            created_at: c.created_at,
+          }));
+      }
+
+      if (!workingFollows || workingFollows.length === 0) {
         return { data: [], error: null };
       }
 
       // Get profiles for connections
-      const profileIds = [...new Set(follows.map((f: any) => f[targetColumn]))];
+      const profileIds = [...new Set(workingFollows.map((f: any) => f[targetColumn]))];
       const { data: profiles } = await this.supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, role, location, bio, followers_count, trusted_flagger')
@@ -638,7 +657,7 @@ class DataService {
 
       // Map profiles to follows
       const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-      const formattedConnections = follows.map((follow: any) => {
+      const formattedConnections = workingFollows.map((follow: any) => {
         const profile = profilesMap.get(follow[targetColumn]);
         return {
           id: follow.id,

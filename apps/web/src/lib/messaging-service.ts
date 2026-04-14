@@ -44,7 +44,8 @@ export class MessagingService {
           )
         `)
         .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(300);
 
       if (error) {
         console.error('Error fetching conversations:', error);
