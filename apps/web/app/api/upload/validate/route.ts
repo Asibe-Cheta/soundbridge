@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { uploadValidationService, UploadValidationService } from '../../../../src/lib/upload-validation';
+import { uploadValidationService } from '../../../../src/lib/upload-validation';
 import type { UploadValidationRequest } from '../../../../src/lib/types/upload-validation';
+import {
+  canUserUploadNow,
+  effectiveTierToValidationTier,
+  fetchProfileAndActiveSubscriptionTier,
+} from '@/src/lib/upload-entitlement';
+import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,19 +25,14 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get user subscription tier
-    const { data: subscription, error: subError } = await supabase
-      .from('user_subscriptions')
-      .select('tier')
-      .eq('user_id', user.id as any)
-      .eq('status', 'active' as any)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single() as { data: any; error: any };
-    
-    const userTier = subscription?.tier || 'free';
-    console.log('👤 User tier:', userTier);
-    
+    const { profile, subscriptionTier } = await fetchProfileAndActiveSubscriptionTier(
+      supabase,
+      user.id,
+    );
+    const effectiveTier = resolveEffectiveTier(profile, subscriptionTier || 'free');
+    const userTier = effectiveTierToValidationTier(effectiveTier);
+    console.log('User tier (effective):', effectiveTier, 'validation:', userTier);
+
     // Parse request body
     const body = await request.json();
     const { 
@@ -95,57 +96,51 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check persistent memory for free tier eligibility
-    const { data: persistentMemoryCheck, error: memoryError } = await supabase
-      .rpc('can_user_use_free_tier_with_memory', {
-        user_uuid: user.id
-      });
+    // Free-tier abuse memory only — premium/unlimited (incl. early-adopter grants) must not be blocked here
+    if (effectiveTier === 'free') {
+      const { data: persistentMemoryCheck, error: memoryError } = await supabase
+        .rpc('can_user_use_free_tier_with_memory', {
+          user_uuid: user.id,
+        });
 
-    if (memoryError) {
-      console.error('❌ Error checking persistent memory:', memoryError);
-      // Fall back to regular upload check
-    } else if (persistentMemoryCheck?.[0]) {
-      const memoryResult = persistentMemoryCheck[0];
-      
-      if (!memoryResult.can_use_free_tier) {
-        return NextResponse.json(
-          { 
-            error: 'Upload not allowed',
-            details: memoryResult.reason,
-            persistentId: memoryResult.persistent_id,
-            previousTier: memoryResult.previous_tier,
-            freeTierUsed: memoryResult.free_tier_used,
-            abuseScore: memoryResult.abuse_score,
-            requiresVerification: memoryResult.abuse_score >= 0.6
-          },
-          { status: 403 }
-        );
+      if (memoryError) {
+        console.error('Error checking persistent memory:', memoryError);
+      } else if (persistentMemoryCheck?.[0]) {
+        const memoryResult = persistentMemoryCheck[0];
+
+        if (!memoryResult.can_use_free_tier) {
+          return NextResponse.json(
+            {
+              error: 'Upload not allowed',
+              details: memoryResult.reason,
+              persistentId: memoryResult.persistent_id,
+              previousTier: memoryResult.previous_tier,
+              freeTierUsed: memoryResult.free_tier_used,
+              abuseScore: memoryResult.abuse_score,
+              requiresVerification: memoryResult.abuse_score >= 0.6,
+            },
+            { status: 403 },
+          );
+        }
       }
     }
 
-    // Check upload count limits (fallback)
-    const { data: uploadCheck } = await supabase
-      .rpc('check_upload_count_limit', { 
-        user_uuid: user.id 
-      }) as { data: any; error: any };
-    
-    if (!uploadCheck) {
-      // Get upload limit info for better error message
-      const { data: uploadLimitInfo } = await supabase
-        .rpc('check_upload_limit', { p_user_id: user.id });
-      
+    const { allowed: uploadAllowed, limitRow } = await canUserUploadNow(supabase, user.id);
+
+    if (!uploadAllowed) {
       return NextResponse.json(
-        { 
+        {
           error: 'Upload limit exceeded',
-          details: userTier === 'free' 
-            ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 uploads per month.'
-            : userTier === 'pro'
-                ? 'You have reached your limit of 10 total uploads.'
-            : 'You have reached your upload limit.',
-          limit: uploadLimitInfo || null,
-          upgrade_required: true
+          details:
+            effectiveTier === 'free'
+              ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Premium for more uploads each month.'
+              : effectiveTier === 'premium'
+                ? `You have reached your limit of ${limitRow?.uploads_limit ?? 7} uploads this month.`
+                : 'You have reached your upload limit.',
+          limit: limitRow || null,
+          upgrade_required: effectiveTier === 'free',
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
     

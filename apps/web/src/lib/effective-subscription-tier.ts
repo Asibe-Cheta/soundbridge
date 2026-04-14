@@ -3,9 +3,13 @@ export type EffectiveTier = 'free' | 'premium' | 'unlimited';
 type TierInput = string | null | undefined;
 
 export interface ProfileTierInput {
-  early_adopter?: boolean | null;
+  early_adopter?: boolean | null | string | number;
   subscription_tier?: string | null;
   subscription_period_end?: string | null;
+}
+
+function isEarlyAdopterFlag(v: unknown): boolean {
+  return v === true || v === 'true' || v === 1 || v === '1';
 }
 
 function normalizeTier(input: TierInput): EffectiveTier {
@@ -33,9 +37,9 @@ export function resolveEffectiveTier(
 
   const profileTier = normalizeTier(profile.subscription_tier);
   const hasActiveEarlyAdopterGrant =
-    profile.early_adopter === true &&
+    isEarlyAdopterFlag(profile.early_adopter) &&
     (profileTier === 'premium' || profileTier === 'unlimited') &&
-    (!profile.subscription_period_end || isFutureDate(profile.subscription_period_end));
+    (!profile.subscription_period_end || isFutureDate(String(profile.subscription_period_end)));
 
   if (hasActiveEarlyAdopterGrant) {
     return profileTier;

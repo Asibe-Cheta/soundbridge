@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
+import { canUserUploadNow } from '@/src/lib/upload-entitlement';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,43 +25,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Call database function to check upload limit
-    const { data, error } = await supabase.rpc('check_upload_limit', {
-      p_user_id: user.id,
-    });
+    const { allowed, effectiveTier, limitRow } = await canUserUploadNow(supabase, user.id);
 
-    if (error) {
-      console.error('Error checking upload limit:', error);
+    if (!limitRow) {
       return NextResponse.json(
-        { error: 'Failed to check upload limit', details: error.message },
+        { error: 'Failed to check upload limit' },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    // Get user's tier for additional context
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier, subscription_renewal_date, early_adopter, subscription_period_end')
-      .eq('id', user.id)
-      .single();
-
-    const effectiveTier = resolveEffectiveTier(profile, 'free');
-
-    const result = data[0]; // RPC returns array
-
     return NextResponse.json(
       {
-        can_upload: result.can_upload,
-        uploads_used: result.uploads_used,
-        uploads_limit: result.uploads_limit,
-        limit_type: result.limit_type, // 'lifetime', 'monthly', 'unlimited'
-        reset_date: result.reset_date,
+        can_upload: allowed,
+        uploads_used: limitRow.uploads_used,
+        uploads_limit: limitRow.uploads_limit,
+        limit_type: limitRow.limit_type,
+        reset_date: limitRow.reset_date,
         subscription_tier: effectiveTier,
         message: getUploadLimitMessage(
-          result.can_upload,
-          result.uploads_used,
-          result.uploads_limit,
-          result.limit_type,
+          allowed,
+          limitRow.uploads_used,
+          limitRow.uploads_limit,
+          limitRow.limit_type,
           effectiveTier
         ),
       },

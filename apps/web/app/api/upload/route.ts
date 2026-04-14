@@ -6,6 +6,12 @@ import type { UploadValidationRequest } from '../../../src/lib/types/upload-vali
 import { validateAudioFile, type AudioMetadata } from '../../../src/lib/audio-moderation-utils';
 import { createR2PutObjectCommand, buildR2PublicUrl, r2Client } from '@/src/lib/r2-client';
 import { createSafeObjectKey, validateAudioUploadInput } from '@/src/lib/audio-upload-security';
+import {
+  canUserUploadNow,
+  effectiveTierToValidationTier,
+  fetchProfileAndActiveSubscriptionTier,
+} from '@/src/lib/upload-entitlement';
+import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,18 +28,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user subscription tier
-    const { data: subscription, error: subError } = await supabase
-      .from('user_subscriptions')
-      .select('tier')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    
-    const userTier = subscription?.tier || 'free';
-    console.log('👤 User tier:', userTier);
+    const { profile, subscriptionTier } = await fetchProfileAndActiveSubscriptionTier(
+      supabase,
+      user.id,
+    );
+    const effectiveTier = resolveEffectiveTier(profile, subscriptionTier || 'free');
+    const userTier = effectiveTierToValidationTier(effectiveTier);
+    console.log('User tier (effective):', effectiveTier, 'validation:', userTier);
 
     const body = await request.json();
     const {
@@ -177,32 +178,25 @@ export async function POST(request: NextRequest) {
           );
         }
         
-        // Check upload count limits
-        const { data: uploadCheck } = await supabase
-          .rpc('check_upload_count_limit', { 
-            user_uuid: user.id 
-          });
-        
-        if (!uploadCheck) {
-          // Get upload limit info for better error message
-          const { data: uploadLimitInfo } = await supabase
-            .rpc('check_upload_limit', { user_uuid: user.id });
-          
+        const { allowed: uploadAllowed, limitRow } = await canUserUploadNow(supabase, user.id);
+
+        if (!uploadAllowed) {
           return NextResponse.json(
-            { 
+            {
               error: 'Upload limit exceeded',
-              details: userTier === 'free' 
-                ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Pro for 10 total uploads.'
-                : userTier === 'pro'
-                ? 'You have reached your limit of 10 total uploads.'
-                : 'You have reached your upload limit.',
-              limit: uploadLimitInfo || null,
-              upgrade_required: true
+              details:
+                effectiveTier === 'free'
+                  ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Premium for more uploads each month.'
+                  : effectiveTier === 'premium'
+                    ? `You have reached your limit of ${limitRow?.uploads_limit ?? 7} uploads this month.`
+                    : 'You have reached your upload limit.',
+              limit: limitRow || null,
+              upgrade_required: effectiveTier === 'free',
             },
-            { status: 429 }
+            { status: 429 },
           );
         }
-        
+
         // Perform validation
         const validationRequest: UploadValidationRequest = {
           file,

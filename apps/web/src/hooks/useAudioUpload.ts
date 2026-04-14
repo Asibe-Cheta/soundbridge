@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { audioUploadService } from '../lib/upload-service';
+import { resolveEffectiveTier } from '../lib/effective-subscription-tier';
 import type { UploadFile, TrackUploadData } from '../lib/types/upload';
 import type { AudioQualitySettings } from '../lib/types/audio-quality';
 
@@ -87,12 +88,13 @@ export function useAudioUpload(): [UploadState, UploadActions] {
           const supabase = (await import('../lib/supabase')).createBrowserClient();
           const { data: profile } = await supabase
             .from('profiles')
-            .select('subscription_tier')
+            .select('subscription_tier, early_adopter, subscription_period_end')
             .eq('id', user.id)
             .single();
-          
-          if (profile?.subscription_tier && ['premium', 'unlimited'].includes(profile.subscription_tier)) {
-            userTier = profile.subscription_tier as 'premium' | 'unlimited';
+
+          const effective = resolveEffectiveTier(profile, 'free');
+          if (effective === 'premium' || effective === 'unlimited') {
+            userTier = effective;
           }
         } catch (error) {
           console.warn('Could not fetch user tier, defaulting to free:', error);

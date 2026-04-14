@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 // CORS headers for mobile app
@@ -48,9 +49,10 @@ export async function GET(request: NextRequest) {
       is_unlimited: boolean;
     };
 
-    // Resolve effective user tier with early-adopter DB grants honored over fallback free.
+    // Resolve tier from DB grants (service role) so RLS/column quirks never hide early_adopter flags.
+    const service = createServiceClient();
     const [{ data: profile }, { data: subscription }] = await Promise.all([
-      supabase
+      service
         .from('profiles')
         .select('subscription_tier, early_adopter, subscription_period_end')
         .eq('id', user.id)
