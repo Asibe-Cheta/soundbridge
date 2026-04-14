@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     // CRITICAL: Get subscription data from profiles table FIRST (new tier system)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier, subscription_status, subscription_period, subscription_start_date, subscription_renewal_date')
+      .select('subscription_tier, subscription_status, subscription_period, subscription_start_date, subscription_renewal_date, early_adopter, subscription_period_end')
       .eq('id', user.id)
       .single();
 
@@ -139,17 +140,22 @@ export async function GET(request: NextRequest) {
       old_subscription_tier: subscription?.tier
     });
 
-    const finalSubscription = profile?.subscription_tier ? {
-      tier: profile.subscription_tier,
-      status: profile.subscription_status || 'active',
-      billing_cycle: profile.subscription_period || 'monthly',
-      subscription_start_date: profile.subscription_start_date || null,
-      subscription_renewal_date: profile.subscription_renewal_date || null,
-      subscription_ends_at: profile.subscription_renewal_date || null,
+    const effectiveTier = resolveEffectiveTier(
+      profile,
+      (subscription?.tier as string | null | undefined) || 'free',
+    );
+
+    const finalSubscription = (profile || subscription) ? {
+      tier: effectiveTier,
+      status: profile?.subscription_status || subscription?.status || 'active',
+      billing_cycle: profile?.subscription_period || subscription?.billing_cycle || 'monthly',
+      subscription_start_date: profile?.subscription_start_date || subscription?.subscription_start_date || null,
+      subscription_renewal_date: profile?.subscription_renewal_date || subscription?.subscription_renewal_date || null,
+      subscription_ends_at: profile?.subscription_renewal_date || subscription?.subscription_ends_at || null,
       money_back_guarantee_eligible: subscription?.money_back_guarantee_eligible || false,
       refund_count: subscription?.refund_count || 0,
-      created_at: profile.subscription_start_date || new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      created_at: profile?.subscription_start_date || subscription?.created_at || new Date().toISOString(),
+      updated_at: subscription?.updated_at || new Date().toISOString()
     } : (subscription || {
       tier: 'free',
       status: 'active',

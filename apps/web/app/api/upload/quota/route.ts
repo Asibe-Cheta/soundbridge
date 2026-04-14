@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -47,6 +48,23 @@ export async function GET(request: NextRequest) {
       is_unlimited: boolean;
     };
 
+    // Resolve effective user tier with early-adopter DB grants honored over fallback free.
+    const [{ data: profile }, { data: subscription }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('subscription_tier, early_adopter, subscription_period_end')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('user_subscriptions')
+        .select('tier')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
     // Normalize tier names: convert legacy names to current names
     // Database may return 'pro' or 'enterprise', but mobile app expects 'premium' or 'unlimited'
     function normalizeTierName(tier: string): string {
@@ -56,18 +74,44 @@ export async function GET(request: NextRequest) {
     }
 
     const normalizedTier = normalizeTierName(quota.tier);
+    const effectiveTier = resolveEffectiveTier(
+      profile,
+      (subscription?.tier as string | null | undefined) || normalizedTier,
+    );
+
+    // If quota function returns free while user has active manual premium/unlimited grant,
+    // override response tier and minimum limits so frontend gates align with backend grants.
+    const resolvedQuota = { ...quota };
+    if (effectiveTier !== 'free' && normalizedTier === 'free') {
+      if (effectiveTier === 'premium') {
+        resolvedQuota.tier = 'premium';
+        resolvedQuota.is_unlimited = false;
+        resolvedQuota.upload_limit = Math.max(Number(resolvedQuota.upload_limit || 0), 7);
+        resolvedQuota.remaining = Math.max(
+          0,
+          resolvedQuota.upload_limit - Number(resolvedQuota.uploads_this_month || 0),
+        );
+      } else if (effectiveTier === 'unlimited') {
+        resolvedQuota.tier = 'unlimited';
+        resolvedQuota.is_unlimited = true;
+        resolvedQuota.upload_limit = Math.max(Number(resolvedQuota.upload_limit || 0), 999999);
+        resolvedQuota.remaining = Math.max(Number(resolvedQuota.remaining || 0), 1);
+      }
+    } else {
+      resolvedQuota.tier = effectiveTier;
+    }
 
     return NextResponse.json(
       {
         success: true,
         quota: {
-          tier: normalizedTier, // Use normalized tier name
-          upload_limit: quota.upload_limit,
-          uploads_this_month: quota.uploads_this_month,
-          remaining: quota.remaining,
-          reset_date: quota.reset_date,
-          is_unlimited: quota.is_unlimited,
-          can_upload: quota.remaining > 0 || quota.is_unlimited
+          tier: resolvedQuota.tier,
+          upload_limit: resolvedQuota.upload_limit,
+          uploads_this_month: resolvedQuota.uploads_this_month,
+          remaining: resolvedQuota.remaining,
+          reset_date: resolvedQuota.reset_date,
+          is_unlimited: resolvedQuota.is_unlimited,
+          can_upload: resolvedQuota.remaining > 0 || resolvedQuota.is_unlimited
         }
       },
       { status: 200, headers: corsHeaders }

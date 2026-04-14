@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,16 +52,10 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    const periodEndMs =
-      profile?.subscription_period_end ? Date.parse(profile.subscription_period_end as string) : NaN;
-    const earlyAdopterPremiumActive =
-      profile?.early_adopter === true && Number.isFinite(periodEndMs) && periodEndMs > Date.now();
-
-    const tier = earlyAdopterPremiumActive
-      ? 'premium'
-      : (profile?.subscription_tier as string | null | undefined) ||
-        (subscription?.tier as string | null | undefined) ||
-        'free';
+    const tier = resolveEffectiveTier(
+      profile,
+      (subscription?.tier as string | null | undefined) || 'free',
+    );
 
     // Get upload limit
     const { data: uploadLimit } = await supabase

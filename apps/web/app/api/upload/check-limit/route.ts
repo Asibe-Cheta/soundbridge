@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,12 +45,7 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    const periodEndMs =
-      profile?.subscription_period_end ? Date.parse(profile.subscription_period_end as string) : NaN;
-    const effectiveTier =
-      profile?.early_adopter === true && Number.isFinite(periodEndMs) && periodEndMs > Date.now()
-        ? 'premium'
-        : (profile?.subscription_tier || 'free');
+    const effectiveTier = resolveEffectiveTier(profile, 'free');
 
     const result = data[0]; // RPC returns array
 
