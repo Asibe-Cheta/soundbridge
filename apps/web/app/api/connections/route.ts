@@ -27,9 +27,6 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('👥 Get Connections API called');
-
-    // Authenticate user
     const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
@@ -46,24 +43,34 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const offset = (page - 1) * limit;
 
-    // Get connections
-    const { data: connections, error: connectionsError, count } = await supabase
-      .from('connections')
-      .select('*', { count: 'exact' })
-      .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
-      .eq('status', 'connected')
-      .order('connected_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // Mobile parity source-of-truth: follows table.
+    const { data: follows, error: followsError } = await supabase
+      .from('follows')
+      .select('follower_id, following_id, created_at')
+      .or(`follower_id.eq.${user.id},following_id.eq.${user.id}`)
+      .order('created_at', { ascending: false })
+      .limit(2000);
 
-    if (connectionsError) {
-      console.error('❌ Error fetching connections:', connectionsError);
+    if (followsError) {
+      console.error('Error fetching follows for connections:', followsError);
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch connections', details: connectionsError.message },
+        { success: false, error: 'Failed to fetch connections', details: followsError.message },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    if (!connections || connections.length === 0) {
+    const dedupMap = new Map<string, { connected_at: string }>();
+    for (const row of follows || []) {
+      const otherId = row.follower_id === user.id ? row.following_id : row.follower_id;
+      if (!otherId || otherId === user.id) continue;
+      const prev = dedupMap.get(otherId);
+      if (!prev || new Date(row.created_at).getTime() > new Date(prev.connected_at).getTime()) {
+        dedupMap.set(otherId, { connected_at: row.created_at });
+      }
+    }
+
+    const connectedUserIds = Array.from(dedupMap.keys());
+    if (connectedUserIds.length === 0) {
       return NextResponse.json(
         {
           success: true,
@@ -72,7 +79,7 @@ export async function GET(request: NextRequest) {
             pagination: {
               page,
               limit,
-              total: count || 0,
+              total: 0,
               has_more: false,
             },
           },
@@ -81,15 +88,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get connected user IDs
-    const connectedUserIds = connections.map((conn) =>
-      conn.user_id === user.id ? conn.connected_user_id : conn.user_id
-    );
-
-    // Get profiles
     let profilesQuery = supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, professional_headline, location')
+      .select('id, username, display_name, avatar_url, role, bio, professional_headline, location')
       .in('id', connectedUserIds);
 
     if (search) {
@@ -105,24 +106,29 @@ export async function GET(request: NextRequest) {
       profiles.forEach((p) => profileMap.set(p.id, p));
     }
 
-    // Format connections
-    const formattedConnections = connections
-      .map((conn) => {
-        const connectedUserId = conn.user_id === user.id ? conn.connected_user_id : conn.user_id;
+    const formattedConnections = connectedUserIds
+      .map((connectedUserId) => {
         const profile = profileMap.get(connectedUserId);
-
         return {
           id: connectedUserId,
+          user_id: user.id,
+          connected_user_id: connectedUserId,
+          connected_at: dedupMap.get(connectedUserId)?.connected_at || null,
+          user: {
+            id: connectedUserId,
+            username: profile?.username,
+            display_name: profile?.display_name || profile?.username || 'Unknown',
+            avatar_url: profile?.avatar_url,
+            headline: profile?.professional_headline || (profile?.bio ? String(profile.bio).slice(0, 120) : null),
+          },
           name: profile?.display_name || profile?.username || 'Unknown',
           username: profile?.username,
           avatar_url: profile?.avatar_url,
-          role: profile?.professional_headline,
+          role: profile?.role || profile?.professional_headline || null,
           location: profile?.location,
-          connected_at: conn.connected_at,
         };
       })
       .filter((conn) => {
-        // Filter by search if provided
         if (search) {
           const searchLower = search.toLowerCase();
           return (
@@ -133,18 +139,19 @@ export async function GET(request: NextRequest) {
         return true;
       });
 
-    console.log(`✅ Fetched ${formattedConnections.length} connections for user ${user.id}`);
+    const total = formattedConnections.length;
+    const paginated = formattedConnections.slice(offset, offset + limit);
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          connections: formattedConnections,
+          connections: paginated,
           pagination: {
             page,
             limit,
-            total: count || 0,
-            has_more: (count || 0) > offset + limit,
+            total,
+            has_more: total > offset + limit,
           },
         },
       },

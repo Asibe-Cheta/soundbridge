@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { dataService } from '@/src/lib/data-service';
 import { getCreatorProfilePath } from '@/src/lib/profile-links';
 
 interface ConnectionRequest {
@@ -87,6 +86,24 @@ export default function NetworkPage() {
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [connectionCount, setConnectionCount] = useState(0);
 
+  const fetchJsonWithTimeout = async (url: string, timeoutMs = 12000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      const json = await res.json().catch(() => null);
+      return { ok: res.ok, json };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
@@ -128,25 +145,24 @@ export default function NetworkPage() {
     try {
       setLoadingRequests(true);
 
-      console.log('🚀 Fetching connection requests using direct Supabase query...');
+      console.log('Fetching connection requests via API...');
       const startTime = Date.now();
 
-      // Use direct Supabase query (NO API route, NO timeout issues)
-      const { data: requestsData, error } = await dataService.getConnectionRequests(user.id, 'received');
+      const { ok, json } = await fetchJsonWithTimeout('/api/connections/requests/pending?page=1&limit=50');
+      const requestsData = json?.data?.requests || [];
 
-      if (error) {
-        console.error('❌ Error fetching connection requests:', error);
+      if (!ok || !json?.success) {
+        console.error('Error fetching connection requests:', json?.error || 'Request failed');
         setRequests([]);
       } else {
-        // Map to match the UI format
-        const formattedRequests = requestsData.map(req => ({
+        const formattedRequests = requestsData.map((req: any) => ({
           id: req.id,
           requester: {
-            id: req.user.id,
-            name: req.user.name,
-            username: req.user.username,
-            avatar_url: req.user.avatar_url,
-            role: req.user.role,
+            id: req.from_user?.id || req.sender?.id || req.from_user_id || req.sender_id,
+            name: req.from_user?.display_name || req.sender?.display_name || 'Unknown',
+            username: req.from_user?.username || undefined,
+            avatar_url: req.from_user?.avatar_url || req.sender?.avatar_url || undefined,
+            role: req.from_user?.headline || req.sender?.role || undefined,
             mutual_connections: 0
           },
           message: req.message,
@@ -170,29 +186,28 @@ export default function NetworkPage() {
     try {
       setLoadingSuggestions(true);
 
-      console.log('🚀 Fetching connection suggestions using direct Supabase query...');
+      console.log('Fetching suggestions via API...');
       const startTime = Date.now();
 
-      // Use direct Supabase query (NO API route, NO timeout issues)
-      const { data: suggestionsData, error } = await dataService.getConnectionSuggestions(user.id, 20);
+      const { ok, json } = await fetchJsonWithTimeout('/api/connections/suggestions?page=1&limit=20');
+      const suggestionsData = json?.data?.suggestions || [];
 
-      if (error) {
-        console.error('❌ Error fetching suggestions:', error);
+      if (!ok || !json?.success) {
+        console.error('Error fetching suggestions:', json?.error || 'Request failed');
         setSuggestions([]);
       } else {
-        // Map the data to match the UI format
-        const formattedSuggestions = suggestionsData.map(profile => ({
-          id: profile.id,
+        const formattedSuggestions = suggestionsData.map((profile: any) => ({
+          id: profile.id || profile.user?.id,
           user: {
-            id: profile.id,
-            name: profile.display_name,
-            username: profile.username,
-            avatar_url: profile.avatar_url,
-            role: 'creator',
-            location: profile.location
+            id: profile.user?.id || profile.id,
+            name: profile.user?.name || profile.display_name || 'Unknown',
+            username: profile.user?.username || profile.username,
+            avatar_url: profile.user?.avatar_url || profile.avatar_url,
+            role: profile.user?.role || 'creator',
+            location: profile.user?.location || profile.location
           },
-          reason: profile.location ? `Based on location: ${profile.location}` : 'Suggested for you',
-          mutual_connections: 0
+          reason: profile.reason || 'Suggested for you',
+          mutual_connections: profile.mutual_connections || 0
         }));
 
         setSuggestions(formattedSuggestions);
@@ -210,17 +225,26 @@ export default function NetworkPage() {
     try {
       setLoadingOpportunities(true);
 
-      console.log('🚀 Fetching opportunities using direct Supabase query...');
+      console.log('Fetching opportunities via API...');
       const startTime = Date.now();
 
-      // Use direct Supabase query (NO API route, NO timeout issues)
-      const { data: opportunitiesData, error } = await dataService.getOpportunities(15);
+      const { ok, json } = await fetchJsonWithTimeout('/api/opportunities?limit=15&offset=0');
+      const opportunitiesData = json?.items || [];
 
-      if (error) {
-        console.error('❌ Error fetching opportunities:', error);
+      if (!ok || !Array.isArray(opportunitiesData)) {
+        console.error('Error fetching opportunities:', json?.error || 'Request failed');
         setOpportunities([]);
       } else {
-        setOpportunities(opportunitiesData);
+        const normalized = opportunitiesData.map((item: any) => ({
+          id: item.id,
+          content: item.title || item.description || 'Opportunity',
+          post_type: 'opportunity',
+          visibility: item.visibility || 'public',
+          created_at: item.created_at,
+          updated_at: item.updated_at || item.created_at,
+          author: item.author || null,
+        }));
+        setOpportunities(normalized as any);
         console.log(`✅ Opportunities loaded in ${Date.now() - startTime}ms:`, opportunitiesData.length);
       }
     } catch (err: any) {
@@ -237,39 +261,30 @@ export default function NetworkPage() {
     try {
       setLoadingConnections(true);
 
-      console.log('🚀 Fetching connections using direct Supabase query...');
+      console.log('Fetching connections via API...');
       const startTime = Date.now();
 
-      // Use direct Supabase query (NO API route, NO timeout issues)
-      const { data: connectionsData, error } = await dataService.getConnections(user.id, 'following', 50);
+      const search = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const { ok, json } = await fetchJsonWithTimeout(`/api/connections?page=1&limit=200${search}`);
+      const connectionsData = json?.data?.connections || [];
 
-      if (error) {
-        console.error('❌ Error fetching connections:', error);
+      if (!ok || !json?.success) {
+        console.error('Error fetching connections:', json?.error || 'Request failed');
         setConnections([]);
         setConnectionCount(0);
       } else {
-        // Map to match the UI format
-        const formattedConnections = connectionsData.map(conn => ({
-          id: conn.user.id,
-          name: conn.user.name,
-          username: conn.user.username,
-          avatar_url: conn.user.avatar_url,
-          role: conn.user.role,
-          location: conn.user.location,
-          connected_at: conn.created_at
+        const formattedConnections = connectionsData.map((conn: any) => ({
+          id: conn.user?.id || conn.connected_user_id || conn.id,
+          name: conn.user?.display_name || conn.name || 'Unknown',
+          username: conn.user?.username || conn.username,
+          avatar_url: conn.user?.avatar_url || conn.avatar_url,
+          role: conn.user?.headline || conn.role,
+          location: conn.location,
+          connected_at: conn.connected_at || conn.created_at
         }));
-
-        // Filter by search query if present
-        const filteredConnections = searchQuery
-          ? formattedConnections.filter(conn =>
-              conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (conn.username && conn.username.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
-          : formattedConnections;
-
-        setConnections(filteredConnections);
-        setConnectionCount(filteredConnections.length);
-        console.log(`✅ Connections loaded in ${Date.now() - startTime}ms:`, filteredConnections.length);
+        setConnections(formattedConnections);
+        setConnectionCount(json?.data?.pagination?.total ?? formattedConnections.length);
+        console.log(`✅ Connections loaded in ${Date.now() - startTime}ms:`, formattedConnections.length);
       }
     } catch (err: any) {
       console.error('Failed to fetch connections:', err);
