@@ -13,6 +13,24 @@
 
 import { createBrowserClient } from './supabase';
 
+const FEED_QUERY_TIMEOUT_MS = 12000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${ms}ms`));
+        }, ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 class DataService {
   private _supabase: ReturnType<typeof createBrowserClient> | null = null;
   private get supabase() {
@@ -125,13 +143,17 @@ class DataService {
 
       // First get the posts
       // Note: reposted_from_id column may not exist in database yet, so we select all columns
-      const { data: posts, error: postsError } = await this.supabase
-        .from('posts')
-        .select('*')
-        .is('deleted_at', null)
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      const { data: posts, error: postsError } = await withTimeout(
+        this.supabase
+          .from('posts')
+          .select('*')
+          .is('deleted_at', null)
+          .eq('visibility', 'public')
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1),
+        FEED_QUERY_TIMEOUT_MS,
+        'Feed posts query'
+      );
 
       if (postsError) {
         console.error('Error fetching posts:', postsError);
@@ -144,17 +166,25 @@ class DataService {
 
       // Then get the authors separately
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
-      const { data: authors } = await this.supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, role, professional_headline, location, is_verified')
-        .in('id', userIds);
+      const { data: authors } = await withTimeout(
+        this.supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, role, bio, location, trusted_flagger')
+          .in('id', userIds),
+        FEED_QUERY_TIMEOUT_MS,
+        'Feed authors query'
+      );
 
       // Get attachments for all posts
       const postIds = posts.map((p: any) => p.id);
-      const { data: attachments } = await this.supabase
-        .from('post_attachments')
-        .select('*')
-        .in('post_id', postIds);
+      const { data: attachments } = await withTimeout(
+        this.supabase
+          .from('post_attachments')
+          .select('*')
+          .in('post_id', postIds),
+        FEED_QUERY_TIMEOUT_MS,
+        'Feed attachments query'
+      );
 
       // Group attachments by post_id
       const attachmentsMap = new Map<string, any[]>();
@@ -177,8 +207,8 @@ class DataService {
             username: authorData.username,
             display_name: authorData.display_name,
             avatar_url: authorData.avatar_url,
-            role: authorData.role || authorData.professional_headline,
-            is_verified: authorData.is_verified
+            role: authorData.role || null,
+            is_verified: authorData.trusted_flagger === true
           } : {
             id: post.user_id,
             name: 'User',
