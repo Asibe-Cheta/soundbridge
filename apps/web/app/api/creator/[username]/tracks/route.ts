@@ -23,18 +23,31 @@ export async function GET(
       );
     }
 
-    const creator = { id: resolved.profile.id };
+    const creatorId = resolved.profile.id as string;
+    const p = resolved.profile as Record<string, unknown>;
+    const uname = typeof p.username === 'string' ? p.username : '';
+    const displayName =
+      (typeof p.display_name === 'string' && p.display_name) ||
+      uname ||
+      resolved.canonicalSlug;
+    const avatarUrl = (p.avatar_url as string | null) || null;
+    const isVerified = Boolean(p.is_verified);
+    const location = (p.location as string | null) || null;
+    const country = (p.country as string | null) || null;
 
-    // Get all tracks for this creator - simplified query first
     const { data, error } = await supabase
       .from('audio_tracks')
-      .select('*')
-      .eq('creator_id', creator.id as any)
-      .eq('is_public', true as any)
-      .order('created_at', { ascending: false }) as { data: any; error: any };
-
-    console.log('Raw tracks data:', data);
-    console.log('Query error:', error);
+      .select(
+        `
+        id, title, description, duration, play_count, like_count,
+        file_url, cover_art_url, genre, created_at, is_paid, price, currency,
+        creator_id, is_public
+      `,
+      )
+      .eq('creator_id', creatorId)
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .limit(20);
 
     if (error) {
       console.error('Error fetching tracks:', error);
@@ -44,8 +57,7 @@ export async function GET(
       );
     }
 
-    // Transform the data to match AudioTrack interface - simplified
-    const transformedData = (data || []).map((track: any) => ({
+    const transformedData = (data || []).map((track: Record<string, unknown>) => ({
       id: track.id,
       title: track.title || 'Untitled',
       description: track.description || '',
@@ -56,24 +68,27 @@ export async function GET(
       genre: track.genre || 'Unknown',
       tags: track.tags || [],
       play_count: track.play_count || 0,
-      like_count: track.like_count || 0,
+      like_count: (track.like_count as number) ?? 0,
       is_public: track.is_public !== false,
       created_at: track.created_at || new Date().toISOString(),
+      is_paid: track.is_paid,
+      price: track.price,
+      currency: track.currency,
       creator: {
-        id: creator.id,
-        username: username,
-        display_name: username, // Fallback
-        avatar_url: null,
+        id: creatorId,
+        username: uname || resolved.canonicalSlug,
+        display_name: displayName,
+        avatar_url: avatarUrl,
         banner_url: null,
-        location: null,
-        country: null,
-        bio: null,
+        location,
+        country,
+        bio: (p.bio as string | null) || null,
         role: 'creator' as const,
-        is_verified: false,
+        is_verified: isVerified,
         social_links: {},
         created_at: '',
-        updated_at: ''
-      }
+        updated_at: '',
+      },
     }));
 
     return NextResponse.json({

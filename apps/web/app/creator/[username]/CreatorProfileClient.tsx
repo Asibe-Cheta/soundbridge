@@ -14,7 +14,6 @@ import { CustomBranding } from '../../../src/components/branding/CustomBranding'
 import { TipCreator } from '../../../src/components/revenue/TipCreator';
 import { useAvailability } from '../../../src/hooks/useAvailability';
 import {
-  getCreatorTracks,
   getCreatorEvents,
   getMessages,
   sendMessage
@@ -125,11 +124,17 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
         setIsLoading(true);
         setError(null);
 
-        // Load tracks only if not already loaded
         if (tracks.length === 0) {
           try {
-            const { data: tracksData } = await getCreatorTracks(creator.id);
-            setTracks(tracksData || []);
+            const tr = await fetch(`/api/creator/${encodeURIComponent(username)}/tracks`, {
+              cache: 'no-store',
+            });
+            const trJson = await tr.json().catch(() => null);
+            if (tr.ok && trJson?.success && Array.isArray(trJson.data)) {
+              setTracks(trJson.data as AudioTrack[]);
+            } else {
+              setTracks([]);
+            }
           } catch (trackError) {
             console.error('Error loading tracks:', trackError);
             setTracks([]);
@@ -183,6 +188,38 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
 
     loadCreatorData();
   }, [creator.id, username, user]); // Removed availabilityActions to prevent infinite loop
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAlbums = async () => {
+      setAlbumsLoading(true);
+      setAlbumsError(null);
+      try {
+        const res = await fetch(`/api/creator/${encodeURIComponent(username)}/albums`, {
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (res.ok && json?.success && Array.isArray(json.data)) {
+          setCreatorAlbums(json.data as CreatorAlbumCard[]);
+        } else {
+          setCreatorAlbums([]);
+          setAlbumsError(typeof json?.error === 'string' ? json.error : 'Failed to load albums');
+        }
+      } catch {
+        if (!cancelled) {
+          setCreatorAlbums([]);
+          setAlbumsError('Failed to load albums');
+        }
+      } finally {
+        if (!cancelled) setAlbumsLoading(false);
+      }
+    };
+    void loadAlbums();
+    return () => {
+      cancelled = true;
+    };
+  }, [username]);
 
   // Load user tier for tipping features
   useEffect(() => {
@@ -532,11 +569,12 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                       {isUserOnline(creator.id) ? 'Online' : 'Offline'}
                     </div>
                   )}
-                  {(creator as Record<string, unknown>).rating_count != null && Number((creator as Record<string, unknown>).rating_count) > 0 && (
+                  {creator.rating_count != null && Number(creator.rating_count) > 0 && (
                     <div className="flex items-center gap-1.5 mb-2 text-amber-400">
                       <Star className="h-4 w-4 fill-current" />
                       <span className="text-gray-300">
-                        {(Number((creator as Record<string, unknown>).rating_avg) || 0).toFixed(1)} · {Number((creator as Record<string, unknown>).rating_count)} {Number((creator as Record<string, unknown>).rating_count) === 1 ? 'review' : 'reviews'}
+                        {(Number(creator.rating_avg) || 0).toFixed(1)} · {Number(creator.rating_count)}{' '}
+                        {Number(creator.rating_count) === 1 ? 'review' : 'reviews'}
                       </span>
                     </div>
                   )}

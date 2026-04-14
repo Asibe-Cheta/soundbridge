@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
+import { isEarlyAdopterPremiumGrant, resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         .select('subscription_tier, early_adopter, subscription_period_end')
         .eq('id', user.id)
         .maybeSingle(),
-      supabase
+      service
         .from('user_subscriptions')
         .select('tier')
         .eq('user_id', user.id)
@@ -80,6 +80,24 @@ export async function GET(request: NextRequest) {
       profile,
       (subscription?.tier as string | null | undefined) || normalizedTier,
     );
+
+    if (profile && isEarlyAdopterPremiumGrant(profile)) {
+      return NextResponse.json(
+        {
+          success: true,
+          quota: {
+            tier: effectiveTier,
+            upload_limit: null,
+            uploads_this_month: quota.uploads_this_month,
+            remaining: null,
+            reset_date: quota.reset_date ?? null,
+            is_unlimited: effectiveTier === 'unlimited',
+            can_upload: true,
+          },
+        },
+        { status: 200, headers: corsHeaders },
+      );
+    }
 
     // If quota function returns free while user has active manual premium/unlimited grant,
     // override response tier and minimum limits so frontend gates align with backend grants.

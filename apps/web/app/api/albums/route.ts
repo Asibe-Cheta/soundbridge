@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
+import {
+  ALBUM_PUBLISHED_COUNT_LIMITS,
+  resolveAlbumTierForLimits,
+  type ProfileTierInput,
+} from '@/src/lib/effective-subscription-tier';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,30 +26,7 @@ export async function OPTIONS() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              cookieStore.set({ name, value, ...options });
-            } catch (error) {}
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set({ name, value: '', ...options });
-            } catch (error) {}
-          },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -50,10 +34,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const service = createServiceClient();
+    const { data: profileRow } = await service
+      .from('profiles')
+      .select('early_adopter, subscription_tier, subscription_period_end')
+      .eq('id', user.id)
+      .maybeSingle();
+    const profile = profileRow as ProfileTierInput | null;
+
+    const albumTier = resolveAlbumTierForLimits(profile);
+    const albumLimit = ALBUM_PUBLISHED_COUNT_LIMITS[albumTier];
+
+    if (albumLimit === 0) {
+      return NextResponse.json(
+        {
+          error: 'Album creation requires Premium or Unlimited.',
+          details: 'Upgrade your plan to publish albums.',
+          upgrade_required: true,
+        },
+        { status: 403, headers: corsHeaders },
+      );
+    }
+
+    if (albumLimit > 0) {
+      const { count, error: countError } = await service
+        .from('albums')
+        .select('*', { count: 'exact', head: true })
+        .eq('creator_id', user.id)
+        .eq('status', 'published');
+
+      if (!countError && (count ?? 0) >= albumLimit) {
+        return NextResponse.json(
+          {
+            error: 'Album limit reached',
+            details: `You can have up to ${albumLimit} published albums on your current plan.`,
+            upgrade_required: true,
+            limit: albumLimit,
+            current: count ?? 0,
+          },
+          { status: 403, headers: corsHeaders },
+        );
+      }
+    }
+
     const body = await request.json();
     const { title, description, cover_image_url, release_date, status, genre, is_public } = body;
 
-    // Create album (all tiers; storage quota is enforced elsewhere on uploads)
     const { data: album, error: createError } = await supabase
       .from('albums')
       .insert({

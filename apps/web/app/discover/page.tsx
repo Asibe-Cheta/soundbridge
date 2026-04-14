@@ -14,8 +14,6 @@ import { AdvancedFilters } from '../../src/components/ui/AdvancedFilters';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { useSearch } from '../../src/hooks/useSearch';
-import { searchCreators } from '../../src/lib/creator';
-import { createBrowserClient } from '@/src/lib/supabase';
 import type { Event } from '../../src/lib/types/creator';
 import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search';
 import type { AudioTrack } from '../../src/lib/types/audio';
@@ -38,12 +36,6 @@ export default function DiscoverPage() {
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [sortBy, setSortBy] = useState('trending');
   const [activeTab, setActiveTab] = useState('music');
-  const supabase = React.useMemo(() => createBrowserClient(), []);
-  const allowedModerationStatuses = React.useMemo(
-    () => ['pending_check', 'checking', 'clean', 'approved'],
-    []
-  );
-
   // Handle URL parameters for tab selection
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -248,63 +240,72 @@ export default function DiscoverPage() {
         setIsLoading(true);
         setError(null);
 
-        const filters = {
-          genre: selectedGenre !== 'all' ? selectedGenre : undefined,
-          location: selectedLocation !== 'all' ? selectedLocation : undefined,
-          country: selectedLocation.includes('nigeria') ? 'Nigeria' as const :
-            selectedLocation.includes('uk') ? 'UK' as const : undefined
-        };
-
-        const { data: creatorsData, error } = await searchCreators(filters);
-
-        if (error) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const res = await fetch('/api/discover/creators?limit=20', {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success || !Array.isArray(json.data)) {
           setError('Failed to load creators');
+          setCreators([]);
           return;
         }
 
-        // Transform the data to match the expected interface
-        const transformedCreators = (creatorsData || []).map(creator => ({
+        const creatorsData = json.data as Array<{
+          profile: Record<string, unknown>;
+          stats: Record<string, unknown>;
+          recent_tracks?: unknown[];
+          upcoming_events?: unknown[];
+        }>;
+
+        const transformedCreators = creatorsData.map((creator) => ({
           profile: {
-            id: creator.profile.id,
-            username: creator.profile?.username || '',
+            id: creator.profile.id as string,
+            username: (creator.profile.username as string) || '',
             display_name:
-              creator.profile.display_name ||
-              (creator.profile as Record<string, unknown>).full_name ||
+              (creator.profile.display_name as string) ||
+              (creator.profile.full_name as string) ||
+              (creator.profile.username as string) ||
               'Unknown Creator',
-            bio: creator.profile.bio || null,
-            avatar_url: creator.profile.avatar_url || null,
-            banner_url: (creator.profile as Record<string, unknown>).banner_url as string | null || null,
+            bio: (creator.profile.bio as string) || null,
+            avatar_url: (creator.profile.avatar_url as string) || null,
+            banner_url: (creator.profile.banner_url as string) || null,
             role:
-              ((creator.profile as Record<string, unknown>).role === 'organizer'
-                ? 'creator'
-                : creator.profile.role) as 'creator' | 'listener',
-            location: creator.profile.location || null,
+              (creator.profile.role === 'organizer' ? 'creator' : creator.profile.role) as
+                | 'creator'
+                | 'listener',
+            location: (creator.profile.location as string) || null,
             country: creator.profile.country as 'UK' | 'Nigeria' | null,
-            social_links: (creator.profile as Record<string, unknown>).social_links as Record<string, string> || {},
-            created_at: creator.profile.created_at,
-            updated_at: creator.profile.updated_at,
-            followers_count: creator.stats.followers_count,
-            following_count: (creator.stats as Record<string, unknown>).following_count as number || 0,
-            tracks_count: creator.stats.tracks_count,
-            events_count: creator.stats.events_count,
-            is_following: false // Default value, would need separate API call to determine
+            social_links: (creator.profile.social_links as Record<string, string>) || {},
+            created_at: creator.profile.created_at as string,
+            updated_at: (creator.profile.updated_at as string) || (creator.profile.created_at as string),
+            followers_count: (creator.stats.followers_count as number) || 0,
+            following_count: (creator.stats.following_count as number) || 0,
+            tracks_count: (creator.stats.tracks_count as number) || 0,
+            events_count: (creator.stats.events_count as number) || 0,
+            is_following: false,
           },
           stats: {
-            followers_count: creator.stats.followers_count,
-            following_count: (creator.stats as Record<string, unknown>).following_count as number || 0,
-            tracks_count: creator.stats.tracks_count,
-            events_count: creator.stats.events_count,
-            total_plays: (creator.stats as Record<string, unknown>).total_plays as number || 0,
-            total_likes: (creator.stats as Record<string, unknown>).total_likes as number || 0
+            followers_count: (creator.stats.followers_count as number) || 0,
+            following_count: (creator.stats.following_count as number) || 0,
+            tracks_count: (creator.stats.tracks_count as number) || 0,
+            events_count: (creator.stats.events_count as number) || 0,
+            total_plays: (creator.stats.total_plays as number) || 0,
+            total_likes: (creator.stats.total_likes as number) || 0,
           },
-          recent_tracks: [] as never[], // Use empty array to avoid type conflicts
-          upcoming_events: (creator as unknown as Record<string, unknown>).upcoming_events as Event[] || []
+          recent_tracks: (creator.recent_tracks || []) as never[],
+          upcoming_events: (creator.upcoming_events || []) as Event[],
         }));
 
         setCreators(transformedCreators);
       } catch (err) {
         console.error('Error loading creators:', err);
         setError('Failed to load creators');
+        setCreators([]);
       } finally {
         setIsLoading(false);
       }
@@ -313,64 +314,41 @@ export default function DiscoverPage() {
     loadCreators();
   }, [selectedGenre, selectedLocation]);
 
-  // Keep web Discover tabs consistent with mobile filters:
-  // Albums: albums.is_public=true AND status='published'
-  // Podcasts: audio_tracks.is_public=true AND content_type='podcast' AND moderation_status in allowlist
-  // Mixtapes: audio_tracks.is_public=true AND is_mixtape=true AND moderation_status in allowlist
+  // Discover Albums / Podcasts / Mixtapes — server API (service role) matches mobile queries; avoids client RLS hangs.
   useEffect(() => {
     const loadDiscoverTabData = async () => {
       try {
         setDiscoverTabLoading(true);
-        const [albumsRes, podcastsRes, mixtapesRes] = await Promise.all([
-          supabase
-            .from('albums')
-            .select(`
-              id, title, description, cover_image_url, release_date, genre,
-              tracks_count, total_duration, total_plays, total_likes, created_at, published_at,
-              creator:profiles!albums_creator_id_fkey(id, username, display_name, avatar_url, role)
-            `)
-            .eq('is_public', true)
-            .eq('status', 'published')
-            .order('total_plays', { ascending: false })
-            .limit(20),
-          supabase
-            .from('audio_tracks')
-            .select(`
-              id, title, description, audio_url, file_url, cover_art_url, duration,
-              play_count, like_count, created_at,
-              creator:profiles!audio_tracks_creator_id_fkey(id, username, display_name, avatar_url)
-            `)
-            .eq('is_public', true)
-            .eq('content_type', 'podcast')
-            .in('moderation_status', allowedModerationStatuses)
-            .order('created_at', { ascending: false })
-            .limit(20),
-          supabase
-            .from('audio_tracks')
-            .select(`
-              id, title, description, audio_url, file_url, cover_art_url, duration,
-              play_count, like_count, created_at,
-              creator:profiles!audio_tracks_creator_id_fkey(id, username, display_name, avatar_url)
-            `)
-            .eq('is_public', true)
-            .eq('is_mixtape', true)
-            .in('moderation_status', allowedModerationStatuses)
-            .order('created_at', { ascending: false })
-            .limit(20),
-        ]);
-
-        if (!albumsRes.error) setDiscoverAlbums(albumsRes.data || []);
-        if (!podcastsRes.error) setDiscoverPodcasts(podcastsRes.data || []);
-        if (!mixtapesRes.error) setDiscoverMixtapes(mixtapesRes.data || []);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const res = await fetch('/api/discover/tabs', {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const json = await res.json().catch(() => null);
+        if (res.ok && json?.success && json?.data) {
+          setDiscoverAlbums(json.data.albums || []);
+          setDiscoverPodcasts(json.data.podcasts || []);
+          setDiscoverMixtapes(json.data.mixtapes || []);
+        } else {
+          setDiscoverAlbums([]);
+          setDiscoverPodcasts([]);
+          setDiscoverMixtapes([]);
+        }
       } catch (err) {
         console.error('Error loading discover tabs:', err);
+        setDiscoverAlbums([]);
+        setDiscoverPodcasts([]);
+        setDiscoverMixtapes([]);
       } finally {
         setDiscoverTabLoading(false);
       }
     };
 
     loadDiscoverTabData();
-  }, [supabase, allowedModerationStatuses]);
+  }, []);
 
   const handleClearFilters = () => {
     setSearchQuery('');
@@ -811,7 +789,9 @@ export default function DiscoverPage() {
                           color: 'white',
                           fontSize: '2rem'
                         }}>
-                          {creator.profile.display_name.substring(0, 2).toUpperCase()}
+                          {(creator.profile.display_name || creator.profile.username || 'C')
+                            .substring(0, 2)
+                            .toUpperCase()}
                         </div>
                       )}
                       <div className="play-button">▶</div>

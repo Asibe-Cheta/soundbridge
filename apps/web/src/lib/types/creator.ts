@@ -20,6 +20,9 @@ export interface CreatorProfile {
   tracks_count?: number;
   events_count?: number;
   is_following?: boolean;
+  /** Service-provider / profile aggregates when present */
+  rating_avg?: number | null;
+  rating_count?: number | null;
 }
 
 export interface AudioTrack {

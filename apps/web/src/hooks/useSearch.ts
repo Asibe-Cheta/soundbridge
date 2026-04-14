@@ -206,7 +206,7 @@ export function useSearch() {
   }, [state.query, state.filters, debouncedSearch]);
 
   // Get trending content
-  const getTrendingContent = useCallback(async (limit = 20) => {
+  const getTrendingContent = useCallback(async (limit = 20): Promise<SearchResult | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
@@ -218,7 +218,7 @@ export function useSearch() {
           loading: false,
           error: error.message || 'Failed to load trending content'
         }));
-        return;
+        return null;
       }
 
       setState(prev => ({
@@ -226,12 +226,14 @@ export function useSearch() {
         results: data,
         loading: false
       }));
+      return data ?? null;
     } catch (error) {
       setState(prev => ({
         ...prev,
         loading: false,
         error: 'Failed to load trending content'
       }));
+      return null;
     }
   }, []);
 

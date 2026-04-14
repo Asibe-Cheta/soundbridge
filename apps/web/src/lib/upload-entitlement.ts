@@ -1,9 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  isEarlyAdopterPremiumGrant,
   resolveEffectiveTier,
   type EffectiveTier,
   type ProfileTierInput,
 } from '@/src/lib/effective-subscription-tier';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export const PREMIUM_UPLOADS_PER_MONTH = 7;
 export const FREE_LIFETIME_UPLOADS = 3;
@@ -33,16 +35,17 @@ export function parseCheckUploadLimitResult(data: unknown): CheckUploadLimitRow 
 }
 
 export async function fetchProfileAndActiveSubscriptionTier(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   userId: string,
 ): Promise<{ profile: ProfileTierInput | null; subscriptionTier: string | null }> {
+  const service = createServiceClient();
   const [{ data: profile }, { data: subscription }] = await Promise.all([
-    supabase
+    service
       .from('profiles')
       .select('early_adopter, subscription_tier, subscription_period_end')
       .eq('id', userId)
       .maybeSingle(),
-    supabase
+    service
       .from('user_subscriptions')
       .select('tier')
       .eq('user_id', userId)
@@ -109,6 +112,20 @@ export async function canUserUploadNow(supabase: SupabaseClient, userId: string)
     p_user_id: userId,
   });
   const limitRow = rpcError ? null : parseCheckUploadLimitResult(rpcData);
+
+  if (profile && isEarlyAdopterPremiumGrant(profile)) {
+    return {
+      allowed: true,
+      effectiveTier,
+      limitRow: {
+        can_upload: true,
+        uploads_used: limitRow?.uploads_used ?? 0,
+        uploads_limit: -1,
+        limit_type: effectiveTier === 'unlimited' ? 'unlimited' : 'early_adopter_grant',
+        reset_date: limitRow?.reset_date ?? null,
+      },
+    };
+  }
 
   if (effectiveTier === 'unlimited') {
     return {

@@ -22,7 +22,7 @@ interface TipCreatorProps {
   creatorId: string;
   creatorName: string;
   onTipSent?: (amount: number) => void;
-  userTier?: 'free' | 'pro';
+   userTier?: 'free' | 'pro' | 'enterprise';
 }
 
 const SUGGESTED_AMOUNTS = [5, 10, 25, 50, 100];
