@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Post } from '@/src/lib/types/post';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { dataService } from '@/src/lib/data-service';
 import {
   TrendingUp, Briefcase, Plus, Radio, Music,
   ExternalLink, Loader2, ArrowRight, Flame
@@ -46,6 +45,24 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
   const loadOpportunitiesRef = useRef<() => Promise<void>>();
   const loadSuggestionsRef = useRef<() => Promise<void>>();
 
+  const fetchJsonWithTimeout = useCallback(async (url: string, timeoutMs = 10000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      const json = await res.json().catch(() => null);
+      return { ok: res.ok, json };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, []);
+
   loadOpportunitiesRef.current = async () => {
     try {
       setLoadingOpportunities(true);
@@ -53,11 +70,14 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
       console.log('🚀 Loading sidebar opportunities using direct Supabase query...');
       const startTime = Date.now();
 
-      // Use direct Supabase query instead of API route
-      const { data: opportunitiesData, error } = await dataService.getOpportunities(3);
-
-      if (!error && opportunitiesData) {
-        setOpportunities(opportunitiesData.slice(0, 3));
+      const { ok, json } = await fetchJsonWithTimeout('/api/opportunities?limit=3', 12000);
+      if (ok && json?.items) {
+        const mapped = (json.items as any[]).slice(0, 3).map((item) => ({
+          id: item.id,
+          content: item.title || item.description || 'Opportunity',
+          author: null,
+        })) as unknown as Post[];
+        setOpportunities(mapped);
         console.log(`✅ Sidebar opportunities loaded in ${Date.now() - startTime}ms`);
       }
     } catch (error) {
@@ -76,23 +96,21 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
       console.log('🚀 Loading sidebar suggestions using direct Supabase query...');
       const startTime = Date.now();
 
-      // Use direct Supabase query instead of API route
-      const { data: suggestionsData, error } = await dataService.getConnectionSuggestions(effectiveUserId, 5);
+      const { ok, json } = await fetchJsonWithTimeout('/api/connections/suggestions?limit=5', 12000);
 
-      if (!error && suggestionsData) {
-        // Map to match the UI format
-        const formattedSuggestions = suggestionsData.map(profile => ({
-          id: profile.id,
+      if (ok && json?.success && json?.data?.suggestions) {
+        const formattedSuggestions = (json.data.suggestions as any[]).map((suggestion) => ({
+          id: suggestion.id,
           user: {
-            id: profile.id,
-            name: profile.display_name,
-            username: profile.username,
-            avatar_url: profile.avatar_url,
-            role: 'creator',
-            is_verified: profile.is_verified || false
+            id: suggestion.user?.id,
+            name: suggestion.user?.name || 'User',
+            username: suggestion.user?.username,
+            avatar_url: suggestion.user?.avatar_url,
+            role: suggestion.user?.role || 'creator',
+            is_verified: suggestion.user?.is_verified || false,
           },
-          reason: profile.location ? `Based on location: ${profile.location}` : 'Suggested for you',
-          mutual_connections: 0
+          reason: suggestion.reason || 'Suggested for you',
+          mutual_connections: suggestion.mutual_connections || 0,
         }));
 
         setSuggestions(formattedSuggestions.slice(0, 5));
@@ -120,7 +138,7 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
     } else {
       setLoadingSuggestions(false);
     }
-  }, [effectiveUserId]);
+  }, [effectiveUserId, fetchJsonWithTimeout]);
 
   return (
     <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">

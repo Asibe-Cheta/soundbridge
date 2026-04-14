@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
 
     // Execute with increased timeout to match client 30s timeout
     const { data: posts, error: postsError } = await withQueryTimeout(query, 20000) as any;
-    const filteredPosts = (posts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
+    let filteredPosts = (posts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
 
     // Enhanced logging for debugging
     console.log('📊 Query result:', {
@@ -129,6 +129,27 @@ export async function GET(request: NextRequest) {
       errorCode: postsError?.code || null,
       errorDetails: postsError?.details || null,
     });
+
+    // Fallback: if user-context/RLS query returns empty, try public feed with service role.
+    if (filteredPosts.length === 0) {
+      try {
+        const { data: publicPosts } = await withQueryTimeout(
+          service
+            .from('posts')
+            .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
+            .is('deleted_at', null)
+            .or('is_private.is.null,is_private.eq.false')
+            .eq('visibility', 'public')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + safeLimit - 1),
+          10000
+        ) as any;
+        filteredPosts = (publicPosts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
+        console.log('🛟 Service-role public fallback posts:', filteredPosts.length);
+      } catch (fallbackErr) {
+        console.warn('⚠️ Public feed fallback failed:', fallbackErr);
+      }
+    }
 
     // If we got posts, fetch authors and repost status separately (faster than JOIN)
     if (filteredPosts.length > 0) {

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { dataService } from '@/src/lib/data-service';
-import { createBrowserClient } from '@/src/lib/supabase';
 import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 import {
   User, Bookmark, Activity, Radio, Calendar, Briefcase,
@@ -43,6 +42,24 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
   const loadProfileDataRef = useRef<() => Promise<void>>();
   const loadStatsRef = useRef<() => Promise<void>>();
 
+  const fetchJsonWithTimeout = useCallback(async (url: string, timeoutMs = 10000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      const json = await res.json().catch(() => null);
+      return { ok: res.ok, json };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, []);
+
   loadProfileDataRef.current = async () => {
     if (!effectiveUserId) return;
     
@@ -50,15 +67,9 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
       console.log('🚀 Loading profile data using direct Supabase query...');
       const startTime = Date.now();
 
-      // Use direct Supabase query instead of API route
-      const supabase = createBrowserClient();
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, bio, avatar_url, trusted_flagger')
-        .eq('id', effectiveUserId)
-        .single();
-
-      if (error) {
+      const { ok, json } = await fetchJsonWithTimeout(`/api/profile?user_id=${effectiveUserId}`, 12000);
+      const profileData = json?.profile;
+      if (!ok || !profileData) {
         console.warn('Profile not found, using auth user data');
       } else if (profileData) {
         setProfile({
