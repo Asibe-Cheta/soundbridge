@@ -16,7 +16,7 @@ interface ProfileData {
   id: string;
   username?: string;
   display_name?: string;
-  professional_headline?: string;
+  bio?: string;
   avatar_url?: string;
   is_verified?: boolean;
 }
@@ -54,14 +54,17 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
       const supabase = createBrowserClient();
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, professional_headline, avatar_url, is_verified')
+        .select('id, username, display_name, bio, avatar_url, trusted_flagger')
         .eq('id', effectiveUserId)
         .single();
 
       if (error) {
         console.warn('Profile not found, using auth user data');
       } else if (profileData) {
-        setProfile(profileData);
+        setProfile({
+          ...profileData,
+          is_verified: profileData.trusted_flagger === true,
+        });
         console.log(`✅ Profile loaded in ${Date.now() - startTime}ms`);
       }
     } catch (error) {
@@ -123,7 +126,7 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
     || user?.user_metadata?.full_name 
     || user?.email?.split('@')[0] 
     || 'Unknown';
-  const headline = profile?.professional_headline || '';
+  const headline = profile?.bio ? String(profile.bio).slice(0, 120) : '';
 
   return (
     <aside className="w-64 flex-shrink-0 hidden lg:block">

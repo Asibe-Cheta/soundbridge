@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       .from('posts')
       .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
       .is('deleted_at', null)
-      .eq('is_private', false) // Exclude private posts (grace period excess content)
+      .or('is_private.is.null,is_private.eq.false') // Exclude private posts; include legacy null rows
       // Removed: .eq('visibility', 'public') - RLS handles this now
       .order('created_at', { ascending: false })
       .range(offset, offset + safeLimit - 1);
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         const { data: authors } = await withQueryTimeout(
           supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url, role, location, professional_headline, bio, is_verified')
+            .select('id, username, display_name, avatar_url, role, location, bio, trusted_flagger')
             .in('id', userIds),
           10000 // 10s timeout for author lookup
         ) as any;
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
         if (authors) {
           const authorsMap = new Map(authors.map((a: any) => [a.id, {
             ...a,
-            headline: a.professional_headline || null,
+            headline: a.bio ? String(a.bio).slice(0, 120) : null,
             bio: a.bio || null,
           }]));
           filteredPosts.forEach((post: any) => {
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
                 role: author.role || null,
                 headline: author.headline,
                 bio: author.bio,
-                is_verified: author.is_verified || false,
+                is_verified: author.trusted_flagger === true,
               };
             } else {
               post.author = null;
@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
               const { data: originalAuthors } = await withQueryTimeout(
                 supabase
                   .from('profiles')
-                  .select('id, username, display_name, avatar_url, professional_headline, bio, is_verified')
+                  .select('id, username, display_name, avatar_url, bio, trusted_flagger')
                   .in('id', originalAuthorIds),
                 5000 // 5s timeout
               ) as any;
@@ -309,9 +309,9 @@ export async function GET(request: NextRequest) {
                         username: originalAuthor.username || '',
                         display_name: originalAuthor.display_name || originalAuthor.username || 'User',
                         avatar_url: originalAuthor.avatar_url || null,
-                        headline: originalAuthor.professional_headline || null,
+                        headline: originalAuthor.bio ? String(originalAuthor.bio).slice(0, 120) : null,
                         bio: originalAuthor.bio || null,
-                        is_verified: originalAuthor.is_verified || false,
+                        is_verified: originalAuthor.trusted_flagger === true,
                       } : {
                         id: originalPost.user_id,
                         username: '',

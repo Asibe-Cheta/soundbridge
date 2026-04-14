@@ -37,7 +37,7 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
   const [opportunities, setOpportunities] = useState<Post[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(true);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const hasLoadedRef = useRef(false);
   
   // Use prop userId if provided, otherwise fall back to auth user
@@ -106,15 +106,21 @@ export const FeedRightSidebar = React.memo(function FeedRightSidebar({ userId }:
   };
 
   useEffect(() => {
-    // Only load once when component mounts or effectiveUserId becomes available
+    // Load opportunities once regardless of auth
     if (!hasLoadedRef.current) {
       hasLoadedRef.current = true;
       loadOpportunitiesRef.current?.();
-      if (effectiveUserId) {
-        loadSuggestionsRef.current?.();
-      }
     }
-  }, [effectiveUserId]); // Only depend on effectiveUserId (primitive, stable)
+  }, []);
+
+  useEffect(() => {
+    // Load suggestions when auth user becomes available
+    if (effectiveUserId) {
+      loadSuggestionsRef.current?.();
+    } else {
+      setLoadingSuggestions(false);
+    }
+  }, [effectiveUserId]);
 
   return (
     <aside className="w-80 flex-shrink-0 hidden lg:block sticky top-24">

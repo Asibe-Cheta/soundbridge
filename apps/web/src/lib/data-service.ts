@@ -252,7 +252,7 @@ class DataService {
       // Build query for suggestions
       let query = this.supabase
         .from('profiles')
-        .select('id, username, display_name, bio, avatar_url, followers_count, location, is_verified')
+        .select('id, username, display_name, bio, avatar_url, followers_count, location, trusted_flagger')
         .neq('id', userId)
         .order('followers_count', { ascending: false })
         .limit(limit);
@@ -562,7 +562,7 @@ class DataService {
       const userIds = [...new Set(posts.map((p: any) => p.user_id))];
       const { data: authors } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, location, is_verified')
+        .select('id, username, display_name, avatar_url, role, location, trusted_flagger')
         .in('id', userIds);
 
       // Map authors to posts
@@ -579,7 +579,7 @@ class DataService {
             avatar_url: authorData.avatar_url,
             role: authorData.role || null,
             location: authorData.location || null,
-            is_verified: authorData.is_verified || false,
+            is_verified: authorData.trusted_flagger === true,
           } : {
             id: post.user_id,
             name: 'Unknown User',
@@ -633,7 +633,7 @@ class DataService {
       const profileIds = [...new Set(follows.map((f: any) => f[targetColumn]))];
       const { data: profiles } = await this.supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, role, location, bio, followers_count, is_verified')
+        .select('id, username, display_name, avatar_url, role, location, bio, followers_count, trusted_flagger')
         .in('id', profileIds);
 
       // Map profiles to follows
@@ -650,7 +650,7 @@ class DataService {
             role: profile?.role || null,
             location: profile?.location || null,
             bio: profile?.bio || '',
-            is_verified: profile?.is_verified || false
+            is_verified: profile?.trusted_flagger === true
           },
           followers_count: profile?.followers_count || 0,
           created_at: follow.created_at
