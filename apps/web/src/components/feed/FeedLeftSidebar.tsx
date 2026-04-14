@@ -92,14 +92,21 @@ export const FeedLeftSidebar = React.memo(function FeedLeftSidebar({ userId }: F
       console.log('🚀 Loading sidebar stats using direct Supabase queries...');
       const startTime = Date.now();
 
-      // Get connection count using direct query
-      const { data: connections } = await dataService.getConnections(effectiveUserId, 'following', 1000);
+      // Mobile-style follows counts
+      const [{ data: followers }, { data: following }] = await Promise.all([
+        dataService.getConnections(effectiveUserId, 'followers', 1000),
+        dataService.getConnections(effectiveUserId, 'following', 1000),
+      ]);
 
       // Get pending requests using direct query
       const { data: requests } = await dataService.getConnectionRequests(effectiveUserId, 'received');
 
+      const uniqueConnectionIds = new Set<string>();
+      (followers || []).forEach((c: any) => uniqueConnectionIds.add(c.user?.id || c.id));
+      (following || []).forEach((c: any) => uniqueConnectionIds.add(c.user?.id || c.id));
+
       setStats({
-        connectionCount: connections?.length || 0,
+        connectionCount: uniqueConnectionIds.size,
         pendingRequests: requests?.length || 0,
       });
 

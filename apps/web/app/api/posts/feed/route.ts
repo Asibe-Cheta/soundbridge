@@ -1,13 +1,3 @@
-/**
- * OPTIMIZED GET /api/posts/feed
- *
- * Blazing fast feed endpoint with:
- * - Single optimized query
- * - Request timeout protection
- * - Minimal joins
- * - Simple sorting
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
@@ -37,16 +27,15 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    console.log('📰 Optimized Feed API called');
+    console.log('Feed API called');
 
-    // Authenticate user with timeout using helper
-    const { supabase, user, error: authError } = await withAuthTimeout(
+    const { user, error: authError } = await withAuthTimeout(
       getSupabaseRouteClient(request, true),
       5000
     );
 
     if (authError || !user) {
-      console.error('❌ Authentication failed');
+      console.error('Feed auth failed');
       logPerformance('/api/posts/feed', startTime);
       return NextResponse.json(
         {
@@ -58,427 +47,171 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('✅ User authenticated:', user.id);
     const service = createServiceClient();
-    const { data: blockRows } = await service
-      .from('user_blocks')
-      .select('blocker_id, blocked_id')
-      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`);
-    const blockedUserIds = new Set<string>();
-    for (const row of blockRows ?? []) {
-      if (row.blocker_id === user.id) blockedUserIds.add(row.blocked_id);
-      if (row.blocked_id === user.id) blockedUserIds.add(row.blocker_id);
-    }
 
-    // Verify Supabase client has correct user context for RLS
-    const { data: userCheck, error: userCheckError } = await supabase.auth.getUser();
-    if (userCheckError || !userCheck?.user || userCheck.user.id !== user.id) {
-      console.error('⚠️ Supabase client user context mismatch:', {
-        expectedUserId: user.id,
-        actualUserId: userCheck?.user?.id || null,
-        error: userCheckError?.message || null,
-      });
-    } else {
-      console.log('✅ Supabase client user context verified:', userCheck.user.id);
-    }
-
-    // Get query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
+    const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
     const limit = Math.min(parseInt(searchParams.get('limit') || '15'), 50);
-    const postType = searchParams.get('type');
     const offset = (page - 1) * limit;
-
-    // EMERGENCY OPTIMIZATION: Minimal query without JOIN
-    // Reduce limit to speed up query
-    const safeLimit = Math.min(limit, 20); // Cap at 20 for performance
-
-    // FIXED: Let RLS policy handle visibility (public + connections)
-    // The RLS policy automatically filters based on:
-    // 1. Public posts (everyone can see)
-    // 2. Connection posts (only connections can see)
-    // 3. User's own posts (always visible)
-    // Also filter out private posts (is_private = true) from grace period system
-    let query = supabase
-      .from('posts')
-      .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
-      .is('deleted_at', null)
-      .or('is_private.is.null,is_private.eq.false') // Exclude private posts; include legacy null rows
-      // Removed: .eq('visibility', 'public') - RLS handles this now
-      .order('created_at', { ascending: false })
-      .range(offset, offset + safeLimit - 1);
-
-    // Filter by post type if provided
-    if (postType) {
-      query = query.eq('post_type', postType);
-    }
-
-    console.log('🔍 Executing minimal query (no JOIN)...');
-    console.log('📋 Query params:', { page, limit: safeLimit, offset, postType, userId: user.id });
-
-    // Execute with increased timeout to match client 30s timeout
-    const { data: posts, error: postsError } = await withQueryTimeout(query, 20000) as any;
-    let filteredPosts = (posts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
-
-    // Enhanced logging for debugging
-    console.log('📊 Query result:', {
-      postsCount: posts?.length || 0,
-      filteredPostsCount: filteredPosts.length,
-      hasError: !!postsError,
-      errorMessage: postsError?.message || null,
-      errorCode: postsError?.code || null,
-      errorDetails: postsError?.details || null,
-    });
-
-    // Fallback: if user-context/RLS query returns empty, try service-role feed with explicit visibility rules.
-    if (filteredPosts.length === 0) {
-      try {
-        const connectedIds = new Set<string>();
-        connectedIds.add(user.id);
-
-        // connections table path
-        const { data: connectionRows } = await service
-          .from('connections')
-          .select('user_id, connected_user_id, status')
-          .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
-          .limit(200);
-        for (const row of connectionRows ?? []) {
-          const status = (row as any).status;
-          if (status && status !== 'accepted') continue;
-          if ((row as any).user_id === user.id) connectedIds.add((row as any).connected_user_id);
-          if ((row as any).connected_user_id === user.id) connectedIds.add((row as any).user_id);
-        }
-
-        // follows table path (legacy/social graph)
-        const { data: followRows } = await service
-          .from('follows')
-          .select('follower_id, following_id')
-          .or(`follower_id.eq.${user.id},following_id.eq.${user.id}`)
-          .limit(200);
-        for (const row of followRows ?? []) {
-          if ((row as any).follower_id === user.id) connectedIds.add((row as any).following_id);
-          if ((row as any).following_id === user.id) connectedIds.add((row as any).follower_id);
-        }
-
-        const connectedArray = Array.from(connectedIds);
-        let fallbackQuery = service
-          .from('posts')
-          .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at, updated_at, reposted_from_id')
-          .is('deleted_at', null)
-          .or('is_private.is.null,is_private.eq.false')
-          .order('created_at', { ascending: false });
-
-        if (connectedArray.length > 0) {
-          const csv = connectedArray.join(',');
-          fallbackQuery = fallbackQuery.or(
-            `visibility.eq.public,and(visibility.eq.connections,user_id.in.(${csv})),user_id.eq.${user.id}`
-          );
-        } else {
-          fallbackQuery = fallbackQuery.eq('visibility', 'public');
-        }
-
-        const { data: fallbackPosts } = await withQueryTimeout(
-          fallbackQuery.range(offset, offset + safeLimit - 1),
-          10000
-        ) as any;
-        filteredPosts = (fallbackPosts || []).filter((post: any) => !blockedUserIds.has(post.user_id));
-        console.log('🛟 Service-role visibility fallback posts:', filteredPosts.length);
-      } catch (fallbackErr) {
-        console.warn('⚠️ Public feed fallback failed:', fallbackErr);
-      }
-    }
-
-    // If we got posts, fetch authors and repost status separately (faster than JOIN)
-    if (filteredPosts.length > 0) {
-      const userIds = [...new Set(filteredPosts.map((p: any) => p.user_id))];
-      const postIds = filteredPosts.map((p: any) => p.id);
-
-      try {
-        // Fetch authors
-        const { data: authors } = await withQueryTimeout(
-          supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar_url, role, location, bio, trusted_flagger')
-            .in('id', userIds),
-          10000 // 10s timeout for author lookup
-        ) as any;
-
-        // Map authors to posts
-        if (authors) {
-          const authorsMap = new Map(authors.map((a: any) => [a.id, {
-            ...a,
-            headline: a.bio ? String(a.bio).slice(0, 120) : null,
-            bio: a.bio || null,
-          }]));
-          filteredPosts.forEach((post: any) => {
-            const author = authorsMap.get(post.user_id);
-            if (author) {
-              post.author = {
-                id: author.id,
-                username: author.username || '',
-                name: author.display_name || author.username || 'User',
-                display_name: author.display_name || author.username || 'User',
-                avatar_url: author.avatar_url || null,
-                role: author.role || null,
-                headline: author.headline,
-                bio: author.bio,
-                is_verified: author.trusted_flagger === true,
-              };
-            } else {
-              post.author = null;
-            }
-          });
-        }
-
-        // Fetch user's reposts to determine user_reposted status
-        const { data: userReposts } = await withQueryTimeout(
-          supabase
-            .from('post_reposts')
-            .select('post_id, repost_post_id')
-            .eq('user_id', user.id)
-            .in('post_id', postIds),
-          5000 // 5s timeout for repost lookup
-        ) as any;
-
-        // Create map of post_id -> repost_post_id for quick lookup
-        const repostsMap = new Map();
-        if (userReposts) {
-          userReposts.forEach((r: any) => {
-            repostsMap.set(r.post_id, r.repost_post_id);
-          });
-        }
-
-        // Add user_reposted and user_repost_id to each post
-        filteredPosts.forEach((post: any) => {
-          const repostPostId = repostsMap.get(post.id);
-          post.user_reposted = !!repostPostId;
-          post.user_repost_id = repostPostId || null;
-        });
-
-        // Fetch original posts for reposts (reposted_from object)
-        const repostedFromIds = filteredPosts
-          .map((p: any) => p.reposted_from_id)
-          .filter((id: any) => id !== null && id !== undefined);
-        
-        if (repostedFromIds.length > 0) {
-          try {
-            // Fetch original posts
-            const { data: originalPosts } = await withQueryTimeout(
-              supabase
-                .from('posts')
-                .select('id, user_id, content, visibility, post_type, media_urls, likes_count, comments_count, shares_count, created_at')
-                .in('id', repostedFromIds)
-                .is('deleted_at', null),
-              10000 // 10s timeout
-            ) as any;
-
-            if (originalPosts && originalPosts.length > 0) {
-              // Get original post authors
-              const originalAuthorIds = [...new Set(originalPosts.map((p: any) => p.user_id))];
-              const { data: originalAuthors } = await withQueryTimeout(
-                supabase
-                  .from('profiles')
-                  .select('id, username, display_name, avatar_url, bio, trusted_flagger')
-                  .in('id', originalAuthorIds),
-                5000 // 5s timeout
-              ) as any;
-
-              // Get original post attachments
-              const originalPostIds = originalPosts.map((p: any) => p.id);
-              const { data: originalAttachments } = await withQueryTimeout(
-                supabase
-                  .from('post_attachments')
-                  .select('*')
-                  .in('post_id', originalPostIds),
-                5000 // 5s timeout
-              ) as any;
-
-              // Get original post reactions
-              const { data: originalReactions } = await withQueryTimeout(
-                supabase
-                  .from('post_reactions')
-                  .select('post_id, reaction_type')
-                  .in('post_id', originalPostIds),
-                5000 // 5s timeout
-              ) as any;
-
-              // Build maps for quick lookup
-              const originalPostsMap = new Map(originalPosts.map((p: any) => [p.id, p]));
-              const originalAuthorsMap = new Map((originalAuthors || []).map((a: any) => [a.id, a]));
-              
-              // Group attachments by post_id
-              const originalAttachmentsMap = new Map();
-              (originalAttachments || []).forEach((att: any) => {
-                if (!originalAttachmentsMap.has(att.post_id)) {
-                  originalAttachmentsMap.set(att.post_id, []);
-                }
-                originalAttachmentsMap.get(att.post_id).push(att);
-              });
-
-              // Calculate reaction counts for original posts
-              const originalReactionsMap = new Map();
-              originalPostIds.forEach((postId: string) => {
-                originalReactionsMap.set(postId, {
-                  support: 0,
-                  love: 0,
-                  fire: 0,
-                  congrats: 0,
-                });
-              });
-              
-              if (originalReactions) {
-                originalReactions.forEach((r: any) => {
-                  const counts = originalReactionsMap.get(r.post_id);
-                  if (counts && r.reaction_type in counts) {
-                    counts[r.reaction_type]++;
-                  }
-                });
-              }
-
-              // Map reposted_from object to each repost
-              filteredPosts.forEach((post: any) => {
-                if (post.reposted_from_id) {
-                  const originalPost = originalPostsMap.get(post.reposted_from_id);
-                  if (originalPost) {
-                    const originalAuthor = originalAuthorsMap.get(originalPost.user_id);
-                    const attachments = originalAttachmentsMap.get(originalPost.id) || [];
-                    const reactionsCount = originalReactionsMap.get(originalPost.id) || {
-                      support: 0,
-                      love: 0,
-                      fire: 0,
-                      congrats: 0,
-                    };
-
-                    // Extract primary image/audio from attachments
-                    const imageAttachment = attachments.find((a: any) => 
-                      a.attachment_type === 'image' || a.attachment_type === 'photo'
-                    );
-                    const audioAttachment = attachments.find((a: any) => 
-                      a.attachment_type === 'audio' || a.attachment_type === 'track'
-                    );
-
-                    post.reposted_from = {
-                      id: originalPost.id,
-                      content: originalPost.content,
-                      created_at: originalPost.created_at,
-                      visibility: originalPost.visibility,
-                      author: originalAuthor ? {
-                        id: originalAuthor.id,
-                        username: originalAuthor.username || '',
-                        display_name: originalAuthor.display_name || originalAuthor.username || 'User',
-                        avatar_url: originalAuthor.avatar_url || null,
-                        headline: originalAuthor.bio ? String(originalAuthor.bio).slice(0, 120) : null,
-                        bio: originalAuthor.bio || null,
-                        is_verified: originalAuthor.trusted_flagger === true,
-                      } : {
-                        id: originalPost.user_id,
-                        username: '',
-                        display_name: 'User',
-                        avatar_url: null,
-                        headline: null,
-                        bio: null,
-                        is_verified: false,
-                      },
-                      media_urls: originalPost.media_urls || [],
-                      image_url: imageAttachment?.file_url || null,
-                      audio_url: audioAttachment?.file_url || null,
-                      attachments: attachments,
-                      reactions_count: reactionsCount,
-                      comments_count: originalPost.comments_count || 0,
-                      shares_count: originalPost.shares_count || 0,
-                    };
-                  } else {
-                    // Original post not found (deleted or inaccessible)
-                    post.reposted_from = null;
-                  }
-                } else {
-                  // Not a repost
-                  post.reposted_from = null;
-                }
-              });
-            } else {
-              // No original posts found - set reposted_from to null
-              filteredPosts.forEach((post: any) => {
-                if (post.reposted_from_id) {
-                  post.reposted_from = null;
-                } else {
-                  post.reposted_from = null;
-                }
-              });
-            }
-          } catch (repostError) {
-            console.warn('⚠️ Failed to fetch reposted_from data, continuing without:', repostError);
-            // Set reposted_from to null for all posts if fetch fails
-            filteredPosts.forEach((post: any) => {
-              post.reposted_from = null;
-            });
-          }
-        } else {
-          // No reposts in this batch - set reposted_from to null for all
-          filteredPosts.forEach((post: any) => {
-            post.reposted_from = null;
-          });
-        }
-      } catch (fetchError) {
-        console.warn('⚠️ Failed to fetch authors/reposts, continuing without:', fetchError);
-        // Continue without authors/reposts - posts will have null author and user_reposted = false
-        filteredPosts.forEach((post: any) => {
-          post.user_reposted = false;
-          post.user_repost_id = null;
-          post.reposted_from = null;
-        });
-      }
-    }
-
-    logPerformance('/api/posts/feed (query)', startTime);
+    // 1) Base posts query (mobile source of truth)
+    const { data: posts, error: postsError } = await withQueryTimeout(
+      service
+        .from('posts')
+        .select('id, user_id, content, post_type, visibility, event_id, created_at, updated_at, reposted_from_id')
+        .is('deleted_at', null)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1),
+      12000
+    ) as any;
 
     if (postsError) {
-      console.error('❌ Error fetching posts:', {
-        message: postsError.message,
-        code: postsError.code,
-        details: postsError.details,
-        hint: postsError.hint,
-        userId: user.id,
-      });
-      logPerformance('/api/posts/feed', startTime);
+      throw postsError;
+    }
+
+    const postRows = posts || [];
+    if (postRows.length === 0) {
       return NextResponse.json(
-        createErrorResponse('Failed to load posts', {
-          posts: [],
-          pagination: { page, limit, total: 0, has_more: false }
-        }),
-        { status: 200, headers: corsHeaders }
+        {
+          success: true,
+          data: {
+            posts: [],
+            pagination: { page, limit, total: 0, has_more: false },
+          },
+        },
+        { headers: corsHeaders }
       );
     }
 
-    console.log(`📊 Found ${filteredPosts.length || 0} posts after block filter`);
-    
-    // Additional debug: Log first post if available
-    if (filteredPosts.length > 0) {
-      console.log('✅ Sample post:', {
-        id: filteredPosts[0].id,
-        userId: filteredPosts[0].user_id,
-        visibility: filteredPosts[0].visibility,
-        contentPreview: filteredPosts[0].content?.substring(0, 50) || 'N/A',
-      });
-    } else {
-      console.warn('⚠️ No posts returned - checking RLS policy...');
-      // Try a direct count query to verify RLS
-      const { count, error: countError } = await supabase
-        .from('posts')
-        .select('*', { count: 'exact', head: true })
-        .is('deleted_at', null)
-        .eq('visibility', 'public');
-      
-      console.log('🔍 RLS Check - Public posts count:', {
-        count,
-        countError: countError?.message || null,
-        userId: user.id,
-      });
+    const postIds = postRows.map((p: any) => p.id);
+    const userIds = Array.from(new Set(postRows.map((p: any) => p.user_id)));
+
+    // 2) Author profiles
+    const { data: authors } = await withQueryTimeout(
+      service
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, role, bio, professional_headline, subscription_tier, is_verified')
+        .in('id', userIds),
+      8000
+    ) as any;
+
+    // 3) Attachments
+    const { data: attachments } = await withQueryTimeout(
+      service
+        .from('post_attachments')
+        .select('post_id, attachment_type, file_url')
+        .in('post_id', postIds),
+      8000
+    ) as any;
+
+    // 4) Reactions
+    const { data: reactions } = await withQueryTimeout(
+      service
+        .from('post_reactions')
+        .select('post_id, reaction_type, user_id')
+        .in('post_id', postIds),
+      8000
+    ) as any;
+
+    // 5) Comments count
+    const { data: comments } = await withQueryTimeout(
+      service
+        .from('post_comments')
+        .select('post_id')
+        .in('post_id', postIds),
+      8000
+    ) as any;
+
+    // 6) Current user's reactions
+    const { data: userReactions } = await withQueryTimeout(
+      service
+        .from('post_reactions')
+        .select('post_id, reaction_type')
+        .in('post_id', postIds)
+        .eq('user_id', user.id),
+      8000
+    ) as any;
+
+    // 7) Reposted originals
+    const repostedFromIds = Array.from(new Set(postRows.map((p: any) => p.reposted_from_id).filter(Boolean)));
+    let repostedMap = new Map<string, any>();
+    if (repostedFromIds.length > 0) {
+      const { data: repostedPosts } = await withQueryTimeout(
+        service
+          .from('posts')
+          .select('id, user_id, content, created_at, visibility')
+          .in('id', repostedFromIds),
+        8000
+      ) as any;
+      repostedMap = new Map((repostedPosts || []).map((p: any) => [p.id, p]));
     }
 
-    // Estimate pagination without expensive count
-    const hasMore = filteredPosts.length === safeLimit;
-    const estimatedTotal = hasMore ? offset + safeLimit + 1 : offset + filteredPosts.length;
+    const authorsMap = new Map((authors || []).map((a: any) => [a.id, a]));
+    const attachmentsMap = new Map<string, { imageUrls: string[]; audioUrl: string | null }>();
+    for (const att of attachments || []) {
+      if (!attachmentsMap.has(att.post_id)) {
+        attachmentsMap.set(att.post_id, { imageUrls: [], audioUrl: null });
+      }
+      const entry = attachmentsMap.get(att.post_id)!;
+      if (att.attachment_type === 'image') entry.imageUrls.push(att.file_url);
+      if (att.attachment_type === 'audio' && !entry.audioUrl) entry.audioUrl = att.file_url;
+    }
+
+    const reactionsCountMap = new Map<string, { support: number; love: number; fire: number; congrats: number }>();
+    for (const postId of postIds) {
+      reactionsCountMap.set(postId, { support: 0, love: 0, fire: 0, congrats: 0 });
+    }
+    for (const reaction of reactions || []) {
+      const counts = reactionsCountMap.get(reaction.post_id);
+      if (!counts) continue;
+      if (reaction.reaction_type === 'support') counts.support += 1;
+      if (reaction.reaction_type === 'love') counts.love += 1;
+      if (reaction.reaction_type === 'fire') counts.fire += 1;
+      if (reaction.reaction_type === 'congrats') counts.congrats += 1;
+    }
+
+    const commentsCountMap = new Map<string, number>();
+    for (const c of comments || []) {
+      commentsCountMap.set(c.post_id, (commentsCountMap.get(c.post_id) || 0) + 1);
+    }
+
+    const userReactionMap = new Map<string, string>();
+    for (const ur of userReactions || []) {
+      userReactionMap.set(ur.post_id, ur.reaction_type);
+    }
+
+    const normalizedPosts = postRows.map((post: any) => {
+      const author = authorsMap.get(post.user_id);
+      const atts = attachmentsMap.get(post.id) || { imageUrls: [], audioUrl: null };
+      return {
+        id: post.id,
+        author: {
+          id: author?.id || post.user_id,
+          username: author?.username || null,
+          display_name: author?.display_name || author?.username || 'User',
+          avatar_url: author?.avatar_url || null,
+          role: author?.role || null,
+          headline: author?.professional_headline || null,
+          bio: author?.bio || null,
+          subscription_tier: author?.subscription_tier || null,
+          is_verified: Boolean(author?.is_verified),
+        },
+        content: post.content,
+        post_type: post.post_type,
+        visibility: post.visibility,
+        image_url: atts.imageUrls[0] || null,
+        image_urls: atts.imageUrls.length > 0 ? atts.imageUrls : null,
+        audio_url: atts.audioUrl,
+        event_id: post.event_id || null,
+        reactions_count: reactionsCountMap.get(post.id) || { support: 0, love: 0, fire: 0, congrats: 0 },
+        comments_count: commentsCountMap.get(post.id) || 0,
+        user_reaction: userReactionMap.get(post.id) || null,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        reposted_from_id: post.reposted_from_id || null,
+        reposted_from: post.reposted_from_id ? repostedMap.get(post.reposted_from_id) || null : null,
+      };
+    });
 
     logPerformance('/api/posts/feed', startTime);
 
@@ -487,12 +220,12 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         data: {
-          posts: filteredPosts || [],
+          posts: normalizedPosts,
           pagination: {
             page,
-            limit: safeLimit,
-            total: estimatedTotal,
-            has_more: hasMore,
+            limit,
+            total: offset + normalizedPosts.length,
+            has_more: normalizedPosts.length === limit,
           },
         },
       },
@@ -506,10 +239,9 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error: any) {
-    console.error('❌ Feed API error:', error);
+    console.error('Feed API error:', error);
     logPerformance('/api/posts/feed', startTime);
 
-    // Always return success with empty data to prevent client loading states
     return NextResponse.json(
       createErrorResponse(error.message || 'Request timeout', {
         posts: [],
