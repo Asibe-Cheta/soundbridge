@@ -11,7 +11,6 @@ import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/sr
 import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
-import { dataService } from '@/src/lib/data-service';
 import { useSocial } from '@/src/hooks/useSocial';
 
 export default function FeedPage() {
@@ -112,15 +111,29 @@ export default function FeedPage() {
 
       // Get current user ID from ref (always current, no stale closure)
       const currentUserId = userIdRef.current;
-      console.log('🚀 Fetching feed posts using direct Supabase query (like Discover)...', { pageNum, append, user: currentUserId });
+      console.log('🚀 Fetching feed posts from API...', { pageNum, append, user: currentUserId });
       const startTime = Date.now();
 
-      // Use direct Supabase query (NO API route, NO timeout issues)
-      const { data: newPosts, error: feedError, hasMore: hasMorePosts } = await dataService.getFeedPosts(pageNum, 15);
-
-      if (feedError) {
-        console.error('❌ Error fetching feed:', feedError);
-        throw new Error('Failed to load feed posts');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      let newPosts: Post[] = [];
+      let hasMorePosts = false;
+      try {
+        const res = await fetch(`/api/posts/feed?page=${pageNum}&limit=15`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || `Failed to load feed (${res.status})`);
+        }
+        newPosts = json?.data?.posts || [];
+        hasMorePosts = Boolean(json?.data?.pagination?.has_more);
+      } finally {
+        clearTimeout(timeoutId);
       }
 
       console.log(`✅ Feed posts loaded in ${Date.now() - startTime}ms:`, { count: newPosts.length, hasMore: hasMorePosts });
