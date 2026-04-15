@@ -193,7 +193,7 @@ export default function ContactPage() {
                     Address
                   </h3>
                   <p style={{ color: 'var(--text-secondary)' }}>
-                    Wokingham, United Kingdom
+                    United Kingdom
                   </p>
                 </div>
               </div>

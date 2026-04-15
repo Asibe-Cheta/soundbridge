@@ -11,7 +11,7 @@ const COMPANY = {
   number: '16854928',
   email: 'contact@soundbridge.live',
   website: 'soundbridge.live',
-  registeredAddress: '4 Whitlock House, 2 Cedar Grove, Wokingham, UK',
+  registeredAddress: 'United Kingdom',
   vatNote: 'VAT not applicable — SoundBridge Live Ltd is not currently VAT registered',
 } as const;
 

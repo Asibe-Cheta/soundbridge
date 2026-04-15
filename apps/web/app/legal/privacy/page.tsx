@@ -463,7 +463,7 @@ export default function PrivacyPolicy() {
             }}>
               <p style={{ color: 'var(--text-secondary)' }}>
                 <strong>Email:</strong> contact@soundbridge.live<br/>
-                <strong>Address:</strong> Wokingham, United Kingdom<br/>
+                <strong>Address:</strong> United Kingdom<br/>
                 <strong>Privacy Email:</strong> privacy@soundbridge.live<br/>
                 <strong>Data Protection Officer:</strong> dpo@soundbridge.live
               </p>
