@@ -8,6 +8,7 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Shield, Calendar, Clock } from 'lucide-react';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface Track {
   id: string;
@@ -100,9 +101,7 @@ export default function ModerationDashboard() {
       setDataLoading(true);
 
       // Fetch moderation queue
-      const queueResponse = await fetch(`/api/admin/moderation/queue?filter=${filter}`, {
-        credentials: 'include'
-      });
+      const queueResponse = await fetchWithSupabaseAuth(`/api/admin/moderation/queue?filter=${filter}`);
       
       // Check if response is unauthorized or forbidden
       if (queueResponse.status === 401) {
@@ -112,8 +111,9 @@ export default function ModerationDashboard() {
           await new Promise(resolve => setTimeout(resolve, 1000));
           return loadModerationData(1);
         }
-        console.error('Unauthorized after retry - redirecting to login');
-        router.push('/login');
+        console.error('Unauthorized after retry - keeping user on page');
+        setTracks([]);
+        setStats(null);
         return;
       }
       
@@ -138,17 +138,13 @@ export default function ModerationDashboard() {
       }
 
       // Fetch stats (with retry on 401)
-      let statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
-        credentials: 'include'
-      });
+      let statsResponse = await fetchWithSupabaseAuth('/api/admin/moderation/stats?days=7');
       
       // Retry once if 401 (cookie sync delay)
       if (statsResponse.status === 401 && retryCount === 0) {
         console.log('Stats API 401 on first attempt - retrying after delay');
         await new Promise(resolve => setTimeout(resolve, 1000));
-        statsResponse = await fetch('/api/admin/moderation/stats?days=7', {
-          credentials: 'include'
-        });
+        statsResponse = await fetchWithSupabaseAuth('/api/admin/moderation/stats?days=7');
       }
       
       if (statsResponse.status === 401 || statsResponse.status === 403) {
