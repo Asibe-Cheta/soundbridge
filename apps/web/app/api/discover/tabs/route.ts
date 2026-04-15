@@ -45,12 +45,11 @@ function normalizeTrackRow(row: Record<string, unknown> & { creator?: Record<str
     (row.likes_count as number | undefined) ??
     (row.like_count as number | undefined) ??
     0;
-  const cover =
-    (row.cover_art_url as string | null) || (row.artwork_url as string | null) || null;
+  const cover = (row.cover_art_url as string | null) ?? null;
   return {
     ...row,
     cover_art_url: cover,
-    artwork_url: row.artwork_url ?? null,
+    artwork_url: null,
     like_count: likes,
     likes_count: likes,
     creator: row.creator,
@@ -64,19 +63,28 @@ export async function GET() {
   try {
     const supabase = createServiceClient();
 
-    const albumSelect = `
+    const albumFeaturedSelect = `
       id, title, description, cover_image_url, release_date, genre,
       tracks_count, total_duration, total_plays, total_likes,
       created_at, published_at,
-      creator:profiles!albums_creator_id_fkey (
+      profiles:profiles!albums_creator_id_fkey (
         id, username, display_name, avatar_url, role
       )
     `;
 
+    const albumRecentSelect = `
+      id, title, description, cover_image_url, release_date, genre,
+      tracks_count, total_duration, total_plays, total_likes,
+      created_at, published_at,
+      profiles:profiles!albums_creator_id_fkey (
+        id, username, display_name, avatar_url
+      )
+    `;
+
     const trackSelect = `
-      id, title, description, audio_url, file_url, cover_art_url, artwork_url,
-      duration, play_count, like_count, created_at, creator_id,
-      creator:profiles!audio_tracks_creator_id_fkey (
+      id, title, description, audio_url, file_url, cover_art_url,
+      duration, play_count, created_at, creator_id,
+      profiles:profiles!creator_id (
         id, username, display_name, avatar_url
       )
     `;
@@ -84,18 +92,18 @@ export async function GET() {
     const [featuredRes, recentRes, podcastsRes, mixtapesRes] = await Promise.all([
       supabase
         .from('albums')
-        .select(albumSelect)
+        .select(albumFeaturedSelect)
         .eq('is_public', true)
         .eq('status', 'published')
         .order('total_plays', { ascending: false })
-        .limit(20),
+        .limit(10),
       supabase
         .from('albums')
-        .select(albumSelect)
+        .select(albumRecentSelect)
         .eq('is_public', true)
         .eq('status', 'published')
         .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(20),
+        .limit(10),
       supabase
         .from('audio_tracks')
         .select(trackSelect)
@@ -114,39 +122,53 @@ export async function GET() {
         .limit(20),
     ]);
 
-    const err =
-      featuredRes.error ||
-      recentRes.error ||
-      podcastsRes.error ||
-      mixtapesRes.error;
-    if (err) {
-      console.error('[discover/tabs]', err);
-      return NextResponse.json(
-        { success: false, error: err.message || 'Query failed' },
-        { status: 500, headers: corsHeaders },
-      );
-    }
-
     const albums = mergeAlbumsUnique(
-      (featuredRes.data || []) as Record<string, unknown>[],
-      (recentRes.data || []) as Record<string, unknown>[],
+      ((featuredRes.data || []) as Record<string, unknown>[]).map((row) => ({
+        ...row,
+        creator: (row.profiles as Record<string, unknown> | null) ?? null,
+      })),
+      ((recentRes.data || []) as Record<string, unknown>[]).map((row) => ({
+        ...row,
+        creator: (row.profiles as Record<string, unknown> | null) ?? null,
+      })),
       20,
     );
 
-    const podcasts = ((podcastsRes.data || []) as Record<string, unknown>[]).map((r) =>
-      normalizeTrackRow(r as Parameters<typeof normalizeTrackRow>[0]),
+    const podcasts = ((podcastsRes.data || []) as Record<string, unknown>[]).map((row) =>
+      normalizeTrackRow({
+        ...row,
+        creator: (row.profiles as Record<string, unknown> | null) ?? null,
+      } as Parameters<typeof normalizeTrackRow>[0]),
     );
-    const mixtapes = ((mixtapesRes.data || []) as Record<string, unknown>[]).map((r) =>
-      normalizeTrackRow(r as Parameters<typeof normalizeTrackRow>[0]),
+    const mixtapes = ((mixtapesRes.data || []) as Record<string, unknown>[]).map((row) =>
+      normalizeTrackRow({
+        ...row,
+        creator: (row.profiles as Record<string, unknown> | null) ?? null,
+      } as Parameters<typeof normalizeTrackRow>[0]),
     );
+
+    if (featuredRes.error || recentRes.error || podcastsRes.error || mixtapesRes.error) {
+      console.error('[discover/tabs] partial query errors', {
+        featured: featuredRes.error?.message ?? null,
+        recent: recentRes.error?.message ?? null,
+        podcasts: podcastsRes.error?.message ?? null,
+        mixtapes: mixtapesRes.error?.message ?? null,
+      });
+    }
 
     return NextResponse.json(
       {
         success: true,
         data: {
           albums,
-          albums_featured: featuredRes.data || [],
-          albums_recent: recentRes.data || [],
+          albums_featured: ((featuredRes.data || []) as Record<string, unknown>[]).map((row) => ({
+            ...row,
+            creator: (row.profiles as Record<string, unknown> | null) ?? null,
+          })),
+          albums_recent: ((recentRes.data || []) as Record<string, unknown>[]).map((row) => ({
+            ...row,
+            creator: (row.profiles as Record<string, unknown> | null) ?? null,
+          })),
           podcasts,
           mixtapes,
         },
