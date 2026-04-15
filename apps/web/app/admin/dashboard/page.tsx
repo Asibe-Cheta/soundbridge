@@ -14,6 +14,7 @@ import { Shield, AlertTriangle, Flag, Users, Clock, CheckCircle, X, Eye, User, M
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { WaitlistEmailCampaignsPanel } from '../../../src/components/admin/WaitlistEmailCampaignsPanel';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface ReviewQueueItem {
   id: string;
@@ -238,7 +239,7 @@ function InteractiveLineChart({
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const [queueItems, setQueueItems] = useState<ReviewQueueItem[]>([]);
   const [statistics, setStatistics] = useState<QueueStatistics | null>(null);
@@ -307,13 +308,11 @@ export default function AdminDashboard() {
       setLoading(true);
       console.log('📋 Loading review queue...');
       
-      // Supabase automatically handles auth tokens in API calls
-      const response = await fetch('/api/admin/review-queue', {
+      const response = await fetchWithSupabaseAuth('/api/admin/review-queue', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        },
-        credentials: 'include' // Include cookies for auth
+        }
       });
 
       console.log('📋 Review queue response status:', response.status);
@@ -346,10 +345,9 @@ export default function AdminDashboard() {
     try {
       setTabLoading(prev => ({ ...prev, overview: true }));
       
-      const response = await fetch('/api/admin/overview', {
+      const response = await fetchWithSupabaseAuth('/api/admin/overview', {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (response.ok) {
@@ -377,10 +375,9 @@ export default function AdminDashboard() {
       if (role) params.append('role', role);
       if (status) params.append('status', status);
       
-      const response = await fetch(`/api/admin/users?${params.toString()}`, {
+      const response = await fetchWithSupabaseAuth(`/api/admin/users?${params.toString()}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
       });
 
       if (response.ok) {
@@ -400,10 +397,9 @@ export default function AdminDashboard() {
     try {
       setTabLoading(prev => ({ ...prev, analytics: true }));
       
-      const response = await fetch(`/api/admin/analytics?period=${period}`, {
+      const response = await fetchWithSupabaseAuth(`/api/admin/analytics?period=${period}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
       });
 
       if (response.ok) {
@@ -423,10 +419,9 @@ export default function AdminDashboard() {
     try {
       setTabLoading(prev => ({ ...prev, settings: true }));
       
-      const response = await fetch('/api/admin/settings', {
+      const response = await fetchWithSupabaseAuth('/api/admin/settings', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
       });
 
       if (response.ok) {
@@ -446,10 +441,9 @@ export default function AdminDashboard() {
     try {
       setUserDetailsLoading(true);
       
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetchWithSupabaseAuth(`/api/admin/users/${userId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
       });
 
       if (response.ok) {
@@ -477,10 +471,9 @@ export default function AdminDashboard() {
     try {
       console.log('🔄 Performing user action:', action, 'for user:', userId, 'with data:', data);
       
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetchWithSupabaseAuth(`/api/admin/users/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ action, ...data })
       });
 
@@ -588,12 +581,11 @@ export default function AdminDashboard() {
     try {
       console.log('📋 Submitting admin action:', { action, queueId, additionalData });
 
-      const response = await fetch('/api/admin/review-queue', {
+      const response = await fetchWithSupabaseAuth('/api/admin/review-queue', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        credentials: 'include', // Include cookies for auth
         body: JSON.stringify({
           action,
           queueId,
@@ -632,6 +624,18 @@ export default function AdminDashboard() {
 
     return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesAssigned;
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-16 w-16 text-gray-400 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Checking authentication...</h2>
+          <p className="text-gray-600">Please wait while we verify your session.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -1483,9 +1487,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await fetch(`/api/admin/users?${params.toString()}`, {
-        credentials: 'include'
-      });
+      const response = await fetchWithSupabaseAuth(`/api/admin/users?${params.toString()}`);
       const result = await response.json();
       if (result.success) {
         setSearchResults(result.data);
@@ -2547,9 +2549,7 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
         params.append('search', searchTerm);
       }
 
-      const response = await fetch(`/api/admin/waitlist?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithSupabaseAuth(`/api/admin/waitlist?${params.toString()}`);
 
       if (response.ok) {
         const result = await response.json();
@@ -2603,10 +2603,9 @@ function WaitlistModal({ theme, onClose }: { theme: string; onClose: () => void 
 
     try {
       setDeletingId(entry.id || entry.email);
-      const response = await fetch('/api/admin/waitlist', {
+      const response = await fetchWithSupabaseAuth('/api/admin/waitlist', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ id: entry.id, email: entry.email }),
       });
 

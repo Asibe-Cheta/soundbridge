@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, Flag, Users, Clock, CheckCircle, X, Eye, User, Mail, Calendar, Filter, Search, RefreshCw, TrendingUp, FileText, Copyright, Ban, CheckSquare, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface CopyrightReport {
   id: string;
@@ -48,7 +49,7 @@ interface CopyrightStatistics {
 }
 
 export default function CopyrightAdminPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const [reports, setReports] = useState<CopyrightReport[]>([]);
   const [flags, setFlags] = useState<CopyrightFlag[]>([]);
@@ -74,10 +75,9 @@ export default function CopyrightAdminPage() {
       setLoading(true);
       
       // Load reports
-      const reportsResponse = await fetch('/api/reports/content?type=copyright', {
+      const reportsResponse = await fetchWithSupabaseAuth('/api/reports/content?type=copyright', {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (reportsResponse.ok) {
@@ -86,10 +86,9 @@ export default function CopyrightAdminPage() {
       }
 
       // Load flags
-      const flagsResponse = await fetch('/api/copyright/flags', {
+      const flagsResponse = await fetchWithSupabaseAuth('/api/copyright/flags', {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (flagsResponse.ok) {
@@ -98,10 +97,9 @@ export default function CopyrightAdminPage() {
       }
 
       // Load statistics
-      const statsResponse = await fetch('/api/admin/copyright/statistics', {
+      const statsResponse = await fetchWithSupabaseAuth('/api/admin/copyright/statistics', {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (statsResponse.ok) {
@@ -118,10 +116,9 @@ export default function CopyrightAdminPage() {
 
   const handleAdminAction = async (action: string, itemId: string, additionalData?: any) => {
     try {
-      const response = await fetch('/api/admin/review-queue', {
+      const response = await fetchWithSupabaseAuth('/api/admin/review-queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           action,
           queueId: itemId,
@@ -196,12 +193,14 @@ export default function CopyrightAdminPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
           <RefreshCw className={`w-8 h-8 animate-spin mx-auto mb-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Loading copyright management data...</p>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
+            {authLoading ? 'Checking authentication...' : 'Loading copyright management data...'}
+          </p>
         </div>
       </div>
     );

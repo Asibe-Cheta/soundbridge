@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 type AccountDeletionRequest = {
   id: string;
@@ -42,7 +43,7 @@ export default function AccountDeletionsAdminPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/admin/account-deletions');
+      const response = await fetchWithSupabaseAuth('/api/admin/account-deletions');
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || 'Failed to load requests');
@@ -63,7 +64,7 @@ export default function AccountDeletionsAdminPage() {
     try {
       setProcessing(requestId);
       setError(null);
-      const response = await fetch('/api/admin/account-deletions', {
+      const response = await fetchWithSupabaseAuth('/api/admin/account-deletions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId, action }),

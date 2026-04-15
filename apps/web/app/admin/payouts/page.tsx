@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { CheckCircle, Clock, Loader2, RefreshCw, Wallet, XCircle } from 'lucide-react';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 type PendingPayoutRequest = {
   id: string;
@@ -97,13 +98,13 @@ export default function AdminPayoutsPage() {
     setWiseUsd((s) => ({ ...s, loading: true }));
     try {
       const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes, batchHistoryRes, wiseBalRes] = await Promise.all([
-        fetch('/api/admin/payouts?pending_requests=1&limit=50&offset=0', { credentials: 'include' }),
-        fetch('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0', { credentials: 'include' }),
-        fetch('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0', { credentials: 'include' }),
-        fetch('/api/admin/payouts?status=completed&limit=50&offset=0', { credentials: 'include' }),
-        fetch('/api/admin/payouts?status=failed&limit=50&offset=0', { credentials: 'include' }),
-        fetch('/api/admin/payouts?batch_history=1&limit=50&offset=0', { credentials: 'include' }),
-        fetch('/api/admin/payouts/wise-balance', { credentials: 'include' }),
+        fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts?status=completed&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts?status=failed&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts?batch_history=1&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts/wise-balance'),
       ]);
 
       if (wiseBalRes.ok) {
@@ -165,9 +166,8 @@ export default function AdminPayoutsPage() {
   const approve = async (payoutRequestId: string) => {
     setActionBusy({ id: payoutRequestId, kind: 'approve' });
     try {
-      const res = await fetch('/api/admin/payouts', {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_request_id: payoutRequestId }),
       });
@@ -193,9 +193,8 @@ export default function AdminPayoutsPage() {
     setActionBusy({ id: payoutRequestId, kind: 'manual' });
     setError(null);
     try {
-      const res = await fetch('/api/admin/payouts/manual-complete', {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/manual-complete', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_request_id: payoutRequestId }),
       });
@@ -215,9 +214,8 @@ export default function AdminPayoutsPage() {
     setError(null);
     setLastBatchResult(null);
     try {
-      const res = await fetch('/api/admin/payouts/batch', {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/batch', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ max: 1000 }),
       });
@@ -241,9 +239,8 @@ export default function AdminPayoutsPage() {
     if (!reason || !reason.trim()) return;
     setActionBusy({ id: payoutRequestId, kind: 'reject' });
     try {
-      const res = await fetch('/api/admin/payouts/reject', {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/reject', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_request_id: payoutRequestId, rejection_reason: reason.trim() }),
       });
@@ -263,9 +260,8 @@ export default function AdminPayoutsPage() {
     setActionBusy({ id: payoutRequestId, kind: 'fund' });
     setError(null);
     try {
-      const res = await fetch('/api/admin/payouts/fund', {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/fund', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_request_id: payoutRequestId }),
       });
@@ -283,9 +279,8 @@ export default function AdminPayoutsPage() {
     setActionBusy({ id: payoutRequestId, kind: 'retry' });
     setError(null);
     try {
-      const res = await fetch('/api/admin/payouts/retry', {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/retry', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_request_id: payoutRequestId }),
       });

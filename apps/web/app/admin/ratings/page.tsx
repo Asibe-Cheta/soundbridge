@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 type RatingRecord = {
   id: string;
@@ -46,7 +47,7 @@ export default function RatingsAdminPage() {
       if (ratedUserId) params.set('userId', ratedUserId);
       if (context) params.set('context', context);
 
-      const response = await fetch(`/api/admin/ratings?${params.toString()}`);
+      const response = await fetchWithSupabaseAuth(`/api/admin/ratings?${params.toString()}`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || 'Failed to load ratings');
@@ -65,7 +66,7 @@ export default function RatingsAdminPage() {
 
   const handleDelete = async (ratingId: string) => {
     try {
-      const response = await fetch(`/api/admin/ratings/${ratingId}`, { method: 'DELETE' });
+      const response = await fetchWithSupabaseAuth(`/api/admin/ratings/${ratingId}`, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || 'Failed to delete rating');

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 type VerificationUser = {
   id: string;
@@ -31,7 +32,7 @@ export default function VerificationUsersAdminPage() {
       if (effectiveStatus) params.set('status', effectiveStatus);
       if (effectiveSearch) params.set('search', effectiveSearch);
 
-      const response = await fetch(`/api/admin/verification/users?${params.toString()}`);
+      const response = await fetchWithSupabaseAuth(`/api/admin/verification/users?${params.toString()}`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || 'Failed to load users');
@@ -50,7 +51,7 @@ export default function VerificationUsersAdminPage() {
 
   const updateVerification = async (userId: string, isVerified: boolean) => {
     try {
-      const response = await fetch('/api/admin/verification/users', {
+      const response = await fetchWithSupabaseAuth('/api/admin/verification/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, is_verified: isVerified }),

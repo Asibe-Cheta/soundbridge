@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 import {
   DollarSign,
   TrendingUp,
@@ -50,9 +51,9 @@ export default function AdminGigPaymentsPage() {
       params.set('page', String(page));
       params.set('limit', String(limit));
       const [listRes, alertsRes, revenueRes] = await Promise.all([
-        fetch(`/api/admin/gig-payments?${params.toString()}`, { credentials: 'include' }),
-        fetch('/api/admin/gig-payments/alerts', { credentials: 'include' }),
-        fetch('/api/admin/gig-payments/revenue', { credentials: 'include' }),
+        fetchWithSupabaseAuth(`/api/admin/gig-payments?${params.toString()}`),
+        fetchWithSupabaseAuth('/api/admin/gig-payments/alerts'),
+        fetchWithSupabaseAuth('/api/admin/gig-payments/revenue'),
       ]);
       if (!listRes.ok) throw new Error('Failed to load gig payments');
       const listData = await listRes.json();
@@ -73,7 +74,7 @@ export default function AdminGigPaymentsPage() {
   const loadDetail = async (id: string) => {
     setDetailId(id);
     try {
-      const res = await fetch(`/api/admin/gig-payments/${id}`, { credentials: 'include' });
+      const res = await fetchWithSupabaseAuth(`/api/admin/gig-payments/${id}`);
       if (res.ok) setDetail(await res.json());
       else setDetail(null);
     } catch {
@@ -275,11 +276,10 @@ export default function AdminGigPaymentsPage() {
                       className="px-3 py-1.5 rounded bg-amber-600 text-white text-xs"
                       onClick={async () => {
                         if (!confirm('Release escrow and credit creator wallet?')) return;
-                        const res = await fetch(`/api/admin/gig-payments/${detailId}/release-escrow`, {
+                        const res = await fetchWithSupabaseAuth(`/api/admin/gig-payments/${detailId}/release-escrow`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ reason: 'Manual release by admin' }),
-                          credentials: 'include',
                         });
                         if (res.ok) { setDetailId(null); load(); }
                       }}
@@ -292,11 +292,10 @@ export default function AdminGigPaymentsPage() {
                       className="px-3 py-1.5 rounded bg-red-600 text-white text-xs"
                       onClick={async () => {
                         if (!confirm('Refund requester and debit creator wallet? This will trigger a Stripe refund.')) return;
-                        const res = await fetch(`/api/admin/gig-payments/${detailId}/refund`, {
+                        const res = await fetchWithSupabaseAuth(`/api/admin/gig-payments/${detailId}/refund`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ reason: 'Refund by admin' }),
-                          credentials: 'include',
                         });
                         if (res.ok) { setDetailId(null); load(); }
                       }}

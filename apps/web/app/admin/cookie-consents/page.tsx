@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 type ConsentRecord = {
   id: string;
@@ -44,7 +45,7 @@ export default function CookieConsentsAdminPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/admin/cookie-consents?page=${nextPage}&limit=50`);
+      const response = await fetchWithSupabaseAuth(`/api/admin/cookie-consents?page=${nextPage}&limit=50`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || 'Failed to load cookie consents');

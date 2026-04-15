@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 type ClaimsSummary = {
   totalMembers: number;
@@ -118,9 +119,7 @@ export default function FoundingMembersAdminPage() {
         params.append('search', nextSearch.trim());
       }
 
-      const response = await fetch(`/api/admin/users/accounts?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithSupabaseAuth(`/api/admin/users/accounts?${params.toString()}`);
       const result = await response.json();
 
       if (!response.ok || !result?.success) {
@@ -165,9 +164,7 @@ export default function FoundingMembersAdminPage() {
         params.append('search', nextSearch.trim());
       }
 
-      const response = await fetch(`/api/admin/founding-members/claims?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithSupabaseAuth(`/api/admin/founding-members/claims?${params.toString()}`);
       const result = await response.json();
 
       if (!response.ok || !result?.success) {

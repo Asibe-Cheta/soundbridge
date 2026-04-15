@@ -169,10 +169,9 @@ export default function ModerationDashboard() {
   async function handleReview(trackId: string, action: 'approve' | 'reject') {
     setSubmitting(true);
     try {
-      const response = await fetch('/api/admin/moderation/review', {
+      const response = await fetchWithSupabaseAuth('/api/admin/moderation/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           trackId,
           action,
