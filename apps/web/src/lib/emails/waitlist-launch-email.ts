@@ -3,7 +3,7 @@
  * Personalize with displayName + recipientEmail (unsubscribe mailto).
  */
 
-const APP_STORE_URL = 'https://apps.apple.com/gb/app/soundbridge-mobile/id6754335651';
+import { IOS_APP_STORE_URL } from '@/src/lib/app-store-url';
 
 export const WAITLIST_LAUNCH_EMAIL_SUBJECT =
   'SoundBridge is live — and we just made it better';
@@ -73,7 +73,7 @@ export function buildWaitlistLaunchEmailHtml(
         </tr>
         <tr>
           <td align="center" style="padding:8px 0 32px;">
-            <a href="${escapeHtml(APP_STORE_URL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#991B1B;color:#FFFFFF !important;text-decoration:none;font-weight:600;font-size:17px;line-height:1.2;padding:16px 36px;border-radius:10px;min-width:240px;text-align:center;border:1px solid #B91C1C;">Download on the App Store</a>
+            <a href="${escapeHtml(IOS_APP_STORE_URL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#991B1B;color:#FFFFFF !important;text-decoration:none;font-weight:600;font-size:17px;line-height:1.2;padding:16px 36px;border-radius:10px;min-width:240px;text-align:center;border:1px solid #B91C1C;">Download on the App Store</a>
           </td>
         </tr>
         <tr>

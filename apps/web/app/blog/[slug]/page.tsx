@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { notFound } from 'next/navigation';
 import { blogPosts, getBlogPost, type BlogBlock } from '@/src/content/blog/posts';
 import { getSiteUrl } from '@/src/lib/site-url';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 const renderBlock = (block: BlogBlock, index: number) => {
   switch (block.type) {
@@ -172,12 +173,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             Download SoundBridge on iOS — connect professionally, promote events for free, and keep 90% of your revenue.
           </p>
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
-          >
-            Download for iOS
-          </Link>
+          <AppStoreBadgeLink size="md" />
         </div>
 
         <div className="mt-10">

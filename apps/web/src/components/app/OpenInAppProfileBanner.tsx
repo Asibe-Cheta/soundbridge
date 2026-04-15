@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-
-const IOS_APP_URL = 'https://apps.apple.com/gb/app/soundbridge/id6754335651';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.soundbridge';
 
 const storageKey = (profileId: string) => `sb_dismiss_open_app_profile:${profileId}`;
@@ -59,14 +58,7 @@ export function OpenInAppProfileBanner({ profileId, displayName }: Props) {
             >
               Open in app
             </a>
-            <a
-              href={IOS_APP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-red-300 underline-offset-2 hover:text-red-200 hover:underline"
-            >
-              App Store
-            </a>
+            <AppStoreBadgeLink size="sm" className="-my-0.5" />
             <span className="text-xs text-gray-500">·</span>
             <a
               href={ANDROID_APP_URL}

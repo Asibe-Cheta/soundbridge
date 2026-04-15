@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Apple,
   ArrowLeft,
   CalendarHeart,
   Gift,
@@ -13,8 +12,7 @@ import {
   Sparkles,
   Wallet,
 } from 'lucide-react';
-
-const IOS_APP_URL = 'https://apps.apple.com/gb/app/soundbridge/id6754335651';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 const SCREENSHOTS: { src: string; alt: string; tilt: number; y: number }[] = [
   { src: '/app-download/feed.png', alt: 'SoundBridge social feed', tilt: -7, y: 0 },
@@ -30,28 +28,6 @@ const fadeUp = {
   viewport: { once: true, margin: '-60px' },
   transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
 };
-
-function AppStoreBadgeLink({ className = '' }: { className?: string }) {
-  return (
-    <a
-      href={IOS_APP_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`group inline-flex items-center justify-center gap-3 rounded-2xl bg-black px-8 py-4 text-white shadow-[0_20px_50px_-12px_rgba(220,38,38,0.45)] ring-2 ring-white/10 transition hover:scale-[1.02] hover:ring-red-500/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500 ${className}`}
-      aria-label="Download SoundBridge on the App Store"
-    >
-      <Apple className="h-10 w-10 shrink-0 text-white" aria-hidden />
-      <span className="text-left leading-tight">
-        <span className="block text-[11px] font-medium uppercase tracking-[0.2em] text-white/70">
-          Download on the
-        </span>
-        <span className="block font-semibold tracking-tight" style={{ fontSize: '1.35rem' }}>
-          App Store
-        </span>
-      </span>
-    </a>
-  );
-}
 
 function PhoneFrame({
   src,
@@ -147,7 +123,10 @@ export default function AppDownloadPage() {
             transition={{ ...fadeUp.transition, delay: 0.08 }}
             className="mx-auto mt-12 flex max-w-lg flex-col items-center gap-6"
           >
-            <AppStoreBadgeLink className="w-full max-w-sm scale-110 sm:scale-125" />
+            <AppStoreBadgeLink
+              size="lg"
+              className="mx-auto w-full max-w-sm justify-center scale-110 sm:scale-125 drop-shadow-[0_20px_50px_-12px_rgba(220,38,38,0.45)]"
+            />
 
             <div className="flex w-full max-w-sm flex-col items-center gap-2">
               <button
@@ -275,7 +254,7 @@ export default function AppDownloadPage() {
             </h2>
             <p className="mt-3 text-white/55">Join the community building real music careers.</p>
             <div className="mt-10">
-              <AppStoreBadgeLink className="scale-110" />
+              <AppStoreBadgeLink size="md" className="justify-center scale-110" />
             </div>
           </motion.div>
         </section>

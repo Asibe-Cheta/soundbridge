@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
 import { getSiteUrl } from '@/src/lib/site-url';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 interface Props {
   params: { albumId: string };
@@ -305,15 +306,8 @@ export default async function AlbumPage({ params }: Props) {
             <p className="text-white/90 mb-6">
               Download the SoundBridge app to listen to this album and discover more amazing music
             </p>
-            <div className="flex gap-4 justify-center">
-              <a
-                href="https://apps.apple.com/app/soundbridge"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition"
-              >
-                App Store
-              </a>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <AppStoreBadgeLink size="md" className="justify-center" />
               <a
                 href="https://play.google.com/store/apps/details?id=com.soundbridge"
                 target="_blank"

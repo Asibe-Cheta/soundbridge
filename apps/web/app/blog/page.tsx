@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { blogPosts, type BlogBlock } from '@/src/content/blog/posts';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 export const metadata: Metadata = {
   title: 'SoundBridge Blog - Insights for Audio Creators',
@@ -84,12 +85,9 @@ export default function BlogPage() {
           <p className="text-gray-600 dark:text-gray-300 mb-6">
             Download SoundBridge on iOS — connect professionally, promote events for free, and keep 90% of your revenue.
           </p>
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
-          >
-            Download for iOS
-          </Link>
+          <div className="flex justify-center">
+            <AppStoreBadgeLink size="md" className="justify-center" />
+          </div>
         </div>
 
         <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">

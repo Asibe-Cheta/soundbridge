@@ -7,6 +7,7 @@ import { useTheme } from '@/src/contexts/ThemeContext';
 import { HeroSection } from '@/src/components/sections/HeroSection';
 import { Footer } from '@/src/components/layout/Footer';
 import { StructuredData } from '@/src/components/seo/StructuredData';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 import {
   ArrowRight,
   Briefcase,
@@ -17,7 +18,6 @@ import {
   Music,
   Share2,
   Sparkles,
-  Smartphone,
   TrendingUp,
   Upload,
   Users,
@@ -400,12 +400,17 @@ export default function HomePageClient() {
             Where musicians, podcasters, and producers connect professionally, promote events for free, and keep 90%
             of what they earn.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <AppStoreBadgeLink size="lg" className="justify-center" />
             <Link
               href="/app"
-              className="px-8 py-4 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all font-semibold"
+              className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
+                theme === 'dark'
+                  ? 'border-white/20 text-white hover:bg-white/10'
+                  : 'border-gray-300 text-gray-800 hover:bg-gray-50'
+              }`}
             >
-              Get the app
+              App page
             </Link>
             <a
               href="#features"
@@ -523,13 +528,9 @@ export default function HomePageClient() {
           <p className={`text-lg mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
             Download SoundBridge on iPhone — Android is coming mid-April 2026.
           </p>
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-all font-semibold"
-          >
-            Download for iOS
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          <div className="flex justify-center">
+            <AppStoreBadgeLink size="md" className="justify-center" />
+          </div>
         </section>
 
         <section className="mt-12 lg:mt-16">
@@ -633,16 +634,8 @@ export default function HomePageClient() {
               <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 Android version coming in mid-April.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <a
-                  href="https://apps.apple.com/gb/app/soundbridge-mobile/id6754335651"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all bg-gradient-to-r from-red-600 to-pink-500 text-white hover:from-red-700 hover:to-pink-600"
-                >
-                  <Smartphone className="w-5 h-5" />
-                  Download on iOS
-                </a>
+              <div className="flex flex-wrap items-center gap-4">
+                <AppStoreBadgeLink size="lg" />
                 <a
                   href="/discover"
                   className={`px-6 py-3 rounded-lg font-semibold transition-all border ${

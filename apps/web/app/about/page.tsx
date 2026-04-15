@@ -3,6 +3,7 @@
 import { useTheme } from '@/src/contexts/ThemeContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 const FOUNDER_BIO_PARAGRAPHS = [
   'SoundBridge was not built in a boardroom. It was built out of frustration, faith, and a £6 royalty statement.',
@@ -128,12 +129,15 @@ export default function AboutPage() {
           </ul>
         </section>
 
-        <div className="text-center">
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <AppStoreBadgeLink size="md" className="justify-center" />
           <Link
             href="/app"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
+            className={`text-sm font-semibold underline-offset-4 hover:underline ${
+              theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
+            }`}
           >
-            Get the app
+            App landing page
           </Link>
         </div>
       </main>

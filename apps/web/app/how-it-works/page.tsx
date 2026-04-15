@@ -3,6 +3,7 @@
 import { useTheme } from '@/src/contexts/ThemeContext';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 const steps = [
   {
@@ -57,12 +58,17 @@ export default function HowItWorksPage() {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <AppStoreBadgeLink size="md" className="justify-center" />
           <Link
             href="/app"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold hover:from-red-700 hover:to-pink-600 transition-colors"
+            className={`inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
+              theme === 'dark'
+                ? 'border-white/20 text-white hover:bg-white/10'
+                : 'border-gray-300 text-gray-800 hover:bg-gray-50'
+            }`}
           >
-            Get the app
+            App landing page
           </Link>
         </div>
       </main>

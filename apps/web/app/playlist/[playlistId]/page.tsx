@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 
 interface Props {
   params: { playlistId: string };
@@ -224,15 +225,8 @@ export default async function PlaylistPage({ params }: Props) {
             <p className="text-white/90 mb-6">
               Download the SoundBridge app to listen to this playlist and discover more amazing music
             </p>
-            <div className="flex gap-4 justify-center">
-              <a
-                href="https://apps.apple.com/app/soundbridge"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition"
-              >
-                App Store
-              </a>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <AppStoreBadgeLink size="md" className="justify-center" />
               <a
                 href="https://play.google.com/store/apps/details?id=com.soundbridge"
                 target="_blank"
