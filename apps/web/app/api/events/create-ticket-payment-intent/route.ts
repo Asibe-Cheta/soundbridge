@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import {
+  createStripeCustomerEphemeralKey,
+  getOrCreateStripeCustomer,
+  paymentIntentCustomerOptions,
+  type StripePayerProfile,
+} from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 const corsHeaders = {
@@ -154,6 +160,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: buyerProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const payer: StripePayerProfile = {
+      soundbridgeUserId: user.id,
+      email: user.email,
+      displayName: buyerProfile?.display_name ?? (user.user_metadata as { full_name?: string })?.full_name,
+    };
+
+    let customerId: string | null = null;
+    let ephemeral_key_secret: string | null = null;
+    if (payer.email) {
+      const customer = await getOrCreateStripeCustomer(stripe, payer);
+      if (customer?.id) {
+        customerId = customer.id;
+        ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+      }
+    }
+
     // Calculate total amount and fees
     // Amount stored in smallest currency unit (pence for GBP, kobo for NGN)
     // Both GBP and NGN use 100 as multiplier (1 GBP = 100 pence, 1 NGN = 100 kobo)
@@ -174,6 +202,7 @@ export async function POST(request: NextRequest) {
       transfer_data: {
         destination: stripeAccountId,
       },
+      ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
         eventId: eventId,
         userId: user.id,
@@ -196,9 +225,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         clientSecret: paymentIntent.client_secret,
+        stripe_client_secret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         amount: totalAmount,
         currency: validCurrency.toLowerCase(),
+        ...(customerId && ephemeral_key_secret
+          ? { customer_id: customerId, ephemeral_key_secret }
+          : {}),
       },
       { headers: corsHeaders }
     );

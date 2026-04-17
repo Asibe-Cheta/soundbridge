@@ -3,6 +3,13 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import {
+  createStripeCustomerEphemeralKey,
+  getOrCreateStripeCustomer,
+  paymentIntentCustomerOptions,
+  stripeCustomerIdFromPaymentIntent,
+  type StripePayerProfile,
+} from '@/src/lib/stripe-payment-sheet-customer';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -54,13 +61,47 @@ export async function POST(
       return NextResponse.json({ error: 'Payment system not configured' }, { status: 500, headers: CORS });
     }
 
+    const { data: payerProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const payer: StripePayerProfile = {
+      soundbridgeUserId: user.id,
+      email: user.email,
+      displayName: payerProfile?.display_name ?? (user.user_metadata as { full_name?: string })?.full_name,
+    };
+
     const piId = project.stripe_payment_intent_id;
     if (piId) {
       try {
         const existingPi = await stripe.paymentIntents.retrieve(piId);
         if (existingPi.status === 'requires_payment_method') {
+          let customerId = stripeCustomerIdFromPaymentIntent(existingPi);
+          if (!customerId && payer.email) {
+            const customer = await getOrCreateStripeCustomer(stripe, payer);
+            if (customer?.id) {
+              await stripe.paymentIntents.update(existingPi.id, {
+                customer: customer.id,
+                setup_future_usage: 'off_session',
+              });
+              customerId = customer.id;
+            }
+          }
+          const secret = existingPi.client_secret ?? undefined;
+          let ephemeral_key_secret: string | undefined;
+          if (customerId) {
+            ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customerId);
+          }
           return NextResponse.json(
-            { client_secret: existingPi.client_secret ?? undefined },
+            {
+              client_secret: secret,
+              stripe_client_secret: secret,
+              ...(customerId && ephemeral_key_secret
+                ? { customer_id: customerId, ephemeral_key_secret }
+                : {}),
+            },
             { status: 200, headers: CORS }
           );
         }
@@ -81,10 +122,21 @@ export async function POST(
       .maybeSingle();
     const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
     const creatorPayoutCents = amountCents - platformFeeCents;
+    let customerId: string | null = null;
+    let ephemeral_key_secret: string | null = null;
+    if (payer.email) {
+      const customer = await getOrCreateStripeCustomer(stripe, payer);
+      if (customer?.id) {
+        customerId = customer.id;
+        ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+      }
+    }
+
     const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
       amount: amountCents,
       currency: (project.currency || 'GBP').toLowerCase(),
       capture_method: 'manual',
+      ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
         project_id: project.id,
         opportunity_id: project.opportunity_id,
@@ -122,7 +174,13 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { client_secret: newPi.client_secret ?? undefined },
+      {
+        client_secret: newPi.client_secret ?? undefined,
+        stripe_client_secret: newPi.client_secret ?? undefined,
+        ...(customerId && ephemeral_key_secret
+          ? { customer_id: customerId, ephemeral_key_secret }
+          : {}),
+      },
       { status: 200, headers: CORS }
     );
   } catch (e) {

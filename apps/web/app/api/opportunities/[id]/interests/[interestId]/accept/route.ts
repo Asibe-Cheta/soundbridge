@@ -3,6 +3,12 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import {
+  createStripeCustomerEphemeralKey,
+  getOrCreateStripeCustomer,
+  paymentIntentCustomerOptions,
+  type StripePayerProfile,
+} from '@/src/lib/stripe-payment-sheet-customer';
 import { getMonetizationPlatformFeePercent } from '@/src/lib/platform-fees';
 
 const CORS = {
@@ -64,6 +70,18 @@ export async function POST(
     const posterUserId = user.id;
     const creatorUserId = interest.interested_user_id;
 
+    const { data: payerProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', posterUserId)
+      .maybeSingle();
+
+    const payer: StripePayerProfile = {
+      soundbridgeUserId: posterUserId,
+      email: user.email,
+      displayName: payerProfile?.display_name ?? (user.user_metadata as { full_name?: string })?.full_name,
+    };
+
     const { data: existingProject } = await serviceSupabase
       .from('opportunity_projects')
       .select('id, status, agreed_amount, currency, poster_user_id, creator_user_id, opportunity_id, interest_id, title, brief, deadline, chat_thread_id, created_at, platform_fee_percent, platform_fee_amount, creator_payout_amount')
@@ -86,10 +104,22 @@ export async function POST(
           .maybeSingle();
         const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
         const creatorPayoutPence = amountPence - platformFeePence;
+
+        let customerId: string | null = null;
+        let ephemeral_key_secret: string | null = null;
+        if (payer.email) {
+          const customer = await getOrCreateStripeCustomer(stripe, payer);
+          if (customer?.id) {
+            customerId = customer.id;
+            ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+          }
+        }
+
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountPence,
           currency: (existingProject.currency || 'GBP').toLowerCase(),
           capture_method: 'manual',
+          ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
           metadata: {
             project_source: 'opportunity',
             opportunity_id: existingProject.opportunity_id,
@@ -148,6 +178,10 @@ export async function POST(
               chat_thread_id: existingProject.chat_thread_id,
             },
             client_secret: paymentIntent.client_secret,
+            stripe_client_secret: paymentIntent.client_secret,
+            ...(customerId && ephemeral_key_secret
+              ? { customer_id: customerId, ephemeral_key_secret }
+              : {}),
           },
           { status: 200, headers: CORS }
         );
@@ -250,6 +284,8 @@ export async function POST(
     // Create Stripe PaymentIntent after project exists; wrap in try/catch so project creation succeeds even if Stripe fails
     let clientSecret: string | null = null;
     let stripePaymentIntentId: string | null = null;
+    let sheetCustomerId: string | null = null;
+    let sheetEphemeralSecret: string | null = null;
     if (stripe) {
       try {
         const amountPence = Math.round(agreed * 100);
@@ -262,10 +298,24 @@ export async function POST(
           .maybeSingle();
         const stripeAccountId = (creatorBank as { stripe_account_id?: string } | null)?.stripe_account_id;
         const creatorPayoutPence = amountPence - platformFeePence;
+
+        let customerId: string | null = null;
+        let ephemeral_key_secret: string | null = null;
+        if (payer.email) {
+          const customer = await getOrCreateStripeCustomer(stripe, payer);
+          if (customer?.id) {
+            customerId = customer.id;
+            ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+          }
+        }
+        sheetCustomerId = customerId;
+        sheetEphemeralSecret = ephemeral_key_secret;
+
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountPence,
           currency: (currency || 'GBP').toLowerCase(),
           capture_method: 'manual',
+          ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
           metadata: {
             project_source: 'opportunity',
             projectId: project.id,
@@ -330,6 +380,10 @@ export async function POST(
           chat_thread_id: project.chat_thread_id,
         },
         client_secret: clientSecret,
+        stripe_client_secret: clientSecret,
+        ...(clientSecret && sheetCustomerId && sheetEphemeralSecret
+          ? { customer_id: sheetCustomerId, ephemeral_key_secret: sheetEphemeralSecret }
+          : {}),
       },
       { status: 201, headers: CORS }
     );

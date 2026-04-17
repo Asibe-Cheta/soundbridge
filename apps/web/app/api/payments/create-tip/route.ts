@@ -4,6 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import {
+  createStripeCustomerEphemeralKey,
+  getOrCreateStripeCustomer,
+  paymentIntentCustomerOptions,
+  type StripePayerProfile,
+} from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 // Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; Wise converts at payout.
@@ -251,9 +257,33 @@ export async function POST(request: NextRequest) {
 
     const platformFeeMinor = Math.round(amountMinor * stripeFeeRate);
     const creatorPayoutMinor = amountMinor - platformFeeMinor;
+
+    const { data: tipperProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const payer: StripePayerProfile = {
+      soundbridgeUserId: user.id,
+      email: user.email,
+      displayName: tipperProfile?.display_name ?? (user.user_metadata as { full_name?: string })?.full_name,
+    };
+
+    let customerId: string | null = null;
+    let ephemeral_key_secret: string | null = null;
+    if (payer.email) {
+      const customer = await getOrCreateStripeCustomer(stripe, payer);
+      if (customer?.id) {
+        customerId = customer.id;
+        ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+      }
+    }
+
     const paymentIntentConfig: Record<string, unknown> = {
       amount: amountMinor,
       currency: tipCurrencyLower,
+      ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
         creatorId,
         tipperId: user.id,
@@ -372,12 +402,16 @@ export async function POST(request: NextRequest) {
       success: true,
       paymentIntentId: paymentIntent.id,
       clientSecret: paymentIntent.client_secret,
+      stripe_client_secret: paymentIntent.client_secret,
       tipId: tipData.id,
       tipRecordId: tipsRow?.id || null,
       platformFee,
       creatorEarnings,
       currency: tipCurrency,
-      message: 'Payment intent created'
+      message: 'Payment intent created',
+      ...(customerId && ephemeral_key_secret
+        ? { customer_id: customerId, ephemeral_key_secret }
+        : {}),
     }, { headers: corsHeaders });
     
   } catch (error) {

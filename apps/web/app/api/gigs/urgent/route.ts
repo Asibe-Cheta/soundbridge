@@ -8,6 +8,12 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import {
+  createStripeCustomerEphemeralKey,
+  getOrCreateStripeCustomer,
+  paymentIntentCustomerOptions,
+  type StripePayerProfile,
+} from '@/src/lib/stripe-payment-sheet-customer';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -67,11 +73,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Payment system not configured' }, { status: 500, headers: CORS });
     }
 
+    const { data: payerProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const payer: StripePayerProfile = {
+      soundbridgeUserId: user.id,
+      email: user.email,
+      displayName: payerProfile?.display_name ?? (user.user_metadata as { full_name?: string })?.full_name,
+    };
+
+    let customerId: string | null = null;
+    let ephemeral_key_secret: string | null = null;
+    if (payer.email) {
+      const customer = await getOrCreateStripeCustomer(stripe, payer);
+      if (customer?.id) {
+        customerId = customer.id;
+        ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+      }
+    }
+
     const amountPence = Math.round(Number(payment_amount) * 100);
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountPence,
       currency: (payment_currency || 'GBP').toString().toLowerCase(),
       capture_method: 'manual',
+      ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
         gig_source: 'urgent',
         requester_user_id: user.id,
@@ -135,6 +164,9 @@ export async function POST(request: NextRequest) {
         data: {
           gig_id: gig.id,
           stripe_client_secret: paymentIntent.client_secret ?? null,
+          ...(customerId && ephemeral_key_secret
+            ? { customer_id: customerId, ephemeral_key_secret }
+            : {}),
           estimated_matches,
         },
       },

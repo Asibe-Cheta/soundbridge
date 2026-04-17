@@ -3,6 +3,12 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
+import {
+  createStripeCustomerEphemeralKey,
+  getOrCreateStripeCustomer,
+  paymentIntentCustomerOptions,
+  type StripePayerProfile,
+} from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
 export async function POST(request: NextRequest) {
@@ -109,6 +115,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const payerEmail = (user.email || buyerEmail || '').trim() || null;
+    const payer: StripePayerProfile = {
+      soundbridgeUserId: user.id,
+      email: payerEmail,
+      displayName: buyerName || user.user_metadata?.full_name,
+    };
+
+    let customerId: string | null = null;
+    let ephemeral_key_secret: string | null = null;
+    if (payer.email) {
+      const customer = await getOrCreateStripeCustomer(stripe, payer);
+      if (customer?.id) {
+        customerId = customer.id;
+        ephemeral_key_secret = await createStripeCustomerEphemeralKey(stripe, customer.id);
+      }
+    }
+
     // Generate unique ticket codes
     const ticketCodes: string[] = [];
     for (let i = 0; i < quantity; i++) {
@@ -126,6 +149,7 @@ export async function POST(request: NextRequest) {
       transfer_data: {
         destination: promoterStripeAccount,
       },
+      ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
         event_id: ticket.event?.id,
         event_title: ticket.event?.title,
@@ -192,12 +216,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       clientSecret: paymentIntent.client_secret,
+      stripe_client_secret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       amount: totalAmount,
       platformFee: platformFee,
       promoterRevenue: promoterRevenue,
       ticketCodes: ticketCodes,
       purchases: purchases,
+      ...(customerId && ephemeral_key_secret
+        ? { customer_id: customerId, ephemeral_key_secret }
+        : {}),
     });
 
   } catch (error) {
