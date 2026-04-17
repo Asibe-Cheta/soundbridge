@@ -31,6 +31,13 @@ export interface PostAuthor {
   is_verified?: boolean;
 }
 
+/** Stored on posts.mentions; mirrors mobile payload shape */
+export interface PostMentionPayload {
+  userId: string;
+  username: string;
+  display_name: string | null;
+}
+
 export interface Post {
   id: string;
   user_id: string;
@@ -50,6 +57,7 @@ export interface Post {
   reactions?: PostReactions;
   comment_count?: number;
   is_connected?: boolean;
+  mentions?: PostMentionPayload[];
 }
 
 export interface PostComment {
@@ -90,5 +98,7 @@ export interface CreatePostRequest {
   post_type?: 'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event';
   event_id?: string;
   attachments?: string[]; // Array of attachment IDs
+  /** Parallel to @username tokens in content; used for mention notifications */
+  mentions?: PostMentionPayload[];
 }
 

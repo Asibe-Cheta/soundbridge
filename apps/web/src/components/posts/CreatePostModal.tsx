@@ -7,6 +7,8 @@ import imageCompression from 'browser-image-compression';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { X, Image as ImageIcon, Music, Globe, Users, Loader2, AlertCircle, Link as LinkIcon, Flame } from 'lucide-react';
 import { hasUrls, extractUrls } from '@/src/lib/link-utils';
+import { syncMentionsWithContent, type PostMention } from '@/src/lib/post-mentions';
+import { PostComposerMentionField } from '@/src/components/posts/PostComposerMentionField';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
   const { user } = useAuth();
   const router = useRouter();
   const [content, setContent] = useState('');
+  const [mentions, setMentions] = useState<PostMention[]>([]);
   const [postType, setPostType] = useState<'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event'>('update');
   const [visibility, setVisibility] = useState<'connections' | 'public'>('connections');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -45,6 +48,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const formScrollRef = useRef<HTMLDivElement>(null);
 
   // Detect URLs in content (MUST be before early return to maintain consistent hook order)
   const detectedUrls = useMemo(() => {
@@ -188,6 +192,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = content.trim();
+    const finalMentions = syncMentionsWithContent(trimmed, mentions);
     const nonWhitespace = trimmed.replace(/\s/g, '').length;
     if (nonWhitespace < MIN_NON_WHITESPACE) {
       setError('Content must have at least 10 non-whitespace characters');
@@ -206,6 +211,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
         content: trimmed,
         visibility,
         post_type: postType,
+        ...(finalMentions.length > 0 ? { mentions: finalMentions } : {}),
       };
 
       const response = await fetch('/api/posts', {
@@ -249,6 +255,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
       }
 
       setContent('');
+      setMentions([]);
       setImageFiles([]);
       setImagePreviews([]);
       setAudioFile(null);
@@ -267,6 +274,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
   const handleClose = () => {
     if (isUploading) return;
     setContent('');
+    setMentions([]);
     setImageFiles([]);
     setImagePreviews([]);
     setAudioFile(null);
@@ -299,7 +307,7 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
 
         {/* Form - scrollable */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0 pb-20">
+        <div ref={formScrollRef} className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0 pb-20">
           {/* Error Message */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 flex items-center gap-2 text-red-400">
@@ -323,16 +331,20 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
             </div>
           </div>
 
-          {/* Content Textarea - grows naturally, outer area scrolls */}
-          <textarea
+          {/* Content + @mentions (plain text + parallel mentions[] on submit) */}
+          <PostComposerMentionField
             value={content}
-            onChange={(e) => {
-              const v = e.target.value;
+            onChange={(v) => {
               if (v.length <= MAX_CONTENT_LENGTH) setContent(v);
             }}
-            placeholder="What do you want to share? You can paste links and they'll be clickable."
-            className="w-full min-h-[120px] bg-gray-800 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-y focus:outline-none focus:border-red-500/50 transition-colors"
+            mentions={mentions}
+            onMentionsChange={setMentions}
             disabled={isUploading}
+            placeholder="What do you want to share? You can paste links and they'll be clickable. Type @ to mention someone."
+            scrollContainerRef={formScrollRef}
+            currentUserId={user?.id ?? null}
+            maxLength={MAX_CONTENT_LENGTH}
+            textareaClassName="w-full min-h-[120px] bg-gray-800 border border-white/10 rounded-lg text-white placeholder-gray-500 resize-y focus:outline-none focus:border-red-500/50 transition-colors"
           />
           {showCounter && (
             <div className="flex items-center justify-between text-xs">

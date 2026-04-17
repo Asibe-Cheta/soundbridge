@@ -8,7 +8,8 @@
  *   "content": "Just wrapped recording my debut EP!",
  *   "visibility": "connections", // or "public"
  *   "post_type": "update", // "update", "opportunity", "achievement", "collaboration", "event"
- *   "event_id": "optional-event-uuid"
+ *   "event_id": "optional-event-uuid",
+ *   "mentions": [ { "userId": "uuid", "username": "john_doe", "display_name": "John Doe" } ] // optional
  * }
  *
  * Response:
@@ -37,6 +38,50 @@ const corsHeaders = {
 };
 
 const DB_POST_TYPES = ['update', 'opportunity', 'achievement', 'collaboration', 'event'] as const;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type PostMentionRow = { userId: string; username: string; display_name: string | null };
+
+function parseMentionsForInsert(raw: unknown, content: string): PostMentionRow[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) return undefined;
+
+  const out: PostMentionRow[] = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const userId =
+      typeof o.userId === 'string'
+        ? o.userId
+        : typeof o.user_id === 'string'
+          ? o.user_id
+          : '';
+    const username =
+      typeof o.username === 'string' ? o.username.trim().replace(/^@/, '') : '';
+    if (!userId || !username || !UUID_RE.test(userId)) continue;
+    if (seen.has(userId)) continue;
+
+    const boundary = new RegExp(`@${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`);
+    if (!boundary.test(content)) continue;
+
+    const display_name =
+      typeof o.display_name === 'string'
+        ? o.display_name
+        : typeof o.displayName === 'string'
+          ? o.displayName
+          : null;
+
+    out.push({ userId, username, display_name });
+    seen.add(userId);
+    if (out.length >= 32) break;
+  }
+
+  return out;
+}
 const POST_TYPE_ALIASES: Record<string, (typeof DB_POST_TYPES)[number]> = {
   welcome: 'achievement',
   intro: 'achievement',
@@ -140,6 +185,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const mentionsParsed = parseMentionsForInsert(body.mentions, trimmed);
+
     if (!['connections', 'public'].includes(visibility)) {
       return NextResponse.json(
         { success: false, error: 'Visibility must be "connections" or "public"' },
@@ -166,6 +213,9 @@ export async function POST(request: NextRequest) {
     };
     if (Array.isArray(imageUrls) && imageUrls.length > 0) {
       insertPayload.image_urls = imageUrls.slice(0, 20).map((u) => String(u));
+    }
+    if (mentionsParsed && mentionsParsed.length > 0) {
+      insertPayload.mentions = mentionsParsed;
     }
 
     // Create post
