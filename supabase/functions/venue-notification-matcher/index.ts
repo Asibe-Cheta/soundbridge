@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendPushNotifications } from './_lib/expo.ts'
+import { isWithinTimeWindow } from './_lib/time-window.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -106,10 +107,32 @@ serve(async (req) => {
       })
     }
 
+    const { data: quietHourRows } = await supabase
+      .from('notification_preferences')
+      .select('user_id, start_hour, end_hour, timezone')
+      .in('user_id', matchingUserIds)
+
+    const quietHourMap = new Map(
+      (quietHourRows ?? []).map((r) => [r.user_id, r]),
+    )
+
+    const sendableUserIds = matchingUserIds.filter((uid) => {
+      const prefs = quietHourMap.get(uid)
+      if (!prefs) return true
+      return isWithinTimeWindow(prefs.start_hour, prefs.end_hour, prefs.timezone ?? 'UTC')
+    })
+
+    if (sendableUserIds.length === 0) {
+      return new Response(
+        JSON.stringify({ matched: matchingUserIds.length, sent: 0, reason: 'Quiet hours' }),
+        { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      )
+    }
+
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, expo_push_token')
-      .in('id', matchingUserIds)
+      .in('id', sendableUserIds)
       .not('expo_push_token', 'is', null)
 
     if (!profiles?.length) {
