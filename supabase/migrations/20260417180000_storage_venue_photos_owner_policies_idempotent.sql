@@ -1,5 +1,5 @@
--- Venue photos: first path segment must be the venue UUID; only that venue's owner can write.
--- Matches pattern used for branding: (storage.foldername(name))[1] = entity id
+-- Idempotent re-apply: always DROP before CREATE (avoids 42710 if SQL was run twice in the editor).
+-- Same rules as 20260417170000.
 
 DROP POLICY IF EXISTS "Authenticated users can upload venue photos" ON storage.objects;
 DROP POLICY IF EXISTS "Venue owners can upload venue photos" ON storage.objects;
