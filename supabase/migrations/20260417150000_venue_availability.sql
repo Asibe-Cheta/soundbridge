@@ -1,6 +1,6 @@
 -- Venue availability announcements (mobile): flexible free-text windows + optional rates
 
-CREATE TABLE public.venue_availability (
+CREATE TABLE IF NOT EXISTS public.venue_availability (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id UUID NOT NULL REFERENCES public.venues(id) ON DELETE CASCADE,
   available_from TEXT NOT NULL,
