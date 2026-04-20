@@ -86,8 +86,10 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         setLaunchMeta(data.error || `Error ${res.status}`);
         return;
       }
+      const excluded = Number(data.excludedRegisteredCount ?? 0);
+      const totalWaitlist = Number(data.totalWaitlistDeduped ?? data.totalInDb ?? 0);
       setLaunchMeta(
-        `Would send to ${data.wouldSend} of ${data.totalInDb} (deduped). Confirm phrase: ${data.confirmPhrase}`
+        `Would send to ${data.wouldSend} waitlist users without accounts (${excluded} excluded from ${totalWaitlist} deduped waitlist rows). Confirm phrase: ${data.confirmPhrase}`
       );
       setLaunchPreview(data.sample?.html || '');
     } catch (e) {
@@ -216,8 +218,10 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         setCustomMeta(data.error || `Error ${res.status}`);
         return;
       }
+      const excluded = Number(data.excludedRegisteredCount ?? 0);
+      const totalWaitlist = Number(data.totalWaitlistDeduped ?? data.totalInDb ?? 0);
       setCustomMeta(
-        `Would send to ${data.wouldSend} of ${data.totalInDb}. Sample subject: ${data.sample?.subject}. Confirm: ${data.confirmPhrase}`
+        `Would send to ${data.wouldSend} waitlist users without accounts (${excluded} excluded from ${totalWaitlist} deduped waitlist rows). Sample subject: ${data.sample?.subject}. Confirm: ${data.confirmPhrase}`
       );
       setCustomPreview(data.sample?.html || '');
     } catch (e) {
@@ -371,7 +375,7 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           Email campaigns
         </h3>
         <p className={`text-sm mt-1 ${mutedCls}`}>
-          Waitlist blocks below use the <code className="text-xs">waitlist</code> table only. The{' '}
+          Waitlist blocks below target <strong className="font-medium text-inherit">waitlist emails without a matching SoundBridge account</strong> (deduped by email). The{' '}
           <strong className="font-medium text-inherit">Registered accounts</strong> section emails everyone
           with a SoundBridge login (auth email). Optional: if{' '}
           <code className="text-xs">WAITLIST_BROADCAST_SECRET</code> is set in env, enter it below for any

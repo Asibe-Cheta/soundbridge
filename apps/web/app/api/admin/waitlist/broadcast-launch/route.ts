@@ -131,7 +131,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { recipients, error: loadError } = await loadWaitlistRecipients(
+    const {
+      recipients,
+      totalWaitlistDeduped,
+      excludedRegisteredCount,
+      error: loadError,
+    } = await loadWaitlistRecipients(
       adminCheck.serviceClient
     );
 
@@ -153,6 +158,8 @@ export async function POST(request: NextRequest) {
         success: true,
         dryRun: true,
         totalInDb: recipients.length,
+        totalWaitlistDeduped,
+        excludedRegisteredCount,
         wouldSend: capped.length,
         maxRecipients: maxRecipients ?? null,
         subject: WAITLIST_LAUNCH_EMAIL_SUBJECT,

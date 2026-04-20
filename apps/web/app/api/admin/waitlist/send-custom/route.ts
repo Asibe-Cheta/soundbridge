@@ -68,7 +68,12 @@ export async function POST(request: NextRequest) {
       process.env.SENDGRID_WAITLIST_LAUNCH_FROM_NAME?.trim() ||
       'Justice @ SoundBridge';
 
-    const { recipients, error } = await loadWaitlistRecipients(adminCheck.serviceClient);
+    const {
+      recipients,
+      totalWaitlistDeduped,
+      excludedRegisteredCount,
+      error,
+    } = await loadWaitlistRecipients(adminCheck.serviceClient);
     if (error) {
       return NextResponse.json(
         { success: false, error: 'Failed to load waitlist', details: error },
@@ -94,6 +99,8 @@ export async function POST(request: NextRequest) {
         success: true,
         dryRun: true,
         totalInDb: recipients.length,
+        totalWaitlistDeduped,
+        excludedRegisteredCount,
         wouldSend: capped.length,
         maxRecipients: maxRecipients ?? null,
         sample: {
