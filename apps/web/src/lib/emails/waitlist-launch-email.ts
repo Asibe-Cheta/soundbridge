@@ -5,8 +5,7 @@
 
 import { IOS_APP_STORE_URL } from '@/src/lib/app-store-url';
 
-export const WAITLIST_LAUNCH_EMAIL_SUBJECT =
-  'SoundBridge is live — and we just made it better';
+export const WAITLIST_LAUNCH_EMAIL_SUBJECT = 'SoundBridge is live';
 
 export function displayNameFromEmail(email: string): string {
   const local = email.split('@')[0]?.replace(/[._+-]+/g, ' ').trim() || '';
@@ -59,8 +58,7 @@ export function buildWaitlistLaunchEmailHtml(
           <td style="color:#FFFFFF;font-size:17px;line-height:1.55;">
             <p style="margin:0 0 20px;">Hey ${name},</p>
             <p style="margin:0 0 20px;">You're on the SoundBridge waitlist — and the app is <strong>live</strong>.</p>
-            <p style="margin:0 0 20px;">We opened to early users this week. A small technical issue affected sign-ins for some people right at launch — we caught it, fixed it, and an update is hitting the App Store within 48 hours.</p>
-            <p style="margin:0 0 20px;">If you tried to log in and hit an error, that's on us. It's sorted.</p>
+            <p style="margin:0 0 20px;">Thank you for being early. Download the app when you're ready and sign in with the email you used on the waitlist.</p>
             <p style="margin:0 0 12px;font-weight:600;">Here's what's waiting for you on SoundBridge:</p>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
               <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Upload and sell your music directly to fans</td></tr>
