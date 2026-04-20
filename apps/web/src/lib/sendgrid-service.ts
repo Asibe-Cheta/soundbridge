@@ -17,6 +17,27 @@ function ensureSendGridKey(): boolean {
   return !!process.env.SENDGRID_API_KEY;
 }
 
+/** Minimal HTML → plain text for multipart/alternative (better inbox placement than HTML-only). */
+function plainTextFromHtml(html: string): string {
+  let t = html
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/\s*(p|div|h[1-6]|li|tr)\s*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+\n/g, '\n')
+    .replace(/\n\s+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (t.length > 20_000) t = t.slice(0, 20_000) + '\n…';
+  return t || ' ';
+}
+
 export interface EmailData {
   to: string;
   from?: string;
@@ -644,6 +665,7 @@ export class SendGridService {
       replyTo?: string;
       categories?: string[];
       headers?: Record<string, string>;
+      text?: string;
     }
   ): Promise<boolean> {
     try {
@@ -651,13 +673,15 @@ export class SendGridService {
       if (!sgMail) return false;
       const fromEmail = options?.from ?? this.fromEmail;
       const fromName = options?.fromName ?? this.fromName;
+      const text = options?.text?.trim() ? options.text : plainTextFromHtml(html);
       await sgMail.send({
         to,
         from: { email: fromEmail, name: fromName },
         replyTo: options?.replyTo ?? 'contact@soundbridge.live',
         subject,
+        text,
         html,
-        categories: options?.categories,
+        categories: options?.categories ?? ['transactional', 'soundbridge'],
         headers: {
           'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
@@ -683,6 +707,7 @@ export class SendGridService {
       fromName?: string;
       replyTo?: string;
       categories?: string[];
+      text?: string;
     }>,
     chunkSize = 100
   ): Promise<{ sent: number; failed: number; errors: string[] }> {
@@ -708,8 +733,9 @@ export class SendGridService {
         from: { email: m.from ?? defaultFrom, name: m.fromName ?? defaultName },
         replyTo: m.replyTo ?? 'contact@soundbridge.live',
         subject: m.subject,
+        text: m.text?.trim() ? m.text : plainTextFromHtml(m.html),
         html: m.html,
-        categories: m.categories ?? ['waitlist_launch'],
+        categories: m.categories ?? ['transactional', 'soundbridge', 'waitlist_broadcast'],
         headers: {
           'List-Unsubscribe': '<mailto:contact@soundbridge.live?subject=unsubscribe>',
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

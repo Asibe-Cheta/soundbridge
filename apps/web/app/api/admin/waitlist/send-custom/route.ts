@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       html: substituteWaitlistPlaceholders(htmlRaw, row, siteBase),
       from: fromEmail,
       fromName,
-      categories: ['waitlist_custom', 'marketing'],
+      categories: ['waitlist_custom', 'waitlist_broadcast', 'transactional'],
     }));
 
     const result = await SendGridService.sendHtmlEmailBatch(payloads, 100);
