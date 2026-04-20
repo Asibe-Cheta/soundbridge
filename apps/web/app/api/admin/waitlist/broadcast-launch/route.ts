@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       const ok = await SendGridService.sendHtmlEmail(testToEmail, WAITLIST_LAUNCH_EMAIL_SUBJECT, html, {
         from: fromEmail,
         fromName,
-        categories: ['waitlist_launch', 'waitlist_broadcast', 'transactional', 'waitlist_launch_test'],
+        categories: ['transactional', 'waitlist_launch_test'],
       });
       console.log(
         '[waitlist broadcast-launch test]',
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       html: buildWaitlistLaunchEmailHtml(displayNameFromEmail(row.email), row.email, siteBase),
       from: fromEmail,
       fromName,
-      categories: ['waitlist_launch', 'waitlist_broadcast', 'transactional'],
+      categories: ['transactional'],
     }));
 
     const result = await SendGridService.sendHtmlEmailBatch(payloads, 100);

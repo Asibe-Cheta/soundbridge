@@ -15,7 +15,11 @@ const MAX_HTML_LEN = 500_000;
  *
  * Send HTML email to every waitlist row. Subject and html support placeholders:
  * {{name}}, {{first_name}}, {{email}}, {{role}}, {{city}}, {{state}}, {{country}},
- * {{referral_source}}, {{site_url}}, {{signup_url}}, {{logo_url}}, {{unsubscribe_href}}, {{unsubscribe_link}}
+ * {{referral_source}}, {{site_url}}, {{signup_url}}, {{app_store_url}}, {{logo_url}},
+ * {{unsubscribe_href}}, {{unsubscribe_link}}
+ *
+ * Note: href="{{site_url}}/auth/sign-up" is rewritten server-side to the App Store URL
+ * (that web path does not exist).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -138,7 +142,7 @@ export async function POST(request: NextRequest) {
       html: substituteWaitlistPlaceholders(htmlRaw, row, siteBase),
       from: fromEmail,
       fromName,
-      categories: ['waitlist_custom', 'waitlist_broadcast', 'transactional'],
+      categories: ['transactional'],
     }));
 
     const result = await SendGridService.sendHtmlEmailBatch(payloads, 100);

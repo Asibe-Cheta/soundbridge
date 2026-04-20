@@ -69,7 +69,7 @@ export default function CreateAccountPage() {
                 Step 1: Go to the Sign Up Page
               </h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                Visit SoundBridge and click the <strong>"Sign Up"</strong> button in the top right corner of the page. You can also go directly to the sign-up page by visiting <code className="px-2 py-1 rounded bg-gray-200 dark:bg-gray-800">/auth/signup</code>
+                Visit SoundBridge and click the <strong>"Sign Up"</strong> button in the top right corner of the page. You can also go directly to the sign-up page by visiting <code className="px-2 py-1 rounded bg-gray-200 dark:bg-gray-800">/signup</code>
               </p>
             </section>
 

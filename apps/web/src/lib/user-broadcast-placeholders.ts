@@ -1,5 +1,7 @@
 import { displayNameFromEmail } from '@/src/lib/emails/waitlist-launch-email';
 import type { UserBroadcastRecipientRow } from '@/src/lib/user-broadcast-recipients';
+import { IOS_APP_STORE_URL } from '@/src/lib/app-store-url';
+import { rewriteLegacyAuthSignupHrefsInHtml } from '@/src/lib/email-rewrite-legacy-hrefs';
 
 export const USER_BROADCAST_EMAIL_VARIABLES: ReadonlyArray<{ key: string; description: string }> = [
   { key: '{{name}}', description: 'Profile display name, or a friendly name from email if empty' },
@@ -10,6 +12,10 @@ export const USER_BROADCAST_EMAIL_VARIABLES: ReadonlyArray<{ key: string; descri
   {
     key: '{{signup_url}}',
     description: 'Web account signup URL (/signup on the public site)',
+  },
+  {
+    key: '{{app_store_url}}',
+    description: 'iOS App Store URL (recommended for “Create your account” CTAs)',
   },
   { key: '{{logo_url}}', description: 'Absolute URL to SoundBridge logo' },
   {
@@ -53,6 +59,7 @@ export function substituteUserBroadcastPlaceholders(
   const signupUrl = `${base}/signup`;
 
   const map: Record<string, string> = {
+    '{{app_store_url}}': escapeHtml(IOS_APP_STORE_URL),
     '{{unsubscribe_link}}': `<a href="${unsubHref}" style="color:#A3A3A3;text-decoration:underline;">Unsubscribe</a>`,
     '{{unsubscribe_href}}': unsubHref,
     '{{logo_url}}': escapeHtml(logoUrl),
@@ -69,5 +76,5 @@ export function substituteUserBroadcastPlaceholders(
   for (const key of keys) {
     out = out.split(key).join(map[key]);
   }
-  return out;
+  return rewriteLegacyAuthSignupHrefsInHtml(out);
 }

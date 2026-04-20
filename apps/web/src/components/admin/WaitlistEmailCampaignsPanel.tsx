@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Send, Eye, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { WAITLIST_EMAIL_VARIABLES } from '@/src/lib/waitlist-email-placeholders';
 import { USER_BROADCAST_EMAIL_VARIABLES } from '@/src/lib/user-broadcast-placeholders';
+import { WAITLIST_CUSTOM_LIVE_HTML_EXAMPLE } from '@/src/lib/emails/waitlist-recommended-custom-template';
 
 const LAUNCH_CONFIRM = 'WAITLIST_LAUNCH_SEND_NOW';
 const LAUNCH_TEST_CONFIRM = 'WAITLIST_LAUNCH_TEST_SEND';
@@ -594,16 +595,26 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm ${inputCls}`}
         />
         <label className={`block text-sm font-medium mt-3 ${labelCls}`}>HTML body</label>
+        <div className="mt-1 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setCustomHtml(WAITLIST_CUSTOM_LIVE_HTML_EXAMPLE);
+              setCustomMeta(null);
+            }}
+            className={`text-xs px-3 py-1.5 rounded-lg border ${
+              dark ? 'border-gray-600 text-gray-200 hover:bg-gray-800' : 'border-gray-300 text-gray-800 hover:bg-gray-100'
+            }`}
+          >
+            Load recommended “live” template (App Store CTA)
+          </button>
+        </div>
         <textarea
           value={customHtml}
           onChange={(e) => setCustomHtml(e.target.value)}
           rows={10}
-          placeholder={`<!DOCTYPE html><html><body style="background:#0A0A0A;color:#fff;font-family:sans-serif;padding:24px;">
-<p>Hey {{name}},</p>
-<p>Your message here.</p>
-<p>{{unsubscribe_link}}</p>
-</body></html>`}
-          className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm font-mono ${inputCls}`}
+          placeholder={`Use href="{{app_store_url}}" for iOS signup — not {{site_url}}/auth/sign-up (404). Optional web: {{signup_url}}. Footer: {{unsubscribe_link}}`}
+          className={`mt-2 w-full px-3 py-2 rounded-lg border text-sm font-mono ${inputCls}`}
         />
         <div className="mt-3 flex flex-wrap gap-2">
           <button

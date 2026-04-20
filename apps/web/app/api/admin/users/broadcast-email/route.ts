@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       const ok = await SendGridService.sendHtmlEmail(testToEmail, subj, htmlBody, {
         from: fromEmail,
         fromName,
-        categories: ['user_broadcast', 'test'],
+        categories: ['transactional', 'user_broadcast_test'],
       });
 
       console.log(
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       html: substituteUserBroadcastPlaceholders(htmlRaw, row, siteBase),
       from: fromEmail,
       fromName,
-      categories: ['user_broadcast', 'announcement'],
+      categories: ['transactional'],
     }));
 
     const result = await SendGridService.sendHtmlEmailBatch(payloads, 100);

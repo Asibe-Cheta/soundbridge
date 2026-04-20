@@ -107,6 +107,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  /** Legacy / mistaken paths used in emails and old links → real signup route. */
+  async redirects() {
+    return [
+      { source: "/auth/sign-up", destination: "/signup", permanent: true },
+      { source: "/auth/sign-up/", destination: "/signup", permanent: true },
+      { source: "/auth/signup", destination: "/signup", permanent: true },
+      { source: "/auth/signup/", destination: "/signup", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -88,17 +88,18 @@ export async function POST(request: NextRequest) {
           fromName: 'SoundBridge Team',
           replyTo: CONTACT_EMAIL,
           templateId: SENDGRID_WAITLIST_TEMPLATE_ID,
-          subject: 'Welcome to SoundBridge Waitlist! 🎵',
+          subject: 'Welcome to SoundBridge Waitlist',
           dynamicTemplateData: {
-            subject: 'Welcome to SoundBridge Waitlist! 🎵',
+            subject: 'Welcome to SoundBridge Waitlist',
             name: email.split('@')[0], // Basic name from email
             /** Primary CTA: iOS App Store (same constant as marketing + launch emails). */
             waitlist_link: IOS_APP_STORE_URL,
+            app_store_url: IOS_APP_STORE_URL,
             social_media_link: 'https://twitter.com/soundbridge', // Update with actual social link
             founder_name: 'Justice Asibe',
             contact_email: CONTACT_EMAIL,
           },
-          categories: ['waitlist', 'transactional', 'soundbridge'],
+          categories: ['transactional', 'soundbridge'],
         });
 
         if (!emailSent) {

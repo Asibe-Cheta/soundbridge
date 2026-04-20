@@ -1,5 +1,7 @@
 import { displayNameFromEmail } from '@/src/lib/emails/waitlist-launch-email';
 import type { WaitlistRecipientRow } from '@/src/lib/waitlist-broadcast-recipients';
+import { IOS_APP_STORE_URL } from '@/src/lib/app-store-url';
+import { rewriteLegacyAuthSignupHrefsInHtml } from '@/src/lib/email-rewrite-legacy-hrefs';
 
 /** Documented variables for admin UI and custom HTML emails */
 export const WAITLIST_EMAIL_VARIABLES: ReadonlyArray<{ key: string; description: string }> = [
@@ -15,6 +17,10 @@ export const WAITLIST_EMAIL_VARIABLES: ReadonlyArray<{ key: string; description:
   {
     key: '{{signup_url}}',
     description: 'Web account signup URL (same path as /signup on the public site)',
+  },
+  {
+    key: '{{app_store_url}}',
+    description: 'iOS App Store URL (use for “Create your account” / download CTAs)',
   },
   { key: '{{logo_url}}', description: 'Absolute URL to SoundBridge logo SVG' },
   {
@@ -57,6 +63,7 @@ export function substituteWaitlistPlaceholders(
   const signupUrl = `${base}/signup`;
 
   const map: Record<string, string> = {
+    '{{app_store_url}}': escapeHtml(IOS_APP_STORE_URL),
     '{{unsubscribe_link}}': `<a href="${unsubHref}" style="color:#A3A3A3;text-decoration:underline;">Unsubscribe</a>`,
     '{{unsubscribe_href}}': unsubHref,
     '{{referral_source}}': escapeHtml(row.referral_source || ''),
@@ -77,5 +84,5 @@ export function substituteWaitlistPlaceholders(
   for (const key of keys) {
     out = out.split(key).join(map[key]);
   }
-  return out;
+  return rewriteLegacyAuthSignupHrefsInHtml(out);
 }

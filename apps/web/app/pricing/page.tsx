@@ -37,7 +37,7 @@ function PricingContent() {
   const handleUpgrade = async (plan: 'premium' | 'unlimited' | 'pro') => {
     if (!user) {
       // Redirect to signup if not logged in
-      window.location.href = '/auth/signup';
+      window.location.href = '/signup';
       return;
     }
     
@@ -407,7 +407,7 @@ function PricingContent() {
                       <div className="mt-auto">
                         {plan.id === 'free' ? (
                           <Link
-                            href={user ? '/dashboard' : '/auth/signup'}
+                            href={user ? '/dashboard' : '/signup'}
                             className="w-full block text-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all duration-300 border border-white/20 hover:border-white/30"
                           >
                             {user ? 'Go to Dashboard' : 'Get Started Free'}
@@ -749,7 +749,7 @@ function PricingContent() {
                   </>
                 ) : (
                   <Link
-                    href="/auth/signup"
+                    href="/signup"
                     className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     Start Free Today
