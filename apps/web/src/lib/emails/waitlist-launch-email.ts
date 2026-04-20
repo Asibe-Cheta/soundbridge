@@ -32,7 +32,8 @@ export function buildWaitlistLaunchEmailHtml(
   siteBaseUrl: string
 ): string {
   const name = escapeHtml(displayName);
-  const logoUrl = `${siteBaseUrl.replace(/\/$/, '')}/images/logo-trans-lockup.svg`;
+  const baseNoSlash = siteBaseUrl.replace(/\/$/, '');
+  const logoUrl = `${baseNoSlash}/images/logo-trans-lockup.svg`;
   const unsubMailto = `mailto:contact@soundbridge.live?subject=${encodeURIComponent('Unsubscribe — SoundBridge waitlist')}&body=${encodeURIComponent(`Please remove this email from the waitlist: ${recipientEmail}`)}`;
   const unsubHref = unsubMailto.replace(/&/g, '&amp;');
 
@@ -72,8 +73,13 @@ export function buildWaitlistLaunchEmailHtml(
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding:8px 0 32px;">
+          <td align="center" style="padding:8px 0 16px;">
             <a href="${escapeHtml(IOS_APP_STORE_URL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#991B1B;color:#FFFFFF !important;text-decoration:none;font-weight:600;font-size:17px;line-height:1.2;padding:16px 36px;border-radius:10px;min-width:240px;text-align:center;border:1px solid #B91C1C;">Download on the App Store</a>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 0 32px;">
+            <a href="${escapeHtml(IOS_APP_STORE_URL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#171717;color:#FAFAFA !important;text-decoration:none;font-weight:600;font-size:16px;line-height:1.2;padding:14px 32px;border-radius:10px;min-width:220px;text-align:center;border:1px solid #404040;">Create your account</a>
           </td>
         </tr>
         <tr>
@@ -86,7 +92,7 @@ export function buildWaitlistLaunchEmailHtml(
             <p style="margin:0;font-size:12px;line-height:1.5;color:#737373;text-align:center;">
               <a href="${unsubHref}" style="color:#A3A3A3;text-decoration:underline;">Unsubscribe</a>
               &nbsp;·&nbsp;
-              <a href="${escapeHtml(siteBaseUrl.replace(/\/$/, ''))}" style="color:#A3A3A3;text-decoration:underline;">soundbridge.live</a>
+              <a href="${escapeHtml(baseNoSlash)}" style="color:#A3A3A3;text-decoration:underline;">soundbridge.live</a>
             </p>
           </td>
         </tr>

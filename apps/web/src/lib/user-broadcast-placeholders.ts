@@ -7,6 +7,10 @@ export const USER_BROADCAST_EMAIL_VARIABLES: ReadonlyArray<{ key: string; descri
   { key: '{{email}}', description: 'Recipient address (HTML-escaped)' },
   { key: '{{username}}', description: 'Profile @username if set' },
   { key: '{{site_url}}', description: 'Public site base URL' },
+  {
+    key: '{{signup_url}}',
+    description: 'Web account signup URL (/signup on the public site)',
+  },
   { key: '{{logo_url}}', description: 'Absolute URL to SoundBridge logo' },
   {
     key: '{{unsubscribe_href}}',
@@ -46,12 +50,14 @@ export function substituteUserBroadcastPlaceholders(
   const unsubMailto = buildUnsubscribeMailto(row.email);
   const unsubHref = unsubMailto.replace(/&/g, '&amp;');
   const logoUrl = `${base}/images/logo-trans-lockup.svg`;
+  const signupUrl = `${base}/signup`;
 
   const map: Record<string, string> = {
     '{{unsubscribe_link}}': `<a href="${unsubHref}" style="color:#A3A3A3;text-decoration:underline;">Unsubscribe</a>`,
     '{{unsubscribe_href}}': unsubHref,
     '{{logo_url}}': escapeHtml(logoUrl),
     '{{site_url}}': escapeHtml(base),
+    '{{signup_url}}': escapeHtml(signupUrl),
     '{{email}}': escapeHtml(row.email),
     '{{username}}': escapeHtml(row.username || ''),
     '{{first_name}}': escapeHtml(firstName),

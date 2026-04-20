@@ -15,7 +15,7 @@ const MAX_HTML_LEN = 500_000;
  *
  * Send HTML email to every waitlist row. Subject and html support placeholders:
  * {{name}}, {{first_name}}, {{email}}, {{role}}, {{city}}, {{state}}, {{country}},
- * {{referral_source}}, {{site_url}}, {{logo_url}}, {{unsubscribe_href}}, {{unsubscribe_link}}
+ * {{referral_source}}, {{site_url}}, {{signup_url}}, {{logo_url}}, {{unsubscribe_href}}, {{unsubscribe_link}}
  */
 export async function POST(request: NextRequest) {
   try {

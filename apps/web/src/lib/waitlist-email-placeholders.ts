@@ -12,6 +12,10 @@ export const WAITLIST_EMAIL_VARIABLES: ReadonlyArray<{ key: string; description:
   { key: '{{country}}', description: 'Country if captured' },
   { key: '{{referral_source}}', description: 'Referral source if captured' },
   { key: '{{site_url}}', description: 'Public site base URL (no trailing slash)' },
+  {
+    key: '{{signup_url}}',
+    description: 'Web account signup URL (same path as /signup on the public site)',
+  },
   { key: '{{logo_url}}', description: 'Absolute URL to SoundBridge logo SVG' },
   {
     key: '{{unsubscribe_href}}',
@@ -50,6 +54,7 @@ export function substituteWaitlistPlaceholders(
   const unsubMailto = buildUnsubscribeMailto(row.email);
   const unsubHref = unsubMailto.replace(/&/g, '&amp;');
   const logoUrl = `${base}/images/logo-trans-lockup.svg`;
+  const signupUrl = `${base}/signup`;
 
   const map: Record<string, string> = {
     '{{unsubscribe_link}}': `<a href="${unsubHref}" style="color:#A3A3A3;text-decoration:underline;">Unsubscribe</a>`,
@@ -62,6 +67,7 @@ export function substituteWaitlistPlaceholders(
     '{{role}}': escapeHtml(row.role || ''),
     '{{logo_url}}': escapeHtml(logoUrl),
     '{{site_url}}': escapeHtml(base),
+    '{{signup_url}}': escapeHtml(signupUrl),
     '{{email}}': escapeHtml(row.email),
     '{{name}}': escapeHtml(name),
   };

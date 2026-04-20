@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { IOS_APP_STORE_URL } from '@/src/lib/app-store-url';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const SENDGRID_WAITLIST_TEMPLATE_ID = process.env.SENDGRID_WAITLIST_TEMPLATE_ID;
@@ -91,7 +92,8 @@ export async function POST(request: NextRequest) {
           dynamicTemplateData: {
             subject: 'Welcome to SoundBridge Waitlist! 🎵',
             name: email.split('@')[0], // Basic name from email
-            waitlist_link: 'https://soundbridge.live/app',
+            /** Primary CTA: iOS App Store (same constant as marketing + launch emails). */
+            waitlist_link: IOS_APP_STORE_URL,
             social_media_link: 'https://twitter.com/soundbridge', // Update with actual social link
             founder_name: 'Justice Asibe',
             contact_email: CONTACT_EMAIL,
