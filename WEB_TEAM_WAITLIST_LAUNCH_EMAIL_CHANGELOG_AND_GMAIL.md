@@ -174,4 +174,122 @@ These commits are on `main` and affect **waitlist / broadcast** or **SendGrid** 
 
 ---
 
+## 8. Mobile team Q&A (clarifications)
+
+### Q1: Is Promotions about the hardcoded admin “launch” email, or SendGrid auth confirmation?
+
+**A:** The **preset / hardcoded** waitlist **launch** email is **not** the Supabase auth confirmation.
+
+| Flow | What it is | Where it lives |
+|------|------------|----------------|
+| **General / launch email** | Fixed HTML: “SoundBridge is live”, built in code, sent from admin via **`POST /api/admin/waitlist/broadcast-launch`**. Uses `buildWaitlistLaunchEmailHtml()` + `WAITLIST_LAUNCH_EMAIL_SUBJECT`. | `apps/web/src/lib/emails/waitlist-launch-email.ts` + `apps/web/app/api/admin/waitlist/broadcast-launch/route.ts` |
+| **SendGrid waitlist confirmation** | Optional **dynamic template** when someone hits **`POST /api/waitlist`** (`SENDGRID_WAITLIST_TEMPLATE_ID`). Separate copy and IDs. | `apps/web/app/api/waitlist/route.ts` |
+| **Supabase Auth emails** | Signup / reset etc. via auth hook / SendGrid as configured for Auth. | e.g. `apps/web/app/api/auth/send-email/route.ts` (not the same as launch preset) |
+
+If the discussion is about the **admin “Preset: SoundBridge is live”** bulk or test send, that is the **broadcast-launch** row in the table above.
+
+### Q2: Sequence — Primary before `81894e85`, Promotions after?
+
+**A:** That matches **what Justice reported** after deploy: **before** commit `81894e85` the same preset-style send was seen in **Primary**; **after** removing the sign-in / 48h App Store paragraphs (and shortening the subject), it **moved to Promotions**.
+
+We cannot **prove** causation from Gmail’s side (no access to their classifier). Other variables (send volume, time, recipient history, subject text) can also move the tab.
+
+### Q3: Theory — conversational “we fixed it” copy vs shorter marketing tone?
+
+**A:** **Plausible and worth testing.** The old body included first-person, time-bound, problem-resolution language (“we caught it”, “that’s on us”, “it’s sorted”), which can read more like a **1:1 operational** note. The new body is shorter and pivots faster to **feature bullets + two CTAs**, which can read closer to a **product announcement** — a pattern Gmail often buckets with **Promotions**.
+
+**Other hypotheses** (not mutually exclusive):
+
+- **Subject change:** from `SoundBridge is live — and we just made it better` to **`SoundBridge is live`** (shorter, more “headline”, less conversational).
+- **Length / entropy:** less unique prose, more “template-like” block next to bullets.
+- **Unrelated:** Gmail reclassification over time; same user moving messages; IP/reputation noise.
+
+**Suggested test:** restore **only** the previous **body paragraphs** (not necessarily the old subject), redeploy, same test recipient, same time of week — single variable. Then try restoring **only** the old subject with **new** body.
+
+### Q4: Exact current full HTML of the hardcoded template?
+
+**A:** The source of truth is `buildWaitlistLaunchEmailHtml()` in `apps/web/src/lib/emails/waitlist-launch-email.ts` (shown in repo). SendGrid also receives a **generated plain-text** part derived from that HTML (`sendgrid-service.ts`).
+
+**Subject (current):** `SoundBridge is live` (`WAITLIST_LAUNCH_EMAIL_SUBJECT`).
+
+**Example rendered HTML** (illustrative substitutions: recipient `asibe@example.com` → display name `Asibe`; `siteBase` = `https://www.soundbridge.live`; App Store URL from `app-store-url.ts`):
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>SoundBridge</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0A0A0A;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0A0A0A;">
+  <tr>
+    <td align="center" style="padding:28px 16px 32px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+        <tr>
+          <td align="center" style="padding-bottom:28px;">
+            <img src="https://www.soundbridge.live/images/logo-trans-lockup.svg" alt="SoundBridge" width="200" height="auto" style="display:block;max-width:220px;height:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="color:#FFFFFF;font-size:17px;line-height:1.55;">
+            <p style="margin:0 0 20px;">Hey Asibe,</p>
+            <p style="margin:0 0 20px;">You're on the SoundBridge waitlist — and the app is <strong>live</strong>.</p>
+            <p style="margin:0 0 20px;">Thank you for being early. Download the app when you're ready and sign in with the email you used on the waitlist.</p>
+            <p style="margin:0 0 12px;font-weight:600;">Here's what's waiting for you on SoundBridge:</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
+              <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Upload and sell your music directly to fans</td></tr>
+              <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Creator profiles with tracks, albums, and drops</td></tr>
+              <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Live audio sessions with tipping</td></tr>
+              <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Connect and collaborate with other musicians</td></tr>
+              <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Messages, events, opportunities and more</td></tr>
+            </table>
+            <p style="margin:0 0 28px;color:#D4D4D4;font-size:16px;line-height:1.55;">We're a small team moving fast and building something we genuinely believe in. Your early support means everything.</p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:8px 0 16px;">
+            <a href="https://apps.apple.com/gb/app/soundbridge/id6754335651" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#991B1B;color:#FFFFFF !important;text-decoration:none;font-weight:600;font-size:17px;line-height:1.2;padding:16px 36px;border-radius:10px;min-width:240px;text-align:center;border:1px solid #B91C1C;">Download on the App Store</a>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 0 32px;">
+            <a href="https://apps.apple.com/gb/app/soundbridge/id6754335651" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#171717;color:#FAFAFA !important;text-decoration:none;font-weight:600;font-size:16px;line-height:1.2;padding:14px 32px;border-radius:10px;min-width:220px;text-align:center;border:1px solid #404040;">Create your account</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="color:#A3A3A3;font-size:16px;line-height:1.55;padding-top:8px;">
+            <p style="margin:0;">— Justice, SoundBridge</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:40px;border-top:1px solid #262626;">
+            <p style="margin:0;font-size:12px;line-height:1.5;color:#737373;text-align:center;">
+              <a href="mailto:contact@soundbridge.live?subject=Unsubscribe%20%E2%80%94%20SoundBridge%20waitlist&amp;body=Please%20remove%20this%20email%20from%20the%20waitlist%3A%20asibe%40example.com" style="color:#A3A3A3;text-decoration:underline;">Unsubscribe</a>
+              &nbsp;·&nbsp;
+              <a href="https://www.soundbridge.live" style="color:#A3A3A3;text-decoration:underline;">soundbridge.live</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+```
+
+*(Actual `mailto` query encoding may differ slightly from the above one-liner; the live string is built in code with `encodeURIComponent`.)*
+
+**Copy/structure ideas to trial (web can implement after you agree):**
+
+1. Reintroduce **one** short paragraph of plain, specific prose (not about bugs — e.g. “We’re rolling out to waitlist first; reply if anything looks off”) before the bullet block.
+2. Restore **previous subject line** while keeping new body (or vice versa) to isolate Gmail’s trigger.
+3. **Single** primary CTA instead of two identical App Store buttons (reduces “campaign” signals).
+4. Lighter **visual** treatment (less banner-like red button) — needs design sign-off.
+
+---
+
 *Document generated for internal handoff. Commit references are from `main` as of the waitlist email workstream.*
