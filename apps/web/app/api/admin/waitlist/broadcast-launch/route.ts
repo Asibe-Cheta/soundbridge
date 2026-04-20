@@ -3,8 +3,8 @@ import { requireAdmin } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import {
   buildWaitlistLaunchEmailHtml,
+  buildWaitlistLaunchEmailSubject,
   displayNameFromEmail,
-  WAITLIST_LAUNCH_EMAIL_SUBJECT,
 } from '@/src/lib/emails/waitlist-launch-email';
 import { loadWaitlistRecipients } from '@/src/lib/waitlist-broadcast-recipients';
 import { waitlistBroadcastSecretError } from '@/src/lib/waitlist-broadcast-secret-check';
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
           testToEmail,
           totalInDb: null,
           wouldSend: 1,
-          subject: WAITLIST_LAUNCH_EMAIL_SUBJECT,
+          subject: buildWaitlistLaunchEmailSubject(testToEmail),
           sample: {
             email: testToEmail,
             displayName: sampleName,
@@ -106,11 +106,17 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      const ok = await SendGridService.sendHtmlEmail(testToEmail, WAITLIST_LAUNCH_EMAIL_SUBJECT, html, {
-        from: fromEmail,
-        fromName,
-        categories: ['transactional', 'waitlist_launch_test'],
-      });
+      const ok = await SendGridService.sendHtmlEmail(
+        testToEmail,
+        buildWaitlistLaunchEmailSubject(testToEmail),
+        html,
+        {
+          from: fromEmail,
+          fromName,
+          replyTo: 'contact@soundbridge.live',
+          categories: ['transactional', 'waitlist_launch_test'],
+        }
+      );
       console.log(
         '[waitlist broadcast-launch test]',
         JSON.stringify({ actorUserId: adminCheck.userId, testToEmail, ok })
@@ -162,7 +168,8 @@ export async function POST(request: NextRequest) {
         excludedRegisteredCount,
         wouldSend: capped.length,
         maxRecipients: maxRecipients ?? null,
-        subject: WAITLIST_LAUNCH_EMAIL_SUBJECT,
+        subject: buildWaitlistLaunchEmailSubject(sampleEmail),
+        subjectNote: 'Subject is personalised per recipient (Hey {first}, SoundBridge is live).',
         sample: {
           email: sampleEmail,
           displayName: sampleName,
@@ -194,10 +201,11 @@ export async function POST(request: NextRequest) {
 
     const payloads = capped.map((row) => ({
       to: row.email,
-      subject: WAITLIST_LAUNCH_EMAIL_SUBJECT,
+      subject: buildWaitlistLaunchEmailSubject(row.email),
       html: buildWaitlistLaunchEmailHtml(displayNameFromEmail(row.email), row.email, siteBase),
       from: fromEmail,
       fromName,
+      replyTo: 'contact@soundbridge.live',
       categories: ['transactional'],
     }));
 
@@ -215,7 +223,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: result.failed === 0,
-      subject: WAITLIST_LAUNCH_EMAIL_SUBJECT,
+      subject: capped[0] ? buildWaitlistLaunchEmailSubject(capped[0].email) : null,
+      subjectNote: 'Each recipient gets a personalised subject (Hey {first}, SoundBridge is live).',
       attempted: capped.length,
       sent: result.sent,
       failed: result.failed,

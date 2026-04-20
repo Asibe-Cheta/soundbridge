@@ -5,8 +5,6 @@
 
 import { IOS_APP_STORE_URL } from '@/src/lib/app-store-url';
 
-export const WAITLIST_LAUNCH_EMAIL_SUBJECT = 'SoundBridge is live';
-
 export function displayNameFromEmail(email: string): string {
   const local = email.split('@')[0]?.replace(/[._+-]+/g, ' ').trim() || '';
   if (!local) return 'there';
@@ -15,6 +13,19 @@ export function displayNameFromEmail(email: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
   return titled || 'there';
+}
+
+/** First word of friendly display name — used in subject line. */
+export function firstNameFromEmailForSubject(email: string): string {
+  const display = displayNameFromEmail(email);
+  const raw = display.split(/\s+/)[0]?.trim() || display;
+  return raw || 'there';
+}
+
+/** Per-recipient subject (mobile team: conversational vs pure announcement). */
+export function buildWaitlistLaunchEmailSubject(recipientEmail: string): string {
+  const first = firstNameFromEmailForSubject(recipientEmail);
+  return `Hey ${first}, SoundBridge is live`;
 }
 
 function escapeHtml(s: string): string {
@@ -57,9 +68,9 @@ export function buildWaitlistLaunchEmailHtml(
         <tr>
           <td style="color:#FFFFFF;font-size:17px;line-height:1.55;">
             <p style="margin:0 0 20px;">Hey ${name},</p>
-            <p style="margin:0 0 20px;">You're on the SoundBridge waitlist — and the app is <strong>live</strong>.</p>
-            <p style="margin:0 0 20px;">Thank you for being early. Download the app when you're ready and sign in with the email you used on the waitlist.</p>
-            <p style="margin:0 0 12px;font-weight:600;">Here's what's waiting for you on SoundBridge:</p>
+            <p style="margin:0 0 20px;">You've been on the waitlist for a while — thank you for that. The app is <strong>live</strong> and we wanted you to be among the first to know.</p>
+            <p style="margin:0 0 20px;">We're a small team and we've been building this carefully. Sign in with the same email you used on the waitlist and you're straight in.</p>
+            <p style="margin:0 0 12px;font-weight:600;">Here's what's waiting for you:</p>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
               <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Upload and sell your music directly to fans</td></tr>
               <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Creator profiles with tracks, albums, and drops</td></tr>
@@ -67,17 +78,16 @@ export function buildWaitlistLaunchEmailHtml(
               <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Connect and collaborate with other musicians</td></tr>
               <tr><td style="color:#E5E5E5;font-size:16px;line-height:1.6;padding:6px 0 6px 0;">• Messages, events, opportunities and more</td></tr>
             </table>
-            <p style="margin:0 0 28px;color:#D4D4D4;font-size:16px;line-height:1.55;">We're a small team moving fast and building something we genuinely believe in. Your early support means everything.</p>
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding:8px 0 16px;">
+          <td align="center" style="padding:8px 0 24px;">
             <a href="${escapeHtml(IOS_APP_STORE_URL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#991B1B;color:#FFFFFF !important;text-decoration:none;font-weight:600;font-size:17px;line-height:1.2;padding:16px 36px;border-radius:10px;min-width:240px;text-align:center;border:1px solid #B91C1C;">Download on the App Store</a>
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding:0 0 32px;">
-            <a href="${escapeHtml(IOS_APP_STORE_URL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:#171717;color:#FAFAFA !important;text-decoration:none;font-weight:600;font-size:16px;line-height:1.2;padding:14px 32px;border-radius:10px;min-width:220px;text-align:center;border:1px solid #404040;">Create your account</a>
+          <td style="color:#D4D4D4;font-size:16px;line-height:1.55;">
+            <p style="margin:0 0 20px;">If you have any questions just reply to this email — it reaches us directly.</p>
           </td>
         </tr>
         <tr>
