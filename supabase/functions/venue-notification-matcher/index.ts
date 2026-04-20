@@ -37,6 +37,7 @@ serve(async (req) => {
 
   try {
     const { venue_id } = await req.json()
+    console.log('[venue-notification-matcher] invoked', { venue_id })
     if (!venue_id) {
       return new Response(JSON.stringify({ error: 'venue_id required' }), {
         status: 400,
@@ -53,13 +54,18 @@ serve(async (req) => {
       .single()
 
     if (venueError || !venue) {
+      console.error('[venue-notification-matcher] venue lookup failed', {
+        venue_id,
+        error: venueError?.message,
+      })
       return new Response(JSON.stringify({ error: 'Venue not found' }), {
         status: 404,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
     }
 
-    if (!venue.latitude || !venue.longitude) {
+    if (venue.latitude == null || venue.longitude == null) {
+      console.log('[venue-notification-matcher] venue has no coordinates', { venue_id })
       return new Response(JSON.stringify({ matched: 0, reason: 'No coordinates' }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
@@ -71,11 +77,27 @@ serve(async (req) => {
       .eq('notifications_enabled', true)
       .neq('user_id', venue.owner_id)
 
-    if (prefError || !preferences?.length) {
+    if (prefError) {
+      console.error('[venue-notification-matcher] preference query failed', {
+        venue_id,
+        error: prefError.message,
+      })
+      return new Response(JSON.stringify({ matched: 0, reason: 'Preference query failed' }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!preferences?.length) {
+      console.log('[venue-notification-matcher] no enabled preferences', { venue_id })
       return new Response(JSON.stringify({ matched: 0 }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
     }
+
+    console.log('[venue-notification-matcher] loaded preferences', {
+      venue_id,
+      total: preferences.length,
+    })
 
     const matchingUserIds: string[] = []
 
@@ -83,7 +105,8 @@ serve(async (req) => {
       const checkLat = pref.preferred_location_lat ?? venue.latitude
       const checkLng = pref.preferred_location_lng ?? venue.longitude
       const dist = haversineKm(checkLat, checkLng, venue.latitude, venue.longitude)
-      if (dist > pref.notification_radius_km) continue
+      const radiusKm = typeof pref.notification_radius_km === 'number' ? pref.notification_radius_km : 25
+      if (dist > radiusKm) continue
 
       if (pref.preferred_venue_types?.length > 0 && venue.venue_type) {
         const normalised = venue.venue_type.toLowerCase().replace(/\s+/g, '_')
@@ -102,6 +125,7 @@ serve(async (req) => {
     }
 
     if (matchingUserIds.length === 0) {
+      console.log('[venue-notification-matcher] no users matched after filters', { venue_id })
       return new Response(JSON.stringify({ matched: 0 }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
@@ -123,6 +147,10 @@ serve(async (req) => {
     })
 
     if (sendableUserIds.length === 0) {
+      console.log('[venue-notification-matcher] all matched users in quiet hours', {
+        venue_id,
+        matched: matchingUserIds.length,
+      })
       return new Response(
         JSON.stringify({ matched: matchingUserIds.length, sent: 0, reason: 'Quiet hours' }),
         { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -136,6 +164,10 @@ serve(async (req) => {
       .not('expo_push_token', 'is', null)
 
     if (!profiles?.length) {
+      console.log('[venue-notification-matcher] no expo tokens found for sendable users', {
+        venue_id,
+        sendable: sendableUserIds.length,
+      })
       return new Response(JSON.stringify({ matched: 0, reason: 'No push tokens' }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
@@ -157,6 +189,15 @@ serve(async (req) => {
 
     const receipts = await sendPushNotifications(messages)
     const sent = receipts.filter((r) => r.status === 'ok').length
+    const failed = receipts.length - sent
+    console.log('[venue-notification-matcher] push send complete', {
+      venue_id,
+      matched: matchingUserIds.length,
+      sendable: sendableUserIds.length,
+      with_tokens: profiles.length,
+      sent,
+      failed,
+    })
 
     return new Response(JSON.stringify({ matched: matchingUserIds.length, sent }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },

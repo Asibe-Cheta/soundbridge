@@ -133,6 +133,7 @@ export async function POST(
       .maybeSingle();
 
     let reaction;
+    let shouldNotify = false;
 
     if (existingReaction) {
       // If user already reacted with the same type, remove reaction (toggle off)
@@ -197,6 +198,7 @@ export async function POST(
         }
 
         reaction = updatedReaction;
+        shouldNotify = true;
       }
     } else {
       // Create new reaction
@@ -221,33 +223,53 @@ export async function POST(
 
       reaction = newReaction;
 
-      // Send notification to post author (if not reacting to own post)
-      if (post.user_id !== user.id) {
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('display_name, username')
-          .eq('id', user.id)
-          .single();
+      shouldNotify = true;
+    }
 
-        const userName = userProfile?.display_name || userProfile?.username || 'Someone';
-        const atLabel = userProfile?.username ? `@${userProfile.username}` : userName;
-        const reactionEmoji: Record<string, string> = {
-          support: '👍',
-          love: '❤️',
-          fire: '🔥',
-          congrats: '🎉',
-        };
-        const emoji = reactionEmoji[reaction_type] || '❤️';
-        try {
-          await notifyPostReaction(post.user_id, userName, postId, reaction_type, {
-            actorUserId: user.id,
-            actorUsername: userProfile?.username ?? null,
-            pushTitle: `${atLabel} reacted to your post`,
-            pushBody: `${emoji} on your drop`,
+    // Send notification to post author (if not reacting to own post)
+    if (shouldNotify && post.user_id !== user.id) {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('⚠️ Failed loading reactor profile for notification:', profileError);
+      }
+
+      const userName = userProfile?.display_name || userProfile?.username || 'Someone';
+      const atLabel = userProfile?.username ? `@${userProfile.username}` : userName;
+      const reactionEmoji: Record<string, string> = {
+        support: '👍',
+        love: '❤️',
+        fire: '🔥',
+        congrats: '🎉',
+      };
+      const emoji = reactionEmoji[reaction_type] || '❤️';
+      try {
+        const notifyResult = await notifyPostReaction(post.user_id, userName, postId, reaction_type, {
+          actorUserId: user.id,
+          actorUsername: userProfile?.username ?? null,
+          pushTitle: `${atLabel} reacted to your post`,
+          pushBody: `${emoji} on your drop`,
+        });
+        if (!notifyResult?.success) {
+          console.error('❌ Reaction notification pipeline reported failure:', {
+            postId,
+            postOwnerId: post.user_id,
+            reactorId: user.id,
+            error: notifyResult?.error,
           });
-        } catch (err) {
-          console.error('Failed to send reaction notification:', err);
+        } else {
+          console.log('✅ Reaction notification pipeline completed:', {
+            postId,
+            postOwnerId: post.user_id,
+            reactorId: user.id,
+          });
         }
+      } catch (err) {
+        console.error('❌ Failed to send reaction notification:', err);
       }
     }
 
