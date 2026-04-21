@@ -54,30 +54,66 @@ class ProviderVerificationService {
 
     const supabase = this.supabase!;
 
-    const { data: provider, error: providerError } = await supabase
-      .from('service_provider_profiles')
-      .select('*')
-      .eq('user_id', providerId)
-      .maybeSingle();
+    const [{ data: provider, error: providerError }, { data: profile }, { data: latestPersonaSession }] = await Promise.all([
+      supabase
+        .from('service_provider_profiles')
+        .select('user_id, is_verified, average_rating')
+        .eq('user_id', providerId)
+        .maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('is_verified')
+        .eq('id', providerId)
+        .maybeSingle(),
+      supabase
+        .from('provider_verification_sessions')
+        .select('status, completed_at, updated_at')
+        .eq('user_id', providerId)
+        .eq('provider', 'persona')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     if (providerError) {
       console.error('Failed to load provider profile for verification status', providerError);
       return null;
     }
 
-    if (!provider) {
+    if (!provider && !profile?.is_verified && !latestPersonaSession) {
       return null;
     }
 
     const latestRequest = await this.getLatestRequestWithDocuments(providerId);
-    const prerequisites = await this.evaluatePrerequisites(providerId, provider.average_rating ?? 0);
+    const prerequisites = await this.evaluatePrerequisites(providerId, provider?.average_rating ?? 0);
+
+    const providerStatus: ProviderVerificationStatus['verificationStatus'] | null = null;
+    const sessionStatus = (latestPersonaSession?.status as string | null) ?? null;
+
+    let verificationStatus: ProviderVerificationStatus['verificationStatus'] = providerStatus ?? 'not_requested';
+    let isVerified = Boolean(provider?.is_verified ?? false);
+
+    // Trust canonical verification outcomes from synced profile/session when provider row lags.
+    if (profile?.is_verified === true || sessionStatus === 'approved') {
+      verificationStatus = 'approved';
+      isVerified = true;
+    } else if (sessionStatus === 'pending' || sessionStatus === 'needs_review') {
+      verificationStatus = 'pending';
+      isVerified = false;
+    } else if (sessionStatus === 'declined') {
+      verificationStatus = 'rejected';
+      isVerified = false;
+    }
 
     return {
-      verificationStatus: provider.verification_status,
-      isVerified: provider.is_verified,
-      verificationNotes: provider.verification_notes,
-      verificationRequestedAt: provider.verification_requested_at,
-      verificationReviewedAt: provider.verification_reviewed_at,
+      verificationStatus,
+      isVerified,
+      verificationNotes: null,
+      verificationRequestedAt: null,
+      verificationReviewedAt:
+        latestPersonaSession?.completed_at ??
+        latestPersonaSession?.updated_at ??
+        null,
       latestRequest,
       prerequisites,
     };
