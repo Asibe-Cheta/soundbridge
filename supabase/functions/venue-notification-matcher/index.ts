@@ -30,6 +30,11 @@ function formatRate(dailyRate: number | null, hourlyRate: number | null, currenc
   return 'Contact for pricing'
 }
 
+function isValidExpoPushToken(token: string | null | undefined): token is string {
+  if (!token) return false
+  return token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
@@ -161,12 +166,40 @@ serve(async (req) => {
       .from('profiles')
       .select('id, expo_push_token')
       .in('id', sendableUserIds)
-      .not('expo_push_token', 'is', null)
+    const { data: tokenRows } = await supabase
+      .from('user_push_tokens')
+      .select('user_id, push_token, active, last_used_at')
+      .in('user_id', sendableUserIds)
+      .eq('active', true)
+      .not('push_token', 'is', null)
+      .order('last_used_at', { ascending: false })
 
-    if (!profiles?.length) {
+    const fallbackTokenByUserId = new Map<string, string>()
+    for (const row of tokenRows ?? []) {
+      const uid = row.user_id as string
+      const token = row.push_token as string
+      if (!fallbackTokenByUserId.has(uid) && isValidExpoPushToken(token)) {
+        fallbackTokenByUserId.set(uid, token)
+      }
+    }
+
+    const tokensByUserId = new Map<string, string>()
+    for (const uid of sendableUserIds) {
+      const profileToken = (profiles ?? []).find((p) => p.id === uid)?.expo_push_token as string | null | undefined
+      if (isValidExpoPushToken(profileToken)) {
+        tokensByUserId.set(uid, profileToken)
+        continue
+      }
+      const fallback = fallbackTokenByUserId.get(uid)
+      if (fallback) tokensByUserId.set(uid, fallback)
+    }
+
+    if (tokensByUserId.size === 0) {
       console.log('[venue-notification-matcher] no expo tokens found for sendable users', {
         venue_id,
         sendable: sendableUserIds.length,
+        profiles_with_token: (profiles ?? []).filter((p) => isValidExpoPushToken(p.expo_push_token as string | null | undefined)).length,
+        fallback_tokens: fallbackTokenByUserId.size,
       })
       return new Response(JSON.stringify({ matched: 0, reason: 'No push tokens' }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
@@ -176,14 +209,12 @@ serve(async (req) => {
     const location = [venue.city, venue.country].filter(Boolean).join(', ') || 'your area'
     const rateString = formatRate(venue.daily_rate, venue.hourly_rate, venue.currency ?? 'GBP')
 
-    const messages = profiles
-      .filter((p) => p.expo_push_token)
-      .map((p) => ({
-        to: p.expo_push_token as string,
+    const messages = Array.from(tokensByUserId.entries()).map(([uid, token]) => ({
+        to: token,
         sound: 'default',
         title: 'A venue near you matches your budget',
         body: `${venue.name} in ${location} is available from ${rateString}. Tap to view.`,
-        data: { type: 'venue_match', venueId: venue.id, deepLink: `soundbridge://venue/${venue.id}` },
+        data: { type: 'venue_match', venueId: venue.id, userId: uid, deepLink: `soundbridge://venue/${venue.id}` },
         channelId: 'default',
       }))
 
@@ -194,7 +225,7 @@ serve(async (req) => {
       venue_id,
       matched: matchingUserIds.length,
       sendable: sendableUserIds.length,
-      with_tokens: profiles.length,
+      with_tokens: tokensByUserId.size,
       sent,
       failed,
     })
