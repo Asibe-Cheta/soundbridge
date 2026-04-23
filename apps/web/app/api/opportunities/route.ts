@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       description,
       skills_needed = [],
       location,
+      country_code,
       is_remote = false,
       date_from,
       date_to,
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
         description: description.trim(),
         skills_needed: Array.isArray(skills_needed) ? skills_needed : [],
         location: location?.trim() || null,
+        country_code: typeof country_code === 'string' ? country_code.trim().toUpperCase() || null : null,
         is_remote: !!is_remote,
         date_from: date_from || null,
         date_to: date_to || null,
@@ -107,11 +109,23 @@ export async function GET(request: NextRequest) {
     const offset = Number(searchParams.get('offset')) || 0;
     const type = searchParams.get('type') || null;
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('country_code')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const countryCode =
+      typeof profile?.country_code === 'string' && profile.country_code.trim().length === 2
+        ? profile.country_code.trim().toUpperCase()
+        : null;
+
     const { data: items, error } = await supabase.rpc('get_recommended_opportunities', {
       p_user_id: user.id,
       p_limit: limit,
       p_offset: offset,
       p_type: type,
+      p_country_code: countryCode,
     });
 
     if (error) {

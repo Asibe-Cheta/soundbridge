@@ -32,7 +32,7 @@ export async function POST(
 
     const { data: opp } = await supabase
       .from('opportunity_posts')
-      .select('id, user_id, title, is_active, expires_at')
+      .select('id, user_id, title, is_active, expires_at, is_remote, country_code')
       .eq('id', opportunityId)
       .single();
 
@@ -44,6 +44,25 @@ export async function POST(
     }
     if (!opp.is_active || (opp.expires_at && new Date(opp.expires_at) < new Date())) {
       return NextResponse.json({ error: 'Opportunity is not active' }, { status: 400, headers: CORS });
+    }
+
+    if (!opp.is_remote && opp.country_code) {
+      const { data: applicantProfile } = await supabase
+        .from('profiles')
+        .select('country_code')
+        .eq('id', user.id)
+        .maybeSingle();
+      const applicantCountry =
+        typeof applicantProfile?.country_code === 'string'
+          ? applicantProfile.country_code.trim().toUpperCase()
+          : null;
+      const opportunityCountry = String(opp.country_code).trim().toUpperCase();
+      if (!applicantCountry || applicantCountry !== opportunityCountry) {
+        return NextResponse.json(
+          { error: `This opportunity is restricted to ${opportunityCountry}. Your profile country does not match.` },
+          { status: 403, headers: CORS }
+        );
+      }
     }
 
     const { data: existing } = await supabase
@@ -72,6 +91,14 @@ export async function POST(
 
     if (error) {
       console.error('opportunity_interests insert error:', error);
+      // Global guard: stale/deleted opportunity IDs can fail at FK check between read and insert.
+      // Return a user-friendly response for all clients/users.
+      if ((error as { code?: string }).code === '23503') {
+        return NextResponse.json(
+          { error: 'Opportunity no longer available. Refresh and try again.' },
+          { status: 404, headers: CORS }
+        );
+      }
       return NextResponse.json({ error: error.message || 'Failed to submit interest' }, { status: 500, headers: CORS });
     }
 

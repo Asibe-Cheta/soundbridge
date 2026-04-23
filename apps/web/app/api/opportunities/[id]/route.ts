@@ -68,15 +68,11 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { data: existing } = await supabase.from('opportunity_posts').select('user_id').eq('id', id).single();
-    if (!existing || existing.user_id !== user.id) {
-      return NextResponse.json({ error: 'Not allowed to update this opportunity' }, { status: 403, headers: CORS });
-    }
 
     const body = await request.json();
     const allowed = [
       'title', 'description', 'skills_needed', 'location', 'is_remote', 'date_from', 'date_to',
-      'budget_min', 'budget_max', 'budget_currency', 'visibility', 'is_active',
+      'budget_min', 'budget_max', 'budget_currency', 'visibility', 'is_active', 'country_code',
     ];
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const key of allowed) {
@@ -93,12 +89,16 @@ export async function PATCH(
       .from('opportunity_posts')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
     if (error) {
       console.error('Opportunity update error:', error);
       return NextResponse.json({ error: error.message || 'Update failed' }, { status: 500, headers: CORS });
+    }
+    if (!row) {
+      return NextResponse.json({ error: 'Not allowed to update this opportunity' }, { status: 403, headers: CORS });
     }
     return NextResponse.json(row, { headers: CORS });
   } catch (e) {
@@ -121,8 +121,13 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const { data: existing } = await supabase.from('opportunity_posts').select('user_id').eq('id', id).single();
-    if (!existing || existing.user_id !== user.id) {
+    const { data: existing } = await supabase
+      .from('opportunity_posts')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!existing) {
       return NextResponse.json({ error: 'Not allowed to delete this opportunity' }, { status: 403, headers: CORS });
     }
 
@@ -141,10 +146,26 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase.from('opportunity_posts').delete().eq('id', id);
-    if (error) {
-      console.error('Opportunity delete error:', error);
-      return NextResponse.json({ error: error.message || 'Delete failed' }, { status: 500, headers: CORS });
+    const { error: interestsError } = await supabase.from('opportunity_interests').delete().eq('opportunity_id', id);
+    if (interestsError) {
+      console.error('Opportunity delete interests error:', interestsError);
+      return NextResponse.json({ error: interestsError.message || 'Failed to remove interests' }, { status: 500, headers: CORS });
+    }
+
+    const { error: projectsError } = await supabase.from('opportunity_projects').delete().eq('opportunity_id', id);
+    if (projectsError) {
+      console.error('Opportunity delete projects error:', projectsError);
+      return NextResponse.json({ error: projectsError.message || 'Failed to remove projects' }, { status: 500, headers: CORS });
+    }
+
+    const { error: postError } = await supabase
+      .from('opportunity_posts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (postError) {
+      console.error('Opportunity delete post error:', postError);
+      return NextResponse.json({ error: postError.message || 'Delete failed' }, { status: 500, headers: CORS });
     }
     return new NextResponse(null, { status: 204, headers: CORS });
   } catch (e) {
