@@ -1,5 +1,5 @@
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed';
-export type MessageType = 'text' | 'audio' | 'image' | 'file' | 'collaboration' | 'system';
+export type MessageType = 'text' | 'audio' | 'image' | 'file' | 'collaboration' | 'system' | 'reply' | 'forwarded';
 
 export interface Message {
   id: string;
@@ -18,6 +18,9 @@ export interface Message {
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
+  deleted_for_everyone?: boolean;
+  is_edited?: boolean;
+  edited_at?: string | null;
   sender?: ConversationParticipant;
   recipient?: ConversationParticipant;
 }

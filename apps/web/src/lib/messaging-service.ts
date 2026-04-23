@@ -457,8 +457,15 @@ export class MessagingService {
 
       const { error } = await this.supabase
         .from('messages')
-        .delete()
-        .eq('id', messageId);
+        .update({
+          deleted_for_everyone: true,
+          deleted_at: new Date().toISOString(),
+          content: 'This message was deleted.',
+          is_edited: false,
+          edited_at: null
+        })
+        .eq('id', messageId)
+        .eq('sender_id', userId);
 
       if (error) {
         console.error('Error deleting message:', error);
@@ -468,6 +475,37 @@ export class MessagingService {
       return { error: null };
     } catch (error) {
       console.error('Unexpected error deleting message:', error);
+      return { error };
+    }
+  }
+
+  /**
+   * Edit a message (sender only). Preserves row for both participants.
+   */
+  async editMessage(messageId: string, userId: string, newContent: string): Promise<{ error: unknown }> {
+    try {
+      if (!newContent || !newContent.trim()) {
+        return { error: 'Message content is required' };
+      }
+
+      const { error } = await this.supabase
+        .from('messages')
+        .update({
+          content: newContent.trim(),
+          is_edited: true,
+          edited_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .eq('sender_id', userId)
+        .eq('deleted_for_everyone', false);
+
+      if (error) {
+        console.error('Error editing message:', error);
+        return { error };
+      }
+      return { error: null };
+    } catch (error) {
+      console.error('Unexpected error editing message:', error);
       return { error };
     }
   }
