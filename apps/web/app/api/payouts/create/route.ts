@@ -3,8 +3,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
-import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
-import { decryptSecret } from '@/src/lib/encryption';
+import { performCreatorFincraWalletPayout } from '@/src/lib/payouts/creator-fincra-wallet-payout';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,15 +79,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!stripe) {
+    // Parse request body
+    const { amount, currency = 'GBP', method = 'stripe' } = await request.json();
+
+    if (method === 'stripe' && !stripe) {
       return NextResponse.json(
         { error: 'Stripe not configured' },
         { status: 500, headers: corsHeaders }
       );
     }
-
-    // Parse request body
-    const { amount, currency = 'GBP', method = 'stripe' } = await request.json();
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
@@ -183,32 +182,29 @@ export async function POST(request: NextRequest) {
       });
       transferId = transfer.id;
     } else {
-      const payoutCurrency = String(bankAccount.currency || currency).toUpperCase();
-      if (!isFincraCurrency(payoutCurrency)) {
+      try {
+        const fincraResult = await performCreatorFincraWalletPayout(supabase, user, {
+          amount: Number(amount),
+          currency: String(currency).toUpperCase(),
+        });
         return NextResponse.json(
-          { error: `Fincra payouts support NGN, GHS, and KES only. Got ${payoutCurrency}.` },
-          { status: 400, headers: corsHeaders }
+          {
+            payout_id: fincraResult.payoutId,
+            status: 'pending',
+            amount: fincraResult.amount,
+            currency: fincraResult.currency,
+            estimated_arrival: fincraResult.estimatedArrival,
+          },
+          { headers: corsHeaders },
         );
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Fincra payout failed';
+        const status = (e as { status?: number })?.status === 403 ? 502 : 400;
+        return NextResponse.json({ error: msg }, { status, headers: corsHeaders });
       }
-      const accountNumberEncrypted = String(bankAccount.account_number_encrypted || '');
-      const bankCodeEncrypted = String(bankAccount.routing_number_encrypted || '');
-      const accountNumber = accountNumberEncrypted.includes(':') ? decryptSecret(accountNumberEncrypted) : accountNumberEncrypted;
-      const bankCode = bankCodeEncrypted.includes(':') ? decryptSecret(bankCodeEncrypted) : bankCodeEncrypted;
-      const accountName = String(bankAccount.account_holder_name || 'Account Holder');
-      const reference = `fincra_payout_${user.id}_${Date.now()}`;
-      const transfer = await createFincraTransfer({
-        amount: Number(amount),
-        currency: payoutCurrency,
-        accountNumber,
-        bankCode,
-        accountName,
-        reference,
-        narration: 'SoundBridge creator payout',
-      });
-      transferId = transfer.id;
     }
 
-    // Deduct from wallet balance
+    // Deduct from wallet balance (Stripe only — Fincra returns above)
     const { error: walletUpdateError } = await supabase
       .rpc('add_wallet_transaction', {
         user_uuid: user.id,
