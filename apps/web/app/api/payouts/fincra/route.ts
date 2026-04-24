@@ -8,6 +8,7 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import { decryptSecret } from '@/src/lib/encryption';
 import { performCreatorFincraWalletPayout } from '@/src/lib/payouts/creator-fincra-wallet-payout';
+import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
     }
+
+    await syncFincraWalletWithdrawalMethodsFromCreatorBank(supabase, user.id);
 
     const body = await request.json().catch(() => ({}));
     const amount = Number(body.amount);

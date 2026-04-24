@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import type { BankAccountFormData } from '../../../../../src/lib/types/revenue';
 import { isWiseCurrency } from '@/src/lib/wise-currencies';
+import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 
 export async function GET(request: NextRequest) {
   try {
@@ -270,6 +271,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    await syncFincraWalletWithdrawalMethodsFromCreatorBank(supabase, user.id);
 
     return NextResponse.json({ 
       success: true, 

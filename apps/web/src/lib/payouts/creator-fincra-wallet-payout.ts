@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import { decryptSecret } from '@/src/lib/encryption';
+import { pickVerifiedFincraCreatorBankAccount } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 
 export type CreatorFincraWalletPayoutInput = {
   amount: number;
@@ -57,19 +58,23 @@ export async function performCreatorFincraWalletPayout(
     throw new Error(`Minimum payout amount is ${sym}${minimumBalance}`);
   }
 
-  const { data: bankAccount, error: bankError } = await supabase
+  const { data: bankRows, error: bankError } = await supabase
     .from('creator_bank_accounts')
     .select(
-      'stripe_account_id, is_verified, currency, account_number_encrypted, routing_number_encrypted, account_holder_name',
+      'stripe_account_id, is_verified, currency, account_number_encrypted, routing_number_encrypted, account_holder_name, updated_at',
     )
     .eq('user_id', user.id)
-    .single();
+    .order('updated_at', { ascending: false });
 
-  if (bankError || !bankAccount) {
+  if (bankError) {
     throw new Error('Payout account not found. Please complete onboarding first.');
   }
-  if (!bankAccount.is_verified) {
-    throw new Error('Your payout account is not yet verified. Please complete the verification process.');
+
+  const bankAccount = pickVerifiedFincraCreatorBankAccount(bankRows ?? []);
+  if (!bankAccount) {
+    throw new Error(
+      'No verified Fincra payout bank (NGN, GHS, or KES) on file. Add or verify your bank account first.',
+    );
   }
 
   const payoutCurrency = String(bankAccount.currency || currency).toUpperCase();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 
 /**
  * Withdrawal methods API — available to all authenticated users (no creator role required).
@@ -21,6 +22,8 @@ export async function GET(request: NextRequest) {
         { status: 401, headers: CORS_HEADERS }
       );
     }
+
+    await syncFincraWalletWithdrawalMethodsFromCreatorBank(supabase, user.id);
 
     // Get user's withdrawal methods
     const { data: methods, error: methodsError } = await supabase
