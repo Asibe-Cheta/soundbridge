@@ -40,7 +40,11 @@ export async function performCreatorFincraWalletPayout(
     .single();
 
   const userTier = profile?.subscription_tier || 'free';
-  const minimumBalance = userTier === 'unlimited' ? 10.0 : 20.0;
+  const defaultMinimumBalance = userTier === 'unlimited' ? 10.0 : 20.0;
+  // Temporary test override: set MIN_PAYOUT_AMOUNT_OVERRIDE=5 in env to lower minimum payout.
+  const minOverrideRaw = Number(process.env.MIN_PAYOUT_AMOUNT_OVERRIDE ?? '');
+  const minimumBalance =
+    Number.isFinite(minOverrideRaw) && minOverrideRaw > 0 ? minOverrideRaw : defaultMinimumBalance;
 
   const { data: wallet } = await supabase
     .from('user_wallets')
