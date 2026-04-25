@@ -82,6 +82,31 @@ function getFincraConfig() {
 }
 
 let fixieProxy: ProxyAgent | undefined;
+let fincraConfigFingerprintLogged = false;
+
+function shortFingerprint(value: string | null | undefined): string {
+  const v = String(value ?? '').trim();
+  if (!v) return 'missing';
+  const digest = createHmac('sha256', 'fincra-debug-fingerprint')
+    .update(v)
+    .digest('hex')
+    .slice(0, 10);
+  return `len=${v.length} head=${v.slice(0, 4)} tail=${v.slice(-4)} fp=${digest}`;
+}
+
+function logFincraConfigFingerprintOnce(): void {
+  if (fincraConfigFingerprintLogged) return;
+  fincraConfigFingerprintLogged = true;
+  const cfg = getFincraConfig();
+  console.info('[fincra] config fingerprint', {
+    base_url: cfg.baseUrl || 'missing',
+    api_key: shortFingerprint(cfg.apiKey),
+    public_key: shortFingerprint(cfg.publicKey),
+    webhook_secret: shortFingerprint(cfg.webhookSecret),
+    business_id: shortFingerprint(cfg.businessId),
+    payout_body: cfg.payoutBody,
+  });
+}
 
 function getFixieDispatcher(): Dispatcher | undefined {
   const fixie = process.env.FIXIE_URL?.trim();
@@ -105,6 +130,7 @@ function getFixieDispatcher(): Dispatcher | undefined {
 }
 
 async function fincraHttp<T>(method: string, path: string, body?: unknown): Promise<T> {
+  logFincraConfigFingerprintOnce();
   const { baseUrl, apiKey, publicKey } = getFincraConfig();
   if (!apiKey) throw new Error('FINCRA_API_KEY is not configured');
 
