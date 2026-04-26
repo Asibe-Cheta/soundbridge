@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 const title = 'Download SoundBridge';
 const description =
-  'The professional network for music creators. Get the SoundBridge app on iOS — Android coming mid-April 2026.';
+  'The professional network for music creators. Get the SoundBridge app on iOS and Android.';
 
 export const metadata: Metadata = {
   title,

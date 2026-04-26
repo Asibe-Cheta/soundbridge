@@ -104,7 +104,7 @@ export default function AppDownloadPage() {
         <section className="mx-auto max-w-6xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16">
           <motion.div {...fadeUp} className="mx-auto max-w-3xl text-center">
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-red-400/90">
-              iOS out now · Android soon
+              iOS + Android out now
             </p>
             <h1 className="font-sans text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl">
               Your music career,
@@ -128,18 +128,15 @@ export default function AppDownloadPage() {
               className="mx-auto w-full max-w-sm justify-center scale-110 sm:scale-125 drop-shadow-[0_20px_50px_-12px_rgba(220,38,38,0.45)]"
             />
 
-            <div className="flex w-full max-w-sm flex-col items-center gap-2">
-              <button
-                type="button"
-                disabled
-                className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3.5 text-white/35"
-                aria-disabled
+            <div className="flex w-full max-w-sm flex-col items-center gap-3">
+              <Link
+                href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/[0.08] px-6 py-3.5 text-white transition hover:bg-white/[0.14]"
               >
                 <span className="text-sm font-medium">Google Play</span>
-              </button>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/45">
-                Coming mid-April 2026
-              </span>
+              </Link>
             </div>
           </motion.div>
         </section>
@@ -250,11 +247,19 @@ export default function AppDownloadPage() {
           >
             <Mic2 className="mb-4 h-10 w-10 text-red-400/80" aria-hidden />
             <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Start on iPhone today
+              Download on iPhone and Android
             </h2>
             <p className="mt-3 text-white/55">Join the community building real music careers.</p>
-            <div className="mt-10">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <AppStoreBadgeLink size="md" className="justify-center scale-110" />
+              <Link
+                href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/[0.08] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.14]"
+              >
+                Get it on Google Play
+              </Link>
             </div>
           </motion.div>
         </section>

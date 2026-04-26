@@ -391,7 +391,7 @@ export default function HomePageClient() {
             }`}
           >
             <Sparkles className="w-4 h-4 text-pink-500" />
-            iOS app live · Android soon
+            iOS app live · Android app now live
           </div>
           <h1 className={`text-4xl lg:text-6xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             LinkedIn for Audio Creators
@@ -402,6 +402,18 @@ export default function HomePageClient() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <AppStoreBadgeLink size="lg" className="justify-center" />
+            <Link
+              href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
+                theme === 'dark'
+                  ? 'border-white/20 text-white hover:bg-white/10'
+                  : 'border-gray-300 text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Get it on Android
+            </Link>
             <Link
               href="/app"
               className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
@@ -526,10 +538,22 @@ export default function HomePageClient() {
             Start Your SoundBridge Journey
           </h2>
           <p className={`text-lg mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            Download SoundBridge on iPhone — Android is coming mid-April 2026.
+            Download SoundBridge on iPhone or Android and start building your creator career.
           </p>
-          <div className="flex justify-center">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <AppStoreBadgeLink size="md" className="justify-center" />
+            <Link
+              href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
+                theme === 'dark'
+                  ? 'border-white/20 text-white hover:bg-white/10'
+                  : 'border-gray-300 text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Get it on Android
+            </Link>
           </div>
         </section>
 
@@ -632,7 +656,7 @@ export default function HomePageClient() {
                 </p>
               </div>
               <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Android version coming in mid-April.
+                iPhone and Android apps are both available now.
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <AppStoreBadgeLink size="lg" />

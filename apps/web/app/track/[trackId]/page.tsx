@@ -309,7 +309,7 @@ export default async function TrackPage({ params }: Props) {
             <div className="flex flex-wrap items-center justify-center gap-4">
               <AppStoreBadgeLink size="md" className="justify-center" />
               <a
-                href="https://play.google.com/store/apps/details?id=com.soundbridge"
+                href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition"

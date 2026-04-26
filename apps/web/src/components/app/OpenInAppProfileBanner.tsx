@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
-const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.soundbridge';
+const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share';
 
 const storageKey = (profileId: string) => `sb_dismiss_open_app_profile:${profileId}`;
 
