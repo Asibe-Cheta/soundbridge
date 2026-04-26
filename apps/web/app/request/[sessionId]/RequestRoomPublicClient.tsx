@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type SessionPayload = {
   id: string;
@@ -21,9 +22,11 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 function CheckoutForm({
   clientSecret,
   onSuccess,
+  isDark,
 }: {
   clientSecret: string;
   onSuccess: () => void;
+  isDark: boolean;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -50,7 +53,7 @@ function CheckoutForm({
   return (
     <form onSubmit={handleConfirm} className="space-y-4">
       <PaymentElement />
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className={isDark ? 'text-sm text-red-300' : 'text-sm text-red-600'}>{error}</p> : null}
       <button
         type="submit"
         disabled={processing || !stripe}
@@ -69,6 +72,8 @@ export default function RequestRoomPublicClient({
   sessionId: string;
   session: SessionPayload;
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [songRequest, setSongRequest] = useState('');
   const [tipAmount, setTipAmount] = useState(String(session.minimum_tip_amount || 1));
   const [tipperName, setTipperName] = useState('');
@@ -117,28 +122,34 @@ export default function RequestRoomPublicClient({
   };
 
   if (session.status !== 'active') {
-    return <p className="text-center text-lg text-white">This session has ended.</p>;
+    return <p className={isDark ? 'text-center text-lg text-white' : 'text-center text-lg text-slate-900'}>This session has ended.</p>;
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-black/30 p-6 text-white">
+    <div className={isDark ? 'mx-auto max-w-xl rounded-2xl border border-white/10 bg-black/30 p-6 text-white' : 'mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm'}>
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold">{session.session_name || `Request Room with ${displayName}`}</h1>
-        <p className="mt-1 text-white/70">Make a song request and tip {displayName} live.</p>
+        <p className={isDark ? 'mt-1 text-white/70' : 'mt-1 text-slate-600'}>Make a song request and tip {displayName} live.</p>
       </div>
 
       {message ? (
-        <div className="rounded-lg bg-emerald-600/20 p-4 text-emerald-200">{message}</div>
+        <div className={isDark ? 'rounded-lg bg-emerald-600/20 p-4 text-emerald-200' : 'rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-700'}>{message}</div>
       ) : (
         <>
           {!clientSecret ? (
             <form onSubmit={beginPayment} className="space-y-4">
+              <label className={isDark ? 'block text-sm font-semibold text-white' : 'block text-sm font-semibold text-slate-800'}>
+                Song request
+              </label>
               <input
                 value={songRequest}
                 onChange={e => setSongRequest(e.target.value)}
                 placeholder="What song would you like to hear?"
-                className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400"
+                className={isDark ? 'w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400' : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-red-400'}
               />
+              <label className={isDark ? 'block text-sm font-semibold text-white' : 'block text-sm font-semibold text-slate-800'}>
+                Tip amount (minimum ${minTip.toFixed(2)})
+              </label>
               <input
                 type="number"
                 min={minTip}
@@ -146,22 +157,28 @@ export default function RequestRoomPublicClient({
                 value={tipAmount}
                 onChange={e => setTipAmount(e.target.value)}
                 placeholder={`Tip amount (min ${minTip})`}
-                className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400"
+                className={isDark ? 'w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400' : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-red-400'}
               />
+              <label className={isDark ? 'block text-sm font-semibold text-white' : 'block text-sm font-semibold text-slate-800'}>
+                Your name (optional)
+              </label>
               <input
                 value={tipperName}
                 onChange={e => setTipperName(e.target.value)}
                 placeholder="Your name (optional)"
-                className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400"
+                className={isDark ? 'w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400' : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-red-400'}
               />
+              <label className={isDark ? 'block text-sm font-semibold text-white' : 'block text-sm font-semibold text-slate-800'}>
+                Email (optional)
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={`Your email (optional updates from ${displayName})`}
-                className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400"
+                className={isDark ? 'w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 outline-none focus:border-red-400' : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-red-400'}
               />
-              <label className="flex items-start gap-2 text-sm text-white/80">
+              <label className={isDark ? 'flex items-start gap-2 text-sm text-white/80' : 'flex items-start gap-2 text-sm text-slate-600'}>
                 <input
                   type="checkbox"
                   checked={gdprConsent}
@@ -170,7 +187,7 @@ export default function RequestRoomPublicClient({
                 />
                 <span>I consent to receive occasional updates from SoundBridge and this creator.</span>
               </label>
-              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {error ? <p className={isDark ? 'text-sm text-red-300' : 'text-sm text-red-600'}>{error}</p> : null}
               <button
                 type="submit"
                 className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-500"
@@ -182,6 +199,7 @@ export default function RequestRoomPublicClient({
             <Elements stripe={stripePromise} options={options}>
               <CheckoutForm
                 clientSecret={clientSecret}
+                isDark={isDark}
                 onSuccess={() => {
                   setMessage(`Your request has been sent! ${displayName} will see it now.`);
                 }}

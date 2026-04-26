@@ -22,8 +22,8 @@ export default async function RequestRoomPublicPage({
 
   if (!session) {
     return (
-      <main className="min-h-screen bg-[#121212] p-6 text-white">
-        <div className="mx-auto max-w-xl rounded-xl border border-white/10 p-6 text-center">
+      <main className="min-h-screen bg-slate-50 p-6 text-slate-900 dark:bg-[#121212] dark:text-white">
+        <div className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 text-center dark:border-white/10 dark:bg-black/20">
           This session has ended.
         </div>
       </main>
@@ -37,7 +37,7 @@ export default async function RequestRoomPublicPage({
     .maybeSingle();
 
   return (
-    <main className="min-h-screen bg-[#121212] p-6">
+    <main className="min-h-screen bg-slate-50 p-6 dark:bg-[#121212]">
       <RequestRoomPublicClient sessionId={sessionId} session={{ ...session, creator }} />
     </main>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import QRCode from 'qrcode';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Session = {
   id: string;
@@ -23,6 +24,7 @@ type RoomRequest = {
 };
 
 export default function RequestRoomDashboardPage() {
+  const { theme } = useTheme();
   const supabase = useMemo(() => createClientComponentClient(), []);
   const [session, setSession] = useState<Session | null>(null);
   const [requests, setRequests] = useState<RoomRequest[]>([]);
@@ -127,48 +129,62 @@ export default function RequestRoomDashboardPage() {
     await loadData();
   };
 
-  if (loading) return <main className="min-h-screen bg-slate-50 p-6 text-slate-900">Loading...</main>;
+  const isDark = theme === 'dark';
+  const pageClass = isDark ? 'min-h-screen bg-[#121212] p-6 text-white' : 'min-h-screen bg-slate-50 p-6 text-slate-900';
+  const cardClass = isDark ? 'rounded-xl border border-white/10 bg-black/20 p-6 shadow-sm' : 'rounded-xl border border-slate-200 bg-white p-6 shadow-sm';
+  const helperCardClass = isDark ? 'rounded-lg border border-white/10 bg-white/5 p-3' : 'rounded-lg border border-slate-200 bg-slate-50 p-3';
+  const sectionCardClass = isDark ? 'rounded-xl border border-white/10 bg-black/20 p-4 shadow-sm' : 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm';
+  const mutedTextClass = isDark ? 'text-white/70' : 'text-slate-600';
+  const inputClass = isDark
+    ? 'w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 text-white placeholder:text-white/40 focus:border-rose-500 focus:outline-none'
+    : 'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none';
+  const subtleBtnClass = isDark
+    ? 'rounded-lg border border-white/20 px-4 py-2 text-white hover:bg-white/10'
+    : 'rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100';
+  const queueItemClass = isDark ? 'flex items-center justify-between rounded-lg border border-white/10 p-3' : 'flex items-center justify-between rounded-lg border border-slate-200 p-3';
+
+  if (loading) return <main className={pageClass}>Loading...</main>;
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 text-slate-900">
+    <main className={pageClass}>
       <div className="mx-auto max-w-5xl space-y-6">
         <h1 className="text-3xl font-bold">Request Room</h1>
-        <p className="text-slate-600">
+        <p className={mutedTextClass}>
           Open a live request session, set a minimum tip, share your link or QR code, and get requests in real time.
         </p>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">How it works</h2>
+        <div className={isDark ? 'rounded-xl border border-white/10 bg-black/20 p-5 shadow-sm' : 'rounded-xl border border-slate-200 bg-white p-5 shadow-sm'}>
+          <h2 className={isDark ? 'text-lg font-semibold text-white' : 'text-lg font-semibold text-slate-900'}>How it works</h2>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-semibold text-slate-800">1. Start session</p>
-              <p className="mt-1 text-sm text-slate-600">Set a session name and minimum tip amount in USD.</p>
+            <div className={helperCardClass}>
+              <p className={isDark ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-slate-800'}>1. Start session</p>
+              <p className={isDark ? 'mt-1 text-sm text-white/70' : 'mt-1 text-sm text-slate-600'}>Set a session name and minimum tip amount in USD.</p>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-semibold text-slate-800">2. Share link or QR</p>
-              <p className="mt-1 text-sm text-slate-600">Fans scan the QR or open your link to send requests and tips.</p>
+            <div className={helperCardClass}>
+              <p className={isDark ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-slate-800'}>2. Share link or QR</p>
+              <p className={isDark ? 'mt-1 text-sm text-white/70' : 'mt-1 text-sm text-slate-600'}>Fans scan the QR or open your link to send requests and tips.</p>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-semibold text-slate-800">3. Manage requests live</p>
-              <p className="mt-1 text-sm text-slate-600">Track incoming requests, mark as Playing/Done, and end session when finished.</p>
+            <div className={helperCardClass}>
+              <p className={isDark ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-slate-800'}>3. Manage requests live</p>
+              <p className={isDark ? 'mt-1 text-sm text-white/70' : 'mt-1 text-sm text-slate-600'}>Track incoming requests, mark as Playing/Done, and end session when finished.</p>
             </div>
           </div>
         </div>
 
-        {error ? <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{error}</div> : null}
+        {error ? <div className={isDark ? 'rounded-lg border border-red-500/40 bg-red-900/20 p-3 text-red-200' : 'rounded-lg border border-red-200 bg-red-50 p-3 text-red-700'}>{error}</div> : null}
 
         {!session ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <div className={`${cardClass} space-y-4`}>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">Session name (optional)</label>
+              <label className={isDark ? 'mb-2 block text-sm font-semibold text-white' : 'mb-2 block text-sm font-semibold text-slate-800'}>Session name (optional)</label>
               <input
                 value={sessionName}
                 onChange={e => setSessionName(e.target.value)}
                 placeholder='Example: "Saturday Night at Lounge 44"'
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">Minimum tip amount (USD)</label>
+              <label className={isDark ? 'mb-2 block text-sm font-semibold text-white' : 'mb-2 block text-sm font-semibold text-slate-800'}>Minimum tip amount (USD)</label>
               <input
                 type="number"
                 min="1"
@@ -176,9 +192,9 @@ export default function RequestRoomDashboardPage() {
                 value={minimumTip}
                 onChange={e => setMinimumTip(e.target.value)}
                 placeholder="1.00"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none"
+                className={inputClass}
               />
-              <p className="mt-2 text-sm text-slate-500">
+              <p className={isDark ? 'mt-2 text-sm text-white/60' : 'mt-2 text-sm text-slate-500'}>
                 This is the minimum money a fan must pay per request. The default value <strong>1</strong> means $1.00.
               </p>
             </div>
@@ -189,15 +205,15 @@ export default function RequestRoomDashboardPage() {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
+              <div className={`${cardClass} space-y-3`}>
                 <p className="text-lg font-semibold">{session.session_name || 'Live Request Room'}</p>
-                <p className="text-slate-600">Minimum tip: ${Number(session.minimum_tip_amount || 0).toFixed(2)}</p>
-                <p className="text-slate-600">Total tips: ${Number(session.total_tips_collected || 0).toFixed(2)}</p>
-                <p className="text-slate-600">Requests: {session.total_requests_received || 0}</p>
+                <p className={mutedTextClass}>Minimum tip: ${Number(session.minimum_tip_amount || 0).toFixed(2)}</p>
+                <p className={mutedTextClass}>Total tips: ${Number(session.total_tips_collected || 0).toFixed(2)}</p>
+                <p className={mutedTextClass}>Requests: {session.total_requests_received || 0}</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => navigator.clipboard.writeText(sessionUrl)}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100"
+                    className={subtleBtnClass}
                   >
                     Copy Link
                   </button>
@@ -205,7 +221,7 @@ export default function RequestRoomDashboardPage() {
                     href={`/request-room/${session.id}/project`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100"
+                    className={subtleBtnClass}
                   >
                     Open Projection View
                   </a>
@@ -217,31 +233,31 @@ export default function RequestRoomDashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
+              <div className={isDark ? 'rounded-xl border border-white/10 bg-black/20 p-4 text-white shadow-sm' : 'rounded-xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm'}>
                 {qrUrl ? <img src={qrUrl} alt="Request room QR code" className="mx-auto h-72 w-72 object-contain" /> : null}
-                <p className="mt-3 text-center text-sm text-slate-600">Scan to request: {sessionUrl}</p>
+                <p className={isDark ? 'mt-3 text-center text-sm text-white/70' : 'mt-3 text-center text-sm text-slate-600'}>Scan to request: {sessionUrl}</p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className={sectionCardClass}>
               <h2 className="mb-3 text-xl font-semibold">Request Queue</h2>
               <div className="space-y-3">
                 {requests.length === 0 ? (
-                  <p className="text-slate-500">No requests yet.</p>
+                  <p className={isDark ? 'text-white/60' : 'text-slate-500'}>No requests yet.</p>
                 ) : (
                   requests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                    <div key={req.id} className={queueItemClass}>
                       <div>
                         <p className="font-medium">{req.song_request}</p>
-                        <p className="text-sm text-slate-600">
+                        <p className={isDark ? 'text-sm text-white/70' : 'text-sm text-slate-600'}>
                           {req.tipper_name || 'Anonymous'} - ${Number(req.tip_amount || 0).toFixed(2)}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => updateStatus(req.id, 'playing')} className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100">
+                        <button onClick={() => updateStatus(req.id, 'playing')} className={isDark ? 'rounded border border-white/20 px-2 py-1 text-sm text-white hover:bg-white/10' : 'rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100'}>
                           Playing
                         </button>
-                        <button onClick={() => updateStatus(req.id, 'done')} className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100">
+                        <button onClick={() => updateStatus(req.id, 'done')} className={isDark ? 'rounded border border-white/20 px-2 py-1 text-sm text-white hover:bg-white/10' : 'rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100'}>
                           Done
                         </button>
                       </div>
