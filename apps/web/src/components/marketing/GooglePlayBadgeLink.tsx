@@ -2,9 +2,9 @@ import { ANDROID_PLAY_STORE_URL } from '@/src/lib/app-store-url';
 import { AppStoreBadgeSize } from '@/src/components/marketing/AppStoreBadgeLink';
 
 const SIZE_CLASS: Record<AppStoreBadgeSize, string> = {
-  sm: 'h-11 w-auto sm:h-12',
-  md: 'h-12 w-auto sm:h-[3.25rem]',
-  lg: 'h-14 w-auto sm:h-16 md:h-[4.25rem]',
+  sm: 'h-12 w-auto sm:h-14',
+  md: 'h-14 w-auto sm:h-[3.75rem]',
+  lg: 'h-16 w-auto sm:h-[4.5rem] md:h-[4.9rem]',
 };
 
 type Props = {
