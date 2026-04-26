@@ -26,10 +26,10 @@ export function GooglePlayBadgeLink({ size = 'md', className = '' }: Props) {
       aria-label="Get it on Google Play"
     >
       <img
-        src="/images/logos/google-play.svg"
+        src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
         alt="Get it on Google Play"
-        width={180}
-        height={53}
+        width={646}
+        height={250}
         className={`${SIZE_CLASS[size]} max-w-full`}
         decoding="async"
       />
