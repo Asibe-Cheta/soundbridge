@@ -130,7 +130,10 @@ export default function AppDownloadPage() {
             />
 
             <div className="flex w-full max-w-sm flex-col items-center gap-3">
-              <GooglePlayBadgeLink size="lg" className="w-full justify-center" />
+              <GooglePlayBadgeLink
+                size="lg"
+                className="mx-auto w-full max-w-sm justify-center scale-110 sm:scale-125"
+              />
             </div>
           </motion.div>
         </section>
@@ -246,7 +249,7 @@ export default function AppDownloadPage() {
             <p className="mt-3 text-white/55">Join the community building real music careers.</p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <AppStoreBadgeLink size="md" className="justify-center scale-110" />
-              <GooglePlayBadgeLink size="md" className="justify-center" />
+              <GooglePlayBadgeLink size="md" className="justify-center scale-110" />
             </div>
           </motion.div>
         </section>
