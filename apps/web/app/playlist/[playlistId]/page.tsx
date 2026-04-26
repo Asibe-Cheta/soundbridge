@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
+import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
 
 interface Props {
   params: { playlistId: string };
@@ -227,14 +228,7 @@ export default async function PlaylistPage({ params }: Props) {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <AppStoreBadgeLink size="md" className="justify-center" />
-              <a
-                href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition"
-              >
-                Google Play
-              </a>
+              <GooglePlayBadgeLink size="md" className="justify-center" />
             </div>
           </div>
         </div>

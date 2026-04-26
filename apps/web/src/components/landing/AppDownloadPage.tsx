@@ -13,6 +13,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
+import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
 
 const SCREENSHOTS: { src: string; alt: string; tilt: number; y: number }[] = [
   { src: '/app-download/feed.png', alt: 'SoundBridge social feed', tilt: -7, y: 0 },
@@ -129,14 +130,7 @@ export default function AppDownloadPage() {
             />
 
             <div className="flex w-full max-w-sm flex-col items-center gap-3">
-              <Link
-                href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/[0.08] px-6 py-3.5 text-white transition hover:bg-white/[0.14]"
-              >
-                <span className="text-sm font-medium">Google Play</span>
-              </Link>
+              <GooglePlayBadgeLink size="lg" className="w-full justify-center" />
             </div>
           </motion.div>
         </section>
@@ -252,14 +246,7 @@ export default function AppDownloadPage() {
             <p className="mt-3 text-white/55">Join the community building real music careers.</p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <AppStoreBadgeLink size="md" className="justify-center scale-110" />
-              <Link
-                href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/[0.08] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.14]"
-              >
-                Get it on Google Play
-              </Link>
+              <GooglePlayBadgeLink size="md" className="justify-center" />
             </div>
           </motion.div>
         </section>

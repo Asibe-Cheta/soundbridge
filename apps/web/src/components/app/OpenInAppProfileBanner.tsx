@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
-const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share';
+import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
 
 const storageKey = (profileId: string) => `sb_dismiss_open_app_profile:${profileId}`;
 
@@ -59,15 +59,7 @@ export function OpenInAppProfileBanner({ profileId, displayName }: Props) {
               Open in app
             </a>
             <AppStoreBadgeLink size="sm" className="-my-0.5" />
-            <span className="text-xs text-gray-500">·</span>
-            <a
-              href={ANDROID_APP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-red-300 underline-offset-2 hover:text-red-200 hover:underline"
-            >
-              Google Play
-            </a>
+            <GooglePlayBadgeLink size="sm" className="-my-0.5" />
           </div>
         </div>
         <button

@@ -8,6 +8,7 @@ import { HeroSection } from '@/src/components/sections/HeroSection';
 import { Footer } from '@/src/components/layout/Footer';
 import { StructuredData } from '@/src/components/seo/StructuredData';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
+import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
 import {
   ArrowRight,
   Briefcase,
@@ -402,18 +403,7 @@ export default function HomePageClient() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <AppStoreBadgeLink size="lg" className="justify-center" />
-            <Link
-              href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
-                theme === 'dark'
-                  ? 'border-white/20 text-white hover:bg-white/10'
-                  : 'border-gray-300 text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              Get it on Android
-            </Link>
+            <GooglePlayBadgeLink size="lg" className="justify-center" />
             <Link
               href="/app"
               className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
@@ -542,18 +532,7 @@ export default function HomePageClient() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <AppStoreBadgeLink size="md" className="justify-center" />
-            <Link
-              href="https://play.google.com/store/apps/details?id=com.soundbridge.mobile&pcampaignid=web_share"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`px-6 py-3 rounded-lg text-sm font-semibold border transition-colors ${
-                theme === 'dark'
-                  ? 'border-white/20 text-white hover:bg-white/10'
-                  : 'border-gray-300 text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              Get it on Android
-            </Link>
+            <GooglePlayBadgeLink size="md" className="justify-center" />
           </div>
         </section>
 
