@@ -127,35 +127,61 @@ export default function RequestRoomDashboardPage() {
     await loadData();
   };
 
-  if (loading) return <main className="min-h-screen bg-[#121212] p-6 text-white">Loading...</main>;
+  if (loading) return <main className="min-h-screen bg-slate-50 p-6 text-slate-900">Loading...</main>;
 
   return (
-    <main className="min-h-screen bg-[#121212] p-6 text-white">
+    <main className="min-h-screen bg-slate-50 p-6 text-slate-900">
       <div className="mx-auto max-w-5xl space-y-6">
         <h1 className="text-3xl font-bold">Request Room</h1>
-        <p className="text-white/70">
+        <p className="text-slate-600">
           Open a live request session, set a minimum tip, share your link or QR code, and get requests in real time.
         </p>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">How it works</h2>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-sm font-semibold text-slate-800">1. Start session</p>
+              <p className="mt-1 text-sm text-slate-600">Set a session name and minimum tip amount in USD.</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-sm font-semibold text-slate-800">2. Share link or QR</p>
+              <p className="mt-1 text-sm text-slate-600">Fans scan the QR or open your link to send requests and tips.</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-sm font-semibold text-slate-800">3. Manage requests live</p>
+              <p className="mt-1 text-sm text-slate-600">Track incoming requests, mark as Playing/Done, and end session when finished.</p>
+            </div>
+          </div>
+        </div>
 
-        {error ? <div className="rounded-lg bg-red-600/20 p-3 text-red-200">{error}</div> : null}
+        {error ? <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{error}</div> : null}
 
         {!session ? (
-          <div className="rounded-xl border border-white/10 bg-black/20 p-6 space-y-3">
-            <input
-              value={sessionName}
-              onChange={e => setSessionName(e.target.value)}
-              placeholder="Session name (optional)"
-              className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3"
-            />
-            <input
-              type="number"
-              min="1"
-              step="0.01"
-              value={minimumTip}
-              onChange={e => setMinimumTip(e.target.value)}
-              placeholder="Minimum tip amount"
-              className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3"
-            />
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-800">Session name (optional)</label>
+              <input
+                value={sessionName}
+                onChange={e => setSessionName(e.target.value)}
+                placeholder='Example: "Saturday Night at Lounge 44"'
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-800">Minimum tip amount (USD)</label>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                value={minimumTip}
+                onChange={e => setMinimumTip(e.target.value)}
+                placeholder="1.00"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none"
+              />
+              <p className="mt-2 text-sm text-slate-500">
+                This is the minimum money a fan must pay per request. The default value <strong>1</strong> means $1.00.
+              </p>
+            </div>
             <button onClick={startSession} className="rounded-lg bg-red-600 px-5 py-3 font-semibold hover:bg-red-500">
               Start Session
             </button>
@@ -163,15 +189,15 @@ export default function RequestRoomDashboardPage() {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-xl border border-white/10 bg-black/20 p-6 space-y-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
                 <p className="text-lg font-semibold">{session.session_name || 'Live Request Room'}</p>
-                <p className="text-white/70">Minimum tip: ${Number(session.minimum_tip_amount || 0).toFixed(2)}</p>
-                <p className="text-white/70">Total tips: ${Number(session.total_tips_collected || 0).toFixed(2)}</p>
-                <p className="text-white/70">Requests: {session.total_requests_received || 0}</p>
-                <div className="flex gap-2">
+                <p className="text-slate-600">Minimum tip: ${Number(session.minimum_tip_amount || 0).toFixed(2)}</p>
+                <p className="text-slate-600">Total tips: ${Number(session.total_tips_collected || 0).toFixed(2)}</p>
+                <p className="text-slate-600">Requests: {session.total_requests_received || 0}</p>
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => navigator.clipboard.writeText(sessionUrl)}
-                    className="rounded-lg border border-white/20 px-4 py-2 hover:bg-white/10"
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100"
                   >
                     Copy Link
                   </button>
@@ -179,7 +205,7 @@ export default function RequestRoomDashboardPage() {
                     href={`/request-room/${session.id}/project`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-lg border border-white/20 px-4 py-2 hover:bg-white/10"
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100"
                   >
                     Open Projection View
                   </a>
@@ -191,31 +217,31 @@ export default function RequestRoomDashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white p-4 text-black">
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
                 {qrUrl ? <img src={qrUrl} alt="Request room QR code" className="mx-auto h-72 w-72 object-contain" /> : null}
-                <p className="mt-3 text-center text-sm">Scan to request: {sessionUrl}</p>
+                <p className="mt-3 text-center text-sm text-slate-600">Scan to request: {sessionUrl}</p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 className="mb-3 text-xl font-semibold">Request Queue</h2>
               <div className="space-y-3">
                 {requests.length === 0 ? (
-                  <p className="text-white/60">No requests yet.</p>
+                  <p className="text-slate-500">No requests yet.</p>
                 ) : (
                   requests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between rounded-lg border border-white/10 p-3">
+                    <div key={req.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
                       <div>
                         <p className="font-medium">{req.song_request}</p>
-                        <p className="text-sm text-white/70">
+                        <p className="text-sm text-slate-600">
                           {req.tipper_name || 'Anonymous'} - ${Number(req.tip_amount || 0).toFixed(2)}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => updateStatus(req.id, 'playing')} className="rounded border border-white/20 px-2 py-1 text-sm">
+                        <button onClick={() => updateStatus(req.id, 'playing')} className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100">
                           Playing
                         </button>
-                        <button onClick={() => updateStatus(req.id, 'done')} className="rounded border border-white/20 px-2 py-1 text-sm">
+                        <button onClick={() => updateStatus(req.id, 'done')} className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100">
                           Done
                         </button>
                       </div>

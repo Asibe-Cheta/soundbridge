@@ -7,7 +7,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
-import { Settings, Upload, Calendar, Music, BarChart3, Users, Activity, AlertCircle, X, AlertTriangle, TrendingUp, Heart, Play, FileAudio, Clock, Plus, MessageCircle, Home, Star, DollarSign, Briefcase } from 'lucide-react';
+import { Settings, Upload, Calendar, Music, BarChart3, Users, Activity, AlertCircle, X, AlertTriangle, TrendingUp, Heart, Play, FileAudio, Clock, Plus, MessageCircle, Home, Star, DollarSign, Briefcase, Radio } from 'lucide-react';
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
 import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';
@@ -76,13 +76,14 @@ export default function DashboardPage() {
     }
   };
 
-  const navigation = [
+  const navigation: Array<{ id: string; label: string; icon: any; href?: string }> = [
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'content', label: 'Content', icon: Music },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'followers', label: 'Followers', icon: Users },
     { id: 'subscription', label: 'Subscription', icon: Star },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
+    { id: 'request-room', label: 'Request Room', icon: Radio, href: '/request-room' },
     { id: 'service-provider', label: 'Service Provider', icon: Briefcase },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -121,6 +122,37 @@ export default function DashboardPage() {
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const sharedStyle: React.CSSProperties = {
+                display: 'flex',
+                alignItems: 'center',
+                gap: isMobile ? '0.25rem' : '0.5rem',
+                padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
+                fontWeight: '500',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                color: isActive ? 'white' : 'var(--text-secondary)',
+                background: isActive ? 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)' : 'transparent',
+                boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none',
+                textDecoration: 'none',
+              };
+
+              if (item.href) {
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    style={sharedStyle}
+                    onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-primary)', e.currentTarget.style.background = 'var(--hover-bg)')}
+                    onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-secondary)', e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Icon size={isMobile ? 14 : 16} />
+                    {item.label}
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={item.id}
@@ -138,21 +170,7 @@ export default function DashboardPage() {
                         | 'settings'
                     )
                   }
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: isMobile ? '0.25rem' : '0.5rem',
-                    padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    fontSize: isMobile ? '0.75rem' : '0.875rem',
-                    fontWeight: '500',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    background: isActive ? 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)' : 'transparent',
-                    color: isActive ? 'white' : 'var(--text-secondary)',
-                    boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none'
-                  }}
+                  style={sharedStyle}
                   onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-primary)', e.currentTarget.style.background = 'var(--hover-bg)')}
                   onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-secondary)', e.currentTarget.style.background = 'transparent')}
                 >
@@ -274,6 +292,14 @@ export default function DashboardPage() {
                     description: 'Chat with community',
                     href: '/messaging',
                     gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)'
+                  },
+                  {
+                    icon: Radio,
+                    title: 'Request Room',
+                    subtitle: 'Go live for audience requests',
+                    description: 'Start or manage session',
+                    href: '/request-room',
+                    gradient: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)'
                   },
                   ...(!isServiceProvider && !isLoadingCreatorTypes ? [{
                     icon: Briefcase,
