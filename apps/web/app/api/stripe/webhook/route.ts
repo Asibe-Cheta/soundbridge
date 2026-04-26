@@ -20,6 +20,10 @@ import {
   isTipPaymentIntent,
   finalizeTipFromSucceededPaymentIntent,
 } from '../../../../src/lib/tip-payment-intent-webhook';
+import {
+  finalizeRequestRoomFromSucceededPaymentIntent,
+  isRequestRoomTipPaymentIntent,
+} from '@/src/lib/request-room-payment-intent-webhook';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -147,6 +151,15 @@ export async function POST(request: NextRequest) {
           } catch (tipErr) {
             console.error('[webhook] finalizeTip threw:', tipErr);
           }
+        } else if (isRequestRoomTipPaymentIntent(piSucceeded)) {
+          try {
+            const requestRoomResult = await finalizeRequestRoomFromSucceededPaymentIntent(piSucceeded, supabase);
+            if (!requestRoomResult.ok) {
+              console.error('[webhook] finalizeRequestRoom result:', requestRoomResult.reason, piSucceeded.id);
+            }
+          } catch (requestRoomErr) {
+            console.error('[webhook] finalizeRequestRoom threw:', requestRoomErr);
+          }
         } else if (isContentSalePaymentIntent(piSucceeded)) {
           try {
             await recordContentSaleFromPaymentIntent(piSucceeded, supabase);
@@ -169,6 +182,15 @@ export async function POST(request: NextRequest) {
             }
           } catch (tipErr) {
             console.error('[webhook] finalizeTip threw:', tipErr);
+          }
+        } else if (isRequestRoomTipPaymentIntent(pi)) {
+          try {
+            const requestRoomResult = await finalizeRequestRoomFromSucceededPaymentIntent(pi, supabase);
+            if (!requestRoomResult.ok) {
+              console.error('[webhook] finalizeRequestRoom result:', requestRoomResult.reason, pi.id);
+            }
+          } catch (requestRoomErr) {
+            console.error('[webhook] finalizeRequestRoom threw:', requestRoomErr);
           }
         } else if (isContentSalePaymentIntent(pi)) {
           try {

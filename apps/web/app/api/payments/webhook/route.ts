@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { recordContentSaleFromPaymentIntent } from '@/src/lib/content-purchase-payment-intent-webhook';
 import { finalizeTipFromSucceededPaymentIntent } from '@/src/lib/tip-payment-intent-webhook';
+import { finalizeRequestRoomFromSucceededPaymentIntent } from '@/src/lib/request-room-payment-intent-webhook';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -104,6 +105,7 @@ async function handlePaymentSucceeded(
 ) {
   try {
     await finalizeTipFromSucceededPaymentIntent(paymentIntent, supabase);
+    await finalizeRequestRoomFromSucceededPaymentIntent(paymentIntent, supabase);
     await recordContentSaleFromPaymentIntent(paymentIntent, supabase);
   } catch (error: any) {
     console.error('Error handling payment success:', error);
