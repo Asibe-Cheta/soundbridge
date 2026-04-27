@@ -12,8 +12,24 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get('host');
   const hostNoPort = host?.split(':')[0]?.toLowerCase();
   const canonicalHost = getSiteHostname();
+  const pathname = request.nextUrl.pathname;
 
-  if (hostNoPort && isSoundBridgeProductionHost(hostNoPort) && hostNoPort !== canonicalHost) {
+  // Avoid host rewrites on admin/auth-sensitive routes to prevent cookie/session churn
+  // between apex and www during active authenticated sessions.
+  const isAuthSensitivePath =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api/admin') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/dashboard');
+
+  if (
+    hostNoPort &&
+    isSoundBridgeProductionHost(hostNoPort) &&
+    hostNoPort !== canonicalHost &&
+    !isAuthSensitivePath
+  ) {
     const dest = new URL(request.url);
     dest.hostname = canonicalHost;
     dest.protocol = 'https:';
@@ -21,7 +37,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(dest, 308);
   }
 
-  const pathname = request.nextUrl.pathname;
   const match = pathname.match(AT_PROFILE);
   if (!match?.[1]) {
     return NextResponse.next();
