@@ -26,6 +26,7 @@ const authDebug = (...args: unknown[]) => {
 
 /** Only used to unblock the UI if getSession() never completes (should be rare). Never clears session. */
 const SESSION_LOAD_SAFETY_MS = 45_000;
+const PROTECTED_PATHS = ['/admin', '/dashboard', '/settings'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authDebug('AuthProvider: Initializing...');
 
     let cancelled = false;
+    let protectedRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
     // 1) Subscribe first so INITIAL_SESSION / SIGNED_IN are never missed (listener must exist before hydration).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -108,14 +110,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const safetyTimer = setTimeout(() => {
       if (cancelled) return;
-      setLoading((stillLoading) => {
-        if (stillLoading) {
-          console.warn(
-            `AuthProvider: Session load safety timeout (${SESSION_LOAD_SAFETY_MS}ms) — clearing loading only; session left to Supabase`
-          );
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname : '';
+      const isProtectedPath = PROTECTED_PATHS.some((p) => currentPath.startsWith(p));
+
+      if (!isProtectedPath) {
+        setLoading((stillLoading) => {
+          if (stillLoading) {
+            console.warn(
+              `AuthProvider: Session load safety timeout (${SESSION_LOAD_SAFETY_MS}ms) — clearing loading only; session left to Supabase`
+            );
+          }
+          return false;
+        });
+        return;
+      }
+
+      // For protected routes, prefer waiting/retrying over false logout redirects.
+      console.warn(
+        `AuthProvider: Session load timeout on protected path (${currentPath}). Retrying auth probe to avoid false logout.`
+      );
+
+      const probe = async () => {
+        try {
+          const { data, error } = await supabase.auth.getUser();
+          if (cancelled) return;
+          if (!error && data?.user) {
+            setUser(data.user);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // ignore, retry below
         }
-        return false;
-      });
+        if (!cancelled) {
+          protectedRetryTimer = setTimeout(probe, 2000);
+        }
+      };
+
+      void probe();
     }, SESSION_LOAD_SAFETY_MS);
 
     void hydrate().finally(() => {
@@ -125,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
       clearTimeout(safetyTimer);
+      if (protectedRetryTimer) clearTimeout(protectedRetryTimer);
       subscription.unsubscribe();
     };
   }, [supabase]);
