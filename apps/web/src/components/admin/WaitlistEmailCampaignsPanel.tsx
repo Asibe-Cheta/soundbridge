@@ -11,6 +11,8 @@ const LAUNCH_TEST_CONFIRM = 'WAITLIST_LAUNCH_TEST_SEND';
 const CUSTOM_CONFIRM = 'WAITLIST_CUSTOM_SEND_NOW';
 const REG_CONFIRM = 'REGISTERED_USERS_BROADCAST_SEND_NOW';
 const REG_TEST_CONFIRM = 'REGISTERED_USERS_BROADCAST_TEST_SEND';
+const CREATOR_CONFIRM = 'REGISTERED_CREATORS_BROADCAST_SEND_NOW';
+const CREATOR_TEST_CONFIRM = 'REGISTERED_CREATORS_BROADCAST_TEST_SEND';
 
 function headersWithSecret(secret: string): HeadersInit {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -60,6 +62,8 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
   const [regMaxCap, setRegMaxCap] = useState('');
   const [regTestEmail, setRegTestEmail] = useState('');
   const [regTestConfirm, setRegTestConfirm] = useState('');
+  const [regAudience, setRegAudience] = useState<'all' | 'creators'>('all');
+  const [creatorCount, setCreatorCount] = useState<number | null>(null);
 
   const parseMax = () => {
     const n = parseInt(maxTest, 10);
@@ -275,6 +279,7 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         headers: headersWithSecret(broadcastSecret),
         body: JSON.stringify({
           dryRun: true,
+          audience: regAudience,
           subject: regSubject,
           html: regHtml,
           maxRecipients: parseRegMax(),
@@ -285,8 +290,10 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         setRegMeta(data.error || `Error ${res.status}`);
         return;
       }
+      setCreatorCount(Number(data.totalCreators ?? 0));
+      const audienceLabel = regAudience === 'creators' ? 'creators only' : 'all registered users';
       setRegMeta(
-        `Registered accounts: would email ${data.wouldSend} of ${data.totalInDb}. Test phrase: ${data.testConfirmPhrase}. Full send phrase: ${data.confirmPhrase}`
+        `Audience: ${audienceLabel}. Would email ${data.wouldSend} of ${data.totalInDb}. Total creators: ${Number(data.totalCreators ?? 0)}. Test phrase: ${data.testConfirmPhrase}. Full send phrase: ${data.confirmPhrase}`
       );
       setRegPreview(data.sample?.html || '');
     } catch (e) {
@@ -313,6 +320,7 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         headers: headersWithSecret(broadcastSecret),
         body: JSON.stringify({
           confirm: regConfirm.trim(),
+          audience: regAudience,
           subject: regSubject,
           html: regHtml,
           maxRecipients: parseRegMax(),
@@ -351,6 +359,7 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
         body: JSON.stringify({
           testToEmail: to,
           confirm: regTestConfirm.trim(),
+          audience: regAudience,
           subject: regSubject,
           html: regHtml,
         }),
@@ -667,14 +676,29 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
 
       <div className={`rounded-lg border p-4 ${cardCls}`}>
         <h4 className={`font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>
-          Registered accounts (all users with a login)
+          Registered accounts broadcast
         </h4>
         <p className={`text-sm mt-1 ${mutedCls}`}>
           Uses auth emails (same list as admin user search). Include{' '}
           <code className="text-xs">{'{{unsubscribe_link}}'}</code> for compliance. Preview first, then send a
-          single test to your inbox with <code className="text-xs">{REG_TEST_CONFIRM}</code>, or broadcast
-          with <code className="text-xs">{REG_CONFIRM}</code>.
+          single test to your inbox, or broadcast to either all registered users or creators only.
         </p>
+        <label className={`block text-sm font-medium mt-3 ${labelCls}`}>Audience</label>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <select
+            value={regAudience}
+            onChange={(e) => setRegAudience(e.target.value === 'creators' ? 'creators' : 'all')}
+            className={`px-3 py-2 rounded-lg border text-sm ${inputCls}`}
+          >
+            <option value="all">All registered users</option>
+            <option value="creators">Creators only</option>
+          </select>
+          {creatorCount != null && (
+            <span className={`text-xs ${mutedCls}`}>
+              Creator accounts: <strong className="font-semibold">{creatorCount}</strong>
+            </span>
+          )}
+        </div>
         <label className={`block text-sm font-medium mt-3 ${labelCls}`}>Subject</label>
         <input
           type="text"
@@ -749,14 +773,19 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           <div className="mt-3 flex flex-wrap gap-2 items-center">
             <input
               type="text"
-              placeholder={`Type ${REG_TEST_CONFIRM}`}
+              placeholder={`Type ${regAudience === 'creators' ? CREATOR_TEST_CONFIRM : REG_TEST_CONFIRM}`}
               value={regTestConfirm}
               onChange={(e) => setRegTestConfirm(e.target.value)}
               className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg border text-sm ${inputCls}`}
             />
             <button
               type="button"
-              disabled={regBusy || regTestConfirm.trim() !== REG_TEST_CONFIRM || !regSubject.trim() || !regHtml.trim()}
+              disabled={
+                regBusy ||
+                regTestConfirm.trim() !== (regAudience === 'creators' ? CREATOR_TEST_CONFIRM : REG_TEST_CONFIRM) ||
+                !regSubject.trim() ||
+                !regHtml.trim()
+              }
               onClick={sendRegTest}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
                 dark ? 'bg-indigo-700 text-white hover:bg-indigo-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'
@@ -766,12 +795,18 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
               Send test only
             </button>
           </div>
+          <p className={`text-xs mt-2 ${mutedCls}`}>
+            Confirm phrase:{' '}
+            <code className="text-xs">
+              {regAudience === 'creators' ? CREATOR_TEST_CONFIRM : REG_TEST_CONFIRM}
+            </code>
+          </p>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2 items-center">
           <input
             type="text"
-            placeholder={`Type ${REG_CONFIRM}`}
+            placeholder={`Type ${regAudience === 'creators' ? CREATOR_CONFIRM : REG_CONFIRM}`}
             value={regConfirm}
             onChange={(e) => setRegConfirm(e.target.value)}
             className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg border text-sm ${inputCls}`}
@@ -779,15 +814,24 @@ export function WaitlistEmailCampaignsPanel({ theme }: { theme: string }) {
           <button
             type="button"
             disabled={
-              regBusy || regConfirm.trim() !== REG_CONFIRM || !regSubject.trim() || !regHtml.trim()
+              regBusy ||
+              regConfirm.trim() !== (regAudience === 'creators' ? CREATOR_CONFIRM : REG_CONFIRM) ||
+              !regSubject.trim() ||
+              !regHtml.trim()
             }
             onClick={sendRegBroadcast}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-700 text-white hover:bg-red-600 disabled:opacity-40"
           >
             {regBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Send to all registered users
+            {regAudience === 'creators' ? 'Send to creators only' : 'Send to all registered users'}
           </button>
         </div>
+        <p className={`text-xs mt-2 ${mutedCls}`}>
+          Full send confirm phrase:{' '}
+          <code className="text-xs">
+            {regAudience === 'creators' ? CREATOR_CONFIRM : REG_CONFIRM}
+          </code>
+        </p>
       </div>
     </div>
   );

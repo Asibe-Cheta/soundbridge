@@ -11,6 +11,8 @@ import { waitlistBroadcastSecretError } from '@/src/lib/waitlist-broadcast-secre
 const ADMIN_ROLES = ['admin', 'super_admin'] as const;
 const CONFIRM_PHRASE = 'REGISTERED_USERS_BROADCAST_SEND_NOW';
 const TEST_CONFIRM_PHRASE = 'REGISTERED_USERS_BROADCAST_TEST_SEND';
+const CREATOR_CONFIRM_PHRASE = 'REGISTERED_CREATORS_BROADCAST_SEND_NOW';
+const CREATOR_TEST_CONFIRM_PHRASE = 'REGISTERED_CREATORS_BROADCAST_TEST_SEND';
 const MAX_SUBJECT_LEN = 200;
 const MAX_HTML_LEN = 500_000;
 
@@ -40,6 +42,10 @@ export async function POST(request: NextRequest) {
       typeof body?.maxRecipients === 'number' && body.maxRecipients > 0
         ? Math.min(body.maxRecipients, 50_000)
         : undefined;
+    const audience: 'all' | 'creators' = body?.audience === 'creators' ? 'creators' : 'all';
+    const confirmPhrase = audience === 'creators' ? CREATOR_CONFIRM_PHRASE : CONFIRM_PHRASE;
+    const testConfirmPhrase =
+      audience === 'creators' ? CREATOR_TEST_CONFIRM_PHRASE : TEST_CONFIRM_PHRASE;
 
     if (!subjectRaw) {
       return NextResponse.json({ success: false, error: 'subject is required' }, { status: 400 });
@@ -71,9 +77,17 @@ export async function POST(request: NextRequest) {
       process.env.SENDGRID_FROM_NAME ||
       'SoundBridge';
 
-    const { recipients, error } = await loadRegisteredUserBroadcastRecipients(
-      adminCheck.serviceClient
-    );
+    const { recipients: allRecipients, error: allError } =
+      await loadRegisteredUserBroadcastRecipients(adminCheck.serviceClient, { audience: 'all' });
+    if (allError) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to load users', details: allError },
+        { status: 500 }
+      );
+    }
+    const { recipients, error } = await loadRegisteredUserBroadcastRecipients(adminCheck.serviceClient, {
+      audience,
+    });
     if (error) {
       return NextResponse.json(
         { success: false, error: 'Failed to load users', details: error },
@@ -94,12 +108,18 @@ export async function POST(request: NextRequest) {
         success: true,
         dryRun: true,
         totalInDb: recipients.length,
+        totalAllRegistered: allRecipients.length,
+        totalCreators:
+          audience === 'creators'
+            ? recipients.length
+            : (await loadRegisteredUserBroadcastRecipients(adminCheck.serviceClient, { audience: 'creators' })).recipients.length,
         wouldSend: capped.length,
         maxRecipients: maxRecipients ?? null,
+        audience,
         sample: { email: sample.email, subject, html },
         firstFiveEmails: capped.slice(0, 5).map((r) => r.email),
-        confirmPhrase: CONFIRM_PHRASE,
-        testConfirmPhrase: TEST_CONFIRM_PHRASE,
+        confirmPhrase,
+        testConfirmPhrase,
       });
     }
 
@@ -112,12 +132,12 @@ export async function POST(request: NextRequest) {
 
     // One-off test to a single inbox
     if (testToEmail) {
-      if (confirm !== TEST_CONFIRM_PHRASE) {
+      if (confirm !== testConfirmPhrase) {
         return NextResponse.json(
           {
             success: false,
-            error: `For test send, set confirm to "${TEST_CONFIRM_PHRASE}".`,
-            confirmPhrase: TEST_CONFIRM_PHRASE,
+            error: `For test send, set confirm to "${testConfirmPhrase}".`,
+            confirmPhrase: testConfirmPhrase,
           },
           { status: 400 }
         );
@@ -156,13 +176,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (confirm !== CONFIRM_PHRASE) {
+    if (confirm !== confirmPhrase) {
       return NextResponse.json(
         {
           success: false,
-          error: `Set confirm to "${CONFIRM_PHRASE}" to send. Use dryRun: true first.`,
+          error: `Set confirm to "${confirmPhrase}" to send. Use dryRun: true first.`,
           totalRecipients: capped.length,
-          confirmPhrase: CONFIRM_PHRASE,
+          confirmPhrase,
         },
         { status: 400 }
       );
