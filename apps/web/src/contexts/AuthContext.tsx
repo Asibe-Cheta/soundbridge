@@ -28,6 +28,22 @@ const authDebug = (...args: unknown[]) => {
 const SESSION_LOAD_SAFETY_MS = 45_000;
 const PROTECTED_PATHS = ['/admin', '/dashboard', '/settings'];
 const PROTECTED_PROBE_MAX_RETRIES = 6;
+const AUTH_CALL_TIMEOUT_MS = 6000;
+
+function isProtectedPathname(pathname: string): boolean {
+  return PROTECTED_PATHS.some((p) => pathname.startsWith(p));
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = AUTH_CALL_TIMEOUT_MS): Promise<T | null> {
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -76,8 +92,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const hydrate = async () => {
       try {
         authDebug('AuthProvider: getSession() after listener registered');
-        const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
+        const sessionResp = await withTimeout(supabase.auth.getSession());
         if (cancelled) return;
+
+        if (!sessionResp) {
+          console.warn('AuthProvider: getSession timed out');
+          return;
+        }
+
+        const {
+          data: { session: s },
+          error: sessionError,
+        } = sessionResp;
+
         if (sessionError) {
           console.error('AuthProvider: getSession error:', sessionError);
           setError('Failed to get initial session');
@@ -92,7 +119,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(s);
           setUser(s.user);
         } else {
-          authDebug('AuthProvider: No session from getSession');
+          const currentPath =
+            typeof window !== 'undefined' ? window.location.pathname : '';
+          if (isProtectedPathname(currentPath)) {
+            authDebug('AuthProvider: No session on protected path, probing getUser() before anonymous fallback');
+            const userResp = await withTimeout(supabase.auth.getUser());
+            if (!cancelled && userResp && !userResp.error && userResp.data?.user) {
+              setUser(userResp.data.user);
+              return;
+            }
+          }
+          authDebug('AuthProvider: No session/user from hydrate');
           setSession(null);
           setUser(null);
         }
@@ -113,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       const currentPath =
         typeof window !== 'undefined' ? window.location.pathname : '';
-      const isProtectedPath = PROTECTED_PATHS.some((p) => currentPath.startsWith(p));
+      const isProtectedPath = isProtectedPathname(currentPath);
 
       if (!isProtectedPath) {
         setLoading((stillLoading) => {
@@ -136,19 +173,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const probe = async () => {
         attempts += 1;
         try {
-          const { data: sessionData } = await supabase.auth.getSession();
+          const sessionResp = await withTimeout(supabase.auth.getSession());
           if (cancelled) return;
-          if (sessionData?.session?.user) {
-            setSession(sessionData.session);
-            setUser(sessionData.session.user);
+          if (sessionResp?.data?.session?.user) {
+            setSession(sessionResp.data.session);
+            setUser(sessionResp.data.session.user);
             setLoading(false);
             return;
           }
 
-          const { data, error } = await supabase.auth.getUser();
+          const userResp = await withTimeout(supabase.auth.getUser());
           if (cancelled) return;
-          if (!error && data?.user) {
-            setUser(data.user);
+          if (userResp && !userResp.error && userResp.data?.user) {
+            setUser(userResp.data.user);
             setLoading(false);
             return;
           }
