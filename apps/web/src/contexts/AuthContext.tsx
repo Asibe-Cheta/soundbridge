@@ -27,6 +27,7 @@ const authDebug = (...args: unknown[]) => {
 /** Only used to unblock the UI if getSession() never completes (should be rare). Never clears session. */
 const SESSION_LOAD_SAFETY_MS = 45_000;
 const PROTECTED_PATHS = ['/admin', '/dashboard', '/settings'];
+const PROTECTED_PROBE_MAX_RETRIES = 6;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -126,13 +127,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // For protected routes, prefer waiting/retrying over false logout redirects.
+      // For protected routes, prefer retrying before declaring anonymous.
       console.warn(
         `AuthProvider: Session load timeout on protected path (${currentPath}). Retrying auth probe to avoid false logout.`
       );
 
+      let attempts = 0;
       const probe = async () => {
+        attempts += 1;
         try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (cancelled) return;
+          if (sessionData?.session?.user) {
+            setSession(sessionData.session);
+            setUser(sessionData.session.user);
+            setLoading(false);
+            return;
+          }
+
           const { data, error } = await supabase.auth.getUser();
           if (cancelled) return;
           if (!error && data?.user) {
@@ -142,6 +154,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch {
           // ignore, retry below
+        }
+
+        if (cancelled) return;
+        if (attempts >= PROTECTED_PROBE_MAX_RETRIES) {
+          console.warn(
+            `AuthProvider: protected auth probe exhausted (${attempts} attempts). Clearing loading.`
+          );
+          setLoading(false);
+          return;
         }
         if (!cancelled) {
           protectedRetryTimer = setTimeout(probe, 2000);
