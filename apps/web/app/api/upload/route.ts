@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    const isMixtapeUpload = contentType === 'mixtape' || is_mixtape === true;
+    const normalizedContentType =
+      contentType === 'podcast' || contentType === 'mixtape' ? contentType : 'music';
+    const isMixtapeUpload = normalizedContentType === 'mixtape' || is_mixtape === true;
     if (!title || (!isMixtapeUpload && !artistName) || (isMixtapeUpload && !(dj_name || artistName))) {
       return NextResponse.json(
         { error: 'Title and artist name are required' },
@@ -438,6 +440,7 @@ export async function POST(request: NextRequest) {
         size: audioMetadata.size
       } : null,
       is_mixtape: isMixtapeUpload,
+      content_type: isMixtapeUpload ? 'mixtape' : normalizedContentType,
       dj_name: isMixtapeUpload ? String(dj_name || artistName || '').trim() : null,
       tracklist: isMixtapeUpload ? String(tracklist || '').trim() : null
     };

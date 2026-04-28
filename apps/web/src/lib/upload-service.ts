@@ -633,7 +633,9 @@ export class AudioUploadService {
 
       const td = trackData as any;
       const acr = td.acrcloudData;
-      const isMixtape = td.contentType === 'mixtape' || td.is_mixtape === true;
+      const normalizedContentType =
+        td.contentType === 'podcast' || td.contentType === 'mixtape' ? td.contentType : 'music';
+      const isMixtape = normalizedContentType === 'mixtape' || td.is_mixtape === true;
       const isrcSource = isMixtape
         ? null
         : (td.isrc_source || (acr?.detectedISRC ? 'acrcloud_detected' : (td.isrcCode ? 'user_provided' : 'soundbridge_generated')));
@@ -710,6 +712,7 @@ export class AudioUploadService {
         original_song_title: isMixtape ? null : (td.original_song_title?.trim() || null),
         suspected_duplicate: suspectedDup,
         is_mixtape: isMixtape,
+        content_type: isMixtape ? 'mixtape' : normalizedContentType,
         dj_name: isMixtape ? (td.djName?.trim() || td.artistName?.trim() || null) : null,
         tracklist: isMixtape ? (td.tracklist?.trim() || null) : null
       });
