@@ -4,6 +4,7 @@ import { useTheme } from '@/src/contexts/ThemeContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
+import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
 
 const FOUNDER_BIO_PARAGRAPHS = [
   'SoundBridge was not built in a boardroom. It was built out of frustration, faith, and a £6 royalty statement.',
@@ -131,6 +132,7 @@ export default function AboutPage() {
 
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <AppStoreBadgeLink size="md" className="justify-center" />
+          <GooglePlayBadgeLink size="md" className="justify-center" />
           <Link
             href="/app"
             className={`text-sm font-semibold underline-offset-4 hover:underline ${
