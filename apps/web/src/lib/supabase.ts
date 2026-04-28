@@ -199,16 +199,12 @@ const getCookieOptions = () => {
     };
   }
 
-  const parts = hostname.split('.');
-  const baseDomain = parts.length >= 2
-    ? `.${parts.slice(-2).join('.')}`
-    : hostname;
-
   return {
     path: '/',
     sameSite: 'lax' as const,
     secure: window.location.protocol === 'https:',
-    domain: baseDomain,
+    // Intentionally omit `domain` so cookies are host-only.
+    // This is more reliable in Safari and avoids cross-host session churn.
   };
 };
 
