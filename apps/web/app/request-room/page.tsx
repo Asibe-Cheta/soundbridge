@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import QRCode from 'qrcode';
+import Link from 'next/link';
 import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Session = {
@@ -173,6 +174,16 @@ export default function RequestRoomDashboardPage() {
   return (
     <main className={pageClass} style={darkPageStyle}>
       <div className="mx-auto max-w-5xl space-y-6">
+        <Link
+          href="/dashboard"
+          className={
+            isDark
+              ? 'inline-flex items-center rounded-lg border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/10'
+              : 'inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100'
+          }
+        >
+          Back to Dashboard
+        </Link>
         <h1 className="text-3xl font-bold">Request Room</h1>
         <p className={mutedTextClass}>
           Open a live request session, set a minimum tip, share your link or QR code, and get requests in real time.

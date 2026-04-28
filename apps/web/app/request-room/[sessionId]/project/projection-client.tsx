@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Link from 'next/link';
 
 type PublicSession = {
   id: string;
@@ -102,6 +103,15 @@ export default function RequestRoomProjectionClient({ sessionId }: { sessionId: 
           50% { opacity: 1; }
         }
       `}</style>
+
+      <div className="mb-4 w-full max-w-6xl">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center rounded-lg border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/10"
+        >
+          Back to Dashboard
+        </Link>
+      </div>
 
       <div
         className="relative rounded-3xl bg-white p-8 shadow-2xl"

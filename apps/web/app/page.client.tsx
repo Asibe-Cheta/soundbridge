@@ -557,7 +557,7 @@ export default function HomePageClient() {
                   Upload Music Now
                 </h2>
                 <p className={`text-lg mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Get 3 free uploads to start sharing your sound with the world
+                  Start free with 250MB storage (about 30-40 tracks) and share your sound with the world
                 </p>
                 <Link
                   href="/signup"
@@ -631,7 +631,7 @@ export default function HomePageClient() {
                 }`}
               >
                 <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>
-                  iOS App is Now Live
+                  iOS + Android Apps Are Now Live
                 </p>
               </div>
               <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -639,6 +639,7 @@ export default function HomePageClient() {
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <AppStoreBadgeLink size="lg" />
+                <GooglePlayBadgeLink size="lg" />
                 <a
                   href="/discover"
                   className={`px-6 py-3 rounded-lg font-semibold transition-all border ${

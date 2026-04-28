@@ -163,7 +163,7 @@ function PricingContent() {
       category: 'Content & Uploads',
       icon: <Music className="h-6 w-6 text-blue-500" />,
       items: [
-        { name: 'Track Uploads', free: '250MB (~30–40 tracks)', premium: '7/month', unlimited: 'Unlimited' },
+        { name: 'Track Uploads', free: '250MB (~30–40 tracks)', premium: '2GB (~250 tracks)', unlimited: '10GB (~1,000+ tracks)' },
         { name: 'Professional Searches', free: '5/month', premium: 'Unlimited', unlimited: 'Unlimited' },
         { name: 'Direct Messages (sent)', free: 'Unlimited', premium: 'Unlimited', unlimited: 'Unlimited' },
         { name: 'Storage Space', free: '250MB', premium: '2GB', unlimited: '10GB' },
@@ -243,7 +243,7 @@ function PricingContent() {
     {
       name: 'Sarah Chen',
       role: 'Independent Musician',
-      content: 'The Premium plan helped me grow my audience by 300% in just 3 months. The 7 uploads per month and featured placement are game-changers!',
+      content: 'The Premium plan helped me grow my audience by 300% in just 3 months. The larger storage and featured placement are game-changers!',
       avatar: 'SC',
       plan: 'Premium'
     },
@@ -658,11 +658,11 @@ function PricingContent() {
                 },
                 {
                   q: "How does the upload validation work?",
-                  a: "Our system automatically validates your files for size, format, and quality. Free tier gets standard processing (2-5 min), Pro gets priority (1-2 min)."
+                  a: "Our system automatically validates your files for size, format, and quality. Free tier gets standard processing (2-5 min), Premium and Unlimited get priority processing (1-2 min)."
                 },
                 {
                   q: "What copyright protection do you offer?",
-                  a: "Free tier includes basic copyright protection, Pro tier has advanced protection to keep your content safe."
+                  a: "Free tier includes basic copyright protection, while Premium and Unlimited include advanced protection to keep your content safe."
                 },
                 {
                   q: "Can I upload cover songs?",
