@@ -108,6 +108,19 @@ function logFincraConfigFingerprintOnce(): void {
   });
 }
 
+function buildFincraDebugMeta(): Record<string, unknown> {
+  const cfg = getFincraConfig();
+  return {
+    base_url: cfg.baseUrl || 'missing',
+    api_key: shortFingerprint(cfg.apiKey),
+    public_key: shortFingerprint(cfg.publicKey),
+    webhook_secret: shortFingerprint(cfg.webhookSecret),
+    business_id: shortFingerprint(cfg.businessId),
+    payout_body: cfg.payoutBody,
+    has_fixie_url: Boolean(process.env.FIXIE_URL?.trim()),
+  };
+}
+
 function getFixieDispatcher(): Dispatcher | undefined {
   const fixie = process.env.FIXIE_URL?.trim();
   if (!fixie) {
@@ -159,6 +172,17 @@ async function fincraHttp<T>(method: string, path: string, body?: unknown): Prom
     const err = new Error(details) as Error & { status?: number; details?: unknown };
     err.status = response.status;
     err.details = data;
+    // Keep this at error-level so it appears even when info logs are filtered out.
+    console.error('[fincra] request failed', {
+      method,
+      path,
+      status: response.status,
+      response_message:
+        (typeof data.message === 'string' && data.message) ||
+        (typeof data.error === 'string' && data.error) ||
+        'unknown',
+      debug: buildFincraDebugMeta(),
+    });
     throw err;
   }
 
