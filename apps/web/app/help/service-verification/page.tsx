@@ -120,6 +120,57 @@ export default function ServiceVerificationPage() {
             </div>
           </section>
 
+          {/* Where to find it in the product */}
+          <section>
+            <h2 className={`text-3xl font-bold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              Where to find Persona on SoundBridge
+            </h2>
+            <div className={`prose prose-lg max-w-none ${
+              theme === 'dark' ? 'prose-invert' : ''
+            }`}>
+              <p className={`text-lg leading-relaxed mb-4 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                On the <strong>web app</strong>, identity verification for service providers is started from your
+                dashboard—not from a standalone “verify” page in settings.
+              </p>
+              <ol className={`space-y-3 mb-4 list-decimal pl-6 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                <li>
+                  Sign in and go to{' '}
+                  <Link href="/dashboard" className="text-red-500 hover:underline font-medium">
+                    Dashboard
+                  </Link>
+                  .
+                </li>
+                <li>
+                  In the <strong>left sidebar</strong>, select <strong>Service Provider</strong>.
+                </li>
+                <li>
+                  Scroll to the card titled <strong>Identity verification (Persona)</strong> (there is a help icon
+                  linking to this article).
+                </li>
+                <li>
+                  When you have <strong>Premium or Unlimited</strong> and all prerequisites in that section show as
+                  met, click <strong>Get Verified Professional</strong>. SoundBridge opens{' '}
+                  <strong>Persona</strong> in a <strong>new browser tab</strong> where you will submit a{' '}
+                  <strong>government-issued ID</strong> and complete <strong>face / selfie verification</strong>. If
+                  your browser blocks pop-ups, the site may navigate in the <strong>same tab</strong> instead—complete
+                  the flow there.
+                </li>
+              </ol>
+              <p className={`text-sm ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                You do not upload ID or selfie files through SoundBridge forms; Persona collects those steps in their
+                hosted flow.
+              </p>
+            </div>
+          </section>
+
           {/* Requirements */}
           <section>
             <h2 className={`text-3xl font-bold mb-4 ${
@@ -225,7 +276,13 @@ export default function ServiceVerificationPage() {
                     1
                   </span>
                   <div>
-                    <strong>Complete prerequisites &amp; Premium</strong> — Meet the requirements above and have an active Premium or Unlimited plan. Check progress in the Verification section of your Service Provider dashboard.
+                    <strong>Complete prerequisites &amp; Premium</strong> — Meet the requirements below and have an active Premium or Unlimited plan. On{' '}
+                    <Link href="/dashboard" className="text-red-500 hover:underline font-medium">
+                      Dashboard
+                    </Link>
+                    {' → '}
+                    <strong>Service Provider</strong>
+                    , use the <strong>Identity verification (Persona)</strong> card to see which checklist items are still outstanding.
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -235,7 +292,7 @@ export default function ServiceVerificationPage() {
                     2
                   </span>
                   <div>
-                    <strong>Start or continue Persona</strong> — In the Verification section, choose <strong>Start verification with Persona</strong> (or <strong>Continue with Persona</strong> if you already began). Allow the new tab and follow Persona’s steps.
+                    <strong>Start or resume Persona</strong> — In that same card, click <strong>Get Verified Professional</strong> (the label may show <strong>Starting…</strong> briefly). Allow the new tab and follow Persona’s steps. If you already began, use the same button to resume when Persona returns a resume link.
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -245,7 +302,7 @@ export default function ServiceVerificationPage() {
                     3
                   </span>
                   <div>
-                    <strong>Finish in Persona</strong> — Persona will guide you through government ID and selfie capture. Use good lighting and a current, unexpired ID.
+                    <strong>Finish in Persona</strong> — Persona will guide you through <strong>government ID</strong> and <strong>face / selfie</strong> capture. Use good lighting and a current, unexpired ID.
                   </div>
                 </li>
                 <li className="flex gap-4">
@@ -255,7 +312,7 @@ export default function ServiceVerificationPage() {
                     4
                   </span>
                   <div>
-                    <strong>Wait for status</strong> — When Persona completes review, your dashboard status updates. If something is still in progress, use <strong>Continue with Persona</strong> from the same section.
+                    <strong>Wait for status</strong> — When Persona completes review, your <strong>Service Provider</strong> dashboard status updates. If something is still in progress, click <strong>Get Verified Professional</strong> again from the <strong>Identity verification (Persona)</strong> card to resume.
                   </div>
                 </li>
               </ol>
@@ -273,13 +330,13 @@ export default function ServiceVerificationPage() {
               {[
                 {
                   status: 'Not Requested',
-                  description: 'You haven’t started Persona verification yet. Complete the prerequisites, then start from the Verification section.',
+                  description: 'You haven’t started Persona yet. Complete the prerequisites on Dashboard → Service Provider, then click Get Verified Professional in Identity verification (Persona).',
                   icon: HelpCircle,
                   color: 'gray'
                 },
                 {
                   status: 'In progress / review',
-                  description: 'You may still need to finish steps in Persona, or Persona is reviewing your inquiry. Use Continue with Persona if the flow isn’t complete.',
+                  description: 'You may still need to finish steps in Persona, or Persona is reviewing your inquiry. Open Dashboard → Service Provider → Identity verification (Persona) and click Get Verified Professional again to resume.',
                   icon: Clock,
                   color: 'yellow'
                 },
@@ -291,7 +348,7 @@ export default function ServiceVerificationPage() {
                 },
                 {
                   status: 'Not verified',
-                  description: 'Verification did not pass. When you’re ready, you can try again with Persona from the Verification section.',
+                  description: 'Verification did not pass. When you’re ready, try again from Dashboard → Service Provider → Identity verification (Persona) → Get Verified Professional.',
                   icon: AlertCircle,
                   color: 'red'
                 }

@@ -188,6 +188,99 @@ class EventNotificationService {
   }
 
   /**
+   * Queue notifications for a newly uploaded track
+   */
+  async queueNotificationsForTrack(trackId: string): Promise<{ success: boolean; queued_count: number; error?: string }> {
+    try {
+      const { data: track, error: trackError } = await getSupabaseAdmin()
+        .from('audio_tracks')
+        .select(`
+          id,
+          title,
+          genre,
+          creator_id,
+          creator:profiles!audio_tracks_creator_id_fkey(
+            display_name,
+            username
+          )
+        `)
+        .eq('id', trackId)
+        .single();
+
+      if (trackError || !track) {
+        return { success: false, queued_count: 0, error: 'Track not found' };
+      }
+
+      const { data: matchingUsers, error: usersError } = await getSupabaseAdmin()
+        .rpc('get_matching_users_for_track', { p_track_id: trackId });
+
+      if (usersError) {
+        return { success: false, queued_count: 0, error: usersError.message };
+      }
+
+      if (!matchingUsers || matchingUsers.length === 0) {
+        return { success: true, queued_count: 0 };
+      }
+
+      const creator = (track.creator as any)?.[0];
+      const creatorName = creator?.display_name || creator?.username || 'An artist';
+      const genreLabel = track.genre || 'music';
+
+      const notifications = [];
+      for (const user of matchingUsers) {
+        const { data: existingNotif } = await getSupabaseAdmin()
+          .from('track_notifications')
+          .select('id')
+          .eq('user_id', user.user_id)
+          .eq('track_id', trackId)
+          .eq('notification_type', 'track_release')
+          .single();
+
+        if (existingNotif) {
+          continue;
+        }
+
+        const scheduledFor = this.calculateScheduledTime(
+          user.quiet_hours_enabled,
+          user.quiet_hours_start,
+          user.quiet_hours_end
+        );
+
+        notifications.push({
+          user_id: user.user_id,
+          track_id: trackId,
+          notification_type: 'track_release',
+          title: `New music just dropped in ${genreLabel}.`,
+          body: `${creatorName} just uploaded a new track we think you'll love. Give it a listen and show some love.`,
+          status: 'queued',
+          scheduled_for: scheduledFor,
+        });
+      }
+
+      if (notifications.length > 0) {
+        const { error: insertError } = await getSupabaseAdmin()
+          .from('track_notifications')
+          .insert(notifications);
+
+        if (insertError) {
+          return { success: false, queued_count: 0, error: insertError.message };
+        }
+      }
+
+      return {
+        success: true,
+        queued_count: notifications.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        queued_count: 0,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
    * Send queued notifications (called by background job)
    * Processes notifications with status='queued' and scheduled_for <= NOW()
    */
@@ -349,6 +442,151 @@ class EventNotificationService {
         success: false,
         sent_count: 0,
         failed_count: 0
+      };
+    }
+  }
+
+  /**
+   * Send queued track notifications (called by background job)
+   */
+  async sendQueuedTrackNotifications(): Promise<{ success: boolean; sent_count: number; failed_count: number }> {
+    try {
+      const { data: notifications, error: fetchError } = await getSupabaseAdmin()
+        .from('track_notifications')
+        .select(`
+          id,
+          user_id,
+          track_id,
+          title,
+          body,
+          retry_count,
+          track:audio_tracks (
+            id,
+            title
+          )
+        `)
+        .eq('status', 'queued')
+        .lte('scheduled_for', new Date().toISOString())
+        .lt('retry_count', 3)
+        .limit(100);
+
+      if (fetchError) {
+        return { success: false, sent_count: 0, failed_count: 0 };
+      }
+
+      if (!notifications || notifications.length === 0) {
+        return { success: true, sent_count: 0, failed_count: 0 };
+      }
+
+      const userIds = notifications.map((n) => n.user_id);
+      const { data: pushTokens, error: tokenError } = await getSupabaseAdmin()
+        .from('user_push_tokens')
+        .select('user_id, push_token')
+        .in('user_id', userIds);
+
+      if (tokenError) {
+        return { success: false, sent_count: 0, failed_count: 0 };
+      }
+
+      const tokenMap = new Map(pushTokens?.map((t) => [t.user_id, t.push_token]) || []);
+
+      const messages: ExpoPushMessage[] = [];
+      const notificationIdMap = new Map<string, string>();
+
+      for (const notification of notifications) {
+        const pushToken = tokenMap.get(notification.user_id);
+        if (!pushToken) {
+          await this.updateTrackNotificationStatus(
+            notification.id,
+            'failed',
+            null,
+            'No push token found',
+            (notification.retry_count || 0) + 1
+          );
+          continue;
+        }
+
+        if (!Expo.isExpoPushToken(pushToken)) {
+          await this.updateTrackNotificationStatus(
+            notification.id,
+            'failed',
+            null,
+            'Invalid push token',
+            (notification.retry_count || 0) + 1
+          );
+          continue;
+        }
+
+        messages.push({
+          to: pushToken,
+          sound: 'default',
+          title: notification.title,
+          body: notification.body,
+          data: {
+            type: 'track.release',
+            trackId: notification.track_id,
+            notificationId: notification.id,
+            action: 'LISTEN_NOW',
+          },
+          channelId: 'music',
+          priority: 'high',
+          badge: 1,
+        });
+
+        notificationIdMap.set(pushToken, notification.id);
+      }
+
+      if (messages.length === 0) {
+        return { success: true, sent_count: 0, failed_count: 0 };
+      }
+
+      const chunks = getExpoPushClient().chunkPushNotifications(messages);
+      let sentCount = 0;
+      let failedCount = 0;
+
+      for (const chunk of chunks) {
+        try {
+          const ticketChunk = await getExpoPushClient().sendPushNotificationsAsync(chunk);
+
+          for (let i = 0; i < ticketChunk.length; i++) {
+            const ticket = ticketChunk[i];
+            const message = chunk[i];
+            const notificationId = notificationIdMap.get(message.to as string);
+
+            if (!notificationId) continue;
+
+            if (ticket.status === 'ok') {
+              await this.updateTrackNotificationStatus(notificationId, 'sent', ticket.id, null, 0);
+              sentCount++;
+            } else {
+              const current = notifications.find((n) => n.id === notificationId)?.retry_count || 0;
+              await this.updateTrackNotificationStatus(
+                notificationId,
+                'failed',
+                null,
+                ticket.message,
+                current + 1
+              );
+              failedCount++;
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error sending track notification chunk:', error);
+          failedCount += chunk.length;
+        }
+      }
+
+      return {
+        success: true,
+        sent_count: sentCount,
+        failed_count: failedCount,
+      };
+    } catch (error) {
+      console.error('❌ Error in sendQueuedTrackNotifications:', error);
+      return {
+        success: false,
+        sent_count: 0,
+        failed_count: 0,
       };
     }
   }
@@ -570,6 +808,25 @@ class EventNotificationService {
       p_expo_ticket_id: expoTicketId,
       p_error_message: errorMessage
     });
+  }
+
+  private async updateTrackNotificationStatus(
+    notificationId: string,
+    status: string,
+    expoTicketId: string | null,
+    errorMessage: string | null,
+    retryCount: number
+  ): Promise<void> {
+    await getSupabaseAdmin()
+      .from('track_notifications')
+      .update({
+        status,
+        expo_ticket_id: expoTicketId,
+        error_message: errorMessage,
+        sent_at: status === 'sent' ? new Date().toISOString() : null,
+        retry_count: retryCount,
+      })
+      .eq('id', notificationId);
   }
 }
 

@@ -77,6 +77,7 @@ export default function HelpPage() {
       title: 'Payments & Earnings',
       description: 'Understanding payments and revenue',
       articles: [
+        { title: 'How to earn on SoundBridge (FAQ)', slug: 'earn-on-soundbridge' },
         { title: 'How payments work', slug: 'payments' },
         { title: 'Setting up bank account', slug: 'bank-account' },
         { title: 'Withdrawal process', slug: 'withdrawals' },
@@ -109,6 +110,7 @@ export default function HelpPage() {
   ];
 
   const popularArticles = [
+    { title: 'How to earn on SoundBridge (FAQ)', category: 'Payments & Earnings', slug: 'earn-on-soundbridge' },
     { title: 'How to upload music', category: 'Uploading Content', slug: 'upload-track' },
     { title: 'Creating your first event', category: 'Events', slug: 'create-event' },
     { title: 'Complete Service Provider Guide', category: 'Service Providers', slug: 'service-provider-guide' },

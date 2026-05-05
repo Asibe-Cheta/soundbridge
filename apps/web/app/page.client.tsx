@@ -22,7 +22,9 @@ import {
   TrendingUp,
   Upload,
   Users,
-  Wallet
+  Wallet,
+  Rocket,
+  BookOpen
 } from 'lucide-react';
 
 export default function HomePageClient() {
@@ -85,6 +87,171 @@ export default function HomePageClient() {
       >
         <div className="container mx-auto px-4 py-6 lg:py-8">
           <HeroSection />
+
+          {/* Prominent onboarding for signed-in users */}
+          <section
+            className={`mb-10 lg:mb-12 rounded-2xl border-2 overflow-hidden ${
+              theme === 'dark'
+                ? 'border-pink-500/50 bg-gradient-to-br from-white/10 via-purple-900/40 to-red-900/30 shadow-lg shadow-pink-900/20'
+                : 'border-red-200 bg-gradient-to-br from-white via-red-50/80 to-pink-50 shadow-lg shadow-red-100'
+            }`}
+            aria-labelledby="how-to-get-started-heading"
+          >
+            <div className="p-6 lg:p-10">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                <div className="flex gap-4 min-w-0">
+                  <div
+                    className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${
+                      theme === 'dark' ? 'bg-gradient-to-br from-red-500 to-pink-600' : 'bg-gradient-to-br from-red-600 to-pink-500'
+                    }`}
+                  >
+                    <Rocket className="w-7 h-7 text-white" aria-hidden />
+                  </div>
+                  <div>
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wide mb-1 ${
+                        theme === 'dark' ? 'text-pink-300' : 'text-pink-600'
+                      }`}
+                    >
+                      New here or leveling up?
+                    </p>
+                    <h2
+                      id="how-to-get-started-heading"
+                      className={`text-2xl lg:text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                    >
+                      How to get started
+                    </h2>
+                    <p className={`text-base lg:text-lg max-w-2xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Complete your profile, open your creator dashboard and Service Provider tools, add payout details,
+                      complete <strong>Verified Professional</strong> identity checks through{' '}
+                      <strong>Persona</strong> (government ID + face selfie in Persona&apos;s flow—see step 3), upload
+                      tracks, and share your SoundBridge link on your other socials. As our community grows, every link
+                      works harder for you.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:items-stretch lg:min-w-[200px]">
+                  <Link
+                    href="/help/earn-on-soundbridge"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 transition-all shadow-md text-center"
+                  >
+                    <BookOpen className="w-5 h-5 shrink-0" />
+                    Ways to earn (FAQ)
+                  </Link>
+                  <Link
+                    href="/help"
+                    className={`inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all text-center border ${
+                      theme === 'dark'
+                        ? 'border-white/25 text-white hover:bg-white/10'
+                        : 'border-gray-300 text-gray-900 hover:bg-white/80 bg-white/60'
+                    }`}
+                  >
+                    Help Center
+                  </Link>
+                </div>
+              </div>
+              <ol
+                className={`mt-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 text-sm lg:text-base ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                }`}
+              >
+                <li className="flex gap-3 items-start">
+                  <span
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                      theme === 'dark' ? 'bg-white/15 text-white' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    1
+                  </span>
+                  <span>
+                    <Link href="/profile" className="font-semibold text-red-500 hover:underline">
+                      Profile
+                    </Link>
+                    {' — photo, bio, genres, links'}
+                  </span>
+                </li>
+                <li className="flex gap-3 items-start">
+                  <span
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                      theme === 'dark' ? 'bg-white/15 text-white' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    2
+                  </span>
+                  <span>
+                    <Link href="/dashboard" className="font-semibold text-red-500 hover:underline">
+                      Dashboard
+                    </Link>
+                    {' — content, revenue, '}
+                    <Link href="/dashboard" className="text-red-500 hover:underline">
+                      Service Provider
+                    </Link>
+                  </span>
+                </li>
+                <li className="flex gap-3 items-start sm:col-span-2 xl:col-span-1">
+                  <span
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                      theme === 'dark' ? 'bg-white/15 text-white' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    3
+                  </span>
+                  <span>
+                    <Link href="/help/bank-account" className="font-semibold text-red-500 hover:underline">
+                      Bank and payouts
+                    </Link>
+                    {' (Stripe / Wise—see Help). '}
+                    <strong className={theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}>Persona (ID + face):</strong>{' '}
+                    <Link href="/dashboard" className="font-semibold text-red-500 hover:underline">
+                      Dashboard
+                    </Link>
+                    {' → '}
+                    <Link href="/dashboard" className="text-red-500 hover:underline">
+                      Service Provider
+                    </Link>
+                    {' → card '}
+                    <em className={theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}>Identity verification (Persona)</em>
+                    {' → '}
+                    <em className={theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}>Get Verified Professional</em>
+                    {' (opens Persona in a new tab; allow pop-ups). '}
+                    <Link href="/help/service-verification" className="text-red-500 hover:underline">
+                      Full steps
+                    </Link>
+                  </span>
+                </li>
+                <li className="flex gap-3 items-start">
+                  <span
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                      theme === 'dark' ? 'bg-white/15 text-white' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    4
+                  </span>
+                  <span>
+                    <Link href="/upload" className="font-semibold text-red-500 hover:underline">
+                      Upload
+                    </Link>
+                    {' — music & podcasts'}
+                  </span>
+                </li>
+                <li className="flex gap-3 items-start sm:col-span-2 xl:col-span-2">
+                  <span
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                      theme === 'dark' ? 'bg-white/15 text-white' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    5
+                  </span>
+                  <span>
+                    <Link href="/help/sharing" className="font-semibold text-red-500 hover:underline">
+                      Share your SoundBridge link
+                    </Link>
+                    {' on Instagram, TikTok, YouTube, and more'}
+                  </span>
+                </li>
+              </ol>
+            </div>
+          </section>
 
           <div className="mb-8 lg:mb-12">
             <h2 className={`text-xl lg:text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>

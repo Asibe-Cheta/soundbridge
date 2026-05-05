@@ -18,11 +18,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const result = await eventNotificationService.sendQueuedNotifications();
+  const eventResult = await eventNotificationService.sendQueuedNotifications();
+  const trackResult = await eventNotificationService.sendQueuedTrackNotifications();
+
+  const success = eventResult.success && trackResult.success;
+  const sentCount = eventResult.sent_count + trackResult.sent_count;
+  const failedCount = eventResult.failed_count + trackResult.failed_count;
+
   return NextResponse.json({
-    success: result.success,
-    sent_count: result.sent_count,
-    failed_count: result.failed_count,
+    success,
+    sent_count: sentCount,
+    failed_count: failedCount,
+    event_notifications: eventResult,
+    track_notifications: trackResult,
     timestamp: new Date().toISOString(),
   });
 }
