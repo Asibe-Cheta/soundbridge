@@ -105,20 +105,34 @@ export default function DashboardPage() {
           margin: '0 auto', 
           padding: isMobile ? '1rem 0.5rem' : '2rem 1rem' 
         }}>
-          {/* Navigation Tabs */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            marginBottom: isMobile ? '1rem' : '2rem',
-            padding: '0.25rem',
-            background: 'var(--bg-secondary)',
-            borderRadius: '0.75rem',
-            border: '1px solid var(--border-primary)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            overflowX: isMobile ? 'auto' : 'visible'
-          }}>
+          {/* Navigation Tabs — scroll horizontally when tabs exceed width */}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              marginBottom: isMobile ? '1rem' : '2rem',
+              padding: '0.25rem',
+              background: 'var(--bg-secondary)',
+              borderRadius: '0.75rem',
+              border: '1px solid var(--border-primary)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehaviorX: 'contain',
+            }}
+            className="dashboard-tabs-scroll"
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                flexWrap: 'nowrap',
+                width: 'max-content',
+              }}
+            >
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -179,6 +193,7 @@ export default function DashboardPage() {
                 </button>
               );
             })}
+            </div>
           </div>
 
           {/* Error Toast */}
