@@ -37,6 +37,10 @@ Sentry.init({
     /Java object is gone/,
     // Stripe.js blocked or failed to load (ad blockers, flaky network, CSP)
     'Failed to load Stripe.js',
+    // Browser extensions / injected readers (not SoundBridge): Firefox reader, crypto wallets, etc.
+    /__firefox__/,
+    "Can't find variable: __firefox__",
+    /window\.ethereum/,
   ],
 
   // Enable logs to be sent to Sentry

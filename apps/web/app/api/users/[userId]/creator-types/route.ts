@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CREATOR_TYPES, isValidCreatorType } from '@/src/constants/creatorTypes';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { ensureServiceProviderCreatorTypeSynced } from '@/src/lib/sync-service-provider-creator-type';
 
 interface CreatorTypesPayload {
   creatorTypes: string[];
@@ -74,9 +75,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
+    // Heal drift: web (or legacy) flows may have service_provider_profiles without user_creator_types.
+    await ensureServiceProviderCreatorTypeSynced(userId);
+
+    const { data: refreshed, error: refreshError } = await supabaseClient
+      .from('user_creator_types')
+      .select('creator_type')
+      .eq('user_id', userId)
+      .order('creator_type', { ascending: true });
+
+    if (refreshError) {
+      console.error('❌ Creator types refresh after SP sync:', {
+        userId,
+        error: refreshError.message,
+        code: refreshError.code,
+      });
+      return NextResponse.json(
+        {
+          error: 'Failed to load creator types',
+          details: process.env.NODE_ENV === 'development' ? refreshError.message : undefined,
+        },
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
     return NextResponse.json(
       {
-        creatorTypes: (data || []).map((entry) => entry.creator_type),
+        creatorTypes: (refreshed || []).map((entry) => entry.creator_type),
         allCreatorTypes: CREATOR_TYPES,
       },
       { headers: corsHeaders },

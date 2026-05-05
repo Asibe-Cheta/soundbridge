@@ -4,15 +4,15 @@ import { cookies } from 'next/headers';
 import { eventNotificationService } from '@/src/services/EventNotificationService';
 
 /**
- * POST /api/tracks/[id]/queue-notifications
+ * POST /api/tracks/[trackId]/queue-notifications
  * Queue push notifications for users matching track genre/preferences.
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ trackId: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { trackId } = await params;
     const supabase = createRouteHandlerClient({ cookies });
 
     const {
@@ -24,14 +24,14 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!id) {
+    if (!trackId) {
       return NextResponse.json({ error: 'Track ID is required' }, { status: 400 });
     }
 
     const { data: track, error: trackError } = await supabase
       .from('audio_tracks')
       .select('id, title, creator_id')
-      .eq('id', id)
+      .eq('id', trackId)
       .single();
 
     if (trackError || !track) {
@@ -45,7 +45,7 @@ export async function POST(
       );
     }
 
-    const result = await eventNotificationService.queueNotificationsForTrack(id);
+    const result = await eventNotificationService.queueNotificationsForTrack(trackId);
     if (!result.success) {
       return NextResponse.json(
         {
@@ -66,7 +66,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Error in POST /api/tracks/[id]/queue-notifications:', error);
+    console.error('Error in POST /api/tracks/[trackId]/queue-notifications:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

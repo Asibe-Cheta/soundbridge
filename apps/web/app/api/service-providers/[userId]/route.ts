@@ -11,6 +11,7 @@ import {
   enrichServicePortfolioItemRow,
   enrichServiceReviewRow,
 } from '@/src/lib/service-provider-response';
+import { ensureServiceProviderCreatorTypeSynced } from '@/src/lib/sync-service-provider-creator-type';
 import type { Database } from '@/src/lib/types';
 
 const corsHeaders = {
@@ -305,6 +306,8 @@ export async function PATCH(
       { status: 500, headers: corsHeaders },
     );
   }
+
+  await ensureServiceProviderCreatorTypeSynced(userId);
 
   return NextResponse.json({ provider: data }, { headers: corsHeaders });
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SERVICE_CATEGORIES, isValidServiceCategory } from '@/src/constants/creatorTypes';
 import { SUPPORTED_CURRENCIES, isSupportedCurrency } from '@/src/constants/currency';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { ensureServiceProviderCreatorTypeSynced } from '@/src/lib/sync-service-provider-creator-type';
 
 interface ServiceProviderPayload {
   displayName: string;
@@ -28,25 +29,6 @@ export async function POST(request: NextRequest) {
 
   if (error || !user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
-  }
-
-  const { data: creatorTypes, error: creatorTypesError } = await supabase
-    .from('user_creator_types')
-    .select('creator_type')
-    .eq('user_id', user.id);
-
-  if (creatorTypesError) {
-    return NextResponse.json(
-      { error: 'Failed to load creator types', details: creatorTypesError.message },
-      { status: 500, headers: corsHeaders },
-    );
-  }
-
-  if (!creatorTypes?.some((entry) => entry.creator_type === 'service_provider')) {
-    return NextResponse.json(
-      { error: 'You must add service_provider to your creator types before creating a provider profile.' },
-      { status: 400, headers: corsHeaders },
-    );
   }
 
   let body: ServiceProviderPayload;
@@ -112,6 +94,8 @@ export async function POST(request: NextRequest) {
       { status: 500, headers: corsHeaders },
     );
   }
+
+  await ensureServiceProviderCreatorTypeSynced(user.id);
 
   return NextResponse.json({ provider: data }, { headers: corsHeaders });
 }
