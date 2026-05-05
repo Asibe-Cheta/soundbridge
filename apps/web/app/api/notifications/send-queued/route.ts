@@ -28,29 +28,38 @@ export async function POST(request: NextRequest) {
 
     console.log('📤 Starting queued notification send job...');
 
-    // Send queued notifications
-    const result = await eventNotificationService.sendQueuedNotifications();
+    // Match /api/cron/send-event-push-queue: drain both event + track queues (GitHub Actions calls this route).
+    const eventResult = await eventNotificationService.sendQueuedNotifications();
+    const trackResult = await eventNotificationService.sendQueuedTrackNotifications();
 
-    if (!result.success) {
+    const success = eventResult.success && trackResult.success;
+    const sentCount = eventResult.sent_count + trackResult.sent_count;
+    const failedCount = eventResult.failed_count + trackResult.failed_count;
+
+    if (!success) {
       return NextResponse.json(
         {
-          error: 'Failed to send queued notifications',
-          sent_count: result.sent_count,
-          failed_count: result.failed_count,
+          error: 'Failed to send one or more queued notification batches',
+          sent_count: sentCount,
+          failed_count: failedCount,
+          event_notifications: eventResult,
+          track_notifications: trackResult,
         },
         { status: 500 }
       );
     }
 
     console.log(
-      `✅ Notification send job complete: ${result.sent_count} sent, ${result.failed_count} failed`
+      `✅ Notification send job complete: ${sentCount} sent, ${failedCount} failed (event + track)`
     );
 
     return NextResponse.json({
       success: true,
-      sent_count: result.sent_count,
-      failed_count: result.failed_count,
-      message: `Successfully sent ${result.sent_count} notifications, ${result.failed_count} failed`,
+      sent_count: sentCount,
+      failed_count: failedCount,
+      event_notifications: eventResult,
+      track_notifications: trackResult,
+      message: `Successfully sent ${sentCount} notifications, ${failedCount} failed`,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -64,6 +73,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/** Pro/Enterprise: allow long Expo push batches. Hobby remains capped at 60s—keep queues small or upgrade. */
+export const maxDuration = 300;
 
 /**
  * GET /api/notifications/send-queued

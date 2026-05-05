@@ -1,6 +1,6 @@
 name: Send Queued Push Notifications
 
-# Backup only: Vercel calls /api/cron/send-event-push-queue every minute (event_notifications).
+# Backup only: Vercel cron GET /api/cron/send-event-push-queue every minute; POST /api/notifications/send-queued mirrors it (event + track queues).
 # Reads CRON_SECRET / SUPABASE_SERVICE_ROLE_KEY from repo Actions secrets OR from the
 # GitHub Environment (secrets or variables). Job must use the same environment name you
 # configured (e.g. Production).
@@ -36,10 +36,17 @@ jobs:
             echo "Environment name in this workflow must match (currently: Production)."
             exit 1
           fi
-          curl -X POST "https://www.soundbridge.live/api/notifications/send-queued" \
+          # Timeouts: avoid hanging ~5m on stale TCP when Vercel/serverless cuts the function (curl 56).
+          # --max-time must exceed worst-case push batch but fail before GitHub's step ceiling.
+          curl -sS -X POST "https://www.soundbridge.live/api/notifications/send-queued" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${TOKEN}" \
-            --fail-with-body
+            --connect-timeout 30 \
+            --max-time 270 \
+            --fail-with-body \
+            --retry 1 \
+            --retry-delay 5 \
+            --retry-connrefused
 
       - name: Log result
         if: always()

@@ -37,3 +37,5 @@ export async function GET(request: NextRequest) {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/** Pro/Enterprise: long-running push drain. */
+export const maxDuration = 300;
