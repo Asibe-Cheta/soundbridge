@@ -318,15 +318,28 @@ class EventNotificationService {
 
       // Get push tokens for users
       const userIds = notifications.map(n => n.user_id);
-      const { data: pushTokens, error: tokenError } = await getSupabaseAdmin()
+      let pushTokens: Array<{ user_id: string; push_token: string }> | null = null;
+      const { data: filteredPushTokens, error: tokenError } = await getSupabaseAdmin()
         .from('user_push_tokens')
         .select('user_id, push_token')
         .in('user_id', userIds)
         .eq('is_active', true);
 
       if (tokenError) {
-        console.error('❌ Error fetching push tokens:', tokenError);
-        return { success: false, sent_count: 0, failed_count: 0 };
+        // Some environments use `active` (not `is_active`). Fall back to unfiltered fetch.
+        console.warn('⚠️ is_active filter failed; falling back to schema-agnostic token query:', tokenError);
+        const { data: fallbackPushTokens, error: fallbackError } = await getSupabaseAdmin()
+          .from('user_push_tokens')
+          .select('user_id, push_token')
+          .in('user_id', userIds);
+
+        if (fallbackError) {
+          console.error('❌ Error fetching push tokens:', fallbackError);
+          return { success: false, sent_count: 0, failed_count: 0 };
+        }
+        pushTokens = fallbackPushTokens;
+      } else {
+        pushTokens = filteredPushTokens;
       }
 
       // Create a map of user_id -> push_token
