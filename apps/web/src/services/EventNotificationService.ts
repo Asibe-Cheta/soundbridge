@@ -83,12 +83,11 @@ class EventNotificationService {
           )
         `)
         .eq('id', eventId)
-        .eq('is_featured', true)
         .single();
 
       if (eventError || !event) {
         console.error('❌ Error fetching event:', eventError);
-        return { success: false, queued_count: 0, error: 'Event not found or not featured' };
+        return { success: false, queued_count: 0, error: 'Event not found' };
       }
 
       // Get matching users using the database function

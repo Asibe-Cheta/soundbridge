@@ -35,7 +35,7 @@ export async function POST(
     // Verify event exists and user is the organizer
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, creator_id, organizer_id, is_featured, title')
+      .select('id, creator_id, organizer_id, title')
       .eq('id', eventId)
       .single();
 
@@ -50,17 +50,6 @@ export async function POST(
       return NextResponse.json(
         { error: 'Only the event organizer can queue notifications' },
         { status: 403 }
-      );
-    }
-
-    // Check if event is featured
-    if (!event.is_featured) {
-      return NextResponse.json(
-        {
-          error: 'Only featured events can have notifications queued',
-          message: 'Set is_featured=true on the event first',
-        },
-        { status: 400 }
       );
     }
 

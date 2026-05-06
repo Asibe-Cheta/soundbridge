@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { eventNotificationService } from '@/src/services/EventNotificationService';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -173,9 +174,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let notificationQueueResult: { success: boolean; queued_count: number; error?: string } | null = null;
+    try {
+      notificationQueueResult = await eventNotificationService.queueNotificationsForEvent(event.id);
+      if (!notificationQueueResult.success) {
+        console.error('Event notification queue error:', notificationQueueResult.error);
+      }
+    } catch (queueError) {
+      console.error('Unexpected event notification queue error:', queueError);
+    }
+
     return NextResponse.json({
       success: true,
-      event
+      event,
+      notification_queue: notificationQueueResult
     }, { headers: corsHeaders });
   } catch (error) {
     console.error('Event creation API error:', error);
