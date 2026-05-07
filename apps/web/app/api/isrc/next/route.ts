@@ -1,13 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
 /**
- * Returns the next auto-generated SoundBridge ISRC (e.g. GB-SBR-26-00001).
- * Used during upload when isrc_source is soundbridge_generated.
- * Registrant code from ISRC_REGISTRANT_CODE env (default SBR).
+ * Assigns SoundBridge ISRC to an existing track.
+ * Body: { trackId: string }
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -15,9 +14,33 @@ export async function POST() {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const registrant = (process.env.ISRC_REGISTRANT_CODE || 'SBR').trim() || 'SBR';
-    const { data: isrc, error } = await supabase.rpc('generate_soundbridge_isrc', {
-      p_registrant: registrant
+    const body = await request.json().catch(() => ({}));
+    const trackId = typeof body?.trackId === 'string' ? body.trackId.trim() : '';
+    if (!trackId) {
+      return NextResponse.json({ error: 'trackId is required' }, { status: 400 });
+    }
+
+    const { data: track, error: trackError } = await supabase
+      .from('audio_tracks')
+      .select('id, creator_id, is_cover, isrc_code')
+      .eq('id', trackId)
+      .single();
+
+    if (trackError || !track) {
+      return NextResponse.json({ error: 'Track not found' }, { status: 404 });
+    }
+    if (track.creator_id !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    if (track.isrc_code) {
+      return NextResponse.json({ isrc: track.isrc_code, message: 'Track already has ISRC' });
+    }
+    if (track.is_cover) {
+      return NextResponse.json({ error: 'ISRC auto-assignment is disabled for cover tracks' }, { status: 400 });
+    }
+
+    const { data: isrc, error } = await supabase.rpc('assign_soundbridge_isrc', {
+      p_track_id: trackId,
     });
 
     if (error) {

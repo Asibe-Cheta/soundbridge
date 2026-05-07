@@ -645,15 +645,8 @@ export class AudioUploadService {
       } else if (isrcSource === 'user_provided' && td.isrcCode) {
         resolvedIsrc = String(td.isrcCode).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
       } else if (isrcSource === 'soundbridge_generated') {
-        try {
-          const res = await fetch('/api/isrc/next', { method: 'POST' });
-          if (!res.ok) throw new Error('ISRC generation failed');
-          const json = await res.json();
-          resolvedIsrc = json.isrc || null;
-        } catch (err) {
-          console.error('Failed to generate ISRC:', err);
-          return { success: false, error: { code: 'ISRC_ERROR', message: 'Failed to generate ISRC' } };
-        }
+        // Web upload API now assigns generated ISRC server-side after insert via assign_soundbridge_isrc(track_id).
+        resolvedIsrc = null;
       }
       const suspectedDup = isMixtape ? false : !!td.suspected_duplicate;
 
@@ -699,9 +692,9 @@ export class AudioUploadService {
         } : {}),
         // Cover song fields
         is_cover: isMixtape ? false : (td.isCover || false),
-        isrc_code: resolvedIsrc,
-        isrc_source: isrcSource,
-        isrc_soundbridge_generated: isrcSource === 'soundbridge_generated',
+        isrc_code: isrcSource === 'soundbridge_generated' ? null : resolvedIsrc,
+        isrc_source: isrcSource === 'soundbridge_generated' ? null : isrcSource,
+        isrc_soundbridge_generated: false,
         isrc_verified: isMixtape ? false : (isrcSource === 'acrcloud_detected' ? !!acr?.detectedISRCVerified : (isrcSource === 'user_provided')),
         isrc_verified_at: isMixtape
           ? null

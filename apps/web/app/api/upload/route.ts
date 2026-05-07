@@ -337,7 +337,6 @@ export async function POST(request: NextRequest) {
 
     // Resolve ISRC per WEB_TEAM_ISRC_AUTO_ASSIGNMENT: acrcloud_detected | user_provided | soundbridge_generated
     // Mixtapes intentionally do not require ISRC assignment.
-    const registrantCode = (process.env.ISRC_REGISTRANT_CODE || 'SBR').trim() || 'SBR';
     let assignedIsrc: string | null = null;
     let assignedSource: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated' | null = null;
     if (isMixtapeUpload) {
@@ -350,8 +349,8 @@ export async function POST(request: NextRequest) {
       assignedIsrc = String(isrcCode).replace(/[-\s]/g, '').toUpperCase().substring(0, 12);
       assignedSource = 'user_provided';
     } else {
-      const { data: generated } = await supabase.rpc('generate_soundbridge_isrc', { p_registrant: registrantCode });
-      assignedIsrc = generated as string;
+      // For generated ISRCs, assign after insert via assign_soundbridge_isrc(track_id).
+      assignedIsrc = null;
       assignedSource = 'soundbridge_generated';
     }
 
@@ -392,9 +391,9 @@ export async function POST(request: NextRequest) {
       is_public: suspected_duplicate ? false : (privacy === 'public'),
       // Cover song fields
       is_cover: isMixtapeUpload ? false : (isCover || false),
-      isrc_code: assignedIsrc,
-      isrc_source: assignedSource,
-      isrc_soundbridge_generated: assignedSource === 'soundbridge_generated',
+      isrc_code: assignedSource === 'soundbridge_generated' ? null : assignedIsrc,
+      isrc_source: assignedSource === 'soundbridge_generated' ? null : assignedSource,
+      isrc_soundbridge_generated: false,
       isrc_verified: assignedSource === 'acrcloud_detected' ? (acrcloudData?.detectedISRCVerified || false) : (assignedSource === 'user_provided'),
       isrc_verified_at: (assignedSource === 'acrcloud_detected' && acrcloudData?.detectedISRCVerified) || assignedSource === 'user_provided' ? new Date().toISOString() : null,
       // Original work (covers / match)
@@ -457,6 +456,20 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create track record' },
         { status: 500 }
       );
+    }
+
+    if (assignedSource === 'soundbridge_generated' && !isMixtapeUpload) {
+      const { data: generatedIsrc, error: assignError } = await supabase.rpc('assign_soundbridge_isrc', {
+        p_track_id: track.id,
+      });
+      if (assignError) {
+        console.error('ISRC assignment RPC error:', assignError);
+        return NextResponse.json(
+          { error: 'Failed to assign generated ISRC' },
+          { status: 500 }
+        );
+      }
+      assignedIsrc = (generatedIsrc as string) || null;
     }
 
     // Log successful upload for statistics
