@@ -29,6 +29,7 @@ const RADIUS_KM = '100'
 const PAGE_SIZE = 200
 /** Cap pages per hub so one run cannot explode on broad queries. */
 const MAX_PAGES_PER_HUB = 30
+const MAX_RETRIES = 2
 
 type TmImage = { ratio?: string; url?: string; width?: number; height?: number; fallback?: boolean }
 
@@ -74,6 +75,10 @@ type TmEvent = {
 type TmEventsResponse = {
   _embedded?: { events?: TmEvent[] }
   page?: { size?: number; totalElements?: number; totalPages?: number; number?: number }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function mapGenreLabel(flat: string): string {
@@ -141,33 +146,76 @@ function venueAddressLines(v: TmVenue | undefined): string | null {
   return parts.length ? parts.join(', ') : null
 }
 
-async function fetchEventsPage(
-  apiKey: string,
-  lat: number,
-  lng: number,
-  startIso: string,
-  endIso: string,
+type FetchMode = 'geo-music' | 'geo-broad' | 'city-broad'
+
+async function fetchEventsPage(args: {
+  apiKey: string
+  lat?: number
+  lng?: number
+  city?: string
+  startIso: string
+  endIso: string
   page: number
-): Promise<TmEventsResponse> {
+  mode: FetchMode
+}): Promise<TmEventsResponse> {
+  const { apiKey, lat, lng, city, startIso, endIso, page, mode } = args
   const url = new URL(`${DISCOVERY_BASE}/events.json`)
   url.searchParams.set('apikey', apiKey)
-  url.searchParams.set('latlong', `${lat},${lng}`)
-  url.searchParams.set('radius', RADIUS_KM)
-  url.searchParams.set('unit', 'km')
-  url.searchParams.set('classificationName', 'music')
+  if (typeof lat === 'number' && typeof lng === 'number') {
+    url.searchParams.set('latlong', `${lat},${lng}`)
+    url.searchParams.set('radius', RADIUS_KM)
+    url.searchParams.set('unit', 'km')
+  }
+  if (city) url.searchParams.set('city', city)
+  if (mode === 'geo-music') url.searchParams.set('classificationName', 'music')
   url.searchParams.set('startDateTime', startIso)
   url.searchParams.set('endDateTime', endIso)
   url.searchParams.set('size', String(PAGE_SIZE))
   url.searchParams.set('page', String(page))
-  url.searchParams.set('sort', 'eventDate,date.asc')
+  // Ticketmaster Discovery supports date,asc/date,desc (not eventDate,date.asc).
+  url.searchParams.set('sort', 'date,asc')
   // UK coverage via lat/long + radius; omit countryCode (Discovery docs focus on US/CA enums).
 
-  const res = await fetch(url.toString())
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Ticketmaster page ${page}: ${res.status} ${text.slice(0, 300)}`)
+  const requestUrl = url.toString()
+  let lastStatus = 0
+  let lastBody = ''
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch(requestUrl)
+    if (res.ok) {
+      const json = (await res.json()) as TmEventsResponse
+      if (page === 0) {
+        const pageMeta = json.page ?? {}
+        const rawEvents = json._embedded?.events?.length ?? 0
+        console.log(
+          `[sync-ticketmaster-events] raw ${mode}`,
+          JSON.stringify({
+            city,
+            lat,
+            lng,
+            requestUrl,
+            rawEvents,
+            totalElements: pageMeta.totalElements,
+            totalPages: pageMeta.totalPages,
+          })
+        )
+      }
+      return json
+    }
+
+    lastStatus = res.status
+    lastBody = await res.text().catch(() => '')
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const delayMs = 500 * (attempt + 1)
+      console.warn(`[sync-ticketmaster-events] 429 retry ${attempt + 1} in ${delayMs}ms`)
+      await sleep(delayMs)
+      continue
+    }
+    break
   }
-  return (await res.json()) as TmEventsResponse
+
+  throw new Error(
+    `Ticketmaster ${mode} page ${page}: ${lastStatus} ${lastBody.slice(0, 300)}`
+  )
 }
 
 serve(async (req) => {
@@ -196,19 +244,67 @@ serve(async (req) => {
 
   const seen = new Set<string>()
   const rows: Record<string, unknown>[] = []
+  const diagnostics: Array<{
+    hub: string
+    mode: FetchMode
+    page: number
+    rawEvents: number
+    mappedEvents: number
+    error?: string
+  }> = []
 
   for (const hub of UK_HUBS) {
     let totalPages = MAX_PAGES_PER_HUB
     try {
-      for (let page = 0; page < totalPages && page < MAX_PAGES_PER_HUB; page++) {
-        const body = await fetchEventsPage(apiKey, hub.lat, hub.lng, startIso, endIso, page)
+      let mode: FetchMode = 'geo-music'
+      let page = 0
+      let attemptedFallbackGeo = false
+      let attemptedFallbackCity = false
+
+      while (page < totalPages && page < MAX_PAGES_PER_HUB) {
+        const mappedBefore = rows.length
+        const body = await fetchEventsPage({
+          apiKey,
+          lat: hub.lat,
+          lng: hub.lng,
+          city: mode === 'city-broad' ? hub.label : undefined,
+          startIso,
+          endIso,
+          page,
+          mode,
+        })
         const reportedTotal = body.page?.totalPages
         if (typeof reportedTotal === 'number' && reportedTotal >= 0) {
           totalPages = Math.min(Math.max(reportedTotal, 1), MAX_PAGES_PER_HUB)
         }
 
         const events = body._embedded?.events ?? []
-        if (events.length === 0) break
+        diagnostics.push({
+          hub: hub.label,
+          mode,
+          page,
+          rawEvents: events.length,
+          mappedEvents: 0,
+        })
+        if (events.length === 0) {
+          if (mode === 'geo-music' && !attemptedFallbackGeo) {
+            // First broadening step: remove the music filter.
+            mode = 'geo-broad'
+            page = 0
+            totalPages = MAX_PAGES_PER_HUB
+            attemptedFallbackGeo = true
+            continue
+          }
+          if (mode !== 'city-broad' && !attemptedFallbackCity) {
+            // Second fallback: city text search (Ticketmaster can be stricter on geo in some markets).
+            mode = 'city-broad'
+            page = 0
+            totalPages = MAX_PAGES_PER_HUB
+            attemptedFallbackCity = true
+            continue
+          }
+          break
+        }
 
         for (const ev of events) {
           const rawId = ev.id
@@ -250,9 +346,19 @@ serve(async (req) => {
           })
         }
 
+        diagnostics[diagnostics.length - 1].mappedEvents = rows.length - mappedBefore
         if (events.length < PAGE_SIZE) break
+        page += 1
       }
     } catch (e) {
+      diagnostics.push({
+        hub: hub.label,
+        mode: 'geo-music',
+        page: 0,
+        rawEvents: 0,
+        mappedEvents: 0,
+        error: e instanceof Error ? e.message : 'unknown error',
+      })
       console.error(`[sync-ticketmaster-events] hub ${hub.label}`, e)
     }
   }
@@ -297,6 +403,7 @@ serve(async (req) => {
       unique_events: rows.length,
       upserted,
       removed_past_unclaimed: removedCount,
+      diagnostics: diagnostics.slice(0, 30),
     }),
     { headers: { ...CORS, 'Content-Type': 'application/json' } }
   )
