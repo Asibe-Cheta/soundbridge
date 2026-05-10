@@ -94,7 +94,7 @@ export function validateAudioPresignPayload(body: {
 
 export function validateAudioUploadInput(
   file: File,
-  uploadContentType?: 'music' | 'podcast' | 'mixtape',
+  uploadContentType?: 'music' | 'podcast' | 'mixtape' | 'audio_book',
 ): { valid: true } | { valid: false; message: string } {
   const extension = getFileExtension(file.name);
   const mime = (file.type || '').toLowerCase();
@@ -103,7 +103,8 @@ export function validateAudioUploadInput(
     return { valid: false, message: 'File is empty.' };
   }
 
-  const maxSize = uploadContentType === 'mixtape' ? MAX_AUDIO_FILE_SIZE_BYTES : DEFAULT_AUDIO_FILE_SIZE_BYTES;
+  const maxSize =
+    uploadContentType === 'mixtape' ? MAX_AUDIO_FILE_SIZE_BYTES : DEFAULT_AUDIO_FILE_SIZE_BYTES;
   if (file.size > maxSize) {
     return {
       valid: false,

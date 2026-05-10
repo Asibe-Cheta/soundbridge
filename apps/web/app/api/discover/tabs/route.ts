@@ -89,7 +89,7 @@ export async function GET() {
       )
     `;
 
-    const [featuredRes, recentRes, podcastsRes, mixtapesRes] = await Promise.all([
+    const [featuredRes, recentRes, podcastsRes, audiobooksRes, mixtapesRes] = await Promise.all([
       supabase
         .from('albums')
         .select(albumFeaturedSelect)
@@ -109,6 +109,14 @@ export async function GET() {
         .select(trackSelect)
         .eq('is_public', true)
         .eq('content_type', 'podcast')
+        .in('moderation_status', ALLOWED_MODERATION)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase
+        .from('audio_tracks')
+        .select(trackSelect)
+        .eq('is_public', true)
+        .eq('content_type', 'audio_book')
         .in('moderation_status', ALLOWED_MODERATION)
         .order('created_at', { ascending: false })
         .limit(20),
@@ -140,6 +148,12 @@ export async function GET() {
         creator: (row.profiles as Record<string, unknown> | null) ?? null,
       } as Parameters<typeof normalizeTrackRow>[0]),
     );
+    const audiobooks = ((audiobooksRes.data || []) as Record<string, unknown>[]).map((row) =>
+      normalizeTrackRow({
+        ...row,
+        creator: (row.profiles as Record<string, unknown> | null) ?? null,
+      } as Parameters<typeof normalizeTrackRow>[0]),
+    );
     const mixtapes = ((mixtapesRes.data || []) as Record<string, unknown>[]).map((row) =>
       normalizeTrackRow({
         ...row,
@@ -147,11 +161,12 @@ export async function GET() {
       } as Parameters<typeof normalizeTrackRow>[0]),
     );
 
-    if (featuredRes.error || recentRes.error || podcastsRes.error || mixtapesRes.error) {
+    if (featuredRes.error || recentRes.error || podcastsRes.error || audiobooksRes.error || mixtapesRes.error) {
       console.error('[discover/tabs] partial query errors', {
         featured: featuredRes.error?.message ?? null,
         recent: recentRes.error?.message ?? null,
         podcasts: podcastsRes.error?.message ?? null,
+        audiobooks: audiobooksRes.error?.message ?? null,
         mixtapes: mixtapesRes.error?.message ?? null,
       });
     }
@@ -170,6 +185,7 @@ export async function GET() {
             creator: (row.profiles as Record<string, unknown> | null) ?? null,
           })),
           podcasts,
+          audiobooks,
           mixtapes,
         },
       },

@@ -16,9 +16,9 @@ import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types
 import { Toaster } from '../../src/components/ui/Toast';
 import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 import { toast as hotToast } from 'react-hot-toast';
-import { Upload, Music, Mic, Disc, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
+import { Upload, Music, Mic, Disc, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search, BookOpen } from 'lucide-react';
 
-type ContentType = 'music' | 'podcast' | 'mixtape';
+type ContentType = 'music' | 'podcast' | 'mixtape' | 'audio_book';
 
 export default function UnifiedUploadPage() {
   const UPLOAD_DEBUG = process.env.NODE_ENV !== 'production';
@@ -151,11 +151,60 @@ export default function UnifiedUploadPage() {
           setPodcastCategories(podcastData.genres.map((g: any) => g.name));
         }
       }
+
+      const audiobookResponse = await fetch('/api/genres?category=audiobook&active=true');
+      if (audiobookResponse.ok) {
+        const audiobookData = await audiobookResponse.json();
+        if (audiobookData.success && audiobookData.genres?.length) {
+          setAudiobookGenres(audiobookData.genres.map((g: any) => g.name));
+        } else {
+          setAudiobookGenres([
+            'Fiction',
+            'Non-Fiction',
+            'Biography & Memoir',
+            'Self-Help',
+            'Business',
+            'Children',
+            'Science',
+            'History',
+            'Religion & Spirituality',
+            'Young Adult',
+            'Other',
+          ]);
+        }
+      } else {
+        setAudiobookGenres([
+          'Fiction',
+          'Non-Fiction',
+          'Biography & Memoir',
+          'Self-Help',
+          'Business',
+          'Children',
+          'Science',
+          'History',
+          'Religion & Spirituality',
+          'Young Adult',
+          'Other',
+        ]);
+      }
     } catch (error) {
       console.error('Failed to load genres:', error);
       // Fallback to basic genres if API fails
       setGenres(['Afrobeats', 'Gospel', 'Hip Hop', 'Pop', 'R&B', 'Rock', 'Jazz', 'Classical', 'Country', 'Electronic', 'Reggae', 'Blues', 'Folk', 'Alternative', 'Other']);
       setPodcastCategories(['Arts & Culture', 'Business', 'Comedy', 'Education', 'Entertainment', 'Health & Fitness', 'Music', 'News & Politics', 'Religion & Spirituality', 'Science', 'Sports', 'Technology', 'True Crime', 'Other']);
+      setAudiobookGenres([
+        'Fiction',
+        'Non-Fiction',
+        'Biography & Memoir',
+        'Self-Help',
+        'Business',
+        'Children',
+        'Science',
+        'History',
+        'Religion & Spirituality',
+        'Young Adult',
+        'Other',
+      ]);
     } finally {
       setLoadingGenres(false);
     }
@@ -272,6 +321,8 @@ export default function UnifiedUploadPage() {
     if (!title.trim()) return 'Title is required';
     if (contentType === 'music' && !artistName.trim()) return 'Artist name is required';
     if (contentType === 'music' && !genre.trim()) return 'Genre selection is required for music tracks';
+    if (contentType === 'audio_book' && !artistName.trim()) return 'Author / narrator name is required';
+    if (contentType === 'audio_book' && !genre.trim()) return 'Book genre is required';
     if (contentType === 'podcast' && !episodeNumber.trim()) return 'Episode number is required';
     if (contentType === 'podcast' && !podcastCategory.trim()) return 'Category selection is required for podcast episodes';
     if (contentType === 'mixtape' && !djName.trim()) return 'DJ / Artist Name is required for mixtapes';
@@ -618,6 +669,20 @@ export default function UnifiedUploadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadState.audioFile?.id, contentType]); // Only re-run when file ID changes
 
+  useEffect(() => {
+    if (contentType !== 'music') {
+      setAcrcloudStatus('idle');
+      setAcrcloudData(null);
+      setAcrcloudError(null);
+      setIsCover(false);
+      setIsOriginalConfirmed(false);
+      setIsrcCode('');
+      setIsrcVerificationStatus('idle');
+      setIsrcVerificationError(null);
+      setIsrcVerificationData(null);
+    }
+  }, [contentType]);
+
   // Simple validation modal
   const ValidationModal = () => {
     if (!showValidationModal) return null;
@@ -806,6 +871,19 @@ export default function UnifiedUploadPage() {
           original_song_title: undefined,
           suspected_duplicate: false,
           acrcloudData: null
+        } : contentType === 'audio_book' ? {
+          contentType: 'audio_book' as const,
+          artistName: artistName.trim(),
+          genre: genre.trim(),
+          lyrics: undefined,
+          lyricsLanguage: undefined,
+          isCover: false,
+          isrcCode: undefined,
+          isrc_source: undefined,
+          original_artist_name: undefined,
+          original_song_title: undefined,
+          suspected_duplicate: false,
+          acrcloudData: null,
         } : {
           contentType: 'podcast' as const,
           episodeNumber: episodeNumber.trim(),
@@ -934,12 +1012,20 @@ export default function UnifiedUploadPage() {
       icon: Disc,
       description: 'Upload DJ mixes and continuous sets',
       color: 'linear-gradient(135deg, #F59E0B 0%, #f97316 100%)'
+    },
+    {
+      id: 'audio_book' as ContentType,
+      label: 'Audio Book',
+      icon: BookOpen,
+      description: 'Audiobooks and spoken-word titles',
+      color: 'linear-gradient(135deg, #0d9488 0%, #6366f1 100%)'
     }
   ];
 
   // Dynamic genre loading from API
   const [genres, setGenres] = useState<string[]>([]);
   const [podcastCategories, setPodcastCategories] = useState<string[]>([]);
+  const [audiobookGenres, setAudiobookGenres] = useState<string[]>([]);
   const [loadingGenres, setLoadingGenres] = useState(false);
 
   if (loading) {
@@ -977,7 +1063,7 @@ export default function UnifiedUploadPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">Upload Content</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {contentTypes.map((type) => (
               <div
                 key={type.id}
@@ -1118,7 +1204,7 @@ export default function UnifiedUploadPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your track title"
+                  placeholder={contentType === 'audio_book' ? 'Book or release title' : 'Enter your track title'}
                 />
               </div>
 
@@ -1524,6 +1610,45 @@ export default function UnifiedUploadPage() {
                 </>
               )}
 
+              {contentType === 'audio_book' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Author / narrator *
+                    </label>
+                    <input
+                      type="text"
+                      value={artistName}
+                      onChange={(e) => setArtistName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Primary author or narrator name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Book genre *
+                    </label>
+                    <select
+                      value={genre}
+                      onChange={(e) => setGenre(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                      disabled={loadingGenres}
+                    >
+                      <option value="">
+                        {loadingGenres ? 'Loading genres...' : 'Select a book genre'}
+                      </option>
+                      {audiobookGenres.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Category for discover and search (same as mobile)
+                    </p>
+                  </div>
+                </>
+              )}
+
               {contentType === 'mixtape' && (
                 <>
                   <div>
@@ -1868,7 +1993,16 @@ export default function UnifiedUploadPage() {
                   <span>Validating...</span>
                 </>
               ) : (
-                <span>Publish {contentType === 'music' ? 'Track' : contentType === 'podcast' ? 'Episode' : 'Mix'}</span>
+                <span>
+                  Publish{' '}
+                  {contentType === 'music'
+                    ? 'Track'
+                    : contentType === 'podcast'
+                      ? 'Episode'
+                      : contentType === 'audio_book'
+                        ? 'Audio Book'
+                        : 'Mix'}
+                </span>
               )}
             </button>
           </div>

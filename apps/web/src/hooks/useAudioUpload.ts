@@ -21,7 +21,7 @@ export interface UploadState {
 }
 
 export interface UploadActions {
-  setAudioFile: (file: File | null, uploadContentType?: 'music' | 'podcast' | 'mixtape') => void;
+  setAudioFile: (file: File | null, uploadContentType?: 'music' | 'podcast' | 'mixtape' | 'audio_book') => void;
   setCoverArtFile: (file: File | null) => void;
   uploadTrack: (
     trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>,
@@ -51,7 +51,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const setAudioFile = useCallback((file: File | null, uploadContentType: 'music' | 'podcast' | 'mixtape' = 'music') => {
+  const setAudioFile = useCallback((file: File | null, uploadContentType: 'music' | 'podcast' | 'mixtape' | 'audio_book' = 'music') => {
     if (!file) {
       setState(prev => ({ ...prev, audioFile: null, audioMetadata: undefined }));
       return;

@@ -40,7 +40,13 @@ export async function POST(request: NextRequest) {
     const audioFile = formData.get('audioFile');
     const uploadContentTypeRaw = formData.get('uploadContentType');
     const uploadContentType =
-      uploadContentTypeRaw === 'mixtape' ? 'mixtape' : uploadContentTypeRaw === 'podcast' ? 'podcast' : 'music';
+      uploadContentTypeRaw === 'mixtape'
+        ? 'mixtape'
+        : uploadContentTypeRaw === 'podcast'
+          ? 'podcast'
+          : uploadContentTypeRaw === 'audio_book'
+            ? 'audio_book'
+            : 'music';
     if (!(audioFile instanceof File)) {
       return NextResponse.json({ error: 'audioFile is required' }, { status: 400 });
     }

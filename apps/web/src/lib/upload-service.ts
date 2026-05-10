@@ -40,12 +40,13 @@ export class AudioUploadService {
   validateAudioFile(
     file: File,
     _userTier: 'free' | 'premium' | 'unlimited' = 'free',
-    uploadContentType: 'music' | 'podcast' | 'mixtape' = 'music',
+    uploadContentType: 'music' | 'podcast' | 'mixtape' | 'audio_book' = 'music',
   ): { isValid: boolean; errors: string[]; warnings?: string[] } {
     const errors: string[] = [];
     const warnings: string[] = [];
     
-    const typeMaxSize = uploadContentType === 'mixtape' ? 200 * 1024 * 1024 : 100 * 1024 * 1024;
+    const typeMaxSize =
+      uploadContentType === 'mixtape' ? 200 * 1024 * 1024 : 100 * 1024 * 1024;
     const maxSize = typeMaxSize;
     const allowedTypes = [
       'audio/mpeg',
@@ -175,7 +176,7 @@ export class AudioUploadService {
   async uploadAudioFile(
     file: File,
     userId: string,
-    uploadContentType: 'music' | 'podcast' | 'mixtape' = 'music',
+    uploadContentType: 'music' | 'podcast' | 'mixtape' | 'audio_book' = 'music',
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadResult> {
     try {
@@ -599,7 +600,7 @@ export class AudioUploadService {
       const audioResult = await this.uploadAudioFile(
         processedFile,
         userId,
-        (trackData.contentType as 'music' | 'podcast' | 'mixtape') || 'music',
+        (trackData.contentType as 'music' | 'podcast' | 'mixtape' | 'audio_book') || 'music',
         (progress) => onProgress?.('audio', progress)
       );
 
@@ -634,9 +635,12 @@ export class AudioUploadService {
       const td = trackData as any;
       const acr = td.acrcloudData;
       const normalizedContentType =
-        td.contentType === 'podcast' || td.contentType === 'mixtape' ? td.contentType : 'music';
+        td.contentType === 'podcast' || td.contentType === 'mixtape' || td.contentType === 'audio_book'
+          ? td.contentType
+          : 'music';
       const isMixtape = normalizedContentType === 'mixtape' || td.is_mixtape === true;
-      const isrcSource = isMixtape
+      const skipMusicRights = isMixtape || normalizedContentType === 'audio_book';
+      const isrcSource = skipMusicRights
         ? null
         : (td.isrc_source || (acr?.detectedISRC ? 'acrcloud_detected' : (td.isrcCode ? 'user_provided' : 'soundbridge_generated')));
       let resolvedIsrc: string | null = null;
@@ -648,7 +652,7 @@ export class AudioUploadService {
         // Web upload API now assigns generated ISRC server-side after insert via assign_soundbridge_isrc(track_id).
         resolvedIsrc = null;
       }
-      const suspectedDup = isMixtape ? false : !!td.suspected_duplicate;
+      const suspectedDup = skipMusicRights ? false : !!td.suspected_duplicate;
 
       // Create database record
       const dbResult = await this.createAudioTrackRecord({
@@ -691,18 +695,18 @@ export class AudioUploadService {
           artist_name_match_confidence: acr.artistMatchConfidence || null
         } : {}),
         // Cover song fields
-        is_cover: isMixtape ? false : (td.isCover || false),
+        is_cover: skipMusicRights ? false : (td.isCover || false),
         isrc_code: isrcSource === 'soundbridge_generated' ? null : resolvedIsrc,
         isrc_source: isrcSource === 'soundbridge_generated' ? null : isrcSource,
         isrc_soundbridge_generated: false,
-        isrc_verified: isMixtape ? false : (isrcSource === 'acrcloud_detected' ? !!acr?.detectedISRCVerified : (isrcSource === 'user_provided')),
-        isrc_verified_at: isMixtape
+        isrc_verified: skipMusicRights ? false : (isrcSource === 'acrcloud_detected' ? !!acr?.detectedISRCVerified : (isrcSource === 'user_provided')),
+        isrc_verified_at: skipMusicRights
           ? null
           : ((isrcSource === 'acrcloud_detected' && acr?.detectedISRCVerified) || isrcSource === 'user_provided'
             ? new Date().toISOString()
             : null),
-        original_artist_name: isMixtape ? null : (td.original_artist_name?.trim() || null),
-        original_song_title: isMixtape ? null : (td.original_song_title?.trim() || null),
+        original_artist_name: skipMusicRights ? null : (td.original_artist_name?.trim() || null),
+        original_song_title: skipMusicRights ? null : (td.original_song_title?.trim() || null),
         suspected_duplicate: suspectedDup,
         is_mixtape: isMixtape,
         content_type: isMixtape ? 'mixtape' : normalizedContentType,

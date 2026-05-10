@@ -104,7 +104,7 @@ export interface StorageBucket {
 export interface TrackUploadData {
   title: string;
   description?: string;
-  contentType?: 'music' | 'podcast' | 'mixtape';
+  contentType?: 'music' | 'podcast' | 'mixtape' | 'audio_book';
   artistName?: string;
   djName?: string;
   tracklist?: string;

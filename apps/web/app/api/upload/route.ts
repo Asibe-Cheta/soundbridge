@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     const normalizedContentType =
-      contentType === 'podcast' || contentType === 'mixtape' ? contentType : 'music';
+      contentType === 'podcast' || contentType === 'mixtape' || contentType === 'audio_book'
+        ? contentType
+        : 'music';
     const isMixtapeUpload = normalizedContentType === 'mixtape' || is_mixtape === true;
     if (!title || (!isMixtapeUpload && !artistName) || (isMixtapeUpload && !(dj_name || artistName))) {
       return NextResponse.json(
@@ -97,7 +99,10 @@ export async function POST(request: NextRequest) {
     if (!resolvedAudioFileUrl && fileData) {
       try {
         const file = await createFileFromBase64(fileData);
-        const inputValidation = validateAudioUploadInput(file, isMixtapeUpload ? 'mixtape' : 'music');
+        const inputValidation = validateAudioUploadInput(
+          file,
+          isMixtapeUpload ? 'mixtape' : normalizedContentType === 'audio_book' ? 'audio_book' : 'music',
+        );
         if (!inputValidation.valid) {
           return NextResponse.json({ error: inputValidation.message }, { status: 400 });
         }
@@ -339,7 +344,7 @@ export async function POST(request: NextRequest) {
     // Mixtapes intentionally do not require ISRC assignment.
     let assignedIsrc: string | null = null;
     let assignedSource: 'user_provided' | 'acrcloud_detected' | 'soundbridge_generated' | null = null;
-    if (isMixtapeUpload) {
+    if (isMixtapeUpload || normalizedContentType === 'audio_book') {
       assignedIsrc = null;
       assignedSource = null;
     } else if (isrc_source === 'acrcloud_detected' && acrcloudData?.detectedISRC) {
@@ -458,7 +463,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (assignedSource === 'soundbridge_generated' && !isMixtapeUpload) {
+    if (assignedSource === 'soundbridge_generated' && !isMixtapeUpload && normalizedContentType === 'music') {
       const { data: generatedIsrc, error: assignError } = await supabase.rpc('assign_soundbridge_isrc', {
         p_track_id: track.id,
       });

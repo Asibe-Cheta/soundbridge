@@ -19,7 +19,7 @@ import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search'
 import type { AudioTrack } from '../../src/lib/types/audio';
 import ShareModal from '@/src/components/social/ShareModal';
 import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
-import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, Briefcase } from 'lucide-react';
+import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, BookOpen, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, Briefcase } from 'lucide-react';
 
 export default function DiscoverPage() {
   const router = useRouter();
@@ -41,7 +41,10 @@ export default function DiscoverPage() {
     if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
-    if (tabParam && ['music', 'albums', 'creators', 'events', 'podcasts', 'mixtapes'].includes(tabParam)) {
+    if (
+      tabParam &&
+      ['music', 'albums', 'creators', 'events', 'podcasts', 'audiobooks', 'mixtapes'].includes(tabParam)
+    ) {
       setActiveTab(tabParam);
       }
     }
@@ -60,6 +63,7 @@ export default function DiscoverPage() {
   const [onboardingUserType, setOnboardingUserType] = useState<string | null>(null);
   const [discoverAlbums, setDiscoverAlbums] = useState<any[]>([]);
   const [discoverPodcasts, setDiscoverPodcasts] = useState<any[]>([]);
+  const [discoverAudiobooks, setDiscoverAudiobooks] = useState<any[]>([]);
   const [discoverMixtapes, setDiscoverMixtapes] = useState<any[]>([]);
   const [discoverTabLoading, setDiscoverTabLoading] = useState(false);
 
@@ -151,6 +155,7 @@ export default function DiscoverPage() {
     { id: 'services', label: 'Services', icon: Briefcase },
     { id: 'venues', label: 'Venues', icon: Home },
     { id: 'podcasts', label: 'Podcasts', icon: Mic },
+    { id: 'audiobooks', label: 'Audio Books', icon: BookOpen },
     { id: 'mixtapes', label: 'Mixtapes', icon: Music }
   ];
 
@@ -331,16 +336,19 @@ export default function DiscoverPage() {
         if (res.ok && json?.success && json?.data) {
           setDiscoverAlbums(json.data.albums || []);
           setDiscoverPodcasts(json.data.podcasts || []);
+          setDiscoverAudiobooks(json.data.audiobooks || []);
           setDiscoverMixtapes(json.data.mixtapes || []);
         } else {
           setDiscoverAlbums([]);
           setDiscoverPodcasts([]);
+          setDiscoverAudiobooks([]);
           setDiscoverMixtapes([]);
         }
       } catch (err) {
         console.error('Error loading discover tabs:', err);
         setDiscoverAlbums([]);
         setDiscoverPodcasts([]);
+        setDiscoverAudiobooks([]);
         setDiscoverMixtapes([]);
       } finally {
         setDiscoverTabLoading(false);
@@ -475,6 +483,13 @@ export default function DiscoverPage() {
         title: "No Podcasts Yet",
         description: "Start your podcast journey and share your stories with listeners!",
         action: "Start Podcast",
+        actionLink: "/upload"
+      },
+      audiobooks: {
+        icon: <BookOpen size={48} className="mx-auto mb-4 opacity-50" />,
+        title: "No Audio Books Yet",
+        description: "Upload audiobooks and spoken-word titles for listeners to discover.",
+        action: "Upload Audio Book",
         actionLink: "/upload"
       }
     };
@@ -1270,6 +1285,163 @@ export default function DiscoverPage() {
               ))
             ) : (
               renderEmptyState('podcasts')
+            )}
+          </div>
+        );
+
+      case 'audiobooks':
+        return (
+          <div className="grid grid-4">
+            {discoverTabLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card">
+                  <div className="card-image">
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '2rem'
+                    }}>
+                      <BookOpen size={32} />
+                    </div>
+                    <div className="play-button">▶</div>
+                  </div>
+                  <div style={{ fontWeight: '600' }}>Loading...</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>Loading...</div>
+                </div>
+              ))
+            ) : trendingError ? (
+              <div className="card" style={{ gridColumn: 'span 4', textAlign: 'center', padding: '2rem' }}>
+                <AlertCircle size={48} style={{ color: '#DC2626', marginBottom: '1rem' }} />
+                <h3 style={{ color: '#DC2626', marginBottom: '1rem' }}>Error Loading Audio Books</h3>
+                <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
+                <button
+                  onClick={() => getTrendingContent(20)}
+                  style={{
+                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+                  }}
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : discoverAudiobooks.length > 0 ? (
+              discoverAudiobooks.map((book) => (
+                <div key={book.id} className="card" style={{ cursor: 'pointer' }}>
+                  <div className="card-image" style={{ position: 'relative' }}>
+                    {book.cover_art_url ? (
+                      <Image
+                        src={book.cover_art_url}
+                        alt={book.title}
+                        width={200}
+                        height={200}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(45deg, #0d9488, #6366f1)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '2rem'
+                      }}>
+                        <BookOpen size={32} />
+                      </div>
+                    )}
+                    <div
+                      className="play-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePlayTrack(book);
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        backgroundColor: currentTrack?.id === book.id && isPlaying ? 'rgba(236, 72, 153, 0.9)' : 'rgba(0, 0, 0, 0.7)'
+                      }}
+                    >
+                      {currentTrack?.id === book.id && isPlaying ? (
+                        <Pause size={20} />
+                      ) : (
+                        <Play size={20} />
+                      )}
+                    </div>
+                    <div
+                      className="like-button"
+                      onClick={(e) => handleLikeTrack(book, e)}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                    >
+                      <Heart
+                        size={16}
+                        style={{
+                          color: likedTracks.has(book.id) ? '#EC4899' : 'white',
+                          fill: likedTracks.has(book.id) ? '#EC4899' : 'none'
+                        }}
+                      />
+                    </div>
+                    <div
+                      className="share-button"
+                      onClick={(e) => handleShareTrack(book, e)}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '50px',
+                        cursor: 'pointer',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        zIndex: 10
+                      }}
+                    >
+                      <Share2 size={16} style={{ color: 'white' }} />
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: '600' }}>{book.title}</div>
+                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{book.creator?.display_name || 'Unknown Creator'}</div>
+                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    {book.duration ? `${Math.floor(book.duration / 60)}:${String(book.duration % 60).padStart(2, '0')}` : '--:--'} • {(book.play_count || 0).toLocaleString()} plays
+                  </div>
+                </div>
+              ))
+            ) : (
+              renderEmptyState('audiobooks')
             )}
           </div>
         );
