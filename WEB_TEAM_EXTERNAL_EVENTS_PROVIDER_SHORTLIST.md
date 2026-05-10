@@ -58,3 +58,4 @@ Adjust field paths to the **exact** Discovery API version you integrate.
 ## Mobile / product
 
 - No app schema changes; cards and claim flow stay the same if rows match `external_events`.
+- **`get_personalized_events`** returns **only** SoundBridge `events` rows (no `external_events` union). External listings stay on **`getExternalEvents()`** so Discover does not duplicate Ticketmaster cards.
