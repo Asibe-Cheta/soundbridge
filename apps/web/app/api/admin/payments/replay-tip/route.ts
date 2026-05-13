@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { stripe } from '@/src/lib/stripe';
 import {
   finalizeTipFromSucceededPaymentIntent,
@@ -39,7 +39,7 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   const admin = await requireAdmin(request, ADMIN_ROLES);
-  if (!admin.ok) {
+  if (isAdminAccessDenied(admin)) {
     return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
   }
 

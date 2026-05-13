@@ -54,25 +54,19 @@ export async function POST(request: NextRequest) {
     );
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Bank verification failed';
-    const status = (e as { status?: number })?.status;
-    const isFincraResolveAccessIssue =
-      status === 403 && /invalid api key passed/i.test(String(msg));
-
-    if (isFincraResolveAccessIssue) {
-      // Temporary graceful fallback while Fincra enables /core/accounts/resolve on live account.
-      return NextResponse.json(
-        {
-          success: true,
-          pending_verification: true,
-          message:
-            'Bank account details saved, but live name verification is temporarily unavailable. You can continue and we will verify server-side once access is restored.',
-        },
-        { status: 200, headers: corsHeaders },
-      );
-    }
-
-    console.error('POST /api/payouts/verify-bank:', e);
-    return NextResponse.json({ error: msg }, { status: 500, headers: corsHeaders });
+    // Non-blocking fallback for any provider-side verification failure.
+    // Mobile/web clients can proceed with pending verification state.
+    console.error('POST /api/payouts/verify-bank fallback to pending_verification:', e);
+    return NextResponse.json(
+      {
+        success: true,
+        pending_verification: true,
+        message:
+          'Bank account details saved, but live name verification is temporarily unavailable. You can continue and we will verify server-side once access is restored.',
+        provider_error: msg,
+      },
+      { status: 200, headers: corsHeaders },
+    );
   }
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,7 +16,7 @@ export async function POST(
 ) {
   try {
     const admin = await requireAdmin(request);
-    if (!admin.ok) {
+    if (isAdminAccessDenied(admin)) {
       return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
     }
 

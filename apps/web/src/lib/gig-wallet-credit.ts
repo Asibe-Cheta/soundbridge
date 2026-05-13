@@ -8,8 +8,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { currencyService } from './currency-service';
 import { stripe } from './stripe';
 
-/** Countries where payouts go via Wise (kept for metadata; we now always credit USD). */
-export const WISE_COUNTRIES = ['NG', 'GH', 'KE', 'EG', 'ZA', 'UG', 'TZ'] as const;
+/** Countries where creators typically withdraw to a local bank via Fincra (NG/GH/KE). Used for email copy only. */
+export const FINCRA_LOCAL_BANK_COUNTRY_CODES = ['NG', 'GH', 'KE'] as const;
 
 export interface GigWalletCreditProject {
   id: string;

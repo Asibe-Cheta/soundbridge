@@ -106,7 +106,7 @@ export default function PaymentsPage() {
               </p>
               <div className={`p-6 rounded-lg border ${theme === 'dark' ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
                 <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-                  Withdrawals are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
+                  Withdrawals go to your bank (Fincra where supported) and typically arrive within <strong>1–3 business days</strong>. No SoundBridge fees charged.
                 </p>
               </div>
             </section>

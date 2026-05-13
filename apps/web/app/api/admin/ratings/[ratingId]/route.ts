@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 export async function DELETE(_request: NextRequest, { params }: { params: { ratingId: string } }) {
   try {
     const adminCheck = await requireAdmin(_request);
-    if (!adminCheck.ok) {
+    if (isAdminAccessDenied(adminCheck)) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 

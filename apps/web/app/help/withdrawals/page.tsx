@@ -37,7 +37,7 @@ export default function WithdrawalsPage() {
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>How Withdrawals Work</h2>
               <p className={`text-lg leading-relaxed mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                When you earn on SoundBridge (gigs, tips, content sales), funds are added to your <strong>SoundBridge wallet</strong> when the gig or order is completed. From your wallet you can request a withdrawal to your local bank at any time (minimum $50). Withdrawals are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
+                When you earn on SoundBridge (gigs, tips, content sales), funds are added to your <strong>SoundBridge wallet</strong> when the gig or order is completed. From your wallet you can request a withdrawal to your local bank at any time (minimum $50). Withdrawals use Fincra for supported African currencies and typically arrive within <strong>1–3 business days</strong>. No SoundBridge fees charged.
               </p>
             </section>
 
@@ -50,7 +50,7 @@ export default function WithdrawalsPage() {
                     <div>
                       <h3 className={`text-xl font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Processing Time</h3>
                       <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-                        Funds are sent via Wise and typically arrive in your local bank within <strong>1–3 business days</strong>. No SoundBridge fees charged.
+                        Funds are sent to your bank (Fincra where supported) and typically arrive within <strong>1–3 business days</strong>. No SoundBridge fees charged.
                       </p>
                       <p className={`mt-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                         After you submit a withdrawal request, the money is sent to your connected bank account. Timing can vary slightly by bank and country.

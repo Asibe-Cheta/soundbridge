@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
@@ -31,7 +31,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
-    if (!admin.ok) {
+    if (isAdminAccessDenied(admin)) {
       return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
     }
 
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       { status: 200, headers: CORS }
     );
   } catch (e: any) {
-    console.error('Admin batch Wise payout error:', e);
+    console.error('Admin batch Fincra payout error:', e);
     return NextResponse.json({ error: 'Internal server error', message: e?.message }, { status: 500, headers: CORS });
   }
 }

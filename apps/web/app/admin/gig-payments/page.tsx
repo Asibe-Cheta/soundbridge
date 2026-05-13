@@ -103,22 +103,19 @@ export default function AdminGigPaymentsPage() {
         <div className="mb-4 p-4 rounded-lg bg-red-900/20 border border-red-500/50 text-red-400 text-sm">{error}</div>
       )}
 
-      {alerts && ((alerts.stuck_escrow?.length > 0) || (alerts.failed_wise?.length > 0)) && (
+      {alerts && (alerts.stuck_escrow?.length > 0) && (
         <div className="mb-6 p-4 rounded-lg bg-amber-900/20 border border-amber-500/50 flex items-start gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-200">
             {alerts.stuck_escrow?.length > 0 && (
               <p>⚠️ {alerts.stuck_escrow.length} gig(s) have been escrowed for more than 7 days.</p>
             )}
-            {alerts.failed_wise?.length > 0 && (
-              <p>⚠️ {alerts.failed_wise.length} failed Wise transfer(s).</p>
-            )}
           </div>
         </div>
       )}
 
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
           <div className={`rounded-lg border p-4 ${cardClass}`}>
             <p className={`text-xs ${mutedClass}`}>Escrowed today</p>
             <p className={`text-lg font-semibold ${textClass}`}>{formatMoney(summary.escrowed_total ?? 0, 'USD')}</p>
@@ -132,12 +129,16 @@ export default function AdminGigPaymentsPage() {
             <p className={`text-lg font-semibold ${textClass}`}>{formatMoney(summary.platform_fees_mtd ?? 0, 'USD')}</p>
           </div>
           <div className={`rounded-lg border p-4 ${cardClass}`}>
-            <p className={`text-xs ${mutedClass}`}>Pending Wise</p>
-            <p className={`text-lg font-semibold ${textClass}`}>{summary.pending_wise_transfers ?? 0}</p>
+            <p className={`text-xs ${mutedClass}`}>Pending payout requests</p>
+            <p className={`text-lg font-semibold ${textClass}`}>{summary.pending_payout_requests ?? 0}</p>
+          </div>
+          <div className={`rounded-lg border p-4 ${cardClass}`}>
+            <p className={`text-xs ${mutedClass}`}>Processing payouts</p>
+            <p className={`text-lg font-semibold ${textClass}`}>{summary.processing_payout_requests ?? 0}</p>
           </div>
           <div className={`rounded-lg border p-4 ${cardClass}`}>
             <p className={`text-xs ${mutedClass}`}>Failed payouts</p>
-            <p className={`text-lg font-semibold text-red-400`}>{summary.failed_payouts ?? 0}</p>
+            <p className={`text-lg font-semibold text-red-400`}>{summary.failed_payout_requests ?? 0}</p>
           </div>
           <div className={`rounded-lg border p-4 ${cardClass}`}>
             <p className={`text-xs ${mutedClass}`}>Open disputes</p>

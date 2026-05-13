@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import {
   buildWaitlistLaunchEmailHtml,
@@ -44,7 +44,7 @@ function parseTestEmail(raw: unknown): string | null {
 export async function POST(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin(request, ADMIN_ROLES);
-    if (!adminCheck.ok) {
+    if (isAdminAccessDenied(adminCheck)) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 

@@ -1,6 +1,6 @@
 import { createBrowserClient } from './supabase';
 import { mergeCreatorRevenueSummaryWithWallet } from './creator-revenue-summary-merge';
-import { isWiseCurrency } from './wise-currencies';
+import { isFincraCurrency } from './fincra-currencies';
 
 /** Map wallet ledger rows to Revenue dashboard list (tips/sales hit user_wallets first). */
 function mapWalletRowToRevenueTransaction(w: Record<string, unknown>): RevenueTransaction {
@@ -149,8 +149,8 @@ export class RevenueService {
       // In a real implementation, you would encrypt the account details here
       // For now, we'll store them as-is (you should implement encryption)
       
-      // Wise currencies: auto-verify on creation (WEB_TEAM_WISE_VERIFICATION_STATUS_FIX.md)
-      const isWise = isWiseCurrency(bankData.currency);
+      // Fincra rail (NGN/GHS/KES): auto-verify on creation; live name match is separate.
+      const isFincraRail = isFincraCurrency(bankData.currency);
       const { data, error } = await this.supabase
         .from('creator_bank_accounts')
         .upsert({
@@ -161,8 +161,8 @@ export class RevenueService {
           routing_number_encrypted: bankData.routing_number, // TODO: Encrypt this
           account_type: bankData.account_type,
           currency: bankData.currency,
-          verification_status: isWise ? 'verified' : 'pending',
-          is_verified: isWise
+          verification_status: isFincraRail ? 'verified' : 'pending',
+          is_verified: isFincraRail
         });
 
       if (error) {

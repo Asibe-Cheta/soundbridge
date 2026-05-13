@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { loadWaitlistRecipients } from '@/src/lib/waitlist-broadcast-recipients';
 import { substituteWaitlistPlaceholders } from '@/src/lib/waitlist-email-placeholders';
@@ -24,7 +24,7 @@ const MAX_HTML_LEN = 500_000;
 export async function POST(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin(request, ADMIN_ROLES);
-    if (!adminCheck.ok) {
+    if (isAdminAccessDenied(adminCheck)) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 

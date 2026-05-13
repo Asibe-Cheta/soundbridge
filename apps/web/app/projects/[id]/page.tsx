@@ -218,7 +218,7 @@ export default function OpportunityProjectPage() {
           </p>
           {isCreator && (
             <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-              Payment is held securely by SoundBridge and released to your wallet on gig completion. You can then withdraw to your local bank via Wise (1–3 business days).
+              Payment is held securely by SoundBridge and released to your wallet on gig completion. You can then withdraw to your local bank (typically 1–3 business days).
             </p>
           )}
         </CardContent>

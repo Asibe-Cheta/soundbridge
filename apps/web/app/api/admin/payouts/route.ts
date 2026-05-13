@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 
@@ -159,7 +159,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
-    if (!admin.ok) {
+    if (isAdminAccessDenied(admin)) {
       return NextResponse.json(
         { error: admin.error },
         { status: admin.status, headers: corsHeaders }
@@ -370,13 +370,17 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/admin/payouts
- * 
- * Get payout history (optional - for admin dashboard)
+ *
+ * Query params:
+ * - pending_requests=1 — enriched `payout_requests` (default status pending; pass status=processing|failed).
+ * - batch_history=1 — returns `batches: []` (no batch table; Fincra is per request).
+ * - Otherwise — `payouts` from `payout_requests` (withdrawal history). Optional status, creatorId, limit, offset.
+ *   Provider transfer id is in each row as `stripe_transfer_id` and `provider_transfer_id`.
  */
 export async function GET(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
-    if (!admin.ok) {
+    if (isAdminAccessDenied(admin)) {
       return NextResponse.json(
         { error: admin.error },
         { status: admin.status, headers: corsHeaders }
@@ -528,101 +532,69 @@ export async function GET(request: NextRequest) {
     }
 
     if (batchHistory) {
-      const { data: wiseRows, error: wiseError } = await supabase
-        .from('wise_payouts')
-        .select('id, status, source_amount, source_currency, created_at, updated_at, metadata')
-        .order('created_at', { ascending: false })
-        .limit(2000);
-
-      if (wiseError) {
-        return NextResponse.json(
-          { error: 'Failed to fetch batch history' },
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
-      const grouped = new Map<string, any>();
-      for (const row of (wiseRows ?? []) as any[]) {
-        const meta = (row.metadata ?? {}) as Record<string, any>;
-        const batchId = typeof meta.wise_batch_id === 'string' ? meta.wise_batch_id : null;
-        if (!batchId) continue;
-        const existing = grouped.get(batchId) ?? {
-          batch_id: batchId,
-          source_currency: row.source_currency ?? 'USD',
-          count: 0,
-          total_amount: 0,
-          statuses: new Set<string>(),
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-          wise_dashboard_url: typeof meta.wise_dashboard_url === 'string' ? meta.wise_dashboard_url : 'https://wise.com/home',
-        };
-        existing.count += 1;
-        existing.total_amount += Number(row.source_amount ?? 0);
-        existing.statuses.add(String(row.status ?? 'pending'));
-        if (!existing.created_at || new Date(row.created_at).getTime() < new Date(existing.created_at).getTime()) {
-          existing.created_at = row.created_at;
-        }
-        if (!existing.updated_at || new Date(row.updated_at).getTime() > new Date(existing.updated_at).getTime()) {
-          existing.updated_at = row.updated_at;
-        }
-        grouped.set(batchId, existing);
-      }
-
-      const batches = Array.from(grouped.values()).map((b) => {
-        const statuses = Array.from(b.statuses) as string[];
-        let statusSummary = 'funded';
-        if (statuses.some((s) => s === 'pending')) statusSummary = 'pending_batch';
-        else if (statuses.every((s) => s === 'completed')) statusSummary = 'completed';
-        else if (statuses.some((s) => s === 'failed' || s === 'cancelled')) statusSummary = 'failed';
-        return {
-          batch_id: b.batch_id,
-          source_currency: b.source_currency,
-          count: b.count,
-          total_amount: Math.round(b.total_amount * 100) / 100,
-          status: statusSummary,
-          created_at: b.created_at,
-          updated_at: b.updated_at,
-          wise_dashboard_url: b.wise_dashboard_url,
-        };
-      });
-
-      batches.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
+      // Fincra flows use per-request `payout_requests` rows; there is no batch-group table.
       return NextResponse.json(
-        { success: true, batches: batches.slice(offset, offset + limit), limit, offset },
+        { success: true, batches: [], limit, offset },
         { status: 200, headers: corsHeaders }
       );
     }
 
-      // Legacy payout history table (wise_payouts) reused for provider payout records.
-    let query = supabase
-      .from('wise_payouts')
-      .select('*')
-      .order('created_at', { ascending: false })
+    /** Admin + clients: withdrawal history lives in `payout_requests` (provider ref in `stripe_transfer_id`). */
+    let historyQuery = supabase
+      .from('payout_requests')
+      .select(
+        'id, creator_id, amount, currency, status, requested_at, processed_at, completed_at, stripe_transfer_id, rejection_reason, created_at, updated_at, admin_notes, bank_account_id'
+      )
+      .order('requested_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (status) {
-      query = query.eq('status', status);
+      historyQuery = historyQuery.eq('status', status);
+    } else {
+      historyQuery = historyQuery.in('status', ['completed', 'failed', 'processing', 'rejected']);
     }
 
     if (creatorId) {
-      query = query.eq('creator_id', creatorId);
+      historyQuery = historyQuery.eq('creator_id', creatorId);
     }
 
-    const { data: payouts, error } = await query;
+    const { data: prRows, error: historyError } = await historyQuery;
 
-    if (error) {
-      console.error('Error fetching payouts:', error);
+    if (historyError) {
+      console.error('Error fetching payout_requests:', historyError);
       return NextResponse.json(
         { error: 'Failed to fetch payouts' },
         { status: 500, headers: corsHeaders }
       );
     }
 
+    const payouts = (prRows ?? []).map((r: Record<string, unknown>) => {
+      const st = String(r.status ?? '');
+      return {
+        id: r.id,
+        creator_id: r.creator_id,
+        bank_account_id: r.bank_account_id,
+        amount: r.amount,
+        currency: r.currency,
+        status: r.status,
+        provider_transfer_id: r.stripe_transfer_id,
+        stripe_transfer_id: r.stripe_transfer_id,
+        rejection_reason: r.rejection_reason,
+        error_message: r.rejection_reason,
+        completed_at: r.completed_at,
+        failed_at: st === 'failed' ? (r.processed_at ?? r.updated_at) : null,
+        requested_at: r.requested_at,
+        processed_at: r.processed_at,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        admin_notes: r.admin_notes,
+      };
+    });
+
     return NextResponse.json(
       {
         success: true,
-        payouts: payouts || [],
+        payouts,
         limit,
         offset,
       },

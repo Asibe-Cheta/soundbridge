@@ -1,7 +1,7 @@
 {
   "redirects": [
     {
-      "source": "/((?!\\.well-known|api|wise-web-hook).+)",
+      "source": "/((?!\\.well-known|api).+)",
       "has": [{ "type": "host", "value": "soundbridge.live" }],
       "destination": "https://www.soundbridge.live/$1",
       "permanent": true

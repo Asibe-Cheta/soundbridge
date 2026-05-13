@@ -1,8 +1,8 @@
 /**
- * POST /api/gigs/:id/complete — Mark gig completed; capture payment, instant wallet credit, notify (no immediate Wise/Stripe transfer)
+ * POST /api/gigs/:id/complete — Mark gig completed; capture payment, instant wallet credit, notify (no immediate payout transfer)
  * WEB_TEAM_URGENT_GIGS_BACKEND_REQUIREMENTS.md
- * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — two-step: wallet credited now; creator withdraws via Wise when they choose
- * Wise-country creators credited in USD; Stripe Connect in requester currency.
+ * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — two-step: wallet credited now; creator withdraws when they choose
+ * African bank-rail creators credited in USD; Stripe Connect in requester currency.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -79,7 +79,7 @@ export async function POST(
       }
     }
 
-    // Instant wallet credit only — no Stripe/Wise transfer here; creator withdraws when they choose (WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET)
+    // Instant wallet credit only — no Stripe transfer here; creator withdraws when they choose (WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET)
     await service.from('opportunity_posts').update({
       urgent_status: 'completed',
       payment_status: 'released',

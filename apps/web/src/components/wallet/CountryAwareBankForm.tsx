@@ -290,7 +290,7 @@ const COUNTRY_BANKING_INFO: Record<string, CountryBankingInfo> = {
     },
     validation: {
       account_number: /^\d{10}$/,
-      bank_code: /^[A-Za-z0-9]{2,20}$/ // Wise internal codes e.g. UBA, ACCESS
+      bank_code: /^[A-Za-z0-9]{2,20}$/ // Fincra bank codes (e.g. UBA, ACCESS)
     }
   },
   SG: {
@@ -432,10 +432,10 @@ const BANK_CODE_FIELD: Record<string, string> = {
   CN: 'bank_code', JP: 'branch_code', IN: 'ifsc_code', US: 'routing_number', GB: 'sort_code',
 };
 
-/** Countries that use Wise payout bank list — fetch from GET /api/payouts/bank-options so we store Wise internal codes. @see WEB_TEAM_WISE_BANK_OPTIONS_ENDPOINT.md.md */
-const WISE_BANK_OPTIONS_COUNTRIES: Record<string, string> = { NG: 'NGN', GH: 'GHS', KE: 'KES' };
+/** Countries whose bank lists and codes come from Fincra (`/api/payouts/bank-options`), not `/api/banks`. */
+const FINCRA_BANK_OPTIONS_COUNTRIES: Record<string, string> = { NG: 'NGN', GH: 'GHS', KE: 'KES' };
 
-/** Curated bank lists for key markets. Used for non-Wise countries or fallback when bank-options fails. @see WEB_TEAM_BANK_LIST_API_REQUIRED.md */
+/** Curated bank lists for key markets. Used for non-Fincra-rail countries or fallback when bank-options fails. @see WEB_TEAM_BANK_LIST_API_REQUIRED.md */
 const CURATED_BANK_COUNTRIES = ['GB', 'NG', 'GH', 'CA', 'US', 'IN'] as const;
 const BUILTIN_BANKS: Record<string, { name: string; code: string }[]> = {
   GB: [
@@ -556,18 +556,18 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
     }
   }, []);
 
-  // Bank list: Wise payout currencies (NG, GH, KE) use GET /api/payouts/bank-options so we store Wise internal codes; others use curated or /api/banks.
+  // Bank list: Fincra rails (NG, GH, KE) use GET /api/payouts/bank-options; others use curated lists or /api/banks (APILayer when configured).
   useEffect(() => {
     if (!selectedCountry || !countryInfo?.currency) {
       setAvailableBanks([]);
       return;
     }
-    const wiseCurrency = WISE_BANK_OPTIONS_COUNTRIES[selectedCountry];
-    if (wiseCurrency) {
+    const fincraCurrency = FINCRA_BANK_OPTIONS_COUNTRIES[selectedCountry];
+    if (fincraCurrency) {
       let cancelled = false;
       setBanksLoading(true);
       setAvailableBanks([]);
-      fetch(`/api/payouts/bank-options?currency=${encodeURIComponent(wiseCurrency)}`, { credentials: 'include' })
+      fetch(`/api/payouts/bank-options?currency=${encodeURIComponent(fincraCurrency)}`, { credentials: 'include' })
         .then((res) => res.json())
         .then((data) => {
           if (!cancelled && Array.isArray(data.banks)) setAvailableBanks(data.banks);

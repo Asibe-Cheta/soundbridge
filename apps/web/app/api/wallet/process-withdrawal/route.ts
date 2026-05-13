@@ -3,7 +3,6 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import Stripe from 'stripe';
-import { isWiseCurrency } from '@/src/lib/wise-currencies';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 
 function getStripe(): Stripe {
@@ -113,7 +112,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const canWithdraw = withdrawalMethod.is_verified || isWiseCurrency(withdrawalMethod.currency);
+    const canWithdraw = withdrawalMethod.is_verified || isFincraCurrency(withdrawalMethod.currency);
     if (!canWithdraw) {
       return NextResponse.json(
         { error: 'Withdrawal method is not verified' },

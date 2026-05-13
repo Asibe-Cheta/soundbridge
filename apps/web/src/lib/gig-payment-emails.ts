@@ -4,7 +4,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { WISE_COUNTRIES } from './gig-wallet-credit';
+import { FINCRA_LOCAL_BANK_COUNTRY_CODES } from './gig-wallet-credit';
 import { SendGridService } from './sendgrid-service';
 const WITHDRAWAL_CTA_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://soundbridge.live';
 const GIG_VIEW_BASE = WITHDRAWAL_CTA_URL + '/projects';
@@ -79,7 +79,9 @@ export async function sendGigPaymentEmails(params: SendGigPaymentEmailsParams): 
     const requesterProfile = profileMap.get(requesterUserId);
     const creatorName = creatorProfile?.display_name ?? 'Creator';
     const requesterName = requesterProfile?.display_name ?? 'Requester';
-    const isWiseCountry = creatorProfile?.country_code ? WISE_COUNTRIES.includes(creatorProfile.country_code as any) : false;
+    const isFincraBankRegion = creatorProfile?.country_code
+      ? FINCRA_LOCAL_BANK_COUNTRY_CODES.includes(creatorProfile.country_code as (typeof FINCRA_LOCAL_BANK_COUNTRY_CODES)[number])
+      : false;
 
     const completedAtStr = gigCompletedAt.toLocaleDateString('en-GB', { dateStyle: 'long', timeStyle: 'short' });
 
@@ -96,7 +98,7 @@ export async function sendGigPaymentEmails(params: SendGigPaymentEmailsParams): 
         currency: currency === 'USD' ? 'USD' : currency,
         gig_completed_at: completedAtStr,
         withdrawal_cta_url: `${WITHDRAWAL_CTA_URL}/wallet`,
-        is_wise_country: isWiseCountry,
+        is_fincra_bank_region: isFincraBankRegion,
       });
     }
 

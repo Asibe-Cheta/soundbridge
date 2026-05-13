@@ -97,7 +97,7 @@ export interface GigCreatorReceiptData {
   currency: string;
   gig_completed_at: string;
   withdrawal_cta_url: string;
-  is_wise_country?: boolean;
+  is_fincra_bank_region?: boolean;
 }
 
 /** WEB_TEAM_GIG_PAYMENT_EMAIL_RECEIPT.md — requester payment confirmation */
@@ -556,7 +556,7 @@ export class SendGridService {
           currency: data.currency,
           gig_completed_at: data.gig_completed_at,
           withdrawal_cta_url: data.withdrawal_cta_url,
-          is_wise_country: data.is_wise_country ?? false,
+          is_fincra_bank_region: data.is_fincra_bank_region ?? false,
           support_email: 'contact@soundbridge.live',
           receipt_logo_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/logos/logo-trans-lockup.png`,
         },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 type AdminAction = 'cancel' | 'process_now';
 
@@ -32,7 +32,7 @@ async function anonymizeUser(serviceClient: ReturnType<typeof createServiceClien
 export async function GET(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin(request);
-    if (!adminCheck.ok) {
+    if (isAdminAccessDenied(adminCheck)) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin(request);
-    if (!adminCheck.ok) {
+    if (isAdminAccessDenied(adminCheck)) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 

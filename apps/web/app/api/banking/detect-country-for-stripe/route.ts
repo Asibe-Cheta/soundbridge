@@ -2,18 +2,15 @@
  * GET /api/banking/detect-country-for-stripe
  *
  * Returns whether the user's country is supported by Stripe Connect (show Connect setup)
- * or Wise (show Wise bank account setup). Used by Payment Methods screen to choose flow.
- *
- * - supported_by_stripe: true → Stripe Connect setup
- * - supported_by_stripe: false → Wise bank account setup (Nigeria and all Wise countries)
+ * or should use the local bank account flow (Fincra for NG/GH/KE, or generic bank details elsewhere).
  *
  * Query: ?country_code=NG (optional). If omitted, uses authenticated user's profile.country_code.
- * Unknown countries default to supported_by_stripe: false (safer: route to Wise rather than Connect).
+ * Unknown countries default to supported_by_stripe: false (local bank flow).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { WISE_COUNTRIES } from '@/src/lib/gig-wallet-credit';
+import { FINCRA_LOCAL_BANK_COUNTRY_CODES } from '@/src/lib/gig-wallet-credit';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -55,48 +52,34 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const isWiseCountry = countryCode
-      ? (WISE_COUNTRIES as readonly string[]).includes(countryCode)
-      : false;
+    const usesFincraPayouts =
+      !!countryCode &&
+      (FINCRA_LOCAL_BANK_COUNTRY_CODES as readonly string[]).includes(countryCode);
     const isStripeCountry = countryCode ? STRIPE_CONNECT_COUNTRIES.has(countryCode) : false;
 
-    // Wise countries (NG, GH, KE, EG, ZA, UG, TZ, etc.) → Stripe not supported
-    if (isWiseCountry) {
-      return NextResponse.json(
-        {
-          country_code: countryCode,
-          supported_by_stripe: false,
-          supported_by_wise: true,
-        },
-        { headers: CORS }
-      );
-    }
-
-    // Explicit Stripe Connect countries → Stripe supported
     if (isStripeCountry) {
       return NextResponse.json(
         {
           country_code: countryCode,
           supported_by_stripe: true,
-          supported_by_wise: false,
+          uses_fincra_for_payouts: false,
         },
         { headers: CORS }
       );
     }
 
-    // Unknown or missing country: default to false (show Wise flow; safer than failing Connect)
     return NextResponse.json(
       {
         country_code: countryCode ?? null,
         supported_by_stripe: false,
-        supported_by_wise: true,
+        uses_fincra_for_payouts: usesFincraPayouts,
       },
       { headers: CORS }
     );
   } catch (e) {
     console.error('[detect-country-for-stripe]', e);
     return NextResponse.json(
-      { country_code: null, supported_by_stripe: false, supported_by_wise: true },
+      { country_code: null, supported_by_stripe: false, uses_fincra_for_payouts: false },
       { status: 200, headers: CORS }
     );
   }

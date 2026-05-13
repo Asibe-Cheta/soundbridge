@@ -12,7 +12,7 @@ import {
 } from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
-// Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; Wise converts at payout.
+// Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; local payout at withdrawal.
 const STRIPE_SUPPORTED_CURRENCIES = new Set([
   'usd', 'gbp', 'eur', 'cad', 'aud', 'sgd', 'hkd', 'jpy', 'nzd', 'dkk', 'sek', 'nok', 'chf',
   'mxn', 'brl', 'inr', 'pln', 'zar', 'krw', 'try', 'thb', 'myr', 'php', 'idr', 'aed', 'sar', 'ils',

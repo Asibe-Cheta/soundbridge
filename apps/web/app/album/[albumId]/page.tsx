@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
@@ -25,7 +24,7 @@ function toAbsoluteUrl(url: string | undefined): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cookieStore = await cookies();
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -113,7 +112,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AlbumPage({ params }: Props) {
   const cookieStore = await cookies();
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { revenueService } from '../../lib/revenue-service';
 import { walletService } from '../../lib/wallet-service';
-import { isWiseCurrency } from '../../lib/wise-currencies';
+import { isFincraCurrency } from '../../lib/fincra-currencies';
 import { CountryAwareBankForm } from '../wallet/CountryAwareBankForm';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
 import { Building2, CreditCard, Shield, CheckCircle, AlertCircle, Edit, Save, X, Loader2, Eye, EyeOff, Wallet, RefreshCw, Info } from 'lucide-react';
@@ -359,7 +359,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             Manage your bank account for payouts
           </p>
         </div>
-        {bankAccount && !isEditing && !isWiseCurrency(bankAccount.currency) && (
+        {bankAccount && !isEditing && !isFincraCurrency(bankAccount.currency) && (
           <div className="flex items-center space-x-3">
             <button
               onClick={handleResetBankAccount}
@@ -457,11 +457,11 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       {bankAccount ? (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           {(() => {
-            const isWiseAccount = isWiseCurrency(bankAccount.currency);
+            const isFincraAccount = isFincraCurrency(bankAccount.currency);
             return (
               <>
                 {/* Fincra: Ready for Withdrawals (no Stripe UI) */}
-                {isWiseAccount && (
+                {isFincraAccount && (
                   <>
                     <div className="mb-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
                       <div className="flex items-start space-x-3">
@@ -489,7 +489,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                 )}
 
                 {/* Stripe Connect Warning if not set up (Stripe users only) */}
-                {!isWiseAccount && bankAccount && !bankAccount.stripe_account_id && (
+                {!isFincraAccount && bankAccount && !bankAccount.stripe_account_id && (
                   <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
                     <div className="flex items-start space-x-3">
                       <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
@@ -522,7 +522,7 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                 )}
 
                 {/* Complete Verification Button (Stripe users only — never for Fincra rail) */}
-                {!isWiseAccount && bankAccount && bankAccount.stripe_account_id && bankAccount.verification_status === 'pending' && (
+                {!isFincraAccount && bankAccount && bankAccount.stripe_account_id && bankAccount.verification_status === 'pending' && (
                   <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
                     <div className="flex items-start space-x-3">
                       <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
@@ -554,23 +554,23 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                 )}
 
                 <div className="space-y-4">
-                  {/* Verification Status — show Active for Wise */}
+                  {/* Verification Status — Fincra rails show as Active */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${getVerificationStatusColor(isWiseAccount ? 'verified' : bankAccount.verification_status)}`}>
-                        {getVerificationStatusIcon(isWiseAccount ? 'verified' : bankAccount.verification_status)}
+                      <div className={`p-2 rounded-lg ${getVerificationStatusColor(isFincraAccount ? 'verified' : bankAccount.verification_status)}`}>
+                        {getVerificationStatusIcon(isFincraAccount ? 'verified' : bankAccount.verification_status)}
                       </div>
                       <div>
                         <p className="text-white font-medium">Verification Status</p>
                         <p className="text-gray-400 text-sm capitalize">
-                          {isWiseAccount ? 'Active' : bankAccount.verification_status}
+                          {isFincraAccount ? 'Active' : bankAccount.verification_status}
                         </p>
                       </div>
                     </div>
-                    {(bankAccount.is_verified || isWiseAccount) && (
+                    {(bankAccount.is_verified || isFincraAccount) && (
                       <div className="flex items-center space-x-2 text-green-400">
                         <Shield className="h-4 w-4" />
-                        <span className="text-sm font-medium">{isWiseAccount ? 'Ready' : 'Verified'}</span>
+                        <span className="text-sm font-medium">{isFincraAccount ? 'Ready' : 'Verified'}</span>
                       </div>
                     )}
                   </div>

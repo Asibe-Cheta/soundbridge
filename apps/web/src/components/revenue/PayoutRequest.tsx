@@ -117,7 +117,7 @@ export function PayoutRequest() {
       const result = await response.json();
 
       if (result.success) {
-        setSuccess('Your withdrawal request has been submitted. Funds are sent via Wise and typically arrive in your local bank within 1–3 business days.');
+        setSuccess('Your withdrawal request has been submitted. Funds are sent to your bank (Fincra where supported) and typically arrive within 1–3 business days.');
         setRequestAmount('');
         loadPayoutData(); // Reload data
       } else {
@@ -172,12 +172,12 @@ export function PayoutRequest() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white">Payout Request</h3>
-            <p className="text-gray-400 text-sm">Withdraw in USD; Wise converts to your bank currency at live rate. Typically 1–3 business days. No SoundBridge fees charged.</p>
+            <p className="text-gray-400 text-sm">Withdraw in USD; local payout in NGN/GHS/KES via Fincra where supported. Typically 1–3 business days. No SoundBridge fees charged.</p>
           </div>
         </div>
 
         <p className="text-gray-500 text-xs mb-4">
-          I understand that withdrawals are processed via Wise and typically arrive in my local bank within 1–3 business days.
+          I understand that withdrawals are processed to my bank (Fincra where supported) and typically arrive within 1–3 business days.
         </p>
 
         {eligibility && (

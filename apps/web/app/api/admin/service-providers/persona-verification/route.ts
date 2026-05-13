@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 type SessionRow = {
   user_id: string;
@@ -21,7 +21,7 @@ function dedupeLatestSessionByUser(rows: SessionRow[]): Map<string, SessionRow> 
 
 export async function GET(request: NextRequest) {
   const admin = await requireAdmin(request);
-  if (!admin.ok) {
+  if (isAdminAccessDenied(admin)) {
     return NextResponse.json({ error: admin.error }, { status: admin.status });
   }
 

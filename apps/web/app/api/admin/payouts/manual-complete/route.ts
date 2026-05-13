@@ -1,11 +1,11 @@
 /**
- * Admin: Mark a payout request as completed without calling Wise (manual bank / Tide / etc.).
+ * Admin: Mark a payout request as completed without calling Fincra (manual bank transfer, etc.).
  * POST /api/admin/payouts/manual-complete
  * Body: { payout_request_id: string }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const corsHeaders = {
@@ -21,7 +21,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
-    if (!admin.ok) {
+    if (isAdminAccessDenied(admin)) {
       return NextResponse.json(
         { error: admin.error },
         { status: admin.status, headers: corsHeaders }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mirror Wise webhook: deduct creator balance for this payout amount.
+    // Deduct creator balance for this payout amount (same as automated completion).
     const { data: rpcOk, error: rpcErr } = await supabase.rpc('process_creator_payout', {
       user_uuid: pr.creator_id,
       payout_amount: Number(pr.amount),

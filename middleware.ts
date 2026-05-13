@@ -94,8 +94,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      * - api routes (handled separately)
-     * - wise-webhook (Wise webhook endpoint - no auth needed)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public/|api/|wise-webhook).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public/|api/).*)',
   ],
 }; 

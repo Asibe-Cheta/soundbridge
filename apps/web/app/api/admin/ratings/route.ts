@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 export async function GET(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin(request);
-    if (!adminCheck.ok) {
+    if (isAdminAccessDenied(adminCheck)) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 

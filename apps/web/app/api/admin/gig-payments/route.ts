@@ -3,7 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 
 const CORS = {
@@ -27,7 +27,7 @@ function startOfMonth(d: Date): string {
 
 export async function GET(request: NextRequest) {
   const admin = await requireAdmin(request);
-  if (!admin.ok) {
+  if (isAdminAccessDenied(admin)) {
     return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
   }
   const service = admin.serviceClient;
@@ -44,13 +44,14 @@ export async function GET(request: NextRequest) {
   const monthStart = startOfMonth(new Date());
 
   try {
-    // Summary: escrowed (from opportunity_posts where payment_status = 'escrowed'), released today, platform fees MTD, wise counts, disputes
-    const [postsWithEscrow, releasedTodayRows, platformFeesMtd, wisePendingRes, wiseFailedRes, disputedRes] = await Promise.all([
+    // Summary: escrowed, released today, platform fees MTD, payout request queue, disputes
+    const [postsWithEscrow, releasedTodayRows, platformFeesMtd, payoutPendingRes, payoutProcessingRes, payoutFailedRes, disputedRes] = await Promise.all([
       service.from('opportunity_posts').select('id, payment_amount, payment_currency').eq('payment_status', 'escrowed'),
       service.from('wallet_transactions').select('amount, currency').eq('transaction_type', 'gig_payment').eq('status', 'completed').gte('created_at', todayStart),
       service.from('wallet_transactions').select('amount').eq('transaction_type', 'gig_payment').eq('status', 'completed').gte('created_at', monthStart),
-      service.from('wise_payouts').select('*', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
-      service.from('wise_payouts').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
+      service.from('payout_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      service.from('payout_requests').select('*', { count: 'exact', head: true }).eq('status', 'processing'),
+      service.from('payout_requests').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
       service.from('opportunity_projects').select('*', { count: 'exact', head: true }).eq('status', 'disputed'),
     ]);
 
@@ -63,8 +64,9 @@ export async function GET(request: NextRequest) {
       escrowed_total: escrowedTotal,
       released_today: releasedToday,
       platform_fees_mtd: Math.round(platformFeesMtdSum * 100) / 100,
-      pending_wise_transfers: wisePendingRes.count ?? 0,
-      failed_payouts: wiseFailedRes.count ?? 0,
+      pending_payout_requests: payoutPendingRes.count ?? 0,
+      processing_payout_requests: payoutProcessingRes.count ?? 0,
+      failed_payout_requests: payoutFailedRes.count ?? 0,
       open_disputes: disputedRes.count ?? 0,
     };
 

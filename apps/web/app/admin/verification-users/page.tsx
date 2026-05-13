@@ -76,7 +76,7 @@ export default function VerificationUsersAdminPage() {
           </div>
           <button
             className={`px-3 py-2 text-sm rounded ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800'} text-white`}
-            onClick={loadUsers}
+            onClick={() => void loadUsers()}
           >
             Refresh
           </button>
@@ -164,7 +164,7 @@ export default function VerificationUsersAdminPage() {
           </div>
           <button
             className="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-            onClick={loadUsers}
+            onClick={() => void loadUsers()}
           >
             Apply filters
           </button>

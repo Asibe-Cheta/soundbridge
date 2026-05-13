@@ -217,7 +217,7 @@ function InteractiveLineChart({
                     {valueSuffix}
                   </div>
                   <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {formatGranularityLabel(label, granularity)}
+                    {formatGranularityLabel(String(label ?? ''), granularity)}
                   </div>
                 </div>
               );
@@ -1458,7 +1458,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
   theme: string; 
   data: any; 
   loading: boolean; 
-  onRefresh: () => void;
+  onRefresh: (page?: number, search?: string, role?: string, status?: string) => void | Promise<void>;
   onViewUser: (user: any) => void;
   onBanUser: (user: any) => void;
 }) {
@@ -1524,7 +1524,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
       <div className="text-center py-12">
         <p className="text-gray-600">No users data available</p>
         <button 
-          onClick={onRefresh}
+          onClick={() => void onRefresh()}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Refresh
@@ -1621,7 +1621,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
             User Statistics {searchResults && `(Search Results: ${displayPagination.total})`}
           </h3>
           <button 
-            onClick={onRefresh}
+            onClick={() => void onRefresh()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Refresh
@@ -1672,7 +1672,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
                   if (searchResults) {
                     handleSearch(newPage);
                   } else {
-                    loadUsersData(newPage);
+                    onRefresh(newPage);
                   }
                 }}
                 disabled={currentPage === 1 || isSearching}
@@ -1689,7 +1689,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
                   if (searchResults) {
                     handleSearch(newPage);
                   } else {
-                    loadUsersData(newPage);
+                    onRefresh(newPage);
                   }
                 }}
                 disabled={currentPage >= (displayPagination.pages || 1) || isSearching}
@@ -1833,7 +1833,7 @@ function AnalyticsTab({
       <div className="text-center py-12">
         <p className="text-gray-600">No analytics data available</p>
         <button 
-          onClick={onRefresh}
+          onClick={() => onRefresh()}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Refresh
@@ -2165,7 +2165,7 @@ function SettingsTab({ theme, data, loading, onRefresh }: {
       <div className="text-center py-12">
         <p className="text-gray-600">No settings data available</p>
         <button 
-          onClick={onRefresh}
+          onClick={() => void onRefresh()}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Refresh
@@ -2183,7 +2183,7 @@ function SettingsTab({ theme, data, loading, onRefresh }: {
         <div className="flex justify-between items-center mb-4">
           <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>System Settings</h3>
           <button 
-            onClick={onRefresh}
+            onClick={() => void onRefresh()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Refresh

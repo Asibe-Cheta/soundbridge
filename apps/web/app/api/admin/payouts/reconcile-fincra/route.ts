@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 const ADMIN_ROLES = ['admin', 'super_admin'] as const;
 
@@ -53,7 +53,7 @@ function isTerminalWalletStatus(status: string): boolean {
 
 export async function POST(request: NextRequest) {
   const admin = await requireAdmin(request, ADMIN_ROLES);
-  if (!admin.ok) {
+  if (isAdminAccessDenied(admin)) {
     return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
   }
 

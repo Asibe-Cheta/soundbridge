@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
       // Don't fail - transfer is already created
     }
 
-    // Estimate arrival (Wise: typically 1-3 business days)
+    // Estimate arrival (Fincra / bank rails: typically 1–3 business days)
     const estimatedArrival = new Date();
     estimatedArrival.setDate(estimatedArrival.getDate() + 3);
 

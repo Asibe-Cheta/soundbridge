@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { getMinPayoutForCurrency, MIN_PAYOUT_NON_WISE_USD } from '@/src/lib/payout-minimum';
+import { getMinPayoutForCurrency, MIN_PAYOUT_DEFAULT_USD } from '@/src/lib/payout-minimum';
 
 /** Safe eligibility payload when something goes wrong (never 5xx). */
-function ineligiblePayload(reasons: string[], minPayout: number = MIN_PAYOUT_NON_WISE_USD): Record<string, unknown> {
+function ineligiblePayload(reasons: string[], minPayout: number = MIN_PAYOUT_DEFAULT_USD): Record<string, unknown> {
   return {
     success: true,
     eligible: false,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     let has_bank_account = false;
     let bank_account_verified = false;
     let bank_currency: string | null = null;
-    let min_payout = MIN_PAYOUT_NON_WISE_USD;
+    let min_payout = MIN_PAYOUT_DEFAULT_USD;
 
     try {
       // 1. Check for at least one verified bank account and get currency for min_payout
@@ -132,6 +132,6 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     // Top-level safety: auth or any uncaught throw → still 200 with ineligible (mobile must never see 5xx)
     console.error('Payout eligibility handler error:', e);
-    return NextResponse.json(ineligiblePayload(['Unable to determine eligibility'], MIN_PAYOUT_NON_WISE_USD), { status: 200 });
+    return NextResponse.json(ineligiblePayload(['Unable to determine eligibility'], MIN_PAYOUT_DEFAULT_USD), { status: 200 });
   }
 }

@@ -162,7 +162,7 @@ export function WalletDashboard({ userId }: WalletDashboardProps) {
         </p>
         <ul className="text-gray-400 text-sm space-y-1">
           <li>• Gig payments land in your wallet on completion</li>
-          <li>• Withdraw to your local bank via Wise (1–3 business days)</li>
+          <li>• Withdraw to your local bank (Fincra where supported; typically 1–3 business days)</li>
           <li>• Supports 40+ currencies across Africa, Asia & Latin America</li>
           <li>• Minimum withdrawal: $50</li>
         </ul>

@@ -25,7 +25,7 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
       if (success) {
         setPayoutMessage({
           type: 'success',
-          text: 'Your withdrawal request has been submitted. Funds are sent via Wise and typically arrive in your local bank within 1–3 business days.'
+          text: 'Your withdrawal request has been submitted. Funds are sent to your bank (Fincra where supported) and typically arrive within 1–3 business days.'
         });
       } else {
         setPayoutMessage({
@@ -255,7 +255,7 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
             <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               <p>Last payout: {formatDate(revenue.last_payout_at)}</p>
               <p className="mt-1">
-                Funds are sent via Wise and typically arrive in your local bank within 1–3 business days. No SoundBridge fees charged.
+                Funds are sent to your bank (Fincra where supported) and typically arrive within 1–3 business days. No SoundBridge fees charged.
               </p>
             </div>
           </div>

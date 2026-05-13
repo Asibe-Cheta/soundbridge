@@ -200,7 +200,7 @@ export default function HomePageClient() {
                     <Link href="/help/bank-account" className="font-semibold text-red-500 hover:underline">
                       Bank and payouts
                     </Link>
-                    {' (Stripe / Wise—see Help). '}
+                    {' (Stripe / Fincra / local bank—see Help). '}
                     <strong className={theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}>Persona (ID + face):</strong>{' '}
                     <Link href="/dashboard" className="font-semibold text-red-500 hover:underline">
                       Dashboard

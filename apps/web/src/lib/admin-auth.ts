@@ -4,9 +4,16 @@ import { createServiceClient } from '@/src/lib/supabase';
 
 const DEFAULT_ADMIN_ROLES = ['admin', 'super_admin', 'moderator'] as const;
 
-type AdminCheckResult =
+export type AdminCheckResult =
   | { ok: true; userId: string; serviceClient: ReturnType<typeof createServiceClient> }
   | { ok: false; status: number; error: string };
+
+/** Narrows failed admin checks (use instead of `if (!r.ok)` — negation often does not narrow). */
+export function isAdminAccessDenied(
+  r: AdminCheckResult
+): r is { ok: false; status: number; error: string } {
+  return r.ok === false;
+}
 
 export async function requireAdmin(
   request: NextRequest,
@@ -15,7 +22,7 @@ export async function requireAdmin(
   const { user, error: authError } = await getSupabaseRouteClient(request, true);
 
   if (authError || !user) {
-    return { ok: false, status: 401, error: 'Unauthorized' };
+    return { ok: false as const, status: 401, error: 'Unauthorized' };
   }
 
   const serviceClient = createServiceClient();
@@ -27,7 +34,7 @@ export async function requireAdmin(
     .maybeSingle();
 
   if (profile?.role && allowedRoles.includes(profile.role)) {
-    return { ok: true, userId: user.id, serviceClient };
+    return { ok: true as const, userId: user.id, serviceClient };
   }
 
   const { data: userRole } = await serviceClient
@@ -37,8 +44,8 @@ export async function requireAdmin(
     .maybeSingle();
 
   if (userRole?.role && allowedRoles.includes(userRole.role)) {
-    return { ok: true, userId: user.id, serviceClient };
+    return { ok: true as const, userId: user.id, serviceClient };
   }
 
-  return { ok: false, status: 403, error: 'Forbidden - Admin access required' };
+  return { ok: false as const, status: 403, error: 'Forbidden - Admin access required' };
 }

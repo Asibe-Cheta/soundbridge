@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/admin-auth';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +13,7 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   const adminCheck = await requireAdmin(request);
-  if (!adminCheck.ok) {
+  if (isAdminAccessDenied(adminCheck)) {
     return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status, headers: corsHeaders });
   }
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { walletService, type WithdrawalMethod } from '../../lib/wallet-service';
-import { isWiseCurrency } from '../../lib/wise-currencies';
+import { isFincraCurrency } from '../../lib/fincra-currencies';
 import { Plus, Edit, Trash2, Shield, CheckCircle, AlertCircle, Banknote, CreditCard, Wallet, Bitcoin, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface WithdrawalManagerProps {
@@ -127,12 +127,12 @@ export function WithdrawalManager({ userId, onWithdrawalRequest }: WithdrawalMan
   };
 
   const getVerificationStatus = (method: WithdrawalMethod) => {
-    const canUse = method.is_verified || isWiseCurrency(method.currency);
+    const canUse = method.is_verified || isFincraCurrency(method.currency);
     if (canUse) {
       return (
         <div className="flex items-center space-x-1 text-green-400">
           <CheckCircle className="h-4 w-4" />
-          <span className="text-sm">{isWiseCurrency(method.currency) ? 'Ready' : 'Verified'}</span>
+          <span className="text-sm">{isFincraCurrency(method.currency) ? 'Ready' : 'Verified'}</span>
         </div>
       );
     }

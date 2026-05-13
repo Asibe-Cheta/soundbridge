@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import type { BankAccountFormData } from '../../../../../src/lib/types/revenue';
-import { isWiseCurrency } from '@/src/lib/wise-currencies';
+import { isFincraCurrency } from '@/src/lib/fincra-currencies';
 import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 
 export async function GET(request: NextRequest) {
@@ -247,8 +247,8 @@ export async function POST(request: NextRequest) {
       routingIdentifier = bankData.iban;
     }
     
-    // Wise-routed currencies: auto-verify on creation (WEB_TEAM_WISE_VERIFICATION_STATUS_FIX.md)
-    const isWise = isWiseCurrency(currency);
+    // Fincra-rail currencies (NGN/GHS/KES): auto-verify on creation; live name match is separate.
+    const isFincraRail = isFincraCurrency(currency);
     const { data, error } = await supabase
       .from('creator_bank_accounts')
       .upsert({
@@ -259,8 +259,8 @@ export async function POST(request: NextRequest) {
         routing_number_encrypted: routingIdentifier || bankData.routing_number || '', // TODO: Encrypt this
         account_type: bankData.account_type || 'checking',
         currency: currency,
-        verification_status: isWise ? 'verified' : 'pending',
-        is_verified: isWise,
+        verification_status: isFincraRail ? 'verified' : 'pending',
+        is_verified: isFincraRail,
         verification_attempts: 0
       });
 

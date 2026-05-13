@@ -14,7 +14,7 @@ const CORS = {
 
 /**
  * POST /api/opportunity-projects/:id/confirm-delivery — Poster confirms delivery; capture payment, instant wallet credit (no transfer)
- * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — creator sees balance immediately; they withdraw via Wise when they choose
+ * WEB_TEAM_GIG_PAYMENT_INSTANT_WALLET.MD — creator sees balance immediately; they withdraw when they choose
  */
 export async function POST(
   request: NextRequest,
