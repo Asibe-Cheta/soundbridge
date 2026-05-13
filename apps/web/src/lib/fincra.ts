@@ -232,12 +232,15 @@ export async function validateFincraBankAccount(params: {
   const upper = params.currency.toUpperCase();
 
   if (upper === 'NGN') {
+    // Match Fincra docs: Nigeria bank verification uses type "bank_account" + currency (not "nuban" alone).
+    // https://docs.fincra.com/docs/verify-iban-and-account-numbers
     const payload = await fincraHttp<{
       data?: { accountName?: string; account_name?: string; isValid?: boolean };
     }>('POST', '/core/accounts/resolve', {
       accountNumber: params.accountNumber,
       bankCode: params.bankCode,
-      type: 'nuban',
+      currency: upper,
+      type: 'bank_account',
     });
     const d = payload.data as Record<string, unknown> | undefined;
     const accountName =
