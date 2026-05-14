@@ -21,7 +21,8 @@
           "/messages/*",
           "/wallet/*",
           "/opportunity/*",
-          "/collaboration/*"
+          "/collaboration/*",
+          "/*/home"
         ]
       }
     ]

@@ -30,6 +30,11 @@ export async function middleware(req: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
 
+    // Public artist fan landing: /[username]/home (universal link target; must not require login)
+    if (/^\/[^/]+\/home\/?$/.test(req.nextUrl.pathname)) {
+      return res;
+    }
+
     // Define protected routes that require authentication
     const protectedRoutes = [
       '/dashboard',

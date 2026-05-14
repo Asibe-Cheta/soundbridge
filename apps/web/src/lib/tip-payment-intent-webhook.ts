@@ -205,6 +205,218 @@ async function recoverMissingTipRowsFromMetadata(
   };
 }
 
+/** Web fan landing guest tip: row may be missing if webhook races create; recover from Stripe metadata. */
+async function recoverFanLandingTipRowFromMetadata(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: SupabaseClient
+): Promise<Record<string, unknown> | null> {
+  const meta = paymentIntent.metadata || {};
+  if (meta.guest_tip !== 'true') return null;
+  const paymentIntentId = paymentIntent.id;
+  const creatorId = String(meta.creatorId || meta.creator_id || meta.creator_user_id || '').trim();
+  const email = String(meta.tipper_email || '').trim();
+  if (!creatorId || !email) {
+    console.error('[finalizeFanLanding] recover: missing creatorId or tipper_email');
+    return null;
+  }
+  const gross = paymentIntent.amount ?? 0;
+  const amountMajor = gross > 0 ? gross / 100 : 0;
+  const currency = (paymentIntent.currency || 'gbp').toUpperCase();
+  const nameRaw = typeof meta.guest_tipper_name === 'string' ? meta.guest_tipper_name.trim() : '';
+  const msgRaw = typeof meta.tipMessage === 'string' ? meta.tipMessage.trim() : '';
+  const { error } = await supabase.from('fan_landing_tips').insert({
+    creator_id: creatorId,
+    guest_email: email,
+    guest_name: nameRaw || null,
+    amount: amountMajor,
+    currency,
+    stripe_payment_intent_id: paymentIntentId,
+    source: 'fan_landing_page',
+    status: 'pending',
+    message: msgRaw || null,
+  });
+  if (error && (error as { code?: string }).code !== '23505') {
+    console.error('[finalizeFanLanding] recover insert:', error);
+    return null;
+  }
+  const { data: row } = await supabase
+    .from('fan_landing_tips')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+  return (row as Record<string, unknown>) ?? null;
+}
+
+async function finalizeFanLandingGuestTipFromPaymentIntent(
+  paymentIntent: Stripe.PaymentIntent,
+  supabase: SupabaseClient
+): Promise<FinalizeTipResult> {
+  const paymentIntentId = paymentIntent.id;
+  const meta = paymentIntent.metadata || {};
+
+  let { data: fanRow } = await supabase
+    .from('fan_landing_tips')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+
+  if (!fanRow) {
+    fanRow = (await recoverFanLandingTipRowFromMetadata(paymentIntent, supabase)) as typeof fanRow;
+  }
+
+  if (!fanRow) {
+    console.error('[finalizeFanLanding] No fan_landing_tips row for', paymentIntentId);
+    return { ok: false, reason: 'no_fan_landing_row' };
+  }
+
+  if (await tipWalletAlreadyCredited(supabase, paymentIntentId)) {
+    await supabase
+      .from('fan_landing_tips')
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .eq('status', 'pending');
+    console.log('[finalizeFanLanding] Wallet already credited (idempotent):', paymentIntentId);
+    return { ok: true };
+  }
+
+  const creatorId = String(fanRow.creator_id);
+  const guestEmail = String(fanRow.guest_email || meta.tipper_email || '').trim();
+  const guestDisplayName =
+    (typeof fanRow.guest_name === 'string' && fanRow.guest_name.trim()) ||
+    (typeof meta.guest_tipper_name === 'string' && meta.guest_tipper_name.trim()) ||
+    guestEmail.split('@')[0] ||
+    'A fan';
+
+  await supabase
+    .from('fan_landing_tips')
+    .update({ status: 'completed', completed_at: new Date().toISOString() })
+    .eq('id', fanRow.id)
+    .eq('status', 'pending');
+
+  const grossMinor = paymentIntent.amount ?? 0;
+  const platformFeeMinor = meta.platform_fee_amount
+    ? parseInt(String(meta.platform_fee_amount), 10)
+    : Math.round(grossMinor * 0.15);
+  const creatorPayoutMinor = meta.creator_payout_amount
+    ? parseInt(String(meta.creator_payout_amount), 10)
+    : grossMinor - platformFeeMinor;
+  const feePct = meta.platform_fee_percent ? parseFloat(String(meta.platform_fee_percent)) : 15;
+
+  try {
+    const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
+      p_charge_type: 'tip',
+      p_gross_amount: grossMinor,
+      p_platform_fee_amount: platformFeeMinor,
+      p_platform_fee_percent: feePct,
+      p_creator_payout_amount: creatorPayoutMinor,
+      p_stripe_payment_intent_id: paymentIntentId,
+      p_reference_id: paymentIntentId,
+      p_creator_user_id: creatorId,
+      p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
+    });
+    if (insertPrErr) {
+      console.error('[finalizeFanLanding] insert_platform_revenue:', insertPrErr);
+    }
+  } catch (err) {
+    console.error('[finalizeFanLanding] insert_platform_revenue:', err);
+  }
+
+  const amount = Number(fanRow.amount ?? (grossMinor > 0 ? grossMinor / 100 : 0));
+  const currency = String(fanRow.currency || paymentIntent.currency || 'gbp').toUpperCase();
+  const platformFeeFromMeta = parseFloat(String(meta.platformFee ?? meta.platform_fee ?? ''));
+  const platformFee =
+    Number.isFinite(platformFeeFromMeta) && platformFeeFromMeta >= 0
+      ? platformFeeFromMeta
+      : Number.isFinite(feePct)
+        ? Math.round(amount * (feePct / 100) * 100) / 100
+        : amount * 0.15;
+  let creatorEarnings = NaN;
+  const metaEarningsStr = meta.creatorEarnings ?? meta.creator_earnings;
+  if (metaEarningsStr !== undefined && metaEarningsStr !== null && String(metaEarningsStr).trim() !== '') {
+    creatorEarnings = Number(metaEarningsStr);
+  }
+  if (!Number.isFinite(creatorEarnings) || creatorEarnings < 0) {
+    const minor = meta.creator_payout_amount != null ? parseInt(String(meta.creator_payout_amount), 10) : NaN;
+    if (Number.isFinite(minor) && minor >= 0) {
+      creatorEarnings = minor / 100;
+    }
+  }
+  if (!Number.isFinite(creatorEarnings) || creatorEarnings < 0) {
+    creatorEarnings = Math.max(0, amount - platformFee);
+  }
+
+  const tipMessage = String(fanRow.message || meta.tipMessage || '');
+
+  try {
+    const { error: walletError } = await supabase.rpc('add_wallet_transaction', {
+      user_uuid: creatorId,
+      transaction_type: 'tip_received',
+      amount: creatorEarnings,
+      description: `Tip received (fan page)${tipMessage ? `: ${tipMessage}` : ''}`,
+      reference_id: paymentIntentId,
+      metadata: {
+        tipper_id: 'fan_landing_guest',
+        fan_landing_guest: true,
+        guest_email: guestEmail,
+        original_amount: amount,
+        creator_earnings: creatorEarnings,
+        platform_fee: platformFee,
+        tip_message: tipMessage,
+        tip_source: 'fan_landing_page',
+      },
+      p_currency: currency,
+      p_stripe_payment_intent_id: paymentIntentId,
+    });
+    if (walletError) {
+      console.error('[finalizeFanLanding] add_wallet_transaction:', walletError);
+      return { ok: false, reason: 'wallet_failed' };
+    }
+  } catch (e) {
+    console.error('[finalizeFanLanding] wallet:', e);
+    return { ok: false, reason: 'wallet_failed' };
+  }
+
+  try {
+    await supabase.rpc('record_revenue_transaction', {
+      user_uuid: creatorId,
+      transaction_type_param: 'tip',
+      amount_param: amount,
+      customer_email_param: guestEmail,
+      customer_name_param: guestDisplayName,
+      stripe_payment_intent_id_param: paymentIntentId,
+    });
+  } catch (e) {
+    console.error('[finalizeFanLanding] record_revenue_transaction:', e);
+  }
+
+  try {
+    const formattedAmount =
+      currency === 'USD' ? `$${amount.toFixed(2)}` : currency === 'GBP' ? `£${amount.toFixed(2)}` : `${currency} ${amount.toFixed(2)}`;
+    const tipTitle = `A fan tipped you ${formattedAmount}`;
+    await sendExpoPushIfAllowed(supabase, creatorId, 'tip', {
+      title: tipTitle,
+      body: guestEmail ? `From ${guestEmail}` : 'Check your wallet',
+      data: {
+        type: 'tip',
+        entityId: String(fanRow.id ?? paymentIntentId),
+        entityType: 'fan_landing_tip',
+        creatorId: '',
+        username: '',
+        amount: formattedAmount,
+        tipperId: 'fan_landing_guest',
+        currency,
+      },
+      channelId: 'tips',
+      priority: 'high',
+    });
+  } catch (e) {
+    console.error('[finalizeFanLanding] push:', e);
+  }
+
+  console.log('✅ [finalizeFanLanding] Guest tip finalized for PI', paymentIntentId);
+  return { ok: true };
+}
+
 /**
  * Idempotent: safe to call on every payment_intent.succeeded for tip PIs.
  * Expects service-role Supabase client (bypasses RLS on tips / creator_tips updates).
@@ -226,6 +438,10 @@ async function finalizeTipFromSucceededPaymentIntentInner(
   supabase: SupabaseClient
 ): Promise<FinalizeTipResult> {
   if (!isTipPaymentIntent(paymentIntent)) return { ok: true };
+
+  if (paymentIntent.metadata?.guest_tip === 'true') {
+    return finalizeFanLandingGuestTipFromPaymentIntent(paymentIntent, supabase);
+  }
 
   const paymentIntentId = paymentIntent.id;
   const meta = paymentIntent.metadata || {};
