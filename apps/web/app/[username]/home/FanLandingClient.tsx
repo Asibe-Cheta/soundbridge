@@ -241,12 +241,23 @@ export function FanLandingClient({
           name: guestName.trim() || undefined,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { client_secret?: string; error?: string };
-      if (!res.ok || !data.client_secret) {
-        setTipError(data.error || 'Could not start checkout.');
+      const data = (await res.json().catch(() => ({}))) as {
+        client_secret?: string;
+        clientSecret?: string;
+        stripe_client_secret?: string;
+        error?: string;
+        details?: string;
+      };
+      const secret = data.client_secret ?? data.clientSecret ?? data.stripe_client_secret;
+      if (!res.ok || !secret) {
+        setTipError(
+          data.error ||
+            (typeof data.details === 'string' ? data.details : null) ||
+            'Could not start checkout.'
+        );
         return;
       }
-      setClientSecret(data.client_secret);
+      setClientSecret(secret);
     } catch {
       setTipError('Network error. Try again.');
     } finally {

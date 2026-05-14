@@ -261,6 +261,7 @@ export async function POST(request: NextRequest) {
         success: true,
         paymentIntentId: paymentIntent.id,
         clientSecret: paymentIntent.client_secret,
+        client_secret: paymentIntent.client_secret,
         stripe_client_secret: paymentIntent.client_secret,
         currency: tipCurrency,
         platformFee,
