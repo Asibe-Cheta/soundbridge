@@ -57,7 +57,7 @@ export function FeaturedCreators({ creators = [] }: FeaturedCreatorsProps) {
             </span>
           </h1>
           <p className="text-xl text-white/70 max-w-2xl mx-auto mb-8">
-            Connect with talented artists, producers, and musicians from the UK and Nigeria.
+            Connect with talented artists, producers, and musicians worldwide.
             Discover new sounds and build your network.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

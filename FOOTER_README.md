@@ -39,7 +39,7 @@ The Footer component provides a comprehensive footer for the SoundBridge platfor
    - Terms of Service (with FileText icon)
 
 #### Secondary Footer
-- **Copyright**: "© 2024 SoundBridge. Connecting creators across UK & Nigeria"
+- **Copyright**: "© {year} SoundBridge · Built in the UK. Built for the world."
 - **Social Media**: Instagram, Twitter, TikTok, YouTube icons
 - **Legal Links**: Privacy • Terms • Cookies
 

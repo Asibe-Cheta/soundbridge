@@ -266,7 +266,7 @@ export function Footer() {
         <div className={`${isMobile ? 'mb-2 text-xs' : 'mb-4 text-sm'} ${
           theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
         }`}>
-          © 2024 SoundBridge. Connecting creators across UK & Nigeria
+          © {new Date().getFullYear()} SoundBridge · Built in the UK. Built for the world.
         </div>
         
         <div style={{ 
