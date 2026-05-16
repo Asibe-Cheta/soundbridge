@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
+import { completePayoutRequestBalanceDeduction } from '@/src/lib/payouts/complete-payout-request-balance';
 
 const ADMIN_ROLES = ['admin', 'super_admin'] as const;
 
@@ -184,6 +185,12 @@ export async function POST(request: NextRequest) {
   if (!dryRun) {
     for (const fix of fixes) {
       if (fix.kind === 'payout_to_completed') {
+        const { data: prRow } = await service
+          .from('payout_requests')
+          .select('id, creator_id, amount, currency')
+          .eq('id', fix.payout_request_id)
+          .maybeSingle();
+
         const { error } = await service
           .from('payout_requests')
           .update({
@@ -193,8 +200,25 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', fix.payout_request_id);
-        if (error) errors.push({ reference_id: fix.reference_id, error: error.message });
-        else applied.push(`${fix.kind}:${fix.reference_id}`);
+        if (error) {
+          errors.push({ reference_id: fix.reference_id, error: error.message });
+        } else {
+          applied.push(`${fix.kind}:${fix.reference_id}`);
+          if (prRow) {
+            const deduct = await completePayoutRequestBalanceDeduction(service, {
+              creatorId: prRow.creator_id,
+              amount: Number(prRow.amount),
+              payoutRequestId: prRow.id,
+              currency: String(prRow.currency ?? 'USD'),
+            });
+            if (!deduct.success && !deduct.already_deducted) {
+              errors.push({
+                reference_id: fix.reference_id,
+                error: `Status updated but wallet deduction failed: ${deduct.error ?? 'unknown'}`,
+              });
+            }
+          }
+        }
       } else if (fix.kind === 'payout_to_failed') {
         const { error } = await service
           .from('payout_requests')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { verifyFincraWebhookSignature } from '@/src/lib/fincra';
+import { completePayoutRequestBalanceDeduction } from '@/src/lib/payouts/complete-payout-request-balance';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,14 +147,33 @@ export async function POST(request: NextRequest) {
 
   // Keep payout requests in sync where stripe_transfer_id is used as transfer reference.
   if (normalized === 'completed') {
+    const { data: completingRows } = await supabase
+      .from('payout_requests')
+      .select('id, creator_id, amount, currency, status')
+      .eq('stripe_transfer_id', reference);
+
     await supabase
       .from('payout_requests')
       .update({
         status: 'completed',
         completed_at: completedAt,
         updated_at: completedAt,
+        rejection_reason: null,
       })
       .eq('stripe_transfer_id', reference);
+
+    for (const pr of completingRows ?? []) {
+      const deduct = await completePayoutRequestBalanceDeduction(supabase, {
+        creatorId: pr.creator_id,
+        amount: Number(pr.amount),
+        payoutRequestId: pr.id,
+        currency: String(pr.currency ?? 'USD'),
+      });
+      if (!deduct.success && !deduct.already_deducted) {
+        console.error('[fincra webhook] wallet deduction failed for payout_request', pr.id, deduct);
+      }
+    }
+
     await supabase
       .from('payouts')
       .update({ status: 'completed', completed_at: completedAt, failure_reason: null })

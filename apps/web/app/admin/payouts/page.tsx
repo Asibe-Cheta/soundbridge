@@ -67,7 +67,7 @@ export default function AdminPayoutsPage() {
   const [historyFailed, setHistoryFailed] = useState<ProviderPayoutHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type ActionBusyKind = 'approve' | 'manual' | 'reject' | 'fund' | 'retry';
+  type ActionBusyKind = 'approve' | 'manual' | 'reject' | 'fund' | 'retry' | 'deduct';
   const [actionBusy, setActionBusy] = useState<{ id: string; kind: ActionBusyKind } | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
   type BatchResult = {
@@ -151,11 +151,36 @@ export default function AdminPayoutsPage() {
     }
   };
 
+  const applyWalletDeduction = async (payoutRequestId: string) => {
+    const ok = window.confirm(
+      'Apply wallet deduction for this completed payout?\n\n' +
+        'Use when the creator was paid but their in-app balance was never reduced (repair). ' +
+        'Safe to run more than once — it will not double-charge if already deducted.'
+    );
+    if (!ok) return;
+    setActionBusy({ id: payoutRequestId, kind: 'deduct' });
+    setError(null);
+    try {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/apply-wallet-deduction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payout_request_id: payoutRequestId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || json.message || 'Wallet deduction failed');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Wallet deduction failed');
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
   const manualMarkPaid = async (payoutRequestId: string) => {
     const ok = window.confirm(
       'Mark this payout as manually paid?\n\n' +
         'Use when you sent funds outside the automated rail (e.g. manual bank transfer). ' +
-        'This sets the request to completed and updates the creator balance — it does not call Fincra.'
+        'This deducts the creator wallet first, then marks the request completed — it does not call Fincra.'
     );
     if (!ok) return;
     setActionBusy({ id: payoutRequestId, kind: 'manual' });
@@ -657,8 +682,21 @@ export default function AdminPayoutsPage() {
                           Ref: {payoutRef(h)}
                         </div>
                       </div>
-                      <div className={`${mutedClass} text-xs`}>
-                        {h.completed_at ? new Date(h.completed_at).toLocaleString() : h.created_at ? new Date(h.created_at).toLocaleString() : '—'}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`${mutedClass} text-xs`}>
+                          {h.completed_at ? new Date(h.completed_at).toLocaleString() : h.created_at ? new Date(h.created_at).toLocaleString() : '—'}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={actionBusy !== null && actionBusy.id === h.id}
+                          onClick={() => applyWalletDeduction(h.id)}
+                          className="px-2 py-1 rounded text-xs font-medium bg-amber-700/80 hover:bg-amber-600 text-white disabled:opacity-60"
+                          title="Repair: deduct creator wallet if this payout never updated their balance"
+                        >
+                          {actionBusy?.id === h.id && actionBusy.kind === 'deduct'
+                            ? 'Updating…'
+                            : 'Fix wallet balance'}
+                        </button>
                       </div>
                     </div>
                   </div>

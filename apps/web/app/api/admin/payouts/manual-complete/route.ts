@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
+import { completePayoutRequestBalanceDeduction } from '@/src/lib/payouts/complete-payout-request-balance';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const corsHeaders = {
@@ -52,70 +53,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (pr.status === 'completed') {
-      return NextResponse.json(
-        { success: false, error: 'This payout request is already completed.' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    const allowed = ['pending', 'failed', 'processing'];
-    if (!allowed.includes(pr.status)) {
+    const allowedStatuses = ['pending', 'failed', 'processing', 'completed'];
+    if (!allowedStatuses.includes(pr.status)) {
       return NextResponse.json(
         {
           success: false,
-          error: `Cannot mark as manually paid (status: ${pr.status}). Only pending, failed, or processing requests are allowed.`,
+          error: `Cannot mark as manually paid (status: ${pr.status}). Allowed: ${allowedStatuses.join(', ')}.`,
         },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    const now = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from('payout_requests')
-      .update({
-        status: 'completed',
-        completed_at: now,
-        updated_at: now,
-        rejection_reason: null,
-      })
-      .eq('id', payoutRequestId);
+    const walletCurrency = String(pr.currency ?? 'USD').toUpperCase();
+    const deduct = await completePayoutRequestBalanceDeduction(supabase, {
+      creatorId: pr.creator_id,
+      amount: Number(pr.amount),
+      payoutRequestId: pr.id,
+      currency: walletCurrency,
+    });
 
-    if (updateError) {
-      console.error('manual-complete update error:', updateError);
+    if (!deduct.success) {
+      const msg =
+        deduct.error === 'insufficient_wallet_balance'
+          ? `Insufficient ${walletCurrency} wallet balance (${deduct.wallet_balance_available ?? 0} available, ${deduct.required ?? pr.amount} required).`
+          : deduct.error || 'Could not deduct creator wallet balance';
       return NextResponse.json(
-        { success: false, error: 'Failed to update payout request' },
-        { status: 500, headers: corsHeaders }
+        { success: false, error: msg, deduction: deduct },
+        { status: 422, headers: corsHeaders }
       );
     }
 
-    // Deduct creator balance for this payout amount (same as automated completion).
-    const { data: rpcOk, error: rpcErr } = await supabase.rpc('process_creator_payout', {
-      user_uuid: pr.creator_id,
-      payout_amount: Number(pr.amount),
-    });
+    if (pr.status !== 'completed') {
+      const now = new Date().toISOString();
+      const { error: updateError } = await supabase
+        .from('payout_requests')
+        .update({
+          status: 'completed',
+          completed_at: now,
+          updated_at: now,
+          rejection_reason: null,
+        })
+        .eq('id', payoutRequestId);
 
-    const walletOk = !rpcErr && rpcOk !== false;
-    if (!walletOk) {
-      if (rpcErr) console.warn('process_creator_payout error:', rpcErr);
-      if (rpcOk === false) console.warn('process_creator_payout returned false (insufficient balance or no bank?)');
-      const { error: revErr } = await supabase.rpc('record_revenue_transaction', {
-        user_uuid: pr.creator_id,
-        transaction_type_param: 'payout',
-        amount_param: -Number(pr.amount),
-        customer_name_param: 'SoundBridge Platform (manual payout)',
-        stripe_payment_intent_id_param: `manual_payout_${payoutRequestId}`,
-      });
-      if (revErr) {
-        console.error('Wallet deduction fallback failed after manual complete — reconcile manually:', revErr);
+      if (updateError) {
+        console.error('manual-complete update error:', updateError);
         return NextResponse.json(
           {
-            success: true,
-            warning:
-              'Marked completed in the database, but wallet deduction failed — reconcile manually or run wallet fix.',
-            payout_request_id: payoutRequestId,
+            success: false,
+            error: 'Wallet was deducted but payout request status could not be updated — contact engineering.',
+            deduction: deduct,
           },
-          { status: 200, headers: corsHeaders }
+          { status: 500, headers: corsHeaders }
         );
       }
     }
@@ -128,8 +116,8 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       const email = creatorProfile?.email;
-      if (email) {
-        const currency = (pr.currency ?? 'USD').toString();
+      if (email && pr.status !== 'completed') {
+        const currency = walletCurrency;
         const symbol =
           currency === 'NGN'
             ? '₦'
@@ -149,14 +137,14 @@ export async function POST(request: NextRequest) {
             <h2 style="margin: 0 0 10px;">Your SoundBridge payout has been recorded</h2>
             <p style="margin: 0 0 8px;">Hi <b>${displayName}</b>,</p>
             <p style="margin: 0 0 8px;">A payout of <b>${symbol}${amount.toFixed(2)}</b> has been marked as completed on your account.</p>
-            <p style="margin: 0 0 8px; color: #555; font-size: 13px;">If you received this amount via an external transfer (e.g. bank), your balance has been updated accordingly.</p>
+            <p style="margin: 0 0 8px; color: #555; font-size: 13px;">Your wallet balance has been updated. If you received funds via an external transfer, no further action is needed.</p>
             <p style="margin-top: 16px; color: #666; font-size: 12px;">Support: contact@soundbridge.live</p>
           </div>
         `;
         await SendGridService.sendHtmlEmail(
           email,
           `SoundBridge: payout of ${symbol}${amount.toFixed(2)} recorded`,
-          html
+          html,
         );
       }
     } catch (emailErr) {
@@ -166,15 +154,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'Payout marked as manually paid (completed).',
+        message: deduct.already_deducted
+          ? 'Payout already completed; wallet balance was already deducted (no duplicate debit).'
+          : 'Payout marked as manually paid and creator wallet updated.',
         payout_request_id: payoutRequestId,
+        deduction: deduct,
       },
       { status: 200, headers: corsHeaders }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin manual-complete error:', error);
     return NextResponse.json(
-      { success: false, error: error?.message ?? 'Internal error' },
+      { success: false, error: error instanceof Error ? error.message : 'Internal error' },
       { status: 500, headers: corsHeaders }
     );
   }
