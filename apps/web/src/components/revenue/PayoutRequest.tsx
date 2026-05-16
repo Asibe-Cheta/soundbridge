@@ -12,6 +12,7 @@ interface PayoutEligibility {
   pending_requests?: number;
   min_payout: number;
   withdrawable_amount?: number;
+  can_request_payout?: boolean;
 }
 
 interface PayoutRequest {
@@ -87,7 +88,7 @@ export function PayoutRequest() {
   const handleRequestPayout = async () => {
     const amount = parseFloat(requestAmount);
     
-    const minPayout = eligibility?.min_payout ?? 30;
+    const minPayout = eligibility?.min_payout ?? 20;
     if (!amount || amount < minPayout) {
       setError(`Minimum withdrawal amount is $${minPayout}.00`);
       return;
@@ -218,7 +219,7 @@ export function PayoutRequest() {
         <div className="space-y-4">
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              Withdrawal Amount (Minimum: {eligibility?.min_payout != null ? `$${eligibility.min_payout}.00` : '$20–$30'})
+              Withdrawal Amount (Minimum: {eligibility?.min_payout != null ? `$${eligibility.min_payout}.00` : '$20.00'})
             </label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -246,7 +247,7 @@ export function PayoutRequest() {
 
           <button
             onClick={handleRequestPayout}
-            disabled={requesting || !eligibility?.eligible || !requestAmount}
+            disabled={requesting || !eligibility?.can_request_payout || !requestAmount}
             className="w-full px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {requesting ? (

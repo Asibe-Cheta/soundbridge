@@ -122,7 +122,11 @@ export interface RevenueSummary {
   total_earned: number;
   total_paid_out: number;
   pending_balance: number;
+  /** Withdrawable after pending payout holds (matches get_payout_eligibility). */
   available_balance: number;
+  /** Raw USD user_wallets.balance (may differ until payout debits are applied). */
+  wallet_balance?: number;
+  pending_payout_requests?: number;
   this_month_earnings: number;
   last_month_earnings: number;
   total_tips: number;
@@ -167,9 +171,9 @@ export const PLATFORM_FEES = {
 
 // Minimum payout amounts
 export const MINIMUM_PAYOUTS = {
-  USD: 25.00,
-  EUR: 25.00,
-  GBP: 20.00
+  USD: 20.00,
+  EUR: 20.00,
+  GBP: 20.00,
 } as const;
 
 // Supported currencies

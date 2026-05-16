@@ -726,7 +726,7 @@ export default function DashboardPage() {
                   fontSize: '0.875rem', 
                   margin: '0 0 1.5rem 0' 
                 }}>
-                  Request withdrawals from your earnings (Minimum: $25)
+                  Request withdrawals from your earnings (Minimum: $20)
                 </p>
                 <PayoutRequest />
               </div>

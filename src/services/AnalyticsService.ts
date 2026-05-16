@@ -258,21 +258,62 @@ class AnalyticsService {
         return null;
       }
 
-      // Try web app API first
+      // Try web app API first (revenue/balance returns camelCase revenue object)
       try {
-        const response = await fetch(`${this.baseUrl}/user/revenue/summary`, {
+        const response = await fetch(`${this.baseUrl}/revenue/balance`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
         });
 
         if (response.ok) {
           const data = await response.json();
-          console.log('Ô£à Revenue fetched from web app API');
-          return data.revenue;
+          const r = data.revenue;
+          if (r) {
+            console.log('Revenue fetched from web app API');
+            return {
+              totalEarned: r.totalEarned ?? 0,
+              totalPaidOut: r.totalPaidOut ?? 0,
+              pendingBalance: r.pendingBalance ?? 0,
+              availableBalance: r.availableBalance ?? 0,
+              thisMonthEarnings: r.thisMonthEarnings ?? 0,
+              totalTips: r.totalTips ?? 0,
+              totalTrackSales: r.totalTrackSales ?? 0,
+              totalSubscriptions: r.totalSubscriptions ?? 0,
+              payoutThreshold: 20,
+              stripeConnected: false,
+            };
+          }
+        }
+
+        const summaryResponse = await fetch(`${this.baseUrl}/user/revenue/summary`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (summaryResponse.ok) {
+          const summaryData = await summaryResponse.json();
+          const r = summaryData.revenue ?? summaryData;
+          if (r) {
+            const totalEarned = r.totalEarned ?? r.total_earned ?? 0;
+            const totalPaidOut = r.totalPaidOut ?? r.total_paid_out ?? 0;
+            return {
+              totalEarned,
+              totalPaidOut,
+              pendingBalance: r.pendingBalance ?? r.pending_balance ?? 0,
+              availableBalance: r.availableBalance ?? r.available_balance ?? 0,
+              thisMonthEarnings: r.thisMonthEarnings ?? r.this_month_earnings ?? 0,
+              totalTips: r.totalTips ?? r.total_tips ?? 0,
+              totalTrackSales: r.totalTrackSales ?? r.total_track_sales ?? 0,
+              totalSubscriptions: r.totalSubscriptions ?? r.total_subscriptions ?? 0,
+              payoutThreshold: 20,
+              stripeConnected: false,
+            };
+          }
         }
       } catch (apiError) {
-        console.log('ÔÜá´©Å Web app API not available, using direct database query');
+        console.log('Web app API not available, using direct database query');
       }
 
       // Fallback to direct database query
@@ -326,16 +367,30 @@ class AnalyticsService {
         } : null;
       }
 
+      const { data: walletRow } = await supabase
+        .from('user_wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .eq('currency', 'USD')
+        .maybeSingle();
+
+      const walletUsd = Number(walletRow?.balance ?? 0);
+      const crAvailable = Number(revenue.available_balance ?? 0);
+      const impliedAvailable = Math.max(
+        0,
+        Number(revenue.total_earned ?? 0) - Number(revenue.total_paid_out ?? 0),
+      );
+
       return {
         totalEarned: revenue.total_earned || 0,
         totalPaidOut: revenue.total_paid_out || 0,
         pendingBalance: revenue.pending_balance || 0,
-        availableBalance: revenue.available_balance || 0,
-        thisMonthEarnings: 0, // TODO: Calculate from transactions
-        totalTips: 0, // TODO: Calculate from tips
-        totalTrackSales: 0, // TODO: Calculate from sales
-        totalSubscriptions: 0, // TODO: Calculate from subscriptions
-        payoutThreshold: revenue.payout_threshold || 50,
+        availableBalance: Math.max(walletUsd, crAvailable, impliedAvailable),
+        thisMonthEarnings: 0,
+        totalTips: 0,
+        totalTrackSales: 0,
+        totalSubscriptions: 0,
+        payoutThreshold: revenue.payout_threshold || 20,
         stripeConnected: revenue.stripe_connected || false,
       };
     } catch (error) {
