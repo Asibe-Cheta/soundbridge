@@ -10,7 +10,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AgreementPage() {
+type PageProps = {
+  searchParams: Promise<{ draft?: string; edit?: string }>;
+};
+
+export default async function AgreementPage({ searchParams }: PageProps) {
+  const { draft, edit } = await searchParams;
+
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
@@ -21,7 +27,7 @@ export default function AgreementPage() {
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to home
         </Link>
-        <AgreementClient />
+        <AgreementClient initialDraftId={draft} initialEditToken={edit} />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { AGREEMENT_BODY } from './agreementLegalText';
@@ -11,6 +12,24 @@ const SB_DEFAULTS = {
   representativeName: 'Justice Chetachukwu Asibe',
   title: 'Founder and CEO',
 } as const;
+
+type DraftPayload = {
+  sbCompany: string;
+  sbRep: string;
+  sbTitle: string;
+  sbDate: string;
+  creatorName: string;
+  creatorArtist: string;
+  creatorEmail: string;
+  creatorDate: string;
+  sbSignaturePng: string | null;
+  creatorSignaturePng: string | null;
+};
+
+type AgreementClientProps = {
+  initialDraftId?: string;
+  initialEditToken?: string;
+};
 
 function slugify(s: string) {
   return s
@@ -25,10 +44,13 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+function saveTokenStorageKey(draftId: string) {
+  return `agreement-save-token-${draftId}`;
+}
+
 async function fetchLogoDataUrl(): Promise<string | null> {
   try {
-    const origin =
-      typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const res = await fetch(`${origin}/images/logos/logo-trans-lockup.png`);
     if (!res.ok) return null;
     const blob = await res.blob();
@@ -43,11 +65,26 @@ async function fetchLogoDataUrl(): Promise<string | null> {
   }
 }
 
-export function AgreementClient() {
+function applySignatureToCanvas(ref: React.RefObject<SignatureCanvas | null>, dataUrl: string | null) {
+  if (!dataUrl || !ref.current) return;
+  try {
+    ref.current.fromDataURL(dataUrl, { ratio: 1, width: ref.current.getCanvas().width, height: ref.current.getCanvas().height });
+  } catch {
+    /* ignore corrupt image */
+  }
+}
+
+export function AgreementClient({ initialDraftId, initialEditToken }: AgreementClientProps) {
+  const router = useRouter();
   const sbSigRef = useRef<SignatureCanvas>(null);
   const creatorSigRef = useRef<SignatureCanvas>(null);
 
   const [padWidth, setPadWidth] = useState(320);
+  const [draftId, setDraftId] = useState<string | null>(initialDraftId ?? null);
+  const [saveToken, setSaveToken] = useState<string | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(!!initialDraftId);
+  const [saving, setSaving] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const [sbCompany, setSbCompany] = useState(SB_DEFAULTS.companyName);
   const [sbRep, setSbRep] = useState(SB_DEFAULTS.representativeName);
@@ -59,14 +96,21 @@ export function AgreementClient() {
   const [creatorEmail, setCreatorEmail] = useState('');
   const [creatorDate, setCreatorDate] = useState('');
 
+  const [sbSignatureStored, setSbSignatureStored] = useState<string | null>(null);
+  const [creatorSignatureStored, setCreatorSignatureStored] = useState<string | null>(null);
+  const [signaturesApplied, setSignaturesApplied] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+
+  const canEditSoundBridge = !sbSignatureStored || !!saveToken;
+  const isCounterpartyView = !!draftId && !!sbSignatureStored && !saveToken;
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
-    setSbDate(today);
-    setCreatorDate(today);
+    setSbDate((d) => d || today);
+    setCreatorDate((d) => d || today);
   }, []);
 
   useEffect(() => {
@@ -74,12 +118,215 @@ export function AgreementClient() {
     setPadWidth(w);
   }, []);
 
-  const clearSb = useCallback(() => sbSigRef.current?.clear(), []);
-  const clearCreator = useCallback(() => creatorSigRef.current?.clear(), []);
+  const applyPayload = useCallback((p: DraftPayload) => {
+    setSbCompany(p.sbCompany || SB_DEFAULTS.companyName);
+    setSbRep(p.sbRep || SB_DEFAULTS.representativeName);
+    setSbTitle(p.sbTitle || SB_DEFAULTS.title);
+    if (p.sbDate) setSbDate(p.sbDate);
+    setCreatorName(p.creatorName);
+    setCreatorArtist(p.creatorArtist);
+    setCreatorEmail(p.creatorEmail);
+    if (p.creatorDate) setCreatorDate(p.creatorDate);
+    setSbSignatureStored(p.sbSignaturePng);
+    setCreatorSignatureStored(p.creatorSignaturePng);
+    setSignaturesApplied(false);
+  }, []);
+
+  useEffect(() => {
+    if (!initialDraftId) {
+      setLoadingDraft(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/agreement/drafts/${initialDraftId}`);
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Could not load saved agreement');
+          return;
+        }
+        if (cancelled) return;
+        setDraftId(data.id);
+        applyPayload(data.payload as DraftPayload);
+
+        const tokenFromUrl = initialEditToken?.trim();
+        const tokenFromStorage =
+          typeof window !== 'undefined'
+            ? sessionStorage.getItem(saveTokenStorageKey(data.id))
+            : null;
+        const token = tokenFromUrl || tokenFromStorage;
+        if (token) {
+          setSaveToken(token);
+          sessionStorage.setItem(saveTokenStorageKey(data.id), token);
+          if (tokenFromUrl) {
+            router.replace(`/agreement?draft=${data.id}`, { scroll: false });
+          }
+        }
+      } catch {
+        if (!cancelled) setError('Could not load saved agreement');
+      } finally {
+        if (!cancelled) setLoadingDraft(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDraftId, initialEditToken, applyPayload, router]);
+
+  useEffect(() => {
+    if (signaturesApplied || loadingDraft) return;
+    const t = window.setTimeout(() => {
+      applySignatureToCanvas(sbSigRef, sbSignatureStored);
+      applySignatureToCanvas(creatorSigRef, creatorSignatureStored);
+      setSignaturesApplied(true);
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [
+    loadingDraft,
+    signaturesApplied,
+    sbSignatureStored,
+    creatorSignatureStored,
+    padWidth,
+  ]);
+
+  const buildPayload = useCallback((): DraftPayload => {
+    const sbPng =
+      sbSigRef.current && !sbSigRef.current.isEmpty()
+        ? sbSigRef.current.toDataURL('image/png')
+        : sbSignatureStored;
+    const crPng =
+      creatorSigRef.current && !creatorSigRef.current.isEmpty()
+        ? creatorSigRef.current.toDataURL('image/png')
+        : creatorSignatureStored;
+    return {
+      sbCompany,
+      sbRep,
+      sbTitle,
+      sbDate,
+      creatorName,
+      creatorArtist,
+      creatorEmail,
+      creatorDate,
+      sbSignaturePng: sbPng,
+      creatorSignaturePng: crPng,
+    };
+  }, [
+    sbCompany,
+    sbRep,
+    sbTitle,
+    sbDate,
+    creatorName,
+    creatorArtist,
+    creatorEmail,
+    creatorDate,
+    sbSignatureStored,
+    creatorSignatureStored,
+  ]);
+
+  const shareUrl =
+    typeof window !== 'undefined' && draftId
+      ? `${window.location.origin}/agreement?draft=${draftId}`
+      : '';
+
+  const handleSave = useCallback(async () => {
+    setError(null);
+    setSuccess(null);
+    setShareCopied(false);
+
+    const payload = buildPayload();
+    if (!payload.sbSignaturePng) {
+      setError('Add your SoundBridge signature before saving to share.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (!draftId) {
+        const res = await fetch('/api/agreement/drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Could not save');
+          return;
+        }
+        setDraftId(data.id);
+        setSaveToken(data.saveToken);
+        sessionStorage.setItem(saveTokenStorageKey(data.id), data.saveToken);
+        setSbSignatureStored(payload.sbSignaturePng);
+        setCreatorSignatureStored(payload.creatorSignaturePng);
+        router.replace(`/agreement?draft=${data.id}`, { scroll: false });
+        setSuccess('Saved. Copy the share link below and send it to the other party to sign.');
+        return;
+      }
+
+      const res = await fetch(`/api/agreement/drafts/${draftId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          saveToken: saveToken ?? undefined,
+          payload,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Could not save');
+        return;
+      }
+      setSbSignatureStored(payload.sbSignaturePng);
+      setCreatorSignatureStored(payload.creatorSignaturePng);
+      setSuccess('Saved. The share link includes your latest signature and details.');
+    } catch {
+      setError('Could not save. Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [buildPayload, draftId, saveToken, router]);
+
+  const copyShareLink = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      setError('Could not copy link. Select and copy the URL from your browser bar.');
+    }
+  }, [shareUrl]);
+
+  const clearSb = useCallback(() => {
+    if (!canEditSoundBridge) return;
+    sbSigRef.current?.clear();
+    setSbSignatureStored(null);
+  }, [canEditSoundBridge]);
+
+  const clearCreator = useCallback(() => {
+    creatorSigRef.current?.clear();
+    setCreatorSignatureStored(null);
+  }, []);
+
+  const getSbSigForPdf = () => {
+    if (sbSigRef.current && !sbSigRef.current.isEmpty()) {
+      return sbSigRef.current.toDataURL('image/png');
+    }
+    return sbSignatureStored;
+  };
+
+  const getCreatorSigForPdf = () => {
+    if (creatorSigRef.current && !creatorSigRef.current.isEmpty()) {
+      return creatorSigRef.current.toDataURL('image/png');
+    }
+    return creatorSignatureStored;
+  };
 
   const handleDownloadPdf = useCallback(async () => {
     setError(null);
-    setSuccess(false);
+    setSuccess(null);
 
     if (!creatorName.trim()) {
       setError('Please enter your full legal name.');
@@ -97,11 +344,13 @@ export function AgreementClient() {
       setError('Please set both signature dates.');
       return;
     }
-    if (sbSigRef.current?.isEmpty()) {
+    const sbImg = getSbSigForPdf();
+    const crImg = getCreatorSigForPdf();
+    if (!sbImg) {
       setError('SoundBridge representative signature is required.');
       return;
     }
-    if (creatorSigRef.current?.isEmpty()) {
+    if (!crImg) {
       setError('Your signature is required.');
       return;
     }
@@ -188,8 +437,6 @@ export function AgreementClient() {
         y = margin;
       }
 
-      const sbImg = sbSigRef.current!.toDataURL('image/png');
-      const crImg = creatorSigRef.current!.toDataURL('image/png');
       const sigW = 72;
       const sigH = 28;
 
@@ -225,7 +472,7 @@ export function AgreementClient() {
       }
 
       doc.save(`SoundBridge-Digital-Rights-Ownership-Agreement-${refId}.pdf`);
-      setSuccess(true);
+      setSuccess('PDF downloaded. Keep a copy for your records.');
     } catch (e) {
       console.error(e);
       setError('Could not generate PDF. Please try again or use a different browser.');
@@ -241,7 +488,17 @@ export function AgreementClient() {
     sbDate,
     sbRep,
     sbTitle,
+    sbSignatureStored,
+    creatorSignatureStored,
   ]);
+
+  if (loadingDraft) {
+    return (
+      <article className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+        Loading saved agreement…
+      </article>
+    );
+  }
 
   return (
     <article className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 shadow-sm sm:p-8">
@@ -260,10 +517,25 @@ export function AgreementClient() {
           Digital Rights & Content Ownership Agreement
         </h1>
         <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-          Between SoundBridge Live Ltd and you, the creator. Complete the fields below, sign, then
-          download your PDF copy.
+          {isCounterpartyView
+            ? 'SoundBridge has signed. Complete your details and signature below, then download the PDF.'
+            : 'Complete the fields, sign, save to share a link with the other party, then download the signed PDF.'}
         </p>
       </header>
+
+      {draftId && shareUrl ? (
+        <div className="mb-6 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.35)] p-4 text-sm">
+          <p className="font-medium text-[hsl(var(--foreground))]">Share link</p>
+          <p className="mt-1 break-all text-xs text-[hsl(var(--muted-foreground))]">{shareUrl}</p>
+          <button
+            type="button"
+            onClick={copyShareLink}
+            className="mt-3 rounded-lg border border-[hsl(var(--border))] px-3 py-1.5 text-xs font-medium hover:bg-[hsl(var(--muted))]"
+          >
+            {shareCopied ? 'Copied' : 'Copy share link'}
+          </button>
+        </div>
+      ) : null}
 
       <section
         className="mb-8 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.35)] p-4 text-sm leading-relaxed text-[hsl(var(--foreground))] sm:p-5"
@@ -290,13 +562,14 @@ export function AgreementClient() {
       <section className="space-y-6" aria-label="Agreement form">
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-            SoundBridge (pre-filled)
+            SoundBridge {canEditSoundBridge ? '(pre-filled)' : '(signed — locked)'}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Company</span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                disabled={!canEditSoundBridge}
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
                 value={sbCompany}
                 onChange={(e) => setSbCompany(e.target.value)}
               />
@@ -304,7 +577,8 @@ export function AgreementClient() {
             <label className="block text-sm">
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Representative</span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                disabled={!canEditSoundBridge}
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
                 value={sbRep}
                 onChange={(e) => setSbRep(e.target.value)}
               />
@@ -312,7 +586,8 @@ export function AgreementClient() {
             <label className="block text-sm">
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Title</span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                disabled={!canEditSoundBridge}
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
                 value={sbTitle}
                 onChange={(e) => setSbTitle(e.target.value)}
               />
@@ -321,7 +596,8 @@ export function AgreementClient() {
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Date</span>
               <input
                 type="date"
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                disabled={!canEditSoundBridge}
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
                 value={sbDate}
                 onChange={(e) => setSbDate(e.target.value)}
               />
@@ -381,7 +657,9 @@ export function AgreementClient() {
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-sm font-medium">SoundBridge signature</p>
-            <div className="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-white">
+            <div
+              className={`overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-white ${!canEditSoundBridge ? 'pointer-events-none' : ''}`}
+            >
               <SignatureCanvas
                 ref={sbSigRef}
                 penColor="#111827"
@@ -392,13 +670,17 @@ export function AgreementClient() {
                 }}
               />
             </div>
-            <button
-              type="button"
-              onClick={clearSb}
-              className="mt-2 text-xs text-[hsl(var(--muted-foreground))] underline underline-offset-2 hover:text-[hsl(var(--foreground))]"
-            >
-              Clear
-            </button>
+            {canEditSoundBridge ? (
+              <button
+                type="button"
+                onClick={clearSb}
+                className="mt-2 text-xs text-[hsl(var(--muted-foreground))] underline underline-offset-2 hover:text-[hsl(var(--foreground))]"
+              >
+                Clear
+              </button>
+            ) : (
+              <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">Saved with this link</p>
+            )}
           </div>
           <div>
             <p className="mb-2 text-sm font-medium">Your signature</p>
@@ -433,9 +715,18 @@ export function AgreementClient() {
         ) : null}
         {success ? (
           <p className="rounded-lg border border-emerald-600/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
-            PDF downloaded. Keep a copy for your records.
+            {success}
           </p>
         ) : null}
+
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm font-semibold transition hover:bg-[hsl(var(--muted))] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : draftId ? 'Save changes' : 'Save & get share link'}
+        </button>
 
         <button
           type="button"
