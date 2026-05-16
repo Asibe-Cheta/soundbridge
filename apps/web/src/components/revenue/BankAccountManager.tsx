@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { revenueService } from '../../lib/revenue-service';
 import { walletService } from '../../lib/wallet-service';
-import { isFincraCurrency } from '../../lib/fincra-currencies';
+import { countryCodeForFincraCurrency, isFincraCurrency } from '../../lib/fincra-currencies';
 import { CountryAwareBankForm } from '../wallet/CountryAwareBankForm';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
 import { Building2, CreditCard, Shield, CheckCircle, AlertCircle, Edit, Save, X, Loader2, Eye, EyeOff, Wallet, RefreshCw, Info } from 'lucide-react';
@@ -682,6 +682,11 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             onSave={handleSave}
             onCancel={handleCancel}
             initialData={formData}
+            initialCountryCode={
+              bankAccount && isFincraCurrency(bankAccount.currency)
+                ? countryCodeForFincraCurrency(bankAccount.currency) ?? undefined
+                : undefined
+            }
           />
         </div>
       )}

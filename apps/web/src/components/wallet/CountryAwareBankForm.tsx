@@ -424,6 +424,8 @@ interface CountryAwareBankFormProps {
   onSave: (formData: any) => void;
   onCancel: () => void;
   initialData?: any;
+  /** When set (e.g. editing NGN account), skip IP-based country detection. */
+  initialCountryCode?: string;
 }
 
 /** Field name that holds bank code for each country (for bank picker auto-fill). */
@@ -499,8 +501,8 @@ const BUILTIN_BANKS: Record<string, { name: string; code: string }[]> = {
   ],
 };
 
-export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryAwareBankFormProps) {
-  const [selectedCountry, setSelectedCountry] = useState<string>('GB'); // Default to UK
+export function CountryAwareBankForm({ onSave, onCancel, initialData, initialCountryCode }: CountryAwareBankFormProps) {
+  const [selectedCountry, setSelectedCountry] = useState<string>(initialCountryCode ?? 'GB');
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -547,13 +549,27 @@ export function CountryAwareBankForm({ onSave, onCancel, initialData }: CountryA
   const bankCodeField = BANK_CODE_FIELD[selectedCountry] ?? null;
 
   useEffect(() => {
-    // Auto-detect user's country based on browser locale or IP
-    detectUserCountry();
-    
-    // Initialize form data
     if (initialData) {
-      setFormData(initialData);
+      const mapped = { ...initialData };
+      if (initialCountryCode === 'NG' && mapped.routing_number && !mapped.bank_code) {
+        mapped.bank_code = mapped.routing_number;
+      }
+      setFormData(mapped);
+      if (mapped.bank_name) setBankSearch(String(mapped.bank_name));
     }
+
+    if (initialCountryCode) {
+      setSelectedCountry(initialCountryCode);
+      setDetectingLocation(false);
+      const label =
+        COUNTRY_BANKING_INFO[initialCountryCode]?.country ??
+        countryList.find((c) => c.code === initialCountryCode)?.name ??
+        initialCountryCode;
+      setDetectionStatus(`Using saved payout country: ${label} (not your current location)`);
+      return;
+    }
+
+    detectUserCountry();
   }, []);
 
   // Bank list: Fincra rails (NG, GH, KE) use GET /api/payouts/bank-options; others use curated lists or /api/banks (APILayer when configured).
