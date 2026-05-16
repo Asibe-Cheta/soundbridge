@@ -89,6 +89,14 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
         return;
       }
 
+      // Fincra rail (NGN/GHS/KES): bank saved locally only — no Stripe Connect.
+      if (isFincraCurrency(formData.currency)) {
+        setSuccess('Bank account updated successfully!');
+        setIsEditing(false);
+        await loadBankAccount();
+        return;
+      }
+
       // CRITICAL FIX: Then create Stripe Connect account if it doesn't exist
       // Check if user already has a Stripe Connect account
       const currentAccount = await revenueService.getBankAccount(userId);
@@ -359,33 +367,48 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
             Manage your bank account for payouts
           </p>
         </div>
-        {bankAccount && !isEditing && !isFincraCurrency(bankAccount.currency) && (
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleResetBankAccount}
-              disabled={saving}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Resetting...</span>
-                </>
-              ) : (
-                <>
-                  <X className="h-4 w-4" />
-                  <span>Reset</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-            >
-              <Edit className="h-4 w-4" />
-              <span>Edit</span>
-            </button>
-          </div>
+        {bankAccount && !isEditing && (
+          <>
+            {isFincraCurrency(bankAccount.currency) ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Change bank</span>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={handleResetBankAccount}
+                  disabled={saving}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Resetting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-4 w-4" />
+                      <span>Reset</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span>Edit</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -610,6 +633,17 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
                       {showAccountDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+
+                  {isFincraAccount && !isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="w-full mt-2 px-4 py-2 border border-gray-600 text-gray-200 rounded-lg hover:bg-gray-700/50 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span>Change bank account</span>
+                    </button>
+                  )}
                 </div>
               </>
             );
@@ -637,7 +671,11 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       {isEditing && (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h4 className="text-lg font-medium text-white mb-6">
-            {bankAccount ? 'Edit Bank Account' : 'Add Bank Account'}
+            {bankAccount
+              ? isFincraCurrency(bankAccount.currency)
+                ? 'Change bank account'
+                : 'Edit Bank Account'
+              : 'Add Bank Account'}
           </h4>
           
           <CountryAwareBankForm
