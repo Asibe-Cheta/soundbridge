@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
       isAnonymous?: boolean;
       userTier?: string;
       paymentMethod?: string;
+      trackId?: string;
     };
     try {
       body = raw ? (JSON.parse(raw) as typeof body) : {};
@@ -175,7 +176,10 @@ export async function POST(request: NextRequest) {
       isAnonymous,
       userTier: _userTierIgnored = 'free',
       paymentMethod = 'card',
+      trackId: trackIdRaw,
     } = body;
+
+    const trackId = typeof trackIdRaw === 'string' && trackIdRaw.trim() ? trackIdRaw.trim() : null;
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -203,6 +207,23 @@ export async function POST(request: NextRequest) {
         { error: 'Tips can only be sent to creator accounts' },
         { status: 400, headers: corsHeaders }
       );
+    }
+
+    if (trackId) {
+      const { data: trackRow, error: trackErr } = await supabase
+        .from('audio_tracks')
+        .select('id, creator_id')
+        .eq('id', trackId)
+        .maybeSingle();
+      if (trackErr || !trackRow) {
+        return NextResponse.json({ error: 'Track not found' }, { status: 404, headers: corsHeaders });
+      }
+      if (trackRow.creator_id !== creatorId) {
+        return NextResponse.json(
+          { error: 'Track does not belong to this creator' },
+          { status: 400, headers: corsHeaders },
+        );
+      }
     }
 
     // Resolve tip currency from creator's wallet (WEB_TEAM_TIP_CURRENCY_FIX)
@@ -299,6 +320,7 @@ export async function POST(request: NextRequest) {
         creator_payout_amount: String(creatorPayoutMinor),
         creator_id: creatorId,
         creator_user_id: creatorId,
+        ...(trackId ? { trackId } : {}),
       },
       description: `Tip to creator ${creatorId}`,
     };
@@ -360,6 +382,7 @@ export async function POST(request: NextRequest) {
         payment_intent_id: paymentIntent.id,
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
+        ...(trackId ? { track_id: trackId } : {}),
       })
       .select()
       .single();

@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
+import { sendTipThankYouDm } from '@/src/lib/tip-thank-you-dm';
 
 /**
  * create-tip sets metadata.charge_type = 'tip'. Main Stripe webhook must finalize tips
@@ -130,6 +131,7 @@ async function recoverMissingTipRowsFromMetadata(
   const currency = (paymentIntent.currency || 'usd').toUpperCase();
   const message = typeof meta.tipMessage === 'string' ? meta.tipMessage : '';
   const isAnonymous = meta.isAnonymous === 'true';
+  const trackId = typeof meta.trackId === 'string' && meta.trackId.trim() ? meta.trackId.trim() : null;
 
   const { error: ctErr } = await supabase.from('creator_tips').insert({
     creator_id: creatorId,
@@ -156,6 +158,7 @@ async function recoverMissingTipRowsFromMetadata(
     payment_intent_id: paymentIntentId,
     platform_fee: platformFee,
     creator_earnings: creatorEarnings,
+    ...(trackId ? { track_id: trackId } : {}),
   });
   if (tipsErr && (tipsErr as { code?: string }).code !== '23505') {
     console.error('[finalizeTip] recover tips insert:', tipsErr);
@@ -486,6 +489,20 @@ async function finalizeTipFromSucceededPaymentIntentInner(
 
   if (await tipWalletAlreadyCredited(supabase, paymentIntentId)) {
     console.log('[finalizeTip] Wallet already credited for PI (idempotent):', paymentIntentId);
+    const { data: idempotentTipsRow } = await supabase
+      .from('tips')
+      .select('id, sender_id, recipient_id, is_anonymous')
+      .eq('payment_intent_id', paymentIntentId)
+      .maybeSingle();
+    if (idempotentTipsRow?.sender_id && idempotentTipsRow?.recipient_id) {
+      await sendTipThankYouDm(supabase, {
+        creatorId: idempotentTipsRow.recipient_id,
+        tipperId: idempotentTipsRow.sender_id,
+        paymentIntentId,
+        isAnonymous: Boolean(idempotentTipsRow.is_anonymous),
+        tipRowId: idempotentTipsRow.id,
+      });
+    }
     return { ok: true };
   }
 
@@ -672,6 +689,14 @@ async function finalizeTipFromSucceededPaymentIntentInner(
   } catch (e) {
     console.error('[finalizeTip] push:', e);
   }
+
+  await sendTipThankYouDm(supabase, {
+    creatorId,
+    tipperId: senderId,
+    paymentIntentId,
+    isAnonymous,
+    tipRowId: updatedTips?.id ?? null,
+  });
 
   console.log('✅ [finalizeTip] Tip finalized for PI', paymentIntentId);
   return { ok: true };
