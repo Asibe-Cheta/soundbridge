@@ -41,6 +41,9 @@ Sentry.init({
     /__firefox__/,
     "Can't find variable: __firefox__",
     /window\.ethereum/,
+    /MetaMask extension not found/i,
+    /Failed to connect to MetaMask/i,
+    /inpage\.js/i,
   ],
 
   // Enable logs to be sent to Sentry
@@ -67,15 +70,32 @@ Sentry.init({
     // Don't send errors from browser extensions
     if (event.exception?.values?.[0]?.stacktrace?.frames) {
       const frames = event.exception.values[0].stacktrace.frames;
-      const hasExtensionFrame = frames.some(frame =>
-        frame.filename?.includes('extension://') ||
-        frame.filename?.includes('chrome-extension://') ||
-        frame.filename?.includes('moz-extension://')
-      );
+      const hasExtensionFrame = frames.some(frame => {
+        const fn = frame.filename ?? '';
+        return (
+          fn.includes('extension://') ||
+          fn.includes('chrome-extension://') ||
+          fn.includes('moz-extension://') ||
+          fn.includes('inpage.js') ||
+          fn.startsWith('app:///scripts/')
+        );
+      });
 
       if (hasExtensionFrame) {
         return null; // Don't send this error
       }
+    }
+
+    const errMessage =
+      typeof hint?.originalException === 'object' &&
+      hint.originalException !== null &&
+      'message' in hint.originalException
+        ? String((hint.originalException as Error).message)
+        : '';
+    const combined =
+      `${event.exception?.values?.[0]?.value ?? ''} ${event.message ?? ''} ${errMessage}`;
+    if (/MetaMask|inpage\.js/i.test(combined)) {
+      return null;
     }
 
     // Filter out localhost errors in production build
