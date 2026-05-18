@@ -44,6 +44,9 @@ Sentry.init({
     /MetaMask extension not found/i,
     /Failed to connect to MetaMask/i,
     /inpage\.js/i,
+    // Facebook / Instagram iOS in-app browser: WKWebView bridge not available
+    /webkit\.messageHandlers/i,
+    /window\.webkit\.messageHandlers/i,
   ],
 
   // Enable logs to be sent to Sentry
@@ -94,7 +97,18 @@ Sentry.init({
         : '';
     const combined =
       `${event.exception?.values?.[0]?.value ?? ''} ${event.message ?? ''} ${errMessage}`;
-    if (/MetaMask|inpage\.js/i.test(combined)) {
+    if (/MetaMask|inpage\.js|webkit\.messageHandlers/i.test(combined)) {
+      return null;
+    }
+
+    const browserName =
+      (event.tags?.['browser.name'] as string | undefined) ??
+      (event.contexts?.browser?.name as string | undefined) ??
+      '';
+    if (
+      /Facebook|Instagram/i.test(browserName) &&
+      /webkit|messageHandlers|Java object is gone/i.test(combined)
+    ) {
       return null;
     }
 
@@ -107,7 +121,9 @@ Sentry.init({
     const message = event.exception?.values?.[0]?.value ?? event.message ?? '';
     if (
       typeof message === 'string' &&
-      (message.includes('Java object is gone') || message.includes('enableButtonsClickedMetaDataLogging'))
+      (message.includes('Java object is gone') ||
+        message.includes('enableButtonsClickedMetaDataLogging') ||
+        message.includes('webkit.messageHandlers'))
     ) {
       return null;
     }
