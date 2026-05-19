@@ -11,6 +11,8 @@ import {
   type StripePayerProfile,
 } from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { isTippableCreator } from '@/src/lib/tippable-creator';
+import { createServiceClient } from '@/src/lib/supabase';
 
 // Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; local payout at withdrawal.
 const STRIPE_SUPPORTED_CURRENCIES = new Set([
@@ -202,7 +204,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (creatorProfile.role !== 'creator') {
+    const service = createServiceClient();
+    const canReceiveTips = await isTippableCreator(
+      service,
+      creatorId,
+      creatorProfile.role,
+    );
+    if (!canReceiveTips) {
       return NextResponse.json(
         { error: 'Tips can only be sent to creator accounts' },
         { status: 400, headers: corsHeaders }
