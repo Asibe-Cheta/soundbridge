@@ -281,7 +281,7 @@ export function FanLandingClient({
     'https://play.google.com/store';
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#07070c] text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       <div
         className="pointer-events-none fixed inset-0 opacity-90"
         style={{

@@ -5,7 +5,7 @@ import { getSiteUrl } from '@/src/lib/site-url';
 export default function FanLandingNotFound() {
   const origin = getSiteUrl();
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center px-6 text-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col items-center justify-center px-6 text-center">
       <Image
         src="/images/logos/logo-trans-lockup.png"
         alt="SoundBridge"
