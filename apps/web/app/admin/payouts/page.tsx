@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { CheckCircle, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
+import { FincraApiLogPanel } from '@/src/components/admin/FincraApiLogPanel';
+import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 
 type PendingPayoutRequest = {
   id: string;
@@ -73,9 +75,14 @@ export default function AdminPayoutsPage() {
   type BatchResult = {
     processed: number;
     unsupported: Array<{ payout_request_id: string; reason: string }>;
-    submissionErrors: Array<{ payout_request_id: string; error: string }>;
+    submissionErrors: Array<{
+      payout_request_id: string;
+      error: string;
+      fincra_api_log?: FincraApiExchange | null;
+    }>;
   };
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult | null>(null);
+  const [fincraApiLog, setFincraApiLog] = useState<FincraApiExchange | null>(null);
   const cardClass = dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const textClass = dark ? 'text-white' : 'text-gray-900';
   const mutedClass = dark ? 'text-gray-400' : 'text-gray-500';
@@ -139,10 +146,12 @@ export default function AdminPayoutsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payout_request_id: payoutRequestId }),
       });
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
+        if (json.fincra_api_log) setFincraApiLog(json.fincra_api_log as FincraApiExchange);
         throw new Error(json.message || json.error || 'Failed to approve payout');
       }
+      if (json.fincra_api_log) setFincraApiLog(json.fincra_api_log as FincraApiExchange);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to approve payout');
@@ -218,11 +227,18 @@ export default function AdminPayoutsPage() {
       setLastBatchResult({
         processed: data.processed?.length ?? 0,
         unsupported: data.unsupported ?? [],
-        submissionErrors: (data.submissionErrors ?? []).map((e: { payout_request_id?: string; error?: string }) => ({
-          payout_request_id: String(e.payout_request_id ?? ''),
-          error: String(e.error ?? ''),
-        })),
+        submissionErrors: (data.submissionErrors ?? []).map(
+          (e: { payout_request_id?: string; error?: string; fincra_api_log?: FincraApiExchange }) => ({
+            payout_request_id: String(e.payout_request_id ?? ''),
+            error: String(e.error ?? ''),
+            fincra_api_log: e.fincra_api_log ?? null,
+          }),
+        ),
       });
+      const firstErr = (data.submissionErrors ?? []).find(
+        (e: { fincra_api_log?: FincraApiExchange }) => e.fincra_api_log,
+      );
+      if (firstErr?.fincra_api_log) setFincraApiLog(firstErr.fincra_api_log);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to process batch');
     } finally {
@@ -332,6 +348,17 @@ export default function AdminPayoutsPage() {
         </div>
       )}
 
+      {fincraApiLog && (
+        <div className="mb-6">
+          <FincraApiLogPanel
+            log={fincraApiLog}
+            title="Latest Fincra payout request / response"
+            dark={dark}
+            onDismiss={() => setFincraApiLog(null)}
+          />
+        </div>
+      )}
+
       {lastBatchResult && (
         <div className={`mb-6 rounded-lg border p-4 ${cardClass}`}>
           <div className="flex items-center justify-between mb-3">
@@ -376,6 +403,15 @@ export default function AdminPayoutsPage() {
                   return (
                     <li key={idx} className={dark ? 'text-red-300' : 'text-red-700'}>
                       <strong>{name}</strong>: {se.error}
+                      {se.fincra_api_log ? (
+                        <button
+                          type="button"
+                          className={`ml-2 text-xs underline ${mutedClass}`}
+                          onClick={() => setFincraApiLog(se.fincra_api_log!)}
+                        >
+                          View Fincra log
+                        </button>
+                      ) : null}
                     </li>
                   );
                 })}

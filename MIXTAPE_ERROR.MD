@@ -1,0 +1,6 @@
+| Timestamp | Type | Category | Level | Message | Data |
+|-----------|------|----------|-------|---------|------|
+| 2026-03-31T17:57:42.460Z | http | http | warning |  | {"http.method":"GET","http.query":"?select=id%2Ctitle%2Ccover_image_url%2Cgenre%2Ccreator%3Aprofiles%21audio_tracks_creator_id_fkey%28username%2Cdisplay_name%29&id=eq.2108ec3c-a1dd-47ec-9e13-46aecda5eed7","status_code":400,"url":"https://aunxdbqukbxyyiusaeqi.supabase.co/rest/v1/audio_tracks"} |
+| 2026-03-31T17:57:42.469Z | http | http | info |  | {"http.method":"GET","http.query":"?select=*%2Ccreator%3Aprofiles%21audio_tracks_creator_id_fkey%28id%2Cusername%2Cdisplay_name%2Cavatar_url%29&id=eq.2108ec3c-a1dd-47ec-9e13-46aecda5eed7","status_code":200,"url":"https://aunxdbqukbxyyiusaeqi.supabase.co/rest/v1/audio_tracks"} |
+| 2026-03-31T17:57:42.656Z | http | http | info |  | {"http.method":"GET","http.query":"?select=id%2Cstatus&content_id=eq.2108ec3c-a1dd-47ec-9e13-46aecda5eed7&content_type=eq.track&order=created_at.desc&limit=1","status_code":200,"url":"https://aunxdbqukbxyyiusaeqi.supabase.co/rest/v1/takedowns"} |
+| 2026-03-31T17:57:42.661Z | error | exception | error |  | {"type":"ReferenceError","value":"isMixtape is not defined"} |

@@ -1,6 +1,11 @@
 import { createHmac } from 'crypto';
 import { fetch as undiciFetch, ProxyAgent } from 'undici';
 import type { Dispatcher } from 'undici';
+import {
+  buildFincraApiExchange,
+  type FincraApiExchange,
+  type FincraHttpError,
+} from '@/src/lib/fincra-api-exchange';
 
 export type FincraCurrency = 'NGN' | 'GHS' | 'KES';
 
@@ -13,7 +18,11 @@ export type FincraTransferResult = {
   id: string;
   status: string;
   raw: Record<string, unknown>;
+  /** Last HTTP exchange with Fincra (redacted curl + response) for admin debugging. */
+  apiExchange?: FincraApiExchange;
 };
+
+export type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 
 export type FincraPayoutStatusResult = {
   status: string;
@@ -142,7 +151,11 @@ function getFixieDispatcher(): Dispatcher | undefined {
   return fixieProxy;
 }
 
-async function fincraHttp<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function fincraHttpExchange<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<{ data: T; exchange: FincraApiExchange }> {
   logFincraConfigFingerprintOnce();
   const { baseUrl, apiKey, publicKey } = getFincraConfig();
   if (!apiKey) throw new Error('FINCRA_API_KEY is not configured');
@@ -164,15 +177,32 @@ async function fincraHttp<T>(method: string, path: string, body?: unknown): Prom
   });
 
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  const exchange = buildFincraApiExchange({
+    method,
+    url,
+    headers,
+    body,
+    responseStatus: response.status,
+    responseBody: data,
+  });
+
+  console.info('[fincra] api exchange', {
+    method: exchange.method,
+    url: exchange.url,
+    status: exchange.response_status,
+    curl: exchange.curl,
+    response_body: exchange.response_body,
+  });
+
   if (response.status >= 400) {
     const details =
       (typeof data.message === 'string' && data.message) ||
       (typeof data.error === 'string' && data.error) ||
       `Fincra request failed (${response.status})`;
-    const err = new Error(details) as Error & { status?: number; details?: unknown };
+    const err = new Error(details) as FincraHttpError;
     err.status = response.status;
     err.details = data;
-    // Keep this at error-level so it appears even when info logs are filtered out.
+    err.fincraExchange = exchange;
     console.error('[fincra] request failed', {
       method,
       path,
@@ -182,11 +212,17 @@ async function fincraHttp<T>(method: string, path: string, body?: unknown): Prom
         (typeof data.error === 'string' && data.error) ||
         'unknown',
       debug: buildFincraDebugMeta(),
+      fincra_exchange: exchange,
     });
     throw err;
   }
 
-  return data as T;
+  return { data: data as T, exchange };
+}
+
+async function fincraHttp<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const { data } = await fincraHttpExchange<T>(method, path, body);
+  return data;
 }
 
 export function isFincraCurrency(currency: string | null | undefined): currency is FincraCurrency {
@@ -318,7 +354,7 @@ export async function createFincraTransfer(params: {
     };
   }
 
-  const payload = await fincraHttp<{
+  const { data: payload, exchange } = await fincraHttpExchange<{
     data?: { id?: string; reference?: string; status?: string; customerReference?: string };
   }>('POST', '/disbursements/payouts', body);
 
@@ -328,7 +364,12 @@ export async function createFincraTransfer(params: {
     (payload.data as { customerReference?: string } | undefined)?.customerReference ??
     params.reference;
   const status = payload.data?.status ?? 'pending';
-  return { id: String(id), status: String(status), raw: payload as Record<string, unknown> };
+  return {
+    id: String(id),
+    status: String(status),
+    raw: payload as Record<string, unknown>,
+    apiExchange: exchange,
+  };
 }
 
 /** GET /disbursements/payouts/customer-reference/:reference */

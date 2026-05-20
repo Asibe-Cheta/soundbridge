@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
+import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,12 +53,18 @@ function httpStatusFromError(err: unknown): number | undefined {
 /**
  * Payout failures: always 422 (not 500) so the admin UI can show the reason without treating it as a server bug.
  */
+function fincraExchangeFromError(err: unknown): FincraApiExchange | null {
+  const ex = (err as { fincraExchange?: FincraApiExchange })?.fincraExchange;
+  return ex ?? null;
+}
+
 function buildPayoutFailureResponse(err: unknown): NextResponse {
   const e = err as {
     message?: string;
     error?: string;
     code?: string | number;
     details?: unknown;
+    fincraExchange?: FincraApiExchange;
   };
   const raw =
     (typeof e?.message === 'string' && e.message.trim()
@@ -87,6 +94,8 @@ function buildPayoutFailureResponse(err: unknown): NextResponse {
   };
   if (e?.code != null) body.code = e.code;
   if (e?.details != null) body.details = e.details;
+  const exchange = e.fincraExchange ?? fincraExchangeFromError(err);
+  if (exchange) body.fincra_api_log = exchange;
 
   return NextResponse.json(body, { status: 422, headers: corsHeaders });
 }
@@ -273,6 +282,7 @@ export async function POST(request: NextRequest) {
             payout_request_id,
             transfer_id: payout.id,
             payout,
+            fincra_api_log: payout.apiExchange ?? null,
           },
           { status: 200, headers: corsHeaders }
         );

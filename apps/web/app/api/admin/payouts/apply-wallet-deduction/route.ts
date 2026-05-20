@@ -1,6 +1,5 @@
 /**
  * Admin repair: apply wallet deduction for a payout_request (idempotent).
- * Use when status is completed but creator wallet was never debited.
  * POST /api/admin/payouts/apply-wallet-deduction
  * Body: { payout_request_id: string }
  */

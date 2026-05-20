@@ -43,11 +43,25 @@ export async function mergeCreatorRevenueSummaryWithWallet(
   /** When creator_revenue was never updated, fall back to sum of RPC breakdown columns. */
   const totalEarned = totalEarnedCr > 0.005 ? totalEarnedCr : sumFromBreakdown;
 
+  let withdrawable = Math.max(availableCr, walletUsd);
+  let pendingPayoutRequests = 0;
+  const { data: eligibility } = await supabase.rpc('get_payout_eligibility', {
+    p_creator_id: userId,
+    p_bank_currency: null,
+  });
+  if (eligibility && typeof eligibility === 'object') {
+    const elig = eligibility as Record<string, unknown>;
+    withdrawable = toNum(elig.withdrawable_amount);
+    pendingPayoutRequests = toNum(elig.pending_requests);
+  }
+
   return {
     total_earned: totalEarned,
     total_paid_out: toNum(row.total_paid_out),
     pending_balance: toNum(row.pending_balance),
-    available_balance: Math.max(availableCr, walletUsd),
+    available_balance: withdrawable,
+    wallet_balance: walletUsd,
+    pending_payout_requests: pendingPayoutRequests,
     this_month_earnings: toNum(row.this_month_earnings),
     last_month_earnings: toNum(row.last_month_earnings),
     total_tips: totalTips,

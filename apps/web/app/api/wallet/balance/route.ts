@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { mergeCreatorRevenueSummaryWithWallet } from '@/src/lib/creator-revenue-summary-merge';
+import { mapRevenueSummaryToClient } from '@/src/lib/revenue-api-mapper';
 
 export async function GET(request: NextRequest) {
   const corsHeaders = {
@@ -57,6 +59,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    async function loadEarningsSummary() {
+      const { data: summaryRows, error: summaryError } = await supabase.rpc(
+        'get_creator_revenue_summary',
+        { user_uuid: user!.id },
+      );
+      if (summaryError || !summaryRows?.length) {
+        return mapRevenueSummaryToClient({
+          total_earned: 0,
+          total_paid_out: 0,
+          pending_balance: 0,
+          available_balance: 0,
+          wallet_balance: 0,
+          pending_payout_requests: 0,
+          this_month_earnings: 0,
+          last_month_earnings: 0,
+          total_tips: 0,
+          total_track_sales: 0,
+          total_subscriptions: 0,
+        });
+      }
+      const merged = await mergeCreatorRevenueSummaryWithWallet(
+        supabase,
+        user!.id,
+        summaryRows[0] as Record<string, unknown>,
+      );
+      return mapRevenueSummaryToClient(merged);
+    }
+
     const { searchParams } = new URL(request.url);
     const currencyParam = searchParams.get('currency');
 
@@ -78,12 +108,14 @@ export async function GET(request: NextRequest) {
       const list = (wallets ?? []) as { balance: number; currency: string }[];
       const usdWallet = list.find((w) => w.currency === 'USD');
       const primary = usdWallet ?? list.find((w) => Number(w.balance) > 0) ?? list[0];
+      const earnings = await loadEarningsSummary();
       return NextResponse.json(
         {
           balance: primary ? Number(primary.balance) : 0,
           currency: primary?.currency ?? 'USD',
           hasWallet: list.length > 0,
           wallets: list.map((w) => ({ currency: w.currency, balance: Number(w.balance) })),
+          earnings,
         },
         { status: 200, headers: corsHeaders }
       );
@@ -106,11 +138,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const earnings = await loadEarningsSummary();
     return NextResponse.json(
       {
         balance: wallet?.balance || 0,
         currency: wallet?.currency || currency,
         hasWallet: !!wallet,
+        earnings,
       },
       { status: 200, headers: corsHeaders }
     );

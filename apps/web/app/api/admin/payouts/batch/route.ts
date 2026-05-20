@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
+import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
 
 const CORS = {
@@ -77,8 +78,16 @@ export async function POST(request: NextRequest) {
 
     const unsupported: Array<{ payout_request_id: string; reason: string }> = [];
     const belowMinimum: Array<{ payout_request_id: string; reason: string }> = [];
-    const processed: Array<{ payout_request_id: string; transfer_id: string }> = [];
-    const submissionErrors: Array<{ payout_request_id: string; error: string }> = [];
+    const processed: Array<{
+      payout_request_id: string;
+      transfer_id: string;
+      fincra_api_log?: FincraApiExchange | null;
+    }> = [];
+    const submissionErrors: Array<{
+      payout_request_id: string;
+      error: string;
+      fincra_api_log?: FincraApiExchange | null;
+    }> = [];
     for (const pr of pending) {
       const creatorId = pr.creator_id;
       const requestId = pr.id;
@@ -137,11 +146,16 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', requestId);
 
-        processed.push({ payout_request_id: requestId, transfer_id: transfer.id });
+        processed.push({
+          payout_request_id: requestId,
+          transfer_id: transfer.id,
+          fincra_api_log: transfer.apiExchange ?? null,
+        });
       } catch (err: any) {
         submissionErrors.push({
           payout_request_id: requestId,
           error: err?.message || 'Fincra payout submission failed',
+          fincra_api_log: err?.fincraExchange ?? null,
         });
       }
     }

@@ -3,13 +3,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export type PayoutBalanceDeductionResult = {
   success: boolean;
   already_deducted?: boolean;
-  wallet_balance?: number;
-  wallet_transaction_id?: string;
-  creator_revenue_deducted?: number;
-  currency?: string;
   error?: string;
   wallet_balance_available?: number;
   required?: number;
+  wallet_transaction_id?: string;
+  wallet_balance?: number;
+  creator_revenue_deducted?: number;
+  currency?: string;
 };
 
 export async function completePayoutRequestBalanceDeduction(
@@ -21,32 +21,35 @@ export async function completePayoutRequestBalanceDeduction(
     currency?: string;
   },
 ): Promise<PayoutBalanceDeductionResult> {
+  const { creatorId, amount, payoutRequestId, currency = 'USD' } = params;
+
   const { data, error } = await supabase.rpc('complete_payout_request_balance_deduction', {
-    p_creator_id: params.creatorId,
-    p_amount: Number(params.amount),
-    p_payout_request_id: params.payoutRequestId,
-    p_currency: (params.currency ?? 'USD').toUpperCase(),
+    p_creator_id: creatorId,
+    p_amount: amount,
+    p_payout_request_id: payoutRequestId,
+    p_currency: currency,
   });
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  const row = (data ?? {}) as Record<string, unknown>;
+  const result = (data ?? {}) as Record<string, unknown>;
+  if (result.success === false) {
+    return {
+      success: false,
+      error: String(result.error ?? 'deduction_failed'),
+      wallet_balance_available: Number(result.wallet_balance ?? 0),
+      required: Number(result.required ?? amount),
+    };
+  }
+
   return {
-    success: row.success === true,
-    already_deducted: row.already_deducted === true,
-    wallet_balance: row.wallet_balance != null ? Number(row.wallet_balance) : undefined,
-    wallet_transaction_id:
-      typeof row.wallet_transaction_id === 'string' ? row.wallet_transaction_id : undefined,
-    creator_revenue_deducted:
-      row.creator_revenue_deducted != null ? Number(row.creator_revenue_deducted) : undefined,
-    currency: typeof row.currency === 'string' ? row.currency : undefined,
-    error: typeof row.error === 'string' ? row.error : undefined,
-    wallet_balance_available:
-      row.wallet_balance != null && row.success === false
-        ? Number(row.wallet_balance)
-        : undefined,
-    required: row.required != null ? Number(row.required) : undefined,
+    success: true,
+    already_deducted: Boolean(result.already_deducted),
+    wallet_transaction_id: result.wallet_transaction_id as string | undefined,
+    wallet_balance: Number(result.wallet_balance ?? 0),
+    creator_revenue_deducted: Number(result.creator_revenue_deducted ?? 0),
+    currency: String(result.currency ?? currency),
   };
 }

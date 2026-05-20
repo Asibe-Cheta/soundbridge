@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { mergeCreatorRevenueSummaryWithWallet } from '@/src/lib/creator-revenue-summary-merge';
+import { mapRevenueSummaryToClient } from '@/src/lib/revenue-api-mapper';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,20 +89,8 @@ export async function GET(request: NextRequest) {
 
     const merged = await mergeCreatorRevenueSummaryWithWallet(supabase, user.id, row as Record<string, unknown>);
     return NextResponse.json(
-      {
-        revenue: {
-          totalEarned: merged.total_earned,
-          totalPaidOut: merged.total_paid_out,
-          pendingBalance: merged.pending_balance,
-          availableBalance: merged.available_balance,
-          thisMonthEarnings: merged.this_month_earnings,
-          lastMonthEarnings: merged.last_month_earnings,
-          totalTips: merged.total_tips,
-          totalTrackSales: merged.total_track_sales,
-          totalSubscriptions: merged.total_subscriptions,
-        },
-      },
-      { status: 200, headers: corsHeaders }
+      { revenue: mapRevenueSummaryToClient(merged) },
+      { status: 200, headers: corsHeaders },
     );
   } catch (err) {
     console.error('Error in revenue balance GET:', err);
