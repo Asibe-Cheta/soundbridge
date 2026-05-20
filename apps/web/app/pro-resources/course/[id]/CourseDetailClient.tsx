@@ -19,7 +19,13 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
   const cardBg = theme === 'dark' ? 'bg-white/[0.05]' : 'bg-white';
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+    <div
+      className={`min-h-screen ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+          : 'bg-gray-50'
+      }`}
+    >
       <section
         className="px-6 pt-3 pb-7"
         style={{

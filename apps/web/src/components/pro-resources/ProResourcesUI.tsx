@@ -49,8 +49,11 @@ function cardBg(theme: string) {
 export function ProResourcesBackButton({ onGradient = false }: { onGradient?: boolean }) {
   const router = useRouter();
   const { theme } = useTheme();
-  const color =
-    onGradient || theme === 'dark' ? 'text-white' : 'text-gray-900';
+  const color = onGradient
+    ? 'text-white'
+    : theme === 'dark'
+      ? 'text-white'
+      : 'text-gray-900';
   return (
     <button
       type="button"

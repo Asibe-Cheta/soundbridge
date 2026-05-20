@@ -20,8 +20,8 @@ export default function ProResourcesPage() {
     <div
       className={`min-h-screen ${
         theme === 'dark'
-          ? 'bg-black text-white'
-          : 'bg-white text-gray-900'
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900'
+          : 'bg-gray-50'
       }`}
     >
       <div className="pt-2 px-2">
