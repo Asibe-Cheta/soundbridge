@@ -299,6 +299,50 @@ export async function validateFincraBankAccount(params: {
   return { accountName, valid, raw: payload as Record<string, unknown> };
 }
 
+/** Cross-currency disbursements require a quote within ~30s (Fincra docs). */
+function needsFincraDisbursementQuote(sourceCurrency: string, destinationCurrency: string): boolean {
+  return sourceCurrency.toUpperCase() !== destinationCurrency.toUpperCase();
+}
+
+/**
+ * POST /quotes/generate — required before cross-currency POST /disbursements/payouts.
+ * @see https://docs.fincra.com/docs/cross-border-payouts
+ */
+async function generateFincraDisbursementQuote(params: {
+  sourceCurrency: string;
+  destinationCurrency: FincraCurrency;
+  amount: number;
+}): Promise<string> {
+  const { businessId } = getFincraConfig();
+  if (!businessId) throw new Error('FINCRA_BUSINESS_ID is not configured');
+
+  const { data: payload } = await fincraHttpExchange<{
+    success?: boolean;
+    message?: string;
+    data?: { reference?: string };
+  }>('POST', '/quotes/generate', {
+    sourceCurrency: params.sourceCurrency.toUpperCase(),
+    destinationCurrency: params.destinationCurrency.toUpperCase(),
+    amount: String(params.amount),
+    action: 'send',
+    transactionType: 'disbursement',
+    business: businessId,
+    feeBearer: 'business',
+    paymentDestination: 'bank_account',
+    beneficiaryType: 'individual',
+  });
+
+  const quoteReference = payload.data?.reference?.trim();
+  if (!quoteReference) {
+    throw new Error(
+      typeof payload.message === 'string' && payload.message
+        ? payload.message
+        : 'Fincra quote did not return a reference',
+    );
+  }
+  return quoteReference;
+}
+
 export async function createFincraTransfer(params: {
   amount: number;
   currency: FincraCurrency;
@@ -335,6 +379,14 @@ export async function createFincraTransfer(params: {
       },
     };
   } else {
+    const quoteReference = needsFincraDisbursementQuote(sourceCurrency, params.currency)
+      ? await generateFincraDisbursementQuote({
+          sourceCurrency,
+          destinationCurrency: params.currency,
+          amount: params.amount,
+        })
+      : undefined;
+
     body = {
       sourceCurrency,
       destinationCurrency: params.currency,
@@ -352,6 +404,7 @@ export async function createFincraTransfer(params: {
       },
       paymentDestination: 'bank_account',
       business: businessId,
+      ...(quoteReference ? { quoteReference } : {}),
     };
   }
 
