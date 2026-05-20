@@ -157,16 +157,14 @@ async function fincraHttpExchange<T>(
   body?: unknown,
 ): Promise<{ data: T; exchange: FincraApiExchange }> {
   logFincraConfigFingerprintOnce();
-  const { baseUrl, apiKey, publicKey } = getFincraConfig();
+  const { baseUrl, apiKey } = getFincraConfig();
   if (!apiKey) throw new Error('FINCRA_API_KEY is not configured');
 
   const url = `${baseUrl.replace(/\/+$/, '')}${path}`;
   const headers: Record<string, string> = {
     'api-key': apiKey,
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${apiKey}`,
   };
-  if (publicKey) headers['x-pub-key'] = publicKey;
 
   const dispatcher = getFixieDispatcher();
   const response = await undiciFetch(url, {
