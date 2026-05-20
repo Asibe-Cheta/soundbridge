@@ -10,6 +10,7 @@ import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
 import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
 import { Post } from '@/src/lib/types/post';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
+import { ProResourcesFeedBanner } from '@/src/components/pro-resources/ProResourcesFeedBanner';
 import Image from 'next/image';
 import { useSocial } from '@/src/hooks/useSocial';
 
@@ -336,6 +337,8 @@ export default function FeedPage() {
                 </button>
               </div>
             </div>
+
+            <ProResourcesFeedBanner />
 
             {/* Posts Feed */}
             {posts.length === 0 && !loading ? (

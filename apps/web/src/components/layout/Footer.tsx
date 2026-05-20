@@ -123,7 +123,7 @@ export function Footer() {
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Calendar size={isMobile ? 12 : 16} /> Create Event
             </Link>
-            <Link href="/resources" style={{ 
+            <Link href="/pro-resources" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
               padding: isMobile ? '0.3rem' : '0.5rem', 

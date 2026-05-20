@@ -19,7 +19,7 @@ import type { AudioTrack as SearchAudioTrack } from '../../src/lib/types/search'
 import type { AudioTrack } from '../../src/lib/types/audio';
 import ShareModal from '@/src/components/social/ShareModal';
 import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
-import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, BookOpen, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, Briefcase } from 'lucide-react';
+import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, BookOpen, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, Briefcase, GraduationCap } from 'lucide-react';
 
 export default function DiscoverPage() {
   const router = useRouter();
@@ -1621,13 +1621,36 @@ export default function DiscoverPage() {
             </span>
           </div>
         )}
-        {/* Filters Button - Top Right */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'flex-end', 
-          padding: '1rem 2rem 0',
-          marginBottom: '1rem'
-        }}>
+        {/* Header actions — Pro Resources + notifications + filters */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '0.75rem',
+            padding: '1rem 2rem 0',
+            marginBottom: '1rem',
+          }}
+        >
+          <Link
+            href="/pro-resources"
+            className="p-2 rounded-lg transition-opacity hover:opacity-80"
+            aria-label="Pro Resources"
+            title="Pro Resources"
+          >
+            <GraduationCap
+              size={24}
+              className={theme === 'dark' ? 'text-white' : 'text-gray-900'}
+            />
+          </Link>
+          <Link
+            href="/notifications"
+            className="p-2 rounded-lg transition-opacity hover:opacity-80"
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <Bell size={24} className={theme === 'dark' ? 'text-white' : 'text-gray-900'} />
+          </Link>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${

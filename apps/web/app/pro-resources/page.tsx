@@ -1,0 +1,59 @@
+'use client';
+
+import { useState } from 'react';
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { Footer } from '@/src/components/layout/Footer';
+import {
+  HertsUniTab,
+  ProResourcesBackButton,
+  ProResourcesTabBar,
+  SoundAcademyTab,
+  Talk2DanTab,
+} from '@/src/components/pro-resources/ProResourcesUI';
+import type { ProResourcesTabId } from '@/src/content/pro-resources/data';
+
+export default function ProResourcesPage() {
+  const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState<ProResourcesTabId>('sound-academy');
+
+  return (
+    <div
+      className={`min-h-screen ${
+        theme === 'dark'
+          ? 'bg-black text-white'
+          : 'bg-white text-gray-900'
+      }`}
+    >
+      <div className="pt-2 px-2">
+        <ProResourcesBackButton />
+      </div>
+
+      <header className="px-6 pt-2 pb-6">
+        <h1
+          className={`text-[52px] font-light tracking-[-1px] leading-[1.05] mb-2 whitespace-pre-line ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}
+        >
+          Pro{'\n'}Resources
+        </h1>
+        <p
+          className={`text-[15px] tracking-[0.5px] ${
+            theme === 'dark' ? 'text-white/55' : 'text-gray-600'
+          }`}
+        >
+          Courses, coaching & career tools from our partners
+        </p>
+      </header>
+
+      <ProResourcesTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <div className="pb-10">
+        {activeTab === 'sound-academy' && <SoundAcademyTab />}
+        {activeTab === 'talk2dan' && <Talk2DanTab />}
+        {activeTab === 'herts' && <HertsUniTab />}
+      </div>
+
+      <Footer />
+    </div>
+  );
+}
