@@ -98,15 +98,13 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
         <div style={{ padding: isMobile ? '1rem' : '2rem' }}>
           <div className="text-center" style={{ marginBottom: isMobile ? '1.5rem' : '2rem' }}>
             <h2 className="font-bold text-white" style={{
-              fontSize: isMobile ? '1.3rem' : '1.875rem',
-              marginBottom: isMobile ? '0.5rem' : '0.75rem',
+                            marginBottom: isMobile ? '0.5rem' : '0.75rem',
               lineHeight: isMobile ? '1.3' : '1.1'
             }}>
               Choose Your Role
             </h2>
             <p className="text-white/70" style={{
-              fontSize: isMobile ? '0.9rem' : '1.125rem',
-              lineHeight: '1.6'
+                            lineHeight: '1.6'
             }}>
               What kind of creator are you? This helps us personalize your experience.
             </p>
@@ -142,14 +140,12 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-white group-hover:text-pink-300 transition-colors" style={{
-                        fontSize: isMobile ? '0.8rem' : '1rem',
-                        marginBottom: isMobile ? '0.25rem' : '0.25rem'
+                                                marginBottom: isMobile ? '0.25rem' : '0.25rem'
                       }}>
                         {role.title}
                       </h3>
                       <p className="text-white/70 leading-relaxed" style={{
-                        fontSize: isMobile ? '0.7rem' : '0.75rem'
-                      }}>
+                                              }}>
                         {role.description}
                       </p>
                     </div>
@@ -174,15 +170,13 @@ export function RoleSelectionModal({ isOpen, onClose }: RoleSelectionModalProps)
               style={{
                 gap: isMobile ? '0.25rem' : '0.5rem',
                 padding: isMobile ? '0.5rem 0.75rem' : '0.75rem',
-                fontSize: isMobile ? '0.8rem' : '0.875rem'
-              }}
+                              }}
             >
               <SkipForward size={isMobile ? 14 : 16} />
               <span>Skip role selection</span>
             </button>
             <p className="text-white/50 text-center" style={{
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              lineHeight: '1.4'
+                            lineHeight: '1.4'
             }}>
               Don't worry, you can always change this later in your profile settings.
             </p>

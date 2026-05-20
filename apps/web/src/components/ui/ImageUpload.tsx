@@ -131,7 +131,7 @@ export function ImageUpload({
             <ImageIcon size={48} style={{ color: '#EC4899', marginBottom: '1rem' }} />
             <h4 style={{ marginBottom: '0.5rem', fontWeight: '600' }}>{title}</h4>
             <p style={{ color: '#999', marginBottom: '1rem' }}>{subtitle}</p>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>
+            <div style={{ color: '#666' }}>
               Supports: JPG, PNG, WebP, AVIF (Max {maxSize / 1024 / 1024}MB)
             </div>
           </div>
@@ -190,7 +190,7 @@ export function ImageUpload({
               <ImageIcon size={24} style={{ color: '#EC4899' }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: '600' }}>{selectedFile.name}</div>
-                <div style={{ color: '#999', fontSize: '0.9rem' }}>
+                <div style={{ color: '#999' }}>
                   {formatFileSize(selectedFile.size)}
                 </div>
               </div>
@@ -201,8 +201,8 @@ export function ImageUpload({
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Loader2 size={16} style={{ color: '#EC4899', animation: 'spin 1s linear infinite' }} />
-                  <span style={{ fontSize: '0.9rem' }}>Uploading...</span>
-                  <span style={{ fontSize: '0.8rem', color: '#999' }}>
+                  <span style={{ }}>Uploading...</span>
+                  <span style={{ color: '#999' }}>
                     {Math.round(uploadProgress)}%
                   </span>
                 </div>
@@ -249,8 +249,7 @@ export function ImageUpload({
           border: '1px solid rgba(239, 68, 68, 0.3)',
           borderRadius: '8px',
           color: '#EF4444',
-          fontSize: '0.9rem'
-        }}>
+                  }}>
           {error}
         </div>
       )}

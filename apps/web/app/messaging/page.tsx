@@ -143,7 +143,6 @@ export default function MessagingPage() {
               padding: '0.75rem 1.5rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '1rem',
               fontWeight: '600'
             }}>
               Go to Login
@@ -203,7 +202,7 @@ export default function MessagingPage() {
               alignItems: 'center',
               justifyContent: 'space-between'
             }}>
-              <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', margin: 0 }}>
+              <h2 style={{ color: 'white', fontWeight: '600', margin: 0 }}>
                 Messages
               </h2>
               {unreadCount > 0 && (
@@ -217,7 +216,6 @@ export default function MessagingPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.75rem',
                   fontWeight: '600'
                 }}>
                   {unreadCount > 99 ? '99+' : unreadCount}
@@ -247,8 +245,7 @@ export default function MessagingPage() {
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '8px',
                     color: 'white',
-                    fontSize: '0.9rem'
-                  }}
+                    }}
                 />
               </div>
             </div>
@@ -280,10 +277,10 @@ export default function MessagingPage() {
                   color: '#999'
                 }}>
                   <MessageCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                  <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  <p style={{ margin: 0 }}>
                     No conversations yet
                   </p>
-                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', opacity: 0.7 }}>
+                  <p style={{ margin: '0.5rem 0 0 0', opacity: 0.7 }}>
                     Start a conversation with other users
                   </p>
                 </div>
@@ -333,7 +330,6 @@ export default function MessagingPage() {
                         justifyContent: 'center',
                         color: 'white',
                         fontWeight: '600',
-                        fontSize: '1.1rem',
                         flexShrink: 0
                       }}>
                         {otherUser?.display_name?.charAt(0) || otherUser?.username?.charAt(0) || '?'}
@@ -361,7 +357,6 @@ export default function MessagingPage() {
                         }}>
                           <h3 style={{
                             color: 'white',
-                            fontSize: '0.95rem',
                             fontWeight: '600',
                             margin: 0,
                             whiteSpace: 'nowrap',
@@ -372,7 +367,6 @@ export default function MessagingPage() {
                           </h3>
                           <span style={{
                             color: '#999',
-                            fontSize: '0.75rem',
                             flexShrink: 0
                           }}>
                             {conversation.lastMessage ? formatTimestamp(conversation.lastMessage.created_at) : ''}
@@ -380,7 +374,6 @@ export default function MessagingPage() {
                         </div>
                         <p style={{
                           color: '#ccc',
-                          fontSize: '0.85rem',
                           margin: 0,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -401,7 +394,6 @@ export default function MessagingPage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '0.7rem',
                           fontWeight: '600',
                           flexShrink: 0
                         }}>
@@ -443,8 +435,7 @@ export default function MessagingPage() {
                       justifyContent: 'center',
                       color: 'white',
                       fontWeight: '600',
-                      fontSize: '1rem'
-                    }}>
+                      }}>
                       {(() => {
                         const conversation = conversations.find(c => c.id === selectedConversationId);
                         const otherUser = conversation ? getOtherParticipant(conversation) : null;
@@ -452,14 +443,14 @@ export default function MessagingPage() {
                       })()}
                     </div>
                     <div>
-                      <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: '600', margin: 0 }}>
+                      <h3 style={{ color: 'white', fontWeight: '600', margin: 0 }}>
                         {(() => {
                           const conversation = conversations.find(c => c.id === selectedConversationId);
                           const otherUser = conversation ? getOtherParticipant(conversation) : null;
                           return otherUser?.display_name || otherUser?.username || 'Unknown User';
                         })()}
                       </h3>
-                      <p style={{ color: '#999', fontSize: '0.85rem', margin: 0 }}>
+                      <p style={{ color: '#999', margin: 0 }}>
                         {typingUsers.length > 0
                           ? 'Typing...'
                           : (() => {
@@ -516,10 +507,10 @@ export default function MessagingPage() {
                       color: '#999'
                     }}>
                       <MessageCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                      <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                      <p style={{ margin: 0 }}>
                         No messages yet
                       </p>
-                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', opacity: 0.7 }}>
+                      <p style={{ margin: '0.5rem 0 0 0', opacity: 0.7 }}>
                         Start the conversation by sending a message
                       </p>
                     </div>
@@ -541,7 +532,6 @@ export default function MessagingPage() {
                             : 'rgba(255, 255, 255, 0.1)',
                           border: message.sender_id !== user.id ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
                           color: 'white',
-                          fontSize: '0.9rem',
                           lineHeight: '1.4'
                         }}>
                           <p style={{ margin: 0, marginBottom: '0.25rem' }}>
@@ -549,8 +539,7 @@ export default function MessagingPage() {
                           </p>
                           <span style={{
                             color: message.sender_id === user.id ? 'rgba(255, 255, 255, 0.8)' : '#999',
-                            fontSize: '0.75rem'
-                          }}>
+                            }}>
                             {formatMessageTime(message.created_at)}
                           </span>
                         </div>
@@ -584,7 +573,6 @@ export default function MessagingPage() {
                           border: '1px solid rgba(255, 255, 255, 0.2)',
                           borderRadius: '12px',
                           color: 'white',
-                          fontSize: '0.9rem',
                           resize: 'none',
                           outline: 'none',
                           fontFamily: 'inherit'
@@ -638,10 +626,10 @@ export default function MessagingPage() {
                 textAlign: 'center'
               }}>
                 <MessageCircle size={64} style={{ color: '#666', marginBottom: '1rem' }} />
-                <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>
                   Select a conversation
                 </h3>
-                <p style={{ color: '#999', fontSize: '1rem', margin: 0 }}>
+                <p style={{ color: '#999', margin: 0 }}>
                   Choose a conversation from the list to start messaging
                 </p>
               </div>

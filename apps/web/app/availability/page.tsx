@@ -212,7 +212,6 @@ export default function AvailabilityPage() {
                       padding: '8px 16px',
                       cursor: 'pointer',
                       fontWeight: '500',
-                      fontSize: '16px',
                       transition: 'all 0.2s ease'
                     }}
                   >
@@ -261,8 +260,7 @@ export default function AvailabilityPage() {
                     style={{ 
                       width: '100%', 
                       paddingLeft: '40px',
-                      fontSize: '16px'
-                    }} 
+                      }} 
                   />
                 </div>
               </div>
@@ -278,7 +276,6 @@ export default function AvailabilityPage() {
                       borderRadius: '12px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
                       transition: 'all 0.3s ease'
                     }}
                   >
@@ -295,7 +292,6 @@ export default function AvailabilityPage() {
                       borderRadius: '12px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
                     }}
@@ -533,8 +529,7 @@ export default function AvailabilityPage() {
                   style={{ 
                     width: '100%', 
                     paddingLeft: '40px',
-                    fontSize: '16px'
-                  }} 
+                    }} 
                 />
               </div>
             </div>
@@ -550,7 +545,6 @@ export default function AvailabilityPage() {
                     borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
@@ -779,7 +773,7 @@ export default function AvailabilityPage() {
           {activeTab === 'calendar' && (
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h3 style={{ color: '#EC4899', fontSize: '1.2rem' }}>Your Availability Calendar</h3>
+                <h3 style={{ color: '#EC4899' }}>Your Availability Calendar</h3>
                 <button
                   onClick={() => setShowAddForm(!showAddForm)}
                   className="btn-primary"
@@ -817,8 +811,7 @@ export default function AvailabilityPage() {
                             borderRadius: '8px',
                             padding: '0.75rem',
                             color: 'white',
-                            fontSize: '1rem'
-                          }}
+                            }}
                         />
                       </div>
                       <div>
@@ -836,8 +829,7 @@ export default function AvailabilityPage() {
                             borderRadius: '8px',
                             padding: '0.75rem',
                             color: 'white',
-                            fontSize: '1rem'
-                          }}
+                            }}
                         />
                       </div>
                     </div>
@@ -858,8 +850,7 @@ export default function AvailabilityPage() {
                             borderRadius: '8px',
                             padding: '0.75rem',
                             color: 'white',
-                            fontSize: '1rem'
-                          }}
+                            }}
                         />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -890,7 +881,6 @@ export default function AvailabilityPage() {
                           borderRadius: '8px',
                           padding: '0.75rem',
                           color: 'white',
-                          fontSize: '1rem',
                           resize: 'vertical'
                         }}
                       />
@@ -962,11 +952,11 @@ export default function AvailabilityPage() {
                           <div>Start: {new Date(slot.start_date).toLocaleString()}</div>
                           <div>End: {new Date(slot.end_date).toLocaleString()}</div>
                         </div>
-                        <div style={{ color: '#999', fontSize: '0.9rem' }}>
+                        <div style={{ color: '#999' }}>
                           Max requests: {slot.max_requests} • Current requests: {slot.request_count}
                         </div>
                         {slot.notes && (
-                          <div style={{ color: '#999', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                          <div style={{ color: '#999', marginTop: '0.5rem' }}>
                             Notes: {slot.notes}
                           </div>
                         )}
@@ -989,7 +979,7 @@ export default function AvailabilityPage() {
 
           {activeTab === 'requests' && (
             <div className="card">
-              <h3 style={{ color: '#EC4899', fontSize: '1.2rem', marginBottom: '2rem' }}>Collaboration Requests</h3>
+              <h3 style={{ color: '#EC4899', marginBottom: '2rem' }}>Collaboration Requests</h3>
               
               {availabilityState.loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
@@ -1016,14 +1006,13 @@ export default function AvailabilityPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                         <div>
                           <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>{request.subject}</h4>
-                          <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                          <div style={{ color: '#ccc' }}>
                             From: {request.requester?.display_name || 'Unknown'}
                           </div>
                         </div>
                         <div style={{
                           padding: '0.25rem 0.75rem',
                           borderRadius: '20px',
-                          fontSize: '0.8rem',
                           fontWeight: '600',
                           background: request.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 
                                    request.status === 'accepted' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
@@ -1070,7 +1059,7 @@ export default function AvailabilityPage() {
 
           {activeTab === 'settings' && (
             <div className="card">
-              <h3 style={{ color: '#EC4899', fontSize: '1.2rem', marginBottom: '2rem' }}>Availability Settings</h3>
+              <h3 style={{ color: '#EC4899', marginBottom: '2rem' }}>Availability Settings</h3>
               
               <div style={{ display: 'grid', gap: '2rem' }}>
                 <div>
@@ -1083,7 +1072,7 @@ export default function AvailabilityPage() {
                     />
                     Enable collaboration requests
                   </label>
-                  <p style={{ color: '#999', fontSize: '0.9rem', marginLeft: '1.5rem' }}>
+                  <p style={{ color: '#999', marginLeft: '1.5rem' }}>
                     Allow other creators to send you collaboration requests
                   </p>
                 </div>
@@ -1098,7 +1087,7 @@ export default function AvailabilityPage() {
                     />
                     Auto-decline requests for unavailable times
                   </label>
-                  <p style={{ color: '#999', fontSize: '0.9rem', marginLeft: '1.5rem' }}>
+                  <p style={{ color: '#999', marginLeft: '1.5rem' }}>
                     Automatically decline requests that don't match your availability
                   </p>
                 </div>
@@ -1121,10 +1110,9 @@ export default function AvailabilityPage() {
                       borderRadius: '8px',
                       padding: '0.75rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   />
-                  <p style={{ color: '#999', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <p style={{ color: '#999', marginTop: '0.5rem' }}>
                     Minimum number of days notice required for collaboration requests
                   </p>
                 </div>
@@ -1168,7 +1156,7 @@ export default function AvailabilityPage() {
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Availability Tips</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>Set regular availability slots</div>
           <div>Use notes to specify project types</div>
           <div>Review requests before accepting</div>

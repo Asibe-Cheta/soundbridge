@@ -111,7 +111,7 @@ function ResetPasswordVerifyInner() {
               margin: '0 auto 1rem',
             }}
           />
-          <p style={{ color: 'white', fontSize: '1rem', opacity: 0.8 }}>Confirming reset link…</p>
+          <p style={{ color: 'white', opacity: 0.8 }}>Confirming reset link…</p>
           <style>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -167,7 +167,7 @@ function ResetPasswordVerifyInner() {
         <div className="logo" style={{ marginBottom: '1.5rem' }}>
           <Image src="/images/logos/logo-trans-lockup.png" alt="SoundBridge" width={150} height={40} priority style={{ height: 'auto' }} />
         </div>
-        <h1 style={{ color: 'white', fontSize: '1.5rem', marginBottom: '1rem' }}>Reset link invalid</h1>
+        <h1 style={{ color: 'white', marginBottom: '1rem' }}>Reset link invalid</h1>
         <p style={{ color: '#ccc', marginBottom: '1.5rem' }}>{error}</p>
         <Link href="/forgot-password" style={{ color: '#EC4899', textDecoration: 'underline' }}>
           Request a new reset link

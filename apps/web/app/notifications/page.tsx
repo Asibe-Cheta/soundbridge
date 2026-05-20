@@ -253,7 +253,7 @@ export default function NotificationPreferencesPage() {
           }}>
             <div>
               <div style={{ color: 'white', fontWeight: '600' }}>Urgent Gig Alerts</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Receive notifications when new urgent gigs match your availability</div>
+              <div style={{ color: '#999' }}>Receive notifications when new urgent gigs match your availability</div>
             </div>
             <button
               onClick={() => updateUrgentGigPref('urgentGigNotificationsEnabled', !urgentGigNotificationsEnabled)}
@@ -293,7 +293,7 @@ export default function NotificationPreferencesPage() {
           }}>
             <div>
               <div style={{ color: 'white', fontWeight: '600' }}>Notification Action Buttons</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>Show quick actions (e.g. View, Respond) in urgent gig notifications</div>
+              <div style={{ color: '#999' }}>Show quick actions (e.g. View, Respond) in urgent gig notifications</div>
             </div>
             <button
               onClick={() => urgentGigNotificationsEnabled && updateUrgentGigPref('urgentGigActionButtonsEnabled', !urgentGigActionButtonsEnabled)}
@@ -420,8 +420,8 @@ export default function NotificationPreferencesPage() {
             boxShadow: '0 0 10px rgba(236, 72, 153, 0.8)'
           }} />
           <div style={{ color: '#999', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Your Location</div>
-            <div style={{ fontSize: '0.8rem' }}>{settings.locationRadius}km coverage</div>
+            <div style={{ marginBottom: '0.5rem' }}>Your Location</div>
+            <div style={{ }}>{settings.locationRadius}km coverage</div>
           </div>
         </div>
       </div>
@@ -522,7 +522,7 @@ export default function NotificationPreferencesPage() {
           >
             <div>
               <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{option.label}</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>{option.description}</div>
+              <div style={{ color: '#999' }}>{option.description}</div>
             </div>
             {settings.notificationTiming === option.id && <Check size={20} />}
           </button>
@@ -578,7 +578,7 @@ export default function NotificationPreferencesPage() {
                 <Icon size={20} />
                 <div>
                   <div style={{ fontWeight: '600' }}>{method.label}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{method.description}</div>
+                  <div style={{ color: '#999' }}>{method.description}</div>
                 </div>
               </div>
               {isSelected && <Check size={20} />}
@@ -637,7 +637,7 @@ export default function NotificationPreferencesPage() {
       {settings.quietHours.enabled && (
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div>
-            <label style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'block' }}>
+            <label style={{ color: '#999', marginBottom: '0.5rem', display: 'block' }}>
               Start Time
             </label>
             <input
@@ -650,13 +650,12 @@ export default function NotificationPreferencesPage() {
                 borderRadius: '8px',
                 padding: '0.5rem',
                 color: 'white',
-                fontSize: '1rem'
-              }}
+                }}
             />
           </div>
           <div style={{ color: '#999' }}>to</div>
           <div>
-            <label style={{ color: '#999', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'block' }}>
+            <label style={{ color: '#999', marginBottom: '0.5rem', display: 'block' }}>
               End Time
             </label>
             <input
@@ -669,8 +668,7 @@ export default function NotificationPreferencesPage() {
                 borderRadius: '8px',
                 padding: '0.5rem',
                 color: 'white',
-                fontSize: '1rem'
-              }}
+                }}
             />
           </div>
         </div>
@@ -718,7 +716,7 @@ export default function NotificationPreferencesPage() {
                 <Icon size={20} style={{ color: '#EC4899' }} />
                 <div>
                   <div style={{ color: 'white', fontWeight: '600' }}>{item.label}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{item.description}</div>
+                  <div style={{ color: '#999' }}>{item.description}</div>
                 </div>
               </div>
               <button
@@ -839,7 +837,7 @@ export default function NotificationPreferencesPage() {
                   <Icon size={20} style={{ color: '#EC4899' }} />
                   <div>
                     <div style={{ color: 'white', fontWeight: '600' }}>{item.label}</div>
-                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{item.description}</div>
+                    <div style={{ color: '#999' }}>{item.description}</div>
                   </div>
                 </div>
                 <button
@@ -924,7 +922,7 @@ export default function NotificationPreferencesPage() {
                   <Icon size={20} />
                   <div>
                     <div style={{ fontWeight: '600' }}>{method.label}</div>
-                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{method.description}</div>
+                    <div style={{ color: '#999' }}>{method.description}</div>
                   </div>
                 </div>
                 {isSelected && <Check size={20} />}
@@ -965,17 +963,16 @@ export default function NotificationPreferencesPage() {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
-              fontSize: '1.2rem',
               fontWeight: 'bold'
             }}>
               J
             </div>
             <div>
               <div style={{ color: 'white', fontWeight: '600' }}>New Collaboration Request</div>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>John Doe wants to collaborate with you</div>
+              <div style={{ color: '#999' }}>John Doe wants to collaborate with you</div>
             </div>
           </div>
-          <div style={{ color: '#999', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+          <div style={{ color: '#999', marginTop: '0.5rem' }}>
             "I'd love to work on a gospel project together. Are you available next week?"
           </div>
         </div>
@@ -1039,14 +1036,13 @@ export default function NotificationPreferencesPage() {
               border: 'none',
               color: '#999',
               cursor: 'pointer',
-              fontSize: '1.2rem'
-            }}>
+              }}>
               ←
             </button>
           </Link>
                      <div>
-             <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Notification Preferences</h1>
-             <p style={{ color: '#999', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+             <h1 style={{ color: 'white', margin: 0 }}>Notification Preferences</h1>
+             <p style={{ color: '#999', margin: '0.25rem 0 0 0' }}>
                Customize your event discovery experience
              </p>
            </div>
@@ -1058,8 +1054,7 @@ export default function NotificationPreferencesPage() {
                padding: '0.5rem 1rem',
                borderRadius: '8px',
                cursor: 'pointer',
-               fontSize: '0.9rem'
-             }}>
+               }}>
                View Notifications
              </button>
            </Link>
@@ -1146,7 +1141,6 @@ export default function NotificationPreferencesPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '12px',
                 fontWeight: 'bold'
               }}>
                 ✗
@@ -1177,7 +1171,6 @@ export default function NotificationPreferencesPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '12px',
                 fontWeight: 'bold'
               }}>
                 ✓
@@ -1207,7 +1200,6 @@ export default function NotificationPreferencesPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '12px',
                 fontWeight: 'bold'
               }}>
                 ✗

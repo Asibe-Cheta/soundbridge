@@ -28,7 +28,6 @@ export default function PressPage() {
           }}>
             <FileText size={48} style={{ color: '#DC2626' }} />
             <h1 style={{
-              fontSize: '3rem',
               fontWeight: '700',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -40,7 +39,6 @@ export default function PressPage() {
             </h1>
           </div>
           <p style={{
-            fontSize: '1.2rem',
             color: 'rgba(255, 255, 255, 0.8)',
             maxWidth: '700px',
             margin: '0 auto',
@@ -53,7 +51,6 @@ export default function PressPage() {
         {/* Press Contact */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -89,7 +86,6 @@ export default function PressPage() {
             
             <p style={{
               color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '0.9rem',
               lineHeight: '1.6'
             }}>
               For press inquiries, interview requests, or media partnerships, please contact our press team. 
@@ -101,7 +97,6 @@ export default function PressPage() {
         {/* Media Kit */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -135,7 +130,6 @@ export default function PressPage() {
                 border: 'none',
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
-                fontSize: '0.9rem',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
@@ -172,7 +166,6 @@ export default function PressPage() {
                 border: 'none',
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
-                fontSize: '0.9rem',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
@@ -209,7 +202,6 @@ export default function PressPage() {
                 border: 'none',
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
-                fontSize: '0.9rem',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
@@ -230,7 +222,6 @@ export default function PressPage() {
         {/* Recent Coverage */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -256,9 +247,9 @@ export default function PressPage() {
                 marginBottom: '1rem'
               }}>
                 <Calendar size={16} style={{ color: 'rgba(255, 255, 255, 0.6)' }} />
-                <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>March 15, 2024</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>March 15, 2024</span>
               </div>
-              <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: 'white', marginBottom: '1rem' }}>
                 "SoundBridge Revolutionizes Music Discovery with AI-Powered Recommendations"
               </h3>
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6', marginBottom: '1rem' }}>
@@ -268,8 +259,7 @@ export default function PressPage() {
                 color: '#DC2626',
                 textDecoration: 'none',
                 fontWeight: '600',
-                fontSize: '0.9rem'
-              }}>
+                }}>
                 Read Full Article →
               </a>
             </div>
@@ -287,9 +277,9 @@ export default function PressPage() {
                 marginBottom: '1rem'
               }}>
                 <Calendar size={16} style={{ color: 'rgba(255, 255, 255, 0.6)' }} />
-                <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>March 8, 2024</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>March 8, 2024</span>
               </div>
-              <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: 'white', marginBottom: '1rem' }}>
                 "Startup Spotlight: SoundBridge's Mission to Connect Music Lovers"
               </h3>
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6', marginBottom: '1rem' }}>
@@ -299,8 +289,7 @@ export default function PressPage() {
                 color: '#DC2626',
                 textDecoration: 'none',
                 fontWeight: '600',
-                fontSize: '0.9rem'
-              }}>
+                }}>
                 Read Full Article →
               </a>
             </div>
@@ -318,9 +307,9 @@ export default function PressPage() {
                 marginBottom: '1rem'
               }}>
                 <Calendar size={16} style={{ color: 'rgba(255, 255, 255, 0.6)' }} />
-                <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>February 28, 2024</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>February 28, 2024</span>
               </div>
-              <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: 'white', marginBottom: '1rem' }}>
                 "Music Tech Roundup: SoundBridge Leads Innovation in Social Discovery"
               </h3>
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6', marginBottom: '1rem' }}>
@@ -330,8 +319,7 @@ export default function PressPage() {
                 color: '#DC2626',
                 textDecoration: 'none',
                 fontWeight: '600',
-                fontSize: '0.9rem'
-              }}>
+                }}>
                 Read Full Article →
               </a>
             </div>
@@ -341,7 +329,6 @@ export default function PressPage() {
         {/* Company Information */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -392,14 +379,12 @@ export default function PressPage() {
           padding: '3rem'
         }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '1rem'
           }}>
             Media Inquiries
           </h2>
           <p style={{
-            fontSize: '1.1rem',
             color: 'rgba(255, 255, 255, 0.8)',
             lineHeight: '1.6',
             maxWidth: '600px',
@@ -415,7 +400,6 @@ export default function PressPage() {
             border: 'none',
             padding: '1rem 2rem',
             borderRadius: '12px',
-            fontSize: '1.1rem',
             fontWeight: '600',
             cursor: 'pointer',
             transition: 'all 0.3s ease'

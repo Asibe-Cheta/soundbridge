@@ -314,7 +314,7 @@ export function PostComposerMentionField({
     <div ref={shellRef} className={className}>
       <div className="relative w-full min-h-[120px]">
         <div
-          className="pointer-events-none absolute inset-0 z-0 whitespace-pre-wrap break-words rounded-lg border border-transparent px-3 py-3 text-[15px] leading-relaxed text-white"
+          className="pointer-events-none absolute inset-0 z-0 whitespace-pre-wrap break-words rounded-lg border border-transparent px-3 py-3 text-base leading-relaxed text-white"
           aria-hidden
         >
           {renderHighlightedOverlay(value, mentionUsernames)}

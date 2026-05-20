@@ -1536,7 +1536,6 @@ export default function ProfilePage() {
                   <span className="profile-headline" style={{ 
                     display: 'block', 
                     marginTop: '0.25rem',
-                    fontSize: '0.875rem',
                     color: '#9ca3af'
                   }}>
                     {professionalHeadline}
@@ -1548,7 +1547,6 @@ export default function ProfilePage() {
                     alignItems: 'center',
                     gap: '0.25rem',
                     marginLeft: '0.5rem',
-                    fontSize: '0.875rem',
                     color: '#9ca3af'
                   }}>
                     <Users size={14} />

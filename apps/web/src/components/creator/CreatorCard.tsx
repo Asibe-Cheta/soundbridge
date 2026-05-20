@@ -99,8 +99,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
             color: 'white',
             padding: '0.25rem 0.5rem',
             borderRadius: '12px',
-            fontSize: '0.7rem',
-            fontWeight: '600',
+                        fontWeight: '600',
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             zIndex: 2
           }}>
@@ -138,8 +137,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
-              fontSize: isMobile ? '1.5rem' : '2rem',
-              fontWeight: '600'
+                            fontWeight: '600'
             }}>
               {getInitials(creator.display_name)}
             </div>
@@ -152,8 +150,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
         <div>
           <h3 style={{
             color: 'var(--text-primary)',
-            fontSize: isMobile ? '0.9rem' : '1rem',
-            fontWeight: '600',
+                        fontWeight: '600',
             margin: '0 0 4px 0',
             lineHeight: '1.2',
             overflow: 'hidden',
@@ -165,8 +162,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
           
           <p style={{
             color: 'var(--text-secondary)',
-            fontSize: isMobile ? '0.8rem' : '0.9rem',
-            margin: '0 0 8px 0',
+                        margin: '0 0 8px 0',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
@@ -179,8 +175,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontSize: isMobile ? '0.75rem' : '0.8rem',
-            color: 'var(--text-secondary)'
+                        color: 'var(--text-secondary)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Users size={12} />
@@ -263,8 +258,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '1.2rem',
-                fontWeight: '600'
+                                fontWeight: '600'
               }}>
                 {getInitials(creator.display_name)}
               </div>
@@ -274,8 +268,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{
               color: 'var(--text-primary)',
-              fontSize: '1rem',
-              fontWeight: '600',
+                            fontWeight: '600',
               margin: '0 0 4px 0',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -286,8 +279,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
             
             <p style={{
               color: 'var(--text-secondary)',
-              fontSize: '0.8rem',
-              margin: '0',
+                            margin: '0',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'
@@ -302,8 +294,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '0.8rem',
-          color: 'var(--text-secondary)',
+                    color: 'var(--text-secondary)',
           marginBottom: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -331,8 +322,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
               padding: '0.5rem 1rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '0.8rem',
-              fontWeight: '500',
+                            fontWeight: '500',
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
@@ -355,8 +345,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
                 padding: '0.5rem 1rem',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                fontSize: '0.8rem',
-                fontWeight: '500',
+                                fontWeight: '500',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
@@ -432,8 +421,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
-              fontSize: '1.5rem',
-              fontWeight: '600'
+                            fontWeight: '600'
             }}>
               {getInitials(creator.display_name)}
             </div>
@@ -444,8 +432,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{
             color: 'var(--text-primary)',
-            fontSize: '1rem',
-            fontWeight: '600',
+                        fontWeight: '600',
             margin: '0 0 4px 0',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -456,8 +443,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
           
           <p style={{
             color: 'var(--text-secondary)',
-            fontSize: '0.8rem',
-            margin: '0 0 8px 0',
+                        margin: '0 0 8px 0',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
@@ -469,8 +455,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
           <div style={{
             display: 'flex',
             gap: '12px',
-            fontSize: '0.75rem',
-            color: 'var(--text-secondary)'
+                        color: 'var(--text-secondary)'
           }}>
             <span>{formatNumber(creator.followers_count)} followers</span>
             <span>{formatNumber(creator.tracks_count)} tracks</span>

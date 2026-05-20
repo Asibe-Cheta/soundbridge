@@ -27,7 +27,7 @@ export function ProResourcesFeedBanner() {
           />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(139,92,246,0.4)] bg-[rgba(139,92,246,0.2)] px-2.5 py-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#A78BFA]" />
-            <span className="text-[10px] font-bold tracking-[0.8px] text-[#C4B5FD]">
+            <span className="text-badge font-bold tracking-[0.8px] text-[#C4B5FD]">
               EDUCATION PARTNER
             </span>
           </span>
@@ -36,17 +36,17 @@ export function ProResourcesFeedBanner() {
         <h3 className="text-white text-xl font-bold tracking-[0.1px] mt-3 mb-1.5">
           Level Up Your Sound
         </h3>
-        <p className="text-[13px] leading-[19px] text-white/55 mb-3.5 whitespace-pre-line">
+        <p className="text-sm leading-[19px] text-white/55 mb-3.5 whitespace-pre-line">
           World-class audio engineering & DJ courses.{'\n'}Pro Tools certified · 5 countries.
         </p>
 
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-4 py-2 text-[13px] font-semibold text-white mb-3.5">
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-4 py-2 text-sm font-semibold text-white mb-3.5">
           <GraduationCap size={16} />
           Explore Courses
         </span>
 
         <div className="flex items-center justify-between border-t border-white/[0.07] py-2.5">
-          <span className="text-[10px] font-medium text-white/30">
+          <span className="text-badge font-medium text-white/30">
             Official SoundBridge Education Partner
           </span>
           <Image

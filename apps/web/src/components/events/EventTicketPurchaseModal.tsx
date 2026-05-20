@@ -250,7 +250,7 @@ export function EventTicketPurchaseModal({ isOpen, onClose, event, onSuccess }: 
             alignItems: 'center',
           }}
         >
-          <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#fff' }}>
+          <h2 style={{ margin: 0, color: '#fff' }}>
             {step === 'success' ? 'Ticket Purchased!' : 'Buy Ticket'}
           </h2>
           <button
@@ -282,7 +282,7 @@ export function EventTicketPurchaseModal({ isOpen, onClose, event, onSuccess }: 
             }}
           >
             <h3 style={{ margin: '0 0 0.5rem 0', color: '#EC4899' }}>{event.title}</h3>
-            <p style={{ margin: '0.25rem 0', color: '#ccc', fontSize: '0.9rem' }}>
+            <p style={{ margin: '0.25rem 0', color: '#ccc' }}>
               {new Date(event.event_date).toLocaleDateString('en-GB', {
                 weekday: 'long',
                 year: 'numeric',
@@ -292,7 +292,7 @@ export function EventTicketPurchaseModal({ isOpen, onClose, event, onSuccess }: 
                 minute: '2-digit',
               })}
             </p>
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.25rem', fontWeight: 'bold', color: '#EC4899' }}>
+            <p style={{ margin: '0.5rem 0 0 0', fontWeight: 'bold', color: '#EC4899' }}>
               {event.formattedPrice}
             </p>
           </div>
@@ -382,14 +382,14 @@ export function EventTicketPurchaseModal({ isOpen, onClose, event, onSuccess }: 
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
                   <Ticket size={20} style={{ color: '#EC4899' }} />
-                  <span style={{ color: '#999', fontSize: '0.9rem' }}>Ticket Code</span>
+                  <span style={{ color: '#999' }}>Ticket Code</span>
                 </div>
-                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#EC4899', margin: 0, letterSpacing: '2px' }}>
+                <p style={{ fontWeight: 'bold', color: '#EC4899', margin: 0, letterSpacing: '2px' }}>
                   {ticketData.ticket_code || ticketData.all_ticket_codes?.[0]}
                 </p>
               </div>
 
-              <p style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1.5rem' }}>
+              <p style={{ color: '#999', marginBottom: '1.5rem' }}>
                 A confirmation email has been sent to your email address with your ticket details.
               </p>
 

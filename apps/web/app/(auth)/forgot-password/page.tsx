@@ -122,7 +122,6 @@ export default function ForgotPasswordPage() {
           <div style={{ marginBottom: '2rem' }}>
             <h1
               style={{
-                fontSize: '2rem',
                 fontWeight: 'bold',
                 background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                 WebkitBackgroundClip: 'text',
@@ -133,7 +132,7 @@ export default function ForgotPasswordPage() {
             >
               Check Your Email
             </h1>
-            <p style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
+            <p style={{ color: '#ccc', lineHeight: '1.5' }}>
               We&apos;ve sent password reset instructions to your email address
             </p>
           </div>
@@ -156,11 +155,10 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div style={{ marginBottom: '2rem', textAlign: 'left' }}>
-            <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.1rem' }}>What to do next:</h3>
+            <h3 style={{ color: 'white', marginBottom: '1rem' }}>What to do next:</h3>
             <ul
               style={{
                 color: '#ccc',
-                fontSize: '0.9rem',
                 lineHeight: '1.6',
                 paddingLeft: '1.5rem',
               }}
@@ -182,7 +180,6 @@ export default function ForgotPasswordPage() {
                 borderRadius: '25px',
                 cursor: 'pointer',
                 fontWeight: '600',
-                fontSize: '1rem',
                 transition: 'all 0.3s ease',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
@@ -256,7 +253,6 @@ export default function ForgotPasswordPage() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1
             style={{
-              fontSize: '2rem',
               fontWeight: 'bold',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -267,7 +263,7 @@ export default function ForgotPasswordPage() {
           >
             Forgot password
           </h1>
-          <p style={{ color: '#999', fontSize: '0.9rem' }}>
+          <p style={{ color: '#999' }}>
             Enter your email address to receive password reset instructions
           </p>
         </div>
@@ -281,8 +277,7 @@ export default function ForgotPasswordPage() {
               padding: '1rem',
               marginBottom: '1.5rem',
               color: '#FCA5A5',
-              fontSize: '0.9rem',
-            }}
+              }}
           >
             {error}
           </div>
@@ -290,7 +285,7 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
@@ -316,7 +311,6 @@ export default function ForgotPasswordPage() {
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '12px',
                   color: 'white',
-                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease',
                 }}
@@ -338,7 +332,6 @@ export default function ForgotPasswordPage() {
               borderRadius: '25px',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               fontWeight: '600',
-              fontSize: '1rem',
               transition: 'all 0.3s ease',
               opacity: isLoading ? 0.7 : 1,
             }}
@@ -365,7 +358,6 @@ export default function ForgotPasswordPage() {
             style={{
               color: '#EC4899',
               textDecoration: 'none',
-              fontSize: '0.9rem',
               transition: 'all 0.3s ease',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = '#DC2626')}

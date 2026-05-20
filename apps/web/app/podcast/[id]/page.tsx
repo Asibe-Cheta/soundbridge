@@ -430,7 +430,6 @@ export default function PodcastPage({ params }: PodcastPageProps) {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.8rem',
                       transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
@@ -448,7 +447,6 @@ export default function PodcastPage({ params }: PodcastPageProps) {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.8rem',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
                     }}
@@ -575,7 +573,6 @@ export default function PodcastPage({ params }: PodcastPageProps) {
                     borderRadius: '8px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.8rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.25rem',
@@ -770,7 +767,6 @@ export default function PodcastPage({ params }: PodcastPageProps) {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.8rem',
                       transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
@@ -788,7 +784,6 @@ export default function PodcastPage({ params }: PodcastPageProps) {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.8rem',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
                     }}

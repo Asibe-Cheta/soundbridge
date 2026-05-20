@@ -35,7 +35,6 @@ export default function ForumsPage() {
           }}>
             <MessageSquare size={48} style={{ color: '#DC2626' }} />
             <h1 style={{
-              fontSize: '3rem',
               fontWeight: '700',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',

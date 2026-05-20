@@ -386,8 +386,7 @@ export default function CreateEventPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.9rem'
-            }}>
+              }}>
               <ArrowLeft size={16} />
               Back to Events
             </button>
@@ -398,7 +397,6 @@ export default function CreateEventPage() {
         <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h1 style={{
-              fontSize: '2.5rem',
               fontWeight: 'bold',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -408,7 +406,7 @@ export default function CreateEventPage() {
             }}>
               Create New Event
             </h1>
-            <p style={{ color: '#ccc', fontSize: '1.1rem' }}>
+            <p style={{ color: '#ccc' }}>
               Share your music event with the world
             </p>
           </div>
@@ -432,7 +430,7 @@ export default function CreateEventPage() {
                     {location.isDetected ? `Detected: ${location.country}` : 'Location not detected'}
                   </div>
                   {location.city && (
-                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                    <div style={{ color: '#ccc' }}>
                       {location.city}, {location.region}
                     </div>
                   )}
@@ -501,7 +499,7 @@ export default function CreateEventPage() {
           <div style={{ display: 'grid', gap: '2rem' }}>
             {/* Basic Information */}
             <div className="card">
-              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                 Basic Information
               </h3>
               
@@ -522,8 +520,7 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   />
                 </div>
 
@@ -543,7 +540,6 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem',
                       resize: 'vertical'
                     }}
                   />
@@ -563,8 +559,7 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   >
                     <option value="">Select genre</option>
                     {genres.map((g) => (
@@ -577,7 +572,7 @@ export default function CreateEventPage() {
 
             {/* Date & Time */}
             <div className="card">
-              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                 Date & Time
               </h3>
               
@@ -598,8 +593,7 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   />
                 </div>
 
@@ -618,8 +612,7 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   />
                 </div>
               </div>
@@ -627,7 +620,7 @@ export default function CreateEventPage() {
 
             {/* Location - Country-based Address Fields */}
             <div className="card">
-              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                 Event Location
               </h3>
               
@@ -647,8 +640,7 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   >
                     {COUNTRY_ADDRESS_CONFIGS.map((config) => (
                       <option key={config.countryCode} value={config.countryCode}>
@@ -677,8 +669,7 @@ export default function CreateEventPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     />
                   </div>
                 ))}
@@ -698,7 +689,6 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem',
                       cursor: isGeocoding || Object.keys(addressFields).length === 0 ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -724,7 +714,6 @@ export default function CreateEventPage() {
                     <div style={{
                       marginTop: '0.5rem',
                       color: '#FCA5A5',
-                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem'
@@ -738,7 +727,6 @@ export default function CreateEventPage() {
                     <div style={{
                       marginTop: '0.5rem',
                       color: '#86EFAC',
-                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem'
@@ -748,7 +736,7 @@ export default function CreateEventPage() {
                     </div>
                   )}
 
-                  <div style={{ color: '#ccc', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                  <div style={{ color: '#ccc', marginTop: '0.5rem' }}>
                     Optional: Get coordinates for better location matching. You can still create the event without coordinates.
                   </div>
                 </div>
@@ -757,7 +745,7 @@ export default function CreateEventPage() {
 
             {/* Pricing */}
             <div className="card">
-              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                 Pricing
               </h3>
               
@@ -779,8 +767,7 @@ export default function CreateEventPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     />
                     {locationLoading && (
                       <div style={{
@@ -793,7 +780,7 @@ export default function CreateEventPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ color: '#ccc', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  <div style={{ color: '#ccc', marginTop: '0.5rem' }}>
                     Leave empty for free events. Currency: {selectedCountryConfig.currencySymbol} ({selectedCountryConfig.currency})
                   </div>
                 </div>
@@ -815,8 +802,7 @@ export default function CreateEventPage() {
                       borderRadius: '12px',
                       padding: '1rem',
                       color: 'white',
-                      fontSize: '1rem'
-                    }}
+                      }}
                   />
                 </div>
               </div>
@@ -824,7 +810,7 @@ export default function CreateEventPage() {
 
             {/* Event Image */}
             <div className="card">
-              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                 Event Image
               </h3>
               
@@ -850,7 +836,7 @@ export default function CreateEventPage() {
 
             {/* Privacy & Publishing */}
             <div className="card">
-              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+              <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                 Privacy & Publishing
               </h3>
               
@@ -885,7 +871,7 @@ export default function CreateEventPage() {
                           }}
                         >
                           <Icon size={20} />
-                          <span style={{ fontSize: '0.9rem' }}>{option.label}</span>
+                          <span style={{ }}>{option.label}</span>
                         </button>
                       );
                     })}
@@ -922,7 +908,7 @@ export default function CreateEventPage() {
                           }}
                         >
                           <Icon size={20} />
-                          <span style={{ fontSize: '0.9rem' }}>{option.label}</span>
+                          <span style={{ }}>{option.label}</span>
                         </button>
                       );
                     })}
@@ -946,8 +932,7 @@ export default function CreateEventPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     />
                   </div>
                 )}
@@ -967,7 +952,6 @@ export default function CreateEventPage() {
                   borderRadius: '12px',
                   cursor: isPublishing ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem'
@@ -988,7 +972,6 @@ export default function CreateEventPage() {
                   borderRadius: '12px',
                   cursor: isPublishing || locationLoading ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
@@ -1046,7 +1029,7 @@ export default function CreateEventPage() {
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>John is listening to &quot;Praise Medley&quot;</div>
           <div>Sarah posted a new track</div>
           <div>Mike joined Gospel Night event</div>

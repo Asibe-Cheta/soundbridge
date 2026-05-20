@@ -592,17 +592,14 @@ export default function DiscoverPage() {
                           }}
                         />
                       ) : (
-                <div style={{
-                  width: '100%',
+                <div className="text-2xl md:text-4xl" style={{ width: '100%',
                           height: isMobile ? '120px' : '100%',
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           borderRadius: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'white',
-                          fontSize: isMobile ? '1.5rem' : '2rem'
-                        }}>
+                          color: 'white' }}>
                           <Music size={isMobile ? 24 : 32} />
                         </div>
                       )}
@@ -744,23 +741,20 @@ export default function DiscoverPage() {
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="card">
                   <div className="card-image">
-                    <div style={{
-                      width: '100%',
+                    <div className="text-4xl" style={{ width: '100%',
                       height: '100%',
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '2rem'
-                    }}>
+                      color: 'white' }}>
                       <User size={32} />
                     </div>
                     <div className="play-button">▶</div>
                   </div>
                   <div style={{ fontWeight: '600' }}>Loading...</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
+                  <div className="text-sm" style={{ color: '#999' }}>Loading...</div>
                   <div className="stats">
                     <span>Loading...</span>
                     <span>Loading...</span>
@@ -793,17 +787,14 @@ export default function DiscoverPage() {
                           style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
                         />
                       ) : (
-                        <div style={{
-                          width: '100%',
+                        <div className="text-4xl" style={{ width: '100%',
                           height: '100%',
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           borderRadius: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'white',
-                          fontSize: '2rem'
-                        }}>
+                          color: 'white' }}>
                           {(creator.profile.display_name || creator.profile.username || 'C')
                             .substring(0, 2)
                             .toUpperCase()}
@@ -836,12 +827,12 @@ export default function DiscoverPage() {
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="event-card">
                   <div className="event-card-content">
-                    <div style={{ fontSize: '0.9rem', color: '#EC4899' }}>Loading...</div>
+                    <div className="text-sm" style={{ color: '#EC4899' }}>Loading...</div>
                     <div style={{ fontWeight: '600', margin: '0.5rem 0' }}>Loading...</div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Loading...</div>
+                    <div className="text-sm" style={{ color: '#ccc' }}>Loading...</div>
                     <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px', fontSize: '0.8rem' }}>Loading...</span>
-                      <span style={{ color: '#999', fontSize: '0.8rem' }}>Loading...</span>
+                      <span className="text-xs" style={{ background: 'rgba(236, 72, 153, 0.2)', color: '#EC4899', padding: '0.25rem 0.5rem', borderRadius: '15px' }}>Loading...</span>
+                      <span className="text-xs" style={{ color: '#999' }}>Loading...</span>
                     </div>
                   </div>
                 </div>
@@ -902,18 +893,15 @@ export default function DiscoverPage() {
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
                 <button
                   onClick={() => getTrendingContent(20)}
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  style={{ background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-                  }}
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
@@ -942,23 +930,19 @@ export default function DiscoverPage() {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Briefcase size={20} style={{ color: '#EC4899' }} />
-                            <span style={{ fontWeight: 600, color: 'white', fontSize: '1rem' }}>{provider.display_name}</span>
+                            <span className="text-base" style={{ fontWeight: 600, color: 'white' }}>{provider.display_name}</span>
                           </div>
                           {provider.headline && (
-                            <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>{provider.headline}</p>
+                            <p className="text-sm" style={{ margin: '0.25rem 0 0', color: '#9ca3af' }}>{provider.headline}</p>
                           )}
                         </div>
                         {provider.badge_active && (
-                          <span
-                            style={{
-                              fontSize: '0.7rem',
-                              fontWeight: 600,
+                          <span className="text-xs" style={{ fontWeight: 600,
                               textTransform: 'uppercase',
                               padding: '0.2rem 0.6rem',
                               borderRadius: '999px',
                               background: 'rgba(245,158,11,0.2)',
-                              color: '#fbbf24',
-                            }}
+                              color: '#fbbf24' }}
                           >
                             Verified Professional
                           </span>
@@ -968,17 +952,13 @@ export default function DiscoverPage() {
                       {provider.categories.length > 0 && (
                         <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                           {provider.categories.slice(0, 3).map((category) => (
-                            <span
-                              key={category}
-                              style={{
-                                fontSize: '0.7rem',
-                                letterSpacing: '0.02em',
+                            <span className="text-xs"
+                              key={category}style={{ letterSpacing: '0.02em',
                                 padding: '0.25rem 0.6rem',
                                 borderRadius: '999px',
                                 background: 'rgba(236, 72, 153, 0.15)',
                                 color: '#f472b6',
-                                textTransform: 'capitalize',
-                              }}
+                                textTransform: 'capitalize' }}
                             >
                               {category.replace('_', ' ')}
                             </span>
@@ -987,8 +967,8 @@ export default function DiscoverPage() {
                       )}
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{ratingLabel}</div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f97316' }}>
+                        <div className="text-xs" style={{ color: '#9ca3af' }}>{ratingLabel}</div>
+                        <div className="text-sm" style={{ fontWeight: 600, color: '#f97316' }}>
                           {provider.default_rate !== null
                             ? `${provider.rate_currency || 'USD'} ${provider.default_rate.toFixed(0)}/${'hr'}`
                             : 'Custom pricing'}
@@ -1023,18 +1003,15 @@ export default function DiscoverPage() {
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
                 <button
                   onClick={() => getTrendingContent(20)}
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  style={{ background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
-                  }}
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
@@ -1059,31 +1036,31 @@ export default function DiscoverPage() {
                     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Home size={20} style={{ color: '#60a5fa' }} />
-                        <span style={{ fontWeight: 600, color: 'white', fontSize: '1rem' }}>{venue.name}</span>
+                        <span className="text-base" style={{ fontWeight: 600, color: 'white' }}>{venue.name}</span>
                       </div>
                       {line1 && (
-                        <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                        <div className="text-sm" style={{ color: '#9ca3af' }}>
                           {line1}
                           {(city || country) && ` · ${[city, country].filter(Boolean).join(', ')}`}
                         </div>
                       )}
                       {!line1 && (city || country) && (
-                        <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                        <div className="text-sm" style={{ color: '#9ca3af' }}>
                           {[city, country].filter(Boolean).join(', ')}
                         </div>
                       )}
                       {venue.description && (
-                        <p style={{ color: '#d1d5db', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                        <p className="text-sm" style={{ color: '#d1d5db', lineHeight: 1.5 }}>
                           {venue.description.length > 160 ? `${venue.description.slice(0, 157)}…` : venue.description}
                         </p>
                       )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#9ca3af', fontSize: '0.8rem' }}>
+                        <div className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#9ca3af' }}>
                           <Users size={14} />
                           <span>{venue.capacity ? `${venue.capacity.toLocaleString()} capacity` : 'Capacity TBC'}</span>
                         </div>
                         {venue.amenities && venue.amenities.length > 0 && (
-                          <div style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                          <div className="text-xs" style={{ color: '#60a5fa' }}>
                             {venue.amenities.slice(0, 2).join(' · ')}
                             {venue.amenities.length > 2 && ' + more'}
                           </div>
@@ -1107,24 +1084,21 @@ export default function DiscoverPage() {
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="card">
                   <div className="card-image">
-                    <div style={{
-                      width: '100%',
+                    <div className="text-4xl" style={{ width: '100%',
                       height: '100%',
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '2rem'
-                    }}>
+                      color: 'white' }}>
                       <Mic size={32} />
                     </div>
                     <div className="play-button">▶</div>
                   </div>
                   <div style={{ fontWeight: '600' }}>Loading...</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>Loading...</div>
+                  <div className="text-sm" style={{ color: '#999' }}>Loading...</div>
+                  <div className="text-xs" style={{ color: '#EC4899', marginTop: '0.5rem' }}>Loading...</div>
                 </div>
               ))
             ) : trendingError ? (
@@ -1134,18 +1108,15 @@ export default function DiscoverPage() {
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
                 <button 
                   onClick={() => getTrendingContent(20)} 
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  style={{ background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
@@ -1171,17 +1142,14 @@ export default function DiscoverPage() {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                       />
                     ) : (
-                      <div style={{
-                        width: '100%',
+                      <div className="text-4xl" style={{ width: '100%',
                         height: '100%',
                         background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                         borderRadius: '12px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '2rem'
-                      }}>
+                        color: 'white' }}>
                         <Mic size={32} />
                       </div>
                     )}
@@ -1277,8 +1245,8 @@ export default function DiscoverPage() {
                     </div>
                   </div>
                   <div style={{ fontWeight: '600' }}>{podcast.title}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{podcast.creator?.display_name || 'Unknown Creator'}</div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  <div className="text-sm" style={{ color: '#999' }}>{podcast.creator?.display_name || 'Unknown Creator'}</div>
+                  <div className="text-xs" style={{ color: '#EC4899', marginTop: '0.5rem' }}>
                     {podcast.duration ? `${Math.floor(podcast.duration / 60)}:${String(podcast.duration % 60).padStart(2, '0')}` : '--:--'} • {(podcast.play_count || 0).toLocaleString()} plays
                   </div>
                 </div>
@@ -1296,24 +1264,21 @@ export default function DiscoverPage() {
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="card">
                   <div className="card-image">
-                    <div style={{
-                      width: '100%',
+                    <div className="text-4xl" style={{ width: '100%',
                       height: '100%',
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '2rem'
-                    }}>
+                      color: 'white' }}>
                       <BookOpen size={32} />
                     </div>
                     <div className="play-button">▶</div>
                   </div>
                   <div style={{ fontWeight: '600' }}>Loading...</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>Loading...</div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>Loading...</div>
+                  <div className="text-sm" style={{ color: '#999' }}>Loading...</div>
+                  <div className="text-xs" style={{ color: '#EC4899', marginTop: '0.5rem' }}>Loading...</div>
                 </div>
               ))
             ) : trendingError ? (
@@ -1323,18 +1288,15 @@ export default function DiscoverPage() {
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>{trendingError}</p>
                 <button
                   onClick={() => getTrendingContent(20)}
-                  style={{
-                    background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                  style={{ background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                  }}
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)' }}
                 >
                   Try Again
                 </button>
@@ -1352,17 +1314,14 @@ export default function DiscoverPage() {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                       />
                     ) : (
-                      <div style={{
-                        width: '100%',
+                      <div className="text-4xl" style={{ width: '100%',
                         height: '100%',
                         background: 'linear-gradient(45deg, #0d9488, #6366f1)',
                         borderRadius: '12px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '2rem'
-                      }}>
+                        color: 'white' }}>
                         <BookOpen size={32} />
                       </div>
                     )}
@@ -1434,8 +1393,8 @@ export default function DiscoverPage() {
                     </div>
                   </div>
                   <div style={{ fontWeight: '600' }}>{book.title}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{book.creator?.display_name || 'Unknown Creator'}</div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  <div className="text-sm" style={{ color: '#999' }}>{book.creator?.display_name || 'Unknown Creator'}</div>
+                  <div className="text-xs" style={{ color: '#EC4899', marginTop: '0.5rem' }}>
                     {book.duration ? `${Math.floor(book.duration / 60)}:${String(book.duration % 60).padStart(2, '0')}` : '--:--'} • {(book.play_count || 0).toLocaleString()} plays
                   </div>
                 </div>
@@ -1470,24 +1429,21 @@ export default function DiscoverPage() {
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                         />
                       ) : (
-                        <div style={{
-                          width: '100%',
+                        <div className="text-4xl" style={{ width: '100%',
                           height: '100%',
                           background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                           borderRadius: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'white',
-                          fontSize: '2rem'
-                        }}>
+                          color: 'white' }}>
                           <Music size={32} />
                         </div>
                       )}
                     </div>
                     <div style={{ fontWeight: '600' }}>{album.title}</div>
-                    <div style={{ color: '#999', fontSize: '0.9rem' }}>{album.creator?.display_name || 'Unknown Creator'}</div>
-                    <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    <div className="text-sm" style={{ color: '#999' }}>{album.creator?.display_name || 'Unknown Creator'}</div>
+                    <div className="text-xs" style={{ color: '#EC4899', marginTop: '0.5rem' }}>
                       {(album.tracks_count || 0).toLocaleString()} tracks • {(album.total_plays || 0).toLocaleString()} plays
                     </div>
                   </div>
@@ -1522,17 +1478,14 @@ export default function DiscoverPage() {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                       />
                     ) : (
-                      <div style={{
-                        width: '100%',
+                      <div className="text-4xl" style={{ width: '100%',
                         height: '100%',
                         background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                         borderRadius: '12px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '2rem'
-                      }}>
+                        color: 'white' }}>
                         <Music size={32} />
                       </div>
                     )}
@@ -1552,8 +1505,8 @@ export default function DiscoverPage() {
                     </div>
                   </div>
                   <div style={{ fontWeight: '600' }}>{mix.title}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>{mix.creator?.display_name || 'Unknown Creator'}</div>
-                  <div style={{ color: '#EC4899', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  <div className="text-sm" style={{ color: '#999' }}>{mix.creator?.display_name || 'Unknown Creator'}</div>
+                  <div className="text-xs" style={{ color: '#EC4899', marginTop: '0.5rem' }}>
                     {mix.duration ? `${Math.floor(mix.duration / 60)}:${String(mix.duration % 60).padStart(2, '0')}` : '--:--'} • {(mix.play_count || 0).toLocaleString()} plays
                   </div>
                 </div>
@@ -1740,21 +1693,18 @@ export default function DiscoverPage() {
       <FloatingCard title="Quick Actions">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Link href="/upload" style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: 'transparent',
+            <div className="text-md" style={{ background: 'transparent',
               border: '1px solid white',
               padding: '0.6rem 1rem',
               borderRadius: '8px',
               cursor: 'pointer',
               color: 'white',
-              fontSize: '0.875rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.75rem',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               width: '100%',
-              fontWeight: '500'
-            }}
+              fontWeight: '500' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
             }}
@@ -1766,21 +1716,18 @@ export default function DiscoverPage() {
               Upload Music
             </div>
           </Link>
-          <div style={{
-            background: 'transparent',
+          <div className="text-xs" style={{ background: 'transparent',
             border: '1px solid white',
             padding: '0.375rem 0.75rem',
             borderRadius: '8px',
             textAlign: 'center',
             cursor: 'pointer',
             color: 'white',
-            fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             justifyContent: 'center',
-            transition: 'all 0.3s ease'
-          }}
+            transition: 'all 0.3s ease' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
           }}
@@ -1791,21 +1738,18 @@ export default function DiscoverPage() {
             <Mic size={18} color="white" />
             Start Podcast
           </div>
-          <div style={{
-            background: 'transparent',
+          <div className="text-xs" style={{ background: 'transparent',
             border: '1px solid white',
             padding: '0.375rem 0.75rem',
             borderRadius: '8px',
             textAlign: 'center',
             cursor: 'pointer',
             color: 'white',
-            fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             justifyContent: 'center',
-            transition: 'all 0.3s ease'
-          }}
+            transition: 'all 0.3s ease' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
           }}
@@ -1816,21 +1760,18 @@ export default function DiscoverPage() {
             <Calendar size={18} color="white" />
             Create Event
           </div>
-          <div style={{
-            background: 'transparent',
+          <div className="text-xs" style={{ background: 'transparent',
             border: '1px solid white',
             padding: '0.375rem 0.75rem',
             borderRadius: '8px',
             textAlign: 'center',
             cursor: 'pointer',
             color: 'white',
-            fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             justifyContent: 'center',
-            transition: 'all 0.3s ease'
-          }}
+            transition: 'all 0.3s ease' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'linear-gradient(45deg, #DC2626, #EC4899)';
           }}
@@ -1844,7 +1785,7 @@ export default function DiscoverPage() {
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Friends Activity</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+        <div className="text-sm" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'rgba(255, 255, 255, 0.7)' }}>
           <div>John is listening to &quot;Praise Medley&quot;</div>
           <div>Sarah posted a new track</div>
           <div>Mike joined Gospel Night event</div>

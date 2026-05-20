@@ -91,7 +91,7 @@ export default function MusicPlayerPage() {
         padding: '2rem'
       }}>
         <Music size={64} style={{ color: '#EC4899', marginBottom: '1rem', opacity: 0.5 }} />
-        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#EC4899' }}>No Track Playing</h1>
+        <h1 style={{ marginBottom: '1rem', color: '#EC4899' }}>No Track Playing</h1>
         <p style={{ color: '#ccc', marginBottom: '2rem', textAlign: 'center' }}>
           Start playing a track from anywhere on SoundBridge to see the full player experience.
         </p>
@@ -105,7 +105,6 @@ export default function MusicPlayerPage() {
             borderRadius: '12px',
             cursor: 'pointer',
             fontWeight: '600',
-            fontSize: '1rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
@@ -273,8 +272,7 @@ export default function MusicPlayerPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  fontSize: '4rem'
-                }}>
+                  }}>
                   <Music size={isExpanded ? 120 : 80} />
                 </div>
               )}
@@ -309,7 +307,6 @@ export default function MusicPlayerPage() {
               </p>
               {currentTrack.album && (
                 <p style={{
-                  fontSize: '1rem',
                   color: '#999'
                 }}>
                   {currentTrack.album}
@@ -339,7 +336,6 @@ export default function MusicPlayerPage() {
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                fontSize: '0.9rem',
                 color: '#ccc'
               }}>
                 <span>1:23</span>

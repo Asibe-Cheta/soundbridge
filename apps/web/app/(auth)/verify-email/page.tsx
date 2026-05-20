@@ -98,7 +98,6 @@ export default function VerifyEmailPage() {
         <div style={{ marginBottom: '2rem' }}>
           <h1 
             style={{
-              fontSize: '2rem',
               fontWeight: 'bold',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -109,7 +108,7 @@ export default function VerifyEmailPage() {
           >
             Check Your Email
           </h1>
-          <p style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
+          <p style={{ color: '#ccc', lineHeight: '1.5' }}>
             We&apos;ve sent a verification link to your email address
           </p>
         </div>
@@ -134,12 +133,11 @@ export default function VerifyEmailPage() {
 
         {/* Instructions */}
         <div style={{ marginBottom: '2rem', textAlign: 'left' }}>
-          <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.1rem' }}>
+          <h3 style={{ color: 'white', marginBottom: '1rem' }}>
             What to do next:
           </h3>
           <ul style={{ 
             color: '#ccc', 
-            fontSize: '0.9rem', 
             lineHeight: '1.6',
             paddingLeft: '1.5rem'
           }}>
@@ -167,7 +165,6 @@ export default function VerifyEmailPage() {
               borderRadius: '25px',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '1rem',
               transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
@@ -186,7 +183,6 @@ export default function VerifyEmailPage() {
                 borderRadius: '25px',
                 cursor: 'pointer',
                 fontWeight: '600',
-                fontSize: '1rem',
                 transition: 'all 0.3s ease',
                 width: '100%'
               }}
@@ -199,7 +195,7 @@ export default function VerifyEmailPage() {
         </div>
 
         {/* Help Text */}
-        <div style={{ color: '#999', fontSize: '0.9rem', lineHeight: '1.4' }}>
+        <div style={{ color: '#999', lineHeight: '1.4' }}>
           <p style={{ marginBottom: '0.5rem' }}>
             Didn&apos;t receive the email? Check your spam folder or try a different email address.
           </p>

@@ -29,8 +29,7 @@ export function ThemeToggle({ className = '', showLabel = true }: ThemeTogglePro
         borderRadius: '8px',
         cursor: 'pointer',
         transition: 'all 0.3s ease',
-        fontSize: '0.9rem',
-        fontWeight: '500'
+                fontWeight: '500'
       }}
       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'}
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}

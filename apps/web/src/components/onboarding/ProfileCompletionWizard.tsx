@@ -210,7 +210,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.5rem' }}>
             <div>
-              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+              <label className="block font-medium text-gray-300 mb-2" style={{ }}>
                 Display Name *
               </label>
               <input
@@ -220,15 +220,14 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
                 className="w-full border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-700 text-white"
                 style={{
                   padding: isMobile ? '0.75rem' : '1rem',
-                  fontSize: isMobile ? '0.9rem' : '1rem'
-                }}
+                                  }}
                 placeholder="How should people know you?"
                 required
               />
             </div>
             
             <div>
-              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+              <label className="block font-medium text-gray-300 mb-2" style={{ }}>
                 Profile Picture
               </label>
               <div className="flex items-center" style={{ gap: isMobile ? '0.75rem' : '1rem' }}>
@@ -255,8 +254,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
                   className="border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors text-white"
                   style={{
                     padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 1rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                                      }}
                 >
                   Choose Photo
                 </button>
@@ -276,7 +274,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1rem' }}>
             <div>
-              <label className="block font-medium text-gray-300 mb-2" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+              <label className="block font-medium text-gray-300 mb-2" style={{ }}>
                 Where are you based?
               </label>
               <CountrySelector
@@ -298,7 +296,7 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1rem' }}>
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block font-medium text-gray-300" style={{ fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+                <label className="block font-medium text-gray-300" style={{ }}>
                   What genres do you love?
                 </label>
                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
@@ -416,14 +414,12 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         <div className="flex items-center justify-between border-b border-white/10" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
           <div>
             <h2 className="font-bold text-white" style={{
-              fontSize: isMobile ? '1.1rem' : '1.25rem',
-              marginBottom: isMobile ? '0.25rem' : '0'
+                            marginBottom: isMobile ? '0.25rem' : '0'
             }}>
               {steps[currentStep].title}
             </h2>
             <p className="text-white/70" style={{
-              fontSize: isMobile ? '0.8rem' : '0.875rem'
-            }}>
+                          }}>
               {steps[currentStep].description}
             </p>
           </div>
@@ -438,10 +434,10 @@ export function ProfileCompletionWizard({ isOpen, onClose }: ProfileCompletionWi
         {/* Progress Bar */}
         <div style={{ padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: isMobile ? '0.5rem' : '0.5rem' }}>
-            <span className="text-white/70" style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
+            <span className="text-white/70" style={{ }}>
               Step {currentStep + 1} of {steps.length}
             </span>
-            <span className="text-white/70" style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
+            <span className="text-white/70" style={{ }}>
               {Math.round(((currentStep + 1) / steps.length) * 100)}%
             </span>
           </div>

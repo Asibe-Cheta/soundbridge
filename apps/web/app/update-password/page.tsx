@@ -285,7 +285,6 @@ function UpdatePasswordContent() {
           <div style={{ marginBottom: '2rem' }}>
             <h1
               style={{
-                fontSize: '2rem',
                 fontWeight: 'bold',
                 background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                 WebkitBackgroundClip: 'text',
@@ -296,13 +295,13 @@ function UpdatePasswordContent() {
             >
               Password Updated!
             </h1>
-            <p style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
+            <p style={{ color: '#ccc', lineHeight: '1.5' }}>
               Your password has been successfully updated. You will be redirected to the login page shortly.
             </p>
           </div>
 
           {/* Redirect Message */}
-          <div style={{ color: '#999', fontSize: '0.9rem' }}>
+          <div style={{ color: '#999' }}>
             Redirecting to login page...
           </div>
         </div>
@@ -333,7 +332,7 @@ function UpdatePasswordContent() {
             animation: 'spin 1s linear infinite',
             margin: '0 auto 1rem'
           }} />
-          <div style={{ color: 'white', fontSize: '1rem', opacity: 0.8 }}>
+          <div style={{ color: 'white', opacity: 0.8 }}>
             Verifying...
           </div>
           <style>{`
@@ -413,7 +412,6 @@ function UpdatePasswordContent() {
           <div style={{ marginBottom: '2rem' }}>
             <h1
               style={{
-                fontSize: '2rem',
                 fontWeight: 'bold',
                 background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                 WebkitBackgroundClip: 'text',
@@ -424,7 +422,7 @@ function UpdatePasswordContent() {
             >
               Invalid Reset Link
             </h1>
-            <p style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5', marginBottom: '2rem' }}>
+            <p style={{ color: '#ccc', lineHeight: '1.5', marginBottom: '2rem' }}>
               {error}
             </p>
           </div>
@@ -441,7 +439,6 @@ function UpdatePasswordContent() {
                   borderRadius: '25px',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   width: '100%'
                 }}
@@ -462,7 +459,6 @@ function UpdatePasswordContent() {
                   borderRadius: '25px',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   width: '100%'
                 }}
@@ -542,7 +538,6 @@ function UpdatePasswordContent() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1
             style={{
-              fontSize: '2rem',
               fontWeight: 'bold',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -553,7 +548,7 @@ function UpdatePasswordContent() {
           >
             Update Password
           </h1>
-          <p style={{ color: '#999', fontSize: '0.9rem' }}>
+          <p style={{ color: '#999' }}>
             Enter your new password below
           </p>
         </div>
@@ -567,8 +562,7 @@ function UpdatePasswordContent() {
             padding: '1rem',
             marginBottom: '1.5rem',
             color: '#FCA5A5',
-            fontSize: '0.9rem'
-          }}>
+            }}>
             {error}
           </div>
         )}
@@ -581,7 +575,6 @@ function UpdatePasswordContent() {
             padding: '1rem',
             marginBottom: '1.5rem',
             color: '#BFDBFE',
-            fontSize: '0.9rem',
             lineHeight: 1.5
           }}>
             {reauthInfo}
@@ -592,7 +585,7 @@ function UpdatePasswordContent() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* New Password Field */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
               New Password
             </label>
             <div style={{ position: 'relative' }}>
@@ -619,7 +612,6 @@ function UpdatePasswordContent() {
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '12px',
                   color: 'white',
-                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease'
                 }}
@@ -649,7 +641,7 @@ function UpdatePasswordContent() {
 
           {/* Confirm Password Field */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
               Confirm New Password
             </label>
             <div style={{ position: 'relative' }}>
@@ -676,7 +668,6 @@ function UpdatePasswordContent() {
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '12px',
                   color: 'white',
-                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease'
                 }}
@@ -706,7 +697,7 @@ function UpdatePasswordContent() {
 
           {awaitingReauthNonce && (
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
                 Email verification code
               </label>
               <div style={{ position: 'relative' }}>
@@ -734,7 +725,6 @@ function UpdatePasswordContent() {
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '12px',
                     color: 'white',
-                    fontSize: '1rem',
                     outline: 'none',
                     transition: 'all 0.3s ease'
                   }}
@@ -753,7 +743,6 @@ function UpdatePasswordContent() {
                   border: 'none',
                   color: '#EC4899',
                   cursor: resendingCode ? 'not-allowed' : 'pointer',
-                  fontSize: '0.85rem',
                   padding: 0,
                   opacity: resendingCode ? 0.6 : 1
                 }}
@@ -775,7 +764,6 @@ function UpdatePasswordContent() {
               borderRadius: '25px',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               fontWeight: '600',
-              fontSize: '1rem',
               transition: 'all 0.3s ease',
               opacity: isLoading ? 0.7 : 1
             }}
@@ -799,7 +787,6 @@ function UpdatePasswordContent() {
             style={{
               color: '#EC4899',
               textDecoration: 'none',
-              fontSize: '0.9rem',
               transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#DC2626'}

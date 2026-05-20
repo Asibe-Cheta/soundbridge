@@ -155,8 +155,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
             className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center"
             style={{
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
-              fontSize: '0.75rem',
-              fontWeight: '600'
+                            fontWeight: '600'
             }}
           >
             {unreadCount > 99 ? '99+' : unreadCount}

@@ -162,7 +162,7 @@ export function UploadArea({
           <p style={{ color: '#999', marginBottom: '1rem' }}>
             or click to browse files
           </p>
-          <div style={{ fontSize: '0.9rem', color: '#666' }}>
+          <div style={{ color: '#666' }}>
             Supports: {getSupportedFormats()} (Max {config.maxFileSize / 1024 / 1024}MB)
           </div>
           {error && (
@@ -173,8 +173,7 @@ export function UploadArea({
               border: '1px solid rgba(220, 38, 38, 0.3)',
               borderRadius: '8px',
               color: '#DC2626',
-              fontSize: '0.9rem'
-            }}>
+                          }}>
               <AlertCircle size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
               {error}
             </div>
@@ -195,7 +194,7 @@ export function UploadArea({
                 
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600' }}>{uploadFile.name}</div>
-                  <div style={{ color: '#999', fontSize: '0.9rem' }}>
+                  <div style={{ color: '#999' }}>
                     {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
                   </div>
                   {uploadFile.status === 'uploading' && (
@@ -215,8 +214,7 @@ export function UploadArea({
                         }} />
                       </div>
                       <div style={{ 
-                        fontSize: '0.8rem', 
-                        color: '#999', 
+                                                color: '#999', 
                         marginTop: '0.25rem' 
                       }}>
                         {uploadFile.progress.toFixed(1)}%
@@ -225,8 +223,7 @@ export function UploadArea({
                   )}
                   {uploadFile.error && (
                     <div style={{ 
-                      fontSize: '0.8rem', 
-                      color: '#DC2626', 
+                                            color: '#DC2626', 
                       marginTop: '0.25rem' 
                     }}>
                       {uploadFile.error}
@@ -274,7 +271,7 @@ export function UploadArea({
               onDrop={handleDrop}
             >
               <Upload size={24} style={{ color: '#999', marginBottom: '0.5rem' }} />
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>
+              <div style={{ color: '#999' }}>
                 Add more files
               </div>
             </div>

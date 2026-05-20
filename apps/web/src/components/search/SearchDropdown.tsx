@@ -284,8 +284,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
               paddingRight: searchQuery ? '40px' : '16px',
               paddingTop: '12px',
               paddingBottom: '12px',
-              fontSize: '16px',
-              borderRadius: '8px',
+                            borderRadius: '8px',
               border: '1px solid #374151',
               background: '#1f2937',
               color: '#f9fafb',
@@ -375,8 +374,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontSize: '12px',
-                      fontWeight: '600'
+                                            fontWeight: '600'
                     }}>
                       {suggestion.type === 'music' ? '🎵' :
                        suggestion.type === 'creator' ? '👤' :
@@ -410,8 +408,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
                         {suggestion.title}
                       </div>
                       <div style={{
-                        fontSize: '14px',
-                        color: '#9ca3af',
+                                                color: '#9ca3af',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
@@ -422,8 +419,7 @@ export default function SearchDropdown({ placeholder = "Search creators, events,
 
                     {/* Type Badge */}
                     <div style={{
-                      fontSize: '10px',
-                      fontWeight: '600',
+                                            fontWeight: '600',
                       textTransform: 'uppercase',
                       color: suggestion.type === 'music' ? '#ef4444' :
                              suggestion.type === 'creator' ? '#8b5cf6' :

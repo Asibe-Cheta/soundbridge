@@ -122,12 +122,12 @@ export function PortfolioItem({ item, formatRelativeDate }: PortfolioItemProps) 
           </div>
           <div style={{ padding: '0.85rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-              <p style={{ color: 'white', fontSize: '0.95rem', margin: 0, fontWeight: 600 }}>
+              <p style={{ color: 'white', margin: 0, fontWeight: 600 }}>
                 {item.caption || 'Video Portfolio Item'}
               </p>
               <Play size={14} style={{ color: '#9ca3af' }} />
             </div>
-            <p style={{ color: '#9ca3af', fontSize: '0.75rem', margin: 0 }}>
+            <p style={{ color: '#9ca3af', margin: 0 }}>
               Added {formatRelativeDate(item.created_at)}
             </p>
           </div>
@@ -180,8 +180,7 @@ export function PortfolioItem({ item, formatRelativeDate }: PortfolioItemProps) 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold',
+                                    fontWeight: 'bold',
                 }}
               >
                 ×
@@ -203,7 +202,7 @@ export function PortfolioItem({ item, formatRelativeDate }: PortfolioItemProps) 
               </div>
               {item.caption && (
                 <div style={{ padding: '1.5rem' }}>
-                  <p style={{ color: 'white', fontSize: '1.1rem', margin: 0, fontWeight: 600 }}>
+                  <p style={{ color: 'white', margin: 0, fontWeight: 600 }}>
                     {item.caption}
                   </p>
                 </div>
@@ -262,12 +261,12 @@ export function PortfolioItem({ item, formatRelativeDate }: PortfolioItemProps) 
       )}
       <div style={{ padding: '0.85rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-          <p style={{ color: 'white', fontSize: '0.95rem', margin: 0, fontWeight: 600 }}>
+          <p style={{ color: 'white', margin: 0, fontWeight: 600 }}>
             {item.caption || 'Portfolio item'}
           </p>
           <ExternalLink size={14} style={{ color: '#9ca3af' }} />
         </div>
-        <p style={{ color: '#9ca3af', fontSize: '0.75rem', margin: 0 }}>
+        <p style={{ color: '#9ca3af', margin: 0 }}>
           Added {formatRelativeDate(item.created_at)}
         </p>
       </div>

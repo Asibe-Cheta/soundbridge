@@ -211,10 +211,8 @@ function SignupContent() {
           }}
         >
           <div style={{ textAlign: 'center', color: 'white' }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '1rem' }}>
-              Join SoundBridge
-            </h1>
-            <p style={{ fontSize: '1.2rem', opacity: 0.9, maxWidth: '400px' }}>
+            <h1 className="text-4xl font-bold mb-4">Join SoundBridge</h1>
+            <p className="text-base opacity-90 max-w-[400px]">
               Connect with creators, discover amazing events, and be part of a vibrant music community
             </p>
           </div>
@@ -288,7 +286,7 @@ function SignupContent() {
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <p style={{ color: '#ccc', fontSize: '1rem' }}>
+            <p style={{ color: '#ccc' }}>
               Connect with creators and discover amazing events
             </p>
           </div>
@@ -302,8 +300,7 @@ function SignupContent() {
               padding: '1rem',
               marginBottom: '1.5rem',
               color: '#FCA5A5',
-              fontSize: '0.9rem'
-            }}>
+              }}>
               {error}
             </div>
           )}
@@ -329,7 +326,6 @@ function SignupContent() {
                     borderRadius: '12px',
                     padding: '1rem',
                     color: '#374151',
-                    fontSize: '1rem',
                     transition: 'all 0.3s ease',
                     outline: 'none'
                   }}
@@ -355,7 +351,6 @@ function SignupContent() {
                     borderRadius: '12px',
                     padding: '1rem',
                     color: '#374151',
-                    fontSize: '1rem',
                     transition: 'all 0.3s ease',
                     outline: 'none'
                   }}
@@ -383,7 +378,6 @@ function SignupContent() {
                   borderRadius: '12px',
                   padding: '1rem',
                   color: '#374151',
-                  fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
@@ -410,7 +404,6 @@ function SignupContent() {
                   borderRadius: '12px',
                   padding: '1rem',
                   color: '#374151',
-                  fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
@@ -437,7 +430,6 @@ function SignupContent() {
                   borderRadius: '12px',
                   padding: '1rem',
                   color: '#374151',
-                  fontSize: '1rem',
                   transition: 'all 0.3s ease',
                   outline: 'none'
                 }}
@@ -457,7 +449,7 @@ function SignupContent() {
                 required
                 style={{ marginTop: '0.25rem' }}
               />
-              <label style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: '1.4' }}>
+              <label style={{ color: '#ccc', lineHeight: '1.4' }}>
                 I agree to SoundBridge&apos;s{' '}
                         <Link href="/legal/terms" style={{ color: '#EC4899', textDecoration: 'none' }}>
           Terms of Service
@@ -477,7 +469,7 @@ function SignupContent() {
                 onChange={handleInputChange}
                 style={{ marginTop: '0.25rem' }}
               />
-              <label style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: '1.4' }}>
+              <label style={{ color: '#ccc', lineHeight: '1.4' }}>
                 I&apos;d like to receive emails about new features, events, and creator spotlights
               </label>
             </div>
@@ -494,7 +486,6 @@ function SignupContent() {
                 borderRadius: '12px',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
-                fontSize: '1rem',
                 transition: 'all 0.3s ease',
                 width: '100%',
                 marginBottom: '1.5rem',
@@ -528,7 +519,7 @@ function SignupContent() {
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#6b7280' }}>
             <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
-            <span style={{ padding: '0 1rem', fontSize: '0.9rem' }}>or continue with</span>
+            <span style={{ padding: '0 1rem' }}>or continue with</span>
             <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
           </div>
 
@@ -554,7 +545,6 @@ function SignupContent() {
                 color: '#374151',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.3s ease',
-                fontSize: '0.9rem',
                 opacity: isLoading ? 0.6 : 1,
                 transform: 'translateY(0)',
                 minWidth: '160px',
@@ -577,7 +567,6 @@ function SignupContent() {
                 color: '#ffffff',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.3s ease',
-                fontSize: '0.9rem',
                 opacity: isLoading ? 0.6 : 1,
                 minWidth: '160px',
                 fontWeight: '500',
@@ -590,7 +579,7 @@ function SignupContent() {
           </div>
 
           {/* Sign In Link */}
-          <div style={{ textAlign: 'center', color: '#999', fontSize: '0.9rem' }}>
+          <div style={{ textAlign: 'center', color: '#999' }}>
             Already have an account?{' '}
             <Link 
               href="/login"

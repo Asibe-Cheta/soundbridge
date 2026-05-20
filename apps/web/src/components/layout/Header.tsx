@@ -328,8 +328,7 @@ export function Header({
                     padding: '8px 16px',
                     cursor: 'pointer',
                     fontWeight: '500',
-                    fontSize: '16px',
-                    transition: 'all 0.2s ease',
+                                        transition: 'all 0.2s ease',
                     borderRadius: '8px'
                   }}
                   onMouseEnter={(e) => {
@@ -438,8 +437,7 @@ export function Header({
                   style={{ 
                     width: '100%', 
                     paddingLeft: '40px',
-                    fontSize: '16px'
-                  }} 
+                                      }} 
                 />
               </div>
             </div>
@@ -458,8 +456,7 @@ export function Header({
                   borderRadius: '12px',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '0.9rem',
-                  display: 'flex',
+                                    display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
                   transition: 'all 0.3s ease',
@@ -671,8 +668,7 @@ export function Header({
                       borderRadius: '12px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
-                      transition: 'all 0.3s ease'
+                                            transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'var(--accent-primary)';
@@ -696,8 +692,7 @@ export function Header({
                       borderRadius: '12px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
-                      transition: 'all 0.3s ease',
+                                            transition: 'all 0.3s ease',
                       boxShadow: 'var(--shadow-md)'
                     }}
                     onMouseEnter={(e) => {

@@ -91,8 +91,7 @@ export function CreatorProfileSkeleton() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  fontSize: '1.2rem'
-                }}>
+                                  }}>
                   ▶
                 </div>
               </div>

@@ -114,7 +114,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
         justifyContent: 'center',
         color: 'white',
         fontWeight: '600',
-        fontSize: '1.2rem',
         flexShrink: 0,
         position: 'relative',
         border: '2px solid rgba(255, 255, 255, 0.1)'
@@ -134,7 +133,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '0.7rem',
             border: '2px solid #000'
           }}>
             ✓
@@ -146,7 +144,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
           <h3 style={{ 
-            fontSize: '0.9rem', 
             fontWeight: '600', 
             color: 'white',
             margin: 0,
@@ -167,7 +164,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
         }}>
           <span style={{ 
             color: '#999', 
-            fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.25rem'
@@ -178,7 +174,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
           {creator.location && (
             <span style={{ 
               color: '#999', 
-              fontSize: '0.75rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -193,7 +188,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
         {creator.bio && (
           <p style={{ 
             color: '#ccc', 
-            fontSize: '0.75rem', 
             margin: 0,
             lineHeight: '1.3',
             overflow: 'hidden',
@@ -222,7 +216,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
               border: 'none',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.8rem',
               transition: 'all 0.2s ease',
               background: creator.isFollowing ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(45deg, #DC2626, #EC4899)',
               color: 'white',
@@ -244,7 +237,6 @@ const MobileCreatorItem = ({ creator, handleFollow }: MobileCreatorItemProps) =>
             cursor: 'pointer',
             background: 'transparent',
             color: '#999',
-            fontSize: '1rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -579,8 +571,7 @@ export default function CreatorsPage() {
                     border: 'none', 
                     color: 'white', 
                     outline: 'none',
-                    fontSize: isMobile ? '0.9rem' : '1rem'
-                  }}
+                    }}
                 />
                 {searchQuery && (
                   <button
@@ -634,7 +625,6 @@ export default function CreatorsPage() {
                         color: 'white',
                         textAlign: 'left',
                         cursor: 'pointer',
-                        fontSize: isMobile ? '0.9rem' : '1rem',
                         borderBottom: index < searchSuggestions.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
                       }}
                       onMouseEnter={(e) => {
@@ -659,7 +649,6 @@ export default function CreatorsPage() {
                 alignItems: 'center', 
                 gap: isMobile ? '0.5rem' : '0.5rem',
                 padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem',
-                fontSize: isMobile ? '0.9rem' : '1rem',
                 whiteSpace: 'nowrap',
                 minWidth: isMobile ? 'auto' : '120px',
                 justifyContent: 'center'
@@ -683,7 +672,6 @@ export default function CreatorsPage() {
             }}>
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -702,8 +690,7 @@ export default function CreatorsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   {genres.map((genre) => (
                     <option key={genre.value} value={genre.value}>
@@ -715,7 +702,6 @@ export default function CreatorsPage() {
 
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -734,8 +720,7 @@ export default function CreatorsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   {locations.map((location) => (
                     <option key={location.value} value={location.value}>
@@ -747,7 +732,6 @@ export default function CreatorsPage() {
 
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -766,8 +750,7 @@ export default function CreatorsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   <option value="hot">Hot Creators</option>
                   <option value="followers">Most Followers</option>
@@ -790,8 +773,7 @@ export default function CreatorsPage() {
                     style={{ 
                       width: isMobile ? '100%' : '200px',
                       padding: isMobile ? '0.75rem 1rem' : '0.75rem 1.5rem',
-                      fontSize: isMobile ? '0.8rem' : '0.9rem'
-                    }}
+                      }}
                   >
                     Clear All Filters
                   </button>
@@ -805,7 +787,6 @@ export default function CreatorsPage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title" style={{ 
-              fontSize: isMobile ? '1rem' : '1.25rem',
               marginBottom: isMobile ? '0.5rem' : '0.75rem'
             }}>
               {loading ? (
@@ -820,7 +801,6 @@ export default function CreatorsPage() {
             </h2>
             {pagination.total > 0 && !loading && (
               <p style={{ 
-                fontSize: isMobile ? '0.8rem' : '0.9rem', 
                 color: '#999', 
                 marginTop: '0.25rem',
                 lineHeight: '1.4'
@@ -946,7 +926,7 @@ export default function CreatorsPage() {
                   marginTop: '2rem'
                 }}>
                   <p>You&apos;ve seen all {pagination.total} creators!</p>
-                  <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  <p style={{ marginTop: '0.5rem' }}>
                     Try adjusting your filters to discover more creators.
                   </p>
                 </div>
@@ -960,7 +940,6 @@ export default function CreatorsPage() {
                   borderRadius: '8px',
                   padding: '1rem',
                   marginTop: '2rem',
-                  fontSize: '0.8rem',
                   color: '#22c55e'
                 }}>
                   <h4 style={{ margin: '0 0 0.5rem 0', color: '#22c55e' }}>🚀 Virtual Grid Active</h4>

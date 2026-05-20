@@ -211,7 +211,6 @@ export default function SocialConnectionsPage() {
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{
-            fontSize: '2rem',
             fontWeight: 'bold',
             background: 'linear-gradient(45deg, #DC2626, #EC4899)',
             WebkitBackgroundClip: 'text',
@@ -221,7 +220,7 @@ export default function SocialConnectionsPage() {
           }}>
             Social Media Connections
           </h1>
-          <p style={{ color: '#9CA3AF', fontSize: '1rem' }}>
+          <p style={{ color: '#9CA3AF' }}>
             Connect your social media accounts to enable direct sharing from SoundBridge
           </p>
         </div>
@@ -266,7 +265,6 @@ export default function SocialConnectionsPage() {
                 <div style={{ flex: 1 }}>
                   <h3 style={{
                     color: 'white',
-                    fontSize: '1.25rem',
                     fontWeight: '600',
                     margin: '0 0 0.25rem 0'
                   }}>
@@ -285,7 +283,7 @@ export default function SocialConnectionsPage() {
                           borderRadius: '50%',
                           background: '#10B981'
                         }} />
-                        <span style={{ color: '#10B981', fontSize: '0.875rem' }}>
+                        <span style={{ color: '#10B981' }}>
                           Connected
                         </span>
                       </>
@@ -299,8 +297,7 @@ export default function SocialConnectionsPage() {
                         }} />
                         <span style={{ 
                           color: connection.isAvailable ? '#F59E0B' : '#6B7280', 
-                          fontSize: '0.875rem' 
-                        }}>
+                          }}>
                           {connection.isAvailable ? 'Available' : 'Coming Soon'}
                         </span>
                       </>
@@ -312,7 +309,6 @@ export default function SocialConnectionsPage() {
               {/* Description */}
               <p style={{
                 color: '#9CA3AF',
-                fontSize: '0.875rem',
                 lineHeight: '1.5',
                 marginBottom: '1.5rem'
               }}>
@@ -339,7 +335,6 @@ export default function SocialConnectionsPage() {
                       : 'transparent',
                     borderRadius: '8px',
                     color: connection.isConnected ? '#EF4444' : 'white',
-                    fontSize: '0.875rem',
                     fontWeight: '600',
                     cursor: isLoading ? 'not-allowed' : 'pointer',
                     opacity: isLoading ? 0.6 : 1,
@@ -376,7 +371,6 @@ export default function SocialConnectionsPage() {
                   border: '1px solid rgba(107, 114, 128, 0.2)',
                   borderRadius: '8px',
                   color: '#6B7280',
-                  fontSize: '0.875rem',
                   textAlign: 'center'
                 }}>
                   Coming Soon
@@ -396,7 +390,6 @@ export default function SocialConnectionsPage() {
         }}>
           <h3 style={{
             color: '#3B82F6',
-            fontSize: '1.125rem',
             fontWeight: '600',
             marginBottom: '0.75rem'
           }}>
@@ -404,7 +397,6 @@ export default function SocialConnectionsPage() {
           </h3>
           <ul style={{
             color: '#9CA3AF',
-            fontSize: '0.875rem',
             lineHeight: '1.6',
             paddingLeft: '1.5rem'
           }}>

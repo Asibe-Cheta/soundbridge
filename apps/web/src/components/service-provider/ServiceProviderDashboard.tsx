@@ -345,7 +345,7 @@ function SectionCard({ title, action, helpLink, children }: { title: string; act
     >
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</h3>
+          <h3 className="text-xl font-bold" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{title}</h3>
           {helpLink && (
             <Link
               href={helpLink}
@@ -396,18 +396,14 @@ function HelperPill({
       : { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.25)', color: '#cbd5f5' };
 
   return (
-    <div
-      style={{
-        display: 'inline-flex',
+    <div className="text-xs" style={{ display: 'inline-flex',
         alignItems: 'center',
         gap: '0.5rem',
         borderRadius: '999px',
         padding: '0.4rem 0.75rem',
-        fontSize: '0.75rem',
         background: palette.bg,
         border: `1px solid ${palette.border}`,
-        color: palette.color,
-      }}
+        color: palette.color }}
     >
       {children}
     </div>
@@ -1277,7 +1273,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{bookerName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{booking.id.slice(0, 8)}</div>
+                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{booking.id.slice(0, 8)}</div>
                     </div>
                   </div>
 
@@ -1289,14 +1285,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{offeringTitle}</div>
-                  <div
-                    style={{
-                      display: 'flex',
+                  <div className="text-xs" style={{ display: 'flex',
                       flexWrap: 'wrap',
                       gap: '0.75rem',
-                      fontSize: '0.8rem',
-                      color: 'var(--text-secondary)',
-                    }}
+                      color: 'var(--text-secondary)' }}
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                       <Clock size={14} /> {start.toLocaleString()} → {end.toLocaleString()}
@@ -1310,14 +1302,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
+                <div className="text-xs" style={{ display: 'flex',
                     flexWrap: 'wrap',
                     gap: '1rem',
-                    fontSize: '0.8rem',
-                    color: 'var(--text-secondary)',
-                  }}
+                    color: 'var(--text-secondary)' }}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                     <DollarSign size={14} /> Total {formatMoney(booking.total_amount, booking.currency)}
@@ -1331,35 +1319,27 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 </div>
 
                 {booking.booking_notes && (
-                  <div
-                    style={{
-                      padding: '0.75rem',
+                  <div className="text-xs" style={{ padding: '0.75rem',
                       borderRadius: '0.6rem',
                       background: 'rgba(148,163,184,0.12)',
-                      color: 'var(--text-secondary)',
-                      fontSize: '0.8rem',
-                    }}
+                      color: 'var(--text-secondary)' }}
                   >
                     Note from booker: {booking.booking_notes}
                   </div>
                 )}
 
                 {booking.cancellation_reason && (
-                  <div
-                    style={{
-                      padding: '0.75rem',
+                  <div className="text-xs" style={{ padding: '0.75rem',
                       borderRadius: '0.6rem',
                       background: 'rgba(239,68,68,0.1)',
-                      color: '#fca5a5',
-                      fontSize: '0.8rem',
-                    }}
+                      color: '#fca5a5' }}
                   >
                     Cancellation reason: {booking.cancellation_reason}
                   </div>
                 )}
 
                 {(providerStatusDescriptionOverrides[booking.status] || statusMeta.description) && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     {providerStatusDescriptionOverrides[booking.status] ?? statusMeta.description}
                   </div>
                 )}
@@ -1372,14 +1352,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           })}
         </div>
       ) : (
-        <div
-          style={{
-            padding: '1.25rem',
+        <div className="text-sm" style={{ padding: '1.25rem',
             borderRadius: '0.75rem',
             border: '1px dashed var(--border-primary)',
-            color: 'var(--text-secondary)',
-            fontSize: '0.85rem',
-          }}
+            color: 'var(--text-secondary)' }}
         >
           No bookings yet. Once clients request time with you, they'll appear here with full context.
         </div>
@@ -1406,39 +1382,31 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         }
       >
         {loadingBadges ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <div className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-secondary)' }}>
             <Loader2 size={16} className="animate-spin" /> Loading badge insights…
           </div>
         ) : badgeError ? (
-          <div
-            style={{
-              borderRadius: '0.75rem',
+          <div className="text-sm" style={{ borderRadius: '0.75rem',
               border: '1px solid rgba(239,68,68,0.35)',
               background: 'rgba(239,68,68,0.12)',
               color: '#fca5a5',
-              padding: '0.9rem',
-              fontSize: '0.85rem',
-            }}
+              padding: '0.9rem' }}
           >
             {badgeError}
           </div>
         ) : badgeInsights ? (
           <div style={{ display: 'grid', gap: '1.5rem' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'inline-flex',
+              <div className="text-xs" style={{ display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.4rem',
                   padding: '0.4rem 0.85rem',
                   borderRadius: '999px',
                   background: 'linear-gradient(135deg, #DC2626, #EC4899)',
                   color: '#ffffff',
-                  fontSize: '0.75rem',
                   fontWeight: 600,
                   letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                }}
+                  textTransform: 'uppercase' }}
               >
                 <Sparkles size={14} /> {badgeInsights.badgeLabel}
               </div>
@@ -1454,28 +1422,28 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               )}
             </div>
 
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>
+            <p className="text-base" style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
               {badgeInsights.badgeHeadline}
             </p>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', color: '#e2e8f0' }}>
               <div style={{ minWidth: '140px' }}>
-                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.08em' }}>
+                <div className="text-xs" style={{ textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.08em' }}>
                   Completed bookings
                 </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 600 }}>{badgeInsights.completedBookings}</div>
+                <div className="text-xl" style={{ fontWeight: 600 }}>{badgeInsights.completedBookings}</div>
               </div>
               <div style={{ minWidth: '140px' }}>
-                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.08em' }}>
+                <div className="text-xs" style={{ textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.08em' }}>
                   Average rating
                 </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 600 }}>{badgeInsights.averageRating.toFixed(1)}</div>
+                <div className="text-xl" style={{ fontWeight: 600 }}>{badgeInsights.averageRating.toFixed(1)}</div>
               </div>
               <div style={{ minWidth: '140px' }}>
-                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.08em' }}>
+                <div className="text-xs" style={{ textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.08em' }}>
                   Reviews
                 </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 600 }}>{badgeInsights.reviewCount}</div>
+                <div className="text-xl" style={{ fontWeight: 600 }}>{badgeInsights.reviewCount}</div>
               </div>
             </div>
 
@@ -1491,21 +1459,21 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
+                  <div className="text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
                     Next badge
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#fca5a5' }}>
+                  <div className="text-xs" style={{ color: '#fca5a5' }}>
                     {nextBadge.remainingBookings > 0 && `${nextBadge.remainingBookings} more booking${nextBadge.remainingBookings === 1 ? '' : 's'}`}
                     {nextBadge.ratingShortfall > 0
                       ? ` · Improve rating by ${nextBadge.ratingShortfall.toFixed(1)}`
                       : ''}
                   </div>
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f8fafc' }}>{nextBadge.label}</div>
-                <p style={{ margin: 0, color: '#cbd5f5', fontSize: '0.9rem' }}>{nextBadge.description}</p>
+                <div className="text-base" style={{ fontWeight: 600, color: '#f8fafc' }}>{nextBadge.label}</div>
+                <p className="text-sm" style={{ margin: 0, color: '#cbd5f5' }}>{nextBadge.description}</p>
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.75rem' }}>
+                    <div className="text-xs" style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
                       <span>Bookings</span>
                       <span>
                         {nextBadge.progress.bookings.current}/{nextBadge.progress.bookings.required}
@@ -1524,7 +1492,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                   </div>
                   {nextBadge.progress.rating && (
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.75rem' }}>
+                      <div className="text-xs" style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
                         <span>Rating</span>
                         <span>
                           {nextBadge.progress.rating.current.toFixed(1)} /{' '}
@@ -1546,15 +1514,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 </div>
               </div>
             ) : (
-              <div
-                style={{
-                  border: '1px solid rgba(34,197,94,0.3)',
+              <div className="text-sm" style={{ border: '1px solid rgba(34,197,94,0.3)',
                   borderRadius: '1rem',
                   padding: '1.1rem',
                   background: 'rgba(34,197,94,0.15)',
-                  color: '#bbf7d0',
-                  fontSize: '0.9rem',
-                }}
+                  color: '#bbf7d0' }}
               >
                 You’ve unlocked every badge available. Keep delivering stellar sessions to maintain your top placement.
               </div>
@@ -1571,7 +1535,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-                <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.05rem' }}>Public trust messaging</span>
+                <span className="text-base" style={{ color: '#e2e8f0', fontWeight: 600 }}>Public trust messaging</span>
                 <button
                   type="button"
                   onClick={handleSaveTrustSettings}
@@ -1596,30 +1560,22 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               </div>
 
               {trustFeedback.error && (
-                <div
-                  style={{
-                    borderRadius: '0.75rem',
+                <div className="text-sm" style={{ borderRadius: '0.75rem',
                     border: '1px solid rgba(239,68,68,0.35)',
                     background: 'rgba(239,68,68,0.12)',
                     color: '#fca5a5',
-                    padding: '0.85rem',
-                    fontSize: '0.85rem',
-                  }}
+                    padding: '0.85rem' }}
                 >
                   {trustFeedback.error}
                 </div>
               )}
 
               {trustFeedback.success && (
-                <div
-                  style={{
-                    borderRadius: '0.75rem',
+                <div className="text-sm" style={{ borderRadius: '0.75rem',
                     border: '1px solid rgba(34,197,94,0.35)',
                     background: 'rgba(34,197,94,0.15)',
                     color: '#bbf7d0',
-                    padding: '0.85rem',
-                    fontSize: '0.85rem',
-                  }}
+                    padding: '0.85rem' }}
                 >
                   {trustFeedback.success}
                 </div>
@@ -1644,7 +1600,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 />
                 <div style={{ display: 'grid', gap: '0.35rem' }}>
                   <span style={{ fontWeight: 600, color: '#e2e8f0' }}>Payment protection banner</span>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                  <p className="text-sm" style={{ margin: 0, color: '#94a3b8' }}>
                     Display SoundBridge escrow messaging on your public profile to reassure clients that their funds are safe.
                   </p>
                 </div>
@@ -1672,7 +1628,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
                     <span style={{ fontWeight: 600, color: '#e2e8f0' }}>First booking special</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Discount</span>
+                      <span className="text-xs" style={{ color: '#94a3b8' }}>Discount</span>
                       <input
                         type="number"
                         min={0}
@@ -1695,11 +1651,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                       <span style={{ color: '#f8fafc', fontWeight: 600 }}>%</span>
                     </div>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                  <p className="text-sm" style={{ margin: 0, color: '#94a3b8' }}>
                     Offer a limited-time discount on your first booking to convert interested clients faster.
                   </p>
                   {discountDisabled && (
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#fca5a5' }}>
+                    <p className="text-xs" style={{ margin: 0, color: '#fca5a5' }}>
                       You’ve already completed your first booking, so the promo is no longer available.
                     </p>
                   )}
@@ -1709,7 +1665,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
             {badgeInsights.history.length > 0 && (
               <div style={{ display: 'grid', gap: '0.4rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div className="text-xs" style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Recent badge milestones
                 </div>
                 <div style={{ display: 'grid', gap: '0.35rem' }}>
@@ -1720,16 +1676,12 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                     const newLabel =
                       badgeInsights.badges.find((badge) => badge.tier === entry.newTier)?.label ?? entry.newTier;
                     return (
-                      <div
-                        key={entry.id}
-                        style={{
-                          display: 'flex',
+                      <div className="text-sm"
+                        key={entry.id}style={{ display: 'flex',
                           justifyContent: 'space-between',
                           gap: '1rem',
-                          fontSize: '0.85rem',
                           color: '#cbd5f5',
-                          flexWrap: 'wrap',
-                        }}
+                          flexWrap: 'wrap' }}
                       >
                         <span>
                           {new Date(entry.createdAt).toLocaleDateString()} ·{' '}
@@ -1744,7 +1696,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
             )}
           </div>
         ) : (
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             Badge insights will appear once bookings start to complete.
           </div>
         )}
@@ -1826,71 +1778,58 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               Verified Professional
             </HelperPill>
             {verifiedCard.cta?.action === 'start_verification' ? (
-              <button
+              <button className="text-xs"
                 type="button"
                 disabled={startingPersonaVerification}
-                onClick={handleStartPersonaVerification}
-                style={{
-                  border: 'none',
+                onClick={handleStartPersonaVerification}style={{ border: 'none',
                   background: 'transparent',
                   color: '#fbbf24',
-                  fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: startingPersonaVerification ? 'not-allowed' : 'pointer',
-                  opacity: startingPersonaVerification ? 0.7 : 1,
-                }}
+                  opacity: startingPersonaVerification ? 0.7 : 1 }}
               >
                 {verifiedCard.cta.label}
               </button>
             ) : verifiedCard.cta?.href ? (
-              <Link href={verifiedCard.cta.href} style={{ color: '#fbbf24', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>
+              <Link className="text-xs" href={verifiedCard.cta.href}style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 600 }}>
                 {verifiedCard.cta.label}
               </Link>
             ) : null}
           </div>
-          <div style={{ color: '#fef3c7', fontSize: '0.9rem', fontWeight: 600 }}>{verifiedCard.title}</div>
-          <div style={{ color: '#fde68a', fontSize: '0.82rem' }}>{verifiedCard.body}</div>
+          <div className="text-sm" style={{ color: '#fef3c7', fontWeight: 600 }}>{verifiedCard.title}</div>
+          <div className="text-sm" style={{ color: '#fde68a' }}>{verifiedCard.body}</div>
         </div>
 
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0, lineHeight: 1.5, opacity: 0.95 }}>
+        <p className="text-xs" style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, opacity: 0.95 }}>
           <strong>Persona</strong> runs the ID and selfie check in a secure browser tab. There is no manual document upload on SoundBridge.
         </p>
 
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{meta.description}</p>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>{meta.description}</p>
 
         {verificationError && (
-          <div
-            style={{
-              borderRadius: '0.75rem',
+          <div className="text-sm" style={{ borderRadius: '0.75rem',
               border: '1px solid rgba(248,113,113,0.35)',
               background: 'rgba(248,113,113,0.12)',
               color: '#fecaca',
-              padding: '0.85rem',
-              fontSize: '0.85rem',
-            }}
+              padding: '0.85rem' }}
           >
             {verificationError}
           </div>
         )}
 
         {verificationSuccess && (
-          <div
-            style={{
-              borderRadius: '0.75rem',
+          <div className="text-sm" style={{ borderRadius: '0.75rem',
               border: '1px solid rgba(34,197,94,0.35)',
               background: 'rgba(34,197,94,0.15)',
               color: '#bbf7d0',
-              padding: '0.85rem',
-              fontSize: '0.85rem',
-            }}
+              padding: '0.85rem' }}
           >
             {verificationSuccess}
           </div>
         )}
 
         {loadingVerification ? (
-          <div
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}
+          <div className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)' }}
           >
             <Loader2 size={16} className="animate-spin" /> Checking verification status…
           </div>
@@ -1906,7 +1845,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 background: 'rgba(15,23,42,0.45)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: 600, fontSize: '0.95rem' }}>
+              <div className="text-base" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0', fontWeight: 600 }}>
                 <ListChecks size={16} /> Requirements
               </div>
               <div style={{ display: 'grid', gap: '0.6rem' }}>
@@ -1916,10 +1855,8 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                   const value = requirement?.value ?? null;
                   const required = requirement?.required ?? null;
                   return (
-                    <div
-                      key={id}
-                      style={{
-                        display: 'flex',
+                    <div className="text-sm"
+                      key={id}style={{ display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: '1rem',
@@ -1927,9 +1864,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                         borderRadius: '0.75rem',
                         border: '1px solid rgba(148,163,184,0.18)',
                         background: 'rgba(15,23,42,0.35)',
-                        color: satisfied ? '#bbf7d0' : '#fca5a5',
-                        fontSize: '0.85rem',
-                      }}
+                        color: satisfied ? '#bbf7d0' : '#fca5a5' }}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {satisfied ? <CheckCircle size={14} /> : <ShieldAlert size={14} />}
@@ -1958,7 +1893,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                       background: 'rgba(15,23,42,0.35)',
                     }}
                   >
-                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#cbd5f5', lineHeight: 1.55 }}>
+                    <p className="text-md" style={{ margin: 0, color: '#cbd5f5', lineHeight: 1.55 }}>
                       Verification is handled by Persona in a new browser tab. Government ID and selfie are not uploaded on Soundbridge.
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -1996,19 +1931,19 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 )}
 
                 {!showPersonaButton && canStartPersona && !badgeInsights?.activePremium && (
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#fda4af' }}>
+                  <p className="text-xs" style={{ margin: 0, color: '#fda4af' }}>
                     Upgrade to Premium to start Persona verification once prerequisites are complete.
                   </p>
                 )}
 
                 {unmetPrerequisites.length > 0 && (
-                  <div style={{ fontSize: '0.8rem', color: '#fca5a5' }}>
+                  <div className="text-xs" style={{ color: '#fca5a5' }}>
                     Outstanding: {unmetPrerequisites.map((entry) => entry.label).join(', ')}.
                   </div>
                 )}
               </>
             ) : (
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+              <div className="text-sm" style={{ color: '#94a3b8' }}>
                 Create your service provider profile and publish your first offering to unlock verification.
               </div>
             )}
@@ -2036,17 +1971,13 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         }
       >
         {!profileData && (
-          <div
-            style={{
-              background: 'rgba(148,163,184,0.15)',
+          <div className="text-md" style={{ background: 'rgba(148,163,184,0.15)',
               border: '1px dashed rgba(148,163,184,0.35)',
               borderRadius: '0.75rem',
               padding: '1rem',
               marginBottom: '1rem',
               color: 'var(--text-secondary)',
-              fontSize: '0.875rem',
-              lineHeight: 1.6,
-            }}
+              lineHeight: 1.6 }}
           >
             You haven’t set up a service provider profile yet. Fill in the details below and click{' '}
             <strong>Create service provider profile</strong> to unlock bookings, offerings, and portfolio tools.
@@ -2055,7 +1986,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
         <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Display name</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Display name</span>
             <input
               value={profileDraft.displayName}
               onChange={(event) => setProfileDraft((prev) => ({ ...prev, displayName: event.target.value }))}
@@ -2071,7 +2002,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           </label>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Headline</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Headline</span>
             <input
               value={profileDraft.headline}
               onChange={(event) => setProfileDraft((prev) => ({ ...prev, headline: event.target.value }))}
@@ -2088,7 +2019,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </div>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Bio</span>
+          <span className="text-sm" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Bio</span>
           <textarea
             value={profileDraft.bio}
             onChange={(event) => setProfileDraft((prev) => ({ ...prev, bio: event.target.value }))}
@@ -2107,7 +2038,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
 
         <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Default rate</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Default rate</span>
             <input
               value={profileDraft.defaultRate}
               onChange={(event) => {
@@ -2128,7 +2059,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           </label>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Currency</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Currency</span>
             <select
               value={profileDraft.rateCurrency}
               onChange={(event) => setProfileDraft((prev) => ({ ...prev, rateCurrency: event.target.value }))}
@@ -2152,7 +2083,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           </label>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Status</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Status</span>
             <select
               value={profileDraft.status}
               onChange={(event) => setProfileDraft((prev) => ({ ...prev, status: event.target.value as ProviderStatus }))}
@@ -2187,17 +2118,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                   }))
                 }
                 type="button"
-                style={{
-                  padding: '0.45rem 0.85rem',
+                style={{ padding: '0.45rem 0.85rem',
                   borderRadius: '999px',
                   border: '1px solid',
                   borderColor: isSelected ? 'rgba(220, 38, 38, 0.6)' : 'var(--border-primary)',
                   color: isSelected ? '#fef2f2' : 'var(--text-secondary)',
                   background: isSelected ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
-                  fontSize: '0.75rem',
                   textTransform: 'capitalize',
-                  transition: 'all 0.2s ease',
-                }}
+                  transition: 'all 0.2s ease' }}
               >
                 {category.replace('_', ' ')}
               </button>
@@ -2275,7 +2203,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         }}
       >
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Title</span>
           <input
             value={offeringDraft.title}
             onChange={(event) => setOfferingDraft((prev) => ({ ...prev, title: event.target.value }))}
@@ -2291,7 +2219,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Category</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Category</span>
           <select
             value={offeringDraft.category}
             onChange={(event) => setOfferingDraft((prev) => ({ ...prev, category: event.target.value }))}
@@ -2313,7 +2241,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Rate amount</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Rate amount</span>
           <input
             value={offeringDraft.rateAmount}
             onChange={(event) => {
@@ -2334,7 +2262,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Rate currency</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Rate currency</span>
           <select
             value={offeringDraft.rateCurrency}
             onChange={(event) => setOfferingDraft((prev) => ({ ...prev, rateCurrency: event.target.value }))}
@@ -2358,7 +2286,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Rate unit</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Rate unit</span>
           <input
             value={offeringDraft.rateUnit}
             onChange={(event) => setOfferingDraft((prev) => ({ ...prev, rateUnit: event.target.value }))}
@@ -2409,7 +2337,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           <Plus size={16} /> Add offering
         </button>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+        <label className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
           <input
             type="checkbox"
             checked={offeringDraft.isActive}
@@ -2443,7 +2371,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                       </HelperPill>
                     )}
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
                     {offering.category.replace('_', ' ')}
                   </p>
                 </div>
@@ -2451,15 +2379,12 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button
                     onClick={() => handleToggleOffering(offering.id, !offering.is_active)}
-                    style={{
-                      padding: '0.45rem 0.75rem',
+                    style={{ padding: '0.45rem 0.75rem',
                       borderRadius: '0.6rem',
                       background: offering.is_active ? 'rgba(220,38,38,0.12)' : 'rgba(34,197,94,0.15)',
                       color: offering.is_active ? '#fca5a5' : '#34d399',
                       border: 'none',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                    }}
+                      cursor: 'pointer' }}
                   >
                     {offering.is_active ? 'Deactivate' : 'Activate'}
                   </button>
@@ -2481,10 +2406,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               </div>
 
               {offering.description && (
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{offering.description}</p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{offering.description}</p>
               )}
 
-              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <div className="text-xs" style={{ display: 'flex', gap: '1rem', color: 'var(--text-secondary)' }}>
                 <span>
                   Rate:{' '}
                   <strong style={{ color: 'var(--text-primary)' }}>
@@ -2498,15 +2423,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           ))}
         </div>
       ) : (
-        <div
-          style={{
-            marginTop: '1rem',
+        <div className="text-sm" style={{ marginTop: '1rem',
             padding: '1.25rem',
             borderRadius: '0.75rem',
             border: '1px dashed var(--border-primary)',
-            color: 'var(--text-secondary)',
-            fontSize: '0.85rem',
-          }}
+            color: 'var(--text-secondary)' }}
         >
           You haven’t added any offerings yet. Use the form above to outline your services.
         </div>
@@ -2533,7 +2454,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         }}
       >
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Media URL</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Media URL</span>
           <input
             value={portfolioDraft.mediaUrl}
             onChange={(event) => setPortfolioDraft((prev) => ({ ...prev, mediaUrl: event.target.value }))}
@@ -2549,7 +2470,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Thumbnail URL</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Thumbnail URL</span>
           <input
             value={portfolioDraft.thumbnailUrl}
             onChange={(event) => setPortfolioDraft((prev) => ({ ...prev, thumbnailUrl: event.target.value }))}
@@ -2565,7 +2486,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Caption</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Caption</span>
           <input
             value={portfolioDraft.caption}
             onChange={(event) => setPortfolioDraft((prev) => ({ ...prev, caption: event.target.value }))}
@@ -2581,7 +2502,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Display order</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Display order</span>
           <input
             value={portfolioDraft.displayOrder}
             onChange={(event) => {
@@ -2665,18 +2586,16 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.caption || 'Portfolio item'}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     Added {new Date(item.created_at).toLocaleDateString()}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Link
+                  <Link className="text-xs"
                     href={item.media_url}
                     target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      flex: 1,
+                    rel="noopener noreferrer" style={{ flex: 1,
                       textDecoration: 'none',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -2686,9 +2605,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
                       borderRadius: '0.6rem',
                       background: 'rgba(59,130,246,0.15)',
                       color: '#60a5fa',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                    }}
+                      fontWeight: 600 }}
                   >
                     <ExternalLink size={14} /> Preview
                   </Link>
@@ -2712,15 +2629,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           ))}
         </div>
       ) : (
-        <div
-          style={{
-            marginTop: '1rem',
+        <div className="text-sm" style={{ marginTop: '1rem',
             padding: '1.25rem',
             borderRadius: '0.75rem',
             border: '1px dashed var(--border-primary)',
-            color: 'var(--text-secondary)',
-            fontSize: '0.85rem',
-          }}
+            color: 'var(--text-secondary)' }}
         >
           No portfolio items yet. Add renders, mixing samples, or behind-the-scenes media to boost trust.
         </div>
@@ -2746,7 +2659,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         }}
       >
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Start time</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Start time</span>
           <input
             type="datetime-local"
             value={availabilityDraft.startTime}
@@ -2762,7 +2675,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>End time</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>End time</span>
           <input
             type="datetime-local"
             value={availabilityDraft.endTime}
@@ -2778,7 +2691,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Recurrence rule</span>
+          <span className="text-xs" style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Recurrence rule</span>
           <input
             value={availabilityDraft.recurrenceRule}
             onChange={(event) => setAvailabilityDraft((prev) => ({ ...prev, recurrenceRule: event.target.value }))}
@@ -2795,7 +2708,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+        <label className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
           <input
             type="checkbox"
             checked={availabilityDraft.isRecurring}
@@ -2804,7 +2717,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           Recurring slot
         </label>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+        <label className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
           <input
             type="checkbox"
             checked={availabilityDraft.isBookable}
@@ -2849,10 +2762,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               }}
             >
               <div>
-                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                <div className="text-sm" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                   {new Date(slot.start_time).toLocaleString()} → {new Date(slot.end_time).toLocaleString()}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.75rem' }}>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)', display: 'flex', gap: '0.75rem' }}>
                   <span>{slot.is_bookable ? 'Bookable' : 'Unavailable'}</span>
                   {slot.is_recurring && <span>Recurring</span>}
                   {slot.recurrence_rule && <span>{slot.recurrence_rule}</span>}
@@ -2876,15 +2789,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           ))}
         </div>
       ) : (
-        <div
-          style={{
-            marginTop: '1rem',
+        <div className="text-sm" style={{ marginTop: '1rem',
             padding: '1.25rem',
             borderRadius: '0.75rem',
             border: '1px dashed var(--border-primary)',
-            color: 'var(--text-secondary)',
-            fontSize: '0.85rem',
-          }}
+            color: 'var(--text-secondary)' }}
         >
           You haven’t added any availability slots yet. Add recurring or one-off availability to accept bookings.
         </div>
@@ -2922,18 +2831,14 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div
-                  style={{
-                    display: 'inline-flex',
+                <div className="text-xs" style={{ display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.35rem',
                     padding: '0.2rem 0.6rem',
                     borderRadius: '999px',
                     background: 'rgba(250, 204, 21, 0.18)',
                     color: '#fde68a',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                  }}
+                    fontWeight: 600 }}
                 >
                   <Star size={14} /> {review.rating}
                 </div>
@@ -2943,11 +2848,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
               </div>
 
               {review.title && (
-                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>{review.title}</h4>
+                <h4 className="text-base" style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>{review.title}</h4>
               )}
-              {review.comment && <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{review.comment}</p>}
+              {review.comment && <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{review.comment}</p>}
 
-              <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <div className="text-xs" style={{ display: 'flex', gap: '0.75rem', color: 'var(--text-secondary)' }}>
                 <span>By {review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
                 <span>{new Date(review.created_at).toLocaleDateString()}</span>
               </div>
@@ -2955,14 +2860,10 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           ))}
         </div>
       ) : (
-        <div
-          style={{
-            padding: '1.25rem',
+        <div className="text-sm" style={{ padding: '1.25rem',
             borderRadius: '0.75rem',
             border: '1px dashed var(--border-primary)',
-            color: 'var(--text-secondary)',
-            fontSize: '0.85rem',
-          }}
+            color: 'var(--text-secondary)' }}
         >
           No reviews yet. Encourage clients to leave feedback after successful collaborations.
         </div>
@@ -2991,34 +2892,27 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
       {error && (
-        <div
-          style={{
-            borderRadius: '0.75rem',
+        <div className="text-sm" style={{ borderRadius: '0.75rem',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             background: 'rgba(239, 68, 68, 0.1)',
             padding: '1rem',
             color: '#fca5a5',
-            fontSize: '0.9rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.75rem',
-          }}
+            gap: '0.75rem' }}
         >
           <ShieldAlert size={18} />
           <span>{error}</span>
           <button
             onClick={() => loadData()}
-            style={{
-              marginLeft: 'auto',
+            style={{ marginLeft: 'auto',
               border: 'none',
               background: 'transparent',
               color: '#fca5a5',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              fontSize: '0.8rem',
-            }}
+              gap: '0.35rem' }}
           >
             <RefreshCcw size={14} /> Try again
           </button>

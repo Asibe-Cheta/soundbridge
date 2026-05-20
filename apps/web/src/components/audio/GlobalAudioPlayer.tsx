@@ -434,8 +434,7 @@ export function GlobalAudioPlayer() {
                   </motion.p>
                   {currentTrack.album && (
                     <p style={{
-                      fontSize: '1rem',
-                      color: '#999'
+                                            color: '#999'
                     }}>
                       {currentTrack.album}
                     </p>
@@ -472,8 +471,7 @@ export function GlobalAudioPlayer() {
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    fontSize: '0.9rem',
-                    color: '#ccc'
+                                        color: '#ccc'
                   }}>
                     <span>{formatTimeDisplay(currentTime)}</span>
                     <span>{formatTimeDisplay(duration)}</span>
@@ -690,8 +688,7 @@ export function GlobalAudioPlayer() {
                       <Type size={20} color="#EC4899" />
                       <h3 style={{
                         color: 'white',
-                        fontSize: '1.2rem',
-                        fontWeight: '600',
+                                                fontWeight: '600',
                         margin: 0
                       }}>
                         Lyrics
@@ -748,8 +745,7 @@ export function GlobalAudioPlayer() {
                           }}
                           style={{
                             color: 'rgba(255, 255, 255, 0.9)',
-                            fontSize: '1.1rem',
-                            lineHeight: '1.6',
+                                                        lineHeight: '1.6',
                             marginBottom: '0.8rem',
                             textAlign: 'left',
                             fontWeight: '400'
@@ -768,8 +764,7 @@ export function GlobalAudioPlayer() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '0.9rem',
-                    color: 'rgba(255, 255, 255, 0.6)'
+                                        color: 'rgba(255, 255, 255, 0.6)'
                   }}>
                     <span>Language: {currentTrack.lyricsLanguage || 'English'}</span>
                     <span>{(currentTrack.lyrics || lyricsRef.current || '').split('\n').length} lines</span>
@@ -787,8 +782,7 @@ export function GlobalAudioPlayer() {
             alignItems: 'center',
             justifyContent: 'space-between',
             color: 'white',
-            fontSize: '14px'
-          }}>
+                      }}>
           {/* Left Section - Track Info & Cover Art */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1', minWidth: 0 }}>
             {/* Cover Art */}
@@ -814,7 +808,7 @@ export function GlobalAudioPlayer() {
                   }}
                 />
               ) : (
-                <span style={{ fontSize: '24px', color: 'white' }}>🎵</span>
+                <span style={{ color: 'white' }}>🎵</span>
               )}
             </div>
             
@@ -826,14 +820,12 @@ export function GlobalAudioPlayer() {
                 overflow: 'hidden', 
                 textOverflow: 'ellipsis',
                 color: 'white',
-                fontSize: '14px',
-                marginBottom: '4px'
+                                marginBottom: '4px'
               }}>
                 {currentTrack.title}
               </div>
               <div style={{ 
-                fontSize: '12px', 
-                color: '#9CA3AF',
+                                color: '#9CA3AF',
                 whiteSpace: 'nowrap', 
                 overflow: 'hidden', 
                 textOverflow: 'ellipsis'
@@ -891,8 +883,7 @@ export function GlobalAudioPlayer() {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   color: 'white',
-                  fontSize: '16px',
-                  transition: 'all 0.2s ease',
+                                    transition: 'all 0.2s ease',
                   boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
                 }}
                 onMouseEnter={(e) => {
@@ -947,8 +938,7 @@ export function GlobalAudioPlayer() {
             {/* Progress Bar */}
             <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ 
-                fontSize: '11px', 
-                color: '#9CA3AF', 
+                                color: '#9CA3AF', 
                 width: '35px', 
                 textAlign: 'right',
                 fontVariantNumeric: 'tabular-nums'
@@ -996,8 +986,7 @@ export function GlobalAudioPlayer() {
               </div>
               
               <span style={{ 
-                fontSize: '11px', 
-                color: '#9CA3AF', 
+                                color: '#9CA3AF', 
                 width: '35px',
                 fontVariantNumeric: 'tabular-nums'
               }}>

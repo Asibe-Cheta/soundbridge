@@ -421,7 +421,7 @@ export function FanLandingClient({
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                             <span>{formatDuration(t.duration)}</span>
                             {t.genre ? (
-                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-rose-100/90">
+                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-badge uppercase tracking-wide text-rose-100/90">
                                 {t.genre}
                               </span>
                             ) : null}
@@ -562,7 +562,7 @@ export function FanLandingClient({
           <Link href="/" className="mt-2 text-xs text-pink-400/90 hover:text-pink-300">
             soundbridge.live
           </Link>
-          <p className="mt-4 max-w-sm text-[10px] leading-relaxed text-gray-600">
+          <p className="mt-4 max-w-sm text-badge leading-relaxed text-gray-600">
             App deep link:{' '}
             <code className="rounded bg-black/40 px-1 py-0.5 text-gray-500">{schemeArtistUrl}</code>
           </p>

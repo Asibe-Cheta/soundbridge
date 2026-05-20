@@ -270,10 +270,10 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
             </button>
 
             <div style={{ display: 'grid', gap: '0.35rem' }}>
-              <h2 id="booking-dialog-title" style={{ margin: 0, fontSize: '1.6rem', color: 'white', fontWeight: 700 }}>
+              <h2 id="booking-dialog-title" style={{ margin: 0, color: 'white', fontWeight: 700 }}>
                 Book {providerName}
               </h2>
-              <p style={{ color: '#cbd5f5', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ color: '#cbd5f5', lineHeight: 1.6, margin: 0 }}>
                 Choose an offering and a time that suits you. You’ll only be charged once the provider confirms.
               </p>
             </div>
@@ -293,8 +293,8 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                   <CheckCircle size={20} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.35rem' }}>Request sent</div>
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#d1fae5' }}>{successMessage}</p>
+                    <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Request sent</div>
+                    <p style={{ margin: 0, color: '#d1fae5' }}>{successMessage}</p>
                   </div>
                 </div>
                 <div
@@ -302,8 +302,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: '0.65rem',
-                    fontSize: '0.85rem',
-                    color: '#d1fae5',
+                                        color: '#d1fae5',
                   }}
                 >
                   <span>• You can monitor the status under your bookings dashboard.</span>
@@ -350,7 +349,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                   }}
                 >
                   <label style={{ display: 'grid', gap: '0.5rem' }}>
-                    <span style={{ color: '#cbd5f5', fontSize: '0.85rem', fontWeight: 600 }}>Service</span>
+                    <span style={{ color: '#cbd5f5', fontWeight: 600 }}>Service</span>
                     <select
                       value={form.offeringId}
                       onChange={(event) => {
@@ -386,7 +385,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                   </label>
 
                   <label style={{ display: 'grid', gap: '0.5rem' }}>
-                    <span style={{ color: '#cbd5f5', fontSize: '0.85rem', fontWeight: 600 }}>Scheduled start</span>
+                    <span style={{ color: '#cbd5f5', fontWeight: 600 }}>Scheduled start</span>
                     <input
                       type="datetime-local"
                       value={form.start}
@@ -403,7 +402,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                   </label>
 
                   <label style={{ display: 'grid', gap: '0.5rem' }}>
-                    <span style={{ color: '#cbd5f5', fontSize: '0.85rem', fontWeight: 600 }}>Scheduled end</span>
+                    <span style={{ color: '#cbd5f5', fontWeight: 600 }}>Scheduled end</span>
                     <input
                       type="datetime-local"
                       value={form.end}
@@ -420,7 +419,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                   </label>
 
                   <label style={{ display: 'grid', gap: '0.5rem' }}>
-                    <span style={{ color: '#cbd5f5', fontSize: '0.85rem', fontWeight: 600 }}>Project total</span>
+                    <span style={{ color: '#cbd5f5', fontWeight: 600 }}>Project total</span>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <input
                         type="number"
@@ -470,7 +469,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                       background: 'rgba(15,23,42,0.4)',
                     }}
                   >
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5f5' }}>
+                    <span style={{ fontWeight: 600, color: '#cbd5f5' }}>
                       Available slots
                     </span>
                     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -490,8 +489,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                               background: selected ? 'rgba(220,38,38,0.12)' : 'transparent',
                               color: selected ? '#fecaca' : '#cbd5f5',
                               padding: '0.6rem 0.9rem',
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
+                                                            cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '0.4rem',
@@ -518,7 +516,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                 )}
 
                 <label style={{ display: 'grid', gap: '0.5rem' }}>
-                  <span style={{ color: '#cbd5f5', fontSize: '0.85rem', fontWeight: 600 }}>Project notes</span>
+                  <span style={{ color: '#cbd5f5', fontWeight: 600 }}>Project notes</span>
                   <textarea
                     value={form.notes}
                     onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -544,8 +542,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                     border: '1px solid rgba(148,163,184,0.25)',
                     background: 'rgba(30,41,59,0.6)',
                     color: '#cbd5f5',
-                    fontSize: '0.85rem',
-                    lineHeight: 1.6,
+                                        lineHeight: 1.6,
                   }}
                 >
                   <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', color: '#fca5a5' }}>
@@ -567,8 +564,7 @@ export const BookProviderDialog: React.FC<BookProviderDialogProps> = ({
                       background: 'rgba(248,113,113,0.12)',
                       color: '#fecaca',
                       padding: '0.75rem',
-                      fontSize: '0.85rem',
-                    }}
+                                          }}
                   >
                     {error}
                   </div>

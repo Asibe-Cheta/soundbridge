@@ -87,8 +87,7 @@ const TonePill: React.FC<{ tone: 'default' | 'warning' | 'success' | 'critical';
         border: `1px solid ${palette.border}`,
         background: palette.bg,
         color: palette.color,
-        fontSize: '0.75rem',
-        fontWeight: 600,
+                fontWeight: 600,
         letterSpacing: '0.03em',
         textTransform: 'uppercase',
       }}
@@ -193,10 +192,10 @@ const AdminVerificationDashboard: React.FC = () => {
       >
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'grid', gap: '0.35rem' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
               {request.provider?.display_name || 'Unknown provider'}
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.75rem' }}>
+            <div style={{ color: 'var(--text-secondary)', display: 'flex', gap: '0.75rem' }}>
               <span>
                 <Clock size={14} style={{ marginRight: '0.3rem' }} />
                 {formatDateTime(request.submitted_at)}
@@ -219,8 +218,7 @@ const AdminVerificationDashboard: React.FC = () => {
               borderRadius: '0.75rem',
               border: '1px solid var(--border-secondary)',
               background: 'var(--bg-tertiary)',
-              fontSize: '0.85rem',
-              color: 'var(--text-primary)',
+                            color: 'var(--text-primary)',
             }}
           >
             {request.provider_notes && <div>Provider notes: {request.provider_notes}</div>}
@@ -237,8 +235,7 @@ const AdminVerificationDashboard: React.FC = () => {
             border: '1px solid rgba(148,163,184,0.25)',
             background: 'rgba(15,23,42,0.35)',
             color: '#cbd5f5',
-            fontSize: '0.85rem',
-          }}
+                      }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: '#e2e8f0' }}>
             <ListChecks size={16} /> Automated checks
@@ -273,8 +270,7 @@ const AdminVerificationDashboard: React.FC = () => {
               borderRadius: '0.75rem',
               border: '1px solid rgba(148,163,184,0.25)',
               background: 'rgba(15,23,42,0.35)',
-              fontSize: '0.85rem',
-              color: '#cbd5f5',
+                            color: '#cbd5f5',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: '#e2e8f0' }}>
@@ -296,7 +292,7 @@ const AdminVerificationDashboard: React.FC = () => {
         )}
 
         <label style={{ display: 'grid', gap: '0.45rem' }}>
-          <span style={{ fontSize: '0.85rem', color: '#cbd5f5', fontWeight: 600 }}>Decision notes</span>
+          <span style={{ color: '#cbd5f5', fontWeight: 600 }}>Decision notes</span>
           <textarea
             value={decisionNotes[request.id] ?? ''}
             onChange={(event) => setDecisionNotes((prev) => ({ ...prev, [request.id]: event.target.value }))}
@@ -349,7 +345,7 @@ const AdminVerificationDashboard: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          <div style={{ color: 'var(--text-secondary)' }}>
             Reviewed {request.reviewed_at ? formatDateTime(request.reviewed_at) : formatDateTime(request.submitted_at)}
           </div>
         )}
@@ -388,8 +384,8 @@ const AdminVerificationDashboard: React.FC = () => {
     >
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'grid', gap: '0.4rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>Provider verification</h1>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+          <h1 style={{ margin: 0, fontWeight: 700 }}>Provider verification</h1>
+          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
             Review verification submissions, validate compliance, and keep the marketplace safe.
           </p>
         </div>
@@ -420,8 +416,7 @@ const AdminVerificationDashboard: React.FC = () => {
             background: isDark ? 'rgba(248,113,113,0.15)' : 'rgba(248,113,113,0.12)',
             color: isDark ? '#fecaca' : '#b91c1c',
             padding: '1rem',
-            fontSize: '0.9rem',
-            display: 'flex',
+                        display: 'flex',
             gap: '0.75rem',
             alignItems: 'center',
           }}
@@ -447,7 +442,7 @@ const AdminVerificationDashboard: React.FC = () => {
       ) : (
         <>
           <section style={{ display: 'grid', gap: '1rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Pending review</h2>
+            <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)' }}>Pending review</h2>
             {groupedRequests.pending.length === 0 ? (
               <div
                 style={{
@@ -455,8 +450,7 @@ const AdminVerificationDashboard: React.FC = () => {
                   borderRadius: '1rem',
                   border: '1px dashed var(--border-primary)',
                   color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                }}
+                                  }}
               >
                 No pending verification requests.
               </div>
@@ -466,7 +460,7 @@ const AdminVerificationDashboard: React.FC = () => {
           </section>
 
           <section style={{ display: 'grid', gap: '1rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Resolved</h2>
+            <h2 style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)' }}>Resolved</h2>
             {groupedRequests.resolved.length === 0 ? (
               <div
                 style={{
@@ -474,8 +468,7 @@ const AdminVerificationDashboard: React.FC = () => {
                   borderRadius: '1rem',
                   border: '1px dashed var(--border-primary)',
                   color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                }}
+                                  }}
               >
                 No recent approvals or rejections.
               </div>

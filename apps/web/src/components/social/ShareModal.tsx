@@ -508,7 +508,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
           padding: '1.5rem',
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', margin: 0 }}>
+          <h2 style={{ color: 'white', fontWeight: '600', margin: 0 }}>
             Share {content.title}
           </h2>
           <button
@@ -548,10 +548,10 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
               />
             )}
             <div style={{ flex: 1 }}>
-              <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: '0 0 0.25rem 0' }}>
+              <h3 style={{ color: 'white', fontWeight: '600', margin: '0 0 0.25rem 0' }}>
                 {content.title}
               </h3>
-              <p style={{ color: '#9CA3AF', fontSize: '0.875rem', margin: 0 }}>
+              <p style={{ color: '#9CA3AF', margin: 0 }}>
                 by {content.creator?.name || 'Unknown Artist'}
               </p>
             </div>
@@ -564,7 +564,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
            flexShrink: 0
          }}>
-           <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: '0 0 1rem 0' }}>
+           <h3 style={{ color: 'white', fontWeight: '600', margin: '0 0 1rem 0' }}>
              Quick Share
            </h3>
            <div 
@@ -607,7 +607,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                 <div style={{ color: option.color }}>
                   {option.icon}
                 </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: '500' }}>
+                <span style={{ fontWeight: '500' }}>
                   {option.name}
                 </span>
               </button>
@@ -643,8 +643,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                  border: 'none',
                  color: activeTab === tab.id ? '#3B82F6' : '#9CA3AF',
                  cursor: 'pointer',
-                 fontSize: '0.875rem',
-                 fontWeight: '500'
+                                  fontWeight: '500'
                }}
              >
                {tab.icon}
@@ -670,8 +669,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                justifyContent: 'center',
                cursor: 'pointer',
                color: '#9CA3AF',
-               fontSize: '12px'
-             }}
+                            }}
            >
              {isTabsExpanded ? '−' : '+'}
            </button>
@@ -705,7 +703,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
              background: '#1F2937'
            }}>
-             <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+             <h3 style={{ color: 'white', fontWeight: '600', margin: 0 }}>
                {activeTab === 'contacts' && 'Share with Contacts'}
                {activeTab === 'platforms' && 'Share on Platforms'}
                {activeTab === 'link' && 'Copy Share Link'}
@@ -743,14 +741,13 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     borderRadius: '8px',
                     color: 'white',
-                    fontSize: '0.875rem',
-                    resize: 'vertical'
+                                        resize: 'vertical'
                   }}
                 />
               </div>
               
                              <div style={{ marginBottom: '1rem' }}>
-                 <h4 style={{ color: 'white', fontSize: '0.875rem', fontWeight: '600', margin: '0 0 0.75rem 0' }}>
+                 <h4 style={{ color: 'white', fontWeight: '600', margin: '0 0 0.75rem 0' }}>
                    Select Contacts
                  </h4>
                  
@@ -768,8 +765,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                        border: '1px solid rgba(255, 255, 255, 0.1)',
                        borderRadius: '6px',
                        color: 'white',
-                       fontSize: '0.875rem',
-                       outline: 'none'
+                                              outline: 'none'
                      }}
                      onFocus={(e) => e.target.style.borderColor = '#3B82F6'}
                      onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
@@ -821,17 +817,16 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                            display: 'flex',
                            alignItems: 'center',
                            justifyContent: 'center',
-                           fontSize: '0.75rem',
-                           fontWeight: '600',
+                                                      fontWeight: '600',
                            flexShrink: 0
                          }}>
                            {contact.name.charAt(0)}
                          </div>
                          <div style={{ flex: 1 }}>
-                           <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                           <div style={{ fontWeight: '500' }}>
                              {contact.name}
                            </div>
-                           <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                           <div style={{ color: '#9CA3AF' }}>
                              {contact.username}
                            </div>
                          </div>
@@ -849,8 +844,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                        textAlign: 'center',
                        padding: '1rem',
                        color: '#9CA3AF',
-                       fontSize: '0.875rem'
-                     }}>
+                                            }}>
                        {contactSearch ? 'No contacts found matching your search' : 'No contacts available'}
                      </div>
                    )}
@@ -867,8 +861,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
+                                    fontWeight: '600',
                   cursor: selectedContacts.length > 0 ? 'pointer' : 'not-allowed',
                   opacity: selectedContacts.length > 0 ? 1 : 0.5
                 }}
@@ -936,7 +929,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                       {platform.icon}
                     </div>
                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                       <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                       <span style={{ fontWeight: '500' }}>
                          Share on {platform.name}
                        </span>
                                                {platform.hasDeepLink && (
@@ -968,7 +961,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
           {activeTab === 'link' && (
             <div style={{ padding: '1.5rem' }}>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ color: 'white', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
+                <label style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
                   Share Link
                 </label>
                 <div style={{
@@ -987,8 +980,7 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '8px',
                       color: 'white',
-                      fontSize: '0.875rem'
-                    }}
+                                          }}
                   />
                   <button
                     onClick={handleCopyLink}
@@ -1015,10 +1007,10 @@ export default function ShareModal({ isOpen, onClose, content }: ShareModalProps
                 border: '1px solid rgba(59, 130, 246, 0.2)',
                 borderRadius: '8px'
               }}>
-                <div style={{ color: '#3B82F6', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                <div style={{ color: '#3B82F6', fontWeight: '600', marginBottom: '0.5rem' }}>
                   💡 Tip
                 </div>
-                <div style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>
+                <div style={{ color: '#9CA3AF' }}>
                   Anyone with this link can view and listen to this track. The link will work even if they don't have a SoundBridge account.
                 </div>
               </div>

@@ -307,8 +307,7 @@ export function CountrySelector({
         }`}
         style={{
           padding: isMobile ? '0.75rem' : '0.75rem',
-          fontSize: isMobile ? '0.8rem' : '0.9rem'
-        }}
+                  }}
       >
         <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem' }}>
           <MapPin size={isMobile ? 14 : 16} />
@@ -343,8 +342,7 @@ export function CountrySelector({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
                 style={{
-                  fontSize: isMobile ? '0.8rem' : '0.9rem'
-                }}
+                                  }}
               />
             </div>
           </div>
@@ -358,8 +356,7 @@ export function CountrySelector({
                   onClick={() => handleCountrySelect(country)}
                   className="w-full text-left px-3 py-2 hover:bg-gray-800 transition-colors flex items-center justify-between"
                   style={{
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                                      }}
                 >
                   <div className="flex items-center" style={{ gap: isMobile ? '0.5rem' : '0.5rem' }}>
                     <span className="font-medium">{country.name}</span>
@@ -371,7 +368,7 @@ export function CountrySelector({
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-gray-400 text-center" style={{ fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
+              <div className="px-3 py-2 text-gray-400 text-center" style={{ }}>
                 No countries found
               </div>
             )}

@@ -68,7 +68,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
           alignItems: 'center',
           justifyContent: 'center',
           color: 'white',
-          fontSize: '1.5rem',
           flexShrink: 0,
           position: 'relative',
           overflow: 'hidden'
@@ -96,7 +95,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
             color: 'white',
             padding: '2px 6px',
             borderRadius: '8px',
-            fontSize: '0.6rem',
             fontWeight: '600',
             textTransform: 'uppercase'
           }}>
@@ -112,7 +110,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
             color: 'white',
             padding: '2px 6px',
             borderRadius: '8px',
-            fontSize: '0.6rem',
             fontWeight: '600'
           }}>
             {(event as any).price === 0 ? 'Free' : `$${(event as any).price}`}
@@ -122,7 +119,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
         {/* Event Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{
-            fontSize: '0.9rem',
             fontWeight: '600',
             color: 'white',
             margin: 0,
@@ -135,7 +131,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
           </h3>
 
           <p style={{
-            fontSize: '0.75rem',
             color: '#ccc',
             margin: 0,
             marginBottom: '0.5rem',
@@ -158,7 +153,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.7rem',
               color: '#999'
             }}>
               <Calendar size={12} />
@@ -171,7 +165,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.7rem',
               color: '#999'
             }}>
               <Users size={12} />
@@ -183,7 +176,6 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
         {/* Arrow */}
         <div style={{
           color: '#999',
-          fontSize: '1.2rem',
           flexShrink: 0
         }}>
           →
@@ -252,8 +244,7 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
                 justifyContent: 'center',
                 height: '100%',
                 color: 'white',
-                fontSize: '3rem'
-              }}>
+                }}>
                 <Music />
               </div>
             )}
@@ -267,7 +258,6 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
               color: 'white',
               padding: '4px 8px',
               borderRadius: '12px',
-              fontSize: '0.75rem',
               fontWeight: '600',
               textTransform: 'uppercase'
             }}>
@@ -283,7 +273,6 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
               color: 'white',
               padding: '4px 8px',
               borderRadius: '12px',
-              fontSize: '0.75rem',
               fontWeight: '600'
             }}>
               {event.price === 0 ? 'Free' : `$${event.price}`}
@@ -293,7 +282,6 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
           {/* Event Details */}
           <div style={{ padding: '1rem' }}>
             <h3 style={{
-              fontSize: '1.1rem',
               fontWeight: '600',
               marginBottom: '0.5rem',
               color: 'var(--text-primary)',
@@ -307,7 +295,6 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
             </h3>
 
             <p style={{
-              fontSize: '0.9rem',
               color: 'var(--text-secondary)',
               marginBottom: '0.75rem',
               lineHeight: '1.4',
@@ -321,17 +308,17 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
 
             {/* Event Meta */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Calendar size={14} />
                 <span>{new Date(event.event_date).toLocaleDateString()}</span>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
                 <User size={14} />
                 <span>{event.location}</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Users size={14} />
                 <span>{event.attendeeCount || 0} attendees</span>
               </div>
@@ -647,7 +634,6 @@ export default function EventsPage() {
                   </div>
                   <div>
                     <h3 style={{
-                      fontSize: isMobile ? '1rem' : '1.25rem',
                       fontWeight: '700',
                       color: 'white',
                       margin: 0,
@@ -656,7 +642,6 @@ export default function EventsPage() {
                       My Events Dashboard
                     </h3>
                     <p style={{
-                      fontSize: isMobile ? '0.8rem' : '0.9rem',
                       color: 'rgba(255, 255, 255, 0.9)',
                       margin: 0
                     }}>
@@ -666,7 +651,6 @@ export default function EventsPage() {
                 </div>
                 <div style={{
                   color: 'white',
-                  fontSize: isMobile ? '1.5rem' : '2rem',
                   lineHeight: 1
                 }}>
                   →
@@ -723,8 +707,7 @@ export default function EventsPage() {
                     border: 'none', 
                     color: 'white', 
                     outline: 'none',
-                    fontSize: isMobile ? '0.9rem' : '1rem'
-                  }}
+                    }}
                 />
                 {searchQuery && (
                   <button
@@ -778,7 +761,6 @@ export default function EventsPage() {
                         color: 'white',
                         textAlign: 'left',
                         cursor: 'pointer',
-                        fontSize: isMobile ? '0.9rem' : '1rem',
                         borderBottom: index < searchSuggestions.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
                       }}
                       onMouseEnter={(e) => {
@@ -803,7 +785,6 @@ export default function EventsPage() {
                 alignItems: 'center', 
                 gap: isMobile ? '0.5rem' : '0.5rem',
                 padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem',
-                fontSize: isMobile ? '0.9rem' : '1rem',
                 whiteSpace: 'nowrap',
                 minWidth: isMobile ? 'auto' : '120px',
                 justifyContent: 'center'
@@ -827,7 +808,6 @@ export default function EventsPage() {
             }}>
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -846,8 +826,7 @@ export default function EventsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   {categories.map((category) => (
                     <option key={category.value} value={category.value}>
@@ -859,7 +838,6 @@ export default function EventsPage() {
 
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -878,8 +856,7 @@ export default function EventsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   {locations.map((location) => (
                     <option key={location.value} value={location.value}>
@@ -891,7 +868,6 @@ export default function EventsPage() {
 
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -910,8 +886,7 @@ export default function EventsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   {dateFilters.map((date) => (
                     <option key={date.value} value={date.value}>
@@ -923,7 +898,6 @@ export default function EventsPage() {
 
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -942,8 +916,7 @@ export default function EventsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   {priceFilters.map((price) => (
                     <option key={price.value} value={price.value}>
@@ -955,7 +928,6 @@ export default function EventsPage() {
 
               <div className="filter-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ 
-                  fontSize: isMobile ? '0.8rem' : '0.9rem', 
                   fontWeight: '600', 
                   color: '#EC4899',
                   display: 'flex',
@@ -977,8 +949,7 @@ export default function EventsPage() {
                     border: '1px solid #555', 
                     borderRadius: '8px', 
                     padding: isMobile ? '0.75rem' : '0.75rem',
-                    fontSize: isMobile ? '0.8rem' : '0.9rem'
-                  }}
+                    }}
                 >
                   <option value="recent">Most Recent</option>
                   <option value="upcoming">Upcoming Soon</option>
@@ -1001,8 +972,7 @@ export default function EventsPage() {
                     style={{ 
                       width: isMobile ? '100%' : '200px',
                       padding: isMobile ? '0.75rem 1rem' : '0.75rem 1.5rem',
-                      fontSize: isMobile ? '0.8rem' : '0.9rem'
-                    }}
+                      }}
                   >
                     Clear All Filters
                   </button>
@@ -1016,7 +986,6 @@ export default function EventsPage() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title" style={{ 
-              fontSize: isMobile ? '1rem' : '1.25rem',
               marginBottom: isMobile ? '0.5rem' : '0.75rem'
             }}>
               {eventsState.loading ? (
@@ -1031,7 +1000,6 @@ export default function EventsPage() {
             </h2>
             {filteredEvents.length > 0 && !eventsState.loading && (
               <p style={{ 
-                fontSize: isMobile ? '0.8rem' : '0.9rem', 
                 color: '#999', 
                 marginTop: '0.25rem',
                 lineHeight: '1.4'

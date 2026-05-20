@@ -542,9 +542,8 @@ function LoginContent() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1
+            className="text-3xl font-bold"
             style={{
-              fontSize: '2rem',
-              fontWeight: 'bold',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -554,7 +553,7 @@ function LoginContent() {
           >
             Welcome Back
           </h1>
-          <p style={{ color: '#999', fontSize: '0.9rem' }}>
+          <p style={{ color: '#999' }}>
             Sign in to your SoundBridge account
           </p>
         </div>
@@ -568,8 +567,7 @@ function LoginContent() {
             padding: '1rem',
             marginBottom: '1.5rem',
             color: '#FCA5A5',
-            fontSize: '0.9rem'
-          }}>
+            }}>
             {error}
           </div>
         )}
@@ -579,14 +577,13 @@ function LoginContent() {
           <div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 style={{
-                fontSize: '1.5rem',
                 fontWeight: 'bold',
                 color: 'white',
                 marginBottom: '0.5rem'
               }}>
                 Two-Factor Authentication
               </h2>
-              <p style={{ color: '#999', fontSize: '0.9rem' }}>
+              <p style={{ color: '#999' }}>
                 Enter the 6-digit code from your authenticator app
               </p>
             </div>
@@ -599,15 +596,14 @@ function LoginContent() {
                 padding: '1rem',
                 marginBottom: '1.5rem',
                 color: '#FCA5A5',
-                fontSize: '0.9rem'
-              }}>
+                }}>
                 {twoFAError}
               </div>
             )}
 
             <form onSubmit={handle2FAVerification} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
                   Verification Code
                 </label>
                 <input
@@ -627,7 +623,6 @@ function LoginContent() {
                     border: '1px solid #e5e7eb',
                     borderRadius: '12px',
                     color: '#374151',
-                    fontSize: '1.5rem',
                     textAlign: 'center',
                     letterSpacing: '0.5rem',
                     outline: 'none',
@@ -652,7 +647,6 @@ function LoginContent() {
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
-                  fontSize: '1rem',
                   fontWeight: 'bold',
                   cursor: isVerifying2FA || twoFACode.length !== 6 ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s ease',
@@ -682,7 +676,6 @@ function LoginContent() {
                   color: '#999',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '12px',
-                  fontSize: '0.9rem',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
@@ -704,7 +697,7 @@ function LoginContent() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Email Field */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
@@ -731,7 +724,6 @@ function LoginContent() {
                   border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   color: '#374151',
-                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease'
                 }}
@@ -744,7 +736,7 @@ function LoginContent() {
 
           {/* Password Field */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
@@ -771,7 +763,6 @@ function LoginContent() {
                   border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   color: '#374151',
-                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.3s ease'
                 }}
@@ -806,7 +797,6 @@ function LoginContent() {
               style={{
                 color: '#EC4899',
                 textDecoration: 'none',
-                fontSize: '0.9rem',
                 transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = '#DC2626'}
@@ -828,7 +818,6 @@ function LoginContent() {
               borderRadius: '12px',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               fontWeight: '600',
-              fontSize: '1rem',
               transition: 'all 0.3s ease',
               opacity: isLoading ? 0.6 : 1,
               boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
@@ -847,7 +836,7 @@ function LoginContent() {
           <>
         <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#6b7280' }}>
           <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
-          <span style={{ padding: '0 1rem', fontSize: '0.9rem' }}>or continue with</span>
+          <span style={{ padding: '0 1rem' }}>or continue with</span>
           <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
         </div>
 
@@ -873,7 +862,6 @@ function LoginContent() {
               color: '#374151',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem',
               opacity: isLoading ? 0.6 : 1,
               transform: 'translateY(0)',
               minWidth: '160px',
@@ -896,7 +884,6 @@ function LoginContent() {
               color: '#ffffff',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              fontSize: '0.9rem',
               opacity: isLoading ? 0.6 : 1,
               minWidth: '160px',
               fontWeight: '500',
@@ -911,7 +898,7 @@ function LoginContent() {
         </div>
 
         {/* Sign Up Link */}
-        <div style={{ textAlign: 'center', color: '#999', fontSize: '0.9rem' }}>
+        <div style={{ textAlign: 'center', color: '#999' }}>
           Don&apos;t have an account?{' '}
           <Link
             href="/signup"

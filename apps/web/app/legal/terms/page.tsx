@@ -44,7 +44,6 @@ export default function TermsOfService() {
 
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h1 style={{
-            fontSize: '2.5rem',
             fontWeight: 'bold',
             background: 'var(--gradient-primary)',
             WebkitBackgroundClip: 'text',
@@ -54,15 +53,14 @@ export default function TermsOfService() {
           }}>
             Terms of Service
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             Last updated: January 15, 2025
           </p>
         </div>
 
-        <div style={{ lineHeight: '1.8', fontSize: '1rem' }}>
+        <div style={{ lineHeight: '1.8' }}>
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -78,7 +76,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -106,7 +103,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -130,7 +126,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -163,7 +158,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -193,7 +187,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -217,7 +210,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -233,7 +225,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -263,7 +254,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -290,7 +280,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -306,7 +295,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -322,7 +310,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -338,7 +325,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -354,7 +340,6 @@ export default function TermsOfService() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',

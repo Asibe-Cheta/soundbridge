@@ -99,7 +99,7 @@ function CreatorInsightsPage() {
             <Link href="/dashboard" style={{ color: theme === 'dark' ? 'white' : 'black', textDecoration: 'none' }}>
               <ArrowLeft size={24} />
             </Link>
-            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <h1 className="text-4xl font-bold" style={{ fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Creator Insights
             </h1>
           </div>
@@ -135,8 +135,8 @@ function CreatorInsightsPage() {
         {/* Total Revenue Card */}
         {revenueSummary && (
           <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
-            <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>Last {dateRange === '7D' ? '7 Days' : dateRange === '30D' ? '30 Days' : '365 Days'}</div>
-            <div style={{ fontSize: '3rem', fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <div className="text-sm" style={{ color: '#999', marginBottom: '0.5rem' }}>Last {dateRange === '7D' ? '7 Days' : dateRange === '30D' ? '30 Days' : '365 Days'}</div>
+            <div className="text-5xl" style={{ fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               {formatCurrency(revenueSummary.total.amount, userCurrency)}
             </div>
           </div>
@@ -175,7 +175,7 @@ function CreatorInsightsPage() {
         {/* Tab Content */}
         {activeTab === 'overview' && revenueSummary && (
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
+            <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
               Revenue Breakdown
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
@@ -229,7 +229,7 @@ function CreatorInsightsPage() {
 
         {activeTab === 'fans' && (
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
+            <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
               Fan Demographics
             </h2>
             <div style={{ color: '#999' }}>Fan demographics data will be displayed here</div>
@@ -238,7 +238,7 @@ function CreatorInsightsPage() {
 
         {activeTab === 'tracks' && (
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
+            <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
               Track Performance
             </h2>
             <div style={{ color: '#999' }}>Track performance data will be displayed here</div>
@@ -247,7 +247,7 @@ function CreatorInsightsPage() {
 
         {activeTab === 'growth' && (
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
+            <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
               Monthly Growth
             </h2>
             <div style={{ color: '#999' }}>Growth data will be displayed here</div>
@@ -282,16 +282,16 @@ function RevenueCard({ title, amount, count, currency, icon, change }: {
     <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '1.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
         <div style={{ color: '#DC2626' }}>{icon}</div>
-        <h3 style={{ fontSize: '1rem', fontWeight: '600', color: theme === 'dark' ? 'white' : 'black' }}>{title}</h3>
+        <h3 className="text-base" style={{ fontWeight: '600', color: theme === 'dark' ? 'white' : 'black' }}>{title}</h3>
       </div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black', marginBottom: '0.5rem' }}>
+      <div className="text-2xl" style={{ fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black', marginBottom: '0.5rem' }}>
         {formatCurrency(amount, currency)}
       </div>
-      <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>
+      <div className="text-sm" style={{ color: '#999', marginBottom: '0.5rem' }}>
         {count} transactions
       </div>
       {change !== undefined && (
-        <div style={{ fontSize: '0.9rem', color: change >= 0 ? '#22C55E' : '#EF4444' }}>
+        <div className="text-sm" style={{ color: change >= 0 ? '#22C55E' : '#EF4444' }}>
           {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
         </div>
       )}

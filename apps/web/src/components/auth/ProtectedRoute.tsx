@@ -43,7 +43,7 @@ export default function ProtectedRoute({
           borderTopColor: '#DC2626',
           animation: 'spin 1s linear infinite'
         }}></div>
-        <div style={{ color: 'white', fontSize: '1rem' }}>
+        <div style={{ color: 'white' }}>
           Loading...
         </div>
         <style dangerouslySetInnerHTML={{ __html: `

@@ -142,7 +142,6 @@ export default function DashboardPage() {
                 gap: isMobile ? '0.25rem' : '0.5rem',
                 padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
                 borderRadius: '0.5rem',
-                fontSize: isMobile ? '0.75rem' : '0.875rem',
                 fontWeight: '500',
                 whiteSpace: 'nowrap',
                 cursor: 'pointer',
@@ -158,6 +157,7 @@ export default function DashboardPage() {
                   <Link
                     key={item.id}
                     href={item.href}
+                    className="text-xs md:text-sm"
                     style={sharedStyle}
                     onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-primary)', e.currentTarget.style.background = 'var(--hover-bg)')}
                     onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-secondary)', e.currentTarget.style.background = 'transparent')}
@@ -170,6 +170,7 @@ export default function DashboardPage() {
               return (
                 <button
                   key={item.id}
+                  className="text-xs md:text-sm"
                   onClick={() =>
                     setActiveTab(
                       item.id as
@@ -209,7 +210,7 @@ export default function DashboardPage() {
             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--error)' }}>
                 <AlertCircle size={18} />
-                <span style={{ fontSize: '0.875rem' }}>{error}</span>
+                <span className="text-md">{error}</span>
                 <button
                   onClick={() => setError(null)}
                   style={{
@@ -270,8 +271,8 @@ export default function DashboardPage() {
                         </div>
                         <TrendingUp size={20} style={{ color: '#10b981' }} />
                       </div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{stat.value}</div>
-                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{stat.label}</div>
+                      <div className="text-2xl" style={{ fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{stat.value}</div>
+                      <div className="text-md" style={{ color: 'var(--text-secondary)' }}>{stat.label}</div>
                     </div>
                   );
                 })}
@@ -358,11 +359,11 @@ export default function DashboardPage() {
                             <Icon size={28} style={{ color: 'white' }} />
                           </div>
                           <div>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>{action.title}</h3>
-                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{action.subtitle}</p>
+                            <h3 className="text-lg font-semibold" style={{ fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>{action.title}</h3>
+                            <p className="text-md" style={{ color: 'var(--text-secondary)', margin: 0 }}>{action.subtitle}</p>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        <div className="text-md" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
                           <Plus size={16} />
                           <span>{action.description}</span>
                         </div>
@@ -394,8 +395,8 @@ export default function DashboardPage() {
                     <Activity size={20} style={{ color: 'white' }} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Recent Activity</h2>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>Your latest updates and interactions</p>
+                    <h2 className="text-xl font-bold" style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>Recent Activity</h2>
+                    <p className="text-md" style={{ color: 'var(--text-secondary)', margin: 0 }}>Your latest updates and interactions</p>
                   </div>
                 </div>
                 
@@ -424,10 +425,10 @@ export default function DashboardPage() {
                           <Activity size={18} style={{ color: 'white' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{activity.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.description}</div>
+                          <div className="text-md" style={{ fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{activity.title}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{activity.description}</div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <div className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
                           <Clock size={14} />
                           <span>{new Date(activity.timestamp).toLocaleDateString()}</span>
                         </div>
@@ -448,21 +449,18 @@ export default function DashboardPage() {
                       }}>
                         <Activity size={32} style={{ color: 'white' }} />
                       </div>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No recent activity</h3>
+                      <h3 className="text-lg font-semibold" style={{ fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No recent activity</h3>
                       <p style={{ color: 'var(--text-secondary)', margin: '0 0 1rem 0' }}>Start creating content to see your activity here</p>
-                      <Link href="/upload" style={{
-                        display: 'inline-flex',
+                      <Link className="text-md" href="/upload" style={{ display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.5rem',
                         padding: '0.5rem 1rem',
                         background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
                         color: 'white',
                         borderRadius: '0.5rem',
-                        fontSize: '0.875rem',
                         fontWeight: '500',
                         textDecoration: 'none',
-                        transition: 'all 0.2s ease'
-                      }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                        transition: 'all 0.2s ease' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
                         <Plus size={16} />
                         Create Content
                       </Link>
@@ -483,24 +481,18 @@ export default function DashboardPage() {
               borderRadius: '1rem',
               padding: '2rem'
             }}>
-              <h2 style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
+              <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold',
                 color: 'var(--text-primary)',
-                margin: '0 0 2rem 0'
-              }}>
+                margin: '0 0 2rem 0' }}>
                 Account Settings
               </h2>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 {/* Account Information */}
                 <div>
-                  <h3 style={{
-                    fontSize: '1.125rem',
-                    fontWeight: '600',
+                  <h3 className="text-lg font-semibold" style={{ fontWeight: '600',
                     color: 'var(--text-primary)',
-                    margin: '0 0 1rem 0'
-                  }}>
+                    margin: '0 0 1rem 0' }}>
                     Account Information
                   </h3>
                   <div style={{
@@ -511,13 +503,10 @@ export default function DashboardPage() {
                   }}>
                     <div style={{ display: 'grid', gap: '1rem' }}>
                       <div>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '0.875rem',
+                        <label className="text-md" style={{ display: 'block',
                           fontWeight: '500',
                           color: 'var(--text-secondary)',
-                          marginBottom: '0.5rem'
-                        }}>
+                          marginBottom: '0.5rem' }}>
                           Email
                         </label>
                         <div style={{
@@ -531,24 +520,18 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '0.875rem',
+                        <label className="text-md" style={{ display: 'block',
                           fontWeight: '500',
                           color: 'var(--text-secondary)',
-                          marginBottom: '0.5rem'
-                        }}>
+                          marginBottom: '0.5rem' }}>
                           User ID
                         </label>
-                        <div style={{
-                          padding: '0.75rem',
+                        <div className="text-md" style={{ padding: '0.75rem',
                           background: 'var(--bg-secondary)',
                           border: '1px solid var(--border-primary)',
                           borderRadius: '0.5rem',
                           color: 'var(--text-primary)',
-                          fontFamily: 'monospace',
-                          fontSize: '0.875rem'
-                        }}>
+                          fontFamily: 'monospace' }}>
                           {user?.id || 'Not available'}
                         </div>
                       </div>
@@ -558,12 +541,9 @@ export default function DashboardPage() {
 
                 {/* Danger Zone */}
                 <div>
-                  <h3 style={{
-                    fontSize: '1.125rem',
-                    fontWeight: '600',
+                  <h3 className="text-lg font-semibold" style={{ fontWeight: '600',
                     color: 'var(--error)',
-                    margin: '0 0 1rem 0'
-                  }}>
+                    margin: '0 0 1rem 0' }}>
                     Danger Zone
                   </h3>
                   <div style={{
@@ -573,39 +553,29 @@ export default function DashboardPage() {
                     padding: '1.5rem'
                   }}>
                     <div style={{ marginBottom: '1rem' }}>
-                      <h4 style={{
-                        fontSize: '1rem',
-                        fontWeight: '600',
+                      <h4 className="text-base" style={{ fontWeight: '600',
                         color: 'var(--text-primary)',
-                        margin: '0 0 0.5rem 0'
-                      }}>
+                        margin: '0 0 0.5rem 0' }}>
                         Account Deletion
                       </h4>
-                      <p style={{
-                        fontSize: '0.875rem',
-                        color: 'var(--text-secondary)',
+                      <p className="text-md" style={{ color: 'var(--text-secondary)',
                         margin: '0 0 1rem 0',
-                        lineHeight: '1.5'
-                      }}>
+                        lineHeight: '1.5' }}>
                         Request account deletion from Settings to choose a reason and start the 14-day retention window.
                       </p>
                     </div>
                     <Link href="/settings" style={{ textDecoration: 'none' }}>
-                      <button
-                        style={{
-                          background: 'var(--error)',
+                      <button className="text-md" style={{ background: 'var(--error)',
                           color: 'white',
                           border: 'none',
                           padding: '0.75rem 1.5rem',
                           borderRadius: '0.5rem',
-                          fontSize: '0.875rem',
                           fontWeight: '500',
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.5rem'
-                        }}
+                          gap: '0.5rem' }}
                         onMouseEnter={(e) => e.currentTarget.style.background = '#b91c1c'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'var(--error)'}
                       >
@@ -671,20 +641,17 @@ export default function DashboardPage() {
               }}>
                 <Clock size={32} style={{ color: 'white' }} />
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Manage Your Availability</h3>
+              <h3 className="text-xl font-bold" style={{ fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Manage Your Availability</h3>
               <p style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0' }}>Set your available time slots for collaboration requests</p>
               <Link href="/availability" style={{ textDecoration: 'none' }}>
-                <button style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                <button className="text-md" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                   color: 'white',
                   border: 'none',
                   padding: '0.75rem 1.5rem',
                   borderRadius: '0.5rem',
-                  fontSize: '0.875rem',
                   fontWeight: '500',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
+                  transition: 'all 0.2s ease' }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
@@ -713,19 +680,13 @@ export default function DashboardPage() {
                 padding: '1.5rem',
                 marginTop: '2rem'
               }}>
-                <h3 style={{ 
-                  fontSize: '1.125rem', 
-                  fontWeight: '600', 
+                <h3 className="text-lg font-semibold" style={{ fontWeight: '600', 
                   color: 'var(--text-primary)', 
-                  margin: '0 0 0.5rem 0' 
-                }}>
+                  margin: '0 0 0.5rem 0' }}>
                   Payout Requests
                 </h3>
-                <p style={{ 
-                  color: 'var(--text-secondary)', 
-                  fontSize: '0.875rem', 
-                  margin: '0 0 1.5rem 0' 
-                }}>
+                <p className="text-md" style={{ color: 'var(--text-secondary)', 
+                  margin: '0 0 1.5rem 0' }}>
                   Request withdrawals from your earnings (Minimum: $20)
                 </p>
                 <PayoutRequest />
@@ -739,19 +700,13 @@ export default function DashboardPage() {
                 padding: '1.5rem',
                 marginTop: '2rem'
               }}>
-                <h3 style={{ 
-                  fontSize: '1.125rem', 
-                  fontWeight: '600', 
+                <h3 className="text-lg font-semibold" style={{ fontWeight: '600', 
                   color: 'var(--text-primary)', 
-                  margin: '0 0 0.5rem 0' 
-                }}>
+                  margin: '0 0 0.5rem 0' }}>
                   Bank Account Management
                 </h3>
-                <p style={{ 
-                  color: 'var(--text-secondary)', 
-                  fontSize: '0.875rem', 
-                  margin: '0 0 1.5rem 0' 
-                }}>
+                <p className="text-md" style={{ color: 'var(--text-secondary)', 
+                  margin: '0 0 1.5rem 0' }}>
                   Manage your bank account for receiving payouts
                 </p>
                 <BankAccountManager userId={user.id} />
@@ -782,7 +737,7 @@ export default function DashboardPage() {
               }}>
                 <Home size={32} style={{ color: 'white' }} />
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
+              <h3 className="text-xl font-bold" style={{ fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>This section is under development</p>
             </div>
           )}

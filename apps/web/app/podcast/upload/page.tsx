@@ -503,7 +503,6 @@ export default function PodcastUploadPage() {
                       padding: '8px 16px',
                       cursor: 'pointer',
                       fontWeight: '500',
-                      fontSize: '16px',
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
@@ -567,8 +566,7 @@ export default function PodcastUploadPage() {
                   style={{ 
                     width: '100%', 
                     paddingLeft: '40px',
-                    fontSize: '16px'
-                  }} 
+                    }} 
                 />
               </div>
             </div>
@@ -586,7 +584,6 @@ export default function PodcastUploadPage() {
                     borderRadius: '12px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '0.9rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
@@ -764,7 +761,6 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         cursor: 'pointer',
                         fontWeight: '600',
-                        fontSize: '0.9rem',
                         transition: 'all 0.3s ease'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
@@ -783,7 +779,6 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         cursor: 'pointer',
                         fontWeight: '600',
-                        fontSize: '0.9rem',
                         transition: 'all 0.3s ease',
                         boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
                       }}
@@ -821,8 +816,7 @@ export default function PodcastUploadPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.9rem'
-            }}>
+              }}>
               <ArrowLeft size={16} />
               Back to Home
             </button>
@@ -833,7 +827,6 @@ export default function PodcastUploadPage() {
         <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h1 style={{
-              fontSize: '2.5rem',
               fontWeight: 'bold',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -843,7 +836,7 @@ export default function PodcastUploadPage() {
             }}>
               Upload Your Podcast
             </h1>
-            <p style={{ color: '#ccc', fontSize: '1.1rem' }}>
+            <p style={{ color: '#ccc' }}>
               Share your podcast episodes with the SoundBridge community
             </p>
           </div>
@@ -853,7 +846,7 @@ export default function PodcastUploadPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {/* Podcast Audio Upload */}
               <div className="card">
-                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Headphones size={20} />
                   Podcast Audio
                 </h3>
@@ -881,7 +874,7 @@ export default function PodcastUploadPage() {
                       </div>
                       <div>
                         <p style={{ color: 'white', fontWeight: '600' }}>{uploadState.audioFile.name}</p>
-                        <p style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                        <p style={{ color: '#ccc' }}>
                           {(uploadState.audioFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
@@ -916,7 +909,7 @@ export default function PodcastUploadPage() {
                           >
                             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
                           </button>
-                          <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                          <div style={{ color: '#ccc' }}>
                             {formatTime(currentTime)} / {formatTime(duration)}
                           </div>
                         </div>
@@ -931,7 +924,6 @@ export default function PodcastUploadPage() {
                           background: 'none',
                           border: 'none',
                           color: '#F87171',
-                          fontSize: '0.9rem',
                           cursor: 'pointer'
                         }}
                       >
@@ -943,7 +935,7 @@ export default function PodcastUploadPage() {
                       <Upload size={48} style={{ color: '#ccc', margin: '0 auto' }} />
                       <div>
                         <p style={{ color: 'white', fontWeight: '600' }}>Drop your podcast audio here</p>
-                        <p style={{ color: '#ccc', fontSize: '0.9rem' }}>or click to browse</p>
+                        <p style={{ color: '#ccc' }}>or click to browse</p>
                       </div>
                       <input
                         ref={fileInputRef}
@@ -993,7 +985,7 @@ export default function PodcastUploadPage() {
 
               {/* Cover Art Upload */}
               <div className="card">
-                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                   Podcast Cover Art
                 </h3>
                 <ImageUpload
@@ -1010,7 +1002,7 @@ export default function PodcastUploadPage() {
                   accept="image/*"
                   maxSize={5 * 1024 * 1024} // 5MB
                 />
-                <div style={{ color: '#ccc', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                <div style={{ color: '#ccc', marginTop: '0.5rem' }}>
                   Supports: JPG, PNG, WebP, AVIF (Max 5MB)
                 </div>
               </div>
@@ -1020,7 +1012,7 @@ export default function PodcastUploadPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {/* Podcast Details */}
               <div className="card">
-                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                   Podcast Details
                 </h3>
                 
@@ -1041,8 +1033,7 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     />
                   </div>
 
@@ -1062,8 +1053,7 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     />
                   </div>
 
@@ -1083,7 +1073,6 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem',
                         resize: 'vertical'
                       }}
                     />
@@ -1103,8 +1092,7 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     >
                       <option value="">Select a category</option>
                       {podcastCategories.map((category) => (
@@ -1131,8 +1119,7 @@ export default function PodcastUploadPage() {
                         borderRadius: '12px',
                         padding: '1rem',
                         color: 'white',
-                        fontSize: '1rem'
-                      }}
+                        }}
                     />
                   </div>
                 </div>
@@ -1140,7 +1127,7 @@ export default function PodcastUploadPage() {
 
               {/* Privacy & Publishing */}
               <div className="card">
-                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                   Privacy & Publishing
                 </h3>
                 
@@ -1175,8 +1162,8 @@ export default function PodcastUploadPage() {
                             }}
                           >
                             <Icon size={20} />
-                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{option.label}</span>
-                            <span style={{ fontSize: '0.8rem', color: '#ccc' }}>{option.desc}</span>
+                            <span style={{ fontWeight: '600' }}>{option.label}</span>
+                            <span style={{ color: '#ccc' }}>{option.desc}</span>
                           </button>
                         );
                       })}
@@ -1213,8 +1200,8 @@ export default function PodcastUploadPage() {
                             }}
                           >
                             <Icon size={20} />
-                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{option.label}</span>
-                            <span style={{ fontSize: '0.8rem', color: '#ccc' }}>{option.desc}</span>
+                            <span style={{ fontWeight: '600' }}>{option.label}</span>
+                            <span style={{ color: '#ccc' }}>{option.desc}</span>
                           </button>
                         );
                       })}
@@ -1238,8 +1225,7 @@ export default function PodcastUploadPage() {
                           borderRadius: '12px',
                           padding: '1rem',
                           color: 'white',
-                          fontSize: '1rem'
-                        }}
+                          }}
                       />
                     </div>
                   )}
@@ -1249,13 +1235,13 @@ export default function PodcastUploadPage() {
               {/* Upload Progress */}
               {uploadState.isUploading && (
                 <div className="card">
-                  <h3 style={{ color: '#EC4899', marginBottom: '1.5rem', fontSize: '1.2rem' }}>
+                  <h3 style={{ color: '#EC4899', marginBottom: '1.5rem' }}>
                     Upload Progress
                   </h3>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#ccc', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ccc', marginBottom: '0.5rem' }}>
                         <span>Audio File</span>
                         <span>{uploadState.uploadProgress.audio}%</span>
                       </div>
@@ -1274,7 +1260,7 @@ export default function PodcastUploadPage() {
                     
                     {uploadState.coverArtFile && (
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#ccc', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ccc', marginBottom: '0.5rem' }}>
                           <span>Cover Art</span>
                           <span>{uploadState.uploadProgress.cover}%</span>
                         </div>
@@ -1360,7 +1346,6 @@ export default function PodcastUploadPage() {
                   borderRadius: '12px',
                   cursor: !uploadState.audioFile || uploadState.isUploading ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
-                  fontSize: '1rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

@@ -253,7 +253,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.5rem',
-            fontSize: '0.9rem',
             color: '#fca5a5',
             textDecoration: 'none',
           }}
@@ -289,7 +288,7 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
               <Briefcase size={28} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', margin: 0 }}>{provider.display_name}</h1>
+              <h1 style={{ fontWeight: 700, color: 'white', margin: 0 }}>{provider.display_name}</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span
                   style={{
@@ -300,7 +299,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                     borderRadius: '999px',
                     background: 'linear-gradient(135deg, rgba(220,38,38,0.9), rgba(236,72,153,0.9))',
                     color: '#fefefe',
-                    fontSize: '0.75rem',
                     fontWeight: 600,
                     letterSpacing: '0.06em',
                     textTransform: 'uppercase',
@@ -318,7 +316,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                       borderRadius: '999px',
                       background: 'rgba(245,158,11,0.2)',
                       color: '#fbbf24',
-                      fontSize: '0.75rem',
                       fontWeight: 600,
                     }}
                   >
@@ -335,7 +332,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                       borderRadius: '999px',
                       background: 'rgba(96,165,250,0.18)',
                       color: '#93c5fd',
-                      fontSize: '0.75rem',
                       fontWeight: 600,
                     }}
                   >
@@ -344,9 +340,9 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                 )}
               </div>
               {provider.headline && (
-                <p style={{ color: '#f3f4f6', fontSize: '1rem', margin: 0 }}>{provider.headline}</p>
+                <p style={{ color: '#f3f4f6', margin: 0 }}>{provider.headline}</p>
               )}
-              <p style={{ color: '#9ca3af', fontSize: '0.9rem', margin: 0 }}>{badgeInfo.blurb}</p>
+              <p style={{ color: '#9ca3af', margin: 0 }}>{badgeInfo.blurb}</p>
             </div>
           </div>
 
@@ -363,7 +359,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                     borderRadius: '999px',
                     background: 'rgba(236, 72, 153, 0.2)',
                     color: '#f472b6',
-                    fontSize: '0.75rem',
                     textTransform: 'capitalize',
                     letterSpacing: '0.03em',
                   }}
@@ -380,7 +375,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
               display: 'flex',
               flexWrap: 'wrap',
               gap: '1rem',
-              fontSize: '0.9rem',
               color: '#cbd5f5',
             }}
           >
@@ -408,7 +402,7 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
           </div>
 
           {provider.bio && (
-            <p style={{ color: '#d1d5db', lineHeight: 1.7, fontSize: '1rem', margin: 0 }}>{provider.bio}</p>
+            <p style={{ color: '#d1d5db', lineHeight: 1.7, margin: 0 }}>{provider.bio}</p>
           )}
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -446,17 +440,17 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
               padding: '1.75rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#DC2626', fontWeight: 700, fontSize: '1.05rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#DC2626', fontWeight: 700 }}>
               <Shield size={22} /> Your payment is protected
             </div>
-            <p style={{ margin: 0, color: '#1a1a1a', fontSize: '0.95rem' }}>
+            <p style={{ margin: 0, color: '#1a1a1a' }}>
               SoundBridge keeps every booking secure from request to payout.
             </p>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.45rem' }}>
               {PAYMENT_PROTECTION_POINTS.map((point) => (
                 <li
                   key={point}
-                  style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', color: '#1a1a1a', fontSize: '0.95rem' }}
+                  style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', color: '#1a1a1a' }}
                 >
                   <span
                     style={{
@@ -483,7 +477,6 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                   background: 'rgba(220,38,38,0.18)',
                   color: '#DC2626',
                   fontWeight: 600,
-                  fontSize: '0.85rem',
                   width: 'fit-content',
                 }}
               >
@@ -509,8 +502,8 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'white', margin: 0 }}>Services</h2>
-            <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+            <h2 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Services</h2>
+            <span style={{ color: '#9ca3af' }}>
               {activeOfferings.length} active offering{activeOfferings.length === 1 ? '' : 's'}
             </span>
           </div>
@@ -536,10 +529,9 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                 >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-                      <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'white', margin: 0 }}>{offering.title}</h3>
+                      <h3 style={{ fontWeight: 600, color: 'white', margin: 0 }}>{offering.title}</h3>
                       <span
                         style={{
-                          fontSize: '0.75rem',
                           fontWeight: 600,
                           color: '#f97316',
                         }}
@@ -547,12 +539,12 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                         {formatCurrency(offering.rate_amount, offering.rate_currency)} / {offering.rate_unit}
                       </span>
                     </div>
-                    <p style={{ margin: '0.3rem 0 0', fontSize: '0.8rem', textTransform: 'capitalize', color: '#fda4af' }}>
+                    <p style={{ margin: '0.3rem 0 0', textTransform: 'capitalize', color: '#fda4af' }}>
                       {offering.category.replace('_', ' ')}
                     </p>
                   </div>
                   {offering.description && (
-                    <p style={{ fontSize: '0.85rem', color: '#d1d5db', lineHeight: 1.6, margin: 0 }}>
+                    <p style={{ color: '#d1d5db', lineHeight: 1.6, margin: 0 }}>
                       {offering.description.length > 180
                         ? `${offering.description.slice(0, 177)}…`
                         : offering.description}
@@ -562,7 +554,7 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
               ))}
             </div>
           ) : (
-            <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>This provider is setting up their offerings.</p>
+            <p style={{ color: '#9ca3af' }}>This provider is setting up their offerings.</p>
           )}
         </div>
 
@@ -575,9 +567,9 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'white', margin: 0 }}>Portfolio</h2>
+            <h2 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Portfolio</h2>
             {hasPortfolio && (
-              <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+              <span style={{ color: '#9ca3af' }}>
                 {provider.portfolio.length} item{provider.portfolio.length === 1 ? '' : 's'}
               </span>
             )}
@@ -599,7 +591,7 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
               ))}
             </div>
           ) : (
-            <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>This provider will share examples of their work soon.</p>
+            <p style={{ color: '#9ca3af' }}>This provider will share examples of their work soon.</p>
           )}
         </div>
 
@@ -612,9 +604,9 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'white', margin: 0 }}>Availability</h2>
+            <h2 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Availability</h2>
             {hasAvailability && (
-              <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+              <span style={{ color: '#9ca3af' }}>
                 {provider.availability.length} slot{provider.availability.length === 1 ? '' : 's'} published
               </span>
             )}
@@ -646,17 +638,16 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem' }}>
+                      <div style={{ fontWeight: 600, color: 'white' }}>
                         {formatDateTimeRange(slot.start_time, slot.end_time)}
                       </div>
-                      <div style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                      <div style={{ color: '#9ca3af', marginTop: '0.25rem' }}>
                         {slot.is_recurring ? 'Repeats weekly' : 'One-off availability'}
                         {slot.recurrence_rule ? ` · ${slot.recurrence_rule}` : ''}
                       </div>
                     </div>
                     <span
                       style={{
-                        fontSize: '0.75rem',
                         fontWeight: 600,
                         color: slot.is_bookable ? '#34d399' : '#f87171',
                       }}
@@ -667,7 +658,7 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                 ))}
             </div>
           ) : (
-            <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
+            <p style={{ color: '#9ca3af' }}>
               Availability calendar coming soon — use the booking button to request a custom time.
             </p>
           )}
@@ -682,9 +673,9 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'white', margin: 0 }}>Reviews</h2>
+            <h2 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Reviews</h2>
             {hasReviews && (
-              <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+              <span style={{ color: '#9ca3af' }}>
                 {provider.review_count} review{provider.review_count === 1 ? '' : 's'}
               </span>
             )}
@@ -735,26 +726,26 @@ export default async function ServiceProviderPage({ params }: ServiceProviderPag
                       </div>
                     )}
                     <div>
-                      <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem' }}>
+                      <div style={{ fontWeight: 600, color: 'white' }}>
                         {review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}
                       </div>
-                      <div style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{formatRelativeDate(review.created_at)}</div>
+                      <div style={{ color: '#9ca3af' }}>{formatRelativeDate(review.created_at)}</div>
                     </div>
                     <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#facc15' }}>
                       <Star size={16} /> {review.rating}
                     </div>
                   </div>
                   {review.title && (
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'white', margin: 0 }}>{review.title}</h3>
+                    <h3 style={{ fontWeight: 600, color: 'white', margin: 0 }}>{review.title}</h3>
                   )}
                   {review.comment && (
-                    <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#d1d5db', margin: 0 }}>{review.comment}</p>
+                    <p style={{ lineHeight: 1.6, color: '#d1d5db', margin: 0 }}>{review.comment}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
+            <p style={{ color: '#9ca3af' }}>
               Reviews will appear here once clients start sharing their feedback.
             </p>
           )}

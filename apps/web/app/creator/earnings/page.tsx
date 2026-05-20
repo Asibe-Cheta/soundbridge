@@ -100,7 +100,7 @@ function CreatorEarningsPage() {
             <Link href="/dashboard" style={{ color: theme === 'dark' ? 'white' : 'black', textDecoration: 'none' }}>
               <ArrowLeft size={24} />
             </Link>
-            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <h1 className="text-4xl font-bold" style={{ fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Earnings Dashboard
             </h1>
           </div>
@@ -136,8 +136,8 @@ function CreatorEarningsPage() {
         {/* Total Earnings Card */}
         {revenueSummary && (
           <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
-            <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>Last {dateRange === '7D' ? '7 Days' : dateRange === '30D' ? '30 Days' : '365 Days'}</div>
-            <div style={{ fontSize: '3rem', fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <div className="text-sm" style={{ color: '#999', marginBottom: '0.5rem' }}>Last {dateRange === '7D' ? '7 Days' : dateRange === '30D' ? '30 Days' : '365 Days'}</div>
+            <div className="text-5xl" style={{ fontWeight: 'bold', background: 'linear-gradient(45deg, #DC2626, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               {formatCurrency(revenueSummary.total.amount, userCurrency)}
             </div>
           </div>
@@ -146,7 +146,7 @@ function CreatorEarningsPage() {
         {/* Revenue Breakdown */}
         {revenueSummary && (
           <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
+            <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
               Revenue Breakdown
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -185,7 +185,7 @@ function CreatorEarningsPage() {
         {/* Revenue Trend */}
         {revenueTrend.length > 0 && (
           <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '2rem', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
+            <h2 className="text-2xl font-bold" style={{ fontWeight: 'bold', marginBottom: '1.5rem', color: theme === 'dark' ? 'white' : 'black' }}>
               Revenue Trend (Last 7 Days)
             </h2>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '200px' }}>
@@ -195,7 +195,7 @@ function CreatorEarningsPage() {
                 return (
                   <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ width: '100%', background: 'linear-gradient(45deg, #DC2626, #EC4899)', borderRadius: '4px 4px 0 0', height: `${height}%`, minHeight: '4px' }} />
-                    <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                    <div className="text-xs" style={{ color: '#999' }}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                   </div>
                 );
               })}
@@ -206,14 +206,14 @@ function CreatorEarningsPage() {
         {/* Pending and Lifetime */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>💰 Pending</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black' }}>
+            <div className="text-sm" style={{ color: '#999', marginBottom: '0.5rem' }}>💰 Pending</div>
+            <div className="text-2xl" style={{ fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black' }}>
               {formatCurrency(0, userCurrency)}
             </div>
           </div>
           <div style={{ background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>📈 Lifetime</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black' }}>
+            <div className="text-sm" style={{ color: '#999', marginBottom: '0.5rem' }}>📈 Lifetime</div>
+            <div className="text-2xl" style={{ fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black' }}>
               {revenueSummary ? formatCurrency(revenueSummary.total.amount, userCurrency) : formatCurrency(0, userCurrency)}
             </div>
           </div>
@@ -261,11 +261,11 @@ function RevenueBreakdownItem({ icon, title, amount, count, currency }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <div style={{ color: '#DC2626' }}>{icon}</div>
         <div>
-          <div style={{ fontSize: '1rem', fontWeight: '600', color: theme === 'dark' ? 'white' : 'black' }}>{title}</div>
-          <div style={{ fontSize: '0.9rem', color: '#999' }}>{count} transactions</div>
+          <div className="text-base" style={{ fontWeight: '600', color: theme === 'dark' ? 'white' : 'black' }}>{title}</div>
+          <div className="text-sm" style={{ color: '#999' }}>{count} transactions</div>
         </div>
       </div>
-      <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black' }}>
+      <div className="text-xl" style={{ fontWeight: 'bold', color: theme === 'dark' ? 'white' : 'black' }}>
         {formatCurrency(amount, currency)}
       </div>
     </div>

@@ -198,13 +198,13 @@ const PaymentForm: React.FC<{
           gap: '0.5rem',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'white', fontWeight: 600, fontSize: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'white', fontWeight: 600 }}>
           <span>Amount due</span>
           <span>
             {context.booking.currency} {context.booking.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
-        <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+        <div style={{ color: '#94a3b8' }}>
           Funds stay in escrow until your session completes. Platform fee:{' '}
           {context.booking.currency} {context.booking.platform_fee.toFixed(2)}
         </div>
@@ -220,8 +220,7 @@ const PaymentForm: React.FC<{
             background: message.includes('success') ? 'rgba(34,197,94,0.12)' : 'rgba(248,113,113,0.12)',
             color: message.includes('success') ? '#bbf7d0' : '#fecaca',
             padding: '0.85rem',
-            fontSize: '0.85rem',
-          }}
+                      }}
         >
           {message}
         </div>
@@ -346,8 +345,8 @@ export const MyBookingsClient: React.FC = () => {
       }}
     >
       <header style={{ display: 'grid', gap: '0.75rem' }}>
-        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'white' }}>My bookings</div>
-        <p style={{ color: '#cbd5f5', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '720px', margin: 0 }}>
+        <div style={{ fontWeight: 700, color: 'white' }}>My bookings</div>
+        <p style={{ color: '#cbd5f5', lineHeight: 1.6, maxWidth: '720px', margin: 0 }}>
           Track every service request from pending to payout. Pay confirmed bookings within 48 hours to keep your slot,
           and follow the status timeline to stay informed.
         </p>
@@ -360,8 +359,7 @@ export const MyBookingsClient: React.FC = () => {
             borderRadius: '0.85rem',
             border: '1px solid rgba(148,163,184,0.35)',
             color: '#cbd5f5',
-            fontSize: '0.85rem',
-          }}
+                      }}
         >
           <ShieldAlert size={16} style={{ color: '#fca5a5' }} />
           Money stays protected in Stripe escrow until the provider delivers.
@@ -414,8 +412,7 @@ export const MyBookingsClient: React.FC = () => {
             border: '1px solid rgba(248,113,113,0.35)',
             background: 'rgba(248,113,113,0.12)',
             color: '#fecaca',
-            fontSize: '0.9rem',
-          }}
+                      }}
         >
           {error}
         </div>
@@ -455,8 +452,8 @@ export const MyBookingsClient: React.FC = () => {
                 }}
               >
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h2 style={{ margin: 0, color: 'white', fontSize: '1.3rem', fontWeight: 600 }}>{title}</h2>
-                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                  <h2 style={{ margin: 0, color: 'white', fontWeight: 600 }}>{title}</h2>
+                  <span style={{ color: '#94a3b8' }}>
                     {list.length} booking{list.length === 1 ? '' : 's'}
                   </span>
                 </header>
@@ -479,10 +476,10 @@ export const MyBookingsClient: React.FC = () => {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                           <div style={{ display: 'grid', gap: '0.35rem' }}>
-                            <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'white' }}>
+                            <div style={{ fontWeight: 600, color: 'white' }}>
                               {booking.provider?.display_name ?? 'Service provider'}
                             </div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                            <div style={{ color: '#94a3b8' }}>
                               {booking.offering?.title ?? 'Custom scope'}
                             </div>
                           </div>
@@ -496,8 +493,7 @@ export const MyBookingsClient: React.FC = () => {
                               background: toneStyle.bg,
                               border: `1px solid ${toneStyle.border}`,
                               color: toneStyle.color,
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
+                                                            fontWeight: 600,
                               textTransform: 'uppercase',
                               letterSpacing: '0.03em',
                             }}
@@ -507,7 +503,7 @@ export const MyBookingsClient: React.FC = () => {
                           </div>
                         </div>
 
-                        <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>
+                        <div style={{ color: '#cbd5f5' }}>
                           {formatDateTime(booking.scheduled_start, booking.scheduled_end, booking.timezone)}
                         </div>
 
@@ -519,8 +515,7 @@ export const MyBookingsClient: React.FC = () => {
                               border: '1px solid rgba(148,163,184,0.2)',
                               background: 'rgba(30,41,59,0.5)',
                               color: '#94a3b8',
-                              fontSize: '0.85rem',
-                            }}
+                                                          }}
                           >
                             {booking.booking_notes}
                           </div>
@@ -531,8 +526,7 @@ export const MyBookingsClient: React.FC = () => {
                             display: 'flex',
                             flexWrap: 'wrap',
                             gap: '0.9rem',
-                            fontSize: '0.8rem',
-                            color: '#94a3b8',
+                                                        color: '#94a3b8',
                           }}
                         >
                           <span>
@@ -642,13 +636,13 @@ export const MyBookingsClient: React.FC = () => {
             </button>
 
             <div style={{ display: 'grid', gap: '0.4rem' }}>
-              <div style={{ color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <div style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Secure payment
               </div>
-              <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 600, color: 'white' }}>
+              <h2 style={{ margin: 0, fontWeight: 600, color: 'white' }}>
                 Pay {paymentContext.booking.provider?.display_name ?? 'provider'}
               </h2>
-              <p style={{ color: '#cbd5f5', fontSize: '0.9rem', margin: 0 }}>
+              <p style={{ color: '#cbd5f5', margin: 0 }}>
                 Complete payment now to secure the confirmed slot. Funds stay protected until the booking completes.
               </p>
             </div>

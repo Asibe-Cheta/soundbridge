@@ -103,7 +103,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.5rem',
-            fontSize: '0.9rem',
             color: '#fca5a5',
             textDecoration: 'none',
           }}
@@ -140,7 +139,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h1 style={{ fontSize: '2.1rem', fontWeight: 700, color: 'white', margin: 0 }}>{venue.name}</h1>
+                <h1 style={{ fontWeight: 700, color: 'white', margin: 0 }}>{venue.name}</h1>
                 <span
                   style={{
                     display: 'inline-flex',
@@ -150,7 +149,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
                     borderRadius: '999px',
                     background: 'rgba(59,130,246,0.18)',
                     color: '#93c5fd',
-                    fontSize: '0.75rem',
                     fontWeight: 600,
                   }}
                 >
@@ -160,7 +158,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
               <p
                 style={{
                   color: '#e2e8f0',
-                  fontSize: '1rem',
                   margin: 0,
                 }}
               >
@@ -174,7 +171,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
               style={{
                 color: '#d1d5db',
                 lineHeight: 1.7,
-                fontSize: '1rem',
                 margin: 0,
               }}
             >
@@ -187,7 +183,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
               display: 'flex',
               flexWrap: 'wrap',
               gap: '1rem',
-              fontSize: '0.9rem',
               color: '#cbd5f5',
             }}
           >
@@ -247,7 +242,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
           gap: '1.5rem',
         }}
       >
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'white', margin: 0 }}>Venue Details</h2>
+        <h2 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Venue Details</h2>
 
         <div
           style={{
@@ -266,11 +261,11 @@ export default async function VenuePage({ params }: VenuePageProps) {
               gap: '0.4rem',
             }}
           >
-            <span style={{ fontSize: '0.75rem', color: '#93c5fd', fontWeight: 600, textTransform: 'uppercase' }}>Capacity</span>
-            <span style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white' }}>
+            <span style={{ color: '#93c5fd', fontWeight: 600, textTransform: 'uppercase' }}>Capacity</span>
+            <span style={{ fontWeight: 700, color: 'white' }}>
               {venue.capacity ? `${venue.capacity.toLocaleString()} guests` : 'To be confirmed'}
             </span>
-            <span style={{ fontSize: '0.8rem', color: '#bfdbfe' }}>Ideal for concerts, showcases, and community events.</span>
+            <span style={{ color: '#bfdbfe' }}>Ideal for concerts, showcases, and community events.</span>
           </div>
 
           <div
@@ -283,9 +278,9 @@ export default async function VenuePage({ params }: VenuePageProps) {
               gap: '0.4rem',
             }}
           >
-            <span style={{ fontSize: '0.75rem', color: '#7dd3fc', fontWeight: 600, textTransform: 'uppercase' }}>Location</span>
-            <span style={{ fontSize: '1rem', color: 'white' }}>{formatAddress(venue.address)}</span>
-            <span style={{ fontSize: '0.8rem', color: '#bae6fd' }}>
+            <span style={{ color: '#7dd3fc', fontWeight: 600, textTransform: 'uppercase' }}>Location</span>
+            <span style={{ color: 'white' }}>{formatAddress(venue.address)}</span>
+            <span style={{ color: '#bae6fd' }}>
               <MapPin size={14} style={{ marginRight: '0.35rem', display: 'inline-block', verticalAlign: 'middle' }} />
               Perfectly situated for artists and organizers.
             </span>
@@ -300,7 +295,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
             padding: '1.2rem',
           }}
         >
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#bbf7d0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <h3 style={{ margin: 0, fontWeight: 600, color: '#bbf7d0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <Wrench size={16} /> Amenities
           </h3>
           {hasAmenities ? (
@@ -313,7 +308,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
                     borderRadius: '999px',
                     border: '1px solid rgba(34,197,94,0.35)',
                     color: '#bbf7d0',
-                    fontSize: '0.8rem',
                     textTransform: 'capitalize',
                   }}
                 >
@@ -322,7 +316,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
               ))}
             </div>
           ) : (
-            <p style={{ color: '#bbf7d0', fontSize: '0.85rem', marginTop: '0.75rem' }}>
+            <p style={{ color: '#bbf7d0', marginTop: '0.75rem' }}>
               Amenity list coming soon—contact the venue to request technical specifications.
             </p>
           )}

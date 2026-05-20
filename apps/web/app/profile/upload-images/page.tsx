@@ -205,7 +205,7 @@ export default function ProfileImageUploadPage() {
                 <>
                   <div>
                     <h4 style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Profile Picture</h4>
-                    <ul style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    <ul style={{ color: '#ccc', lineHeight: '1.6' }}>
                       <li>• Square format recommended (400x400px)</li>
                       <li>• High quality image for best results</li>
                       <li>• Will be automatically compressed and optimized</li>
@@ -218,7 +218,7 @@ export default function ProfileImageUploadPage() {
                 <>
                   <div>
                     <h4 style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Banner Image</h4>
-                    <ul style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    <ul style={{ color: '#ccc', lineHeight: '1.6' }}>
                       <li>• Wide format recommended (1200x400px)</li>
                       <li>• Landscape orientation works best</li>
                       <li>• Will be automatically compressed and optimized</li>
@@ -239,7 +239,7 @@ export default function ProfileImageUploadPage() {
                   <CheckCircle size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
                   Features
                 </h4>
-                <ul style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                <ul style={{ color: '#ccc', lineHeight: '1.6' }}>
                   <li>• Automatic image compression and optimization</li>
                   <li>• Real-time upload progress tracking</li>
                   <li>• Drag & drop functionality</li>

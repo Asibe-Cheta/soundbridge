@@ -194,14 +194,13 @@ export function AudioPreview({ uploadFile, onMetadataExtracted }: AudioPreviewPr
           alignItems: 'center',
           justifyContent: 'center',
           color: 'white',
-          fontSize: '1.5rem'
-        }}>
+                  }}>
           🎵
         </div>
 
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: '600' }}>{uploadFile.name}</div>
-          <div style={{ color: '#999', fontSize: '0.9rem' }}>
+          <div style={{ color: '#999' }}>
             {metadata && `${formatTime(metadata.duration)} • ${metadata.format.split('/')[1].toUpperCase()}`}
           </div>
         </div>
@@ -267,10 +266,10 @@ export function AudioPreview({ uploadFile, onMetadataExtracted }: AudioPreviewPr
         </button>
 
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: '#999', minWidth: '35px' }}>
+          <span style={{ color: '#999', minWidth: '35px' }}>
             {formatTime(currentTime)}
           </span>
-          <span style={{ fontSize: '0.8rem', color: '#999' }}>
+          <span style={{ color: '#999' }}>
             {formatTime(duration)}
           </span>
         </div>
@@ -315,8 +314,7 @@ export function AudioPreview({ uploadFile, onMetadataExtracted }: AudioPreviewPr
           padding: '0.5rem',
           background: 'rgba(255, 255, 255, 0.05)',
           borderRadius: '8px',
-          fontSize: '0.8rem',
-          color: '#999'
+                    color: '#999'
         }}>
           <div>Duration: {formatTime(metadata.duration)}</div>
           <div>Bitrate: ~{Math.round(metadata.bitrate / 1000)}kbps</div>

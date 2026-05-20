@@ -173,9 +173,9 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                 <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
                 <div>
                   <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
-                  <p style={{ color: '#ccc', fontSize: '0.9rem' }}>{event.creator.bio || 'Event organizer'}</p>
+                  <p style={{ color: '#ccc' }}>{event.creator.bio || 'Event organizer'}</p>
                   {event.creator.location && (
-                    <p style={{ color: '#999', fontSize: '0.8rem' }}>
+                    <p style={{ color: '#999' }}>
                       <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
                       {event.creator.location}
                     </p>
@@ -283,14 +283,13 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                   color: 'white',
                   padding: '0.5rem 1rem',
                   borderRadius: '15px',
-                  fontSize: '0.9rem',
                   fontWeight: '600'
                 }}>
                   Featured Event
                 </div>
               )}
-              <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>{event.title}</h1>
-              <p style={{ fontSize: '1.2rem', color: '#ccc', marginBottom: '1rem' }}>
+              <h1 style={{ fontWeight: 'bold', marginBottom: '1rem' }}>{event.title}</h1>
+              <p style={{ color: '#ccc', marginBottom: '1rem' }}>
                 {event.creator?.display_name || 'Unknown Creator'}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
@@ -429,22 +428,22 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                 <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
                 <div style={{ flex: 1 }}>
                   <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
-                  <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <p style={{ color: '#ccc', marginBottom: '0.5rem' }}>
                     {event.creator.bio || 'Event organizer'}
                   </p>
                   {event.creator.location && (
-                    <p style={{ color: '#999', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                    <p style={{ color: '#999', marginBottom: '0.5rem' }}>
                       <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
                       {event.creator.location}
                     </p>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}>
+                    <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>
                       <MessageCircle size={12} />
                       Contact
                     </button>
                     <Link href={`/creator/${event.creator.username}`} style={{ textDecoration: 'none' }}>
-                      <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}>
+                      <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>
                         <User size={12} />
                         View Profile
                       </button>
@@ -475,7 +474,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Similar Events</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>Gospel Choir Competition - Abuja</div>
           <div>Worship Experience - Lagos</div>
           <div>Christian Music Festival - London</div>

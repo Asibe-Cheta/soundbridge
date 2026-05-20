@@ -341,17 +341,13 @@ export default function Navbar() {
                </div>
              ) : (
                <Link href="/login" style={{ textDecoration: 'none' }}>
-                 <button 
-                   style={{
-                     background: 'none',
+                 <button className="text-base" style={{ background: 'none',
                      color: '#DC2626',
                      border: 'none',
                      padding: '8px 16px',
                      cursor: 'pointer',
                      fontWeight: '500',
-                     fontSize: '16px',
-                     transition: 'all 0.2s ease'
-                   }}
+                     transition: 'all 0.2s ease' }}
                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                  >
@@ -583,22 +579,18 @@ export default function Navbar() {
            }}>
              {/* Upload Button */}
              <Link href="/upload" style={{ textDecoration: 'none' }}>
-               <button 
-                 style={{
-                   background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+               <button className="text-xs" style={{ background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                    color: 'white',
                    border: 'none',
                    padding: '0.5rem 1rem',
                    borderRadius: '8px',
                    cursor: 'pointer',
                    fontWeight: '600',
-                   fontSize: '0.8rem',
                    display: 'flex',
                    alignItems: 'center',
                    gap: '0.25rem',
                    transition: 'all 0.3s ease',
-                   boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)'
-                 }}
+                   boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)' }}
                  onMouseEnter={(e) => {
                    e.currentTarget.style.transform = 'translateY(-2px)';
                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
@@ -832,18 +824,14 @@ export default function Navbar() {
             ) : (
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <Link href="/login" style={{ textDecoration: 'none' }}>
-                  <button 
-                    style={{
-                      background: 'transparent',
+                  <button className="text-sm" style={{ background: 'transparent',
                       color: '#374151',
                       border: '1px solid #d1d5db',
                       padding: '0.75rem 1.5rem',
                       borderRadius: '12px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
-                      transition: 'all 0.3s ease'
-                    }}
+                      transition: 'all 0.3s ease' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = '#f3f4f6';
                       e.currentTarget.style.borderColor = '#9ca3af';
@@ -857,19 +845,15 @@ export default function Navbar() {
                   </button>
                 </Link>
                <Link href="/signup" style={{ textDecoration: 'none' }}>
-                 <button 
-                   style={{
-                     background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                 <button className="text-sm" style={{ background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                      color: 'white',
                      border: 'none',
                      padding: '0.75rem 1.5rem',
                      borderRadius: '12px',
                      cursor: 'pointer',
                      fontWeight: '600',
-                     fontSize: '0.9rem',
                      transition: 'all 0.3s ease',
-                     boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-                   }}
+                     boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 8px 25px rgba(220, 38, 38, 0.4)';
@@ -961,21 +945,19 @@ export default function Navbar() {
               <>
                 <Link 
                   href="/feed" 
+                  className="text-sm md:text-base"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ 
-                    textDecoration: 'none', 
+                  style={{ textDecoration: 'none', 
                     color: 'white',
                     padding: '16px 20px',
                     borderRadius: '12px',
                     background: 'rgba(255, 255, 255, 0.08)',
                     border: 'none',
-                    fontSize: isMobile ? '0.9rem' : '17px',
                     fontWeight: '500',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px'
-                  }}
+                    gap: '12px' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
                 >
@@ -984,21 +966,19 @@ export default function Navbar() {
                 </Link>
                 <Link 
                   href="/network" 
+                  className="text-sm md:text-base"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ 
-                    textDecoration: 'none', 
+                  style={{ textDecoration: 'none', 
                     color: 'white',
                     padding: '16px 20px',
                     borderRadius: '12px',
                     background: 'rgba(255, 255, 255, 0.08)',
                     border: 'none',
-                    fontSize: isMobile ? '0.9rem' : '17px',
                     fontWeight: '500',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px'
-                  }}
+                    gap: '12px' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
                 >
@@ -1007,23 +987,21 @@ export default function Navbar() {
                 </Link>
               </>
             ) : (
-              <Link 
-                href="/" 
+              <Link
+                href="/"
+                className="text-sm md:text-base"
                 onClick={() => setIsMobileMenuOpen(false)}
-                style={{ 
-                  textDecoration: 'none', 
+                style={{ textDecoration: 'none', 
                   color: 'white',
                   padding: '16px 20px',
                   borderRadius: '12px',
                   background: 'rgba(255, 255, 255, 0.08)',
                   border: 'none',
-                  fontSize: isMobile ? '0.9rem' : '17px',
                   fontWeight: '500',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px'
-                }}
+                  gap: '12px' }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
               >
@@ -1033,21 +1011,19 @@ export default function Navbar() {
             )}
             <Link 
               href="/discover" 
+              className="text-sm md:text-base"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
+              style={{ textDecoration: 'none', 
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px'
-              }}
+                gap: '12px' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1057,21 +1033,19 @@ export default function Navbar() {
 
             <Link 
               href="/ai-advisor" 
+              className="text-sm md:text-base"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none',
+              style={{ textDecoration: 'none',
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px'
-              }}
+                gap: '12px' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1080,27 +1054,25 @@ export default function Navbar() {
             </Link>
             
             {/* Mobile Search Option */}
-            <div 
+            <div
+              className="text-sm md:text-base"
               onClick={() => {
                 console.log('Mobile search option clicked');
                 // Don't close menu immediately - let focus handler close it
                 setShouldFocusSearch(true);
               }}
-              style={{ 
-                textDecoration: 'none', 
+              style={{ textDecoration: 'none', 
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                cursor: 'pointer'
-              }}
+                cursor: 'pointer' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1109,21 +1081,19 @@ export default function Navbar() {
             </div>
             <Link 
               href="/events" 
+              className="text-sm md:text-base"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
+              style={{ textDecoration: 'none', 
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px'
-              }}
+                gap: '12px' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1132,21 +1102,19 @@ export default function Navbar() {
             </Link>
             <Link 
               href="/gigs/my" 
+              className="text-sm md:text-base"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
+              style={{ textDecoration: 'none', 
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px'
-              }}
+                gap: '12px' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1155,21 +1123,19 @@ export default function Navbar() {
             </Link>
             <Link 
               href="/creators" 
+              className="text-sm md:text-base"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
+              style={{ textDecoration: 'none', 
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px'
-              }}
+                gap: '12px' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1178,21 +1144,19 @@ export default function Navbar() {
             </Link>
             <Link 
               href="/live" 
+              className="text-sm md:text-base"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ 
-                textDecoration: 'none', 
+              style={{ textDecoration: 'none', 
                 color: 'white',
                 padding: '16px 20px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: 'none',
-                fontSize: isMobile ? '0.9rem' : '17px',
                 fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px'
-              }}
+                gap: '12px' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             >
@@ -1224,17 +1188,15 @@ export default function Navbar() {
             alignItems: 'center',
             marginBottom: '20px'
           }}>
-            <h2 style={{ color: 'white', margin: 0, fontSize: '18px' }}>Search</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'white', margin: 0 }}>Search</h2>
             <button
+              className="text-2xl"
               onClick={() => setShowMobileSearch(false)}
-              style={{
-                background: 'none',
+              style={{ background: 'none',
                 border: 'none',
                 color: 'white',
-                fontSize: '24px',
                 cursor: 'pointer',
-                padding: '8px'
-              }}
+                padding: '8px' }}
             >
               ×
             </button>

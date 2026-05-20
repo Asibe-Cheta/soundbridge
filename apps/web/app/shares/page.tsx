@@ -152,7 +152,6 @@ export default function SharesPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '0.875rem',
           fontWeight: '600',
           color: 'white'
         }}>
@@ -168,14 +167,14 @@ export default function SharesPage() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: 'white', fontWeight: '600', fontSize: '0.875rem' }}>
+            <span style={{ color: 'white', fontWeight: '600' }}>
               {share.user.display_name}
             </span>
-            <span style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>
+            <span style={{ color: '#9CA3AF' }}>
               @{share.user.username}
             </span>
           </div>
-          <div style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>
+          <div style={{ color: '#9CA3AF' }}>
             {formatDate(share.created_at)}
             {share.external_platform && (
               <span style={{ marginLeft: '0.5rem', color: '#3B82F6' }}>
@@ -189,7 +188,7 @@ export default function SharesPage() {
 
       {/* Share Caption */}
       {share.caption && (
-        <div style={{ color: 'white', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
+        <div style={{ color: 'white', marginBottom: '1rem', lineHeight: '1.5' }}>
           {share.caption}
         </div>
       )}
@@ -235,14 +234,14 @@ export default function SharesPage() {
         </div>
         
         <div style={{ flex: 1 }}>
-          <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: '0 0 0.25rem 0' }}>
+          <h3 style={{ color: 'white', fontWeight: '600', margin: '0 0 0.25rem 0' }}>
             {share.content.title}
           </h3>
-          <p style={{ color: '#9CA3AF', fontSize: '0.875rem', margin: '0 0 0.5rem 0' }}>
+          <p style={{ color: '#9CA3AF', margin: '0 0 0.5rem 0' }}>
             by {share.content.creator?.display_name || 'Unknown Artist'}
           </p>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#9CA3AF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#9CA3AF' }}>
             <span>{formatDuration(share.content.duration || 0)}</span>
             <span>• {share.content.play_count || 0} plays</span>
             <span>• {share.content.like_count || 0} likes</span>
@@ -270,7 +269,6 @@ export default function SharesPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '0.875rem',
           fontWeight: '600',
           color: 'white'
         }}>
@@ -286,14 +284,14 @@ export default function SharesPage() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: 'white', fontWeight: '600', fontSize: '0.875rem' }}>
+            <span style={{ color: 'white', fontWeight: '600' }}>
               {share.user.display_name}
             </span>
-            <span style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>
+            <span style={{ color: '#9CA3AF' }}>
               @{share.user.username}
             </span>
           </div>
-          <div style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>
+          <div style={{ color: '#9CA3AF' }}>
             {formatDate(share.created_at)}
             {share.external_platform && (
               <span style={{ marginLeft: '0.5rem', color: '#3B82F6' }}>
@@ -307,7 +305,7 @@ export default function SharesPage() {
 
       {/* Share Caption */}
       {share.caption && (
-        <div style={{ color: 'white', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
+        <div style={{ color: 'white', marginBottom: '1rem', lineHeight: '1.5' }}>
           {share.caption}
         </div>
       )}
@@ -323,20 +321,19 @@ export default function SharesPage() {
           alignItems: 'center',
           justifyContent: 'center',
           color: 'white',
-          fontSize: '1.5rem'
-        }}>
+          }}>
           <Calendar size={24} />
         </div>
         
         <div style={{ flex: 1 }}>
-          <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: '0 0 0.25rem 0' }}>
+          <h3 style={{ color: 'white', fontWeight: '600', margin: '0 0 0.25rem 0' }}>
             {share.content.title}
           </h3>
-          <p style={{ color: '#9CA3AF', fontSize: '0.875rem', margin: '0 0 0.5rem 0' }}>
+          <p style={{ color: '#9CA3AF', margin: '0 0 0.5rem 0' }}>
             by {share.content.creator?.display_name || 'Unknown Organizer'}
           </p>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#9CA3AF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#9CA3AF' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <Calendar size={12} />
               {share.content.event_date}
@@ -373,7 +370,7 @@ export default function SharesPage() {
           <Link href="/" style={{ color: '#9CA3AF', display: 'flex', alignItems: 'center' }}>
             <ArrowLeft size={20} />
           </Link>
-          <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
+          <h1 style={{ color: 'white', fontWeight: '700', margin: 0 }}>
             Shared Content
           </h1>
         </div>
@@ -400,8 +397,7 @@ export default function SharesPage() {
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '8px',
                 color: 'white',
-                fontSize: '0.875rem'
-              }}
+                }}
             />
           </div>
           <select
@@ -413,8 +409,7 @@ export default function SharesPage() {
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '8px',
               color: 'white',
-              fontSize: '0.875rem'
-            }}
+              }}
           >
             <option value="all">All</option>
             <option value="track">Tracks</option>
@@ -433,7 +428,6 @@ export default function SharesPage() {
               borderColor: activeTab === 'all' ? '#3B82F6' : 'rgba(255, 255, 255, 0.1)',
               borderRadius: '8px',
               color: 'white',
-              fontSize: '0.875rem',
               fontWeight: '500',
               cursor: 'pointer'
             }}
@@ -449,7 +443,6 @@ export default function SharesPage() {
               borderColor: activeTab === 'my-shares' ? '#3B82F6' : 'rgba(255, 255, 255, 0.1)',
               borderRadius: '8px',
               color: 'white',
-              fontSize: '0.875rem',
               fontWeight: '500',
               cursor: 'pointer'
             }}
@@ -467,7 +460,7 @@ export default function SharesPage() {
             <h3 style={{ color: 'white', marginBottom: '0.5rem' }}>
               {activeTab === 'all' ? 'No shared content found' : 'You haven\'t shared anything yet'}
             </h3>
-            <p style={{ fontSize: '0.875rem' }}>
+            <p style={{ }}>
               {activeTab === 'all' 
                 ? 'When people share tracks and events, they\'ll appear here.'
                 : 'Start sharing your favorite tracks and events with others!'

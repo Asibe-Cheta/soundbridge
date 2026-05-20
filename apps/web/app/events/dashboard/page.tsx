@@ -411,7 +411,6 @@ export default function EventDashboardPage() {
                         padding: '8px 16px',
                         cursor: 'pointer',
                         fontWeight: '500',
-                        fontSize: '16px',
                         transition: 'all 0.2s ease'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
@@ -475,8 +474,7 @@ export default function EventDashboardPage() {
                     style={{ 
                       width: '100%', 
                       paddingLeft: '40px',
-                      fontSize: '16px'
-                    }} 
+                      }} 
                   />
                 </div>
               </div>
@@ -494,7 +492,6 @@ export default function EventDashboardPage() {
                       borderRadius: '12px',
                       cursor: 'pointer',
                       fontWeight: '600',
-                      fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
@@ -672,7 +669,6 @@ export default function EventDashboardPage() {
                           borderRadius: '12px',
                           cursor: 'pointer',
                           fontWeight: '600',
-                          fontSize: '0.9rem',
                           transition: 'all 0.3s ease'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
@@ -691,7 +687,6 @@ export default function EventDashboardPage() {
                           borderRadius: '12px',
                           cursor: 'pointer',
                           fontWeight: '600',
-                          fontSize: '0.9rem',
                           transition: 'all 0.3s ease',
                           boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
                         }}
@@ -875,7 +870,6 @@ export default function EventDashboardPage() {
                         color: 'white',
                         padding: '0.25rem 0.5rem',
                         borderRadius: '10px',
-                        fontSize: '0.8rem',
                         fontWeight: '600'
                       }}>
                         Featured
@@ -895,47 +889,46 @@ export default function EventDashboardPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                          fontSize: '2rem'
-                        }}>
+                          }}>
                           <Music size={32} />
                         </div>
                       )}
                     </div>
 
                     <div className="event-info">
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                      <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
                         {event.title}
                       </h3>
-                      <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                      <p style={{ color: '#ccc', marginBottom: '0.5rem' }}>
                         {event.creator?.display_name || 'Unknown Creator'}
                       </p>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#999' }}>
                         <Calendar size={14} />
                         <span>{event.formattedDate}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#999' }}>
                         <MapPin size={14} />
                         <span>{event.location}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#999' }}>
                         <Music size={14} />
                         <span>{event.category}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: '#999' }}>
                         <DollarSign size={14} />
                         <span>{event.formattedPrice}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#999' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#999' }}>
                         <Users size={14} />
                         <span>{event.attendeeCount || 0} attending</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#999' }}>
                         <Star size={14} style={{ color: '#FFD700' }} />
                         <span>{event.rating?.toFixed(1) || '4.5'}</span>
                       </div>
@@ -1033,7 +1026,7 @@ export default function EventDashboardPage() {
         </div>
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Management</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>Event Analytics</div>
           <div>Email Attendees</div>
           <div>Mobile App</div>
@@ -1086,12 +1079,12 @@ export default function EventDashboardPage() {
               }}
             >
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h2 style={{ margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Ticket size={24} />
                   Ticket Sales
                 </h2>
                 {ticketSalesData && (
-                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.9)' }}>
+                  <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255, 255, 255, 0.9)' }}>
                     {ticketSalesData.event.title}
                   </p>
                 )}
@@ -1126,13 +1119,13 @@ export default function EventDashboardPage() {
                     <div style={{ background: 'rgba(236, 72, 153, 0.1)', border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <Ticket size={20} style={{ color: '#EC4899' }} />
-                        <span style={{ color: '#999', fontSize: '0.9rem' }}>Tickets Sold</span>
+                        <span style={{ color: '#999' }}>Tickets Sold</span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#EC4899' }}>
+                      <p style={{ margin: 0, fontWeight: 'bold', color: '#EC4899' }}>
                         {ticketSalesData.statistics.total_tickets_sold}
                       </p>
                       {ticketSalesData.event.max_attendees && (
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                        <p style={{ margin: '0.25rem 0 0 0', color: '#666' }}>
                           of {ticketSalesData.event.max_attendees} capacity
                         </p>
                       )}
@@ -1141,13 +1134,13 @@ export default function EventDashboardPage() {
                     <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <DollarSign size={20} style={{ color: '#22C55E' }} />
-                        <span style={{ color: '#999', fontSize: '0.9rem' }}>Total Revenue</span>
+                        <span style={{ color: '#999' }}>Total Revenue</span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#22C55E' }}>
+                      <p style={{ margin: 0, fontWeight: 'bold', color: '#22C55E' }}>
                         {ticketSalesData.statistics.currency === 'GBP' ? '£' : '₦'}
                         {(ticketSalesData.statistics.total_revenue / 100).toFixed(2)}
                       </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                      <p style={{ margin: '0.25rem 0 0 0', color: '#666' }}>
                         After 5% platform fee
                       </p>
                     </div>
@@ -1155,9 +1148,9 @@ export default function EventDashboardPage() {
                     <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <CheckCircle size={20} style={{ color: '#3B82F6' }} />
-                        <span style={{ color: '#999', fontSize: '0.9rem' }}>Active Tickets</span>
+                        <span style={{ color: '#999' }}>Active Tickets</span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#3B82F6' }}>
+                      <p style={{ margin: 0, fontWeight: 'bold', color: '#3B82F6' }}>
                         {ticketSalesData.statistics.active_tickets}
                       </p>
                     </div>
@@ -1166,12 +1159,12 @@ export default function EventDashboardPage() {
                       <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', padding: '1.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                           <AlertCircle size={20} style={{ color: '#EF4444' }} />
-                          <span style={{ color: '#999', fontSize: '0.9rem' }}>Refunded</span>
+                          <span style={{ color: '#999' }}>Refunded</span>
                         </div>
-                        <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#EF4444' }}>
+                        <p style={{ margin: 0, fontWeight: 'bold', color: '#EF4444' }}>
                           {ticketSalesData.statistics.refunded_tickets}
                         </p>
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                        <p style={{ margin: '0.25rem 0 0 0', color: '#666' }}>
                           {ticketSalesData.statistics.currency === 'GBP' ? '£' : '₦'}
                           {(ticketSalesData.statistics.total_refunded / 100).toFixed(2)}
                         </p>
@@ -1193,24 +1186,24 @@ export default function EventDashboardPage() {
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                           <thead>
                             <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
-                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Ticket Code</th>
-                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Buyer</th>
-                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Email</th>
-                              <th style={{ padding: '1rem', textAlign: 'right', color: '#999', fontSize: '0.9rem' }}>Amount</th>
-                              <th style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.9rem' }}>Status</th>
-                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999', fontSize: '0.9rem' }}>Date</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999' }}>Ticket Code</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999' }}>Buyer</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999' }}>Email</th>
+                              <th style={{ padding: '1rem', textAlign: 'right', color: '#999' }}>Amount</th>
+                              <th style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>Status</th>
+                              <th style={{ padding: '1rem', textAlign: 'left', color: '#999' }}>Date</th>
                             </tr>
                           </thead>
                           <tbody>
                             {ticketSalesData.tickets.map((ticket: any) => (
                               <tr key={ticket.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                                <td style={{ padding: '1rem', color: '#EC4899', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                                <td style={{ padding: '1rem', color: '#EC4899', fontFamily: 'monospace' }}>
                                   {ticket.ticket_code}
                                 </td>
                                 <td style={{ padding: '1rem', color: '#fff' }}>
                                   {ticket.buyer_name}
                                 </td>
-                                <td style={{ padding: '1rem', color: '#999', fontSize: '0.9rem' }}>
+                                <td style={{ padding: '1rem', color: '#999' }}>
                                   {ticket.buyer_email}
                                 </td>
                                 <td style={{ padding: '1rem', textAlign: 'right', color: '#22C55E', fontWeight: '600' }}>
@@ -1221,7 +1214,6 @@ export default function EventDashboardPage() {
                                   <span style={{
                                     padding: '0.25rem 0.75rem',
                                     borderRadius: '12px',
-                                    fontSize: '0.75rem',
                                     fontWeight: '600',
                                     background: ticket.status === 'active' ? 'rgba(34, 197, 94, 0.2)' :
                                               ticket.status === 'refunded' ? 'rgba(239, 68, 68, 0.2)' :
@@ -1233,7 +1225,7 @@ export default function EventDashboardPage() {
                                     {ticket.status}
                                   </span>
                                 </td>
-                                <td style={{ padding: '1rem', color: '#999', fontSize: '0.85rem' }}>
+                                <td style={{ padding: '1rem', color: '#999' }}>
                                   {new Date(ticket.purchase_date).toLocaleDateString('en-GB', {
                                     day: '2-digit',
                                     month: 'short',

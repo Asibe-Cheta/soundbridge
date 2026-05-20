@@ -44,7 +44,6 @@ export default function PrivacyPolicy() {
 
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h1 style={{
-            fontSize: '2.5rem',
             fontWeight: 'bold',
             background: 'var(--gradient-primary)',
             WebkitBackgroundClip: 'text',
@@ -54,15 +53,14 @@ export default function PrivacyPolicy() {
           }}>
             Privacy Policy
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
             Last updated: January 15, 2025
           </p>
         </div>
 
-        <div style={{ lineHeight: '1.8', fontSize: '1rem' }}>
+        <div style={{ lineHeight: '1.8' }}>
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -78,7 +76,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -89,7 +86,6 @@ export default function PrivacyPolicy() {
             </h2>
             
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -111,7 +107,6 @@ export default function PrivacyPolicy() {
             </ul>
 
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -133,7 +128,6 @@ export default function PrivacyPolicy() {
             </ul>
 
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -157,7 +151,6 @@ export default function PrivacyPolicy() {
             </ul>
 
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -171,7 +164,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -202,7 +194,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -234,7 +225,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -246,7 +236,6 @@ export default function PrivacyPolicy() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>We do not sell, trade, or rent your personal information. We may share your information in the following circumstances:</p>
             
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -258,7 +247,6 @@ export default function PrivacyPolicy() {
             </p>
 
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -270,7 +258,6 @@ export default function PrivacyPolicy() {
             </p>
 
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -284,7 +271,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -312,7 +298,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -351,7 +336,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -379,7 +363,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -395,7 +378,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -411,7 +393,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -427,7 +408,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -443,7 +423,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -472,7 +451,6 @@ export default function PrivacyPolicy() {
 
           <section style={{ marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '1.5rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '1rem',
@@ -484,7 +462,6 @@ export default function PrivacyPolicy() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>We use the following types of cookies:</p>
             
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -494,7 +471,6 @@ export default function PrivacyPolicy() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Required for basic platform functionality.</p>
             
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -504,7 +480,6 @@ export default function PrivacyPolicy() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Help us understand how users interact with the Platform.</p>
             
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
@@ -514,7 +489,6 @@ export default function PrivacyPolicy() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Remember your settings and preferences.</p>
             
             <h3 style={{
-              fontSize: '1.2rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'

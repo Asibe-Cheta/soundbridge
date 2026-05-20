@@ -187,7 +187,7 @@ export function MessagingWidget() {
                         )}
                         {conversation.unreadCount > 0 && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-gray-900 flex items-center justify-center">
-                            <span className="text-[8px] text-white font-semibold">
+                            <span className="text-badge text-white font-semibold">
                               {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
                             </span>
                           </div>

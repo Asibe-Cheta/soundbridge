@@ -20,6 +20,7 @@ import { GlobalErrorHandler } from "@/src/components/GlobalErrorHandler";
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
@@ -149,7 +150,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />

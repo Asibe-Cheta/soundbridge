@@ -811,7 +811,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                     <span className="text-2xl leading-none">
                       {reactionEmojis[type]}
                     </span>
-                    <span className="text-[10px] text-gray-400 mt-0.5">
+                    <span className="text-badge text-gray-400 mt-0.5">
                       {reactionLabels[type]}
                     </span>
                   </button>
@@ -1412,7 +1412,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-[10px]">
+                              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-badge">
                                 {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                               </div>
                             )}
@@ -1452,7 +1452,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                                       className="object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-[10px]">
+                                    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-badge">
                                       {reply.author?.name?.charAt(0) || reply.author?.username?.charAt(0) || 'U'}
                                     </div>
                                   )}
@@ -1541,7 +1541,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
                                           className="object-cover"
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-white font-semibold text-[10px]">
+                                        <div className="w-full h-full flex items-center justify-center text-white font-semibold text-badge">
                                           {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                                         </div>
                                       )}

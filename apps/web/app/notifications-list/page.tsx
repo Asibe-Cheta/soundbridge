@@ -81,8 +81,7 @@ export default function NotificationsListPage() {
               borderRadius: '12px',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '0.9rem'
-            }}>
+              }}>
               Login
             </button>
           </Link>
@@ -115,14 +114,13 @@ export default function NotificationsListPage() {
                 border: 'none',
                 color: '#999',
                 cursor: 'pointer',
-                fontSize: '1.2rem'
-              }}>
+                }}>
                 <ArrowLeft size={20} />
               </button>
             </Link>
             <div>
-              <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Notifications</h1>
-              <p style={{ color: '#999', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+              <h1 style={{ color: 'white', margin: 0 }}>Notifications</h1>
+              <p style={{ color: '#999', margin: '0.25rem 0 0 0' }}>
                 {notificationsState.unreadCount} unread
               </p>
             </div>
@@ -143,8 +141,7 @@ export default function NotificationsListPage() {
               padding: '0.5rem 1rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}
+              }}
           >
             All ({notificationsState.notifications.length})
           </button>
@@ -157,8 +154,7 @@ export default function NotificationsListPage() {
               padding: '0.5rem 1rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}
+              }}
           >
             Unread ({notificationsState.unreadCount})
           </button>
@@ -169,7 +165,7 @@ export default function NotificationsListPage() {
       <div style={{ padding: '2rem' }}>
         {notificationsState.loading ? (
           <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-            <div style={{ color: '#EC4899', fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+            <div style={{ color: '#EC4899', marginBottom: '1rem' }}>⏳</div>
             <p style={{ color: '#999' }}>Loading notifications...</p>
           </div>
         ) : filteredNotifications.length === 0 ? (
@@ -225,7 +221,6 @@ export default function NotificationsListPage() {
                         <h3 style={{ 
                           color: (notification.read ?? notification.is_read) ? '#ccc' : 'white', 
                           margin: '0 0 0.5rem 0',
-                          fontSize: '1rem',
                           fontWeight: '600'
                         }}>
                           {notification.title}
@@ -233,14 +228,13 @@ export default function NotificationsListPage() {
                         <p style={{ 
                           color: '#999', 
                           margin: '0 0 0.5rem 0',
-                          fontSize: '0.9rem',
                           lineHeight: '1.4'
                         }}>
                           {notification.body ?? notification.message}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <Clock size={14} style={{ color: '#666' }} />
-                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                          <span style={{ color: '#666' }}>
                             {formatTimeAgo(notification.created_at)}
                           </span>
                         </div>
@@ -305,8 +299,7 @@ export default function NotificationsListPage() {
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
+                }}
             >
               Load More
             </button>

@@ -30,14 +30,14 @@ export default function ProResourcesPage() {
 
       <header className="px-6 pt-2 pb-6">
         <h1
-          className={`text-[52px] font-light tracking-[-1px] leading-[1.05] mb-2 whitespace-pre-line ${
+          className={`mb-2 whitespace-pre-line ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}
         >
           Pro{'\n'}Resources
         </h1>
         <p
-          className={`text-[15px] tracking-[0.5px] ${
+          className={`text-lead ${
             theme === 'dark' ? 'text-white/55' : 'text-gray-600'
           }`}
         >

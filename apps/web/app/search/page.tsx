@@ -231,7 +231,6 @@ function SearchContent() {
                   borderRadius: '20px',
                   background: isActive ? 'linear-gradient(45deg, #DC2626, #EC4899)' : 'rgba(255, 255, 255, 0.1)',
                   color: isActive ? 'white' : '#ccc',
-                  fontSize: '0.9rem',
                   fontWeight: isActive ? '600' : '400',
                   flexShrink: '0',
                   minWidth: 'fit-content',
@@ -261,7 +260,6 @@ function SearchContent() {
                   <span style={{
                     background: isActive ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
                     color: 'white',
-                    fontSize: '0.7rem',
                     padding: '0.2rem 0.5rem',
                     borderRadius: '10px',
                     fontWeight: '500'
@@ -314,7 +312,6 @@ function SearchContent() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontSize: '1.5rem',
                       fontWeight: '600'
                     }}>
                       {creator.avatar_url ? (
@@ -342,21 +339,21 @@ function SearchContent() {
                       />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>
+                      <h3 style={{ color: 'white', marginBottom: '0.25rem' }}>
                         {creator.display_name}
                       </h3>
-                      <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                      <p style={{ color: '#9ca3af', marginBottom: '0.25rem' }}>
                         @{creator.username}
                       </p>
                       {creator.bio && (
-                        <p style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                        <p style={{ color: '#ccc' }}>
                           {creator.bio.length > 100 ? `${creator.bio.substring(0, 100)}...` : creator.bio}
                         </p>
                       )}
                       {creator.location && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem' }}>
                           <MapPin size={12} color="#9ca3af" />
-                          <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>{creator.location}</span>
+                          <span style={{ color: '#9ca3af' }}>{creator.location}</span>
                         </div>
                       )}
                     </div>
@@ -386,7 +383,6 @@ function SearchContent() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1rem',
-                  fontSize: '0.875rem',
                   color: '#9ca3af'
                 }}>
                   <div style={{ width: '32px', textAlign: 'center' }}>#</div>
@@ -425,7 +421,7 @@ function SearchContent() {
                     }}
                   >
                     {/* Track Number */}
-                    <div style={{ width: '32px', textAlign: 'center', color: '#9ca3af', fontSize: '0.875rem' }}>
+                    <div style={{ width: '32px', textAlign: 'center', color: '#9ca3af' }}>
                       {index + 1}
                     </div>
 
@@ -441,7 +437,6 @@ function SearchContent() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'white',
-                        fontSize: '1rem',
                         flexShrink: '0'
                       }}>
                         {track.cover_art_url ? (
@@ -461,7 +456,6 @@ function SearchContent() {
                       <div style={{ flex: 1, minWidth: '0' }}>
                         <h4 style={{
                           color: 'white',
-                          fontSize: '0.9rem',
                           marginBottom: '0.125rem',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -471,7 +465,6 @@ function SearchContent() {
                         </h4>
                         <p style={{
                           color: '#9ca3af',
-                          fontSize: '0.8rem',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
@@ -486,8 +479,7 @@ function SearchContent() {
                       width: '60px',
                       textAlign: 'center',
                       color: '#9ca3af',
-                      fontSize: '0.8rem'
-                    }}>
+                      }}>
                       {track.duration ? formatDuration(track.duration) : '0:00'}
                     </div>
 
@@ -575,7 +567,6 @@ function SearchContent() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontSize: '1.5rem',
                       overflow: 'hidden'
                     }}>
                       {track.cover_art_url ? (
@@ -641,7 +632,6 @@ function SearchContent() {
                     <h3 style={{
                       color: 'white',
                       marginBottom: '0.25rem',
-                      fontSize: '0.9rem',
                       fontWeight: '600',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -651,7 +641,6 @@ function SearchContent() {
                     </h3>
                     <p style={{
                       color: '#9ca3af',
-                      fontSize: '0.8rem',
                       marginBottom: '0.5rem',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -663,7 +652,6 @@ function SearchContent() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      fontSize: '0.75rem',
                       color: '#ccc'
                     }}>
                       <span>{track.duration ? formatDuration(track.duration) : '0:00'}</span>
@@ -704,30 +692,30 @@ function SearchContent() {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}>
                 <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ color: 'white', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
+                  <h3 style={{ color: 'white', marginBottom: '0.5rem' }}>
                     {event.title}
                   </h3>
-                  <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <p style={{ color: '#9ca3af', marginBottom: '0.5rem' }}>
                     {event.description || 'No description available'}
                   </p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Calendar size={14} color="#9ca3af" />
-                    <span style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                    <span style={{ color: '#ccc' }}>
                       {new Date(event.event_date).toLocaleDateString()}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <MapPin size={14} color="#9ca3af" />
-                    <span style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                    <span style={{ color: '#ccc' }}>
                       {event.venue || event.city || 'Location TBD'}
                     </span>
                   </div>
                   {event.organizer && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <User size={14} color="#9ca3af" />
-                      <span style={{ color: '#ccc', fontSize: '0.9rem' }}>
+                      <span style={{ color: '#ccc' }}>
                         {event.organizer.display_name}
                       </span>
                     </div>
@@ -775,8 +763,7 @@ function SearchContent() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    fontSize: '1.5rem'
-                  }}>
+                    }}>
                     {podcast.cover_art_url ? (
                       <Image
                         src={podcast.cover_art_url}
@@ -790,16 +777,16 @@ function SearchContent() {
                     )}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ color: 'white', marginBottom: '0.25rem', fontSize: '1rem' }}>
+                    <h3 style={{ color: 'white', marginBottom: '0.25rem' }}>
                       {podcast.title}
                     </h3>
-                    <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                    <p style={{ color: '#9ca3af', marginBottom: '0.25rem' }}>
                       {podcast.creator?.display_name || 'Unknown Host'}
                     </p>
                     {podcast.duration && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         <Clock size={12} color="#9ca3af" />
-                        <span style={{ color: '#ccc', fontSize: '0.8rem' }}>
+                        <span style={{ color: '#ccc' }}>
                           {formatDuration(podcast.duration)}
                         </span>
                       </div>

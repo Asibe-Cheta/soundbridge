@@ -152,8 +152,7 @@ export function AdvancedFilters({
               borderRadius: '50%',
               width: '16px',
               height: '16px',
-              fontSize: '0.7rem',
-              display: 'flex',
+                            display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginLeft: '0.5rem'
@@ -191,7 +190,7 @@ export function AdvancedFilters({
           marginBottom: '1rem',
           alignItems: 'center'
         }}>
-          <span style={{ color: '#999', fontSize: '0.9rem' }}>Active filters:</span>
+          <span style={{ color: '#999' }}>Active filters:</span>
           {activeFilters.map((filter) => (
             <div
               key={filter.type}
@@ -204,8 +203,7 @@ export function AdvancedFilters({
                 border: '1px solid rgba(236, 72, 153, 0.3)',
                 borderRadius: '20px',
                 color: '#EC4899',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
+                                cursor: 'pointer',
                 transition: 'all 0.3s ease'
               }}
               onClick={() => removeFilter(filter.type)}
@@ -223,8 +221,7 @@ export function AdvancedFilters({
               border: 'none',
               color: '#999',
               cursor: 'pointer',
-              fontSize: '0.8rem',
-              textDecoration: 'underline'
+                            textDecoration: 'underline'
             }}
           >
             Clear all
@@ -260,8 +257,7 @@ export function AdvancedFilters({
                   color: 'white',
                   cursor: 'pointer',
                   padding: '0.5rem 0',
-                  fontSize: '0.9rem',
-                  fontWeight: '600'
+                                    fontWeight: '600'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -281,8 +277,7 @@ export function AdvancedFilters({
                         gap: '0.5rem',
                         padding: '0.25rem 0',
                         cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        color: selectedGenre === genre.value ? '#EC4899' : '#ccc'
+                                                color: selectedGenre === genre.value ? '#EC4899' : '#ccc'
                       }}
                     >
                       <input
@@ -314,8 +309,7 @@ export function AdvancedFilters({
                   color: 'white',
                   cursor: 'pointer',
                   padding: '0.5rem 0',
-                  fontSize: '0.9rem',
-                  fontWeight: '600'
+                                    fontWeight: '600'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -335,8 +329,7 @@ export function AdvancedFilters({
                         gap: '0.5rem',
                         padding: '0.25rem 0',
                         cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        color: selectedLocation === location.value ? '#EC4899' : '#ccc'
+                                                color: selectedLocation === location.value ? '#EC4899' : '#ccc'
                       }}
                     >
                       <input
@@ -368,8 +361,7 @@ export function AdvancedFilters({
                   color: 'white',
                   cursor: 'pointer',
                   padding: '0.5rem 0',
-                  fontSize: '0.9rem',
-                  fontWeight: '600'
+                                    fontWeight: '600'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -389,8 +381,7 @@ export function AdvancedFilters({
                         gap: '0.5rem',
                         padding: '0.25rem 0',
                         cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        color: selectedDate === date.value ? '#EC4899' : '#ccc'
+                                                color: selectedDate === date.value ? '#EC4899' : '#ccc'
                       }}
                     >
                       <input
@@ -422,8 +413,7 @@ export function AdvancedFilters({
                   color: 'white',
                   cursor: 'pointer',
                   padding: '0.5rem 0',
-                  fontSize: '0.9rem',
-                  fontWeight: '600'
+                                    fontWeight: '600'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -443,8 +433,7 @@ export function AdvancedFilters({
                         gap: '0.5rem',
                         padding: '0.25rem 0',
                         cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        color: selectedPrice === price.value ? '#EC4899' : '#ccc'
+                                                color: selectedPrice === price.value ? '#EC4899' : '#ccc'
                       }}
                     >
                       <input

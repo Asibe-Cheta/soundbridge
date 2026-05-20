@@ -28,7 +28,6 @@ export default function GuidelinesPage() {
           }}>
             <FileText size={48} style={{ color: '#DC2626' }} />
             <h1 style={{
-              fontSize: '3rem',
               fontWeight: '700',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               WebkitBackgroundClip: 'text',
@@ -40,7 +39,6 @@ export default function GuidelinesPage() {
             </h1>
           </div>
           <p style={{
-            fontSize: '1.2rem',
             color: 'rgba(255, 255, 255, 0.8)',
             maxWidth: '700px',
             margin: '0 auto',
@@ -53,7 +51,6 @@ export default function GuidelinesPage() {
         {/* Core Principles */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -112,7 +109,6 @@ export default function GuidelinesPage() {
         {/* Do's and Don'ts */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -188,7 +184,6 @@ export default function GuidelinesPage() {
         {/* Content Guidelines */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -231,7 +226,6 @@ export default function GuidelinesPage() {
         {/* Enforcement */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '2rem',
             textAlign: 'center'
@@ -280,14 +274,12 @@ export default function GuidelinesPage() {
           padding: '3rem'
         }}>
           <h2 style={{
-            fontSize: '2rem',
             color: 'white',
             marginBottom: '1rem'
           }}>
             Questions or Concerns?
           </h2>
           <p style={{
-            fontSize: '1.1rem',
             color: 'rgba(255, 255, 255, 0.8)',
             lineHeight: '1.6',
             maxWidth: '600px',
@@ -303,7 +295,6 @@ export default function GuidelinesPage() {
             border: 'none',
             padding: '1rem 2rem',
             borderRadius: '12px',
-            fontSize: '1.1rem',
             fontWeight: '600',
             cursor: 'pointer',
             transition: 'all 0.3s ease'

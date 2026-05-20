@@ -33,13 +33,11 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
         }}
       >
         <ProResourcesBackButton onGradient />
-        <span className="inline-flex items-center rounded-xl border border-white/20 bg-white/12 px-2.5 py-1 text-[10px] font-bold tracking-[1.2px] text-white uppercase mt-5 mb-3">
+        <span className="inline-flex items-center rounded-xl border border-white/20 bg-white/12 px-2.5 py-1 text-badge font-bold tracking-[1.2px] text-white uppercase mt-5 mb-3">
           MODULE {mod.moduleNumber} · SOUND ACADEMY UK
         </span>
-        <h1 className="text-[32px] font-bold text-white tracking-[-0.5px] leading-[38px] mb-1.5">
-          {mod.title}
-        </h1>
-        <p className="text-[15px] text-white/70 mb-4">{mod.subtitle}</p>
+        <h2 className="text-white mb-1.5">{mod.title}</h2>
+        <p className="text-base text-white/70 mb-4">{mod.subtitle}</p>
         <div className="flex flex-wrap gap-2.5">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-1.5">
             <Clock size={13} className="text-white/70" />
@@ -54,20 +52,16 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
 
       <div className="px-6 pt-7 pb-10">
         <section className="mb-7">
-          <h2
-            className={`text-lg font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
+          <h4 className={`mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             About this module
-          </h2>
-          <p className={`text-[15px] leading-[23px] ${textSecondary}`}>{mod.description}</p>
+          </h4>
+          <p className={textSecondary}>{mod.description}</p>
         </section>
 
         <section className="mb-7">
-          <h2
-            className={`text-lg font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
+          <h4 className={`mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             Certifications Awarded
-          </h2>
+          </h4>
           <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${cardBorder} ${cardBg}`}>
             {mod.certifications.map((cert) => (
               <div key={cert} className="flex items-center gap-2.5">
@@ -83,11 +77,9 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
         </section>
 
         <section>
-          <h2
-            className={`text-lg font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-          >
+          <h4 className={`mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             {mod.units.length} Units
-          </h2>
+          </h4>
           <div className={`divide-y ${theme === 'dark' ? 'divide-white/10' : 'divide-gray-200'}`}>
             {mod.units.map((unit) => {
               const isOpen = expandedUnit === unit.number;
@@ -98,12 +90,12 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
                     onClick={() => setExpandedUnit(isOpen ? null : unit.number)}
                     className="w-full flex items-start gap-3 text-left"
                   >
-                    <span className="w-8 h-8 shrink-0 rounded-[10px] bg-[#EC4899]/20 flex items-center justify-center text-[13px] font-bold text-[#EC4899]">
+                    <span className="w-8 h-8 shrink-0 rounded-[10px] bg-[#EC4899]/20 flex items-center justify-center text-sm font-bold text-[#EC4899]">
                       {unit.number}
                     </span>
                     <span className="flex-1 min-w-0">
                       <span
-                        className={`text-[15px] font-semibold leading-[22px] block ${
+                        className={`text-base font-semibold leading-[22px] block ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
                         }`}
                       >
@@ -121,7 +113,7 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
                       {unit.topics.map((topic) => (
                         <li key={topic} className="flex items-start gap-2">
                           <span className="w-[5px] h-[5px] rounded-full bg-[#EC4899] mt-2 shrink-0" />
-                          <span className={`text-[13px] leading-[19px] ${textSecondary}`}>
+                          <span className={`text-sm leading-[19px] ${textSecondary}`}>
                             {topic}
                           </span>
                         </li>

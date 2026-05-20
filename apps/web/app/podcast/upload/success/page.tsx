@@ -33,7 +33,7 @@ function PodcastUploadSuccessContent() {
               }}>
                 <Mic size={20} color="white" />
               </div>
-              <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white' }}>
+              <span style={{ fontWeight: 'bold', color: 'white' }}>
                 SoundBridge
               </span>
             </div>
@@ -50,7 +50,6 @@ function PodcastUploadSuccessContent() {
               borderRadius: '8px',
               padding: '0.5rem 1rem',
               color: 'white',
-              fontSize: '0.9rem',
               width: '300px'
             }}
           />
@@ -72,8 +71,7 @@ function PodcastUploadSuccessContent() {
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.9rem'
-            }}>
+              }}>
               <ArrowLeft size={16} />
               Back to Home
             </button>
@@ -98,7 +96,6 @@ function PodcastUploadSuccessContent() {
             </div>
             
             <h1 style={{
-              fontSize: '2.5rem',
               fontWeight: 'bold',
               color: 'white',
               marginBottom: '1rem'
@@ -106,7 +103,7 @@ function PodcastUploadSuccessContent() {
               Podcast Published Successfully!
             </h1>
             
-            <p style={{ fontSize: '1.25rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '0.5rem' }}>
+            <p style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: '0.5rem' }}>
               "{title}" is now live on SoundBridge
             </p>
             
@@ -131,7 +128,7 @@ function PodcastUploadSuccessContent() {
                 <Headphones size={24} color="#3B82F6" />
               </div>
               <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>Ready to Listen</h3>
-              <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>
+              <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                 Your episode is now available for streaming
               </p>
             </div>
@@ -150,7 +147,7 @@ function PodcastUploadSuccessContent() {
                 <Share2 size={24} color="#9333EA" />
               </div>
               <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>Share & Promote</h3>
-              <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>
+              <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                 Share your episode with your audience
               </p>
             </div>
@@ -169,7 +166,7 @@ function PodcastUploadSuccessContent() {
                 <TrendingUp size={24} color="#22C55E" />
               </div>
               <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>Track Performance</h3>
-              <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>
+              <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                 Monitor plays, likes, and engagement
               </p>
             </div>
@@ -177,7 +174,7 @@ function PodcastUploadSuccessContent() {
 
           {/* Next Steps */}
           <div className="card" style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', marginBottom: '1.5rem' }}>
+            <h2 style={{ fontWeight: 'bold', color: 'white', marginBottom: '1.5rem' }}>
               What's Next?
             </h2>
             
@@ -194,7 +191,7 @@ function PodcastUploadSuccessContent() {
                   flexShrink: 0,
                   marginTop: '0.25rem'
                 }}>
-                  <span style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>1</span>
+                  <span style={{ color: 'white', fontWeight: 'bold' }}>1</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>Share Your Episode</h3>
@@ -209,7 +206,6 @@ function PodcastUploadSuccessContent() {
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
                       fontWeight: '500'
                     }}>
                       Share on Twitter
@@ -221,7 +217,6 @@ function PodcastUploadSuccessContent() {
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
                       fontWeight: '500'
                     }}>
                       Share on Facebook
@@ -233,7 +228,6 @@ function PodcastUploadSuccessContent() {
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
                       fontWeight: '500'
                     }}>
                       Share on Instagram
@@ -254,7 +248,7 @@ function PodcastUploadSuccessContent() {
                   flexShrink: 0,
                   marginTop: '0.25rem'
                 }}>
-                  <span style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>2</span>
+                  <span style={{ color: 'white', fontWeight: 'bold' }}>2</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>Engage with Listeners</h3>
@@ -269,7 +263,6 @@ function PodcastUploadSuccessContent() {
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
                       fontWeight: '500'
                     }}>
                       Go to Dashboard
@@ -290,7 +283,7 @@ function PodcastUploadSuccessContent() {
                   flexShrink: 0,
                   marginTop: '0.25rem'
                 }}>
-                  <span style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>3</span>
+                  <span style={{ color: 'white', fontWeight: 'bold' }}>3</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>Plan Your Next Episode</h3>
@@ -305,7 +298,6 @@ function PodcastUploadSuccessContent() {
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
                       fontWeight: '500'
                     }}>
                       Upload Next Episode
@@ -327,7 +319,6 @@ function PodcastUploadSuccessContent() {
                   padding: '0.75rem 2rem',
                   borderRadius: '12px',
                   cursor: 'pointer',
-                  fontSize: '1rem',
                   fontWeight: '500'
                 }}>
                   Back to Home
@@ -342,7 +333,6 @@ function PodcastUploadSuccessContent() {
                   padding: '0.75rem 2rem',
                   borderRadius: '12px',
                   cursor: 'pointer',
-                  fontSize: '1rem',
                   fontWeight: '500'
                 }}>
                   View Dashboard
@@ -357,7 +347,6 @@ function PodcastUploadSuccessContent() {
                   padding: '0.75rem 2rem',
                   borderRadius: '12px',
                   cursor: 'pointer',
-                  fontSize: '1rem',
                   fontWeight: '500'
                 }}>
                   Upload Another Episode
@@ -369,7 +358,6 @@ function PodcastUploadSuccessContent() {
           {/* Tips */}
           <div className="card">
             <h3 style={{ 
-              fontSize: '1.25rem', 
               fontWeight: 'bold', 
               color: 'white', 
               marginBottom: '1rem',
@@ -385,19 +373,19 @@ function PodcastUploadSuccessContent() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ width: '8px', height: '8px', background: '#EC4899', borderRadius: '50%', marginTop: '0.5rem', flexShrink: 0 }}></div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Consistency is key - upload episodes regularly
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ width: '8px', height: '8px', background: '#EC4899', borderRadius: '50%', marginTop: '0.5rem', flexShrink: 0 }}></div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Engage with your audience through comments and social media
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ width: '8px', height: '8px', background: '#EC4899', borderRadius: '50%', marginTop: '0.5rem', flexShrink: 0 }}></div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Use relevant tags to help listeners discover your content
                   </p>
                 </div>
@@ -406,19 +394,19 @@ function PodcastUploadSuccessContent() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ width: '8px', height: '8px', background: '#EC4899', borderRadius: '50%', marginTop: '0.5rem', flexShrink: 0 }}></div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Collaborate with other creators to expand your reach
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ width: '8px', height: '8px', background: '#EC4899', borderRadius: '50%', marginTop: '0.5rem', flexShrink: 0 }}></div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Analyze your performance data to understand what works
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <div style={{ width: '8px', height: '8px', background: '#EC4899', borderRadius: '50%', marginTop: '0.5rem', flexShrink: 0 }}></div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                     Keep your content authentic and true to your voice
                   </p>
                 </div>

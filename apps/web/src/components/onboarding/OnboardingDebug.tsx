@@ -21,8 +21,7 @@ export function OnboardingDebug() {
       color: 'white',
       padding: '10px',
       borderRadius: '8px',
-      fontSize: '12px',
-      zIndex: 9999,
+            zIndex: 9999,
       maxWidth: '300px'
     }}>
       <h4 style={{ margin: '0 0 10px 0', color: '#EC4899' }}>Onboarding Debug</h4>
@@ -45,8 +44,7 @@ export function OnboardingDebug() {
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
-            fontSize: '12px'
-          }}
+                      }}
         >
           Start Onboarding
         </button>

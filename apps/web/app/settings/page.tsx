@@ -1123,12 +1123,12 @@ export default function SettingsPage() {
                         {meta.label}
                       </span>
                       {type === 'service_provider' && (
-                        <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-200">
+                        <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-badge font-semibold uppercase tracking-wide text-orange-200">
                           New
                         </span>
                       )}
                       {type === 'venue_owner' && (
-                        <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-200">
+                        <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-badge font-semibold uppercase tracking-wide text-purple-200">
                           Coming Soon
                         </span>
                       )}

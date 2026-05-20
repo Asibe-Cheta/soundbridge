@@ -69,8 +69,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
           <BarChart3 size={32} style={{ color: 'white' }} />
         </div>
         <h2 style={{
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
+                    fontWeight: 'bold',
           color: 'var(--text-primary)',
           margin: '0 0 1rem 0'
         }}>
@@ -98,8 +97,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
               background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
               color: 'white',
               borderRadius: '0.5rem',
-              fontSize: '1rem',
-              fontWeight: '600',
+                            fontWeight: '600',
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
@@ -163,8 +161,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
         gap: '1rem'
       }}>
         <h2 style={{
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
+                    fontWeight: 'bold',
           color: 'var(--text-primary)',
           margin: 0
         }}>
@@ -181,8 +178,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                 color: period === p ? 'white' : 'var(--text-secondary)',
                 border: '1px solid var(--border-primary)',
                 borderRadius: '0.5rem',
-                fontSize: '0.875rem',
-                fontWeight: '500',
+                                fontWeight: '500',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
@@ -231,10 +227,10 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                   <Icon size={20} style={{ color: stat.color }} />
                 </div>
               </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+              <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                 {stat.value}
               </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              <div style={{ color: 'var(--text-secondary)' }}>
                 {stat.label}
               </div>
             </div>
@@ -252,7 +248,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
             <Globe size={24} style={{ color: '#f97316' }} />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+            <h3 style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
               Top Countries
             </h3>
           </div>
@@ -268,15 +264,15 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <MapPin size={16} style={{ color: 'var(--text-secondary)' }} />
-                  <span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-primary)' }}>
+                  <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
                     {country.country_name}
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
                     {country.play_count} plays
                   </span>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
                     {country.unique_listeners} listeners
                   </span>
                 </div>
@@ -295,7 +291,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <Heart size={24} style={{ color: '#ec4899' }} />
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+          <h3 style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
             Engagement
           </h3>
         </div>
@@ -320,10 +316,10 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                 textAlign: 'center'
               }}>
                 <Icon size={20} style={{ color: metric.color, marginBottom: '0.5rem' }} />
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                   {metric.value}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                <div style={{ color: 'var(--text-secondary)' }}>
                   {metric.label}
                 </div>
               </div>
@@ -337,10 +333,10 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
           borderRadius: '0.5rem',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+          <div style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
             Engagement Rate
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6' }}>
+          <div style={{ fontWeight: 'bold', color: '#8b5cf6' }}>
             {engagement.engagementRate}%
           </div>
         </div>
@@ -356,7 +352,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
             <BarChart3 size={24} style={{ color: '#10b981' }} />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+            <h3 style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
               Top Tracks by Completion Rate
             </h3>
           </div>
@@ -383,16 +379,15 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                   />
                 )}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                  <div style={{ fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                     {track.title}
                   </div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ color: 'var(--text-secondary)' }}>
                     {track.plays} plays
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
+                                    fontWeight: 'bold',
                   color: '#10b981'
                 }}>
                   {track.avgCompletion}%
@@ -430,16 +425,14 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
             </div>
             <div>
               <h3 style={{
-                fontSize: '1.25rem',
-                fontWeight: '600',
+                                fontWeight: '600',
                 color: 'var(--text-primary)',
                 margin: 0
               }}>
                 Portfolio Link Performance
               </h3>
               <p style={{
-                fontSize: '0.875rem',
-                color: 'var(--text-secondary)',
+                                color: 'var(--text-secondary)',
                 margin: '0.25rem 0 0 0'
               }}>
                 Total: {externalLinks.totalClicks || 0} clicks • This month: {externalLinks.clicksThisMonth || 0}
@@ -464,16 +457,14 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
+                                    fontWeight: '600',
                   color: '#3b82f6'
                 }}>
                   #{index + 1}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{
-                    fontSize: '1rem',
-                    fontWeight: '500',
+                                        fontWeight: '500',
                     color: 'var(--text-primary)',
                     marginBottom: '0.25rem',
                     textTransform: 'capitalize'
@@ -481,8 +472,7 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                     {link.platform_type?.replace('_', ' ') || 'Link'}
                   </div>
                   <div style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--text-secondary)',
+                                        color: 'var(--text-secondary)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -492,15 +482,13 @@ export function AdvancedAnalytics({ userId, subscriptionTier }: AdvancedAnalytic
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
+                                    fontWeight: 'bold',
                   color: '#10b981'
                 }}>
                   {link.click_count || 0}
                 </div>
                 <div style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)'
+                                    color: 'var(--text-secondary)'
                 }}>
                   clicks
                 </div>

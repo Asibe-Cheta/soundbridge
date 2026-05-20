@@ -95,7 +95,6 @@ export default function ContactPage() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h1 style={{
-            fontSize: '3rem',
             fontWeight: 'bold',
             background: 'var(--gradient-primary)',
             WebkitBackgroundClip: 'text',
@@ -107,7 +106,6 @@ export default function ContactPage() {
           </h1>
           <p style={{ 
             color: 'var(--text-secondary)', 
-            fontSize: '1.2rem',
             maxWidth: '600px',
             margin: '0 auto'
           }}>
@@ -131,7 +129,6 @@ export default function ContactPage() {
             border: 'var(--card-border)'
           }}>
             <h2 style={{
-              fontSize: '1.8rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '2rem',
@@ -157,7 +154,6 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 style={{ 
-                    fontSize: '1.1rem', 
                     fontWeight: '600', 
                     color: 'var(--text-primary)',
                     marginBottom: '0.25rem'
@@ -185,7 +181,6 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 style={{ 
-                    fontSize: '1.1rem', 
                     fontWeight: '600', 
                     color: 'var(--text-primary)',
                     marginBottom: '0.25rem'
@@ -213,7 +208,6 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 style={{ 
-                    fontSize: '1.1rem', 
                     fontWeight: '600', 
                     color: 'var(--text-primary)',
                     marginBottom: '0.25rem'
@@ -236,14 +230,13 @@ export default function ContactPage() {
               border: '1px solid var(--border-color)'
             }}>
               <h4 style={{
-                fontSize: '1rem',
                 fontWeight: '600',
                 color: 'var(--text-primary)',
                 marginBottom: '0.5rem'
               }}>
                 Business Hours
               </h4>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <p style={{ color: 'var(--text-secondary)' }}>
                 Monday - Friday: 9:00 AM - 6:00 PM GMT<br/>
                 Weekend: Limited support available
               </p>
@@ -259,7 +252,6 @@ export default function ContactPage() {
             border: 'var(--card-border)'
           }}>
             <h2 style={{
-              fontSize: '1.8rem',
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '2rem',
@@ -277,8 +269,7 @@ export default function ContactPage() {
                 padding: '1rem',
                 marginBottom: '1.5rem',
                 color: '#22C55E',
-                fontSize: '0.9rem'
-              }}>
+                }}>
                 Thank you! Your message has been sent successfully. We'll get back to you soon.
               </div>
             )}
@@ -291,8 +282,7 @@ export default function ContactPage() {
                 padding: '1rem',
                 marginBottom: '1.5rem',
                 color: '#FCA5A5',
-                fontSize: '0.9rem'
-              }}>
+                }}>
                 Sorry, there was an error sending your message. Please try again.
               </div>
             )}
@@ -304,7 +294,6 @@ export default function ContactPage() {
                   display: 'block', 
                   marginBottom: '0.5rem', 
                   color: 'var(--text-primary)', 
-                  fontSize: '0.9rem',
                   fontWeight: '500'
                 }}>
                   Name *
@@ -322,7 +311,6 @@ export default function ContactPage() {
                     border: '1px solid var(--border-color)',
                     borderRadius: '12px',
                     color: 'var(--text-primary)',
-                    fontSize: '1rem',
                     outline: 'none',
                     transition: 'all 0.3s ease'
                   }}
@@ -338,7 +326,6 @@ export default function ContactPage() {
                   display: 'block', 
                   marginBottom: '0.5rem', 
                   color: 'var(--text-primary)', 
-                  fontSize: '0.9rem',
                   fontWeight: '500'
                 }}>
                   Email *
@@ -356,7 +343,6 @@ export default function ContactPage() {
                     border: '1px solid var(--border-color)',
                     borderRadius: '12px',
                     color: 'var(--text-primary)',
-                    fontSize: '1rem',
                     outline: 'none',
                     transition: 'all 0.3s ease'
                   }}
@@ -372,7 +358,6 @@ export default function ContactPage() {
                   display: 'block', 
                   marginBottom: '0.5rem', 
                   color: 'var(--text-primary)', 
-                  fontSize: '0.9rem',
                   fontWeight: '500'
                 }}>
                   Subject *
@@ -390,7 +375,6 @@ export default function ContactPage() {
                     border: '1px solid var(--border-color)',
                     borderRadius: '12px',
                     color: 'var(--text-primary)',
-                    fontSize: '1rem',
                     outline: 'none',
                     transition: 'all 0.3s ease'
                   }}
@@ -406,7 +390,6 @@ export default function ContactPage() {
                   display: 'block', 
                   marginBottom: '0.5rem', 
                   color: 'var(--text-primary)', 
-                  fontSize: '0.9rem',
                   fontWeight: '500'
                 }}>
                   Message *
@@ -424,7 +407,6 @@ export default function ContactPage() {
                     border: '1px solid var(--border-color)',
                     borderRadius: '12px',
                     color: 'var(--text-primary)',
-                    fontSize: '1rem',
                     outline: 'none',
                     transition: 'all 0.3s ease',
                     resize: 'vertical',
@@ -450,7 +432,6 @@ export default function ContactPage() {
                   color: 'var(--text-primary)',
                   border: 'none',
                   borderRadius: '12px',
-                  fontSize: '1rem',
                   fontWeight: '600',
                   cursor: isSubmitting ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s ease',
@@ -500,7 +481,6 @@ export default function ContactPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    fontSize: '12px',
                     fontWeight: 'bold'
                   }}>
                     ✓
@@ -531,7 +511,6 @@ export default function ContactPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
-                    fontSize: '12px',
                     fontWeight: 'bold'
                   }}>
                     ✗

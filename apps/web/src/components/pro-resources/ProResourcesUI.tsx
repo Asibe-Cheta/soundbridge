@@ -85,7 +85,7 @@ export function PartnerBadge({
     <div className="flex items-center gap-3 px-6">
       {children}
       <span
-        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-bold tracking-[0.8px]"
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-badge font-bold tracking-[0.8px]"
         style={{ background: badgeBg, border: `1px solid ${badgeBorder}`, color: textColor }}
       >
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
@@ -113,7 +113,7 @@ export function ProResourcesTabBar({
               key={tab.id}
               type="button"
               onClick={() => onTabChange(tab.id)}
-              className={`text-[28px] tracking-[-0.5px] whitespace-nowrap transition-colors ${
+              className={`text-section-tab whitespace-nowrap transition-colors ${
                 isActive
                   ? `font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`
                   : `font-normal ${theme === 'dark' ? 'text-white/35' : 'text-gray-400'}`
@@ -162,7 +162,7 @@ export function ModuleCard({ mod, href }: { mod: SoundAcademyModule; href: strin
             'linear-gradient(to bottom, transparent, rgba(0,0,0,0.35), rgba(0,0,0,0.82))',
         }}
       />
-      <span className="absolute top-4 left-4 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold tracking-[1.2px] text-white">
+      <span className="absolute top-4 left-4 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-badge font-bold tracking-[1.2px] text-white">
         MODULE {mod.moduleNumber}
       </span>
       <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -200,7 +200,7 @@ export function Talk2DanCard({ service }: { service: Talk2DanService }) {
             'linear-gradient(to bottom, transparent, rgba(0,0,0,0.35), rgba(0,0,0,0.82))',
         }}
       />
-      <span className="absolute top-4 left-4 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold tracking-[1.2px] text-white">
+      <span className="absolute top-4 left-4 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-badge font-bold tracking-[1.2px] text-white">
         {service.badge}
       </span>
       <div className="absolute left-1/2 -translate-x-1/2 top-[30%]">{t2dIcon(service.icon)}</div>
@@ -226,16 +226,14 @@ export function StatsGrid() {
   const { theme } = useTheme();
   return (
     <div className="px-6 mt-8">
-      <h2 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-        By the Numbers
-      </h2>
+      <h4 className={`mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>By the Numbers</h4>
       <div className="flex flex-wrap gap-2.5">
         {SOUND_ACADEMY_STATS.map((stat) => (
           <div
             key={stat.label}
             className={`w-[calc(50%-5px)] rounded-2xl border p-4 text-center ${cardBorder(theme)} ${cardBg(theme)}`}
           >
-            <div className="text-[22px] font-bold text-[#EC4899]">{stat.value}</div>
+            <div className="text-2xl font-bold text-[#EC4899]">{stat.value}</div>
             <div className={`text-xs font-medium mt-1 ${textSecondary(theme)}`}>{stat.label}</div>
           </div>
         ))}
@@ -335,10 +333,8 @@ export function SoundAcademyTab() {
       </PartnerBadge>
 
       <div className="px-6 mt-6">
-        <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          Sound Engineering
-        </h2>
-        <p className={`text-[13px] mt-1 mb-4 ${textSecondary(theme)}`}>
+        <h4 className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Sound Engineering</h4>
+        <p className={`text-sm mt-1 mb-4 ${textSecondary(theme)}`}>
           2-month programme · Weekends · Official Avid Learning Partner
         </p>
       </div>
@@ -381,10 +377,8 @@ export function Talk2DanTab() {
       </PartnerBadge>
 
       <div className="px-6 mt-7">
-        <h2 className={`text-lg font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          About Dan
-        </h2>
-        <p className={`text-[15px] leading-[23px] ${textSecondary(theme)}`}>
+        <h4 className={`mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>About Dan</h4>
+        <p className={textSecondary(theme)}>
           Dan founded Talk 2 Dan in 2017 from personal experience navigating the barriers of breaking
           into the creative industry. With a background spanning{' '}
           <strong className={theme === 'dark' ? 'text-white font-semibold' : 'text-gray-900 font-semibold'}>
@@ -395,9 +389,7 @@ export function Talk2DanTab() {
       </div>
 
       <div className="px-6 mt-7">
-        <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          Services
-        </h2>
+        <h4 className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Services</h4>
       </div>
 
       <HorizontalCardRow>
@@ -433,10 +425,8 @@ export function HertsUniTab() {
       </PartnerBadge>
 
       <div className="px-6 mt-7 mb-8">
-        <h2 className={`text-lg font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          Coming Soon
-        </h2>
-        <p className={`text-[15px] leading-[23px] ${textSecondary(theme)}`}>
+        <h4 className={`mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Coming Soon</h4>
+        <p className={textSecondary(theme)}>
           We&apos;re finalising our partnership with the University of Hertfordshire. Course listings,
           degree details, and application pathways will appear here once the partnership is confirmed.
         </p>

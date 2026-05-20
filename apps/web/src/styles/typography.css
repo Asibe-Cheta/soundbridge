@@ -1,0 +1,152 @@
+/**
+ * SoundBridge global typography — aligned with Pro Resources / mobile spec.
+ * Inter is loaded in app/layout.tsx (--font-inter).
+ */
+
+:root {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+  --font-display: var(--font-sans);
+  --font-text: var(--font-sans);
+
+  /* Pro Resources scale */
+  --text-xs: 0.75rem; /* 12px — captions, meta */
+  --text-sm: 0.8125rem; /* 13px — small body */
+  --text-md: 0.875rem; /* 14px — subtitles */
+  --text-base: 0.9375rem; /* 15px — body */
+  --text-lg: 1.125rem; /* 18px — section titles */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px — card titles */
+  --text-3xl: 1.75rem; /* 28px — large tabs / sub-heroes */
+  --text-4xl: 2rem; /* 32px — page section heroes */
+  --text-5xl: 3.25rem; /* 52px — marketing / page heroes */
+
+  --leading-hero: 1.05;
+  --leading-tight: 1.2;
+  --leading-snug: 1.375;
+  --leading-body: 1.533; /* 23px @ 15px */
+  --leading-normal: 1.5;
+
+  --tracking-hero: -0.02em;
+  --tracking-display: -0.015em;
+  --tracking-tight: -0.025em;
+  --tracking-subtitle: 0.035em; /* ~0.5px @ 15px */
+  --tracking-badge: 0.12em;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-text);
+    font-size: var(--text-base);
+    line-height: var(--leading-body);
+    font-weight: 400;
+  }
+
+  h1,
+  .heading-1,
+  .text-hero {
+    font-family: var(--font-display);
+    font-size: var(--text-5xl);
+    font-weight: 300;
+    line-height: var(--leading-hero);
+    letter-spacing: var(--tracking-hero);
+  }
+
+  h2,
+  .heading-2 {
+    font-family: var(--font-display);
+    font-size: var(--text-4xl);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+  }
+
+  h3,
+  .heading-3 {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+  }
+
+  h4,
+  .heading-4 {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  h5,
+  .heading-5 {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 600;
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  h6,
+  .heading-6 {
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  p {
+    font-size: var(--text-base);
+    line-height: var(--leading-body);
+    font-weight: 400;
+  }
+
+  .text-lead,
+  .subtitle,
+  p.text-lead {
+    font-size: var(--text-base);
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-subtitle);
+    font-weight: 400;
+  }
+
+  small,
+  .text-caption {
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+  }
+
+  .text-section-tab {
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+    letter-spacing: var(--tracking-display);
+    line-height: var(--leading-tight);
+  }
+
+  .text-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-badge);
+    line-height: 1.2;
+  }
+
+  label,
+  .form-label {
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: var(--text-base);
+    line-height: var(--leading-body);
+  }
+
+  button {
+    font-family: var(--font-sans);
+  }
+}

@@ -17,8 +17,16 @@ module.exports = {
   	},
   	extend: {
   		fontFamily: {
+  			sans: [
+  				'var(--font-inter)',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'Segoe UI',
+  				'system-ui',
+  				'sans-serif'
+  			],
   			display: [
-  				'SF Pro Display',
+  				'var(--font-inter)',
   				'-apple-system',
   				'BlinkMacSystemFont',
   				'Segoe UI',
@@ -26,7 +34,7 @@ module.exports = {
   				'sans-serif'
   			],
   			text: [
-  				'SF Pro Text',
+  				'var(--font-inter)',
   				'-apple-system',
   				'BlinkMacSystemFont',
   				'Segoe UI',
@@ -34,8 +42,7 @@ module.exports = {
   				'sans-serif'
   			],
   			apple: [
-  				'SF Pro Display',
-  				'SF Pro Text',
+  				'var(--font-inter)',
   				'-apple-system',
   				'BlinkMacSystemFont',
   				'Segoe UI',
@@ -44,69 +51,17 @@ module.exports = {
   			]
   		},
   		fontSize: {
-  			xs: [
-  				'0.75rem',
-  				{
-  					lineHeight: '1.5',
-  					letterSpacing: '0.025em'
-  				}
-  			],
-  			sm: [
-  				'0.875rem',
-  				{
-  					lineHeight: '1.5',
-  					letterSpacing: '0'
-  				}
-  			],
-  			base: [
-  				'1rem',
-  				{
-  					lineHeight: '1.5',
-  					letterSpacing: '0'
-  				}
-  			],
-  			lg: [
-  				'1.125rem',
-  				{
-  					lineHeight: '1.625',
-  					letterSpacing: '0'
-  				}
-  			],
-  			xl: [
-  				'1.25rem',
-  				{
-  					lineHeight: '1.375',
-  					letterSpacing: '-0.025em'
-  				}
-  			],
-  			'2xl': [
-  				'1.5rem',
-  				{
-  					lineHeight: '1.375',
-  					letterSpacing: '-0.025em'
-  				}
-  			],
-  			'3xl': [
-  				'1.875rem',
-  				{
-  					lineHeight: '1.375',
-  					letterSpacing: '-0.025em'
-  				}
-  			],
-  			'4xl': [
-  				'2.25rem',
-  				{
-  					lineHeight: '1.25',
-  					letterSpacing: '-0.025em'
-  				}
-  			],
-  			'5xl': [
-  				'3rem',
-  				{
-  					lineHeight: '1.25',
-  					letterSpacing: '-0.025em'
-  				}
-  			]
+  			xs: ['0.75rem', { lineHeight: '1.5' }],
+  			sm: ['0.8125rem', { lineHeight: '1.5' }],
+  			md: ['0.875rem', { lineHeight: '1.5' }],
+  			base: ['0.9375rem', { lineHeight: '1.533' }],
+  			lg: ['1.125rem', { lineHeight: '1.375', letterSpacing: '-0.025em' }],
+  			xl: ['1.25rem', { lineHeight: '1.375', letterSpacing: '-0.025em' }],
+  			'2xl': ['1.5rem', { lineHeight: '1.375', letterSpacing: '-0.015em' }],
+  			'3xl': ['1.75rem', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
+  			'4xl': ['2rem', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
+  			'5xl': ['3.25rem', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+  			hero: ['3.25rem', { lineHeight: '1.05', letterSpacing: '-0.02em' }]
   		},
   		fontWeight: {
   			light: '300',

@@ -136,15 +136,13 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
         <div className="flex items-center justify-between border-b border-white/10" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
           <div>
             <h2 className="font-bold text-white" style={{
-              fontSize: isMobile ? '1.3rem' : '1.5rem',
-              marginBottom: isMobile ? '0.25rem' : '0.25rem',
+                            marginBottom: isMobile ? '0.25rem' : '0.25rem',
               lineHeight: isMobile ? '1.3' : '1.1'
             }}>
               {content.title}
             </h2>
             <p className="text-white/70" style={{
-              fontSize: isMobile ? '0.9rem' : '1rem',
-              lineHeight: '1.6'
+                            lineHeight: '1.6'
             }}>
               {content.description}
             </p>
@@ -168,14 +166,12 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
                 <Sparkles className="text-white" size={isMobile ? 24 : 40} />
               </div>
               <h3 className="font-bold text-white mb-2" style={{
-                fontSize: isMobile ? '1.3rem' : '1.5rem',
-                lineHeight: isMobile ? '1.3' : '1.1'
+                                lineHeight: isMobile ? '1.3' : '1.1'
               }}>
                 Awesome
               </h3>
               <p className="text-gray-300" style={{
-                fontSize: isMobile ? '0.9rem' : '1rem',
-                lineHeight: '1.6'
+                                lineHeight: '1.6'
               }}>
                 You're all set! Welcome to the SoundBridge community.
               </p>
@@ -190,8 +186,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
                   style={{
                     gap: isMobile ? '0.5rem' : '0.75rem',
                     padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
-                    fontSize: isMobile ? '0.9rem' : '1.125rem'
-                  }}
+                                      }}
                 >
                   <Icon size={isMobile ? 18 : 24} />
                   <span className="font-semibold">{content.action}</span>
@@ -202,8 +197,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
               {/* Tips */}
               <div className="bg-gray-700 rounded-xl" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
                 <h3 className="font-semibold text-white mb-4 flex items-center" style={{
-                  fontSize: isMobile ? '1rem' : '1.125rem',
-                  gap: isMobile ? '0.5rem' : '0.5rem'
+                                    gap: isMobile ? '0.5rem' : '0.5rem'
                 }}>
                   <Lightbulb className="text-yellow-500" size={isMobile ? 16 : 20} />
                   Pro Tips
@@ -217,8 +211,7 @@ export function FirstActionGuidance({ isOpen, onClose }: FirstActionGuidanceProp
                         marginTop: isMobile ? '6px' : '8px'
                       }} />
                       <span className="text-gray-300" style={{
-                        fontSize: isMobile ? '0.8rem' : '0.875rem',
-                        lineHeight: '1.5'
+                                                lineHeight: '1.5'
                       }}>
                         {tip}
                       </span>
