@@ -314,7 +314,9 @@ export async function createFincraTransfer(params: {
   if (!businessId) throw new Error('FINCRA_BUSINESS_ID is not configured');
 
   const sourceCurrency = (params.sourceCurrency || 'GBP').toUpperCase();
-  const { firstName, lastName } = splitAccountName(params.accountName);
+  const accountHolderName =
+    (params.accountName || '').trim() || 'Account Holder';
+  const { firstName, lastName } = splitAccountName(accountHolderName);
   const country = fincraCountryForCurrency(params.currency);
 
   let body: Record<string, unknown>;
@@ -342,6 +344,7 @@ export async function createFincraTransfer(params: {
       beneficiary: {
         firstName,
         lastName,
+        accountHolderName,
         accountNumber: params.accountNumber,
         bankCode: params.bankCode,
         type: 'individual',
