@@ -67,6 +67,12 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://www.soundbridge.live/aml-policy</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://www.soundbridge.live/about</loc>
     <lastmod>2025-01-01</lastmod>
     <changefreq>monthly</changefreq>

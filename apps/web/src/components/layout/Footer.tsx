@@ -293,6 +293,11 @@ export function Footer() {
             textDecoration: 'none' 
           }}>Terms</Link>
           <span>•</span>
+          <Link className={footerLinkClass} href="/aml-policy" style={{ 
+            color: 'var(--text-secondary)', 
+            textDecoration: 'none' 
+          }}>AML</Link>
+          <span>•</span>
           <Link className={footerLinkClass} href="/cookies" style={{ 
             color: 'var(--text-secondary)', 
             textDecoration: 'none' 

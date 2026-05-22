@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
       { url: '/feed', priority: '0.8', changefreq: 'hourly' },
       { url: '/legal/privacy', priority: '0.3', changefreq: 'monthly' },
       { url: '/legal/terms', priority: '0.3', changefreq: 'monthly' },
+      { url: '/aml-policy', priority: '0.3', changefreq: 'monthly' },
       { url: '/legal/cookies', priority: '0.3', changefreq: 'monthly' },
     ];
 
