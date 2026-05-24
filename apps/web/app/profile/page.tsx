@@ -902,6 +902,9 @@ export default function ProfilePage() {
           <div className="card-header">
             <h3 className="card-title">My Events</h3>
             <div className="flex items-center gap-2">
+              <Link href="/events/dashboard?tab=saved" className="btn-secondary">
+                Saved
+              </Link>
               <Link href="/events/dashboard" className="btn-secondary">
                 <Eye size={16} />
                 View all

@@ -10,6 +10,8 @@ import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, U
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useEvents } from '../../src/hooks/useEvents';
+import { EventBookmarkButton } from '../../src/components/events/EventBookmarkButton';
+import { EventShareButton } from '../../src/components/events/EventShareButton';
 import { Footer } from '../../src/components/layout/Footer';
 import SearchDropdown from '../../src/components/search/SearchDropdown';
 import { ThemeToggle } from '../../src/components/ui/ThemeToggle';
@@ -267,8 +269,8 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
             {/* Price Badge */}
             <div style={{
               position: 'absolute',
-              top: '12px',
-              right: '12px',
+              bottom: '12px',
+              left: '12px',
               background: 'linear-gradient(45deg, #DC2626, #EC4899)',
               color: 'white',
               padding: '4px 8px',
@@ -276,6 +278,31 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
               fontWeight: '600'
             }}>
               {event.price === 0 ? 'Free' : `$${event.price}`}
+            </div>
+
+            <div
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                display: 'flex',
+                gap: '0.35rem',
+                zIndex: 2,
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <EventBookmarkButton eventId={event.id} size={16} />
+              <EventShareButton
+                eventId={event.id}
+                eventTitle={event.title}
+                eventDate={event.event_date}
+                eventLocation={event.location}
+                variant="icon"
+                size={16}
+              />
             </div>
           </div>
 

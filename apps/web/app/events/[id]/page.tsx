@@ -3,18 +3,25 @@
 import React, { useState, use, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { EventTicketPurchaseModal } from '../../../src/components/events/EventTicketPurchaseModal';
+import { EventBookmarkButton } from '../../../src/components/events/EventBookmarkButton';
+import { EventShareButton } from '../../../src/components/events/EventShareButton';
+import { EventAnalyticsPanel } from '../../../src/components/events/EventAnalyticsPanel';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useSubscription } from '../../../src/hooks/useSubscription';
 import { eventService } from '../../../src/lib/event-service';
+import { trackEventPageView } from '../../../src/lib/event-analytics-client';
 import type { Event } from '../../../src/lib/types/event';
 import { MapPin, Calendar, Users, Clock, Star, Heart, Share2, MessageCircle, ArrowLeft, CheckCircle, AlertCircle, User, Music, DollarSign, Info, Loader2 } from 'lucide-react';
 
 export default function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth();
+  const { data: subscriptionData } = useSubscription();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +31,12 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const resolvedParams = use(params);
+  const subscriptionTier = subscriptionData?.subscription?.tier ?? 'free';
+
+  useEffect(() => {
+    if (!resolvedParams.id) return;
+    trackEventPageView(resolvedParams.id, searchParams.get('ref'));
+  }, [resolvedParams.id, searchParams]);
 
   // Note: Navigation and authentication are handled by the layout Header component
 
@@ -356,18 +369,14 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                     </Link>
                   )
                 )}
-                <button
-                  className="btn-secondary"
-                  onClick={handleLike}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <Heart size={16} style={{ color: isLiked ? '#EC4899' : 'white' }} />
-                  Like
-                </button>
-                <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Share2 size={16} />
-                  Share
-                </button>
+                <EventBookmarkButton eventId={event.id} />
+                <EventShareButton
+                  eventId={event.id}
+                  eventTitle={event.title}
+                  eventDate={event.event_date}
+                  eventLocation={event.location}
+                  variant="button"
+                />
               </div>
             </div>
           </div>
@@ -418,6 +427,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           {/* Tab Content */}
           {renderTabContent()}
         </section>
+
+        {/* Creator analytics */}
+        {user && event.creator_id === user.id && (
+          <section className="section">
+            <div className="card">
+              <EventAnalyticsPanel eventId={event.id} tier={subscriptionTier} />
+            </div>
+          </section>
+        )}
 
         {/* Organizer Info */}
         <section className="section">

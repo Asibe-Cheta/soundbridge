@@ -7,6 +7,7 @@
 import { Expo, ExpoPushMessage, ExpoPushTicket, ExpoPushReceipt } from 'expo-server-sdk';
 import { createClient } from '@supabase/supabase-js';
 import { getExpoPushClient } from '@/src/lib/expo-push-client';
+import { incrementEventNotificationsSent } from '@/src/lib/event-analytics';
 
 // Supabase client for server-side operations (lazy so build can run without env)
 let _eventNotifSupabase: ReturnType<typeof createClient> | null = null;
@@ -396,6 +397,7 @@ class EventNotificationService {
       const chunks = getExpoPushClient().chunkPushNotifications(messages);
       let sentCount = 0;
       let failedCount = 0;
+      const sentByEvent = new Map<string, number>();
 
       for (const chunk of chunks) {
         try {
@@ -417,6 +419,14 @@ class EventNotificationService {
                 ticket.id,
                 null
               );
+
+              const notificationRow = notifications.find((n) => n.id === notificationId);
+              if (notificationRow?.event_id) {
+                sentByEvent.set(
+                  notificationRow.event_id,
+                  (sentByEvent.get(notificationRow.event_id) ?? 0) + 1,
+                );
+              }
 
               // Increment user notification count
               await getSupabaseAdmin().rpc('increment_user_notification_count', {
@@ -442,6 +452,10 @@ class EventNotificationService {
       }
 
       console.log(`✅ Sent ${sentCount} notifications, ${failedCount} failed`);
+
+      for (const [eventId, count] of sentByEvent) {
+        await incrementEventNotificationsSent(getSupabaseAdmin(), eventId, count);
+      }
 
       return {
         success: true,

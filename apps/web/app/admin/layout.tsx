@@ -26,6 +26,7 @@ export default function AdminLayout({
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/gig-payments">Gig Payments</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/payouts">Payouts</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/platform-revenue">Revenue</a>
+            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/events">Events</a>
             <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/founding-members">Founding Members</a>
           </div>
         </div>

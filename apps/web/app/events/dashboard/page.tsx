@@ -9,18 +9,30 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { eventService } from '../../../src/lib/event-service';
 import type { Event } from '../../../src/lib/types/event';
-import { Calendar, MapPin, Clock, Users, Star, Edit, Trash2, Eye, CheckCircle, AlertCircle, ArrowLeft, Plus, Search, Loader2, Music, DollarSign, LogOut, User, Upload, Bell, Settings, Home, Menu, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Star, Edit, Trash2, Eye, CheckCircle, AlertCircle, ArrowLeft, Plus, Search, Loader2, Music, DollarSign, LogOut, User, Upload, Bell, Settings, Home, Menu, Ticket, Bookmark } from 'lucide-react';
+import { EventAnalyticsPanel } from '../../../src/components/events/EventAnalyticsPanel';
+import { useSubscription } from '../../../src/hooks/useSubscription';
+import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
 
 export default function EventDashboardPage() {
   const { user, signOut } = useAuth();
+  const { data: subscriptionData } = useSubscription();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('attending');
+  const subscriptionTier = subscriptionData?.subscription?.tier ?? 'free';
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'saved' || tab === 'created' || tab === 'past' || tab === 'attending') return tab;
+    }
+    return 'attending';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attendingEvents, setAttendingEvents] = useState<Event[]>([]);
   const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
+  const [savedEvents, setSavedEvents] = useState<Event[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedEventForTickets, setSelectedEventForTickets] = useState<string | null>(null);
@@ -30,6 +42,7 @@ export default function EventDashboardPage() {
   const tabs = [
     { id: 'attending', label: 'Attending', icon: Users },
     { id: 'created', label: 'Created', icon: Calendar },
+    { id: 'saved', label: 'Saved', icon: Bookmark },
     { id: 'past', label: 'Past Events', icon: Clock }
   ];
 
@@ -110,6 +123,16 @@ export default function EventDashboardPage() {
         const now = new Date();
         const past = createdResult.data?.filter(event => new Date(event.event_date) < now) || [];
         setPastEvents(past);
+
+        try {
+          const savedRes = await fetchWithSupabaseAuth('/api/events/bookmarks');
+          const savedJson = await savedRes.json();
+          if (savedRes.ok) {
+            setSavedEvents(savedJson.data ?? []);
+          }
+        } catch (savedErr) {
+          console.error('Error fetching saved events:', savedErr);
+        }
 
       } catch (err) {
         setError('Failed to load events');
@@ -193,6 +216,11 @@ export default function EventDashboardPage() {
         );
       case 'created':
         return createdEvents.filter(event =>
+          !searchQuery ||
+          event.title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      case 'saved':
+        return savedEvents.filter(event =>
           !searchQuery ||
           event.title.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -839,6 +867,7 @@ export default function EventDashboardPage() {
               <p>
                 {activeTab === 'attending' && 'You are not attending any events yet.'}
                 {activeTab === 'created' && 'You have not created any events yet.'}
+                {activeTab === 'saved' && 'You have not saved any events yet.'}
                 {activeTab === 'past' && 'You have no past events.'}
               </p>
               {activeTab === 'created' && (
@@ -852,6 +881,13 @@ export default function EventDashboardPage() {
                 <Link href="/events" style={{ textDecoration: 'none' }}>
                   <button className="btn-primary" style={{ marginTop: '1rem' }}>
                     Browse Events
+                  </button>
+                </Link>
+              )}
+              {activeTab === 'saved' && (
+                <Link href="/events" style={{ textDecoration: 'none' }}>
+                  <button className="btn-primary" style={{ marginTop: '1rem' }}>
+                    Discover Events
                   </button>
                 </Link>
               )}
@@ -1002,6 +1038,16 @@ export default function EventDashboardPage() {
                         </>
                       )}
                     </div>
+
+                    {activeTab === 'created' && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <EventAnalyticsPanel
+                          eventId={event.id}
+                          tier={subscriptionTier}
+                          compact
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1027,7 +1073,9 @@ export default function EventDashboardPage() {
 
         <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Event Management</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>Event Analytics</div>
+          <button type="button" className="quick-action" onClick={() => setActiveTab('created')}>
+            Event Analytics
+          </button>
           <div>Email Attendees</div>
           <div>Mobile App</div>
           <div>Notifications</div>

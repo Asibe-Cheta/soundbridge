@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
+import { incrementEventTicketSales } from '@/src/lib/event-analytics';
 import { SubscriptionEmailService } from '@/src/services/SubscriptionEmailService';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
@@ -197,6 +198,12 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       console.error('[confirm-ticket-purchase] insert_platform_revenue:', err);
+    }
+
+    try {
+      await incrementEventTicketSales(supabaseAdmin, eventId, quantity, amountMajor);
+    } catch (analyticsErr) {
+      console.error('[confirm-ticket-purchase] event analytics:', analyticsErr);
     }
 
     // Update event attendee count
