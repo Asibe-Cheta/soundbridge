@@ -12,6 +12,10 @@ export interface ProfileData {
 export async function createProfile(userId: string, profileData: ProfileData) {
   try {
     console.log('🔧 Creating profile via API for user:', userId);
+    const referralCode =
+      typeof window !== 'undefined' ? localStorage.getItem('soundbridge_referral_code') : null;
+    const signupSource =
+      typeof window !== 'undefined' ? localStorage.getItem('soundbridge_signup_source') : null;
     
     // Use the API route instead of direct database access
     const response = await fetch('/api/profile/create', {
@@ -21,6 +25,8 @@ export async function createProfile(userId: string, profileData: ProfileData) {
       },
       body: JSON.stringify({
         userId,
+        ...(referralCode ? { referred_by_code: referralCode } : {}),
+        ...(signupSource ? { source: signupSource } : {}),
         ...profileData
       }),
     });

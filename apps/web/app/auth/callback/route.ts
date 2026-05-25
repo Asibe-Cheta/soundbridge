@@ -6,6 +6,12 @@ import {
   oauthDuplicateLoginRedirectUrl,
 } from '@/src/lib/oauth-duplicate-guard';
 import { extractOAuthDisplayNameParts } from '@/src/lib/oauth-user-display-name';
+import { createServiceClient } from '@/src/lib/supabase';
+import {
+  PARTNER_REFERRAL_COOKIE,
+  PARTNER_SOURCE_COOKIE,
+  processPartnerAttributionForAuthUser,
+} from '@/src/lib/partner-referrals';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +35,8 @@ export async function GET(request: NextRequest) {
     
     // Create Supabase client with proper cookie handling (Next.js 15 + @supabase/ssr)
     const cookieStore = await cookies();
+    const referralCodeCookie = cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value ?? null;
+    const signupSourceCookie = cookieStore.get(PARTNER_SOURCE_COOKIE)?.value ?? null;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -118,6 +126,11 @@ export async function GET(request: NextRequest) {
                 console.log('Mobile profile created successfully');
               }
             }
+
+            await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
+              referralCode: referralCodeCookie,
+              source: signupSourceCookie,
+            });
           } catch (profileError) {
             console.error('Profile handling error for mobile user:', profileError);
           }
@@ -212,6 +225,11 @@ export async function GET(request: NextRequest) {
                 console.log('OAuth profile created successfully');
               }
             }
+
+            await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
+              referralCode: referralCodeCookie,
+              source: signupSourceCookie,
+            });
             
             // Wait a moment for profile to be committed, then check onboarding status
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -346,6 +364,11 @@ export async function GET(request: NextRequest) {
               console.log('Profile created successfully');
             }
           }
+
+          await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
+            referralCode: referralCodeCookie,
+            source: signupSourceCookie,
+          });
           
           // Wait a moment for profile to be committed, then check onboarding status
           await new Promise(resolve => setTimeout(resolve, 1000));

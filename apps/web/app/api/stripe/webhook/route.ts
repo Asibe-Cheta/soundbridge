@@ -24,6 +24,7 @@ import {
   finalizeRequestRoomFromSucceededPaymentIntent,
   isRequestRoomTipPaymentIntent,
 } from '@/src/lib/request-room-payment-intent-webhook';
+import { recordReferralConversion } from '@/src/lib/partner-referrals';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -422,6 +423,7 @@ async function handleCheckoutCompleted(
       console.error('[webhook] Error updating subscription:', error);
     } else {
       console.log('[webhook] Successfully updated subscription for user:', userId);
+      await recordReferralConversion(supabase, userId, session.metadata?.plan || 'pro');
       
       // Send subscription confirmation email
       const userInfo = await SubscriptionEmailService.getUserInfo(userId);
@@ -495,6 +497,7 @@ async function handleSubscriptionUpdated(
 
     if (status === 'active') {
       const plan = (subscription as { metadata?: { plan?: string } }).metadata?.plan ?? 'pro';
+      await recordReferralConversion(supabase, userId, plan);
       sendExpoPush(supabase, userId, {
         title: 'Subscription Updated',
         body: `Your ${plan} subscription is active`,

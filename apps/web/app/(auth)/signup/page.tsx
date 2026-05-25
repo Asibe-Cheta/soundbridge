@@ -36,6 +36,8 @@ function SignupContent() {
   const { signUp, signInWithProvider } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [signupSource, setSignupSource] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -75,6 +77,38 @@ function SignupContent() {
     }
   }, [router, searchParams]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const ref = searchParams.get('ref')?.trim().toLowerCase() || null;
+    const source = searchParams.get('source')?.trim().toLowerCase() || null;
+    const maxAge = 60 * 60 * 24 * 30;
+
+    if (ref) {
+      localStorage.setItem('soundbridge_referral_code', ref);
+      document.cookie = `soundbridge_referral_code=${encodeURIComponent(ref)}; max-age=${maxAge}; path=/; samesite=lax`;
+    }
+
+    if (source) {
+      localStorage.setItem('soundbridge_signup_source', source);
+      document.cookie = `soundbridge_signup_source=${encodeURIComponent(source)}; max-age=${maxAge}; path=/; samesite=lax`;
+    }
+
+    const cookieValue = (name: string) =>
+      document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${name}=`))
+        ?.split('=')[1];
+
+    const storedRef = localStorage.getItem('soundbridge_referral_code');
+    const storedSource = localStorage.getItem('soundbridge_signup_source');
+    const cookieRef = cookieValue('soundbridge_referral_code');
+    const cookieSource = cookieValue('soundbridge_signup_source');
+
+    setReferralCode(ref || storedRef || (cookieRef ? decodeURIComponent(cookieRef) : null));
+    setSignupSource(source || storedSource || (cookieSource ? decodeURIComponent(cookieSource) : null));
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -102,6 +136,8 @@ function SignupContent() {
       const { data, error: signUpError } = await signUp(formData.email, formData.password, {
         first_name: formData.firstName,
         last_name: formData.lastName,
+        ...(referralCode ? { referred_by_code: referralCode } : {}),
+        ...(signupSource ? { source: signupSource } : {}),
       });
 
       if (signUpError) {
@@ -285,6 +321,32 @@ function SignupContent() {
           </Link>
 
           {/* Header */}
+          {signupSource === 'sound_academy' && (
+            <div
+              style={{
+                textAlign: 'center',
+                background: 'rgba(124, 58, 237, 0.18)',
+                border: '1px solid rgba(196, 181, 253, 0.35)',
+                borderRadius: '16px',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                color: 'white',
+              }}
+            >
+              <Image
+                src="/images/pro-resources/sa-2.png"
+                alt="Sound Academy"
+                width={96}
+                height={48}
+                style={{ objectFit: 'contain', margin: '0 auto 0.75rem' }}
+              />
+              <p className="text-sm text-purple-100">
+                Welcome, Sound Academy student. Create your free SoundBridge account to activate
+                your one year Premium access.
+              </p>
+            </div>
+          )}
+
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <p style={{ color: '#ccc' }}>
               Connect with creators and discover amazing events

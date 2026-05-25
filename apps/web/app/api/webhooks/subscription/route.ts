@@ -4,6 +4,7 @@ import { createServiceClient } from '@/src/lib/supabase';
 import { grantGracePeriod } from '@/src/lib/grace-period-service';
 import { stripe } from '@/src/lib/stripe';
 import { shouldSkipRevenueCatDowngradeToFree } from '@/src/lib/revenuecat-entitlements';
+import { recordReferralConversion } from '@/src/lib/partner-referrals';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -434,6 +435,7 @@ async function handleSubscriptionActivated(supabase: any, data: {
   }
 
   console.log('✅ Subscription activated for user:', data.userId);
+  await recordReferralConversion(supabase, data.userId, data.tier);
 
   // TODO: Send welcome email
   await sendEmail(data.userId, 'welcome', {

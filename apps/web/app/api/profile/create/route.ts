@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { processPartnerAttributionForAuthUser } from '@/src/lib/partner-referrals';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +9,7 @@ export async function POST(request: NextRequest) {
     
     // Get request body
     const body = await request.json();
-    const { userId, username, display_name, role, location, country, bio } = body;
+    const { userId, username, display_name, role, location, country, bio, referred_by_code, source } = body;
     
     if (!userId) {
       console.error('❌ No user ID provided');
@@ -81,6 +82,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (authUser?.user) {
+        await processPartnerAttributionForAuthUser(supabase, authUser.user, {
+          referralCode: referred_by_code,
+          source,
+        });
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Profile created successfully (fallback mode)',
@@ -96,6 +104,11 @@ export async function POST(request: NextRequest) {
       .single() as { data: any; error: any };
 
     if (existingProfile) {
+      await processPartnerAttributionForAuthUser(supabase, authUser.user, {
+        referralCode: referred_by_code,
+        source,
+      });
+
       return NextResponse.json({
         success: true,
         message: 'Profile already exists',
@@ -152,6 +165,11 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    await processPartnerAttributionForAuthUser(supabase, authUser.user, {
+      referralCode: referred_by_code,
+      source,
+    });
 
     return NextResponse.json({
       success: true,
