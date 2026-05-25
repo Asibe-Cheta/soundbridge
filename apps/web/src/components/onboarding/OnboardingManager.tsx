@@ -39,6 +39,7 @@ export function OnboardingManager() {
                      pathname?.startsWith('/(auth)') ||
                      pathname?.includes('/verify-email') ||
                      pathname?.includes('/reset-password') ||
+                     pathname?.includes('/update-password') ||
                      pathname?.includes('/forgot-password');
   
   if (isAuthPage) {

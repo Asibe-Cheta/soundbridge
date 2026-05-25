@@ -5,6 +5,30 @@ const SENDGRID_SIGNUP_TEMPLATE_ID = process.env.SENDGRID_SIGNUP_TEMPLATE_ID!;
 const SENDGRID_RESET_TEMPLATE_ID = process.env.SENDGRID_RESET_TEMPLATE_ID!;
 const AUTH_HOOK_SECRET = process.env.SUPABASE_AUTH_HOOK_SECRET;
 
+function buildRecoveryUrl(site: string, tokenHash: string, redirectTo?: string): string {
+  const encodedTokenHash = encodeURIComponent(tokenHash);
+  const fallback = `${site}/reset-password?token_hash=${encodedTokenHash}&type=recovery`;
+
+  if (!redirectTo) return fallback;
+
+  try {
+    const url = new URL(redirectTo);
+    const isMobileTarget =
+      url.protocol === 'soundbridge:' || url.pathname.includes('/auth/mobile-callback');
+
+    if (!isMobileTarget) return fallback;
+
+    url.searchParams.set('token_hash', tokenHash);
+    url.searchParams.set('type', 'recovery');
+    if (!url.searchParams.has('next')) {
+      url.searchParams.set('next', '/update-password');
+    }
+    return url.toString();
+  } catch {
+    return fallback;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get the request body for signature verification
@@ -83,7 +107,7 @@ export async function POST(request: NextRequest) {
       if (email_data.token && email_data.token_hash) {
         const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live';
         // Deep-link: client verifies OTP then routes to /update-password (reset-password/page.tsx).
-        resetUrl = `${site}/reset-password?token_hash=${encodeURIComponent(email_data.token_hash)}&type=recovery`;
+        resetUrl = buildRecoveryUrl(site, email_data.token_hash, email_data.redirect_to);
         authCallbackRecoveryUrl = `${site}/auth/callback?token_hash=${encodeURIComponent(email_data.token_hash)}&type=recovery&next=/update-password`;
       } else if (email_data.redirect_to) {
         // Fallback to redirect_to if available
