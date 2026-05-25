@@ -154,7 +154,28 @@ export async function shouldSkipRevenueCatDowngradeToFree(
   if (status !== 'active') return false;
 
   const endRaw = profile.subscription_period_end ?? profile.subscription_renewal_date;
-  if (!endRaw) return false;
+  if (!endRaw) return true;
 
   return new Date(String(endRaw)).getTime() > Date.now();
+}
+
+export async function hasManualPermanentSubscriptionGrant(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_tier, subscription_status, subscription_period_end, subscription_renewal_date')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!profile) return false;
+
+  const tier = normalizeTier(profile.subscription_tier as string);
+  if (tier !== 'premium' && tier !== 'unlimited') return false;
+
+  const status = String(profile.subscription_status || '').toLowerCase();
+  if (status !== 'active') return false;
+
+  return !profile.subscription_period_end && !profile.subscription_renewal_date;
 }

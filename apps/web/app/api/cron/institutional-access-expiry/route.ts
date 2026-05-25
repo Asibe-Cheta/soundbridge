@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         .update({
           subscription_tier: 'free',
           subscription_status: 'inactive',
-          subscription_updated_at: now.toISOString(),
+          updated_at: now.toISOString(),
         })
         .in('id', downgradeUserIds);
     }

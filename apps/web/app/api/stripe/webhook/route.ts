@@ -25,6 +25,7 @@ import {
   isRequestRoomTipPaymentIntent,
 } from '@/src/lib/request-room-payment-intent-webhook';
 import { recordReferralConversion } from '@/src/lib/partner-referrals';
+import { hasManualPermanentSubscriptionGrant } from '@/src/lib/revenuecat-entitlements';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -379,6 +380,11 @@ async function handleCheckoutCompleted(
       return;
     }
 
+    if (await hasManualPermanentSubscriptionGrant(supabase, userId)) {
+      console.log('[webhook] Checkout subscription sync skipped; manual permanent subscription grant is active:', userId);
+      return;
+    }
+
     // Get subscription details from Stripe
     if (!stripe) {
       console.error('[webhook] Stripe not configured');
@@ -476,6 +482,11 @@ async function handleSubscriptionUpdated(
     const planChanged = priceId != null && previousPriceId != null && priceId !== previousPriceId;
     const planName = subscription.items?.data?.[0]?.price?.nickname ?? subscription.items?.data?.[0]?.price?.recurring?.interval === 'year' ? 'Pro (Annual)' : 'Pro (Monthly)';
 
+    if (await hasManualPermanentSubscriptionGrant(supabase, userId)) {
+      console.log('[webhook] Subscription update skipped; manual permanent subscription grant is active:', userId);
+      return;
+    }
+
     const { error } = await supabase
       .from('user_subscriptions')
       .upsert(
@@ -542,6 +553,11 @@ async function handleSubscriptionDeleted(
 
     const userId = existingSub.user_id;
     const currentTier = existingSub.tier || 'free';
+
+    if (await hasManualPermanentSubscriptionGrant(supabase, userId)) {
+      console.log('[webhook] Subscription deletion skipped; manual permanent subscription grant is active:', userId);
+      return;
+    }
 
     // Grant grace period if downgrading from paid tier to free
     if (currentTier !== 'free') {

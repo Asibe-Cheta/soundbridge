@@ -3,7 +3,10 @@ import Stripe from 'stripe';
 import { createServiceClient } from '@/src/lib/supabase';
 import { grantGracePeriod } from '@/src/lib/grace-period-service';
 import { stripe } from '@/src/lib/stripe';
-import { shouldSkipRevenueCatDowngradeToFree } from '@/src/lib/revenuecat-entitlements';
+import {
+  hasManualPermanentSubscriptionGrant,
+  shouldSkipRevenueCatDowngradeToFree,
+} from '@/src/lib/revenuecat-entitlements';
 import { recordReferralConversion } from '@/src/lib/partner-referrals';
 
 const corsHeaders = {
@@ -406,6 +409,11 @@ async function handleSubscriptionActivated(supabase: any, data: {
 }) {
   console.log('✅ ACTIVATING SUBSCRIPTION:', data.userId, data.tier, data.period);
 
+  if (await hasManualPermanentSubscriptionGrant(supabase, data.userId)) {
+    console.log('✅ Activation skipped; manual permanent subscription grant is active:', data.userId);
+    return;
+  }
+
   const updateData: any = {
     subscription_tier: data.tier,
     subscription_period: data.period,
@@ -452,6 +460,11 @@ async function handleSubscriptionCancelled(supabase: any, data: {
   cancelDate: Date;
 }) {
   console.log('🚫 CANCELLING SUBSCRIPTION:', data.userId);
+
+  if (await hasManualPermanentSubscriptionGrant(supabase, data.userId)) {
+    console.log('🚫 Cancellation skipped; manual permanent subscription grant is active:', data.userId);
+    return;
+  }
 
   const { error } = await supabase
     .from('profiles')
@@ -538,6 +551,11 @@ async function handlePaymentFailed(supabase: any, data: {
   userId: string;
 }) {
   console.log('💔 PAYMENT FAILED:', data.userId);
+
+  if (await hasManualPermanentSubscriptionGrant(supabase, data.userId)) {
+    console.log('💔 Payment failure skipped; manual permanent subscription grant is active:', data.userId);
+    return;
+  }
 
   const { error } = await supabase
     .from('profiles')

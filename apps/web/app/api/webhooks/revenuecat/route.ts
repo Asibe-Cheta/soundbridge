@@ -16,7 +16,10 @@ import {
   getPlanFeatures,
   type SubscriptionTier,
 } from '@/src/lib/subscription-plan-email';
-import { shouldSkipRevenueCatDowngradeToFree } from '@/src/lib/revenuecat-entitlements';
+import {
+  hasManualPermanentSubscriptionGrant,
+  shouldSkipRevenueCatDowngradeToFree,
+} from '@/src/lib/revenuecat-entitlements';
 
 const MANAGE_URL = 'https://soundbridge.live/settings/billing';
 const DUPLICATE_EMAIL_WINDOW_MS = 60 * 1000; // 60 seconds
@@ -109,6 +112,11 @@ export async function POST(request: NextRequest) {
     const previousTier = normalizeTier(profile.subscription_tier ?? 'free');
     const updatedAt = profile.updated_at ? new Date(profile.updated_at).getTime() : 0;
     const withinDuplicateWindow = Date.now() - updatedAt < DUPLICATE_EMAIL_WINDOW_MS;
+
+    if (await hasManualPermanentSubscriptionGrant(supabase, appUserId)) {
+      console.log('[webhooks/revenuecat] Skipping overwrite for manual permanent subscription grant:', appUserId);
+      return NextResponse.json({ received: true, skipped: 'manual_permanent_grant' });
+    }
 
     const { error: updateError } = await supabase
       .from('profiles')

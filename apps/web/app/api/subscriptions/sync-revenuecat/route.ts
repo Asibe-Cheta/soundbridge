@@ -14,6 +14,7 @@ import {
   getPlanFeatures,
   type SubscriptionTier,
 } from '@/src/lib/subscription-plan-email';
+import { hasManualPermanentSubscriptionGrant } from '@/src/lib/revenuecat-entitlements';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Current tier from profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('subscription_tier, updated_at')
+      .select('subscription_tier, subscription_status, subscription_period_end, subscription_renewal_date, updated_at')
       .eq('id', user.id)
       .single();
 
@@ -62,6 +63,14 @@ export async function POST(request: NextRequest) {
     }
 
     const previousTier = normalizeTier(profile?.subscription_tier ?? 'free');
+
+    if (await hasManualPermanentSubscriptionGrant(supabase, user.id)) {
+      console.log('[sync-revenuecat] Skipping overwrite for manual permanent subscription grant:', user.id);
+      return NextResponse.json(
+        { success: true, tier: previousTier, skipped: 'manual_permanent_grant' },
+        { status: 200, headers: CORS_HEADERS }
+      );
+    }
 
     // Update profile
     const { error: updateError } = await supabase
