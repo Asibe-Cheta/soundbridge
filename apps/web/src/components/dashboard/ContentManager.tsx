@@ -3,7 +3,23 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import type { UserTrack, UserEvent } from '../../lib/dashboard-service';
-import { Music, Calendar, Play, Heart, Edit, Trash2, Clock, MapPin, Users, DollarSign, AlertTriangle, CheckCircle, X } from 'lucide-react';
+import {
+  Music,
+  Calendar,
+  Play,
+  Heart,
+  Edit,
+  Trash2,
+  Clock,
+  MapPin,
+  Users,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle,
+  X,
+  Copy,
+  ExternalLink,
+} from 'lucide-react';
 
 interface ContentManagerProps {
   tracks: UserTrack[];
@@ -23,6 +39,17 @@ export function ContentManager({
   const [activeTab, setActiveTab] = useState<'tracks' | 'events'>('tracks');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copiedTrackId, setCopiedTrackId] = useState<string | null>(null);
+
+  const copyTrackUrl = async (trackId: string, fileUrl: string) => {
+    try {
+      await navigator.clipboard.writeText(fileUrl);
+      setCopiedTrackId(trackId);
+      window.setTimeout(() => setCopiedTrackId(null), 2000);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
 
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -109,7 +136,7 @@ export function ContentManager({
             </div>
             <div className="flex items-center gap-1">
               <Heart size={14} />
-              <span>{track.like_count || 0}</span>
+              <span>{track.like_count ?? (track as { likes_count?: number }).likes_count ?? 0}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock size={14} />
@@ -133,6 +160,32 @@ export function ContentManager({
               {formatDate(track.created_at)}
             </span>
           </div>
+
+          {track.file_url ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <code className="text-xs text-gray-400 break-all line-clamp-2 flex-1 min-w-0">
+                {track.file_url}
+              </code>
+              <button
+                type="button"
+                className="p-2 rounded-lg hover:bg-white/10 text-gray-300 transition-colors"
+                title="Copy file URL"
+                onClick={() => copyTrackUrl(track.id, track.file_url)}
+              >
+                <Copy size={14} />
+              </button>
+              <Link
+                href={`/track/${track.id}`}
+                className="p-2 rounded-lg hover:bg-white/10 text-gray-300 transition-colors"
+                title="Open track page"
+              >
+                <ExternalLink size={14} />
+              </Link>
+              {copiedTrackId === track.id ? (
+                <span className="text-xs text-green-400">Copied</span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

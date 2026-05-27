@@ -13,6 +13,7 @@ import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard'
 import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';
 import { PayoutRequest } from '../../src/components/revenue/PayoutRequest';
 import { ServiceProviderDashboard } from '../../src/components/service-provider/ServiceProviderDashboard';
+import { ContentManager } from '../../src/components/dashboard/ContentManager';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -20,9 +21,14 @@ export default function DashboardPage() {
   const router = useRouter();
   const {
     stats,
+    tracks,
+    events,
     profile,
     error,
-    setError
+    setError,
+    isLoadingTracks,
+    deleteTrack,
+    deleteEvent,
   } = useDashboard();
 
   const [activeTab, setActiveTab] = useState<
@@ -661,6 +667,16 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeTab === 'content' && (
+            <ContentManager
+              tracks={tracks}
+              events={events}
+              onDeleteTrack={deleteTrack}
+              onDeleteEvent={deleteEvent}
+              isLoading={isLoadingTracks}
+            />
+          )}
+
           {activeTab === 'revenue' && user && (
             <div style={{
               background: 'var(--bg-secondary)',
@@ -714,7 +730,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab !== 'overview' && activeTab !== 'availability' && activeTab !== 'revenue' && activeTab !== 'service-provider' && activeTab !== 'subscription' && (
+          {activeTab !== 'overview' &&
+            activeTab !== 'content' &&
+            activeTab !== 'availability' &&
+            activeTab !== 'revenue' &&
+            activeTab !== 'service-provider' &&
+            activeTab !== 'subscription' &&
+            activeTab !== 'settings' && (
             <div style={{
               background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',
