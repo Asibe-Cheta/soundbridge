@@ -29,7 +29,7 @@ function MobileCallbackContent() {
       setStatus('redirecting');
       
       // Try to open the mobile app immediately
-      if (isMobile) {
+      if (mobile) {
         const nextParam = next || '/';
         const mobileAppUrl = `soundbridge://auth/callback?verified=true&next=${nextParam}`;
         console.log('Attempting to open mobile app with verified status:', mobileAppUrl);
@@ -77,10 +77,15 @@ function MobileCallbackContent() {
     }
 
     // Try to handle the auth callback
-    handleAuthCallback(tokenHash, type, next);
+    handleAuthCallback(tokenHash, type, next, mobile);
   }, [searchParams, router]);
 
-  const handleAuthCallback = async (tokenHash: string, type: string, next: string | null) => {
+  const handleAuthCallback = async (
+    tokenHash: string,
+    type: string,
+    next: string | null,
+    mobile: boolean
+  ) => {
     try {
       setStatus('redirecting');
 
@@ -103,7 +108,7 @@ function MobileCallbackContent() {
         setStatus('success');
         
         // If on mobile, try to open the app
-        if (isMobile) {
+        if (mobile) {
           // Try to open the mobile app with deep link
           const mobileAppUrl = `soundbridge://auth/callback?token_hash=${tokenHash}&type=${type}&next=${next || '/'}`;
           

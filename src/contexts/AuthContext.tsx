@@ -111,10 +111,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
               
               const accessToken = urlParams.get('access_token');
               const refreshToken = urlParams.get('refresh_token');
+              const tokenHash = urlParams.get('token_hash');
+              const callbackType = urlParams.get('type');
               const error = urlParams.get('error');
               
               if (error) {
                 console.error('ÔØî OAuth error:', error);
+                setLoading(false);
+                return;
+              }
+
+              if (tokenHash && (callbackType === 'signup' || callbackType === 'recovery')) {
+                console.log('🔐 Verifying OTP from deep link callback:', callbackType);
+                const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+                  token_hash: tokenHash,
+                  type: callbackType,
+                });
+
+                if (verifyError) {
+                  console.error('❌ verifyOtp failed from deep link:', verifyError);
+                  setLoading(false);
+                  return;
+                }
+
+                if (verifyData.user) {
+                  console.log('✅ verifyOtp succeeded for:', verifyData.user.email);
+                }
+
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError) {
+                  console.error('❌ Could not fetch session after verifyOtp:', sessionError);
+                  setLoading(false);
+                  return;
+                }
+
+                if (sessionData.session) {
+                  setSession(sessionData.session);
+                  setUser(sessionData.session.user);
+                }
+
                 setLoading(false);
                 return;
               }
