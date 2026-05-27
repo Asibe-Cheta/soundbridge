@@ -59,7 +59,7 @@ function assertFiniteSeconds(value: unknown, field: string): number {
   return numberValue;
 }
 
-function parseAudioStorageUrl(fileUrl: string): { extension: string } {
+function parseAudioInputUrl(fileUrl: string): { extension: string } {
   let url: URL;
   try {
     url = new URL(fileUrl);
@@ -67,32 +67,61 @@ function parseAudioStorageUrl(fileUrl: string): { extension: string } {
     throw new HttpError(400, 'file_url must be a valid URL');
   }
 
+  // 1) Supabase public storage shape:
+  //    https://<project>.supabase.co/storage/v1/object/public/audio-tracks/<path>
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) {
     throw new HttpError(503, 'Supabase URL is not configured');
   }
 
-  const expectedHost = new URL(supabaseUrl).hostname;
-  if (url.hostname !== expectedHost) {
-    throw new HttpError(400, 'file_url must point to this Supabase project');
+  const expectedSupabaseHost = new URL(supabaseUrl).hostname;
+  if (url.hostname === expectedSupabaseHost) {
+    const publicObjectPrefix = `/storage/v1/object/public/${AUDIO_BUCKET}/`;
+    if (!url.pathname.startsWith(publicObjectPrefix)) {
+      throw new HttpError(400, `file_url must be a public ${AUDIO_BUCKET} storage URL`);
+    }
+
+    const objectPath = decodeURIComponent(url.pathname.slice(publicObjectPrefix.length));
+    if (!objectPath || objectPath.includes('..')) {
+      throw new HttpError(400, 'file_url object path is invalid');
+    }
+
+    const extension = objectPath.split('.').pop()?.toLowerCase() || '';
+    if (!ALLOWED_EXTENSIONS.has(extension)) {
+      throw new HttpError(400, 'Supported input formats are MP3, M4A, AAC, and WAV');
+    }
+    return { extension };
   }
 
-  const publicObjectPrefix = `/storage/v1/object/public/${AUDIO_BUCKET}/`;
-  if (!url.pathname.startsWith(publicObjectPrefix)) {
-    throw new HttpError(400, `file_url must be a public ${AUDIO_BUCKET} storage URL`);
+  // 2) Cloudflare R2 public development URL:
+  //    https://pub-<hash>.r2.dev/audio/<userId>/<file>.<ext>
+  //    https://pub-<hash>.r2.dev/migrated/supabase-audio-tracks/<uuid>/<file>.<ext>
+  const r2PublicUrl = process.env.R2_PUBLIC_URL?.trim();
+  if (r2PublicUrl) {
+    const expectedR2Host = new URL(r2PublicUrl).hostname;
+    if (url.hostname === expectedR2Host) {
+      const p = url.pathname;
+      const allowedPrefixes = ['/audio/', '/migrated/'];
+      const matchesPrefix = allowedPrefixes.some((prefix) => p.startsWith(prefix));
+      if (!matchesPrefix) {
+        throw new HttpError(400, 'file_url must be a valid public R2 audio-tracks URL');
+      }
+      if (p.includes('..')) {
+        throw new HttpError(400, 'file_url object path is invalid');
+      }
+
+      const extension = p.split('.').pop()?.toLowerCase() || '';
+      if (!ALLOWED_EXTENSIONS.has(extension)) {
+        throw new HttpError(400, 'Supported input formats are MP3, M4A, AAC, and WAV');
+      }
+      return { extension };
+    }
   }
 
-  const objectPath = decodeURIComponent(url.pathname.slice(publicObjectPrefix.length));
-  if (!objectPath || objectPath.includes('..')) {
-    throw new HttpError(400, 'file_url object path is invalid');
-  }
-
-  const extension = objectPath.split('.').pop()?.toLowerCase() || '';
-  if (!ALLOWED_EXTENSIONS.has(extension)) {
-    throw new HttpError(400, 'Supported input formats are MP3, M4A, AAC, and WAV');
-  }
-
-  return { extension };
+  throw new HttpError(
+    400,
+    'file_url must be a public audio-tracks URL from Supabase or R2',
+  );
 }
 
 async function downloadToBuffer(fileUrl: string): Promise<Buffer> {
@@ -220,7 +249,7 @@ export async function POST(request: NextRequest) {
       return jsonError('Clip length must be 60 seconds or less', 400);
     }
 
-    const { extension } = parseAudioStorageUrl(fileUrl);
+    const { extension } = parseAudioInputUrl(fileUrl);
     const inputBuffer = await downloadToBuffer(fileUrl);
 
     const workDir = path.join(os.tmpdir(), `soundbridge-trim-${randomUUID()}`);
