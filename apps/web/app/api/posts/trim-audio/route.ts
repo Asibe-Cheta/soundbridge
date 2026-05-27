@@ -50,14 +50,17 @@ function jsonError(message: string, status: number) {
 
 let cachedFfmpegPath: string | null = null;
 
+function getBundledFfmpegCandidates(): string[] {
+  const candidates = [
+    process.env.FFMPEG_PATH?.trim(),
+    typeof ffmpegStatic === 'string' ? ffmpegStatic : null,
+    path.join(process.cwd(), 'node_modules/ffmpeg-static/ffmpeg'),
+  ].filter((value): value is string => Boolean(value));
+
+  return [...new Set(candidates)];
+}
+
 async function resolveFfmpegPath(): Promise<string> {
-  const configuredPath = process.env.FFMPEG_PATH?.trim();
-  if (configuredPath) return configuredPath;
-
-  if (!ffmpegStatic) {
-    throw new HttpError(503, 'FFmpeg is not available in this server environment');
-  }
-
   if (cachedFfmpegPath) return cachedFfmpegPath;
 
   const tmpBinary = path.join(os.tmpdir(), 'soundbridge-ffmpeg');
@@ -66,11 +69,24 @@ async function resolveFfmpegPath(): Promise<string> {
     cachedFfmpegPath = tmpBinary;
     return tmpBinary;
   } catch {
-    await copyFile(ffmpegStatic, tmpBinary);
-    await chmod(tmpBinary, 0o755);
-    cachedFfmpegPath = tmpBinary;
-    return tmpBinary;
+    // Continue to copy bundled binary into /tmp (required on Vercel).
   }
+
+  let lastError: unknown;
+  for (const candidate of getBundledFfmpegCandidates()) {
+    try {
+      await access(candidate, constants.F_OK);
+      await copyFile(candidate, tmpBinary);
+      await chmod(tmpBinary, 0o755);
+      cachedFfmpegPath = tmpBinary;
+      return tmpBinary;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  console.error('[trim-audio] ffmpeg binary unavailable:', lastError);
+  throw new HttpError(503, 'FFmpeg is not available in this server environment');
 }
 
 function assertFiniteSeconds(value: unknown, field: string): number {
