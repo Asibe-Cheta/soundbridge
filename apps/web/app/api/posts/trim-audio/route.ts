@@ -1,6 +1,7 @@
 import { execFile } from 'child_process';
 import { randomUUID } from 'crypto';
-import { mkdir, readFile, rm, writeFile } from 'fs/promises';
+import { access, chmod, copyFile, mkdir, readFile, rm, writeFile } from 'fs/promises';
+import { constants } from 'fs';
 import os from 'os';
 import path from 'path';
 import { promisify } from 'util';
@@ -47,8 +48,29 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ success: false, error: message }, { status, headers: corsHeaders });
 }
 
-function getFfmpegPath(): string {
-  return process.env.FFMPEG_PATH?.trim() || ffmpegStatic || 'ffmpeg';
+let cachedFfmpegPath: string | null = null;
+
+async function resolveFfmpegPath(): Promise<string> {
+  const configuredPath = process.env.FFMPEG_PATH?.trim();
+  if (configuredPath) return configuredPath;
+
+  if (!ffmpegStatic) {
+    throw new HttpError(503, 'FFmpeg is not available in this server environment');
+  }
+
+  if (cachedFfmpegPath) return cachedFfmpegPath;
+
+  const tmpBinary = path.join(os.tmpdir(), 'soundbridge-ffmpeg');
+  try {
+    await access(tmpBinary, constants.X_OK);
+    cachedFfmpegPath = tmpBinary;
+    return tmpBinary;
+  } catch {
+    await copyFile(ffmpegStatic, tmpBinary);
+    await chmod(tmpBinary, 0o755);
+    cachedFfmpegPath = tmpBinary;
+    return tmpBinary;
+  }
 }
 
 function assertFiniteSeconds(value: unknown, field: string): number {
@@ -258,7 +280,7 @@ export async function POST(request: NextRequest) {
     outputPath = path.join(workDir, 'output.mp3');
     await writeFile(inputPath, inputBuffer);
 
-    const ffmpegPath = getFfmpegPath();
+    const ffmpegPath = await resolveFfmpegPath();
     const inputDuration = await getAudioDurationSeconds(ffmpegPath, inputPath);
     if (inputDuration > MAX_INPUT_DURATION_SECONDS) {
       return jsonError('Input audio must be 10 minutes or less', 400);
