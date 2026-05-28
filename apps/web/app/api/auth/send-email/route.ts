@@ -5,6 +5,30 @@ const SENDGRID_SIGNUP_TEMPLATE_ID = process.env.SENDGRID_SIGNUP_TEMPLATE_ID!;
 const SENDGRID_RESET_TEMPLATE_ID = process.env.SENDGRID_RESET_TEMPLATE_ID!;
 const AUTH_HOOK_SECRET = process.env.SUPABASE_AUTH_HOOK_SECRET;
 
+function buildSignupUrl(site: string, tokenHash: string, redirectTo?: string): string {
+  const encodedTokenHash = encodeURIComponent(tokenHash);
+  const fallback = `${site}/auth/callback?token_hash=${encodedTokenHash}&type=signup&next=/`;
+
+  if (!redirectTo) return fallback;
+
+  try {
+    const url = new URL(redirectTo);
+    const isMobileTarget =
+      url.protocol === 'soundbridge:' || url.pathname.includes('/auth/mobile-callback');
+
+    if (!isMobileTarget) return fallback;
+
+    url.searchParams.set('token_hash', tokenHash);
+    url.searchParams.set('type', 'signup');
+    if (!url.searchParams.has('next')) {
+      url.searchParams.set('next', '/');
+    }
+    return url.toString();
+  } catch {
+    return fallback;
+  }
+}
+
 function buildRecoveryUrl(site: string, tokenHash: string, redirectTo?: string): string {
   const encodedTokenHash = encodeURIComponent(tokenHash);
   const fallback = `${site}/reset-password?token_hash=${encodedTokenHash}&type=recovery`;
@@ -82,9 +106,8 @@ export async function POST(request: NextRequest) {
       // Build proper confirmation URL with token
       let confirmationUrl;
       if (email_data.token && email_data.token_hash) {
-        // Use Supabase's built-in confirmation URL structure
         const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live';
-        confirmationUrl = `${site}/auth/callback?token_hash=${encodeURIComponent(email_data.token_hash)}&type=signup&next=/`;
+        confirmationUrl = buildSignupUrl(site, email_data.token_hash, email_data.redirect_to);
       } else if (email_data.redirect_to) {
         // Fallback to redirect_to if available
         confirmationUrl = email_data.redirect_to;
