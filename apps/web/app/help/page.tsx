@@ -32,6 +32,7 @@ export default function HelpPage() {
       title: 'Getting Started',
       description: 'Learn the basics of SoundBridge',
       articles: [
+        { title: 'How SoundBridge Works (FAQ)', slug: 'earn-on-soundbridge#how-soundbridge-works' },
         { title: 'How to create an account', slug: 'create-account' },
         { title: 'Uploading your first track', slug: 'upload-track' },
         { title: 'Setting up your profile', slug: 'setup-profile' },
@@ -110,6 +111,7 @@ export default function HelpPage() {
   ];
 
   const popularArticles = [
+    { title: 'How SoundBridge Works (FAQ)', category: 'Getting Started', slug: 'earn-on-soundbridge#how-soundbridge-works' },
     { title: 'How to earn on SoundBridge (FAQ)', category: 'Payments & Earnings', slug: 'earn-on-soundbridge' },
     { title: 'How to upload music', category: 'Uploading Content', slug: 'upload-track' },
     { title: 'Creating your first event', category: 'Events', slug: 'create-event' },

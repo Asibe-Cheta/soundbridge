@@ -6,6 +6,49 @@ import { useTheme } from '@/src/contexts/ThemeContext';
 import { Footer } from '@/src/components/layout/Footer';
 import { ArrowLeft, DollarSign, HelpCircle } from 'lucide-react';
 
+const howSoundBridgeWorksItems: { q: string; a: string }[] = [
+  {
+    q: 'How is SoundBridge different from other platforms?',
+    a:
+      'Other platforms tell you where your music has been heard. SoundBridge tells you who actually wants more of you and where they are. We track what listeners do, not just what they play. A listener who plays your track three times, tips you directly, and says they would like to hear you live is a completely different signal from someone who streamed your track once from a playlist. SoundBridge separates those two types of listener and builds your audience from the ones who genuinely want to be in your world.',
+  },
+  {
+    q: 'How does discovery work on SoundBridge?',
+    a:
+      'When you upload your music your tracks are served to listeners who have opted in for your genre and mood in your location. But we do not stop at genre matching. We pay attention to listener behaviour. Repeat listens, tips, shares, and live interest expressions all build a clearer picture of who your real audience is. The more your listeners engage, the more precisely SoundBridge understands your audience and finds more people like them.',
+  },
+  {
+    q: 'What is the difference between streaming data and SoundBridge data?',
+    a:
+      'Other platforms can tell you that thousands of people played your song last month. That is consumption data. SoundBridge tells you which listeners played your track more than twice, which ones tipped you directly, and which ones said they would like to hear you live and where they are located. That is intention data. One tells you where your music reached. The other tells you where your audience lives and wants to experience you in person.',
+  },
+  {
+    q: 'How does event promotion work?',
+    a:
+      'When you have enough listener data SoundBridge understands where your audience is concentrated, when they are available, and which cities have the strongest live interest in your sound. When you post an event SoundBridge promotes it for free, not to everyone, but to the specific listeners who expressed interest in hearing you live and to fans of your genre in that city who have not yet discovered you. Your event reaches the right people automatically with no ad spend required.',
+  },
+  {
+    q: 'Can I earn from my music without having thousands of streams?',
+    a:
+      'Yes. When a listener feels something while playing your music on SoundBridge they can tip you directly. You keep up to 90% of every tip instantly. There is no stream threshold to reach, no eligibility requirement, and no waiting period. Your first listener can be your first payment.',
+  },
+  {
+    q: 'What is the Live Interest feature?',
+    a:
+      'When a listener plays your track more than once a subtle prompt appears asking if they would like to hear you perform this song live. If they say yes their location and availability preference is captured. This gives you real demand data before you have planned a single event. You can see which cities have the most interest in hearing you live and plan accordingly rather than guessing.',
+  },
+  {
+    q: 'Does SoundBridge replace my distribution to other platforms?',
+    a:
+      'No. SoundBridge is not a distribution platform. It is your professional home where you build direct relationships with your audience, earn directly from your fans, and plan your career intelligently. Distribution to streaming platforms is a separate step and SoundBridge will be introducing a trusted distribution partner integration very soon.',
+  },
+  {
+    q: 'How does the service marketplace work?',
+    a:
+      'If you offer professional services such as session work, mixing, production, vocal coaching or sound engineering you can list them on SoundBridge with your rates and availability. Other creators, event organisers and industry professionals can find and book you directly through the platform without you needing to cold pitch anyone.',
+  },
+];
+
 const faqItems: { q: string; a: React.ReactNode }[] = [
   {
     q: 'What ways can I earn on SoundBridge?',
@@ -129,6 +172,42 @@ export default function EarnOnSoundBridgePage() {
           </div>
 
           <div className="space-y-10">
+            <section id="how-soundbridge-works">
+              <h2
+                className={`text-2xl lg:text-3xl font-bold mb-6 pb-3 border-b ${
+                  theme === 'dark' ? 'text-white border-white/10' : 'text-gray-900 border-gray-200'
+                }`}
+              >
+                How SoundBridge Works
+              </h2>
+              <div className="space-y-6">
+                {howSoundBridgeWorksItems.map((item, i) => (
+                  <article
+                    key={`how-${i}`}
+                    className={`rounded-xl border p-6 lg:p-8 ${
+                      theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-sm'
+                    }`}
+                  >
+                    <h3
+                      className={`text-xl lg:text-2xl font-bold mb-3 flex items-start gap-3 ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      <HelpCircle
+                        className={`w-7 h-7 flex-shrink-0 mt-0.5 ${
+                          theme === 'dark' ? 'text-pink-400' : 'text-pink-600'
+                        }`}
+                      />
+                      {item.q}
+                    </h3>
+                    <p className={`text-lg leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {item.a}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
             {faqItems.map((item, i) => (
               <section key={i} className={`rounded-xl border p-6 lg:p-8 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-sm'}`}>
                 <h2 className={`text-xl lg:text-2xl font-bold mb-3 flex items-start gap-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
