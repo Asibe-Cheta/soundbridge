@@ -1,8 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { createClient } from '@/src/lib/supabase-browser';
+import { ensureSoundAcademyPremiumAccess } from '@/src/lib/partner-referrals';
+
+export const INSTITUTIONAL_ACCESS_GRANTED_EVENT = 'soundbridge:institutional-access-granted';
 
 interface AuthContextType {
   user: User | null;
@@ -52,6 +55,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const [supabase] = useState(() => createClient());
+  const soundAcademyGrantInflight = useRef<string | null>(null);
+
+  const scheduleSoundAcademyPremiumGrant = (authUser: User) => {
+    if (!supabase) return;
+    if (soundAcademyGrantInflight.current === authUser.id) return;
+    soundAcademyGrantInflight.current = authUser.id;
+
+    void ensureSoundAcademyPremiumAccess(supabase, authUser)
+      .then((granted) => {
+        if (granted && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent(INSTITUTIONAL_ACCESS_GRANTED_EVENT));
+        }
+      })
+      .catch((err) => {
+        console.error('[AuthProvider] Sound Academy premium grant failed:', err);
+      })
+      .finally(() => {
+        if (soundAcademyGrantInflight.current === authUser.id) {
+          soundAcademyGrantInflight.current = null;
+        }
+      });
+  };
 
   useEffect(() => {
     if (!supabase) {
@@ -86,6 +111,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(nextSession);
       setUser(nextSession.user);
       setLoading(false);
+
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'INITIAL_SESSION' ||
+        event === 'TOKEN_REFRESHED'
+      ) {
+        scheduleSoundAcademyPremiumGrant(nextSession.user);
+      }
     });
 
     // 2) Hydrate from storage after the listener is attached (Supabase-recommended order).
@@ -118,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           authDebug('AuthProvider: Session from getSession:', s.user?.email);
           setSession(s);
           setUser(s.user);
+          scheduleSoundAcademyPremiumGrant(s.user);
         } else {
           const currentPath =
             typeof window !== 'undefined' ? window.location.pathname : '';
@@ -242,6 +276,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         setLoading(false);
         setError(null);
+        scheduleSoundAcademyPremiumGrant(data.user);
       }
 
       return { data, error: null };

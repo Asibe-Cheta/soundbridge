@@ -143,6 +143,45 @@ export async function processPartnerAttributionForAuthUser(
   });
 }
 
+/**
+ * On sign-in / session load: grant Sound Academy Premium if metadata says sound_academy
+ * and profile is still free. Idempotent RPC; does not re-send welcome email (signup flow does).
+ */
+export async function ensureSoundAcademyPremiumAccess(
+  supabase: SupabaseClient,
+  user: Pick<User, 'id' | 'user_metadata'>,
+): Promise<boolean> {
+  const source = getSignupSourceFromMetadata(user.user_metadata as Record<string, unknown>);
+  if (source !== SOUND_ACADEMY_SOURCE) return false;
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error('[partner-referrals] profile tier lookup failed:', profileError.message);
+    return false;
+  }
+
+  const tier = normalizeText(profile?.subscription_tier);
+  if (tier && tier !== 'free') return false;
+
+  const { error } = await supabase.rpc('grant_institutional_access', {
+    p_user_id: user.id,
+    p_institution: SOUND_ACADEMY_SOURCE,
+    p_access_tier: 'premium',
+  });
+
+  if (error) {
+    console.error('[partner-referrals] ensureSoundAcademyPremiumAccess failed:', error.message);
+    return false;
+  }
+
+  return true;
+}
+
 export async function recordReferralConversion(
   supabase: SupabaseClient,
   userId: string,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { INSTITUTIONAL_ACCESS_GRANTED_EVENT } from '@/src/contexts/AuthContext';
 
 export interface SubscriptionData {
   is_founding_member?: boolean;
@@ -231,6 +232,16 @@ export const useSubscription = (): SubscriptionHook => {
 
   useEffect(() => {
     fetchSubscriptionData();
+  }, []);
+
+  useEffect(() => {
+    const onInstitutionalAccessGranted = () => {
+      void fetchSubscriptionData();
+    };
+    window.addEventListener(INSTITUTIONAL_ACCESS_GRANTED_EVENT, onInstitutionalAccessGranted);
+    return () => {
+      window.removeEventListener(INSTITUTIONAL_ACCESS_GRANTED_EVENT, onInstitutionalAccessGranted);
+    };
   }, []);
 
   return {
