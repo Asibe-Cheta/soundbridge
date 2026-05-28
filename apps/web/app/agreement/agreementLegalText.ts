@@ -65,6 +65,8 @@ Together, the "Parties".
 
 7.3 After account closure, SoundBridge will cease new public use of your Content in line with the Platform Terms and product functionality then in effect, except where retention is required by law or dispute.
 
+7.4 Creator's right to terminate. You may terminate this Agreement and close your account at any time for any reason by giving written notice to SoundBridge at the contact address published on the Platform. Termination does not affect any rights or obligations that arose before the termination date, including outstanding payouts, disputes, or legal obligations. Clauses 6.2, 7.2, and 8.4 survive termination.
+
 8. GENERAL
 
 8.1 Entire agreement (subject to Platform Terms). This document, together with the Platform Terms, sets out the Parties' understanding on ownership and the licence in clause 4. Other commercial terms (fees, payouts, disputes) remain in the Platform Terms unless you have a separate signed agreement with SoundBridge Live Ltd.
