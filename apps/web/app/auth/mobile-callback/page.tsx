@@ -109,8 +109,12 @@ function MobileCallbackContent() {
         
         // If on mobile, try to open the app
         if (mobile) {
-          // Try to open the mobile app with deep link
-          const mobileAppUrl = `soundbridge://auth/callback?token_hash=${tokenHash}&type=${type}&next=${next || '/'}`;
+          // If web consumed token_hash via verifyOtp, pass session tokens to avoid double-consume in app.
+          const session = data.session;
+          const mobileAppUrl =
+            session?.access_token && session?.refresh_token
+              ? `soundbridge://auth/callback?access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}&type=${encodeURIComponent(type)}&next=${encodeURIComponent(next || '/')}`
+              : `soundbridge://auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(type)}&next=${encodeURIComponent(next || '/')}`;
           
           // Attempt to open the mobile app
           window.location.href = mobileAppUrl;
