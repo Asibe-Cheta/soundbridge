@@ -111,6 +111,7 @@ export interface TrackUploadData {
   album?: string;
   recordLabel?: string;
   genre?: string;
+  moodTags?: string[];
   tags?: string[];
   lyrics?: string;
   lyricsLanguage?: string;

@@ -372,6 +372,7 @@ export class AudioUploadService {
     cover_art_url?: string;
     duration: number;
     genre?: string;
+    mood_tags?: string[] | null;
     tags?: string[];
     is_public: boolean;
     audio_quality?: string;
@@ -664,6 +665,9 @@ export class AudioUploadService {
         cover_art_url: coverArtUrl,
         duration: (trackData.audioFile.metadata as AudioMetadata)?.duration || 0,
         genre: trackData.genre,
+        mood_tags: (trackData as TrackUploadData).moodTags?.length
+          ? (trackData as TrackUploadData).moodTags
+          : null,
         tags: trackData.tags,
         lyrics: trackData.lyrics || null,
         lyrics_language: trackData.lyricsLanguage || 'en',

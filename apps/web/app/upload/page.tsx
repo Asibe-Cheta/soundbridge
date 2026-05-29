@@ -15,6 +15,8 @@ import RightsVerificationForm from '../../src/components/upload/RightsVerificati
 import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types/audio-quality';
 import { Toaster } from '../../src/components/ui/Toast';
 import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
+import { MAX_MOOD_TAGS_PER_TRACK, MOOD_TAG_OPTIONS } from '../../src/lib/discovery-intelligence';
+import { createBrowserClient } from '../../src/lib/supabase';
 import { toast as hotToast } from 'react-hot-toast';
 import { Upload, Music, Mic, Disc, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search, BookOpen } from 'lucide-react';
 
@@ -47,6 +49,7 @@ export default function UnifiedUploadPage() {
   // Music-specific states
   const [artistName, setArtistName] = useState('');
   const [genre, setGenre] = useState('');
+  const [moodTags, setMoodTags] = useState<string[]>([]);
   const [lyrics, setLyrics] = useState('');
   const [lyricsLanguage, setLyricsLanguage] = useState('en');
   
@@ -127,6 +130,14 @@ export default function UnifiedUploadPage() {
       console.error('Failed to load user tier:', error);
       setUserTier('free');
     }
+  };
+
+  const toggleMoodTag = (mood: string) => {
+    setMoodTags((prev) => {
+      if (prev.includes(mood)) return prev.filter((m) => m !== mood);
+      if (prev.length >= MAX_MOOD_TAGS_PER_TRACK) return prev;
+      return [...prev, mood];
+    });
   };
 
   // Load genres from API to match onboarding
@@ -842,6 +853,7 @@ export default function UnifiedUploadPage() {
           contentType: 'music' as const,
           artistName: artistName.trim(),
           genre: genre.trim(),
+          moodTags: moodTags.length ? moodTags : undefined,
           lyrics: lyrics.trim(),
           lyricsLanguage: lyricsLanguage,
           isCover: isCoverOrMatch,
@@ -961,6 +973,7 @@ export default function UnifiedUploadPage() {
         setTags('');
         setArtistName('');
         setGenre('');
+        setMoodTags([]);
         setLyrics('');
         setLyricsLanguage('en');
         setEpisodeNumber('');
@@ -973,10 +986,25 @@ export default function UnifiedUploadPage() {
         uploadActions.resetUpload();
         
         // Redirect to success page
+        let creatorLocation = '';
+        try {
+          const supabase = createBrowserClient();
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('location')
+            .eq('id', user.id)
+            .single();
+          creatorLocation = prof?.location?.trim() || '';
+        } catch {
+          /* non-fatal */
+        }
+
         const successUrl = `/upload/success?title=${encodeURIComponent(title)}&type=${contentType}` +
           `${trackId ? `&trackId=${encodeURIComponent(trackId)}` : ''}` +
           `${artistName ? `&artistName=${encodeURIComponent(artistName)}` : ''}` +
           `${genre ? `&genre=${encodeURIComponent(genre)}` : ''}` +
+          `${moodTags.length ? `&moods=${encodeURIComponent(moodTags.join(','))}` : ''}` +
+          `${creatorLocation ? `&location=${encodeURIComponent(creatorLocation)}` : ''}` +
           `${description ? `&description=${encodeURIComponent(description)}` : ''}`;
         window.location.href = successUrl;
       } else {
@@ -1257,6 +1285,38 @@ export default function UnifiedUploadPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Choose the primary genre that best describes your music
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      What mood does this track create?
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      Optional — choose up to {MAX_MOOD_TAGS_PER_TRACK} moods
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {MOOD_TAG_OPTIONS.map((mood) => {
+                        const selected = moodTags.includes(mood);
+                        const disabled = !selected && moodTags.length >= MAX_MOOD_TAGS_PER_TRACK;
+                        return (
+                          <button
+                            key={mood}
+                            type="button"
+                            onClick={() => toggleMoodTag(mood)}
+                            disabled={disabled}
+                            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                              selected
+                                ? 'bg-pink-600 border-pink-600 text-white'
+                                : disabled
+                                  ? 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'
+                                  : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-pink-500'
+                            }`}
+                          >
+                            {mood}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div>

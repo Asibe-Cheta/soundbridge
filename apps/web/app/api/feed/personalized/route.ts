@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { discoverTracksForListener, formatDiscoveryTracks } from '@/src/lib/discovery-feed';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
         location,
         country,
         genres,
+        preferred_moods,
         onboarding_completed,
         created_at
       `)
@@ -122,7 +124,13 @@ async function getPersonalizedContent(supabase: any, profile: any) {
   });
 
   // Get personalized music tracks
-  const personalizedMusic = await getPersonalizedMusic(supabase, userGenres, userLocation, userCountry, userRole);
+  const personalizedMusic = await getPersonalizedMusic(supabase, {
+    genres: userGenres,
+    preferred_moods: profile.preferred_moods || [],
+    location: userLocation,
+    country: userCountry,
+    selected_role: userRole,
+  });
   
   // Get personalized creators
   const personalizedCreators = await getPersonalizedCreators(supabase, userGenres, userLocation, userCountry, userRole);
@@ -141,127 +149,47 @@ async function getPersonalizedContent(supabase: any, profile: any) {
   };
 }
 
-async function getPersonalizedMusic(supabase: any, genres: string[], location: string, country: string, role: string) {
-  let query = supabase
-    .from('audio_tracks')
-    .select(`
-      *,
-      creator:profiles!audio_tracks_creator_id_fkey(
-        id,
-        username,
-        display_name,
-        avatar_url,
-        location,
-        country,
-        selected_role
-      )
-    `)
-    .eq('is_public', true as any)
-    .not('genre', 'eq', 'podcast' as any)
-    .not('genre', 'eq', 'Podcast' as any)
-    .not('genre', 'eq', 'PODCAST' as any);
+async function getPersonalizedMusic(
+  supabase: any,
+  profile: {
+    genres?: string[];
+    preferred_moods?: string[];
+    location?: string;
+    country?: string;
+    selected_role?: string;
+  },
+) {
+  try {
+    const loc = profile.location && profile.location !== 'all' ? profile.location : '';
+    const ctry = profile.country && profile.country !== 'all' ? profile.country : '';
 
-  // Role-based filtering
-  if (role === 'musician') {
-    // Musicians see trending tracks for inspiration and collaboration
-    query = query.order('play_count', { ascending: false });
-  } else if (role === 'podcaster') {
-    // Podcasters see music that could work for intros/outros
-    query = query.or('genre.eq.instrumental,genre.eq.ambient,genre.eq.electronic');
-  } else {
-    // Listeners see content based on their genre preferences
-    if (genres && genres.length > 0) {
-      query = query.or(genres.map((genre: any) => `genre.eq.${genre}`).join(','));
+    let tracks = await discoverTracksForListener(supabase, {
+      genres: profile.genres || [],
+      preferred_moods: profile.preferred_moods || [],
+      location: loc,
+      country: ctry,
+      selected_role: profile.selected_role || 'listener',
+    });
+
+    if (profile.selected_role === 'podcaster' && tracks.length === 0) {
+      const { data: fallback } = await supabase
+        .from('audio_tracks')
+        .select(`
+          *,
+          creator:profiles!audio_tracks_creator_id_fkey(id, username, display_name, avatar_url, location, country)
+        `)
+        .eq('is_public', true)
+        .or('genre.eq.instrumental,genre.eq.ambient,genre.eq.electronic')
+        .order('created_at', { ascending: false })
+        .limit(12);
+      tracks = (fallback || []) as typeof tracks;
     }
-  }
 
-  // Location-based filtering
-  if (location && location !== 'all') {
-    query = query.ilike('creator.location', `%${location}%`);
-  }
-
-  if (country && country !== 'all') {
-    query = query.eq('creator.country', country);
-  }
-
-  // Get recent tracks with personalization
-  const { data: tracks, error } = await query
-    .order('created_at', { ascending: false })
-    .limit(12) as { data: any; error: any };
-
-  if (error) {
+    return await formatDiscoveryTracks(tracks, supabase);
+  } catch (error) {
     console.error('❌ Error fetching personalized music:', error);
     return [];
   }
-
-  // Format tracks to match the expected frontend structure
-  let formattedTracks;
-  
-  if (tracks && tracks.length > 0 && tracks[0].creator) {
-    // Creator relationship is working
-    console.log('✅ Personalized feed: Creator relationship is working');
-    formattedTracks = (tracks || []).map((track: any) => ({
-      id: track.id,
-      title: track.title,
-      artist: track.creator?.display_name || 'Unknown Artist',
-      coverArt: track.cover_art_url, // Map cover_art_url to coverArt
-      url: track.file_url,
-      duration: track.duration || 0,
-      plays: track.play_count || 0,
-      likes: track.like_count || 0,
-      creator: {
-        id: track.creator_id,
-        name: track.creator?.display_name || 'Unknown Artist',
-        username: track.creator?.username || 'unknown',
-        avatar: track.creator?.avatar_url || null
-      }
-    }));
-  } else {
-    // Creator relationship is not working, fetch creator data manually
-    console.log('⚠️ Personalized feed: Creator relationship not working, fetching manually...');
-    
-    // Get unique creator IDs
-    const creatorIds = [...new Set(tracks.map((track: any) => track.creator_id))];
-    console.log('🔍 Personalized feed: Unique creator IDs:', creatorIds);
-    
-    // Fetch creator data manually
-    const { data: creators, error: creatorsError } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url')
-      .in('id', creatorIds as any) as { data: any; error: any };
-    
-    console.log('🔍 Personalized feed: Manual creator fetch result:', { creators, creatorsError });
-    
-    // Create a map of creator data
-    const creatorMap = new Map();
-    if (creators) {
-      creators.forEach((creator: any) => {
-        creatorMap.set(creator.id, creator);
-      });
-    }
-    
-    formattedTracks = (tracks || []).map((track: any) => {
-      const creator = creatorMap.get(track.creator_id);
-      return {
-        id: track.id,
-        title: track.title,
-        artist: creator?.display_name || 'Unknown Artist',
-        coverArt: track.cover_art_url, // Map cover_art_url to coverArt
-        url: track.file_url,
-        duration: track.duration || 0,
-        plays: track.play_count || 0,
-        likes: track.like_count || 0,
-        creator: {
-          id: track.creator_id,
-          name: creator?.display_name || 'Unknown Artist',
-          username: creator?.username || 'unknown',
-          avatar: creator?.avatar_url || null
-        }
-      };
-    });
-  }
-
-  return formattedTracks;
 }
 
 async function getPersonalizedCreators(supabase: any, genres: string[], location: string, country: string, role: string) {

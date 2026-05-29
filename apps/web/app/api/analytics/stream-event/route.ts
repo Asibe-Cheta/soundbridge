@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
+import { isValidPlayDuration } from '@/src/lib/discovery-intelligence';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -139,6 +141,21 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('Error incrementing play count:', updateError);
       // Don't fail the request if this fails
+    }
+
+    if (isValidPlayDuration(durationListened, totalDuration)) {
+      const service = createServiceClient();
+      const completed =
+        totalDuration > 0 && durationListened >= totalDuration * 0.9;
+      const { error: playSessionError } = await service.rpc('record_valid_play_session', {
+        p_track_id: trackId,
+        p_user_id: user?.id || null,
+        p_play_duration_seconds: Math.round(durationListened),
+        p_completed: completed,
+      });
+      if (playSessionError) {
+        console.error('Error recording valid play session:', playSessionError);
+      }
     }
 
     return NextResponse.json(

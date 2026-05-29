@@ -16,6 +16,8 @@ function UploadSuccessContent() {
     trackId?: string;
     artistName?: string;
     genre?: string;
+    moods?: string[];
+    location?: string;
     description?: string;
   } | null>(null);
 
@@ -26,6 +28,8 @@ function UploadSuccessContent() {
     const trackId = searchParams.get('trackId');
     const artistName = searchParams.get('artistName');
     const genre = searchParams.get('genre');
+    const moodsParam = searchParams.get('moods');
+    const location = searchParams.get('location');
     const description = searchParams.get('description');
     
     if (title && type) {
@@ -35,6 +39,8 @@ function UploadSuccessContent() {
         trackId: trackId || undefined,
         artistName: artistName || undefined,
         genre: genre || undefined,
+        moods: moodsParam ? moodsParam.split(',').filter(Boolean) : undefined,
+        location: location || undefined,
         description: description || undefined
       });
     }
@@ -174,6 +180,44 @@ function UploadSuccessContent() {
                 <div className="text-sm text-gray-600 dark:text-gray-400">Plays</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {trackData?.type === 'music' && (
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-xl border border-red-200/50 dark:border-red-800/30 p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              Your track is live. Here is how SoundBridge will find your audience:
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
+              Your music will be served to listeners who have opted in for{' '}
+              <strong>{trackData.genre || 'your genre'}</strong>
+              {trackData.moods?.length ? (
+                <>
+                  {' '}and moods like <strong>{trackData.moods.join(', ')}</strong>
+                </>
+              ) : null}
+              {trackData.location ? (
+                <>
+                  {' '}in <strong>{trackData.location}</strong>
+                </>
+              ) : (
+                <> in your area</>
+              )}
+              .
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-3">
+              As listeners engage we build a clearer picture of who loves your sound. Check your
+              Audience Intelligence dashboard to see this data grow.
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+              The more genuine the engagement, the further your music travels.
+            </p>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center mt-4 text-sm font-medium text-pink-600 dark:text-pink-400 hover:underline"
+            >
+              Open Audience Intelligence →
+            </Link>
           </div>
         )}
 

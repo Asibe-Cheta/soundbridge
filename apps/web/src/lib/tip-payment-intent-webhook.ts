@@ -698,6 +698,24 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     tipRowId: updatedTips?.id ?? null,
   });
 
+  const trackId =
+    (updatedTips as { track_id?: string } | null)?.track_id ||
+    (typeof meta.trackId === 'string' && meta.trackId.trim() ? meta.trackId.trim() : null);
+  if (trackId) {
+    try {
+      const { error: qualityErr } = await supabase.rpc('sync_track_quality_from_tip', {
+        p_track_id: trackId,
+        p_tipper_id: isAnonymous ? null : senderId,
+        p_tip_amount: amount,
+      });
+      if (qualityErr) {
+        console.error('[finalizeTip] sync_track_quality_from_tip:', qualityErr);
+      }
+    } catch (e) {
+      console.error('[finalizeTip] sync_track_quality_from_tip:', e);
+    }
+  }
+
   console.log('✅ [finalizeTip] Tip finalized for PI', paymentIntentId);
   return { ok: true };
 }

@@ -14,6 +14,8 @@ import { BankAccountManager } from '../../src/components/revenue/BankAccountMana
 import { PayoutRequest } from '../../src/components/revenue/PayoutRequest';
 import { ServiceProviderDashboard } from '../../src/components/service-provider/ServiceProviderDashboard';
 import { ContentManager } from '../../src/components/dashboard/ContentManager';
+import { AudienceIntelligencePanel } from '../../src/components/analytics/AudienceIntelligencePanel';
+import { resolveEffectiveTier } from '../../src/lib/effective-subscription-tier';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -73,6 +75,12 @@ export default function DashboardPage() {
   }, [user]);
 
   const isServiceProvider = creatorTypes.includes('service_provider');
+  const profileTier = profile as {
+    subscription_tier?: string;
+    early_adopter?: boolean;
+    subscription_period_end?: string;
+  } | null;
+  const subscriptionTier = resolveEffectiveTier(profileTier, 'free');
 
   const handleSignOut = async () => {
     try {
@@ -730,13 +738,30 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeTab === 'analytics' && (
+            <div
+              style={{
+                background: 'var(--bg-secondary)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: '1rem',
+                padding: '2rem',
+              }}
+            >
+              <AudienceIntelligencePanel tier={subscriptionTier} />
+            </div>
+          )}
+
           {activeTab !== 'overview' &&
             activeTab !== 'content' &&
             activeTab !== 'availability' &&
             activeTab !== 'revenue' &&
             activeTab !== 'service-provider' &&
             activeTab !== 'subscription' &&
-            activeTab !== 'settings' && (
+            activeTab !== 'settings' &&
+            activeTab !== 'analytics' &&
+            activeTab !== 'followers' && (
             <div style={{
               background: 'var(--bg-secondary)',
               backdropFilter: 'blur(20px)',

@@ -31,6 +31,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { useNotificationPreferences, NotificationPreferences } from '../../src/hooks/useNotificationPreferences';
+import { MAX_MOOD_TAGS_PER_TRACK, MOOD_TAG_OPTIONS } from '../../src/lib/discovery-intelligence';
+import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 
 interface NotificationSettings {
   locationRadius: number;
@@ -94,6 +96,9 @@ export default function NotificationPreferencesPage() {
   const [urgentGigActionButtonsEnabled, setUrgentGigActionButtonsEnabled] = useState(true);
   const [urgentGigsPrefsLoading, setUrgentGigsPrefsLoading] = useState(false);
   const [urgentGigsPrefsSaving, setUrgentGigsPrefsSaving] = useState(false);
+  const [preferredMoods, setPreferredMoods] = useState<string[]>([]);
+  const [moodsLoading, setMoodsLoading] = useState(true);
+  const [moodsSaving, setMoodsSaving] = useState(false);
 
   // Use preferences from hook, with fallback defaults
   const settings: NotificationPreferences = preferences || {
@@ -176,6 +181,54 @@ export default function NotificationPreferencesPage() {
     await saveSettings('delivery', { deliveryMethods: newMethods });
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadMoods = async () => {
+      setMoodsLoading(true);
+      try {
+        const res = await fetchWithSupabaseAuth('/api/discovery/preferences');
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          setPreferredMoods(data.preferred_moods || []);
+        }
+      } finally {
+        if (!cancelled) setMoodsLoading(false);
+      }
+    };
+    loadMoods();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const togglePreferredMood = async (mood: string) => {
+    const next = preferredMoods.includes(mood)
+      ? preferredMoods.filter((m) => m !== mood)
+      : preferredMoods.length >= MAX_MOOD_TAGS_PER_TRACK
+        ? preferredMoods
+        : [...preferredMoods, mood];
+    setPreferredMoods(next);
+    setMoodsSaving(true);
+    try {
+      const res = await fetchWithSupabaseAuth('/api/discovery/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferred_moods: next }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setSaveStatus('error');
+        setSaveMessage(data.error || 'Failed to save mood preferences');
+      } else {
+        setSaveStatus('success');
+        setSaveMessage('Discovery mood preferences saved');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } finally {
+      setMoodsSaving(false);
+    }
+  };
+
   // Load urgent gig prefs from /api/user/notification-preferences (mobile-aligned)
   useEffect(() => {
     let cancelled = false;
@@ -220,6 +273,58 @@ export default function NotificationPreferencesPage() {
       setUrgentGigsPrefsSaving(false);
     }
   };
+
+  const renderDiscoveryMoods = () => (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '15px',
+      padding: '1.5rem',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    }}>
+      <h3 style={{ color: 'white', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Headphones size={20} />
+        Discovery — Moods
+      </h3>
+      <p style={{ color: '#999', marginBottom: '1rem' }}>
+        What moods move you most? We use this to match you with tracks in your discovery feed.
+      </p>
+      {moodsLoading ? (
+        <div style={{ color: '#999', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+          Loading...
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {MOOD_TAG_OPTIONS.map((mood) => {
+            const selected = preferredMoods.includes(mood);
+            const disabled = !selected && preferredMoods.length >= MAX_MOOD_TAGS_PER_TRACK;
+            return (
+              <button
+                key={mood}
+                type="button"
+                disabled={moodsSaving || disabled}
+                onClick={() => togglePreferredMood(mood)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '999px',
+                  border: selected ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                  background: selected ? 'linear-gradient(45deg, #DC2626, #EC4899)' : 'rgba(255,255,255,0.05)',
+                  color: disabled ? '#666' : 'white',
+                  cursor: moodsSaving || disabled ? 'not-allowed' : 'pointer',
+                  fontSize: '0.875rem',
+                }}
+              >
+                {mood}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p style={{ color: '#666', fontSize: '0.75rem', marginTop: '1rem' }}>
+        Select up to {MAX_MOOD_TAGS_PER_TRACK} moods. Leave empty to discover by genre and location only.
+      </p>
+    </div>
+  );
 
   const renderUrgentGigsSettings = () => (
     <div style={{
@@ -1000,6 +1105,8 @@ export default function NotificationPreferencesPage() {
         return renderCollaborationRequests();
       case 'urgent-gigs':
         return renderUrgentGigsSettings();
+      case 'discovery-moods':
+        return renderDiscoveryMoods();
       default:
         return renderLocationSettings();
     }
@@ -1014,7 +1121,8 @@ export default function NotificationPreferencesPage() {
     { id: 'creator-activity', label: 'Creator Activity', icon: Mic },
     { id: 'social', label: 'Social', icon: Users },
     { id: 'collaboration-requests', label: 'Collaboration Requests', icon: Share2 },
-    { id: 'urgent-gigs', label: 'Urgent Gigs', icon: Zap }
+    { id: 'urgent-gigs', label: 'Urgent Gigs', icon: Zap },
+    { id: 'discovery-moods', label: 'Discovery Moods', icon: Headphones },
   ];
 
   return (
