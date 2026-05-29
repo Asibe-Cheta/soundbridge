@@ -37,7 +37,7 @@ const corsHeaders = {
     'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
 
-const DB_POST_TYPES = ['update', 'opportunity', 'achievement', 'collaboration', 'event'] as const;
+const DB_POST_TYPES = ['update', 'opportunity', 'achievement', 'collaboration', 'event', 'headline'] as const;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

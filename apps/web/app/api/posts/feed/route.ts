@@ -113,12 +113,13 @@ export async function GET(request: NextRequest) {
       8000
     ) as any;
 
-    // 5) Comments count
+    // 5) Comments (counts + top-level preview) — same for all post_type values including headline
     const { data: comments } = await withQueryTimeout(
       service
         .from('post_comments')
-        .select('post_id')
-        .in('post_id', postIds),
+        .select('id, post_id, user_id, content, parent_comment_id, created_at')
+        .in('post_id', postIds)
+        .is('deleted_at', null),
       8000
     ) as any;
 
@@ -237,8 +238,68 @@ export async function GET(request: NextRequest) {
     }
 
     const commentsCountMap = new Map<string, number>();
+    const topCommentByPost = new Map<string, (typeof comments)[number]>();
     for (const c of comments || []) {
       commentsCountMap.set(c.post_id, (commentsCountMap.get(c.post_id) || 0) + 1);
+      if (!c.parent_comment_id) {
+        const existing = topCommentByPost.get(c.post_id);
+        if (
+          !existing ||
+          new Date(c.created_at).getTime() > new Date(existing.created_at).getTime()
+        ) {
+          topCommentByPost.set(c.post_id, c);
+        }
+      }
+    }
+
+    const topCommentIds = Array.from(topCommentByPost.values()).map((c) => c.id);
+    const topCommentAuthorIds = Array.from(
+      new Set(Array.from(topCommentByPost.values()).map((c) => c.user_id)),
+    );
+
+    let topCommentLikesMap = new Map<string, number>();
+    if (topCommentIds.length > 0) {
+      const { data: topCommentLikes } = await withQueryTimeout(
+        service.from('comment_likes').select('comment_id').in('comment_id', topCommentIds),
+        8000,
+      ) as any;
+      for (const like of topCommentLikes || []) {
+        topCommentLikesMap.set(
+          like.comment_id,
+          (topCommentLikesMap.get(like.comment_id) || 0) + 1,
+        );
+      }
+    }
+
+    const topCommentAuthorsMap = new Map<string, { display_name?: string; username?: string }>();
+    if (topCommentAuthorIds.length > 0) {
+      const { data: topCommentAuthors } = await withQueryTimeout(
+        service
+          .from('profiles')
+          .select('id, display_name, username')
+          .in('id', topCommentAuthorIds),
+        8000,
+      ) as any;
+      for (const a of topCommentAuthors || []) {
+        topCommentAuthorsMap.set(a.id, a);
+      }
+    }
+
+    const topCommentPayloadMap = new Map<
+      string,
+      { author_name: string; content: string; likes_count: number }
+    >();
+    for (const [postId, comment] of topCommentByPost.entries()) {
+      const author = topCommentAuthorsMap.get(comment.user_id);
+      const raw = String(comment.content || '').trim();
+      const preview =
+        raw.length > 120 ? `${raw.slice(0, 117)}...` : raw;
+      topCommentPayloadMap.set(postId, {
+        author_name:
+          author?.display_name || author?.username || 'User',
+        content: preview,
+        likes_count: topCommentLikesMap.get(comment.id) || 0,
+      });
     }
 
     const userReactionMap = new Map<string, string>();
@@ -249,6 +310,8 @@ export async function GET(request: NextRequest) {
     const normalizedPosts = postRows.map((post: any) => {
       const author = authorsMap.get(post.user_id);
       const atts = attachmentsMap.get(post.id) || { imageUrls: [], audioUrl: null };
+      const commentsCount = commentsCountMap.get(post.id) || 0;
+      const topComment = topCommentPayloadMap.get(post.id) || null;
       return {
         id: post.id,
         author: {
@@ -270,7 +333,9 @@ export async function GET(request: NextRequest) {
         audio_url: atts.audioUrl,
         event_id: post.event_id || null,
         reactions_count: reactionsCountMap.get(post.id) || { support: 0, love: 0, fire: 0, congrats: 0 },
-        comments_count: commentsCountMap.get(post.id) || 0,
+        comments_count: commentsCount,
+        comment_count: commentsCount,
+        top_comment: topComment,
         user_reaction: userReactionMap.get(post.id) || null,
         created_at: post.created_at,
         updated_at: post.updated_at,
