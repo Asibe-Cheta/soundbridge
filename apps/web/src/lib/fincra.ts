@@ -229,6 +229,21 @@ export function isFincraCurrency(currency: string | null | undefined): currency 
 }
 
 /**
+ * Fincra payout source wallet currency. Defaults to same as destination
+ * (NGN→NGN, GHS→GHS, KES→KES) so funded local wallets are used — not GBP cross-currency.
+ */
+export function fincraPayoutSourceCurrency(
+  destination: FincraCurrency,
+  explicit?: string | null,
+): FincraCurrency {
+  const override = explicit?.trim().toUpperCase();
+  if (override && isFincraCurrency(override)) {
+    return override;
+  }
+  return destination;
+}
+
+/**
  * Banks for withdrawal UI. Uses GET /core/banks?country=NG|GH|KE (Fincra live + WEB_TEAM doc).
  */
 export async function getFincraBanks(currency: FincraCurrency): Promise<FincraBank[]> {
@@ -351,13 +366,14 @@ export async function createFincraTransfer(params: {
   accountName: string;
   reference: string;
   narration?: string;
-  /** Wallet / source leg currency when using documented payout body (default GBP). */
+  /** Override Fincra source wallet; defaults to same as `currency` (local same-currency payout). */
   sourceCurrency?: string;
 }): Promise<FincraTransferResult> {
   const { businessId, payoutBody } = getFincraConfig();
   if (!businessId) throw new Error('FINCRA_BUSINESS_ID is not configured');
 
-  const sourceCurrency = (params.sourceCurrency || 'GBP').toUpperCase();
+  const destinationCurrency = params.currency;
+  const sourceCurrency = fincraPayoutSourceCurrency(destinationCurrency, params.sourceCurrency);
   const accountHolderName =
     (params.accountName || '').trim() || 'Account Holder';
   const { firstName, lastName } = splitAccountName(accountHolderName);

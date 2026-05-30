@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
         accountName,
         reference: customerReference,
         narration: description,
-        sourceCurrency: currency,
       });
 
       await supabase.rpc('add_wallet_transaction', {

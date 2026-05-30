@@ -103,7 +103,6 @@ export async function performCreatorFincraWalletPayout(
     accountName,
     reference: customerReference,
     narration: 'SoundBridge creator payout',
-    sourceCurrency: currency,
   });
   const transferId = transfer.id;
 
