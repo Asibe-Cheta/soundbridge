@@ -14,6 +14,7 @@ import { Shield, AlertTriangle, Flag, Users, Clock, CheckCircle, X, Eye, User, M
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { WaitlistEmailCampaignsPanel } from '../../../src/components/admin/WaitlistEmailCampaignsPanel';
+import { ProResourcesAnalyticsPanel } from '../../../src/components/admin/ProResourcesAnalyticsPanel';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface ReviewQueueItem {
@@ -2141,11 +2142,13 @@ function AnalyticsTab({
           </>
         )}
       </div>
+
+      <ProResourcesAnalyticsPanel theme={theme} />
     </div>
   );
 }
 
-function SettingsTab({ theme, data, loading, onRefresh }: { 
+function SettingsTab({ theme, data, loading, onRefresh }: {
   theme: string; 
   data: any; 
   loading: boolean; 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { Footer } from '@/src/components/layout/Footer';
+import { trackProResource } from '@/src/lib/pro-resource-analytics';
 import {
   HertsUniTab,
   ProResourcesBackButton,
@@ -15,6 +16,10 @@ import type { ProResourcesTabId } from '@/src/content/pro-resources/data';
 export default function ProResourcesPage() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<ProResourcesTabId>('sound-academy');
+
+  useEffect(() => {
+    void trackProResource('screen_view');
+  }, []);
 
   return (
     <div

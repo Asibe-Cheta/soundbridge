@@ -33,6 +33,12 @@ import {
   type SoundAcademyModule,
   type Talk2DanService,
 } from '@/src/content/pro-resources/data';
+import {
+  soundAcademyModuleResource,
+  talk2DanServiceResource,
+  trackProResource,
+  type ProResourceKey,
+} from '@/src/lib/pro-resource-analytics';
 
 function textSecondary(theme: string) {
   return theme === 'dark' ? 'text-white/55' : 'text-gray-600';
@@ -146,6 +152,9 @@ export function ModuleCard({ mod, href }: { mod: SoundAcademyModule; href: strin
   return (
     <Link
       href={href}
+      onClick={() => {
+        void trackProResource('resource_tap', soundAcademyModuleResource(mod.id));
+      }}
       className="relative shrink-0 w-[280px] h-[380px] rounded-3xl overflow-hidden mr-4 block no-underline"
     >
       <Image src={mod.backgroundImage} alt="" fill className="object-cover" sizes="280px" />
@@ -188,6 +197,9 @@ export function Talk2DanCard({ service }: { service: Talk2DanService }) {
       href={TALK2DAN_URL}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => {
+        void trackProResource('resource_tap', talk2DanServiceResource(service.id));
+      }}
       className="relative shrink-0 w-[280px] h-[380px] rounded-3xl overflow-hidden mr-4 block no-underline"
       style={{
         background: `linear-gradient(135deg, ${service.gradientFrom}, ${service.gradientTo})`,
@@ -246,16 +258,21 @@ export function GradientCtaButton({
   href,
   label,
   icon,
+  trackResource,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
+  trackResource?: ProResourceKey;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => {
+        if (trackResource) void trackProResource('resource_tap', trackResource);
+      }}
       className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
       style={{ background: 'linear-gradient(to right, #DC2626, #EC4899)' }}
     >
@@ -270,17 +287,22 @@ export function SolidCtaButton({
   label,
   bg,
   icon,
+  trackResource,
 }: {
   href: string;
   label: string;
   bg: string;
   icon: React.ReactNode;
+  trackResource?: ProResourceKey;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => {
+        if (trackResource) void trackProResource('resource_tap', trackResource);
+      }}
       className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
       style={{ background: bg }}
     >
@@ -293,9 +315,11 @@ export function SolidCtaButton({
 export function OutlineCtaButton({
   href,
   label,
+  trackResource,
 }: {
   href: string;
   label: string;
+  trackResource?: ProResourceKey;
 }) {
   const { theme } = useTheme();
   const primary = theme === 'dark' ? 'text-[#EC4899] border-[#EC4899]' : 'text-pink-600 border-pink-600';
@@ -304,6 +328,9 @@ export function OutlineCtaButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => {
+        if (trackResource) void trackProResource('resource_tap', trackResource);
+      }}
       className={`mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold border bg-transparent no-underline ${primary}`}
     >
       <ExternalLink size={18} />
@@ -351,6 +378,7 @@ export function SoundAcademyTab() {
         href={CALENDLY_URL}
         label="Book a Free Appointment"
         icon={<Calendar size={18} className="text-white" />}
+        trackResource="sa_booking"
       />
     </>
   );
@@ -403,6 +431,7 @@ export function Talk2DanTab() {
         label="Talk 2 Dan"
         bg="#059669"
         icon={<MessageCircle size={18} className="text-white" />}
+        trackResource="t2d_website"
       />
     </>
   );
@@ -452,7 +481,7 @@ export function HertsUniTab() {
         </div>
       </div>
 
-      <OutlineCtaButton href={HERTS_URL} label="Visit herts.ac.uk" />
+      <OutlineCtaButton href={HERTS_URL} label="Visit herts.ac.uk" trackResource="herts_website" />
     </>
   );
 }
