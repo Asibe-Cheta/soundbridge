@@ -23,6 +23,7 @@ import {
   UserX,
   Wallet,
   Handshake,
+  Landmark,
   X,
 } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { href: '/admin/copyright', label: 'Copyright', icon: Copyright },
   { href: '/admin/gig-payments', label: 'Gig Payments', icon: CreditCard },
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
+  { href: '/admin/bank-verifications', label: 'Verified Banks', icon: Landmark },
   { href: '/admin/platform-revenue', label: 'Revenue', icon: TrendingUp },
   { href: '/admin/events', label: 'Events', icon: Calendar },
   { href: '/admin/partners', label: 'Partners', icon: Handshake },
