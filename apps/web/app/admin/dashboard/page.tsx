@@ -15,6 +15,7 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { WaitlistEmailCampaignsPanel } from '../../../src/components/admin/WaitlistEmailCampaignsPanel';
 import { ProResourcesAnalyticsPanel } from '../../../src/components/admin/ProResourcesAnalyticsPanel';
+import { UserGrowthTrendChart } from '../../../src/components/admin/UserGrowthTrendChart';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface ReviewQueueItem {
@@ -1324,6 +1325,8 @@ function OverviewTab({ theme, data, loading, onWaitlistClick }: { theme: string;
           </div>
         </div>
       </div>
+
+      <UserGrowthTrendChart theme={theme} />
 
       {/* Quick Actions */}
       <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
