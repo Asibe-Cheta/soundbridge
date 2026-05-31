@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -17,7 +17,18 @@ import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { COUNTRY_ADDRESS_CONFIGS, DEFAULT_CONFIG, getCountryConfig, extractCityFromAddressFields } from '../../../src/config/countryAddressConfigs';
 import { geocodeAddress, buildAddressString } from '../../../src/lib/geocoding';
 
-export default function CreateEventPage() {
+function CreateEventLoading() {
+  return (
+    <main className="main-container">
+      <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+        <Loader2 size={32} className="animate-spin" color="#EC4899" />
+        <p style={{ color: '#ccc', marginTop: '1rem' }}>Loading…</p>
+      </div>
+    </main>
+  );
+}
+
+function CreateEventContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const { refresh: refreshSubscription } = useSubscription();
@@ -1047,5 +1058,13 @@ export default function CreateEventPage() {
         </div>
       </FloatingCard>
     </>
+  );
+}
+
+export default function CreateEventPage() {
+  return (
+    <Suspense fallback={<CreateEventLoading />}>
+      <CreateEventContent />
+    </Suspense>
   );
 } 

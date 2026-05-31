@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -22,7 +22,18 @@ type PollResults = {
   availability_insight?: string | null;
 };
 
-export default function DashboardEventPollPage() {
+function EventPollLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-8">
+      <div className="max-w-3xl mx-auto rounded-xl border border-gray-200 bg-white p-6 flex items-center gap-2 text-gray-600">
+        <Loader2 className="animate-spin" size={18} />
+        Loading…
+      </div>
+    </div>
+  );
+}
+
+function DashboardEventPollContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const campaignId = searchParams.get('campaign');
@@ -292,5 +303,13 @@ export default function DashboardEventPollPage() {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function DashboardEventPollPage() {
+  return (
+    <Suspense fallback={<EventPollLoading />}>
+      <DashboardEventPollContent />
+    </Suspense>
   );
 }
