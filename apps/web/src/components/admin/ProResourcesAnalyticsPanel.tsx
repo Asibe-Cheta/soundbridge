@@ -29,12 +29,14 @@ type UserEventRow = {
 
 function summaryLabel(row: SummaryRow): string {
   if (row.event_type === 'screen_view') return PRO_RESOURCE_LABELS.screen_view;
+  if (row.event_type === 'explore_courses_tap') return PRO_RESOURCE_LABELS.explore_courses_tap;
   if (row.resource && PRO_RESOURCE_LABELS[row.resource]) return PRO_RESOURCE_LABELS[row.resource];
   return row.resource || row.event_type;
 }
 
 function eventLabel(row: UserEventRow): string {
   if (row.event_type === 'screen_view') return 'Viewed Pro Resources';
+  if (row.event_type === 'explore_courses_tap') return PRO_RESOURCE_LABELS.explore_courses_tap;
   if (row.resource && PRO_RESOURCE_LABELS[row.resource]) return PRO_RESOURCE_LABELS[row.resource];
   return row.resource || 'Resource tap';
 }

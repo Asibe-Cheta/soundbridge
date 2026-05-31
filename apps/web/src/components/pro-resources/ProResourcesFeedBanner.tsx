@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
 import { PRO_RESOURCES_IMAGES } from '@/src/content/pro-resources/data';
+import { trackProResource } from '@/src/lib/pro-resource-analytics';
 
 export function ProResourcesFeedBanner() {
   return (
@@ -40,7 +41,11 @@ export function ProResourcesFeedBanner() {
           World-class audio engineering & DJ courses.{'\n'}Pro Tools certified · 5 countries.
         </p>
 
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-4 py-2 text-sm font-semibold text-white mb-3.5">
+        <span
+          role="presentation"
+          onClick={() => void trackProResource('explore_courses_tap')}
+          className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-4 py-2 text-sm font-semibold text-white mb-3.5"
+        >
           <GraduationCap size={16} />
           Explore Courses
         </span>

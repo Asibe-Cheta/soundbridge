@@ -1,6 +1,6 @@
 import { createBrowserClient } from '@/src/lib/supabase';
 
-export type ProResourceEventType = 'screen_view' | 'resource_tap';
+export type ProResourceEventType = 'screen_view' | 'resource_tap' | 'explore_courses_tap';
 
 export type ProResourceKey =
   | 'sa_module_1'
@@ -15,6 +15,7 @@ export type ProResourceKey =
 
 export const PRO_RESOURCE_LABELS: Record<string, string> = {
   screen_view: 'Screen views',
+  explore_courses_tap: 'Explore Courses (feed banner)',
   sa_module_1: 'SA Module 1',
   sa_module_2: 'SA Module 2',
   sa_booking: 'SA Booking',
