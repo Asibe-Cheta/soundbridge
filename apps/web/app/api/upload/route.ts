@@ -446,7 +446,8 @@ export async function POST(request: NextRequest) {
       is_mixtape: isMixtapeUpload,
       content_type: isMixtapeUpload ? 'mixtape' : normalizedContentType,
       dj_name: isMixtapeUpload ? String(dj_name || artistName || '').trim() : null,
-      tracklist: isMixtapeUpload ? String(tracklist || '').trim() : null
+      tracklist: isMixtapeUpload ? String(tracklist || '').trim() : null,
+      live_interest_enabled: !isMixtapeUpload && normalizedContentType === 'music',
     };
 
     const { data: track, error: insertError } = await (supabase

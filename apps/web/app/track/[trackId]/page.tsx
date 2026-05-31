@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import TrackActionsClient from '@/src/components/track/TrackActionsClient';
+import { TrackLiveInterestSettings } from '@/src/components/track/TrackLiveInterestSettings';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
 import { getSiteUrl } from '@/src/lib/site-url';
@@ -163,6 +164,11 @@ export default async function TrackPage({ params }: Props) {
   const creatorName = track.creator?.display_name || track.creator?.username || 'Unknown Artist';
   const mixedByName = (track as { dj_name?: string | null }).dj_name || null;
   const isMixtape = !!(track as { is_mixtape?: boolean | null }).is_mixtape;
+  const isMusicTrack =
+    !isMixtape &&
+    (((track as { content_type?: string | null }).content_type === 'music') ||
+      !(track as { content_type?: string | null }).content_type);
+  const liveInterestEnabled = (track as { live_interest_enabled?: boolean | null }).live_interest_enabled !== false;
   const trackUrl = `${SITE_URL}/track/${params.trackId}`;
   const trackDescription =
     (track as { description?: string | null }).description?.trim() ||
@@ -271,6 +277,13 @@ export default async function TrackPage({ params }: Props) {
               currency: (track as { currency?: string | null }).currency ?? null,
               total_sales_count: (track as { total_sales_count?: number | null }).total_sales_count ?? null,
             }}
+          />
+
+          <TrackLiveInterestSettings
+            trackId={track.id}
+            isOwner={isOwner}
+            isMusicTrack={isMusicTrack}
+            initialEnabled={liveInterestEnabled}
           />
 
           <ContentPurchaseSection

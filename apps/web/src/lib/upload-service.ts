@@ -413,6 +413,7 @@ export class AudioUploadService {
     is_mixtape?: boolean;
     dj_name?: string | null;
     tracklist?: string | null;
+    live_interest_enabled?: boolean;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const insertData = {
@@ -715,7 +716,8 @@ export class AudioUploadService {
         is_mixtape: isMixtape,
         content_type: isMixtape ? 'mixtape' : normalizedContentType,
         dj_name: isMixtape ? (td.djName?.trim() || td.artistName?.trim() || null) : null,
-        tracklist: isMixtape ? (td.tracklist?.trim() || null) : null
+        tracklist: isMixtape ? (td.tracklist?.trim() || null) : null,
+        live_interest_enabled: !skipMusicRights && normalizedContentType === 'music',
       });
 
       if (!dbResult.success) {

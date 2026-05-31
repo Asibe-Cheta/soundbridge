@@ -35,6 +35,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'trackId is required' }, { status: 400, headers: corsHeaders });
     }
 
+    const { data: track, error: trackError } = await supabase
+      .from('audio_tracks')
+      .select('live_interest_enabled, is_mixtape, content_type')
+      .eq('id', trackId)
+      .maybeSingle();
+
+    if (trackError || !track) {
+      return NextResponse.json({ error: 'Track not found' }, { status: 404, headers: corsHeaders });
+    }
+
+    const isMusic =
+      !track.is_mixtape &&
+      (track.content_type === 'music' || track.content_type == null);
+
+    if (!isMusic || track.live_interest_enabled === false) {
+      return NextResponse.json(
+        { error: 'Live interest is not enabled for this track' },
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
     const pref =
       typeof availabilityPreference === 'string' && ALLOWED_PREFS.includes(availabilityPreference)
         ? availabilityPreference
