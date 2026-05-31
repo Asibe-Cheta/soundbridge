@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminSidebar } from '@/src/components/admin/AdminSidebar';
 import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function AdminLayout({
@@ -10,30 +11,9 @@ export default function AdminLayout({
   const { theme } = useTheme();
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <header className={`border-b ${theme === 'dark' ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className={`flex flex-wrap items-center gap-3 text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/dashboard">Dashboard</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/moderation">Moderation</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/verification">Provider Verification</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/persona-verification">Persona providers</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/verification-users">User Badges</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/account-deletions">Account Deletions</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/ratings">Ratings</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/cookie-consents">Cookie Consents</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/copyright">Copyright</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/gig-payments">Gig Payments</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/payouts">Payouts</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/platform-revenue">Revenue</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/events">Events</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/partners">Partners</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/institutional-access">Institutional Access</a>
-            <a className={`${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`} href="/admin/founding-members">Founding Members</a>
-          </div>
-        </div>
-      </header>
-      {children}
+    <div className={`min-h-screen flex flex-col lg:flex-row ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <AdminSidebar />
+      <main className="flex-1 min-w-0">{children}</main>
     </div>
   );
 }
