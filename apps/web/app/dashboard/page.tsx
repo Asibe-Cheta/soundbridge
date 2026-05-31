@@ -15,6 +15,7 @@ import { PayoutRequest } from '../../src/components/revenue/PayoutRequest';
 import { ServiceProviderDashboard } from '../../src/components/service-provider/ServiceProviderDashboard';
 import { ContentManager } from '../../src/components/dashboard/ContentManager';
 import { AudienceIntelligencePanel } from '../../src/components/analytics/AudienceIntelligencePanel';
+import { EventPollPanel } from '../../src/components/analytics/EventPollPanel';
 import { resolveEffectiveTier } from '../../src/lib/effective-subscription-tier';
 
 export default function DashboardPage() {
@@ -750,6 +751,9 @@ export default function DashboardPage() {
               }}
             >
               <AudienceIntelligencePanel tier={subscriptionTier} />
+              <div style={{ marginTop: '1.5rem' }}>
+                <EventPollPanel tier={subscriptionTier} />
+              </div>
             </div>
           )}
 

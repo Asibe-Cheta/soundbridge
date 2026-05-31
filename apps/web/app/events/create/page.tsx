@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Globe, Lock, Users, Send, Clock, Save, MapPin, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useSubscription } from '../../../src/hooks/useSubscription';
@@ -18,6 +19,7 @@ import { geocodeAddress, buildAddressString } from '../../../src/lib/geocoding';
 
 export default function CreateEventPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const { refresh: refreshSubscription } = useSubscription();
   const [imageState, imageActions] = useImageUpload();
   const { location, isLoading: locationLoading, error: locationError, detectLocation } = useLocation();
@@ -47,6 +49,15 @@ export default function CreateEventPage() {
 
   const paidPriceValue = parseFloat(price.replace(/[£₦$€₹¥R$]/g, ''));
   const isPaidEvent = Number.isFinite(paidPriceValue) && paidPriceValue > 0;
+
+  useEffect(() => {
+    const prefillTitle = searchParams.get('title');
+    const prefillLocation = searchParams.get('location');
+    if (prefillTitle) setTitle(prefillTitle);
+    if (prefillLocation) {
+      setAddressFields((prev) => ({ ...prev, city: prefillLocation }));
+    }
+  }, [searchParams]);
 
   // Type adapter for ImageUpload component
   const adaptUploadFile = (file: any) => {

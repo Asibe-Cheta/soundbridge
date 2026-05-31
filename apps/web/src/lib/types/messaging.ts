@@ -1,5 +1,5 @@
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed';
-export type MessageType = 'text' | 'audio' | 'image' | 'file' | 'collaboration' | 'system' | 'reply' | 'forwarded';
+export type MessageType = 'text' | 'audio' | 'image' | 'file' | 'collaboration' | 'system' | 'reply' | 'forwarded' | 'event_poll';
 
 export interface Message {
   id: string;

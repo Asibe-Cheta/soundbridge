@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import type { MessageBubbleProps } from '../../lib/types/messaging';
+import { parseEventPollMessage } from '@/src/lib/event-poll';
+import { EventPollMessage } from './EventPollMessage';
 import { MoreVertical, Trash2, Reply, Copy, Download, Play, Pause, Volume2, Calendar, FileText, Music, Image as ImageIcon } from 'lucide-react';
 
 export function MessageBubble({
@@ -183,6 +185,14 @@ export function MessageBubble({
   };
 
   const renderMessageContent = () => {
+    const poll =
+      message.message_type === 'event_poll' || message.content.trim().startsWith('{')
+        ? parseEventPollMessage(message.content)
+        : null;
+    if (poll) {
+      return <EventPollMessage poll={poll} isOwnMessage={isOwnMessage} />;
+    }
+
     switch (message.message_type) {
       case 'collaboration':
         return renderCollaborationRequest();

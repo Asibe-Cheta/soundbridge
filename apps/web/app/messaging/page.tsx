@@ -7,6 +7,8 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useOnlinePresence } from '../../src/contexts/OnlinePresenceContext';
 import { useMessaging } from '../../src/hooks/useMessaging';
 import type { Conversation, ConversationParticipant } from '../../src/lib/types/messaging';
+import { parseEventPollMessage } from '../../src/lib/event-poll';
+import { EventPollMessage } from '../../src/components/messaging/EventPollMessage';
 import { MessageCircle, Search, ArrowLeft, Bell, Settings, AlertCircle, Send, MoreVertical, User, LogOut, Menu } from 'lucide-react';
 
 export default function MessagingPage() {
@@ -515,36 +517,51 @@ export default function MessagingPage() {
                       </p>
                     </div>
                   ) : (
-                    messages.map((message) => (
+                    messages.map((message) => {
+                      const poll =
+                        message.message_type === 'event_poll' || message.content.trim().startsWith('{')
+                          ? parseEventPollMessage(message.content)
+                          : null;
+                      const isOwn = message.sender_id === user?.id;
+
+                      return (
                       <div
                         key={message.id}
                         style={{
                           display: 'flex',
-                          justifyContent: message.sender_id === user.id ? 'flex-end' : 'flex-start'
+                          justifyContent: isOwn ? 'flex-end' : 'flex-start'
                         }}
                       >
                         <div style={{
-                          maxWidth: '70%',
-                          padding: '0.75rem 1rem',
+                          maxWidth: poll ? '85%' : '70%',
+                          padding: poll ? '0.25rem' : '0.75rem 1rem',
                           borderRadius: '16px',
-                          background: message.sender_id === user.id
+                          background: poll
+                            ? 'transparent'
+                            : isOwn
                             ? 'linear-gradient(45deg, #DC2626, #EC4899)'
                             : 'rgba(255, 255, 255, 0.1)',
-                          border: message.sender_id !== user.id ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+                          border: poll ? 'none' : isOwn ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
                           color: 'white',
                           lineHeight: '1.4'
                         }}>
-                          <p style={{ margin: 0, marginBottom: '0.25rem' }}>
-                            {message.content}
-                          </p>
-                          <span style={{
-                            color: message.sender_id === user.id ? 'rgba(255, 255, 255, 0.8)' : '#999',
-                            }}>
-                            {formatMessageTime(message.created_at)}
-                          </span>
+                          {poll ? (
+                            <EventPollMessage poll={poll} isOwnMessage={isOwn} />
+                          ) : (
+                            <>
+                              <p style={{ margin: 0, marginBottom: '0.25rem' }}>
+                                {message.content}
+                              </p>
+                              <span style={{
+                                color: isOwn ? 'rgba(255, 255, 255, 0.8)' : '#999',
+                              }}>
+                                {formatMessageTime(message.created_at)}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    ))
+                    );})
                   )}
                 </div>
 
