@@ -20,10 +20,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const { serviceClient } = adminCheck;
-    const { data: requests, error: requestError } = await serviceClient
-      .from('service_provider_verification_requests')
-      .select(
-        `
+
+    const fullSelect = `
         *,
         provider:service_provider_profiles!service_provider_verification_requests_provider_id_fkey (
           user_id,
@@ -33,10 +31,33 @@ export async function GET(request: NextRequest) {
           verification_requested_at
         ),
         documents:service_provider_verification_documents (*)
-      `,
-      )
+      `;
+
+    const fallbackSelect = `
+        *,
+        provider:service_provider_profiles!service_provider_verification_requests_provider_id_fkey (
+          user_id,
+          display_name,
+          headline
+        ),
+        documents:service_provider_verification_documents (*)
+      `;
+
+    let { data: requests, error: requestError } = await serviceClient
+      .from('service_provider_verification_requests')
+      .select(fullSelect)
       .order('submitted_at', { ascending: true })
       .limit(200);
+
+    if (requestError?.message?.toLowerCase().includes('verification_status')) {
+      const retry = await serviceClient
+        .from('service_provider_verification_requests')
+        .select(fallbackSelect)
+        .order('submitted_at', { ascending: true })
+        .limit(200);
+      requests = retry.data;
+      requestError = retry.error;
+    }
 
     if (requestError) {
       return NextResponse.json(

@@ -28,7 +28,9 @@ const PROVIDER_SELECT_FULL =
   'user_id, display_name, headline, verification_status, is_verified, verified_at, verification_provider, verification_requested_at, verification_reviewed_at';
 
 const PROVIDER_SELECT_BASE =
-  'user_id, display_name, headline, verification_status, is_verified, verification_requested_at, verification_reviewed_at';
+  'user_id, display_name, headline, is_verified, verification_requested_at, verification_reviewed_at';
+
+const PROVIDER_SELECT_MINIMAL = 'user_id, display_name, headline, is_verified';
 
 const BATCH_SIZE = 80;
 
@@ -166,6 +168,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (providerFetch.error && isMissingColumnError(providerFetch.error.message)) {
+    providerFetch = await fetchRowsInBatches<ProviderRow>(
+      supabase,
+      'service_provider_profiles',
+      PROVIDER_SELECT_MINIMAL,
+      'user_id',
+      userIds,
+    );
+  }
+
   if (providerFetch.error) {
     console.error('[admin persona-verification] profiles', providerFetch.error);
     return NextResponse.json(
@@ -242,7 +254,15 @@ export async function GET(request: NextRequest) {
       avatarUrl: prof?.avatar_url ?? null,
       providerDisplayName: spp?.display_name ?? null,
       headline: spp?.headline ?? null,
-      verificationStatus: spp?.verification_status ?? 'not_requested',
+      verificationStatus:
+        spp?.verification_status ??
+        (sess?.status === 'approved'
+          ? 'approved'
+          : sess?.status === 'declined'
+            ? 'rejected'
+            : sess
+              ? 'pending'
+              : 'not_requested'),
       isVerified: Boolean(spp?.is_verified),
       verifiedAt,
       verificationProvider: spp?.verification_provider ?? (sess ? 'persona' : null),
