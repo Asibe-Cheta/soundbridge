@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, Clock, Copy, Loader2, RefreshCcw, ShieldAlert, ShieldCheck, User } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 export type PersonaVerificationAdminRow = {
   userId: string;
@@ -67,12 +68,10 @@ const AdminPersonaVerificationDashboard: React.FC = () => {
       const params = new URLSearchParams();
       if (status !== 'all') params.set('status', status);
       if (debouncedSearch) params.set('search', debouncedSearch);
-      const response = await fetch(`/api/admin/service-providers/persona-verification?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithSupabaseAuth(`/api/admin/service-providers/persona-verification?${params.toString()}`);
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to load Persona verifications');
+        throw new Error(data?.details || data?.error || 'Failed to load Persona verifications');
       }
       setRows(data.providers ?? []);
     } catch (e) {

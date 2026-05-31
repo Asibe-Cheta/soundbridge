@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,34 +13,14 @@ export async function OPTIONS() {
 }
 
 export async function GET(request: NextRequest) {
-  const { supabase, user, error } = await getSupabaseRouteClient(request, true);
-
-  if (error || !user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
-  }
-
-  type AdminRole = { role: string | null };
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle<AdminRole>();
-
-  if (profileError) {
-    return NextResponse.json(
-      { error: 'Failed to fetch user role', details: profileError.message },
-      { status: 500, headers: corsHeaders },
-    );
-  }
-
-  if (!profile || profile.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: corsHeaders });
+  const adminCheck = await requireAdmin(request);
+  if (isAdminAccessDenied(adminCheck)) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status, headers: corsHeaders });
   }
 
   try {
-    const supabaseAdmin = createServiceClient();
-    const { data: requests, error: requestError } = await supabaseAdmin
+    const { serviceClient } = adminCheck;
+    const { data: requests, error: requestError } = await serviceClient
       .from('service_provider_verification_requests')
       .select(
         `
@@ -75,5 +54,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-

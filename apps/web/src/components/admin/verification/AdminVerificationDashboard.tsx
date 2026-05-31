@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle, Clock, FileText, ListChecks, Loader2, RefreshCcw, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface VerificationRequestRecord {
   id: string;
@@ -110,7 +111,7 @@ const AdminVerificationDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/admin/service-providers/verification');
+      const response = await fetchWithSupabaseAuth('/api/admin/service-providers/verification');
 
       if (response.status === 403) {
         setError('This area is restricted to admin accounts.');
@@ -147,7 +148,7 @@ const AdminVerificationDashboard: React.FC = () => {
     try {
       setSubmitting((prev) => ({ ...prev, [requestId]: action }));
       setError(null);
-      const response = await fetch(`/api/admin/service-providers/verification/${requestId}`, {
+      const response = await fetchWithSupabaseAuth(`/api/admin/service-providers/verification/${requestId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, notes: decisionNotes[requestId] ?? '' }),

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const corsHeaders = {
@@ -28,35 +27,18 @@ export async function PATCH(
 ) {
   const { requestId } = await params;
 
-  const { supabase, user, error } = await getSupabaseRouteClient(request, true);
-
-  if (error || !user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
+  const adminCheck = await requireAdmin(request);
+  if (isAdminAccessDenied(adminCheck)) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status, headers: corsHeaders });
   }
 
-  type AdminProfile = {
-    role: string | null;
-    email: string | null;
-    display_name: string | null;
-    username: string | null;
-  };
+  const { userId, serviceClient: supabaseAdmin } = adminCheck;
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: reviewerProfile } = await supabaseAdmin
     .from('profiles')
-    .select('role, email, display_name, username')
-    .eq('id', user.id)
-    .maybeSingle<AdminProfile>();
-
-  if (profileError) {
-    return NextResponse.json(
-      { error: 'Failed to fetch user role', details: profileError.message },
-      { status: 500, headers: corsHeaders },
-    );
-  }
-
-  if (!profile || profile.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: corsHeaders });
-  }
+    .select('email, display_name, username')
+    .eq('id', userId)
+    .maybeSingle();
 
   let payload: VerificationDecisionPayload;
   try {
@@ -70,7 +52,6 @@ export async function PATCH(
   }
 
   try {
-    const supabaseAdmin = createServiceClient();
     const adminClient = supabaseAdmin as any;
 
     type VerificationRequestRecord = {
@@ -137,7 +118,7 @@ export async function PATCH(
       .update({
         status: decisionStatus,
         reviewed_at: nowIso,
-        reviewer_id: user.id,
+        reviewer_id: userId,
         reviewer_notes: payload.notes ?? null,
       })
       .eq('id', requestId);
@@ -155,7 +136,7 @@ export async function PATCH(
         is_verified: payload.action === 'approve',
         verification_status: decisionStatus,
         verification_reviewed_at: nowIso,
-        verification_reviewer_id: user.id,
+        verification_reviewer_id: userId,
         verification_notes: payload.notes ?? null,
         verification_requested_at: existingRequest.submitted_at,
       } as any)
@@ -177,7 +158,7 @@ export async function PATCH(
               existingRequest.provider_account?.display_name ||
               existingRequest.provider_account?.username ||
               'Provider',
-            reviewer_name: profile.display_name || profile.username || 'SoundBridge Admin',
+            reviewer_name: reviewerProfile?.display_name || reviewerProfile?.username || 'SoundBridge Admin',
             reviewer_notes: payload.notes ?? '',
             decision_at: nowIso,
             dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://soundbridge.live'}/dashboard`,

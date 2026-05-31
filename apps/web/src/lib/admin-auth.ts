@@ -29,9 +29,13 @@ export async function requireAdmin(
 
   const { data: profile } = await serviceClient
     .from('profiles')
-    .select('role')
+    .select('role, is_admin')
     .eq('id', user.id)
     .maybeSingle();
+
+  if (profile?.is_admin === true) {
+    return { ok: true as const, userId: user.id, serviceClient };
+  }
 
   if (profile?.role && allowedRoles.includes(profile.role)) {
     return { ok: true as const, userId: user.id, serviceClient };
