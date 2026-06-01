@@ -16,6 +16,7 @@ import { StructuredData, organizationStructuredData, websiteStructuredData } fro
 import { getSiteUrl } from '@/src/lib/site-url';
 import ErrorBoundary from "@/src/components/ErrorBoundary";
 import { GlobalErrorHandler } from "@/src/components/GlobalErrorHandler";
+import { UserBehaviourSessionTracker } from "@/src/components/behaviour/UserBehaviourSessionTracker";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -169,6 +170,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <ThemeProvider>
             <AuthProvider>
+              <UserBehaviourSessionTracker />
               <OnlinePresenceProvider>
                 <OnboardingProvider>
                   <AudioPlayerProvider>

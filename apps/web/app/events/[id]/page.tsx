@@ -14,6 +14,8 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { useSubscription } from '../../../src/hooks/useSubscription';
 import { eventService } from '../../../src/lib/event-service';
 import { trackEventPageView } from '../../../src/lib/event-analytics-client';
+import { recordEventView } from '../../../src/lib/user-behaviour-service';
+import { createClient } from '../../../src/lib/supabase-browser';
 import type { Event } from '../../../src/lib/types/event';
 import { MapPin, Calendar, Users, Clock, Star, Heart, Share2, MessageCircle, ArrowLeft, CheckCircle, AlertCircle, User, Music, DollarSign, Info, Loader2 } from 'lucide-react';
 
@@ -70,6 +72,12 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
 
     fetchEvent();
   }, [resolvedParams.id]);
+
+  useEffect(() => {
+    if (!user?.id || !event?.id) return;
+    const supabase = createClient();
+    void recordEventView(supabase, user.id, event.id, event.city || event.location);
+  }, [user?.id, event?.id, event?.city, event?.location]);
 
   const handleRSVP = async () => {
     if (!user) {
