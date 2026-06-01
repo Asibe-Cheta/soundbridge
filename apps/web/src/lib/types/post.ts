@@ -38,6 +38,26 @@ export interface PostMentionPayload {
   display_name: string | null;
 }
 
+/** Linked event payload for post_type = 'event' (feed discovery). */
+export interface FeedEvent {
+  id: string;
+  title: string;
+  description?: string | null;
+  event_date: string;
+  location?: string | null;
+  venue?: string | null;
+  city?: string | null;
+  category?: string | null;
+  image_url?: string | null;
+  ticket_price?: number | null;
+  tickets_available?: number | null;
+  country?: string | null;
+  price_gbp?: number | null;
+  price_ngn?: number | null;
+  max_attendees?: number | null;
+  current_attendees?: number | null;
+}
+
 export interface Post {
   id: string;
   user_id: string;
@@ -45,6 +65,7 @@ export interface Post {
   visibility: 'connections' | 'public';
   post_type: 'update' | 'opportunity' | 'achievement' | 'collaboration' | 'event';
   event_id?: string;
+  event?: FeedEvent | null;
   reposted_from_id?: string; // ID of the original post if this is a repost
   image_urls?: string[]; // Multi-image support (up to 9), first also in attachments
   created_at: string;

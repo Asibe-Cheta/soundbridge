@@ -85,6 +85,42 @@ export async function GET(request: NextRequest) {
 
     const postIds = postRows.map((p: any) => p.id);
     const userIds = Array.from(new Set(postRows.map((p: any) => p.user_id)));
+    const eventIds = Array.from(
+      new Set(
+        postRows
+          .filter((p: any) => p.post_type === 'event' && p.event_id)
+          .map((p: any) => p.event_id),
+      ),
+    );
+
+    let eventsMap = new Map<string, Record<string, unknown>>();
+    if (eventIds.length > 0) {
+      const { data: eventRows, error: eventsError } = await withQueryTimeout(
+        service
+          .from('events')
+          .select(
+            'id, title, description, event_date, location, venue, city, category, image_url, ticket_price, tickets_available, country, price_gbp, price_ngn, max_attendees, current_attendees, feed_impressions, feed_cta_taps',
+          )
+          .in('id', eventIds),
+        8000,
+      ) as any;
+
+      if (eventsError) {
+        console.warn('[feed] events join failed, retrying without analytics columns:', eventsError.message);
+        const { data: fallbackEvents } = await withQueryTimeout(
+          service
+            .from('events')
+            .select(
+              'id, title, description, event_date, location, venue, city, category, image_url, country, price_gbp, price_ngn, max_attendees, current_attendees',
+            )
+            .in('id', eventIds),
+          8000,
+        ) as any;
+        eventsMap = new Map((fallbackEvents || []).map((e: any) => [e.id, e]));
+      } else {
+        eventsMap = new Map((eventRows || []).map((e: any) => [e.id, e]));
+      }
+    }
 
     // 2) Author profiles
     const { data: authors } = await withQueryTimeout(
@@ -312,8 +348,14 @@ export async function GET(request: NextRequest) {
       const atts = attachmentsMap.get(post.id) || { imageUrls: [], audioUrl: null };
       const commentsCount = commentsCountMap.get(post.id) || 0;
       const topComment = topCommentPayloadMap.get(post.id) || null;
+      const linkedEvent =
+        post.post_type === 'event' && post.event_id
+          ? eventsMap.get(post.event_id) ?? null
+          : null;
+
       return {
         id: post.id,
+        user_id: post.user_id,
         author: {
           id: author?.id || post.user_id,
           username: author?.username || null,
@@ -332,7 +374,12 @@ export async function GET(request: NextRequest) {
         image_urls: atts.imageUrls.length > 0 ? atts.imageUrls : null,
         audio_url: atts.audioUrl,
         event_id: post.event_id || null,
+        event: linkedEvent,
         reactions_count: reactionsCountMap.get(post.id) || { support: 0, love: 0, fire: 0, congrats: 0 },
+        reactions: {
+          ...(reactionsCountMap.get(post.id) || { support: 0, love: 0, fire: 0, congrats: 0 }),
+          user_reaction: userReactionMap.get(post.id) || null,
+        },
         comments_count: commentsCount,
         comment_count: commentsCount,
         top_comment: topComment,

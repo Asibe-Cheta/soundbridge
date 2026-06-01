@@ -25,6 +25,12 @@ interface PostCardProps {
   onUpdate?: () => void;
   showFullContent?: boolean;
   initialBookmarkStatus?: boolean;
+  /** Custom body (e.g. event discovery card). Skips default content/media. */
+  bodyRenderer?: () => React.ReactNode;
+  /** Hide standard author header (event cards use their own header). */
+  hideDefaultHeader?: boolean;
+  /** Override outer container classes (event cards use full-bleed). */
+  outerClassName?: string;
 }
 
 const reactionIcons = {
@@ -62,7 +68,15 @@ const NameWithBadge = ({ name, isVerified, className = '' }: { name: string; isV
   </span>
 );
 
-export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullContent = false, initialBookmarkStatus = false }: PostCardProps) {
+export const PostCard = React.memo(function PostCard({
+  post,
+  onUpdate,
+  showFullContent = false,
+  initialBookmarkStatus = false,
+  bodyRenderer,
+  hideDefaultHeader = false,
+  outerClassName,
+}: PostCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const { toggleBookmark, isBookmarked: checkBookmark } = useSocial();
@@ -458,8 +472,15 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
     ? reactionUsers
     : reactionUsers.filter((r: any) => r.reaction_type === reactionFilter);
 
+  const useCustomBody = Boolean(bodyRenderer);
+
   return (
-    <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 md:p-6 mb-4 hover:border-white/20 transition-all">
+    <div
+      className={
+        outerClassName ??
+        'bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 md:p-6 mb-4 hover:border-white/20 transition-all'
+      }
+    >
       {/* Repost Indicator */}
       {post.reposted_from_id && (
         <div className="flex items-center justify-between mb-3 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
@@ -485,6 +506,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
       )}
       
       {/* Header */}
+      {!hideDefaultHeader && (
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3 flex-1">
           <Link href={`/creator/${post.author?.username || post.author?.id}`}>
@@ -592,9 +614,12 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
           )}
         </div>
       </div>
+      )}
+
+      {useCustomBody && bodyRenderer ? bodyRenderer() : null}
 
       {/* Content — truncate to 8 lines; See more/See less inline (WEB_TEAM_UX_POST) */}
-      {hasContent && (
+      {!useCustomBody && hasContent && (
         <div className="mb-4">
           <div
             className={`text-gray-200 whitespace-pre-wrap break-words ${!isExpanded && showSeeMore ? 'line-clamp-[8]' : ''}`}
@@ -613,7 +638,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
       )}
 
       {/* Embedded Original Post Card */}
-      {(post.reposted_from as any) && (post.reposted_from as any).id && (
+      {!useCustomBody && (post.reposted_from as any) && (post.reposted_from as any).id && (
         <div
           className="mb-4 bg-white/5 border border-white/10 rounded-lg p-4"
         >
@@ -687,7 +712,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
       )}
 
       {/* Image grid — 1: 16:9, 2: two cols, 3: 1 large + 2 stacked, 4+: 2-col with +N more (WEB_TEAM_UX_POST) */}
-      {imageUrls.length > 0 && (
+      {!useCustomBody && imageUrls.length > 0 && (
         <>
           <div className="mb-4 rounded-lg overflow-hidden">
             {imageUrls.length === 1 && (
@@ -743,7 +768,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
       )}
 
       {/* Audio Attachment */}
-      {audioAttachment && (
+      {!useCustomBody && audioAttachment && (
         <div className="mb-4 bg-white/5 rounded-lg p-4 border border-white/10">
           <div className="flex items-center gap-3">
             <button
@@ -779,7 +804,7 @@ export const PostCard = React.memo(function PostCard({ post, onUpdate, showFullC
       )}
 
       {/* LinkedIn-Style Interaction Bar */}
-      <div className="border-t border-white/10 pt-3 mt-3">
+      <div className={`border-t border-white/10 pt-3 mt-3 ${useCustomBody ? 'px-4 md:px-6 pb-4' : ''}`}>
         {/* Reaction Picker (shows on hover/long-press) */}
         {showReactionPicker && (
           <>

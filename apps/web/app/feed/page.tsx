@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { PostCard } from '@/src/components/posts/PostCard';
+import { FeedPostList } from '@/src/components/feed/FeedPostList';
+import { usePersonalizedFeedEvents } from '@/src/hooks/usePersonalizedFeedEvents';
 import { CreatePostModal } from '@/src/components/posts/CreatePostModal';
 import { FeedLeftSidebar } from '@/src/components/feed/FeedLeftSidebar';
 import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
@@ -18,6 +19,7 @@ export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { batchCheckBookmarks } = useSocial();
+  const { events: stripEvents, showStrip: showEventsStrip } = usePersonalizedFeedEvents(user?.id);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false); // Start as false, will be set to true when fetch starts
   const [loadingMore, setLoadingMore] = useState(false);
@@ -353,30 +355,27 @@ export default function FeedPage() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <PostCard 
-                    key={post.id} 
-                    post={post} 
-                    onUpdate={handlePostCreated}
-                    initialBookmarkStatus={bookmarksMap.get(post.id) ?? false}
-                  />
-                ))}
+              <>
+                <FeedPostList
+                  posts={posts}
+                  stripEvents={stripEvents}
+                  showEventsStrip={showEventsStrip}
+                  onPostUpdate={handlePostCreated}
+                  bookmarksMap={bookmarksMap}
+                />
 
-                {/* Loading More Indicator */}
                 {loadingMore && (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-red-500" />
                   </div>
                 )}
 
-                {/* End of Feed */}
                 {!hasMore && posts.length > 0 && (
                   <div className="text-center py-8 text-gray-400">
-                    <p>You've reached the end of your feed</p>
+                    <p>You&apos;ve reached the end of your feed</p>
                   </div>
                 )}
-              </div>
+              </>
             )}
 
             {/* Error Banner (for non-fatal errors) */}
