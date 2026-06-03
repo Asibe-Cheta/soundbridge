@@ -7,6 +7,7 @@ import {
   hasManualPermanentSubscriptionGrant,
   shouldSkipRevenueCatDowngradeToFree,
 } from '@/src/lib/revenuecat-entitlements';
+import { markEarlyAdopterConverted } from '@/src/lib/early-adopter-conversion';
 import { recordReferralConversion } from '@/src/lib/partner-referrals';
 
 const corsHeaders = {
@@ -444,6 +445,7 @@ async function handleSubscriptionActivated(supabase: any, data: {
 
   console.log('✅ Subscription activated for user:', data.userId);
   await recordReferralConversion(supabase, data.userId, data.tier);
+  await markEarlyAdopterConverted(supabase, data.userId);
 
   // TODO: Send welcome email
   await sendEmail(data.userId, 'welcome', {

@@ -24,6 +24,7 @@ import {
   finalizeRequestRoomFromSucceededPaymentIntent,
   isRequestRoomTipPaymentIntent,
 } from '@/src/lib/request-room-payment-intent-webhook';
+import { markEarlyAdopterConverted } from '@/src/lib/early-adopter-conversion';
 import { recordReferralConversion } from '@/src/lib/partner-referrals';
 import { hasManualPermanentSubscriptionGrant } from '@/src/lib/revenuecat-entitlements';
 
@@ -430,6 +431,7 @@ async function handleCheckoutCompleted(
     } else {
       console.log('[webhook] Successfully updated subscription for user:', userId);
       await recordReferralConversion(supabase, userId, session.metadata?.plan || 'pro');
+      await markEarlyAdopterConverted(supabase, userId);
       
       // Send subscription confirmation email
       const userInfo = await SubscriptionEmailService.getUserInfo(userId);
@@ -509,6 +511,7 @@ async function handleSubscriptionUpdated(
     if (status === 'active') {
       const plan = (subscription as { metadata?: { plan?: string } }).metadata?.plan ?? 'pro';
       await recordReferralConversion(supabase, userId, plan);
+      await markEarlyAdopterConverted(supabase, userId);
       sendExpoPush(supabase, userId, {
         title: 'Subscription Updated',
         body: `Your ${plan} subscription is active`,
