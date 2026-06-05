@@ -49,6 +49,7 @@ function CreateEventContent() {
   const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
+  const [eventDisclaimerAccepted, setEventDisclaimerAccepted] = useState(false);
 
   // Location states (country-based address fields)
   const [selectedCountry, setSelectedCountry] = useState<string>('GB'); // Default to UK
@@ -257,6 +258,11 @@ function CreateEventContent() {
       return;
     }
 
+    if (!eventDisclaimerAccepted) {
+      setError('You must accept responsibility for this event before publishing.');
+      return;
+    }
+
     try {
       setIsPublishing(true);
       setError(null);
@@ -334,7 +340,9 @@ function CreateEventContent() {
         address_data: {
           country: selectedCountry,
           fields: addressFields
-        }
+        },
+        creator_event_disclaimer_accepted: true,
+        creator_event_disclaimer_accepted_at: new Date().toISOString(),
       };
 
       const result = await eventService.createEvent(eventData);
@@ -961,8 +969,35 @@ function CreateEventContent() {
               </div>
             </div>
 
+            <div
+              style={{
+                marginTop: '1.5rem',
+                padding: '1.25rem',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'rgba(255, 255, 255, 0.04)',
+              }}
+            >
+              <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1rem' }}>
+                By publishing this event you confirm you are solely responsible for its organisation, safety and
+                delivery. SoundBridge promotes events on your behalf but bears no liability for any aspect of the
+                event itself.
+              </p>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={eventDisclaimerAccepted}
+                  onChange={(e) => setEventDisclaimerAccepted(e.target.checked)}
+                  style={{ marginTop: '0.2rem', accentColor: '#EC4899' }}
+                />
+                <span style={{ color: '#e5e5e5', fontSize: '0.95rem' }}>
+                  I understand and accept responsibility for this event.
+                </span>
+              </label>
+            </div>
+
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
               <button
                 onClick={handleSaveDraft}
                 disabled={isPublishing}
@@ -985,7 +1020,7 @@ function CreateEventContent() {
 
               <button
                 onClick={handlePublish}
-                disabled={isPublishing || locationLoading}
+                disabled={isPublishing || locationLoading || !eventDisclaimerAccepted}
                 style={{
                   background: 'linear-gradient(45deg, #DC2626, #EC4899)',
                   color: 'white',

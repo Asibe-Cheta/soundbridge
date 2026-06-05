@@ -455,7 +455,7 @@ export default function DiscoverPage() {
         title: "No Creators Found",
         description: "Join our community of talented artists and creators!",
         action: "Become a Creator",
-        actionLink: "/signup"
+        actionLink: "/become-creator"
       },
       events: {
         icon: <Calendar size={48} className="mx-auto mb-4 opacity-50" />,

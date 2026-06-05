@@ -114,6 +114,8 @@ const nextConfig: NextConfig = {
       { source: "/auth/sign-up/", destination: "/signup", permanent: true },
       { source: "/auth/signup", destination: "/signup", permanent: true },
       { source: "/auth/signup/", destination: "/signup", permanent: true },
+      { source: "/copyright-policy", destination: "/legal/copyright", permanent: true },
+      { source: "/copyright-policy/", destination: "/legal/copyright", permanent: true },
     ];
   },
 };

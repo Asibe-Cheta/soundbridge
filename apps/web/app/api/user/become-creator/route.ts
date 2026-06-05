@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, role, subscription_tier')
+      .select('id, role, subscription_tier, creator_agreement_accepted')
       .eq('id', user.id)
       .single();
 
@@ -35,7 +35,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (profile.role === 'creator') {
+    let body: { creator_agreement_accepted?: boolean; creator_agreement_version?: string } = {};
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
+
+    if (!body.creator_agreement_accepted) {
+      return NextResponse.json(
+        { success: false, error: 'Creator agreement must be accepted before upgrading role' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const now = new Date().toISOString();
+    const agreementFields = {
+      creator_agreement_accepted: true,
+      creator_agreement_accepted_at: now,
+      creator_agreement_version: body.creator_agreement_version || 'v1.0',
+      updated_at: now,
+    };
+
+    if (profile.role === 'creator' && profile.creator_agreement_accepted) {
       return NextResponse.json(
         {
           success: true,
@@ -53,8 +75,8 @@ export async function POST(request: NextRequest) {
     const { data: updatedProfile, error: updateError } = await supabase
       .from('profiles')
       .update({
-        role: 'creator',
-        updated_at: new Date().toISOString(),
+        ...(profile.role !== 'creator' ? { role: 'creator' as const } : {}),
+        ...agreementFields,
       })
       .eq('id', user.id)
       .select('id, role, subscription_tier')

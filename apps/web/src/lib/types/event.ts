@@ -82,6 +82,8 @@ export interface EventCreateData {
     country: string;
     fields: Record<string, string>;
   };
+  creator_event_disclaimer_accepted?: boolean;
+  creator_event_disclaimer_accepted_at?: string;
 }
 
 export interface EventUpdateData extends Partial<EventCreateData> {

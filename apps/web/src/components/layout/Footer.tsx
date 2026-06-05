@@ -226,6 +226,33 @@ export function Footer() {
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <FileText size={isMobile ? 12 : 16} /> Terms
             </Link>
+            <Link className={footerLinkClass} href="/legal/copyright" style={{ 
+              color: 'var(--text-primary)', 
+              textDecoration: 'none', 
+              padding: isMobile ? '0.3rem' : '0.5rem', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+            }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+              Copyright Policy
+            </Link>
+            <Link className={footerLinkClass} href="/aml-policy" style={{ 
+              color: 'var(--text-primary)', 
+              textDecoration: 'none', 
+              padding: isMobile ? '0.3rem' : '0.5rem', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+            }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+              AML Policy
+            </Link>
+            <Link className={footerLinkClass} href="/legal/dmca" style={{ 
+              color: 'var(--text-primary)', 
+              textDecoration: 'none', 
+              padding: isMobile ? '0.3rem' : '0.5rem', 
+              borderRadius: '8px', 
+              transition: 'all 0.3s ease',
+            }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+              DMCA Notice &amp; Takedown
+            </Link>
           </div>
         </div>
       </div>
@@ -293,10 +320,20 @@ export function Footer() {
             textDecoration: 'none' 
           }}>Terms</Link>
           <span>•</span>
+          <Link className={footerLinkClass} href="/legal/copyright" style={{ 
+            color: 'var(--text-secondary)', 
+            textDecoration: 'none' 
+          }}>Copyright</Link>
+          <span>•</span>
           <Link className={footerLinkClass} href="/aml-policy" style={{ 
             color: 'var(--text-secondary)', 
             textDecoration: 'none' 
           }}>AML</Link>
+          <span>•</span>
+          <Link className={footerLinkClass} href="/legal/dmca" style={{ 
+            color: 'var(--text-secondary)', 
+            textDecoration: 'none' 
+          }}>DMCA</Link>
           <span>•</span>
           <Link className={footerLinkClass} href="/cookies" style={{ 
             color: 'var(--text-secondary)', 

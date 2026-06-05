@@ -54,7 +54,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Last updated: January 15, 2025
+            Last updated: June 3, 2026
           </p>
         </div>
 
@@ -331,10 +331,10 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              13. Governing Law
+              13. Platform Status
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              These terms are governed by the laws of the United Kingdom. Any disputes shall be resolved in the courts of the United Kingdom.
+              SoundBridge Live Ltd operates as a technology platform and marketplace that connects audio creators with fans, clients and collaborators. SoundBridge is not a talent agency, record label, event promoter, booking agent, employer or service provider. SoundBridge does not create, endorse, verify the quality of, or take responsibility for any content, events, services or transactions facilitated through the platform.
             </p>
           </section>
 
@@ -346,7 +346,103 @@ export default function TermsOfService() {
               borderBottom: '2px solid var(--accent-primary)',
               paddingBottom: '0.5rem'
             }}>
-              14. Contact Information
+              14. Creator Independent Contractor Status
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              All creators, service providers and users on SoundBridge are independent third parties. They are not employees, agents, contractors or representatives of SoundBridge Live Ltd. SoundBridge bears no responsibility for the actions, content, services, events or conduct of any creator or user on the platform.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              15. Transaction Liability
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              SoundBridge facilitates payments between fans and creators as a payment intermediary only. SoundBridge does not guarantee the delivery of any content, service, experience or outcome in connection with any transaction processed through the platform. Disputes between fans and creators regarding transactions are the sole responsibility of the parties involved. SoundBridge&apos;s liability in connection with any transaction is limited to the platform fee collected on that transaction.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              16. Event Promotion Disclaimer
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              SoundBridge&apos;s intelligent event promotion service distributes event information to matched users on behalf of creators. SoundBridge does not organise, host, manage, supervise or take responsibility for any event listed or promoted on the platform. Creators who list events are solely responsible for the organisation, safety, legality and delivery of those events. SoundBridge bears no liability for any injury, loss, damage or disappointment arising from attendance at or participation in any event promoted through the platform.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              17. Content Liability and Safe Harbour
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              SoundBridge complies with the Digital Millennium Copyright Act (DMCA) and the Copyright, Designs and Patents Act 1988. SoundBridge is registered as a DMCA Designated Agent (Registration No. DMCA-1070287). We respond promptly to valid takedown notices and operate under the safe harbour provisions available to platform operators under applicable law.
+            </p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Creators are solely responsible for ensuring they have the right to upload all content they submit to the platform. SoundBridge does not pre-screen content for copyright compliance and is not liable for infringing content uploaded by creators before receiving a valid takedown notice. See our <Link href="/legal/copyright" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Copyright Policy</Link> and <Link href="/legal/dmca" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>DMCA Notice and Takedown</Link> pages.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              18. Service Marketplace Disclaimer
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              The SoundBridge service marketplace connects creators who offer professional audio services with clients seeking those services. SoundBridge does not vet, endorse, guarantee or take responsibility for the quality, accuracy, professionalism or delivery of any service listed or booked through the marketplace. Any contract for services is solely between the creator and the client. SoundBridge is not a party to any service agreement.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              19. Dispute Resolution
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              In the event of a dispute between users arising from a transaction, event or service on the platform, SoundBridge may at its sole discretion assist in facilitating a resolution but is under no obligation to do so. SoundBridge&apos;s decision in any dispute assistance process is not binding and does not constitute legal arbitration. Users agree to resolve disputes directly between themselves or through appropriate legal channels.
+            </p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              This agreement is governed by the laws of England and Wales. Any disputes shall be resolved in the courts of England and Wales, subject to mandatory consumer protections that may apply in your jurisdiction.
+            </p>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              borderBottom: '2px solid var(--accent-primary)',
+              paddingBottom: '0.5rem'
+            }}>
+              20. Contact Information
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               If you have questions about these Terms of Service, please contact us at:

@@ -108,6 +108,13 @@ export async function POST(request: NextRequest) {
 
     // Paid events: all tiers may host (MOBILE_PRICING_MODEL_UPDATE.md) — no subscription gate.
 
+    if (!eventData.creator_event_disclaimer_accepted) {
+      return NextResponse.json(
+        { error: 'Event responsibility disclaimer must be accepted before publishing' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Map mobile categories to database enum values
     const categoryMap: Record<string, string> = {
       'Music Concert': 'Secular',
@@ -147,7 +154,10 @@ export async function POST(request: NextRequest) {
       price_ngn: eventData.price_ngn || null,
       // Other fields
       max_attendees: eventData.max_attendees || null,
-      image_url: eventData.image_url || null
+      image_url: eventData.image_url || null,
+      creator_event_disclaimer_accepted: true,
+      creator_event_disclaimer_accepted_at:
+        eventData.creator_event_disclaimer_accepted_at || new Date().toISOString(),
     };
 
     // Create event

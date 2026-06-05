@@ -14,6 +14,7 @@ export default function BecomeServiceProviderPage() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
+  const [serviceDisclaimerAccepted, setServiceDisclaimerAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAlreadyProvider, setIsAlreadyProvider] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
@@ -127,6 +128,11 @@ export default function BecomeServiceProviderPage() {
 
   const handleBecomeProvider = async () => {
     const userId = user?.id;
+    if (!serviceDisclaimerAccepted) {
+      setError('You must accept the service listing disclaimer to continue.');
+      return;
+    }
+
     if (!userId || !session) {
       setError('Please log in to continue.');
       setTimeout(() => {
@@ -370,10 +376,32 @@ export default function BecomeServiceProviderPage() {
               </ul>
             </div>
 
+            <div
+              className={`mb-6 rounded-xl border p-4 ${
+                theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <p className={`mb-3 text-sm leading-relaxed ${theme === 'dark' ? 'text-white/80' : 'text-gray-700'}`}>
+                By listing this service you confirm you are offering it as an independent contractor. SoundBridge is
+                not a party to any service agreement between you and your clients.
+              </p>
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={serviceDisclaimerAccepted}
+                  onChange={(e) => setServiceDisclaimerAccepted(e.target.checked)}
+                  className="mt-0.5 accent-pink-500"
+                />
+                <span className={`text-sm ${theme === 'dark' ? 'text-white/90' : 'text-gray-800'}`}>
+                  I understand.
+                </span>
+              </label>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleBecomeProvider}
-                disabled={isLoading}
+                disabled={isLoading || !serviceDisclaimerAccepted}
                 className={`flex-1 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
               >
                 {isLoading ? (

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Footer } from '../../src/components/layout/Footer';
 import { FloatingCard } from '../../src/components/ui/FloatingCard';
 import { ImageUpload } from '../../src/components/ui/ImageUpload';
@@ -30,6 +31,7 @@ export default function UnifiedUploadPage() {
 
   const { user, loading, signOut } = useAuth();
   const { theme } = useTheme();
+  const router = useRouter();
   const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -117,6 +119,29 @@ export default function UnifiedUploadPage() {
     
     return () => window.removeEventListener('resize', handleResize);
   }, [user]);
+
+  useEffect(() => {
+    if (loading || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createBrowserClient();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, creator_agreement_accepted')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (
+        !cancelled &&
+        profile &&
+        (profile.role !== 'creator' || !profile.creator_agreement_accepted)
+      ) {
+        router.replace('/become-creator');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, loading, router]);
 
   // Load user tier for quality selection
   const loadUserTier = async () => {

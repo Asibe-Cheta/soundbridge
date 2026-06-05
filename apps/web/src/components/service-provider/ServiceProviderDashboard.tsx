@@ -414,6 +414,7 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [serviceDisclaimerAccepted, setServiceDisclaimerAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ServiceProviderProfileResponse['provider'] | null>(null);
   const [offerings, setOfferings] = useState<ServiceProviderProfileResponse['offerings']>([]);
@@ -664,6 +665,11 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
   }, [userId]);
 
   const handleCreateOrUpdateProfile = async () => {
+    if (!profileData && !serviceDisclaimerAccepted) {
+      setError('You must accept the service listing disclaimer before creating your profile.');
+      return;
+    }
+
     try {
       setSavingProfile(true);
       setError(null);
@@ -2133,10 +2139,40 @@ export const ServiceProviderDashboard: React.FC<ServiceProviderDashboardProps> =
           })}
         </div>
 
+        {!profileData && (
+          <div
+            style={{
+              marginBottom: '1rem',
+              padding: '1rem',
+              borderRadius: '0.75rem',
+              border: '1px solid var(--border-primary)',
+              background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
+            }}
+          >
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+              By listing this service you confirm you are offering it as an independent contractor. SoundBridge is
+              not a party to any service agreement between you and your clients.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={serviceDisclaimerAccepted}
+                onChange={(e) => setServiceDisclaimerAccepted(e.target.checked)}
+                style={{ marginTop: '0.15rem' }}
+              />
+              <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>I understand.</span>
+            </label>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
             onClick={handleCreateOrUpdateProfile}
-            disabled={savingProfile || profileDraft.displayName.trim().length === 0}
+            disabled={
+              savingProfile ||
+              profileDraft.displayName.trim().length === 0 ||
+              (!profileData && !serviceDisclaimerAccepted)
+            }
             style={{
               display: 'inline-flex',
               alignItems: 'center',
