@@ -348,7 +348,16 @@ function CreateEventContent() {
       const result = await eventService.createEvent(eventData);
 
       if (result.error) {
-        setError(typeof result.error === 'string' ? result.error : 'Failed to create event');
+        const message =
+          typeof result.error === 'string'
+            ? result.error
+            : typeof result.error === 'object' &&
+                result.error !== null &&
+                'message' in result.error &&
+                typeof (result.error as { message?: string }).message === 'string'
+              ? (result.error as { message: string }).message
+              : 'Failed to create event';
+        setError(message);
         setPublishStatus('error');
       } else {
         setPublishStatus('success');

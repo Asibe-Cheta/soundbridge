@@ -263,47 +263,39 @@ export class EventService {
     }
   }
 
-  // Create new event
+  // Create new event (via API — avoids inserting unknown columns like address_data on direct client insert)
   async createEvent(eventData: EventCreateData): Promise<{ data: Event | null; error: unknown }> {
     try {
-      const { data: { user } } = await this.supabase.auth.getUser();
-      if (!user) {
-        return { data: null, error: 'Authentication required' };
+      const {
+        data: { session },
+      } = await this.supabase.auth.getSession();
+
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
       }
 
-      const { data, error } = await this.supabase
-        .from('events')
-        .insert([{
-          ...eventData,
-          creator_id: user.id,
-          current_attendees: 0
-        }])
-        .select(`
-          *,
-          creator:profiles!events_creator_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url,
-            banner_url
-          )
-        `)
-        .single();
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: JSON.stringify(eventData),
+      });
 
-      if (error) {
-        return { data: null, error };
+      const payload = (await response.json().catch(() => ({}))) as {
+        event?: Event;
+        error?: string;
+        details?: string;
+      };
+
+      if (!response.ok) {
+        return {
+          data: null,
+          error: payload.details || payload.error || 'Failed to create event',
+        };
       }
 
-      const event = {
-        ...data,
-        attendeeCount: 0,
-        formattedDate: this.formatEventDate(data.event_date),
-        formattedPrice: this.formatPrice(data.price_gbp, data.price_ngn),
-        isFeatured: this.isFeaturedEvent(data),
-        rating: this.calculateEventRating(data)
-      } as Event;
-
-      return { data: event, error: null };
+      return { data: payload.event ?? null, error: null };
     } catch (error) {
       return { data: null, error };
     }
