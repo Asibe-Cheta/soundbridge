@@ -6,6 +6,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { ArrowRight, ArrowLeft, Check, X, Loader2 } from 'lucide-react';
 import { CountrySelector } from './CountrySelector';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
+import { readCommunityEntryAttributionFromClient } from '@/src/lib/community-entry';
 
 interface QuickSetupProps {
   isOpen: boolean;
@@ -188,6 +189,8 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
         location: formData.location
       });
 
+      const communityAttribution = readCommunityEntryAttributionFromClient();
+
       const { data, error, response } = await fetchJsonWithAuth('/api/user/complete-profile', {
         method: 'POST',
         body: JSON.stringify({
@@ -198,6 +201,8 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
           country: formData.country,
           location: formData.location,
           onboarding_user_type: onboardingState.onboardingUserType,
+          community_creator_username: communityAttribution.creatorUsername,
+          community_creator_id: communityAttribution.creatorId,
         })
       });
 

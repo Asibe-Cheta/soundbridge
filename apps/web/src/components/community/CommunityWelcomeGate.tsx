@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { createBrowserClient } from '@/src/lib/supabase';
-import { needsCommunityWelcome } from '@/src/lib/community-entry';
+import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
 
 const SKIP_PREFIXES = [
   '/welcome',
@@ -28,23 +27,19 @@ export function CommunityWelcomeGate() {
 
     let cancelled = false;
     (async () => {
-      const supabase = createBrowserClient();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('community_entry_creator_id, community_entry_shown_at, onboarding_completed')
-        .eq('id', user.id)
-        .maybeSingle();
+      const { data } = await fetchJsonWithAuth<{
+        needsWelcome?: boolean;
+        welcomeUsername?: string | null;
+      }>('/api/user/community-welcome-status');
 
-      if (cancelled || !needsCommunityWelcome(profile) || !profile?.community_entry_creator_id) return;
-
-      const { data: creator } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', profile.community_entry_creator_id)
-        .maybeSingle();
-
-      if (cancelled || !creator?.username) return;
-      router.replace(`/welcome/${encodeURIComponent(creator.username)}`);
+      if (
+        !cancelled &&
+        data?.needsWelcome &&
+        typeof data.welcomeUsername === 'string' &&
+        data.welcomeUsername.length > 0
+      ) {
+        router.replace(`/welcome/${encodeURIComponent(data.welcomeUsername)}`);
+      }
     })();
 
     return () => {

@@ -87,8 +87,6 @@ function SignupContent() {
     const maxAge = 60 * 60 * 24 * 30;
 
     if (communityCreator) {
-      localStorage.setItem('soundbridge_community_entry_creator', communityCreator);
-      document.cookie = `soundbridge_community_entry_creator=${encodeURIComponent(communityCreator)}; max-age=${maxAge}; path=/; samesite=lax`;
       persistCommunityEntryCreatorClient(communityCreator);
     }
 

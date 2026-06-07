@@ -17,8 +17,12 @@ export function WelcomeConfirmation({ isOpen, onComplete }: WelcomeConfirmationP
   if (!isOpen) return null;
 
   const handleStartExploring = async () => {
-    await completeOnboarding();
+    const welcomeUsername = await completeOnboarding();
     onComplete();
+    if (welcomeUsername) {
+      window.location.href = `/welcome/${encodeURIComponent(welcomeUsername)}`;
+      return;
+    }
     router.push('/discover');
   };
 

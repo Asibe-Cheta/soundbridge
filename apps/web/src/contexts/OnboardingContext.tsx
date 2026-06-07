@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
+import { readCommunityEntryAttributionFromClient } from '@/src/lib/community-entry';
 
 export type UserRole = 'musician' | 'podcaster' | 'event_promoter' | 'listener';
 export type OnboardingUserType = 'music_creator' | 'podcast_creator' | 'industry_professional' | 'music_lover' | 'event_organiser' | null;
@@ -34,7 +35,7 @@ interface OnboardingContextType {
   setSelectedTier: (tier: 'free' | 'premium' | 'unlimited' | null) => void; // NEW
   setProfileCompleted: (completed: boolean) => void;
   setFirstActionCompleted: (completed: boolean) => void;
-  completeOnboarding: () => void;
+  completeOnboarding: () => Promise<string | null>;
   skipOnboarding: () => void;
   startOnboarding: () => void;
   getNextStep: () => OnboardingStep | null;
@@ -613,26 +614,30 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     }
   };
 
-  const completeOnboarding = async () => {
+  const completeOnboarding = async (): Promise<string | null> => {
     try {
       if (!user?.id) {
         console.error('❌ No user ID available for completing onboarding');
-        return;
+        return null;
       }
 
       console.log('🔧 Completing onboarding for user:', user.id);
+
+      const communityAttribution = readCommunityEntryAttributionFromClient();
       
       // Use fetchJsonWithAuth for consistent bearer token auth
       const { data, error } = await fetchJsonWithAuth('/api/user/complete-onboarding', {
         method: 'POST',
         body: JSON.stringify({
-          userId: user.id
+          userId: user.id,
+          communityCreatorUsername: communityAttribution.creatorUsername,
+          communityCreatorId: communityAttribution.creatorId,
         }),
       });
       
       if (error || !data?.success) {
         console.error('❌ Failed to complete onboarding:', error || data?.error);
-        return;
+        return null;
       }
 
       console.log('✅ Onboarding completed successfully');
@@ -645,13 +650,12 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       // Clear storage when onboarding is completed
       if (typeof window !== 'undefined') {
         localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        if (data?.welcomeUsername) {
-          window.location.href = `/welcome/${encodeURIComponent(data.welcomeUsername)}`;
-          return;
-        }
       }
+
+      return typeof data?.welcomeUsername === 'string' ? data.welcomeUsername : null;
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
+      return null;
     }
   };
 

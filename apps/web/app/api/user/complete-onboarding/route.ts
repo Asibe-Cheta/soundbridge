@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { userId } = body as { userId?: string };
+    const { userId, communityCreatorUsername, communityCreatorId } = body as {
+      userId?: string;
+      communityCreatorUsername?: string;
+      communityCreatorId?: string;
+    };
 
     if (!userId || userId !== user.id) {
       return NextResponse.json(
@@ -50,8 +54,13 @@ export async function POST(request: NextRequest) {
     const referralCodeCookie = cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value ?? null;
     const signupSourceCookie = cookieStore.get(PARTNER_SOURCE_COOKIE)?.value ?? null;
     const fanCreatorUsername =
-      cookieStore.get(COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE)?.value?.trim().toLowerCase() || null;
-    const fanCreatorId = cookieStore.get(COMMUNITY_ENTRY_CREATOR_ID_COOKIE)?.value?.trim() || null;
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE)?.value?.trim().toLowerCase() ||
+      communityCreatorUsername?.trim().toLowerCase() ||
+      null;
+    const fanCreatorId =
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_ID_COOKIE)?.value?.trim() ||
+      communityCreatorId?.trim() ||
+      null;
 
     await processPartnerAttributionForAuthUser(createServiceClient(), user, {
       referralCode: referralCodeCookie,

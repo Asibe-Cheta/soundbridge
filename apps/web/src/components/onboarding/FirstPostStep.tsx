@@ -168,15 +168,16 @@ export function FirstPostStep({ isOpen, onComplete, onBack }: FirstPostStepProps
     if (!canPublish || publishing) return;
     setPublishing(true);
     const success = await publishPost();
+    const welcomeUsername = await completeOnboarding();
+    onComplete();
+    if (welcomeUsername) {
+      window.location.href = `/welcome/${encodeURIComponent(welcomeUsername)}`;
+      return;
+    }
     if (success) {
-      await completeOnboarding();
-      onComplete();
       router.push('/discover');
       return;
     }
-    // Don't block user: complete onboarding anyway, retry post in background
-    await completeOnboarding();
-    onComplete();
     router.push('/discover');
     setTimeout(() => {
       publishPost().catch(() => {});

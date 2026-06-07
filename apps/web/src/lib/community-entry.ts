@@ -10,17 +10,41 @@ export const COMMUNITY_ENTRY_CREATOR_ID_STORAGE = 'soundbridge_community_entry_c
 const SOUND_ACADEMY_SOURCE = 'sound_academy';
 const ATTRIBUTION_MAX_AGE = 60 * 60 * 24 * 30;
 
+/** Share cookies across soundbridge.live and www.soundbridge.live in production. */
+export function getCommunityEntryCookieDomainAttribute(): string {
+  if (typeof window === 'undefined') return '';
+  const host = window.location.hostname.toLowerCase();
+  if (host === 'soundbridge.live' || host.endsWith('.soundbridge.live')) {
+    return '; domain=.soundbridge.live';
+  }
+  return '';
+}
+
+export function readCommunityEntryAttributionFromClient(): {
+  creatorUsername: string | null;
+  creatorId: string | null;
+} {
+  if (typeof window === 'undefined') {
+    return { creatorUsername: null, creatorId: null };
+  }
+  const creatorUsername =
+    localStorage.getItem(COMMUNITY_ENTRY_CREATOR_USERNAME_STORAGE)?.trim().toLowerCase() || null;
+  const creatorId = localStorage.getItem(COMMUNITY_ENTRY_CREATOR_ID_STORAGE)?.trim() || null;
+  return { creatorUsername, creatorId };
+}
+
 export function persistCommunityEntryCreatorClient(username: string, creatorId?: string) {
   if (typeof window === 'undefined') return;
   const normalizedUsername = username.trim().toLowerCase();
   if (!normalizedUsername) return;
 
+  const domain = getCommunityEntryCookieDomainAttribute();
   localStorage.setItem(COMMUNITY_ENTRY_CREATOR_USERNAME_STORAGE, normalizedUsername);
-  document.cookie = `${COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE}=${encodeURIComponent(normalizedUsername)}; max-age=${ATTRIBUTION_MAX_AGE}; path=/; samesite=lax`;
+  document.cookie = `${COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE}=${encodeURIComponent(normalizedUsername)}; max-age=${ATTRIBUTION_MAX_AGE}; path=/; samesite=lax${domain}`;
 
   if (creatorId) {
     localStorage.setItem(COMMUNITY_ENTRY_CREATOR_ID_STORAGE, creatorId);
-    document.cookie = `${COMMUNITY_ENTRY_CREATOR_ID_COOKIE}=${encodeURIComponent(creatorId)}; max-age=${ATTRIBUTION_MAX_AGE}; path=/; samesite=lax`;
+    document.cookie = `${COMMUNITY_ENTRY_CREATOR_ID_COOKIE}=${encodeURIComponent(creatorId)}; max-age=${ATTRIBUTION_MAX_AGE}; path=/; samesite=lax${domain}`;
   }
 }
 

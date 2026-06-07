@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { resolveProfileRole } from '@/src/lib/onboarding-role';
+import {
+  applyCommunityEntryAttribution,
+  COMMUNITY_ENTRY_CREATOR_ID_COOKIE,
+  COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE,
+} from '@/src/lib/community-entry';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -185,6 +192,25 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Profile updated successfully for user:', user.id);
     console.log('📊 Updated profile role:', updatedProfile.role);
+
+    const cookieStore = await cookies();
+    const fanCreatorUsername =
+      (typeof body.community_creator_username === 'string'
+        ? body.community_creator_username.trim().toLowerCase()
+        : null) ||
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE)?.value?.trim().toLowerCase() ||
+      null;
+    const fanCreatorId =
+      (typeof body.community_creator_id === 'string' ? body.community_creator_id.trim() : null) ||
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_ID_COOKIE)?.value?.trim() ||
+      null;
+
+    if (fanCreatorUsername || fanCreatorId) {
+      await applyCommunityEntryAttribution(createServiceClient(), user.id, {
+        creatorId: fanCreatorId,
+        creatorUsername: fanCreatorUsername,
+      });
+    }
 
     return NextResponse.json({
       success: true,

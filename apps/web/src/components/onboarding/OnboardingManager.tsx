@@ -149,9 +149,7 @@ export function OnboardingManager() {
         {currentStep === 'firstPost' && (
           <FirstPostStep
             isOpen={showOnboarding}
-            onComplete={async () => {
-              if (completeOnboarding) await completeOnboarding();
-            }}
+            onComplete={() => {}}
             onBack={() => setCurrentStep('tierSelection')}
           />
         )}
@@ -159,9 +157,7 @@ export function OnboardingManager() {
         {currentStep === 'welcomeConfirmation' && (
           <WelcomeConfirmation
             isOpen={showOnboarding}
-            onComplete={async () => {
-              if (completeOnboarding) await completeOnboarding();
-            }}
+            onComplete={() => {}}
           />
         )}
       </>
