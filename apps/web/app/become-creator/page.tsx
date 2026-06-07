@@ -15,7 +15,6 @@ import {
   type CreatorAgreementCheckboxId,
 } from '@/src/constants/creatorAgreement';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
-import { createBrowserClient } from '@/src/lib/supabase';
 
 type Step = 'perks' | 'agreement';
 
@@ -35,17 +34,17 @@ export default function BecomeCreatorPage() {
     let cancelled = false;
     (async () => {
       try {
-        const supabase = createBrowserClient();
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, creator_agreement_accepted')
-          .eq('id', user.id)
-          .maybeSingle();
+        const { data, response } = await fetchJsonWithAuth<{
+          canUpload?: boolean;
+          creator_agreement_accepted?: boolean;
+          role?: string;
+        }>('/api/user/creator-upload-access');
 
-        if (!cancelled && profile?.role === 'creator' && profile?.creator_agreement_accepted) {
+        if (!cancelled && data?.canUpload) {
           router.replace('/upload');
+          return;
         }
-        if (!cancelled && profile?.role === 'creator' && !profile?.creator_agreement_accepted) {
+        if (!cancelled && data?.role === 'creator' && !data?.creator_agreement_accepted) {
           setStep('agreement');
         }
       } catch {

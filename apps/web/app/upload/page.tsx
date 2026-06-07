@@ -38,6 +38,7 @@ export default function UnifiedUploadPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [uploadAccessChecking, setUploadAccessChecking] = useState(true);
 
   // Form states
   const [contentType, setContentType] = useState<ContentType>('music');
@@ -121,21 +122,27 @@ export default function UnifiedUploadPage() {
   }, [user]);
 
   useEffect(() => {
-    if (loading || !user?.id) return;
+    if (loading || !user?.id) {
+      if (!loading && !user?.id) setUploadAccessChecking(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
-      const supabase = createBrowserClient();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, creator_agreement_accepted')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (
-        !cancelled &&
-        profile &&
-        (profile.role !== 'creator' || !profile.creator_agreement_accepted)
-      ) {
-        router.replace('/become-creator');
+      try {
+        const response = await fetchWithSupabaseAuth('/api/user/creator-upload-access');
+        const payload = (await response.json().catch(() => ({}))) as {
+          canUpload?: boolean;
+          needsBecomeCreator?: boolean;
+        };
+        if (!cancelled && (payload.needsBecomeCreator || !payload.canUpload)) {
+          router.replace('/become-creator');
+          return;
+        }
+      } catch {
+        if (!cancelled) router.replace('/become-creator');
+        return;
+      } finally {
+        if (!cancelled) setUploadAccessChecking(false);
       }
     })();
     return () => {
@@ -1081,7 +1088,7 @@ export default function UnifiedUploadPage() {
   const [audiobookGenres, setAudiobookGenres] = useState<string[]>([]);
   const [loadingGenres, setLoadingGenres] = useState(false);
 
-  if (loading) {
+  if (loading || uploadAccessChecking) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
