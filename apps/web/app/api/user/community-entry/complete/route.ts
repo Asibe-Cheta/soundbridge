@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
-import { clearCommunityEntryAttributionClient } from '@/src/lib/community-entry';
+import { createServiceClient } from '@/src/lib/supabase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.action === 'follow' && creatorId !== user.id) {
-      const { error: followError } = await supabase.from('follows').insert({
+      const service = createServiceClient();
+      const { error: followError } = await service.from('follows').insert({
         follower_id: user.id,
         following_id: creatorId,
       });
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     const username = creator?.username;
     const redirectTo =
       body.action === 'follow' && username
-        ? `/creator/${encodeURIComponent(username)}`
+        ? `/creator/${encodeURIComponent(username)}?welcome_follow=1`
         : '/feed';
 
     const response = NextResponse.json(

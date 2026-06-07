@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { CreatorProfileSkeleton } from '../../../src/components/ui/Skeleton';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -102,6 +102,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
   const { playTrack, currentTrack, isPlaying } = useAudioPlayer();
   const [availabilityState, availabilityActions] = useAvailability();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const tabs = [
     { id: 'drops', label: 'Drops', icon: Music },
@@ -115,6 +116,13 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
   ];
 
 
+
+  // Optimistic state after community welcome follow redirect
+  useEffect(() => {
+    if (searchParams.get('welcome_follow') === '1') {
+      setIsFollowing(true);
+    }
+  }, [searchParams]);
 
   // Load creator data
   useEffect(() => {
@@ -156,10 +164,12 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
         // Check if current user is following this creator
         if (user && creator.id !== user.id) {
           try {
-            const response = await fetch(`/api/follows?following_id=${creator.id}`);
+            const response = await fetchWithSupabaseAuth(
+              `/api/follows?following_id=${encodeURIComponent(creator.id)}`,
+            );
             if (response.ok) {
               const data = await response.json();
-              setIsFollowing(data.isFollowing);
+              setIsFollowing(!!data.isFollowing);
             }
           } catch (error) {
             console.error('Error checking follow status:', error);
@@ -303,7 +313,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
     try {
       setIsLoadingFollow(true);
       if (isFollowing) {
-        const response = await fetch('/api/follows', {
+        const response = await fetchWithSupabaseAuth('/api/follows', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -314,13 +324,13 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || 'Failed to unfollow creator');
         }
 
         setIsFollowing(false);
       } else {
-        const response = await fetch('/api/follows', {
+        const response = await fetchWithSupabaseAuth('/api/follows', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -331,7 +341,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || 'Failed to follow creator');
         }
 
@@ -643,8 +653,8 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                         <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                       ) : isFollowing ? (
                         <>
-                          <UserMinus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
-                          Unfollow
+                          <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+                          Following
                         </>
                       ) : (
                         <>
