@@ -6,13 +6,6 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { ArrowRight, ArrowLeft, Check, X, Loader2 } from 'lucide-react';
 import { CountrySelector } from './CountrySelector';
 import { fetchJsonWithAuth } from '@/src/lib/fetchWithAuth';
-import { CreatorAgreementForm } from '@/src/components/legal/CreatorAgreementForm';
-import {
-  allCreatorAgreementChecksTicked,
-  CREATOR_AGREEMENT_VERSION,
-  emptyCreatorAgreementChecks,
-  type CreatorAgreementCheckboxId,
-} from '@/src/constants/creatorAgreement';
 
 interface QuickSetupProps {
   isOpen: boolean;
@@ -43,8 +36,6 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isMobile, setIsMobile] = useState(false);
-  const [setupStep, setSetupStep] = useState<'profile' | 'agreement'>('profile');
-  const [agreementChecks, setAgreementChecks] = useState(emptyCreatorAgreementChecks());
 
   useEffect(() => {
     const handleResize = () => {
@@ -171,27 +162,8 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const isCreatorOnboarding = onboardingState.onboardingUserType !== 'music_lover';
-
-  const toggleAgreementCheck = (id: CreatorAgreementCheckboxId) => {
-    setAgreementChecks((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleProfileContinue = () => {
-    if (!validateForm()) return;
-    if (isCreatorOnboarding) {
-      setSetupStep('agreement');
-      return;
-    }
-    void handleSubmit();
-  };
-
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    if (isCreatorOnboarding && !allCreatorAgreementChecksTicked(agreementChecks)) {
-      setErrors({ submit: 'Please accept all Creator Agreement items to continue.' });
-      return;
-    }
 
     // Check if user is available before submitting
     if (!user?.id) {
@@ -226,12 +198,6 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
           country: formData.country,
           location: formData.location,
           onboarding_user_type: onboardingState.onboardingUserType,
-          ...(isCreatorOnboarding
-            ? {
-                creator_agreement_accepted: true,
-                creator_agreement_version: CREATOR_AGREEMENT_VERSION,
-              }
-            : {}),
         })
       });
 
@@ -277,56 +243,17 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
         <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10">
           <div className="flex items-center gap-2">
             <button
-              onClick={setupStep === 'agreement' ? () => setSetupStep('profile') : onBack}
+              onClick={onBack}
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
             >
               <ArrowRight className="text-white/70 hover:text-white rotate-180" size={20} />
             </button>
-            <span className="text-sm text-white/70">
-              {setupStep === 'agreement' ? 'Creator agreement' : 'Step 2 of 4'}
-            </span>
+            <span className="text-sm text-white/70">Step 2 of 4</span>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6 md:p-8">
-          {setupStep === 'agreement' ? (
-            <>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
-                Creator Agreement
-              </h2>
-              <p className="text-center text-white/70 mb-6 text-sm">
-                Before you start uploading and earning on SoundBridge, please confirm the following.
-              </p>
-              <CreatorAgreementForm checks={agreementChecks} onToggle={toggleAgreementCheck} compact />
-              {errors.submit && (
-                <div className="mb-4 mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                  <p className="text-red-400 text-sm">{errors.submit}</p>
-                </div>
-              )}
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={handleSubmit}
-                  disabled={!allCreatorAgreementChecksTicked(agreementChecks) || isSubmitting}
-                  className={`px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                    allCreatorAgreementChecksTicked(agreementChecks) && !isSubmitting
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'bg-white/10 text-white/50 cursor-not-allowed'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'I Agree — Start Creating'
-                  )}
-                </button>
-              </div>
-            </>
-          ) : (
-          <>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
             Let's set up your profile
           </h2>
@@ -446,7 +373,7 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
           {/* Continue Button */}
           <div className="flex justify-center mt-8">
             <button
-              onClick={handleProfileContinue}
+              onClick={handleSubmit}
               disabled={!canContinue || isSubmitting}
               className={`px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                 canContinue && !isSubmitting
@@ -467,8 +394,6 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
               )}
             </button>
           </div>
-          </>
-          )}
         </div>
       </div>
     </div>

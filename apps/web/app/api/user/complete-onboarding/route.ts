@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveProfileRole } from '@/src/lib/onboarding-role';
 import {
   applyCommunityEntryAttribution,
   COMMUNITY_ENTRY_CREATOR_ID_COOKIE,
@@ -64,12 +65,27 @@ export async function POST(request: NextRequest) {
       signupSource: signupSourceCookie,
     });
 
-    const updateData = {
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('onboarding_user_type, role, selected_role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const syncedRole = resolveProfileRole({
+      onboardingUserType: existingProfile?.onboarding_user_type,
+      selectedRole: existingProfile?.selected_role,
+    });
+
+    const updateData: Record<string, string | boolean> = {
       onboarding_completed: true,
       onboarding_step: 'completed',
       onboarding_completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    if (syncedRole) {
+      updateData.role = syncedRole;
+    }
 
     const { data: updatedProfile, error: updateError } = await supabase
       .from('profiles')

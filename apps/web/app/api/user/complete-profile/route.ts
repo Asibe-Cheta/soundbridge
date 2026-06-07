@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { resolveProfileRole } from '@/src/lib/onboarding-role';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -45,17 +46,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Map frontend role values to database enum values
-    // Frontend: 'musician', 'podcaster', 'event_promoter' -> Database: 'creator'
-    // Frontend: 'listener' -> Database: 'listener'
-    const databaseRole = (role === 'listener') ? 'listener' : 'creator';
-
-    if (databaseRole === 'creator' && !body.creator_agreement_accepted) {
-      return NextResponse.json(
-        { success: false, error: 'Creator agreement must be accepted before completing creator onboarding' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+    const databaseRole =
+      resolveProfileRole({
+        onboardingUserType: body.onboarding_user_type,
+        explicitRole: role === 'listener' ? 'listener' : role ? 'creator' : null,
+      }) ?? 'listener';
 
     // Validate onboarding_user_type if provided
     // Values: 'music_creator', 'podcast_creator', 'industry_professional', 'music_lover', null
@@ -104,15 +99,6 @@ export async function POST(request: NextRequest) {
       onboarding_completed_at: new Date().toISOString(),
       profile_completed: true,
 
-      // Creator agreement (required when role is creator)
-      ...(databaseRole === 'creator'
-        ? {
-            creator_agreement_accepted: true,
-            creator_agreement_accepted_at: new Date().toISOString(),
-            creator_agreement_version: body.creator_agreement_version || 'v1.0',
-          }
-        : {}),
-      
       // Update timestamp
       updated_at: new Date().toISOString()
     };

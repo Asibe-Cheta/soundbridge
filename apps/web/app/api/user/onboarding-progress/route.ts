@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { resolveProfileRole } from '@/src/lib/onboarding-role';
 
 // CORS headers for mobile app
 const corsHeaders = {
@@ -62,7 +63,6 @@ export async function POST(request: NextRequest) {
 
     // Update fields based on what's provided
     if (currentStep) updateData.onboarding_step = currentStep;
-    if (selectedRole) updateData.role = selectedRole;
     if (profileCompleted !== undefined) updateData.profile_completed = profileCompleted;
     if (firstActionCompleted !== undefined) updateData.first_action_completed = firstActionCompleted;
 
@@ -72,8 +72,22 @@ export async function POST(request: NextRequest) {
       const validUserTypes = ['music_creator', 'podcast_creator', 'industry_professional', 'music_lover', 'event_organiser', null];
       if (validUserTypes.includes(onboardingUserType)) {
         updateData.onboarding_user_type = onboardingUserType;
+        const mappedRole = resolveProfileRole({ onboardingUserType });
+        if (mappedRole) {
+          updateData.role = mappedRole;
+        }
       } else {
         console.warn('⚠️ Invalid onboarding_user_type:', onboardingUserType);
+      }
+    }
+
+    if (selectedRole) {
+      const mappedRole = resolveProfileRole({
+        selectedRole,
+        onboardingUserType: updateData.onboarding_user_type,
+      });
+      if (mappedRole) {
+        updateData.role = mappedRole;
       }
     }
 
