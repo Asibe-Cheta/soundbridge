@@ -8,6 +8,7 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import type { Stripe } from '@stripe/stripe-js';
 import { ChevronLeft, ChevronRight, Heart, Loader2, Music, Pause, Play, Sparkles } from 'lucide-react';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
+import { persistCommunityEntryCreatorClient } from '@/src/lib/community-entry';
 
 export type FanLandingTrack = {
   id: string;
@@ -166,7 +167,8 @@ export function FanLandingClient({
 
   useEffect(() => {
     trackFanLanding(creatorId, 'page_viewed');
-  }, [creatorId]);
+    persistCommunityEntryCreatorClient(canonicalUsername, creatorId);
+  }, [creatorId, canonicalUsername]);
 
   useEffect(() => {
     if (!stripePromise) {
@@ -463,6 +465,26 @@ export function FanLandingClient({
           )}
         </section>
 
+        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-inner backdrop-blur-md">
+          <a
+            href={schemeArtistUrl}
+            onClick={() => trackFanLanding(creatorId, 'join_community_cta_tapped')}
+            className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 py-4 text-base font-semibold text-white shadow-lg shadow-purple-900/35 transition hover:brightness-110"
+          >
+            Join {displayName}&apos;s community on SoundBridge
+          </a>
+          <p className="mt-3 text-sm leading-relaxed text-gray-400">
+            Get notified every time they release new music or announce an event near you.
+          </p>
+          <Link
+            href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
+            onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
+            className="mt-4 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
+          >
+            Or join on web at soundbridge.live
+          </Link>
+        </section>
+
         <section className="mt-12 rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-inner backdrop-blur-md">
           {!thanks ? (
             <>
@@ -488,15 +510,14 @@ export function FanLandingClient({
                 of this. 🙏🏾
               </p>
               <a
-                href={joinCommunityUrl}
+                href={schemeArtistUrl}
                 onClick={() => trackFanLanding(creatorId, 'app_download_cta_tapped')}
                 className="mt-6 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-rose-600 to-pink-500 py-4 text-base font-semibold text-white shadow-lg shadow-rose-900/35"
               >
-                Join {displayName}&apos;s Community on SoundBridge
+                Join {displayName}&apos;s community on SoundBridge
               </a>
-              <p className="mt-4 text-xs text-gray-500">
-                Opens in the app if installed — same link as this page (
-                <span className="break-all text-gray-400">{joinCommunityUrl.replace(/^https?:\/\//, '')}</span>).
+              <p className="mt-3 text-sm leading-relaxed text-gray-400">
+                Get notified every time they release new music or announce an event near you.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <a
@@ -517,7 +538,7 @@ export function FanLandingClient({
                 </a>
               </div>
               <Link
-                href={`/signup?redirect=${encodeURIComponent(`/${canonicalUsername}/home`)}`}
+                href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
                 onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
                 className="mt-5 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
               >

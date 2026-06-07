@@ -645,6 +645,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       // Clear storage when onboarding is completed
       if (typeof window !== 'undefined') {
         localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        if (data?.welcomeUsername) {
+          window.location.href = `/welcome/${encodeURIComponent(data.welcomeUsername)}`;
+          return;
+        }
       }
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);

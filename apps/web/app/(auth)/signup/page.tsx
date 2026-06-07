@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
+import { persistCommunityEntryCreatorClient } from '@/src/lib/community-entry';
 import Image from 'next/image';
 
 // Loading component for Suspense
@@ -82,7 +83,14 @@ function SignupContent() {
 
     const ref = searchParams.get('ref')?.trim().toLowerCase() || null;
     const source = searchParams.get('source')?.trim().toLowerCase() || null;
+    const communityCreator = searchParams.get('community_creator')?.trim().toLowerCase() || null;
     const maxAge = 60 * 60 * 24 * 30;
+
+    if (communityCreator) {
+      localStorage.setItem('soundbridge_community_entry_creator', communityCreator);
+      document.cookie = `soundbridge_community_entry_creator=${encodeURIComponent(communityCreator)}; max-age=${maxAge}; path=/; samesite=lax`;
+      persistCommunityEntryCreatorClient(communityCreator);
+    }
 
     if (ref) {
       localStorage.setItem('soundbridge_referral_code', ref);
@@ -107,6 +115,10 @@ function SignupContent() {
 
     setReferralCode(ref || storedRef || (cookieRef ? decodeURIComponent(cookieRef) : null));
     setSignupSource(source || storedSource || (cookieSource ? decodeURIComponent(cookieSource) : null));
+
+    if (communityCreator) {
+      persistCommunityEntryCreatorClient(communityCreator);
+    }
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,89 +1,131 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
+import {
+  applyCommunityEntryAttribution,
+  COMMUNITY_ENTRY_CREATOR_ID_COOKIE,
+  COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE,
+} from '@/src/lib/community-entry';
+import {
+  PARTNER_REFERRAL_COOKIE,
+  PARTNER_SOURCE_COOKIE,
+  processPartnerAttributionForAuthUser,
+} from '@/src/lib/partner-referrals';
 
-// CORS headers for mobile app
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, x-authorization, x-auth-token, x-supabase-token',
 };
 
-export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 Complete Onboarding API called');
-
-    // Use unified authentication helper (supports both cookie and bearer token)
     const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
-    
+
     if (authError || !user) {
-      console.error('❌ Authentication failed:', authError);
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
 
-    console.log('✅ User authenticated:', user.id);
+    const body = await request.json().catch(() => ({}));
+    const { userId } = body as { userId?: string };
 
-    // Parse request body
-    const body = await request.json();
-    const { userId } = body;
-
-    // Validate required fields
     if (!userId || userId !== user.id) {
-      console.error('❌ Invalid user ID');
       return NextResponse.json(
         { success: false, error: 'Invalid user ID' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
 
-    // Mark onboarding as completed
+    const cookieStore = await cookies();
+    const referralCodeCookie = cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value ?? null;
+    const signupSourceCookie = cookieStore.get(PARTNER_SOURCE_COOKIE)?.value ?? null;
+    const fanCreatorUsername =
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE)?.value?.trim().toLowerCase() || null;
+    const fanCreatorId = cookieStore.get(COMMUNITY_ENTRY_CREATOR_ID_COOKIE)?.value?.trim() || null;
+
+    await processPartnerAttributionForAuthUser(createServiceClient(), user, {
+      referralCode: referralCodeCookie,
+      source: signupSourceCookie,
+    });
+
+    const service = createServiceClient();
+    const { creatorUsername } = await applyCommunityEntryAttribution(service, user.id, {
+      creatorId: fanCreatorId,
+      creatorUsername: fanCreatorUsername,
+      signupSource: signupSourceCookie,
+    });
+
     const updateData = {
       onboarding_completed: true,
       onboarding_step: 'completed',
       onboarding_completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
-    console.log('🔄 Completing onboarding for user:', user.id);
-
-    // Update the profile
     const { data: updatedProfile, error: updateError } = await supabase
       .from('profiles')
       .update(updateData)
       .eq('id', user.id)
-      .select()
+      .select('community_entry_creator_id, community_entry_shown_at')
       .single();
 
     if (updateError) {
-      console.error('❌ Error completing onboarding:', updateError);
       return NextResponse.json(
         { success: false, error: 'Failed to complete onboarding', details: updateError.message },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeaders },
       );
     }
 
-    console.log('✅ Onboarding completed successfully for user:', user.id);
+    let welcomeUsername = creatorUsername;
+    if (!welcomeUsername && updatedProfile?.community_entry_creator_id) {
+      const { data: creator } = await service
+        .from('profiles')
+        .select('username')
+        .eq('id', updatedProfile.community_entry_creator_id)
+        .maybeSingle();
+      welcomeUsername = creator?.username ?? null;
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Onboarding completed successfully',
-      profile: updatedProfile
-    }, { headers: corsHeaders });
+    const needsWelcome =
+      !!updatedProfile?.community_entry_creator_id && !updatedProfile?.community_entry_shown_at;
 
-  } catch (error: any) {
-    console.error('❌ Error completing onboarding:', error);
+    const response = NextResponse.json(
+      {
+        success: true,
+        message: 'Onboarding completed successfully',
+        welcomeUsername: needsWelcome ? welcomeUsername : null,
+      },
+      { headers: corsHeaders },
+    );
+
+    for (const name of [
+      PARTNER_REFERRAL_COOKIE,
+      PARTNER_SOURCE_COOKIE,
+      COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE,
+      COMMUNITY_ENTRY_CREATOR_ID_COOKIE,
+    ]) {
+      response.cookies.set(name, '', { path: '/', maxAge: 0, sameSite: 'lax' });
+    }
+
+    return response;
+  } catch (error: unknown) {
+    console.error('[complete-onboarding]', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error', details: error.message },
-      { status: 500, headers: corsHeaders }
+      {
+        success: false,
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500, headers: corsHeaders },
     );
   }
 }

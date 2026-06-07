@@ -11,6 +11,7 @@ import { OnlinePresenceProvider } from "@/src/contexts/OnlinePresenceContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { OnboardingProvider } from "@/src/contexts/OnboardingContext";
 import { OnboardingManager } from "@/src/components/onboarding/OnboardingManager";
+import { CommunityWelcomeGate } from "@/src/components/community/CommunityWelcomeGate";
 import Navbar from "@/src/components/layout/Navbar";
 import { StructuredData, organizationStructuredData, websiteStructuredData } from "@/src/components/seo/StructuredData";
 import { getSiteUrl } from '@/src/lib/site-url';
@@ -178,6 +179,7 @@ export default function RootLayout({
                     {children}
                     <GlobalAudioPlayerGate />
                     <OnboardingManager />
+                    <CommunityWelcomeGate />
                     <CookieConsentToast />
                     <CookieConsentScripts />
                   </AudioPlayerProvider>
