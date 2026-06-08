@@ -488,10 +488,11 @@ export function FanLandingClient({
         <section className="mt-12 rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-inner backdrop-blur-md">
           {!thanks ? (
             <>
-              <h2 className="text-center text-xl font-semibold">Connect with {displayName}</h2>
-              <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
-                {displayName} pours everything into their music. Show them you are listening with a direct tip. Every
-                penny goes straight to them.
+              <h2 className="text-center text-xl font-semibold leading-snug sm:text-2xl">
+                Support {displayName} and join their community.
+              </h2>
+              <p className="mt-3 text-center text-sm leading-relaxed text-gray-400">
+                Be one of the first. Let them know you were here.
               </p>
               <button
                 type="button"
@@ -500,7 +501,19 @@ export function FanLandingClient({
               >
                 Support with {defaultTipLabel}
               </button>
-              <p className="mt-2 text-center text-xs text-gray-500">You can choose your own amount after tapping</p>
+              <p className="mt-2 text-center text-xs text-gray-500">
+                You choose the amount. {defaultTipLabel} is just the start.
+              </p>
+              <Link
+                href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
+                onClick={() => {
+                  persistCommunityEntryCreatorClient(canonicalUsername, creatorId);
+                  trackFanLanding(creatorId, 'free_join_cta_tapped');
+                }}
+                className="mt-4 block text-center text-xs text-gray-500 underline underline-offset-2 transition hover:text-gray-400"
+              >
+                Join for free and follow their journey
+              </Link>
             </>
           ) : (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center">
