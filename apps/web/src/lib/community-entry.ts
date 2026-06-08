@@ -46,6 +46,18 @@ export function persistCommunityEntryCreatorClient(username: string, creatorId?:
     localStorage.setItem(COMMUNITY_ENTRY_CREATOR_ID_STORAGE, creatorId);
     document.cookie = `${COMMUNITY_ENTRY_CREATOR_ID_COOKIE}=${encodeURIComponent(creatorId)}; max-age=${ATTRIBUTION_MAX_AGE}; path=/; samesite=lax${domain}`;
   }
+
+  // Fan/community entry must not inherit a stale Sound Academy institutional source.
+  clearInstitutionalSignupSourceClient();
+}
+
+/** Remove Sound Academy (or other) institutional signup source from client storage. */
+export function clearInstitutionalSignupSourceClient() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('soundbridge_signup_source');
+  const domain = getCommunityEntryCookieDomainAttribute();
+  document.cookie = `${PARTNER_SOURCE_COOKIE}=; max-age=0; path=/; samesite=lax${domain}`;
+  document.cookie = `${PARTNER_SOURCE_COOKIE}=; max-age=0; path=/; samesite=lax`;
 }
 
 export function clearCommunityEntryAttributionClient() {

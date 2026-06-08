@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
-import { persistCommunityEntryCreatorClient } from '@/src/lib/community-entry';
+import { persistCommunityEntryCreatorClient, readCommunityEntryAttributionFromClient, clearInstitutionalSignupSourceClient } from '@/src/lib/community-entry';
 import Image from 'next/image';
 
 // Loading component for Suspense
@@ -39,6 +39,7 @@ function SignupContent() {
   const [error, setError] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [signupSource, setSignupSource] = useState<string | null>(null);
+  const [communityCreator, setCommunityCreator] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -83,11 +84,19 @@ function SignupContent() {
 
     const ref = searchParams.get('ref')?.trim().toLowerCase() || null;
     const source = searchParams.get('source')?.trim().toLowerCase() || null;
-    const communityCreator = searchParams.get('community_creator')?.trim().toLowerCase() || null;
+    const communityCreatorParam = searchParams.get('community_creator')?.trim().toLowerCase() || null;
     const maxAge = 60 * 60 * 24 * 30;
+    const isExplicitSoundAcademy = source === 'sound_academy';
 
-    if (communityCreator) {
-      persistCommunityEntryCreatorClient(communityCreator);
+    if (communityCreatorParam) {
+      persistCommunityEntryCreatorClient(communityCreatorParam);
+      setCommunityCreator(communityCreatorParam);
+      if (!isExplicitSoundAcademy) {
+        clearInstitutionalSignupSourceClient();
+      }
+    } else {
+      const storedCommunity = readCommunityEntryAttributionFromClient();
+      setCommunityCreator(storedCommunity.creatorUsername);
     }
 
     if (ref) {
@@ -112,11 +121,13 @@ function SignupContent() {
     const cookieSource = cookieValue('soundbridge_signup_source');
 
     setReferralCode(ref || storedRef || (cookieRef ? decodeURIComponent(cookieRef) : null));
-    setSignupSource(source || storedSource || (cookieSource ? decodeURIComponent(cookieSource) : null));
 
-    if (communityCreator) {
-      persistCommunityEntryCreatorClient(communityCreator);
+    const hasCommunityEntry = !!(communityCreatorParam || readCommunityEntryAttributionFromClient().creatorUsername);
+    let resolvedSource = source || storedSource || (cookieSource ? decodeURIComponent(cookieSource) : null);
+    if (hasCommunityEntry && !isExplicitSoundAcademy) {
+      resolvedSource = null;
     }
+    setSignupSource(resolvedSource);
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -353,6 +364,27 @@ function SignupContent() {
               <p className="text-sm text-purple-100">
                 Welcome, Sound Academy student. Create your free SoundBridge account to activate
                 your one year Premium access.
+              </p>
+            </div>
+          )}
+
+          {communityCreator && signupSource !== 'sound_academy' && (
+            <div
+              style={{
+                textAlign: 'center',
+                background: 'rgba(236, 72, 153, 0.12)',
+                border: '1px solid rgba(244, 114, 182, 0.35)',
+                borderRadius: '16px',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                color: 'white',
+              }}
+            >
+              <p className="text-sm font-semibold text-pink-100">
+                Join @{communityCreator}&apos;s community on SoundBridge
+              </p>
+              <p className="mt-2 text-xs text-pink-100/80">
+                Create your free account — after onboarding you&apos;ll get a one-time welcome to connect with them.
               </p>
             </div>
           )}
