@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
-import { ChevronLeft, ChevronRight, Heart, Loader2, Music, Pause, Play, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, Heart, Loader2, Music, Pause, Play, Sparkles } from 'lucide-react';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import { persistCommunityEntryCreatorClient } from '@/src/lib/community-entry';
 
@@ -147,6 +147,8 @@ export function FanLandingClient({
   tipCurrency,
 }: FanLandingClientProps) {
   const [activeTrackIndex, setActiveTrackIndex] = useState(0);
+  const [shuffleDir, setShuffleDir] = useState(0);
+  const shuffleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [bioExpanded, setBioExpanded] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [thanks, setThanks] = useState(false);
@@ -201,10 +203,56 @@ export function FanLandingClient({
     a.onended = () => setPlayingId(null);
   };
 
-  const cycle = (dir: number) => {
-    if (tracks.length === 0) return;
-    setActiveTrackIndex((i) => (i + dir + tracks.length) % tracks.length);
-    stopPreview();
+  useEffect(() => {
+    return () => {
+      if (shuffleTimerRef.current) clearTimeout(shuffleTimerRef.current);
+    };
+  }, []);
+
+  const cycle = useCallback(
+    (dir: number) => {
+      if (tracks.length === 0 || shuffleDir !== 0) return;
+      setShuffleDir(dir);
+      stopPreview();
+      if (shuffleTimerRef.current) clearTimeout(shuffleTimerRef.current);
+      shuffleTimerRef.current = setTimeout(() => {
+        setActiveTrackIndex((i) => (i + dir + tracks.length) % tracks.length);
+        shuffleTimerRef.current = setTimeout(() => setShuffleDir(0), 300);
+      }, 320);
+    },
+    [tracks.length, shuffleDir, stopPreview],
+  );
+
+  const cardShuffleMotion = (offset: number) => {
+    const z = 30 - offset * 10;
+    const idle = {
+      y: offset * 8,
+      scale: 1 - offset * 0.04,
+      opacity: offset === 0 ? 1 : 0.55,
+      rotate: 0,
+      x: 0,
+      zIndex: z,
+    };
+    if (shuffleDir === 0) return idle;
+
+    const spread = 18;
+    if (shuffleDir === 1) {
+      if (offset === 0) {
+        return { y: 72, x: spread, rotate: 22, opacity: 0, scale: 0.8, zIndex: 5 };
+      }
+      if (offset === 1) {
+        return { y: -8, x: -spread * 0.5, rotate: -10, opacity: 1, scale: 1, zIndex: 30 };
+      }
+      return { y: 2, x: spread * 0.35, rotate: 8, opacity: 0.62, scale: 0.95, zIndex: 20 };
+    }
+
+    if (offset === 0) {
+      return { y: -58, x: -spread, rotate: -20, opacity: 0, scale: 0.82, zIndex: 5 };
+    }
+    if (offset === 1) {
+      return { y: -6, x: spread * 0.45, rotate: 9, opacity: 1, scale: 1, zIndex: 30 };
+    }
+    return { y: 8, x: -spread * 0.3, rotate: -6, opacity: 0.6, scale: 0.94, zIndex: 20 };
   };
 
   const bioSnippet = bio
@@ -381,31 +429,31 @@ export function FanLandingClient({
             </div>
           ) : (
             <div className="relative mx-auto w-full max-w-sm">
-              <div className="relative min-h-[220px]">
+              <div className="relative min-h-[200px]">
                 {[2, 1, 0].map((offset) => {
                   const idx = (activeTrackIndex - offset + tracks.length) % tracks.length;
                   const t = tracks[idx];
                   if (!t) return null;
-                  const z = 30 - offset * 10;
-                  const scale = 1 - offset * 0.04;
-                  const y = offset * 10;
+                  const motionProps = cardShuffleMotion(offset);
                   return (
-                    <button
+                    <motion.button
                       key={`${t.id}-${offset}`}
                       type="button"
                       onClick={() => {
+                        if (shuffleDir !== 0) return;
                         if (offset === 0) togglePlay(t);
                         else {
                           setActiveTrackIndex(idx);
                           stopPreview();
                         }
                       }}
-                      className="absolute left-0 right-0 mx-auto w-full rounded-2xl border border-white/10 bg-white/10 p-4 text-left shadow-xl backdrop-blur-md transition-transform"
-                      style={{
-                        zIndex: z,
-                        transform: `translateY(${y}px) scale(${scale})`,
-                        opacity: offset === 0 ? 1 : 0.55,
+                      animate={motionProps}
+                      transition={{
+                        duration: shuffleDir !== 0 ? 0.34 : 0.28,
+                        ease: shuffleDir !== 0 ? [0.32, 0.72, 0, 1] : [0.25, 0.1, 0.25, 1],
                       }}
+                      className="absolute left-0 right-0 mx-auto w-full origin-center rounded-2xl border border-white/10 bg-white/10 p-4 text-left shadow-xl backdrop-blur-md"
+                      style={{ zIndex: motionProps.zIndex }}
                     >
                       <div className="flex gap-3">
                         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-black/40">
@@ -439,53 +487,35 @@ export function FanLandingClient({
                           ) : null}
                         </div>
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
-              <div className="mt-4 flex items-center justify-center gap-4">
+              <div className="-mt-1 flex flex-col items-center justify-center gap-1.5">
                 <button
                   type="button"
                   aria-label="Previous track"
+                  disabled={shuffleDir !== 0}
                   onClick={() => cycle(-1)}
-                  className="rounded-full border border-white/15 bg-white/5 p-2 hover:bg-white/10"
+                  className="rounded-full border border-white/15 bg-white/5 p-2 hover:bg-white/10 disabled:opacity-40"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronUp className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
                   aria-label="Next track"
+                  disabled={shuffleDir !== 0}
                   onClick={() => cycle(1)}
-                  className="rounded-full border border-white/15 bg-white/5 p-2 hover:bg-white/10"
+                  className="rounded-full border border-white/15 bg-white/5 p-2 hover:bg-white/10 disabled:opacity-40"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronDown className="h-5 w-5" />
                 </button>
               </div>
             </div>
           )}
         </section>
 
-        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-inner backdrop-blur-md">
-          <a
-            href={schemeArtistUrl}
-            onClick={() => trackFanLanding(creatorId, 'join_community_cta_tapped')}
-            className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 py-4 text-base font-semibold text-white shadow-lg shadow-purple-900/35 transition hover:brightness-110"
-          >
-            Join {displayName}&apos;s community on SoundBridge
-          </a>
-          <p className="mt-3 text-sm leading-relaxed text-gray-400">
-            Get notified every time they release new music or announce an event near you.
-          </p>
-          <Link
-            href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
-            onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
-            className="mt-4 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
-          >
-            Or join on web at soundbridge.live
-          </Link>
-        </section>
-
-        <section className="mt-12 rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-inner backdrop-blur-md">
+        <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-inner backdrop-blur-md">
           {!thanks ? (
             <>
               <h2 className="text-center text-xl font-semibold leading-snug sm:text-2xl">
@@ -559,6 +589,26 @@ export function FanLandingClient({
               </Link>
             </motion.div>
           )}
+        </section>
+
+        <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-inner backdrop-blur-md">
+          <a
+            href={schemeArtistUrl}
+            onClick={() => trackFanLanding(creatorId, 'join_community_cta_tapped')}
+            className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 py-4 text-base font-semibold text-white shadow-lg shadow-purple-900/35 transition hover:brightness-110"
+          >
+            Join {displayName}&apos;s community on SoundBridge
+          </a>
+          <p className="mt-3 text-sm leading-relaxed text-gray-400">
+            Get notified every time they release new music or announce an event near you.
+          </p>
+          <Link
+            href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
+            onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
+            className="mt-4 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
+          >
+            Or join on web at soundbridge.live
+          </Link>
         </section>
 
         <section className="mt-12">
