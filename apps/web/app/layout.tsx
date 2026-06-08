@@ -38,7 +38,6 @@ export const metadata: Metadata = {
     'music events',
     'music community',
     'afrobeats',
-    'gospel music',
     'uk drill',
     'highlife',
     'jazz',

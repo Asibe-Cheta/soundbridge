@@ -3,6 +3,7 @@
 import React from 'react';
 import { useSubscription, SubscriptionData } from '../../hooks/useSubscription';
 import { Crown, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
 
 interface SubscriptionStatusProps {
   className?: string;
@@ -220,7 +221,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {(subscription.tier === 'free'
             ? [
-                '250MB storage (~30–40 tracks)',
+                PUBLIC_TIER_LIMITS.free.summary,
                 'Unlimited event promotion',
                 'Upload & sell music — keep 85%',
                 'Receive tips & host paid events — keep 85%',
@@ -231,9 +232,9 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
               ]
             : subscription.tier === 'premium'
             ? [
-                '2GB storage (~250 tracks)',
+                PUBLIC_TIER_LIMITS.premium.storageLabel,
+                PUBLIC_TIER_LIMITS.premium.trackUploads,
                 'Sell audio downloads',
-                'Unlimited uploads*',
                 'Pro badge on profile',
                 'Custom profile URL',
                 'Featured on Discover 1×/month',
@@ -244,8 +245,8 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
                 'Priority support',
               ]
             : [
-                '10GB storage (~1,000+ tracks)',
-                'Unlimited uploads',
+                PUBLIC_TIER_LIMITS.unlimited.storageLabel,
+                PUBLIC_TIER_LIMITS.unlimited.trackUploads,
                 'Unlimited badge on profile',
                 'Featured on Discover 2×/month',
                 'Top priority in feed',

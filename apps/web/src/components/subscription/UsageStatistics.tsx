@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSubscription } from '../../hooks/useSubscription';
 import { Music, Mic, Calendar, HardDrive, Play, Users, Loader2, AlertCircle, AlertTriangle, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
 
 interface UsageStatisticsProps {
   className?: string;
@@ -308,14 +309,14 @@ const UsageStatistics: React.FC<UsageStatisticsProps> = ({ className = '' }) => 
           </div>
           <div>
             <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              {data?.subscription?.tier === 'premium' ? '7 Uploads Per Month' : data?.subscription?.tier === 'unlimited' ? 'Unlimited Uploads' : '250MB storage (~30–40 tracks)'}
+              {data?.subscription?.tier === 'premium' ? PUBLIC_TIER_LIMITS.premium.trackUploads : data?.subscription?.tier === 'unlimited' ? PUBLIC_TIER_LIMITS.unlimited.trackUploads : PUBLIC_TIER_LIMITS.free.trackUploadsShort}
             </h4>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               {data?.subscription?.tier === 'premium' 
-                ? 'Premium users can upload up to 7 tracks per month. Limit resets on the 1st of each month.'
+                ? `${PUBLIC_TIER_LIMITS.premium.storageLabel}. ${PUBLIC_TIER_LIMITS.premium.trackUploads}.`
                 : data?.subscription?.tier === 'unlimited'
-                ? 'Unlimited users can upload as many tracks as they want, up to 10GB storage.'
-                : 'Free users get 250MB storage (roughly 30–40 tracks). Upgrade to Premium (2GB) or Unlimited (10GB) for more.'
+                ? `${PUBLIC_TIER_LIMITS.unlimited.storageLabel}. ${PUBLIC_TIER_LIMITS.unlimited.trackUploads}.`
+                : `${PUBLIC_TIER_LIMITS.free.summary}. Upgrade to Premium (${PUBLIC_TIER_LIMITS.premium.storage}) or Unlimited (${PUBLIC_TIER_LIMITS.unlimited.storage}) for more.`
               }
             </p>
           </div>

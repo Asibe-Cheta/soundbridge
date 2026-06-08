@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { SubscriptionService } from '../../src/services/SubscriptionService';
 import { Star, CheckCircle, Zap, TrendingUp, BarChart3, DollarSign, Users, Music, Mic, Calendar, Database, MessageCircle, PenTool, Shield, Globe, Code, Headphones, ArrowRight, Sparkles, Crown } from 'lucide-react';
+import { PUBLIC_TIER_LIMITS, FREE_TIER_STORAGE } from '@/src/constants/public-tier-limits';
 
 // Separate component for search params handling (required for Suspense)
 function PricingContent() {
@@ -89,7 +90,9 @@ function PricingContent() {
       borderColor: 'border-blue-200/50',
       buttonColor: 'bg-blue-600 hover:bg-blue-700',
       features: [
-        '250MB storage (~30–40 tracks)',
+        PUBLIC_TIER_LIMITS.free.storageLabel,
+        PUBLIC_TIER_LIMITS.free.trackUploadsLifetime,
+        PUBLIC_TIER_LIMITS.free.activeUploads,
         'Unlimited event promotion',
         'Create & sell event tickets',
         'Basic profile & networking',
@@ -111,10 +114,10 @@ function PricingContent() {
       borderColor: 'border-purple-200/50',
       buttonColor: 'bg-purple-600 hover:bg-purple-700',
       features: [
-        '2GB storage (~250 tracks)',
+        PUBLIC_TIER_LIMITS.premium.storageLabel,
+        PUBLIC_TIER_LIMITS.premium.trackUploads,
         'Same 85% creator share on sales, tips & tickets',
         'Sell audio downloads',
-        'Unlimited uploads*',
         'Pro badge on profile',
         'Custom profile URL',
         'Featured on Discover 1×/month',
@@ -139,8 +142,8 @@ function PricingContent() {
       borderColor: 'border-yellow-200/50',
       buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
       features: [
-        '10GB storage (~1,000+ tracks)',
-        'Unlimited uploads',
+        PUBLIC_TIER_LIMITS.unlimited.storageLabel,
+        PUBLIC_TIER_LIMITS.unlimited.trackUploads,
         'Unlimited badge on profile',
         'Featured on Discover 2×/month',
         'Top priority in feed',
@@ -163,10 +166,10 @@ function PricingContent() {
       category: 'Content & Uploads',
       icon: <Music className="h-6 w-6 text-blue-500" />,
       items: [
-        { name: 'Track Uploads', free: '250MB (~30–40 tracks)', premium: '2GB (~250 tracks)', unlimited: '10GB (~1,000+ tracks)' },
+        { name: 'Track Uploads', free: PUBLIC_TIER_LIMITS.free.trackUploadsShort, premium: PUBLIC_TIER_LIMITS.premium.trackUploads, unlimited: PUBLIC_TIER_LIMITS.unlimited.trackUploads },
         { name: 'Professional Searches', free: '5/month', premium: 'Unlimited', unlimited: 'Unlimited' },
         { name: 'Direct Messages (sent)', free: 'Unlimited', premium: 'Unlimited', unlimited: 'Unlimited' },
-        { name: 'Storage Space', free: '250MB', premium: '2GB', unlimited: '10GB' },
+        { name: 'Storage Space', free: PUBLIC_TIER_LIMITS.free.storage, premium: PUBLIC_TIER_LIMITS.premium.storage, unlimited: PUBLIC_TIER_LIMITS.unlimited.storage },
         { name: 'Audio Previews in Posts', free: '30 seconds', premium: '60 seconds', unlimited: '60 seconds' },
         { name: 'Max File Size', free: '50MB', premium: '50MB', unlimited: '50MB' }
       ]
@@ -460,15 +463,15 @@ function PricingContent() {
                 <div className="space-y-3 text-white/70">
                   <div className="flex justify-between items-center">
                     <span>Free Tier</span>
-                    <span className="text-blue-400 font-semibold">250MB • 2-5 min</span>
+                    <span className="text-blue-400 font-semibold">{PUBLIC_TIER_LIMITS.free.storage} • 2-5 min</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Premium Tier</span>
-                    <span className="text-purple-400 font-semibold">2GB • 1-2 min</span>
+                    <span className="text-purple-400 font-semibold">{PUBLIC_TIER_LIMITS.premium.storage} • 1-2 min</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Unlimited Tier</span>
-                    <span className="text-yellow-400 font-semibold">10GB • &lt; 1 min</span>
+                    <span className="text-yellow-400 font-semibold">{PUBLIC_TIER_LIMITS.unlimited.storage} • &lt; 1 min</span>
                   </div>
                 </div>
               </div>
@@ -622,7 +625,7 @@ function PricingContent() {
                 },
                 {
                   q: "What happens to my content if I downgrade?",
-                  a: "Your content is never deleted. When you downgrade to Free (250MB), tracks within that limit remain public. Tracks exceeding 250MB are set to private for 90 days — you can re-subscribe at any time to restore them."
+                  a: `Your content is never deleted. When you downgrade to Free (${FREE_TIER_STORAGE}), tracks within that limit remain public. Tracks exceeding ${FREE_TIER_STORAGE} are set to private for 90 days — you can re-subscribe at any time to restore them.`
                 },
                 {
                   q: "How does revenue sharing work?",
@@ -630,31 +633,31 @@ function PricingContent() {
                 },
                 {
                   q: "Do you offer a free trial?",
-                  a: "We don't offer a traditional free trial because our Free tier IS your trial! You get 250MB storage to upload your music and podcasts, plus professional searches and messaging — no credit card required. When you're ready to upgrade, you're protected by our 7-day money-back guarantee."
+                  a: `We don't offer a traditional free trial because our Free tier IS your trial! You get ${PUBLIC_TIER_LIMITS.free.summary}, plus professional searches and messaging — no credit card required. When you're ready to upgrade, you're protected by our 7-day money-back guarantee.`
                 },
                 {
                   q: "How does the 7-day money-back guarantee work?",
-                  a: "If you upgrade and decide it's not for you within 7 days of payment, request a refund from your billing settings. You'll receive a full refund within 3-5 business days, no questions asked. Your account will revert to the Free tier (250MB). Content over 250MB becomes private (not deleted); re-subscribe anytime to restore public access."
+                  a: `If you upgrade and decide it's not for you within 7 days of payment, request a refund from your billing settings. You'll receive a full refund within 3-5 business days, no questions asked. Your account will revert to the Free tier (${FREE_TIER_STORAGE}). Content over ${FREE_TIER_STORAGE} becomes private (not deleted); re-subscribe anytime to restore public access.`
                 },
                 {
                   q: "What happens to my content if I cancel or request a refund?",
-                  a: "Your content is never deleted. When you downgrade to Free (250MB), tracks within that limit stay public. Tracks exceeding 250MB are set to private for 90 days (still accessible to you). Re-subscribe anytime to restore public access to all your content."
+                  a: `Your content is never deleted. When you downgrade to Free (${FREE_TIER_STORAGE}), tracks within that limit stay public. Tracks exceeding ${FREE_TIER_STORAGE} are set to private for 90 days (still accessible to you). Re-subscribe anytime to restore public access to all your content.`
                 },
                 {
                   q: "What are the upload and storage limits?",
-                  a: "Free tier: 250MB storage (roughly 30–40 high-quality tracks). Premium: 2GB storage. Unlimited: 10GB storage. All plans include our smart validation system. Upgrade to Premium or Unlimited for more."
+                  a: `Free: ${PUBLIC_TIER_LIMITS.free.summary}. Premium (${PUBLIC_TIER_LIMITS.premium.priceMonthly}): ${PUBLIC_TIER_LIMITS.premium.storageLabel}, ${PUBLIC_TIER_LIMITS.premium.trackUploads.toLowerCase()}. Unlimited (${PUBLIC_TIER_LIMITS.unlimited.priceMonthly}): ${PUBLIC_TIER_LIMITS.unlimited.storageLabel}, ${PUBLIC_TIER_LIMITS.unlimited.trackUploads.toLowerCase()}.`
                 },
                 {
                   q: "How much storage do I get for free?",
-                  a: "250MB, enough for approximately 30–40 high-quality audio tracks."
+                  a: `${PUBLIC_TIER_LIMITS.free.storageLabel}. ${PUBLIC_TIER_LIMITS.free.trackUploadsLifetime}. ${PUBLIC_TIER_LIMITS.free.activeUploads}.`
                 },
                 {
                   q: "How many tracks can I upload for free?",
-                  a: "The free tier is storage-based (250MB), not track-count-based. At an average of ~8MB per high-quality track, that's roughly 30–40 tracks. Upgrade to Premium (2GB) or Unlimited (10GB) for more."
+                  a: `${PUBLIC_TIER_LIMITS.free.trackUploadsLifetime}. ${PUBLIC_TIER_LIMITS.free.activeUploads}. Upgrade to Premium (${PUBLIC_TIER_LIMITS.premium.storage}) or Unlimited (${PUBLIC_TIER_LIMITS.unlimited.storage}) for unlimited track uploads and more storage.`
                 },
                 {
                   q: "What happens to my content if I downgrade from Premium/Unlimited to Free?",
-                  a: "When you downgrade, you get a 90-day grace period where all your content remains accessible. Tracks over the 250MB free limit are set to private (not deleted) — still accessible to you, but not public. You can re-subscribe anytime to restore public access. Nothing is deleted."
+                  a: `When you downgrade, you get a 90-day grace period where all your content remains accessible. Tracks over the ${FREE_TIER_STORAGE} free limit are set to private (not deleted) — still accessible to you, but not public. You can re-subscribe anytime to restore public access. Nothing is deleted.`
                 },
                 {
                   q: "How does the upload validation work?",

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { ArrowRight, ArrowLeft, Check, Shield } from 'lucide-react';
+import { PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
 
 interface TierSelectionProps {
   isOpen: boolean;
@@ -78,7 +79,15 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-green-400 flex-shrink-0" />
-                  <span className="text-sm">250MB storage</span>
+                  <span className="text-sm">{PUBLIC_TIER_LIMITS.free.storageLabel}</span>
+                </li>
+                <li className="flex items-center gap-2 text-white/90">
+                  <Check size={18} className="text-green-400 flex-shrink-0" />
+                  <span className="text-sm">{PUBLIC_TIER_LIMITS.free.trackUploadsLifetime}</span>
+                </li>
+                <li className="flex items-center gap-2 text-white/90">
+                  <Check size={18} className="text-green-400 flex-shrink-0" />
+                  <span className="text-sm">{PUBLIC_TIER_LIMITS.free.activeUploads}</span>
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-green-400 flex-shrink-0" />

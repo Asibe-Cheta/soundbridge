@@ -9,6 +9,9 @@ import { Footer } from '@/src/components/layout/Footer';
 import { StructuredData } from '@/src/components/seo/StructuredData';
 import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
 import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
+import { HomepageDifferentiationSection } from '@/src/components/marketing/HomepageDifferentiationSection';
+import { HomepagePartnersSection } from '@/src/components/marketing/HomepagePartnersSection';
+import { PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
 import {
   ArrowRight,
   Briefcase,
@@ -27,7 +30,11 @@ import {
   BookOpen
 } from 'lucide-react';
 
-export default function HomePageClient() {
+type HomePageClientProps = {
+  creatorCountRounded?: number;
+};
+
+export default function HomePageClient({ creatorCountRounded = 0 }: HomePageClientProps) {
   const { user, loading } = useAuth();
   const { theme } = useTheme();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -594,6 +601,8 @@ export default function HomePageClient() {
           </div>
         </section>
 
+        <HomepagePartnersSection creatorCountRounded={creatorCountRounded} isDark={theme === 'dark'} />
+
         {/* Value Props */}
         <section id="features" className="mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -644,6 +653,8 @@ export default function HomePageClient() {
             </div>
           </div>
         </section>
+
+        <HomepageDifferentiationSection isDark={theme === 'dark'} />
 
         {/* DM Problem */}
         <section className="mb-16">
@@ -724,7 +735,7 @@ export default function HomePageClient() {
                   Upload Music Now
                 </h2>
                 <p className={`text-lg mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Start free with 250MB storage (about 30-40 tracks) and share your sound with the world
+                  Start free with {PUBLIC_TIER_LIMITS.free.summary} and share your sound with the world
                 </p>
                 <Link
                   href="/signup"

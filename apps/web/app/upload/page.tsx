@@ -17,6 +17,7 @@ import type { AudioQualitySettings, AudioQualityTier } from '../../src/lib/types
 import { Toaster } from '../../src/components/ui/Toast';
 import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 import { MAX_MOOD_TAGS_PER_TRACK, MOOD_TAG_OPTIONS } from '../../src/lib/discovery-intelligence';
+import { PUBLIC_TIER_LIMITS } from '../../src/constants/public-tier-limits';
 import { createBrowserClient } from '../../src/lib/supabase';
 import { toast as hotToast } from 'react-hot-toast';
 import { Upload, Music, Mic, Disc, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search, BookOpen } from 'lucide-react';
@@ -1898,9 +1899,9 @@ export default function UnifiedUploadPage() {
               )}
 
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Need more than 250MB?{' '}
+                Need more than {PUBLIC_TIER_LIMITS.free.storage}?{' '}
                 <Link href="/pricing" className="text-blue-600 dark:text-blue-400 hover:underline">
-                  Upgrade for 2GB or 10GB storage
+                  Upgrade for {PUBLIC_TIER_LIMITS.premium.storage} or {PUBLIC_TIER_LIMITS.unlimited.storage} storage
                 </Link>
                 .
               </p>
