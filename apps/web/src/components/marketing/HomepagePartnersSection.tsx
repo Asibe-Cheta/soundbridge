@@ -3,7 +3,7 @@
 import Image from 'next/image';
 
 type HomepagePartnersSectionProps = {
-  creatorCountRounded: number;
+  userCountRounded: number;
   isDark: boolean;
 };
 
@@ -29,11 +29,11 @@ const PARTNERS = [
   },
 ];
 
-export function HomepagePartnersSection({ creatorCountRounded, isDark }: HomepagePartnersSectionProps) {
+export function HomepagePartnersSection({ userCountRounded, isDark }: HomepagePartnersSectionProps) {
   const statLabel =
-    creatorCountRounded > 0
-      ? `${creatorCountRounded.toLocaleString()}+ creators across the UK, Nigeria, Ghana and beyond`
-      : 'Creators across the UK, Nigeria, Ghana and beyond';
+    userCountRounded > 0
+      ? `${userCountRounded.toLocaleString()}+ users across the UK, Nigeria, Ghana and beyond`
+      : 'Users across the UK, Nigeria, Ghana and beyond';
 
   return (
     <section className="mb-16" aria-labelledby="partners-heading">

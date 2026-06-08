@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import HomePageClient from './page.client';
-import { getPublicCreatorCountRounded } from '@/src/lib/public-creator-count';
+import { getPublicUserCountRounded } from '@/src/lib/public-creator-count';
 import { getSiteUrl } from '@/src/lib/site-url';
 
 const site = getSiteUrl();
@@ -36,6 +36,6 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const creatorCountRounded = await getPublicCreatorCountRounded();
-  return <HomePageClient creatorCountRounded={creatorCountRounded} />;
+  const userCountRounded = await getPublicUserCountRounded();
+  return <HomePageClient userCountRounded={userCountRounded} />;
 }

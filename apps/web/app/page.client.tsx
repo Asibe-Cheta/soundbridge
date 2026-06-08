@@ -31,10 +31,10 @@ import {
 } from 'lucide-react';
 
 type HomePageClientProps = {
-  creatorCountRounded?: number;
+  userCountRounded?: number;
 };
 
-export default function HomePageClient({ creatorCountRounded = 0 }: HomePageClientProps) {
+export default function HomePageClient({ userCountRounded = 0 }: HomePageClientProps) {
   const { user, loading } = useAuth();
   const { theme } = useTheme();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -601,7 +601,7 @@ export default function HomePageClient({ creatorCountRounded = 0 }: HomePageClie
           </div>
         </section>
 
-        <HomepagePartnersSection creatorCountRounded={creatorCountRounded} isDark={theme === 'dark'} />
+        <HomepagePartnersSection userCountRounded={userCountRounded} isDark={theme === 'dark'} />
 
         {/* Value Props */}
         <section id="features" className="mb-16">
