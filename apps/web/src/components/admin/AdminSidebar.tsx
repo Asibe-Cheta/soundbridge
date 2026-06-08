@@ -25,12 +25,14 @@ import {
   Wallet,
   Handshake,
   Landmark,
+  Mail,
   X,
 } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/bulk-email', label: 'Bulk Email', icon: Mail },
   { href: '/admin/moderation', label: 'Moderation', icon: Shield },
   { href: '/admin/verification', label: 'Provider Verification', icon: BadgeCheck },
   { href: '/admin/persona-verification', label: 'Persona providers', icon: ScanFace },
