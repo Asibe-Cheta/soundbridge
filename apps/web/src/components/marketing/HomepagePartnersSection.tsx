@@ -10,21 +10,25 @@ type HomepagePartnersSectionProps = {
 const PARTNERS = [
   {
     name: 'Sound Academy UK',
+    descriptor: 'Official student access partner',
     src: '/images/partners/sa-2.png',
     type: 'image' as const,
   },
   {
     name: 'University of Bedfordshire',
+    descriptor: 'Campus speaking and partnership programme',
     type: 'text' as const,
   },
   {
-    name: 'Radio LaB 97.1FM',
-    src: '/images/partners/beds-fm.png',
+    name: 'Talk 2 Dan Media',
+    descriptor: 'Creative industry event partnership',
+    src: '/images/partners/T2Dhome.png',
     type: 'image' as const,
   },
   {
-    name: 'Talk 2 Dan Media',
-    src: '/images/partners/T2Dhome.png',
+    name: 'Radio LaB 97.1FM',
+    descriptor: 'Official broadcasting partner',
+    src: '/images/partners/beds-fm.png',
     type: 'image' as const,
   },
 ];
@@ -49,39 +53,46 @@ export function HomepagePartnersSection({ userCountRounded, isDark }: HomepagePa
           Trusted by creators and institutions across the UK and beyond
         </h2>
 
-        <ul className="mt-8 flex flex-wrap items-center justify-center gap-8 sm:gap-10 lg:gap-12">
+        <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 sm:gap-x-8 lg:gap-x-10">
           {PARTNERS.map((partner) => (
-            <li key={partner.name} className="flex shrink-0 items-center justify-center">
+            <li key={partner.name} className="flex flex-col items-center text-center">
               {partner.type === 'image' ? (
-                <div className="group relative h-12 w-[120px] sm:h-14 sm:w-[140px]">
+                <div className="relative h-12 w-[120px] sm:h-14 sm:w-[140px]">
                   <Image
                     src={partner.src}
                     alt={partner.name}
                     fill
-                    className="object-contain object-center grayscale opacity-70 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100"
+                    className="object-contain object-center"
                     sizes="140px"
                     unoptimized
                   />
                 </div>
               ) : (
                 <div
-                  className={`max-w-[140px] text-center text-xs font-semibold leading-snug tracking-wide transition-colors sm:text-sm ${
-                    isDark
-                      ? 'text-gray-400 group-hover:text-gray-200'
-                      : 'text-gray-500'
+                  className={`flex h-12 min-h-[3rem] w-[120px] max-w-[140px] flex-col items-center justify-center sm:h-14 ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
                   }`}
                   aria-label={partner.name}
                 >
-                  University of
-                  <br />
-                  Bedfordshire
+                  <span className="text-xs font-semibold leading-snug tracking-wide sm:text-sm">
+                    University of
+                    <br />
+                    Bedfordshire
+                  </span>
                 </div>
               )}
+              <p
+                className={`mt-3 max-w-[160px] text-[11px] leading-snug sm:text-xs ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}
+              >
+                {partner.descriptor}
+              </p>
             </li>
           ))}
         </ul>
 
-        <p className={`mt-8 text-center text-base font-medium sm:text-lg ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+        <p className={`mt-10 text-center text-base font-medium sm:text-lg ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
           {statLabel}
         </p>
 
