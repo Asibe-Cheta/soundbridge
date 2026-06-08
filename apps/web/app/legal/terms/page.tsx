@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { FREE_TIER_STORAGE, PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
+import { FREE_TIER_STORAGE, LEGAL_DOWNGRADE_FREE_TIER_SUMMARY, LEGAL_TIER_LIMITS_LIST, PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
 
 export default function TermsOfService() {
   return (
@@ -55,7 +55,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Last updated: June 3, 2026
+            Last updated: June 8, 2026
           </p>
         </div>
 
@@ -172,7 +172,20 @@ export default function TermsOfService() {
                 <strong>File Validation:</strong> All uploaded content undergoes automated validation to ensure compliance with our technical requirements, copyright policies, and community guidelines.
               </p>
               <p>
-                <strong>Tier-Based Limits:</strong> Storage and upload limits vary by subscription tier. Free: {PUBLIC_TIER_LIMITS.free.summary}. Premium ({PUBLIC_TIER_LIMITS.premium.priceMonthly}): {PUBLIC_TIER_LIMITS.premium.storageLabel}, {PUBLIC_TIER_LIMITS.premium.trackUploads.toLowerCase()}. Unlimited ({PUBLIC_TIER_LIMITS.unlimited.priceMonthly}): {PUBLIC_TIER_LIMITS.unlimited.storageLabel}, {PUBLIC_TIER_LIMITS.unlimited.trackUploads.toLowerCase()}. Processing times also vary by tier.
+                <strong>Tier-Based Limits:</strong> Storage and upload limits vary by subscription tier:
+              </p>
+              <ul style={{
+                listStyle: 'disc',
+                paddingLeft: '1.5rem',
+                color: 'var(--text-secondary)',
+                marginBottom: '0.5rem',
+              }}>
+                {LEGAL_TIER_LIMITS_LIST.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Processing times also vary by tier.
               </p>
               <p>
                 <strong>Content Analysis:</strong> We may analyze your content using automated systems to detect copyright violations, inappropriate content, or technical issues.
@@ -248,7 +261,7 @@ export default function TermsOfService() {
                 <strong>Feature Changes:</strong> We reserve the right to modify subscription features, limits, and pricing with 30 days' notice. Continued use constitutes acceptance of changes.
               </p>
               <p>
-                <strong>Downgrades and Grace Period:</strong> When you downgrade from Premium or Unlimited to Free, you&apos;ll receive a 90-day grace period where all your content remains accessible. Tracks over the {FREE_TIER_STORAGE} free tier limit are set to private (not deleted) — still accessible to you, but not public. You can re-subscribe anytime to restore public access. Nothing is deleted. Grace periods are limited to once per year to prevent abuse.
+                <strong>Downgrades and Grace Period:</strong> When you downgrade from Premium or Unlimited to Free, you&apos;ll receive a 90-day grace period where all your content remains accessible. On the Free tier ({LEGAL_DOWNGRADE_FREE_TIER_SUMMARY}), tracks that exceed the {FREE_TIER_STORAGE} storage limit are set to private (not deleted) — still accessible to you, but not public. You can re-subscribe anytime to restore public access. Nothing is deleted. Grace periods are limited to once per year to prevent abuse.
               </p>
             </div>
           </section>

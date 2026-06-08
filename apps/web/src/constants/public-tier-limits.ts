@@ -23,3 +23,12 @@ export const PUBLIC_TIER_LIMITS = {
 } as const;
 
 export const FREE_TIER_STORAGE = PUBLIC_TIER_LIMITS.free.storage;
+
+/** Bulleted tier limits for legal pages (Terms of Service, etc.). */
+export const LEGAL_TIER_LIMITS_LIST = [
+  `Free: ${PUBLIC_TIER_LIMITS.free.storageLabel}; ${PUBLIC_TIER_LIMITS.free.trackUploadsLifetime}; ${PUBLIC_TIER_LIMITS.free.activeUploads}`,
+  `Premium (${PUBLIC_TIER_LIMITS.premium.priceMonthly}): ${PUBLIC_TIER_LIMITS.premium.storageLabel}; ${PUBLIC_TIER_LIMITS.premium.trackUploads}`,
+  `Unlimited (${PUBLIC_TIER_LIMITS.unlimited.priceMonthly}): ${PUBLIC_TIER_LIMITS.unlimited.storageLabel}; ${PUBLIC_TIER_LIMITS.unlimited.trackUploads}`,
+] as const;
+
+export const LEGAL_DOWNGRADE_FREE_TIER_SUMMARY = PUBLIC_TIER_LIMITS.free.summary;
