@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     const fromEmail =
       process.env.SENDGRID_USER_BROADCAST_FROM_EMAIL?.trim() ||
       process.env.SENDGRID_FROM_EMAIL ||
-      'justice@soundbridge.live';
+      'contact@soundbridge.live';
     const fromName =
       process.env.SENDGRID_USER_BROADCAST_FROM_NAME?.trim() ||
       process.env.SENDGRID_FROM_NAME ||

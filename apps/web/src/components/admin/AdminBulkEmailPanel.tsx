@@ -124,7 +124,11 @@ export function AdminBulkEmailPanel() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
-      setMeta(`Test email sent to ${data.to}.`);
+      setMeta(
+        `Test email sent to ${data.to}` +
+          (data.from?.email ? ` from ${data.from.email} (${data.from.name || 'SoundBridge'}).` : '.') +
+          ' Check spam/promotions if it does not arrive within a few minutes.',
+      );
       setTestConfirm('');
     } catch (e) {
       setMeta(e instanceof Error ? e.message : 'Test send failed');
@@ -147,7 +151,10 @@ export function AdminBulkEmailPanel() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
-      setMeta(`Sent: ${data.sent}, failed: ${data.failed}. ${(data.errors || []).join('; ') || 'OK'}`);
+      setMeta(
+        `Sent: ${data.sent}, failed: ${data.failed}. ${(data.errors || []).join('; ') || 'OK'}` +
+          (data.from?.email ? ` From: ${data.from.email}.` : ''),
+      );
       setConfirm('');
     } catch (e) {
       setMeta(e instanceof Error ? e.message : 'Send failed');
@@ -231,13 +238,19 @@ export function AdminBulkEmailPanel() {
         />
       </div>
 
-      <div className={cardCls}>
-        <h2 className="text-lg font-semibold text-white">Optional broadcast secret</h2>
+      <div className={`${cardCls} border-amber-500/40`}>
+        <h2 className="text-lg font-semibold text-white">Broadcast secret (required on production)</h2>
+        <p className="mt-1 text-sm text-amber-200/90">
+          Production has <code className="text-amber-100">WAITLIST_BROADCAST_SECRET</code> set in Vercel.
+          Paste the same value here before Preview, Test send, or Bulk send — otherwise the API returns 403
+          and no email is sent.
+        </p>
         <input
-          className={`${inputCls} mt-2`}
+          className={`${inputCls} mt-3 border-amber-500/30`}
           value={broadcastSecret}
           onChange={(e) => setBroadcastSecret(e.target.value)}
-          placeholder="x-waitlist-broadcast-secret (if configured on server)"
+          placeholder="Paste WAITLIST_BROADCAST_SECRET from Vercel env"
+          autoComplete="off"
         />
       </div>
 
@@ -254,7 +267,16 @@ export function AdminBulkEmailPanel() {
       </div>
 
       {meta ? (
-        <div className="rounded-lg border border-gray-600 bg-gray-900/80 p-4 text-sm text-gray-200 whitespace-pre-wrap">
+        <div
+          className={`rounded-lg border p-4 text-sm whitespace-pre-wrap ${
+            meta.toLowerCase().includes('error') ||
+            meta.includes('required') ||
+            meta.includes('failed') ||
+            meta.includes('403')
+              ? 'border-red-500/40 bg-red-950/40 text-red-100'
+              : 'border-gray-600 bg-gray-900/80 text-gray-200'
+          }`}
+        >
           {meta}
         </div>
       ) : null}
@@ -287,8 +309,9 @@ export function AdminBulkEmailPanel() {
       <div className={cardCls}>
         <h2 className="text-lg font-semibold text-white">Test send</h2>
         <p className="mt-1 text-sm text-gray-400">
-          Sends one email using the matching row from your recipient list (or a generic sample).
-          Confirm: <code className="text-red-300">{TEST_CONFIRM_PHRASE}</code>
+          Enter <strong className="text-gray-200">your personal email in Test inbox below</strong> — the
+          recipient list above is only used for bulk send. Confirm:{' '}
+          <code className="text-red-300">{TEST_CONFIRM_PHRASE}</code>
         </p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <div className="min-w-[240px] flex-1">
