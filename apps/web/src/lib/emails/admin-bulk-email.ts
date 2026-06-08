@@ -12,6 +12,7 @@ export const ADMIN_BULK_EMAIL_VARIABLES: ReadonlyArray<{ key: string; descriptio
   { key: '{{referral_link}}', description: 'Partner referral link when the recipient has a partners row' },
   { key: '{{username}}', description: 'Profile @username when the account exists' },
   { key: '{{site_url}}', description: 'Public site base URL' },
+  { key: '**text**', description: 'Wrap words in double asterisks for bold (e.g. **Premium access**)' },
 ];
 
 export interface AdminBulkEmailRecipient {
@@ -93,14 +94,60 @@ export function substituteAdminBulkEmailPlaceholders(
   return out;
 }
 
+const PARAGRAPH_STYLE =
+  'margin:0 0 16px;color:#E5E5E5;font-size:16px;line-height:1.65;';
+const BOLD_STYLE = 'font-weight:600;color:#FFFFFF;';
+const LINK_STYLE = 'color:#F87171;text-decoration:underline;word-break:break-all;';
+
+/** Escape plain text, linkify URLs, and support **bold** markers. */
+export function formatInlineRichText(text: string): string {
+  let result = '';
+  let remaining = text;
+  const boldRe = /\*\*([^*]+)\*\*/;
+
+  while (remaining.length > 0) {
+    const match = remaining.match(boldRe);
+    if (!match || match.index === undefined) {
+      result += linkifyPlainText(remaining);
+      break;
+    }
+    if (match.index > 0) {
+      result += linkifyPlainText(remaining.slice(0, match.index));
+    }
+    result += `<strong style="${BOLD_STYLE}">${escapeHtml(match[1])}</strong>`;
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+
+  return result.replace(/\n/g, '<br/>');
+}
+
+function linkifyPlainText(text: string): string {
+  const urlRe = /(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])/g;
+  let result = '';
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = urlRe.exec(text)) !== null) {
+    result += escapeHtml(text.slice(lastIndex, match.index));
+    const url = match[1];
+    result += `<a href="${escapeHtml(url)}" style="${LINK_STYLE}">${escapeHtml(url)}</a>`;
+    lastIndex = match.index + url.length;
+  }
+  result += escapeHtml(text.slice(lastIndex));
+  return result;
+}
+
 function plainTextToHtmlParagraphs(text: string): string {
   const blocks = text.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
   if (blocks.length === 0) return '';
   return blocks
-    .map(
-      (block) =>
-        `<p style="margin:0 0 16px;color:#E5E5E5;font-size:16px;line-height:1.65;">${escapeHtml(block).replace(/\n/g, '<br/>')}</p>`
-    )
+    .map((block) => {
+      const trimmed = block.trim();
+      if (/^<a\s+href=/i.test(trimmed)) {
+        return `<p style="${PARAGRAPH_STYLE}">${trimmed}</p>`;
+      }
+      return `<p style="${PARAGRAPH_STYLE}">${formatInlineRichText(block)}</p>`;
+    })
     .join('');
 }
 
@@ -174,11 +221,11 @@ export const PARTNER_WELCOME_EMAIL_SUBJECT =
 
 export const PARTNER_WELCOME_EMAIL_BODY = `Hi {{first_name}},
 
-Welcome to SoundBridge. We are genuinely thrilled to have you here.
+Welcome to SoundBridge. We are genuinely glad to have you here.
 
-Your Premium access has been activated and you now have full access to everything the platform offers. We built SoundBridge for creators like you and we cannot wait to see what you do with it.
+Your **Premium access** has been activated and you now have full access to everything the platform offers, including a 10% commission on every user who joins through your referral link and subscribes. We built SoundBridge for creators like you and we cannot wait to see what you do with it.
 
-Here is your unique referral link:
+**Here is your unique referral link:**
 
 {{referral_link}}
 
@@ -186,9 +233,11 @@ Every time someone joins SoundBridge through your link and subscribes to a paid 
 
 To help you hit the ground running we have attached two short demo videos:
 
-Demo Video 1 — How to get your fans onto SoundBridge and have them support you directly. This walks you through sharing your fan page link, using your referral link and converting your existing audience into active supporters on the platform.
+**Demo Video 1** — How to get your fans onto SoundBridge and have them support you directly. This walks you through sharing your fan page link, using your referral link and converting your existing audience into active supporters on the platform.
+https://youtu.be/r-uSu6bWQm4?si=-Vtdyg2OyeyDGxi2
 
-Demo Video 2 — How to set up and get the most out of SoundBridge. This covers completing your profile, setting up your Service Provider Dashboard so you can be discovered and booked, using the Request Room to earn directly from your fans at live performances, and much more.
+**Demo Video 2** — How to set up and get the most out of SoundBridge. This covers completing your profile, setting up your Service Provider Dashboard so you can be discovered and booked, using the Request Room to earn directly from your fans at live performances, and much more.
+https://youtu.be/Wrx1BENJjGo?si=ilJxj4jtjlzWEINI
 
 Please take some time to watch both videos and then start inviting your fans. We will be following up personally to make sure you are getting the most out of the platform and to support you every step of the way.
 

@@ -168,8 +168,9 @@ export function AdminBulkEmailPanel() {
       <div className={cardCls}>
         <h2 className="text-lg font-semibold text-white">Compose email</h2>
         <p className="mt-1 text-sm text-gray-400">
-          Logo and founder footer are added automatically. Use plain text in the body — paragraphs are
-          separated by blank lines.
+          Logo and founder footer are added automatically. Use plain text — paragraphs are separated by
+          blank lines. Wrap text in <code className="text-red-300">**double asterisks**</code> for bold.
+          URLs (e.g. YouTube links) become clickable automatically.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
