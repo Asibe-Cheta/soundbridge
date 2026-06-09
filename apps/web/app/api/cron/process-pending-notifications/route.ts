@@ -221,6 +221,7 @@ export async function GET(request: NextRequest) {
       const pushToken = tokenMap.get(notification.user_id);
       const eventRecord = (notification as any).events;
       const isMessageNotification = notification.notification_type === 'message';
+      const isEventNewNotification = notification.notification_type === 'event_new';
       const creatorName = eventRecord?.creator_id
         ? creatorMap.get(eventRecord.creator_id)
         : undefined;
@@ -229,13 +230,20 @@ export async function GET(request: NextRequest) {
         : buildEventReminderContent(notification.notification_type, eventRecord, creatorName);
       const title = notification.title || fallbackContent.title;
       const body = notification.body || fallbackContent.body;
+      const storedData = (notification.data || {}) as Record<string, unknown>;
       const payloadData = isMessageNotification
-        ? (notification.data || {})
-        : {
-            type: 'event_reminder',
-            eventId: notification.event_id,
-            notificationType: notification.notification_type,
-          };
+        ? storedData
+        : isEventNewNotification
+          ? storedData
+          : {
+              type: 'event_reminder',
+              eventId: notification.event_id,
+              notificationType: notification.notification_type,
+            };
+      const deepLink =
+        (typeof storedData.url === 'string' && storedData.url) ||
+        (typeof storedData.deepLink === 'string' && storedData.deepLink) ||
+        (notification.event_id ? `soundbridge://event/${notification.event_id}` : undefined);
 
       if (!pushToken || !Expo.isExpoPushToken(pushToken)) {
         await supabase
@@ -260,6 +268,7 @@ export async function GET(request: NextRequest) {
           title,
           body,
           data: payloadData,
+          ...(deepLink ? { url: deepLink } : {}),
           channelId: isMessageNotification ? 'messages' : 'events',
         },
       });

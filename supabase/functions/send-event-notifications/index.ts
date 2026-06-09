@@ -1,7 +1,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendPushNotifications } from './_lib/expo.ts'
-import { isWithinTimeWindow } from './_lib/time-window.ts'
+import {
+  daysUntilEvent,
+  getNextPreferredNotificationTime,
+  getPlanningWindowAction,
+  getPlanningWindowScheduleDate,
+  isInPreferredNotificationTime,
+  matchesActiveEventMonths,
+  maxScheduleDate,
+} from './_lib/notification-timing.ts'
 
 // Define types
 interface Event {
@@ -32,6 +40,19 @@ interface EligibleUser {
   preferred_categories: string[];
   start_hour: number;
   end_hour: number;
+  timezone: string | null;
+  preferred_notification_times: string[] | null;
+  event_planning_window: string | null;
+  active_event_months: number[] | null;
+}
+
+interface PendingSchedule {
+  user_id: string;
+  username: string;
+  scheduled_for: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
 }
 
 // Constants
@@ -201,70 +222,158 @@ serve(async (req) => {
 
     console.log(`📍 Found ${nearbyUsers.length} nearby users in ${event.city}`);
 
-    // Filter users by time window and daily quota
+    const creatorName = event.creator.display_name || event.creator.username;
+    const deepLink = `soundbridge://event/${event.id}`;
+    const { title, body } = buildEventNotification(event, creatorName);
+    const eventDate = new Date(event.event_date);
+    const daysUntil = daysUntilEvent(eventDate);
+    const now = new Date();
+
+    const notificationPayload = {
+      type: 'event',
+      eventId: event.id,
+      eventTitle: event.title,
+      eventCategory: event.category,
+      eventLocation: event.location,
+      city: event.city,
+      creatorName,
+      deepLink,
+      url: deepLink,
+    };
+
     const eligibleUsers: EligibleUser[] = [];
+    const scheduledUsers: PendingSchedule[] = [];
+    let skippedCount = 0;
 
     for (const user of nearbyUsers as EligibleUser[]) {
-      // Check time window
-      if (!isWithinTimeWindow(user.start_hour, user.end_hour)) {
-        console.log(`⏰ User ${user.username} outside time window, skipping`);
+      const timezone = user.timezone || 'UTC';
+
+      if (!matchesActiveEventMonths(user.active_event_months, eventDate, timezone)) {
+        console.log(`📅 User ${user.username} active_event_months filter, skipping`);
+        skippedCount++;
         continue;
       }
 
-      // Check daily quota
-      const { data: canSend } = await supabase
-        .rpc('check_notification_quota', {
-          p_user_id: user.user_id,
-          p_daily_limit: DAILY_NOTIFICATION_LIMIT
+      const planningAction = getPlanningWindowAction(user.event_planning_window, daysUntil);
+      if (planningAction === 'skip') {
+        console.log(`📆 User ${user.username} outside planning window (${user.event_planning_window}), skipping`);
+        skippedCount++;
+        continue;
+      }
+
+      const planningSchedule =
+        planningAction === 'schedule'
+          ? getPlanningWindowScheduleDate(user.event_planning_window, eventDate)
+          : null;
+
+      const inPreferredTime = isInPreferredNotificationTime(
+        user.preferred_notification_times,
+        timezone,
+        user.start_hour,
+        user.end_hour,
+        now,
+      );
+
+      const timeSchedule = inPreferredTime
+        ? null
+        : getNextPreferredNotificationTime(
+            user.preferred_notification_times,
+            timezone,
+            user.start_hour,
+            user.end_hour,
+            now,
+          );
+
+      const deferUntil =
+        planningSchedule || timeSchedule
+          ? maxScheduleDate(planningSchedule, timeSchedule, now)
+          : null;
+
+      if (deferUntil && deferUntil > now) {
+        scheduledUsers.push({
+          user_id: user.user_id,
+          username: user.username,
+          scheduled_for: deferUntil.toISOString(),
+          title,
+          body,
+          data: { ...notificationPayload, distance: user.distance_km },
         });
+        continue;
+      }
+
+      if (!inPreferredTime) {
+        console.log(`⏰ User ${user.username} outside preferred notification time, skipping`);
+        skippedCount++;
+        continue;
+      }
+
+      const { data: canSend } = await supabase.rpc('check_notification_quota', {
+        p_user_id: user.user_id,
+        p_daily_limit: DAILY_NOTIFICATION_LIMIT,
+      });
 
       if (!canSend) {
         console.log(`🚫 User ${user.username} reached daily limit, skipping`);
+        skippedCount++;
         continue;
       }
 
       eligibleUsers.push(user);
     }
 
-    console.log(`✅ ${eligibleUsers.length} users eligible for notifications`);
+    for (const pending of scheduledUsers) {
+      const { error: scheduleError } = await supabase.from('scheduled_notifications').upsert(
+        {
+          user_id: pending.user_id,
+          event_id: event.id,
+          notification_type: 'event_new',
+          scheduled_for: pending.scheduled_for,
+          status: 'pending',
+          title: pending.title,
+          body: pending.body,
+          data: pending.data,
+        },
+        { onConflict: 'user_id,event_id,notification_type' },
+      );
+
+      if (scheduleError) {
+        console.warn(`⚠️ Could not schedule for ${pending.username}:`, scheduleError.message);
+      } else {
+        console.log(`🗓️ Scheduled event notification for ${pending.username} at ${pending.scheduled_for}`);
+      }
+    }
+
+    console.log(
+      `✅ ${eligibleUsers.length} send now, ${scheduledUsers.length} scheduled, ${skippedCount} skipped`,
+    );
 
     if (eligibleUsers.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, notificationsSent: 0 }),
-        { headers: { 'Content-Type': 'application/json' }, status: 200 }
+        JSON.stringify({
+          success: true,
+          notificationsSent: 0,
+          scheduled: scheduledUsers.length,
+          skipped: skippedCount,
+        }),
+        { headers: { 'Content-Type': 'application/json' }, status: 200 },
       );
     }
 
-    // Build notification messages
-    const creatorName = event.creator.display_name || event.creator.username;
-    const deepLink = `soundbridge://event/${event.id}`;
-    const { title, body } = buildEventNotification(event, creatorName);
-
-    const messages = eligibleUsers.map(user => ({
+    const messages = eligibleUsers.map((user) => ({
       to: user.expo_push_token,
       sound: 'default',
       title,
       body,
       data: {
-        type: 'event',
-        eventId: event.id,
-        eventTitle: event.title,
-        eventCategory: event.category,
-        eventLocation: event.location,
-        city: event.city,
-        creatorName: creatorName,
+        ...notificationPayload,
         distance: user.distance_km,
-        deepLink,
-        url: deepLink
       },
       url: deepLink,
-      channelId: 'events'
+      channelId: 'events',
     }));
 
-    // Send push notifications via Expo
     const results = await sendPushNotifications(messages);
 
-    // Record notification history
     for (let i = 0; i < eligibleUsers.length; i++) {
       const user = eligibleUsers[i];
       const result = results[i];
@@ -303,14 +412,16 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         notificationsSent: eligibleUsers.length,
+        scheduled: scheduledUsers.length,
+        skipped: skippedCount,
         event: {
           id: event.id,
           title: event.title,
           city: event.city,
-          category: event.category
-        }
+          category: event.category,
+        },
       }),
-      { headers: { 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { 'Content-Type': 'application/json' }, status: 200 },
     );
 
   } catch (error) {
