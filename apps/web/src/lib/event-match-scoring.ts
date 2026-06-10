@@ -126,16 +126,28 @@ function normalizeCity(city: string | null | undefined): string {
   return (city ?? '').trim().toLowerCase();
 }
 
-/** Use events.city when set; otherwise first segment of location (e.g. "Mowe, Lagos"). */
-export function resolveEventCity(city: string | null, location: string | null): string | null {
-  const trimmedCity = city?.trim();
-  if (trimmedCity) return trimmedCity;
+/** City tokens from events.city and every comma-separated location segment. */
+export function eventCityCandidates(city: string | null, location: string | null): string[] {
+  const candidates = new Set<string>();
 
-  const trimmedLocation = location?.trim();
-  if (!trimmedLocation) return null;
+  if (city?.trim()) {
+    candidates.add(normalizeCity(city));
+  }
 
-  const firstSegment = trimmedLocation.split(',')[0]?.trim();
-  return firstSegment || null;
+  if (location?.trim()) {
+    for (const segment of location.split(',')) {
+      const normalized = normalizeCity(segment);
+      if (normalized) candidates.add(normalized);
+    }
+  }
+
+  return [...candidates];
+}
+
+function displayEventCity(city: string | null, location: string | null): string {
+  if (city?.trim()) return city.trim();
+  if (location?.trim()) return location.split(',')[0]?.trim() || location.trim();
+  return 'this area';
 }
 
 function moodOverlap(eventMoods: string[], userMoods: string[]): { score: number; signal?: string } {
@@ -278,22 +290,24 @@ export function scoreUserEventPair(params: {
   }
   total += moodResult.score;
 
-  const eventCity = normalizeCity(resolveEventCity(event.city, event.location));
+  const eventCities = eventCityCandidates(event.city, event.location);
   const primaryCity = normalizeCity(behaviour?.primary_location_city);
   const profileCity = normalizeCity(user.city);
   const preferredCities = (behaviour?.preferred_event_cities ?? []).map(normalizeCity);
+  const eventCityLabel = displayEventCity(event.city, event.location);
 
   if (
-    eventCity &&
-    ((primaryCity && primaryCity === eventCity) || (profileCity && profileCity === eventCity))
+    eventCities.length > 0 &&
+    ((primaryCity && eventCities.includes(primaryCity)) ||
+      (profileCity && eventCities.includes(profileCity)))
   ) {
     reasons.location = 20;
-    reasons.location_signal = `In your city (${event.city})`;
+    reasons.location_signal = `In your city (${eventCityLabel})`;
     reasons.signals!.push(reasons.location_signal);
     total += 20;
-  } else if (eventCity && preferredCities.includes(eventCity)) {
+  } else if (eventCities.length > 0 && preferredCities.some((c) => eventCities.includes(c))) {
     reasons.location = 15;
-    reasons.location_signal = `In a city you attend events in (${event.city})`;
+    reasons.location_signal = `In a city you attend events in (${eventCityLabel})`;
     reasons.signals!.push(reasons.location_signal);
     total += 15;
   } else if (
@@ -316,15 +330,13 @@ export function scoreUserEventPair(params: {
     reasons.location = 0;
   }
 
-  if (calendarConnected) {
-    if (calendarFree === true) {
-      reasons.availability = 20;
-      reasons.availability_signal = 'You are free on your calendar for this event';
-      reasons.signals!.push(reasons.availability_signal);
-      total += 20;
-    } else {
-      reasons.availability = 0;
-    }
+  if (calendarConnected && calendarFree === true) {
+    reasons.availability = 20;
+    reasons.availability_signal = 'You are free on your calendar for this event';
+    reasons.signals!.push(reasons.availability_signal);
+    total += 20;
+  } else if (calendarConnected && calendarFree === false) {
+    reasons.availability = 0;
   } else {
     let avail = 0;
     const hour = eventHourInTimezone(event.event_date, timing.timezone);
