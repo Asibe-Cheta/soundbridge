@@ -55,6 +55,7 @@ export type ScoringEvent = {
   category: string | null;
   event_date: string;
   city: string | null;
+  location: string | null;
   latitude: number | null;
   longitude: number | null;
   creator_moods: string[];
@@ -123,6 +124,18 @@ function haversineKm(
 
 function normalizeCity(city: string | null | undefined): string {
   return (city ?? '').trim().toLowerCase();
+}
+
+/** Use events.city when set; otherwise first segment of location (e.g. "Mowe, Lagos"). */
+export function resolveEventCity(city: string | null, location: string | null): string | null {
+  const trimmedCity = city?.trim();
+  if (trimmedCity) return trimmedCity;
+
+  const trimmedLocation = location?.trim();
+  if (!trimmedLocation) return null;
+
+  const firstSegment = trimmedLocation.split(',')[0]?.trim();
+  return firstSegment || null;
 }
 
 function moodOverlap(eventMoods: string[], userMoods: string[]): { score: number; signal?: string } {
@@ -265,7 +278,7 @@ export function scoreUserEventPair(params: {
   }
   total += moodResult.score;
 
-  const eventCity = normalizeCity(event.city);
+  const eventCity = normalizeCity(resolveEventCity(event.city, event.location));
   const primaryCity = normalizeCity(behaviour?.primary_location_city);
   const profileCity = normalizeCity(user.city);
   const preferredCities = (behaviour?.preferred_event_cities ?? []).map(normalizeCity);

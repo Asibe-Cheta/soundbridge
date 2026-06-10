@@ -85,7 +85,7 @@ export async function runEventMatchIntelligenceJob(
 
   const { data: events, error: eventsError } = await supabase
     .from('events')
-    .select('id, creator_id, title, category, event_date, city, latitude, longitude, status')
+    .select('id, creator_id, title, category, event_date, city, location, latitude, longitude, status')
     .gte('event_date', tomorrow.toISOString())
     .lte('event_date', windowEnd.toISOString())
     .eq('status', 'active')
@@ -113,6 +113,7 @@ export async function runEventMatchIntelligenceJob(
     category: e.category,
     event_date: e.event_date,
     city: e.city,
+    location: e.location,
     latitude: e.latitude,
     longitude: e.longitude,
     creator_moods: creatorMoodMap.get(e.creator_id) ?? [],
