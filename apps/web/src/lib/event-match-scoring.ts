@@ -62,6 +62,7 @@ export type ScoringEvent = {
 
 export type ScoringUser = {
   id: string;
+  city: string | null;
   latitude: number | null;
   longitude: number | null;
   preferred_moods: string[];
@@ -266,9 +267,13 @@ export function scoreUserEventPair(params: {
 
   const eventCity = normalizeCity(event.city);
   const primaryCity = normalizeCity(behaviour?.primary_location_city);
+  const profileCity = normalizeCity(user.city);
   const preferredCities = (behaviour?.preferred_event_cities ?? []).map(normalizeCity);
 
-  if (primaryCity && eventCity && primaryCity === eventCity) {
+  if (
+    eventCity &&
+    ((primaryCity && primaryCity === eventCity) || (profileCity && profileCity === eventCity))
+  ) {
     reasons.location = 20;
     reasons.location_signal = `In your city (${event.city})`;
     reasons.signals!.push(reasons.location_signal);

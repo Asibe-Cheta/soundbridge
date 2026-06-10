@@ -144,7 +144,7 @@ export async function runEventMatchIntelligenceJob(
 
   const { data: profileRows } = await supabase
     .from('profiles')
-    .select('id, latitude, longitude, preferred_moods')
+    .select('id, city, latitude, longitude, preferred_moods')
     .not('id', 'is', null);
 
   const eligibleUserIds: string[] = [];
@@ -302,7 +302,13 @@ async function processUser(
       }
     | undefined,
   profile:
-    | { id: string; latitude: number | null; longitude: number | null; preferred_moods: string[] | null }
+    | {
+        id: string;
+        city: string | null;
+        latitude: number | null;
+        longitude: number | null;
+        preferred_moods: string[] | null;
+      }
     | undefined,
   creatorNames: Map<string, string>,
 ): Promise<{
@@ -324,6 +330,7 @@ async function processUser(
 
   const user: ScoringUser = {
     id: userId,
+    city: profile?.city ?? null,
     latitude: profile?.latitude ?? null,
     longitude: profile?.longitude ?? null,
     preferred_moods: (profile?.preferred_moods as string[] | null) ?? [],
