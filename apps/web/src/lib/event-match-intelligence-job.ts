@@ -20,7 +20,7 @@ const MAX_CALENDAR_CHECKS_PER_USER = 25;
 const PAGE_SIZE = 1000;
 
 /** Bump when scoring logic changes — visible in cron/debug responses. */
-export const EVENT_MATCH_JOB_VERSION = '2026-06-11-v3';
+export const EVENT_MATCH_JOB_VERSION = '2026-06-11-v4';
 
 type NotifPrefs = {
   preferred_notification_times: string[];
@@ -99,15 +99,8 @@ async function loadNotificationPrefsByUser(
     fetchAllRows<{
       user_id: string;
       preferred_event_genres: string[] | null;
-      preferred_notification_times: string[] | null;
-      event_planning_window: string | null;
-      active_event_months: number[] | null;
       timezone: string | null;
-    }>(
-      supabase,
-      'user_notification_preferences',
-      'user_id, preferred_event_genres, preferred_notification_times, event_planning_window, active_event_months, timezone',
-    ),
+    }>(supabase, 'user_notification_preferences', 'user_id, preferred_event_genres, timezone'),
   ]);
 
   for (const row of primaryRows) {
@@ -118,9 +111,15 @@ async function loadNotificationPrefsByUser(
     const existing = notifByUser.get(row.user_id);
     if (existing) {
       mergeNotifPrefs(existing, row.preferred_event_genres);
+      if (row.timezone) existing.timezone = row.timezone;
       continue;
     }
-    notifByUser.set(row.user_id, mapNotifRow(row));
+
+    notifByUser.set(row.user_id, {
+      ...defaultTiming(),
+      timezone: row.timezone ?? 'UTC',
+      genres: (row.preferred_event_genres as string[] | null) ?? [],
+    });
   }
 
   return notifByUser;
