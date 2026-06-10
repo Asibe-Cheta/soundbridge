@@ -13,14 +13,52 @@ import {
   type UserAffinity,
 } from '@/src/lib/event-match-scoring';
 
-const USER_BATCH_SIZE = 100;
 const HIGH_CONFIDENCE_THRESHOLD = 75;
 const MIN_STORE_SCORE = 50;
 const MAX_CALENDAR_CHECKS_PER_USER = 25;
+const MAX_CALENDAR_CHECKS_PER_RUN = 40;
+const USER_PROCESS_CONCURRENCY = 25;
 const PAGE_SIZE = 1000;
+const PROFILE_CHUNK_SIZE = 500;
 
 /** Bump when scoring logic changes — visible in cron/debug responses. */
-export const EVENT_MATCH_JOB_VERSION = '2026-06-11-v4';
+export const EVENT_MATCH_JOB_VERSION = '2026-06-11-v5';
+
+const EMPTY_AFFINITY: UserAffinity = {
+  tippedCreatorIds: new Set(),
+  tippedGenres: new Set(),
+  followedCreatorIds: new Set(),
+  liveInterestCreatorIds: new Set(),
+};
+
+type UserProcessContext = {
+  affinityByUser: Map<string, UserAffinity>;
+  calendarConnectedUsers: Set<string>;
+  existingScoresByUser: Map<string, Map<string, ExistingScoreRow>>;
+  calendarCheckBudget: { remaining: number };
+};
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  if (!items.length) return [];
+
+  const results = new Array<R>(items.length);
+  let index = 0;
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const currentIndex = index;
+      index += 1;
+      results[currentIndex] = await fn(items[currentIndex]);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
 
 type NotifPrefs = {
   preferred_notification_times: string[];
@@ -123,6 +161,214 @@ async function loadNotificationPrefsByUser(
   }
 
   return notifByUser;
+}
+
+function affinityForUser(
+  map: Map<string, UserAffinity>,
+  userId: string,
+): UserAffinity {
+  return map.get(userId) ?? EMPTY_AFFINITY;
+}
+
+async function loadAffinityByUser(supabase: SupabaseClient): Promise<Map<string, UserAffinity>> {
+  const map = new Map<string, UserAffinity>();
+
+  const ensure = (userId: string): UserAffinity => {
+    let affinity = map.get(userId);
+    if (!affinity) {
+      affinity = {
+        tippedCreatorIds: new Set(),
+        tippedGenres: new Set(),
+        followedCreatorIds: new Set(),
+        liveInterestCreatorIds: new Set(),
+      };
+      map.set(userId, affinity);
+    }
+    return affinity;
+  };
+
+  const follows = await fetchAllRows<{ follower_id: string; following_id: string }>(
+    supabase,
+    'follows',
+    'follower_id, following_id',
+  );
+
+  const tips: { sender_id: string; recipient_id: string | null; track_id: string | null }[] = [];
+  const creatorTips: { tipper_id: string; creator_id: string | null }[] = [];
+  const liveInterest: { user_id: string; creator_id: string | null }[] = [];
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('tips')
+      .select('sender_id, recipient_id, track_id')
+      .eq('status', 'completed')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`tips: ${error.message}`);
+    if (!data?.length) break;
+    tips.push(...(data as typeof tips));
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('creator_tips')
+      .select('tipper_id, creator_id')
+      .eq('status', 'completed')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`creator_tips: ${error.message}`);
+    if (!data?.length) break;
+    creatorTips.push(...(data as typeof creatorTips));
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('live_interest_responses')
+      .select('user_id, creator_id')
+      .eq('response', 'yes')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`live_interest_responses: ${error.message}`);
+    if (!data?.length) break;
+    liveInterest.push(...(data as typeof liveInterest));
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  for (const row of follows) {
+    if (row.follower_id && row.following_id) {
+      ensure(row.follower_id).followedCreatorIds.add(row.following_id);
+    }
+  }
+
+  const trackIds = new Set<string>();
+  for (const tip of tips) {
+    if (tip.sender_id && tip.recipient_id) {
+      ensure(tip.sender_id).tippedCreatorIds.add(tip.recipient_id);
+    }
+    if (tip.track_id) trackIds.add(tip.track_id);
+  }
+
+  for (const tip of creatorTips) {
+    if (tip.tipper_id && tip.creator_id) {
+      ensure(tip.tipper_id).tippedCreatorIds.add(tip.creator_id);
+    }
+  }
+
+  for (const row of liveInterest) {
+    if (row.user_id && row.creator_id) {
+      ensure(row.user_id).liveInterestCreatorIds.add(row.creator_id);
+    }
+  }
+
+  if (trackIds.size) {
+    const trackIdList = [...trackIds];
+    const tippedTracks: { id: string; genre: string | null }[] = [];
+
+    for (let i = 0; i < trackIdList.length; i += PROFILE_CHUNK_SIZE) {
+      const chunk = trackIdList.slice(i, i + PROFILE_CHUNK_SIZE);
+      const { data } = await supabase.from('audio_tracks').select('id, genre').in('id', chunk);
+      tippedTracks.push(...((data as { id: string; genre: string | null }[] | null) ?? []));
+    }
+
+    const genreByTrack = new Map(tippedTracks.map((t) => [t.id, t.genre]));
+
+    for (const tip of tips) {
+      if (!tip.sender_id || !tip.track_id) continue;
+      const genre = genreByTrack.get(tip.track_id);
+      if (!genre) continue;
+      const affinity = ensure(tip.sender_id);
+      affinity.tippedGenres.add(mapEventCategoryToGenre(genre));
+      affinity.tippedGenres.add(genre);
+    }
+  }
+
+  return map;
+}
+
+async function loadCalendarConnectedUsers(supabase: SupabaseClient): Promise<Set<string>> {
+  const connected = new Set<string>();
+  const rows = await fetchAllRows<{ user_id: string; calendar_connected: boolean | null }>(
+    supabase,
+    'calendar_integrations',
+    'user_id, calendar_connected',
+  );
+
+  for (const row of rows) {
+    if (row.user_id && row.calendar_connected) connected.add(row.user_id);
+  }
+
+  return connected;
+}
+
+async function loadExistingScoresForEvents(
+  supabase: SupabaseClient,
+  eventIds: string[],
+): Promise<Map<string, Map<string, ExistingScoreRow>>> {
+  const byUser = new Map<string, Map<string, ExistingScoreRow>>();
+  if (!eventIds.length) return byUser;
+
+  for (let i = 0; i < eventIds.length; i += PROFILE_CHUNK_SIZE) {
+    const chunk = eventIds.slice(i, i + PROFILE_CHUNK_SIZE);
+    const { data, error } = await supabase
+      .from('event_match_scores')
+      .select('user_id, event_id, personalised_reason, indicator_shown, indicator_dismissed')
+      .in('event_id', chunk);
+
+    if (error) throw new Error(`event_match_scores: ${error.message}`);
+
+    for (const row of data ?? []) {
+      let eventMap = byUser.get(row.user_id);
+      if (!eventMap) {
+        eventMap = new Map();
+        byUser.set(row.user_id, eventMap);
+      }
+      eventMap.set(row.event_id, row as ExistingScoreRow);
+    }
+  }
+
+  return byUser;
+}
+
+async function loadProfilesByIds(
+  supabase: SupabaseClient,
+  userIds: string[],
+): Promise<
+  Map<
+    string,
+    {
+      id: string;
+      city: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      preferred_moods: string[] | null;
+    }
+  >
+> {
+  const profileById = new Map<
+    string,
+    {
+      id: string;
+      city: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      preferred_moods: string[] | null;
+    }
+  >();
+
+  for (let i = 0; i < userIds.length; i += PROFILE_CHUNK_SIZE) {
+    const chunk = userIds.slice(i, i + PROFILE_CHUNK_SIZE);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, city, latitude, longitude, preferred_moods')
+      .in('id', chunk);
+
+    if (error) throw new Error(`profiles: ${error.message}`);
+
+    for (const profile of data ?? []) {
+      profileById.set(profile.id, profile);
+    }
+  }
+
+  return profileById;
 }
 
 type ExistingScoreRow = {
@@ -239,54 +485,88 @@ export async function runEventMatchIntelligenceJob(
 
   const notifByUser = await loadNotificationPrefsByUser(supabase);
 
-  const profileRows = await fetchAllRows<{
+  const candidateIds = new Set<string>();
+  for (const row of behaviourRows) candidateIds.add(row.user_id);
+  for (const userId of notifByUser.keys()) candidateIds.add(userId);
+
+  const moodProfileRows = await fetchAllRows<{
     id: string;
-    city: string | null;
-    latitude: number | null;
-    longitude: number | null;
     preferred_moods: string[] | null;
-  }>(supabase, 'profiles', 'id, city, latitude, longitude, preferred_moods');
+  }>(supabase, 'profiles', 'id, preferred_moods');
 
-  const eligibleUserIds: string[] = [];
-  for (const profile of profileRows ?? []) {
-    const behaviour = behaviourByUser.get(profile.id) ?? null;
-    const notif = notifByUser.get(profile.id);
-    const notificationGenres = notif?.genres ?? [];
-    const profileMoods = (profile.preferred_moods as string[] | null) ?? [];
-
-    if (hasBehaviourSignals(behaviour, notificationGenres, profileMoods)) {
-      eligibleUserIds.push(profile.id);
+  for (const profile of moodProfileRows) {
+    if ((profile.preferred_moods as string[] | null)?.length) {
+      candidateIds.add(profile.id);
     }
   }
 
-  for (let offset = 0; offset < eligibleUserIds.length; offset += USER_BATCH_SIZE) {
-    const batchIds = eligibleUserIds.slice(offset, offset + USER_BATCH_SIZE);
+  const profileById = await loadProfilesByIds(supabase, [...candidateIds]);
 
-    for (const userId of batchIds) {
-      try {
-        const batchResult = await processUser(
-          supabase,
-          userId,
-          scoringEvents,
-          behaviourByUser.get(userId) ?? null,
-          notifByUser.get(userId),
-          profileRows?.find((p) => p.id === userId),
-          creatorNameMap,
-        );
-        result.usersProcessed += 1;
-        result.scoresUpserted += batchResult.upserted;
-        result.scoresDeleted += batchResult.deleted;
-        result.reasonsGenerated += batchResult.reasons;
-        result.maxScoreSeen = Math.max(result.maxScoreSeen, batchResult.maxScore);
-        result.pairsAbove50 += batchResult.pairsAbove50;
-        result.pairsAbove75 += batchResult.pairsAbove75;
-        result.errors.push(...batchResult.upsertErrors);
-      } catch (err) {
-        result.errors.push(
-          `user ${userId}: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
+  const eligibleUserIds: string[] = [];
+  for (const userId of candidateIds) {
+    const profile = profileById.get(userId);
+    const notificationGenres = notifByUser.get(userId)?.genres ?? [];
+    const profileMoods = (profile?.preferred_moods as string[] | null) ?? [];
+
+    if (hasBehaviourSignals(behaviourByUser.get(userId) ?? null, notificationGenres, profileMoods)) {
+      eligibleUserIds.push(userId);
     }
+  }
+
+  const [affinityByUser, calendarConnectedUsers, existingScoresByUser] = await Promise.all([
+    loadAffinityByUser(supabase),
+    loadCalendarConnectedUsers(supabase),
+    loadExistingScoresForEvents(
+      supabase,
+      scoringEvents.map((event) => event.id),
+    ),
+  ]);
+
+  const processContext: UserProcessContext = {
+    affinityByUser,
+    calendarConnectedUsers,
+    existingScoresByUser,
+    calendarCheckBudget: { remaining: MAX_CALENDAR_CHECKS_PER_RUN },
+  };
+
+  const userResults = await mapWithConcurrency(eligibleUserIds, USER_PROCESS_CONCURRENCY, async (userId) => {
+    try {
+      const batchResult = await processUser(
+        supabase,
+        userId,
+        scoringEvents,
+        behaviourByUser.get(userId) ?? null,
+        notifByUser.get(userId),
+        profileById.get(userId),
+        creatorNameMap,
+        processContext,
+      );
+      return { userId, batchResult, error: null as string | null };
+    } catch (err) {
+      return {
+        userId,
+        batchResult: null,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
+
+  for (const entry of userResults) {
+    if (entry.error) {
+      result.errors.push(`user ${entry.userId}: ${entry.error}`);
+      continue;
+    }
+
+    if (!entry.batchResult) continue;
+
+    result.usersProcessed += 1;
+    result.scoresUpserted += entry.batchResult.upserted;
+    result.scoresDeleted += entry.batchResult.deleted;
+    result.reasonsGenerated += entry.batchResult.reasons;
+    result.maxScoreSeen = Math.max(result.maxScoreSeen, entry.batchResult.maxScore);
+    result.pairsAbove50 += entry.batchResult.pairsAbove50;
+    result.pairsAbove75 += entry.batchResult.pairsAbove75;
+    result.errors.push(...entry.batchResult.upsertErrors);
   }
 
   return result;
@@ -412,6 +692,74 @@ export async function debugEventMatchForUser(
   };
 }
 
+/** Score and upsert matches for one user (fast path for smoke tests). */
+export async function persistEventMatchScoresForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Record<string, unknown>> {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  const windowEnd = new Date(tomorrow);
+  windowEnd.setDate(windowEnd.getDate() + 90);
+
+  const { data: events, error: eventsError } = await supabase
+    .from('events')
+    .select('id, creator_id, title, category, event_date, city, location, latitude, longitude, status')
+    .gte('event_date', tomorrow.toISOString())
+    .lte('event_date', windowEnd.toISOString())
+    .eq('status', 'active')
+    .order('event_date', { ascending: true });
+
+  if (eventsError) {
+    throw new Error(`events fetch: ${eventsError.message}`);
+  }
+
+  if (!events?.length) {
+    return { jobVersion: EVENT_MATCH_JOB_VERSION, userId, upserted: 0, message: 'No upcoming events' };
+  }
+
+  const creatorIds = [...new Set(events.map((e) => e.creator_id).filter(Boolean))];
+  const creatorMoodMap = await loadCreatorMoods(supabase, creatorIds);
+  const creatorNameMap = await loadCreatorNames(supabase, creatorIds);
+
+  const scoringEvents: ScoringEvent[] = events.map((e) => ({
+    id: e.id,
+    creator_id: e.creator_id,
+    title: e.title,
+    category: e.category,
+    event_date: e.event_date,
+    city: e.city,
+    location: e.location,
+    latitude: e.latitude,
+    longitude: e.longitude,
+    creator_moods: creatorMoodMap.get(e.creator_id) ?? [],
+  }));
+
+  const [profileById, behaviourRow, notifByUser] = await Promise.all([
+    loadProfilesByIds(supabase, [userId]),
+    supabase.from('user_behaviour_profiles').select('*').eq('user_id', userId).maybeSingle(),
+    loadNotificationPrefsByUser(supabase),
+  ]);
+
+  const result = await processUser(
+    supabase,
+    userId,
+    scoringEvents,
+    (behaviourRow.data as BehaviourProfile | null) ?? null,
+    notifByUser.get(userId),
+    profileById.get(userId),
+    creatorNameMap,
+  );
+
+  return {
+    jobVersion: EVENT_MATCH_JOB_VERSION,
+    userId,
+    ...result,
+  };
+}
+
 async function loadCreatorMoods(
   supabase: SupabaseClient,
   creatorIds: string[],
@@ -532,6 +880,7 @@ async function processUser(
       }
     | undefined,
   creatorNames: Map<string, string>,
+  processContext?: UserProcessContext,
 ): Promise<{
   upserted: number;
   deleted: number;
@@ -559,27 +908,34 @@ async function processUser(
     notification_genres: notif?.genres ?? [],
   };
 
-  const affinity = await loadUserAffinity(supabase, userId);
+  const affinity = processContext
+    ? affinityForUser(processContext.affinityByUser, userId)
+    : await loadUserAffinity(supabase, userId);
 
-  const { data: calendarRow } = await supabase
-    .from('calendar_integrations')
-    .select('calendar_connected')
-    .eq('user_id', userId)
-    .maybeSingle();
+  const calendarConnected = processContext
+    ? processContext.calendarConnectedUsers.has(userId)
+    : Boolean(
+        (
+          await supabase
+            .from('calendar_integrations')
+            .select('calendar_connected')
+            .eq('user_id', userId)
+            .maybeSingle()
+        ).data?.calendar_connected,
+      );
 
-  const calendarConnected = Boolean(calendarRow?.calendar_connected);
-
-  const { data: existingRows } = await supabase
-    .from('event_match_scores')
-    .select('event_id, personalised_reason, indicator_shown, indicator_dismissed')
-    .eq('user_id', userId);
-
-  const existingByEvent = new Map(
-    (existingRows ?? []).map((r) => [r.event_id, r as ExistingScoreRow]),
-  );
+  const existingByEvent = processContext
+    ? new Map(processContext.existingScoresByUser.get(userId) ?? [])
+    : new Map(
+        (
+          (await supabase
+            .from('event_match_scores')
+            .select('event_id, personalised_reason, indicator_shown, indicator_dismissed')
+            .eq('user_id', userId)).data ?? []
+        ).map((r) => [r.event_id, r as ExistingScoreRow]),
+      );
 
   const scored: ScoredEventMatch[] = [];
-  let calendarChecks = 0;
 
   const preliminary = events.map((event) =>
     scoreUserEventPair({
@@ -602,13 +958,17 @@ async function processUser(
 
   const calendarFreeMap = new Map<string, boolean>();
   for (const candidate of calendarCandidates) {
+    if (processContext && processContext.calendarCheckBudget.remaining <= 0) break;
+
     const event = events.find((e) => e.id === candidate.event_id);
     if (!event) continue;
+
+    if (processContext) processContext.calendarCheckBudget.remaining -= 1;
+
     const free = await checkUserFreeForEventWindow(supabase, userId, event.event_date, event.id);
     if (free !== null) {
       calendarFreeMap.set(event.id, free);
     }
-    calendarChecks += 1;
   }
 
   let maxScore = 0;

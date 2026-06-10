@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import {
   debugEventMatchForUser,
+  persistEventMatchScoresForUser,
   runEventMatchIntelligenceJob,
 } from '@/src/lib/event-match-intelligence-job';
 
@@ -32,6 +33,11 @@ export async function GET(request: NextRequest) {
 
     const debugUserId = request.nextUrl.searchParams.get('debugUserId');
     if (debugUserId) {
+      if (request.nextUrl.searchParams.get('persist') === '1') {
+        const persisted = await persistEventMatchScoresForUser(supabase, debugUserId);
+        return NextResponse.json({ success: true, persisted });
+      }
+
       const debug = await debugEventMatchForUser(supabase, debugUserId);
       return NextResponse.json({ success: true, debug });
     }
