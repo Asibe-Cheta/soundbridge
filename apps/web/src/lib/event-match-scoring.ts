@@ -83,9 +83,26 @@ export function mapEventCategoryToGenre(category: string | null): string {
     Rock: 'Music Concert',
     Pop: 'Music Concert',
     Secular: 'Music Concert',
+    Conference: 'Conference',
     Other: 'Other',
   };
   return map[category] ?? category;
+}
+
+/** Align with find_nearby_users_for_event preference labels. */
+export function eventGenreMatchesUserPreferences(
+  category: string | null,
+  userGenres: Set<string>,
+): boolean {
+  const mapped = mapEventCategoryToGenre(category);
+  if (userGenres.has(mapped)) return true;
+
+  const raw = category ?? 'Other';
+  if (raw === 'Conference' || mapped === 'Conference' || raw === 'Other' || mapped === 'Other') {
+    return userGenres.has('Conference') || userGenres.has('Conferences & Seminars');
+  }
+
+  return false;
 }
 
 function haversineKm(
@@ -221,7 +238,7 @@ export function scoreUserEventPair(params: {
     ...user.notification_genres,
   ]);
 
-  if (userGenres.has(mappedGenre)) {
+  if (eventGenreMatchesUserPreferences(event.category, userGenres)) {
     reasons.genre = 25;
     reasons.genre_signal = `${mappedGenre} is in your preferred genres`;
     reasons.signals!.push(reasons.genre_signal);

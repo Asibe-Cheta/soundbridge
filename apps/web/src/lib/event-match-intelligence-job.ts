@@ -27,6 +27,10 @@ type ExistingScoreRow = {
 
 export type EventMatchIntelligenceJobResult = {
   usersProcessed: number;
+  upcomingEventsCount: number;
+  maxScoreSeen: number;
+  pairsAbove50: number;
+  pairsAbove75: number;
   scoresUpserted: number;
   scoresDeleted: number;
   reasonsGenerated: number;
@@ -48,6 +52,10 @@ export async function runEventMatchIntelligenceJob(
 ): Promise<EventMatchIntelligenceJobResult> {
   const result: EventMatchIntelligenceJobResult = {
     usersProcessed: 0,
+    upcomingEventsCount: 0,
+    maxScoreSeen: 0,
+    pairsAbove50: 0,
+    pairsAbove75: 0,
     scoresUpserted: 0,
     scoresDeleted: 0,
     reasonsGenerated: 0,
@@ -87,6 +95,8 @@ export async function runEventMatchIntelligenceJob(
     result.errors.push(`events fetch: ${eventsError.message}`);
     return result;
   }
+
+  result.upcomingEventsCount = events?.length ?? 0;
 
   if (!events?.length) {
     return result;
@@ -167,6 +177,9 @@ export async function runEventMatchIntelligenceJob(
         result.scoresUpserted += batchResult.upserted;
         result.scoresDeleted += batchResult.deleted;
         result.reasonsGenerated += batchResult.reasons;
+        result.maxScoreSeen = Math.max(result.maxScoreSeen, batchResult.maxScore);
+        result.pairsAbove50 += batchResult.pairsAbove50;
+        result.pairsAbove75 += batchResult.pairsAbove75;
       } catch (err) {
         result.errors.push(
           `user ${userId}: ${err instanceof Error ? err.message : String(err)}`,
@@ -292,7 +305,14 @@ async function processUser(
     | { id: string; latitude: number | null; longitude: number | null; preferred_moods: string[] | null }
     | undefined,
   creatorNames: Map<string, string>,
-): Promise<{ upserted: number; deleted: number; reasons: number }> {
+): Promise<{
+  upserted: number;
+  deleted: number;
+  reasons: number;
+  maxScore: number;
+  pairsAbove50: number;
+  pairsAbove75: number;
+}> {
   const timing: NotificationTimingPrefs = notif
     ? {
         preferred_notification_times: notif.preferred_notification_times,
@@ -362,6 +382,10 @@ async function processUser(
     calendarChecks += 1;
   }
 
+  let maxScore = 0;
+  let pairsAbove50 = 0;
+  let pairsAbove75 = 0;
+
   for (const event of events) {
     const match = scoreUserEventPair({
       event,
@@ -373,8 +397,13 @@ async function processUser(
       calendarFree: calendarFreeMap.get(event.id) ?? null,
     });
 
+    maxScore = Math.max(maxScore, match.match_score);
     if (match.match_score >= MIN_STORE_SCORE) {
+      pairsAbove50 += 1;
       scored.push(match);
+    }
+    if (match.match_score >= 75) {
+      pairsAbove75 += 1;
     }
   }
 
@@ -435,5 +464,5 @@ async function processUser(
     if (!error) upserted += 1;
   }
 
-  return { upserted, deleted: toDelete.length, reasons };
+  return { upserted, deleted: toDelete.length, reasons, maxScore, pairsAbove50, pairsAbove75 };
 }
