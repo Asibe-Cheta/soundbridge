@@ -8,7 +8,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
-import { runEventMatchIntelligenceJob } from '@/src/lib/event-match-intelligence-job';
+import {
+  debugEventMatchForUser,
+  runEventMatchIntelligenceJob,
+} from '@/src/lib/event-match-intelligence-job';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +29,12 @@ export async function GET(request: NextRequest) {
 
     console.log('[cron event-match-intelligence] started');
     const supabase = createServiceClient();
+
+    const debugUserId = request.nextUrl.searchParams.get('debugUserId');
+    if (debugUserId) {
+      const debug = await debugEventMatchForUser(supabase, debugUserId);
+      return NextResponse.json({ success: true, debug });
+    }
 
     const { data: runLog } = await supabase
       .from('cron_job_runs')

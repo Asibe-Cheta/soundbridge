@@ -17,6 +17,114 @@ const USER_BATCH_SIZE = 100;
 const HIGH_CONFIDENCE_THRESHOLD = 75;
 const MIN_STORE_SCORE = 50;
 const MAX_CALENDAR_CHECKS_PER_USER = 25;
+const PAGE_SIZE = 1000;
+
+/** Bump when scoring logic changes — visible in cron/debug responses. */
+export const EVENT_MATCH_JOB_VERSION = '2026-06-11-v3';
+
+type NotifPrefs = {
+  preferred_notification_times: string[];
+  event_planning_window: string;
+  active_event_months: number[];
+  timezone: string;
+  genres: string[];
+};
+
+async function fetchAllRows<T extends Record<string, unknown>>(
+  supabase: SupabaseClient,
+  table: string,
+  select: string,
+): Promise<T[]> {
+  const rows: T[] = [];
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(select)
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error(`${table}: ${error.message}`);
+    }
+
+    if (!data?.length) break;
+
+    rows.push(...(data as T[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
+function mapNotifRow(row: {
+  user_id: string;
+  preferred_event_genres?: string[] | null;
+  preferred_notification_times?: string[] | null;
+  event_planning_window?: string | null;
+  active_event_months?: number[] | null;
+  timezone?: string | null;
+}): NotifPrefs {
+  return {
+    preferred_notification_times: row.preferred_notification_times ?? ['any_time'],
+    event_planning_window: row.event_planning_window ?? 'any_time',
+    active_event_months: row.active_event_months ?? [],
+    timezone: row.timezone ?? 'UTC',
+    genres: (row.preferred_event_genres as string[] | null) ?? [],
+  };
+}
+
+function mergeNotifPrefs(target: NotifPrefs, genres: string[] | null | undefined) {
+  if (!genres?.length) return;
+  target.genres = [...new Set([...target.genres, ...genres])];
+}
+
+async function loadNotificationPrefsByUser(
+  supabase: SupabaseClient,
+): Promise<Map<string, NotifPrefs>> {
+  const notifByUser = new Map<string, NotifPrefs>();
+
+  const [primaryRows, legacyRows] = await Promise.all([
+    fetchAllRows<{
+      user_id: string;
+      preferred_event_genres: string[] | null;
+      preferred_notification_times: string[] | null;
+      event_planning_window: string | null;
+      active_event_months: number[] | null;
+      timezone: string | null;
+    }>(
+      supabase,
+      'notification_preferences',
+      'user_id, preferred_event_genres, preferred_notification_times, event_planning_window, active_event_months, timezone',
+    ),
+    fetchAllRows<{
+      user_id: string;
+      preferred_event_genres: string[] | null;
+      preferred_notification_times: string[] | null;
+      event_planning_window: string | null;
+      active_event_months: number[] | null;
+      timezone: string | null;
+    }>(
+      supabase,
+      'user_notification_preferences',
+      'user_id, preferred_event_genres, preferred_notification_times, event_planning_window, active_event_months, timezone',
+    ),
+  ]);
+
+  for (const row of primaryRows) {
+    notifByUser.set(row.user_id, mapNotifRow(row));
+  }
+
+  for (const row of legacyRows) {
+    const existing = notifByUser.get(row.user_id);
+    if (existing) {
+      mergeNotifPrefs(existing, row.preferred_event_genres);
+      continue;
+    }
+    notifByUser.set(row.user_id, mapNotifRow(row));
+  }
+
+  return notifByUser;
+}
 
 type ExistingScoreRow = {
   event_id: string;
@@ -26,6 +134,7 @@ type ExistingScoreRow = {
 };
 
 export type EventMatchIntelligenceJobResult = {
+  jobVersion: string;
   usersProcessed: number;
   upcomingEventsCount: number;
   maxScoreSeen: number;
@@ -51,6 +160,7 @@ export async function runEventMatchIntelligenceJob(
   supabase: SupabaseClient,
 ): Promise<EventMatchIntelligenceJobResult> {
   const result: EventMatchIntelligenceJobResult = {
+    jobVersion: EVENT_MATCH_JOB_VERSION,
     usersProcessed: 0,
     upcomingEventsCount: 0,
     maxScoreSeen: 0,
@@ -119,34 +229,24 @@ export async function runEventMatchIntelligenceJob(
     creator_moods: creatorMoodMap.get(e.creator_id) ?? [],
   }));
 
-  const { data: behaviourRows } = await supabase.from('user_behaviour_profiles').select('*');
+  const behaviourRows = await fetchAllRows<BehaviourProfile>(
+    supabase,
+    'user_behaviour_profiles',
+    '*',
+  );
   const behaviourByUser = new Map(
-    (behaviourRows ?? []).map((row) => [row.user_id, row as BehaviourProfile]),
+    behaviourRows.map((row) => [row.user_id, row as BehaviourProfile]),
   );
 
-  const { data: notifRows } = await supabase
-    .from('notification_preferences')
-    .select(
-      'user_id, preferred_event_genres, preferred_notification_times, event_planning_window, active_event_months, timezone',
-    );
+  const notifByUser = await loadNotificationPrefsByUser(supabase);
 
-  const notifByUser = new Map(
-    (notifRows ?? []).map((row) => [
-      row.user_id,
-      {
-        preferred_notification_times: row.preferred_notification_times ?? ['any_time'],
-        event_planning_window: row.event_planning_window ?? 'any_time',
-        active_event_months: row.active_event_months ?? [],
-        timezone: row.timezone ?? 'UTC',
-        genres: (row.preferred_event_genres as string[] | null) ?? [],
-      },
-    ]),
-  );
-
-  const { data: profileRows } = await supabase
-    .from('profiles')
-    .select('id, city, latitude, longitude, preferred_moods')
-    .not('id', 'is', null);
+  const profileRows = await fetchAllRows<{
+    id: string;
+    city: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    preferred_moods: string[] | null;
+  }>(supabase, 'profiles', 'id, city, latitude, longitude, preferred_moods');
 
   const eligibleUserIds: string[] = [];
   for (const profile of profileRows ?? []) {
@@ -181,6 +281,7 @@ export async function runEventMatchIntelligenceJob(
         result.maxScoreSeen = Math.max(result.maxScoreSeen, batchResult.maxScore);
         result.pairsAbove50 += batchResult.pairsAbove50;
         result.pairsAbove75 += batchResult.pairsAbove75;
+        result.errors.push(...batchResult.upsertErrors);
       } catch (err) {
         result.errors.push(
           `user ${userId}: ${err instanceof Error ? err.message : String(err)}`,
@@ -190,6 +291,126 @@ export async function runEventMatchIntelligenceJob(
   }
 
   return result;
+}
+
+export async function debugEventMatchForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Record<string, unknown>> {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  const windowEnd = new Date(tomorrow);
+  windowEnd.setDate(windowEnd.getDate() + 90);
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, city, latitude, longitude, preferred_moods')
+    .eq('id', userId)
+    .maybeSingle();
+
+  const behaviourRows = await supabase
+    .from('user_behaviour_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const notifByUser = await loadNotificationPrefsByUser(supabase);
+  const notif = notifByUser.get(userId);
+
+  const notificationGenres = notif?.genres ?? [];
+  const profileMoods = (profile?.preferred_moods as string[] | null) ?? [];
+  const eligible = hasBehaviourSignals(
+    (behaviourRows.data as BehaviourProfile | null) ?? null,
+    notificationGenres,
+    profileMoods,
+  );
+
+  const { data: events } = await supabase
+    .from('events')
+    .select('id, creator_id, title, category, event_date, city, location, latitude, longitude, status')
+    .gte('event_date', tomorrow.toISOString())
+    .lte('event_date', windowEnd.toISOString())
+    .eq('status', 'active')
+    .order('event_date', { ascending: true });
+
+  const creatorIds = [...new Set((events ?? []).map((e) => e.creator_id).filter(Boolean))];
+  const creatorMoodMap = await loadCreatorMoods(supabase, creatorIds);
+  const creatorNameMap = await loadCreatorNames(supabase, creatorIds);
+
+  const scoringEvents: ScoringEvent[] = (events ?? []).map((e) => ({
+    id: e.id,
+    creator_id: e.creator_id,
+    title: e.title,
+    category: e.category,
+    event_date: e.event_date,
+    city: e.city,
+    location: e.location,
+    latitude: e.latitude,
+    longitude: e.longitude,
+    creator_moods: creatorMoodMap.get(e.creator_id) ?? [],
+  }));
+
+  const affinity = await loadUserAffinity(supabase, userId);
+  const { data: calendarRow } = await supabase
+    .from('calendar_integrations')
+    .select('calendar_connected')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const timing: NotificationTimingPrefs = notif
+    ? {
+        preferred_notification_times: notif.preferred_notification_times,
+        event_planning_window: notif.event_planning_window,
+        active_event_months: notif.active_event_months,
+        timezone: notif.timezone,
+      }
+    : defaultTiming();
+
+  const user: ScoringUser = {
+    id: userId,
+    city: profile?.city ?? null,
+    latitude: profile?.latitude ?? null,
+    longitude: profile?.longitude ?? null,
+    preferred_moods: profileMoods,
+    notification_genres: notificationGenres,
+  };
+
+  const scores = scoringEvents.map((event) => {
+    const match = scoreUserEventPair({
+      event,
+      behaviour: (behaviourRows.data as BehaviourProfile | null) ?? null,
+      user,
+      timing,
+      affinity,
+      calendarConnected: Boolean(calendarRow?.calendar_connected),
+      calendarFree: null,
+    });
+
+    return {
+      event_id: event.id,
+      title: event.title,
+      creator_id: event.creator_id,
+      event_city: event.city,
+      event_location: event.location,
+      follows_creator: affinity.followedCreatorIds.has(event.creator_id),
+      match_score: match.match_score,
+      match_reasons: match.match_reasons,
+    };
+  });
+
+  return {
+    jobVersion: EVENT_MATCH_JOB_VERSION,
+    userId,
+    eligible,
+    profile_city: profile?.city ?? null,
+    notification_genres: notificationGenres,
+    calendar_connected: Boolean(calendarRow?.calendar_connected),
+    followed_creator_ids: [...affinity.followedCreatorIds],
+    upcoming_events_count: scoringEvents.length,
+    scores,
+  };
 }
 
 async function loadCreatorMoods(
@@ -319,6 +540,7 @@ async function processUser(
   maxScore: number;
   pairsAbove50: number;
   pairsAbove75: number;
+  upsertErrors: string[];
 }> {
   const timing: NotificationTimingPrefs = notif
     ? {
@@ -428,6 +650,7 @@ async function processUser(
 
   let upserted = 0;
   let reasons = 0;
+  const upsertErrors: string[] = [];
 
   for (const match of scored) {
     const existing = existingByEvent.get(match.event_id);
@@ -469,8 +692,20 @@ async function processUser(
       { onConflict: 'user_id,event_id' },
     );
 
-    if (!error) upserted += 1;
+    if (error) {
+      upsertErrors.push(`${match.event_id}: ${error.message}`);
+    } else {
+      upserted += 1;
+    }
   }
 
-  return { upserted, deleted: toDelete.length, reasons, maxScore, pairsAbove50, pairsAbove75 };
+  return {
+    upserted,
+    deleted: toDelete.length,
+    reasons,
+    maxScore,
+    pairsAbove50,
+    pairsAbove75,
+    upsertErrors,
+  };
 }
