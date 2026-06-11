@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
-import { Music, RefreshCw, DollarSign, Disc3, Users, Search } from 'lucide-react';
+import { Music, RefreshCw, DollarSign, Disc3, Users, Search, Download } from 'lucide-react';
 
 type Summary = {
   total_songs_uploaded: number;
@@ -15,6 +15,8 @@ type Summary = {
   total_track_tips: number;
   has_any_track_tips: boolean;
   tip_totals_by_currency: { currency: string; amount: number }[];
+  date_from?: string | null;
+  date_to?: string | null;
 };
 
 type TipRow = {
@@ -55,7 +57,32 @@ export default function AdminMusicTipsPage() {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [exporting, setExporting] = useState(false);
   const limit = 25;
+
+  const inputClass = `text-sm rounded border px-2 py-2 ${
+    dark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+  }`;
+
+  const applyDatePreset = (preset: '7d' | '30d' | 'month' | 'all') => {
+    const end = new Date();
+    const to = end.toISOString().slice(0, 10);
+    if (preset === 'all') {
+      setDateFrom('');
+      setDateTo('');
+      setPage(0);
+      return;
+    }
+    const start = new Date(end);
+    if (preset === '7d') start.setDate(start.getDate() - 6);
+    else if (preset === '30d') start.setDate(start.getDate() - 29);
+    else start.setDate(1);
+    setDateFrom(start.toISOString().slice(0, 10));
+    setDateTo(to);
+    setPage(0);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -65,6 +92,8 @@ export default function AdminMusicTipsPage() {
       params.set('page', String(page));
       params.set('limit', String(limit));
       if (search) params.set('search', search);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
 
       const res = await fetchWithSupabaseAuth(`/api/admin/music-tips?${params.toString()}`);
       if (!res.ok) {
@@ -81,13 +110,41 @@ export default function AdminMusicTipsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, dateFrom, dateTo]);
+
+  const exportCsv = async () => {
+    try {
+      setExporting(true);
+      setError(null);
+      const params = new URLSearchParams();
+      params.set('export', 'csv');
+      if (search) params.set('search', search);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+
+      const res = await fetchWithSupabaseAuth(`/api/admin/music-tips?${params.toString()}`);
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `track-tips-${dateFrom || 'all'}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     load();
   }, [load]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
+  const dateFilterActive = Boolean(dateFrom || dateTo);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -98,15 +155,27 @@ export default function AdminMusicTipsPage() {
             Platform song uploads and tips linked to specific tracks
           </p>
         </div>
-        <button
-          type="button"
-          className={`inline-flex items-center gap-2 px-3 py-2 rounded text-sm ${
-            dark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-          }`}
-          onClick={load}
-        >
-          <RefreshCw className="h-4 w-4" /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={exporting}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded text-sm ${
+              dark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            } disabled:opacity-50`}
+            onClick={exportCsv}
+          >
+            <Download className="h-4 w-4" /> {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
+          <button
+            type="button"
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded text-sm ${
+              dark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            }`}
+            onClick={load}
+          >
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -142,18 +211,24 @@ export default function AdminMusicTipsPage() {
           <div className={`rounded-lg border p-4 ${cardClass}`}>
             <div className="flex items-center gap-2 mb-1">
               <Disc3 className={`h-4 w-4 ${mutedClass}`} />
-              <p className={`text-xs ${mutedClass}`}>Tracks tipped</p>
+              <p className={`text-xs ${mutedClass}`}>
+                Tracks tipped{dateFilterActive ? ' (filtered)' : ''}
+              </p>
             </div>
             <p className={`text-2xl font-semibold ${textClass}`}>{summary.tracks_with_tips.toLocaleString()}</p>
           </div>
           <div className={`rounded-lg border p-4 ${cardClass}`}>
-            <p className={`text-xs ${mutedClass}`}>Total track tips</p>
+            <p className={`text-xs ${mutedClass}`}>
+              Total track tips{dateFilterActive ? ' (filtered)' : ''}
+            </p>
             <p className={`text-2xl font-semibold ${textClass}`}>{summary.total_track_tips.toLocaleString()}</p>
           </div>
           <div className={`rounded-lg border p-4 ${cardClass}`}>
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className={`h-4 w-4 ${mutedClass}`} />
-              <p className={`text-xs ${mutedClass}`}>Tip volume</p>
+              <p className={`text-xs ${mutedClass}`}>
+                Tip volume{dateFilterActive ? ' (filtered)' : ''}
+              </p>
             </div>
             {summary.tip_totals_by_currency.length ? (
               summary.tip_totals_by_currency.map((t) => (
@@ -175,42 +250,84 @@ export default function AdminMusicTipsPage() {
       )}
 
       <div className={`rounded-lg border ${cardClass}`}>
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div
+          className={`flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}
+        >
           <div className="flex items-center gap-2">
             <Users className={`h-4 w-4 ${mutedClass}`} />
             <h2 className={`font-medium ${textClass}`}>Track tip activity</h2>
           </div>
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setPage(0);
-              setSearch(searchInput.trim());
-            }}
-          >
-            <div className="relative">
-              <Search className={`absolute left-2.5 top-2.5 h-4 w-4 ${mutedClass}`} />
-              <input
-                type="search"
-                placeholder="Search song, artist, tipper…"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className={`pl-9 pr-3 py-2 rounded text-sm border ${
-                  dark
-                    ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-500'
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-              />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1">
+              {(['7d', '30d', 'month', 'all'] as const).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => applyDatePreset(preset)}
+                  className={`px-2 py-1 rounded text-xs ${
+                    dark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {preset === '7d'
+                    ? '7 days'
+                    : preset === '30d'
+                      ? '30 days'
+                      : preset === 'month'
+                        ? 'This month'
+                        : 'All time'}
+                </button>
+              ))}
             </div>
-            <button
-              type="submit"
-              className={`px-3 py-2 rounded text-sm ${
-                dark ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(0);
+              }}
+              className={inputClass}
+              aria-label="From date"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(0);
+              }}
+              className={inputClass}
+              aria-label="To date"
+            />
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setPage(0);
+                setSearch(searchInput.trim());
+              }}
             >
-              Search
-            </button>
-          </form>
+              <div className="relative">
+                <Search className={`absolute left-2.5 top-2.5 h-4 w-4 ${mutedClass}`} />
+                <input
+                  type="search"
+                  placeholder="Search song, artist, tipper…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className={`pl-9 pr-3 py-2 rounded text-sm border ${
+                    dark
+                      ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-500'
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-3 py-2 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Search
+              </button>
+            </form>
+          </div>
         </div>
 
         {loading ? (
