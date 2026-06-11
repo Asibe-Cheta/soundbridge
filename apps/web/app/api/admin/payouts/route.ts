@@ -12,6 +12,7 @@ import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
+import { checkCreatorPayoutFraud, notifyAdminPayoutBlocked } from '@/src/lib/payout-fraud-guard';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -211,6 +212,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: `Payout request cannot be initiated (status: ${pr.status}). Only pending or failed requests can be triggered or retried.` },
           { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const fraudCheck = await checkCreatorPayoutFraud(supabase, pr.creator_id);
+      if (fraudCheck.blocked) {
+        await notifyAdminPayoutBlocked(
+          supabase,
+          pr.creator_id,
+          fraudCheck.reason ?? `Payout blocked for ${fraudCheck.creatorName} pending fraud review.`,
+        );
+        return NextResponse.json(
+          { error: fraudCheck.reason ?? 'Payout blocked pending fraud review', fraud_blocked: true },
+          { status: 422, headers: corsHeaders },
         );
       }
 

@@ -4,6 +4,7 @@ import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
+import { checkCreatorPayoutFraud, notifyAdminPayoutBlocked } from '@/src/lib/payout-fraud-guard';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -91,6 +92,21 @@ export async function POST(request: NextRequest) {
     for (const pr of pending) {
       const creatorId = pr.creator_id;
       const requestId = pr.id;
+
+      const fraudCheck = await checkCreatorPayoutFraud(supabase, creatorId);
+      if (fraudCheck.blocked) {
+        unsupported.push({
+          payout_request_id: requestId,
+          reason: fraudCheck.reason ?? 'Payout blocked pending fraud review',
+        });
+        await notifyAdminPayoutBlocked(
+          supabase,
+          creatorId,
+          fraudCheck.reason ?? `Payout blocked for ${fraudCheck.creatorName} pending fraud review.`,
+        );
+        continue;
+      }
+
       const bank = pr.bank_account_id ? banksById.get(pr.bank_account_id) : (banksByUser.get(creatorId) ?? [])[0];
       const currency = String(bank?.currency ?? '').toUpperCase();
 
