@@ -1,15 +1,57 @@
 /**
  * GET /api/admin/gigs-opportunities — Opportunity volume + gig transaction ledger.
+ * Query: page, limit, status, search, date_from, date_to, export=csv
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { minorToMajor } from '@/src/lib/platform-revenue-admin';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+const CSV_EXPORT_LIMIT = 5000;
+
+type ProjectRow = {
+  id: string;
+  opportunity_id: string;
+  poster_user_id: string;
+  creator_user_id: string;
+  title: string;
+  agreed_amount: number | string;
+  creator_payout_amount: number | string;
+  currency: string | null;
+  platform_fee_amount: number | string;
+  status: string;
+  stripe_payment_intent_id: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type GigTransactionRow = {
+  id: string;
+  opportunity_id: string;
+  gig_title: string;
+  opportunity_type: string | null;
+  gig_type: string;
+  requester_username: string | null;
+  requester_display_name: string | null;
+  creator_username: string | null;
+  creator_display_name: string | null;
+  creator_country: string | null;
+  gross_amount: number;
+  platform_fee: number;
+  creator_earnings: number;
+  currency: string;
+  project_status: string;
+  payment_status: string;
+  stripe_payment_intent_id: string | null;
+  created_at: string;
+  completed_at: string | null;
 };
 
 function paymentStatusFromProject(status: string): string {
@@ -18,6 +60,180 @@ function paymentStatusFromProject(status: string): string {
   if (status === 'cancelled' || status === 'declined') return 'cancelled';
   if (status === 'payment_pending' || status === 'active' || status === 'delivered') return 'escrowed';
   return 'pending';
+}
+
+function escapeCsv(value: string | number | null | undefined): string {
+  const s = value == null ? '' : String(value);
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function transactionsToCsv(rows: GigTransactionRow[]): string {
+  const headers = [
+    'transaction_id',
+    'gig_title',
+    'opportunity_type',
+    'gig_type',
+    'requester',
+    'creator',
+    'creator_country',
+    'gross_amount',
+    'platform_fee',
+    'creator_earnings',
+    'currency',
+    'payment_status',
+    'project_status',
+    'created_at',
+    'completed_at',
+    'stripe_payment_intent_id',
+  ];
+  const lines = [headers.join(',')];
+  for (const row of rows) {
+    lines.push(
+      [
+        escapeCsv(row.id),
+        escapeCsv(row.gig_title),
+        escapeCsv(row.opportunity_type),
+        escapeCsv(row.gig_type),
+        escapeCsv(row.requester_display_name),
+        escapeCsv(row.creator_display_name),
+        escapeCsv(row.creator_country),
+        escapeCsv(row.gross_amount),
+        escapeCsv(row.platform_fee),
+        escapeCsv(row.creator_earnings),
+        escapeCsv(row.currency),
+        escapeCsv(row.payment_status),
+        escapeCsv(row.project_status),
+        escapeCsv(row.created_at),
+        escapeCsv(row.completed_at),
+        escapeCsv(row.stripe_payment_intent_id),
+      ].join(','),
+    );
+  }
+  return lines.join('\n');
+}
+
+async function applySearchFilter(
+  service: SupabaseClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  projectsQuery: any,
+  search: string,
+) {
+  const [{ data: matchingPosts }, { data: matchingProfiles }] = await Promise.all([
+    service.from('opportunity_posts').select('id').ilike('title', `%${search}%`).limit(100),
+    service
+      .from('profiles')
+      .select('id')
+      .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`)
+      .limit(100),
+  ]);
+  const postIds = (matchingPosts ?? []).map((p: { id: string }) => p.id);
+  const profileIds = (matchingProfiles ?? []).map((p: { id: string }) => p.id);
+
+  if (!postIds.length && !profileIds.length) {
+    return projectsQuery.ilike('title', `%${search}%`);
+  }
+
+  const filters: string[] = [`title.ilike.%${search}%`];
+  if (postIds.length) filters.push(`opportunity_id.in.(${postIds.join(',')})`);
+  if (profileIds.length) {
+    filters.push(`poster_user_id.in.(${profileIds.join(',')})`);
+    filters.push(`creator_user_id.in.(${profileIds.join(',')})`);
+  }
+  return projectsQuery.or(filters.join(','));
+}
+
+function buildProjectsQuery(
+  service: SupabaseClient,
+  status: string,
+  dateFrom: string | null,
+  dateTo: string | null,
+) {
+  let query = service
+    .from('opportunity_projects')
+    .select(
+      'id, opportunity_id, poster_user_id, creator_user_id, title, agreed_amount, creator_payout_amount, currency, platform_fee_amount, status, stripe_payment_intent_id, completed_at, created_at',
+      { count: 'exact' },
+    )
+    .order('created_at', { ascending: false });
+
+  if (status === 'released') query = query.eq('status', 'completed');
+  else if (status === 'disputed') query = query.eq('status', 'disputed');
+  else if (status === 'escrowed') {
+    query = query.in('status', ['payment_pending', 'active', 'delivered']);
+  } else if (status === 'pending') {
+    query = query.in('status', ['awaiting_acceptance', 'payment_pending']);
+  }
+
+  if (dateFrom) query = query.gte('created_at', dateFrom);
+  if (dateTo) {
+    const end = new Date(dateTo);
+    if (!Number.isNaN(end.getTime())) {
+      end.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', end.toISOString());
+    }
+  }
+
+  return query;
+}
+
+async function mapProjectsToTransactions(
+  service: SupabaseClient,
+  projects: ProjectRow[],
+): Promise<GigTransactionRow[]> {
+  const oppIds = [...new Set(projects.map((p) => p.opportunity_id).filter(Boolean))];
+  const userIds = [...new Set(projects.flatMap((p) => [p.poster_user_id, p.creator_user_id]))];
+
+  const [postsRes, profilesRes] = await Promise.all([
+    oppIds.length
+      ? service
+          .from('opportunity_posts')
+          .select('id, type, gig_type, title, payment_status, payment_amount, payment_currency')
+          .in('id', oppIds)
+      : Promise.resolve({ data: [] }),
+    userIds.length
+      ? service.from('profiles').select('id, username, display_name, country_code').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const postMap = new Map((postsRes.data ?? []).map((p: { id: string }) => [p.id, p]));
+  const profileMap = new Map((profilesRes.data ?? []).map((p: { id: string }) => [p.id, p]));
+
+  return projects.map((g) => {
+    const post = postMap.get(g.opportunity_id) as
+      | { type: string; gig_type: string | null; title: string }
+      | undefined;
+    const poster = profileMap.get(g.poster_user_id) as
+      | { username: string | null; display_name: string | null; country_code: string | null }
+      | undefined;
+    const creator = profileMap.get(g.creator_user_id) as
+      | { username: string | null; display_name: string | null; country_code: string | null }
+      | undefined;
+    const gross = Number(g.agreed_amount ?? 0);
+    const fee = Number(g.platform_fee_amount ?? gross * 0.15);
+    const earnings = Number(g.creator_payout_amount ?? gross - fee);
+
+    return {
+      id: g.id,
+      opportunity_id: g.opportunity_id,
+      gig_title: g.title || post?.title || 'Untitled gig',
+      opportunity_type: post?.type ?? null,
+      gig_type: post?.gig_type ?? 'planned',
+      requester_username: poster?.username ?? poster?.display_name ?? null,
+      requester_display_name: poster?.display_name ?? poster?.username ?? null,
+      creator_username: creator?.username ?? creator?.display_name ?? null,
+      creator_display_name: creator?.display_name ?? creator?.username ?? null,
+      creator_country: creator?.country_code ?? null,
+      gross_amount: gross,
+      platform_fee: fee,
+      creator_earnings: earnings,
+      currency: (g.currency || 'GBP').toUpperCase(),
+      project_status: g.status,
+      payment_status: paymentStatusFromProject(g.status),
+      stripe_payment_intent_id: g.stripe_payment_intent_id,
+      created_at: g.created_at,
+      completed_at: g.completed_at,
+    };
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -32,12 +248,28 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '25', 10)));
   const status = searchParams.get('status') || '';
   const search = (searchParams.get('search') || '').trim().toLowerCase();
+  const dateFrom = searchParams.get('date_from');
+  const dateTo = searchParams.get('date_to');
+  const exportFormat = (searchParams.get('export') || 'json').toLowerCase();
 
   try {
     const startOfMonth = new Date();
     startOfMonth.setUTCDate(1);
     startOfMonth.setUTCHours(0, 0, 0, 0);
     const nowIso = new Date().toISOString();
+
+    let revenueQuery = service
+      .from('platform_revenue')
+      .select('gross_amount, platform_fee_amount, creator_payout_amount, currency, created_at')
+      .eq('charge_type', 'gig_payment');
+    if (dateFrom) revenueQuery = revenueQuery.gte('created_at', dateFrom);
+    if (dateTo) {
+      const end = new Date(dateTo);
+      if (!Number.isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        revenueQuery = revenueQuery.lte('created_at', end.toISOString());
+      }
+    }
 
     const [
       totalPostsRes,
@@ -76,10 +308,7 @@ export async function GET(request: NextRequest) {
         .from('opportunity_posts')
         .select('*', { count: 'exact', head: true })
         .eq('payment_status', 'escrowed'),
-      service
-        .from('platform_revenue')
-        .select('gross_amount, platform_fee_amount, creator_payout_amount, currency')
-        .eq('charge_type', 'gig_payment'),
+      revenueQuery,
     ]);
 
     const typeCounts = { collaboration: 0, event: 0, job: 0, other: 0 };
@@ -104,50 +333,18 @@ export async function GET(request: NextRequest) {
       volumeByCurrency[currency].count += 1;
     }
 
-    let projectsQuery = service
-      .from('opportunity_projects')
-      .select(
-        'id, opportunity_id, poster_user_id, creator_user_id, title, agreed_amount, creator_payout_amount, currency, platform_fee_amount, status, stripe_payment_intent_id, completed_at, created_at',
-        { count: 'exact' },
-      )
-      .order('created_at', { ascending: false });
-
-    if (status === 'released') projectsQuery = projectsQuery.eq('status', 'completed');
-    else if (status === 'disputed') projectsQuery = projectsQuery.eq('status', 'disputed');
-    else if (status === 'escrowed') {
-      projectsQuery = projectsQuery.in('status', ['payment_pending', 'active', 'delivered']);
-    } else if (status === 'pending') {
-      projectsQuery = projectsQuery.in('status', ['awaiting_acceptance', 'payment_pending']);
-    }
-
+    let projectsQuery = buildProjectsQuery(service, status, dateFrom, dateTo);
     if (search) {
-      const [{ data: matchingPosts }, { data: matchingProfiles }] = await Promise.all([
-        service.from('opportunity_posts').select('id').ilike('title', `%${search}%`).limit(100),
-        service
-          .from('profiles')
-          .select('id')
-          .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`)
-          .limit(100),
-      ]);
-      const postIds = (matchingPosts ?? []).map((p: { id: string }) => p.id);
-      const profileIds = (matchingProfiles ?? []).map((p: { id: string }) => p.id);
-
-      if (!postIds.length && !profileIds.length) {
-        projectsQuery = projectsQuery.ilike('title', `%${search}%`);
-      } else {
-        const filters: string[] = [`title.ilike.%${search}%`];
-        if (postIds.length) filters.push(`opportunity_id.in.(${postIds.join(',')})`);
-        if (profileIds.length) {
-          filters.push(`poster_user_id.in.(${profileIds.join(',')})`);
-          filters.push(`creator_user_id.in.(${profileIds.join(',')})`);
-        }
-        projectsQuery = projectsQuery.or(filters.join(','));
-      }
+      projectsQuery = await applySearchFilter(service, projectsQuery, search);
     }
+
+    const exportMode = exportFormat === 'csv';
+    const rangeFrom = exportMode ? 0 : page * limit;
+    const rangeTo = exportMode ? CSV_EXPORT_LIMIT - 1 : page * limit + limit - 1;
 
     const { data: projectRows, error: projError, count: projectsTotal } = await projectsQuery.range(
-      page * limit,
-      page * limit + limit - 1,
+      rangeFrom,
+      rangeTo,
     );
 
     if (projError) {
@@ -158,66 +355,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const projects = projectRows ?? [];
-    const oppIds = [...new Set(projects.map((p) => p.opportunity_id).filter(Boolean))];
-    const userIds = [...new Set(projects.flatMap((p) => [p.poster_user_id, p.creator_user_id]))];
+    const transactions = await mapProjectsToTransactions(service, (projectRows ?? []) as ProjectRow[]);
 
-    const [postsRes, profilesRes] = await Promise.all([
-      oppIds.length
-        ? service
-            .from('opportunity_posts')
-            .select('id, type, gig_type, title, payment_status, payment_amount, payment_currency')
-            .in('id', oppIds)
-        : Promise.resolve({ data: [] }),
-      userIds.length
-        ? service.from('profiles').select('id, username, display_name, country_code').in('id', userIds)
-        : Promise.resolve({ data: [] }),
-    ]);
-
-    const postMap = new Map((postsRes.data ?? []).map((p: { id: string }) => [p.id, p]));
-    const profileMap = new Map((profilesRes.data ?? []).map((p: { id: string }) => [p.id, p]));
-
-    const transactions = projects.map((g) => {
-      const post = postMap.get(g.opportunity_id) as
-        | {
-            type: string;
-            gig_type: string | null;
-            title: string;
-            payment_status: string | null;
-          }
-        | undefined;
-      const poster = profileMap.get(g.poster_user_id) as
-        | { username: string | null; display_name: string | null; country_code: string | null }
-        | undefined;
-      const creator = profileMap.get(g.creator_user_id) as
-        | { username: string | null; display_name: string | null; country_code: string | null }
-        | undefined;
-      const gross = Number(g.agreed_amount ?? 0);
-      const fee = Number(g.platform_fee_amount ?? gross * 0.15);
-      const earnings = Number(g.creator_payout_amount ?? gross - fee);
-
-      return {
-        id: g.id,
-        opportunity_id: g.opportunity_id,
-        gig_title: g.title || post?.title || 'Untitled gig',
-        opportunity_type: post?.type ?? null,
-        gig_type: post?.gig_type ?? 'planned',
-        requester_username: poster?.username ?? poster?.display_name ?? null,
-        requester_display_name: poster?.display_name ?? poster?.username ?? null,
-        creator_username: creator?.username ?? creator?.display_name ?? null,
-        creator_display_name: creator?.display_name ?? creator?.username ?? null,
-        creator_country: creator?.country_code ?? null,
-        gross_amount: gross,
-        platform_fee: fee,
-        creator_earnings: earnings,
-        currency: (g.currency || 'GBP').toUpperCase(),
-        project_status: g.status,
-        payment_status: paymentStatusFromProject(g.status),
-        stripe_payment_intent_id: g.stripe_payment_intent_id,
-        created_at: g.created_at,
-        completed_at: g.completed_at,
-      };
-    });
+    if (exportMode) {
+      const csv = transactionsToCsv(transactions);
+      const slug = dateFrom && dateTo ? `${dateFrom}_to_${dateTo}` : 'all';
+      return new NextResponse(csv, {
+        status: 200,
+        headers: {
+          ...CORS,
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="soundbridge-gig-transactions-${slug}.csv"`,
+        },
+      });
+    }
 
     const summary = {
       total_opportunities: totalPostsRes.count ?? 0,
@@ -238,6 +389,8 @@ export async function GET(request: NextRequest) {
         creator_payouts: Math.round(v.payouts * 100) / 100,
         transaction_count: v.count,
       })),
+      date_from: dateFrom,
+      date_to: dateTo,
     };
 
     return NextResponse.json(

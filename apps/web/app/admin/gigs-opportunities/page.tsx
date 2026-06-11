@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
-import { Briefcase, RefreshCw, Search, DollarSign, Users, AlertTriangle } from 'lucide-react';
+import { Briefcase, RefreshCw, Search, DollarSign, Users, AlertTriangle, Download } from 'lucide-react';
 
 type Summary = {
   total_opportunities: number;
@@ -76,7 +76,32 @@ export default function AdminGigsOpportunitiesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [exporting, setExporting] = useState(false);
   const limit = 25;
+
+  const inputClass = `text-sm rounded border px-2 py-2 ${
+    dark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+  }`;
+
+  const applyDatePreset = (preset: '7d' | '30d' | 'month' | 'all') => {
+    const end = new Date();
+    const to = end.toISOString().slice(0, 10);
+    if (preset === 'all') {
+      setDateFrom('');
+      setDateTo('');
+      setPage(0);
+      return;
+    }
+    const start = new Date(end);
+    if (preset === '7d') start.setDate(start.getDate() - 6);
+    else if (preset === '30d') start.setDate(start.getDate() - 29);
+    else start.setDate(1);
+    setDateFrom(start.toISOString().slice(0, 10));
+    setDateTo(to);
+    setPage(0);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -87,6 +112,8 @@ export default function AdminGigsOpportunitiesPage() {
       params.set('limit', String(limit));
       if (statusFilter) params.set('status', statusFilter);
       if (search) params.set('search', search);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
 
       const res = await fetchWithSupabaseAuth(`/api/admin/gigs-opportunities?${params.toString()}`);
       if (!res.ok) {
@@ -103,7 +130,35 @@ export default function AdminGigsOpportunitiesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, search]);
+  }, [page, statusFilter, search, dateFrom, dateTo]);
+
+  const exportCsv = async () => {
+    try {
+      setExporting(true);
+      setError(null);
+      const params = new URLSearchParams();
+      params.set('export', 'csv');
+      if (statusFilter) params.set('status', statusFilter);
+      if (search) params.set('search', search);
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+
+      const res = await fetchWithSupabaseAuth(`/api/admin/gigs-opportunities?${params.toString()}`);
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gig-transactions-${dateFrom || 'all'}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -127,6 +182,16 @@ export default function AdminGigsOpportunitiesPage() {
           >
             Escrow actions →
           </Link>
+          <button
+            type="button"
+            disabled={exporting}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded text-sm ${
+              dark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            } disabled:opacity-50`}
+            onClick={exportCsv}
+          >
+            <Download className="h-4 w-4" /> {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
           <button
             type="button"
             className={`inline-flex items-center gap-2 px-3 py-2 rounded text-sm ${
@@ -233,15 +298,47 @@ export default function AdminGigsOpportunitiesPage() {
             <h2 className={`font-medium ${textClass}`}>Gig transactions</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1">
+              {(['7d', '30d', 'month', 'all'] as const).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => applyDatePreset(preset)}
+                  className={`px-2 py-1 rounded text-xs ${
+                    dark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {preset === '7d' ? '7 days' : preset === '30d' ? '30 days' : preset === 'month' ? 'This month' : 'All time'}
+                </button>
+              ))}
+            </div>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(0);
+              }}
+              className={inputClass}
+              aria-label="From date"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(0);
+              }}
+              className={inputClass}
+              aria-label="To date"
+            />
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(0);
               }}
-              className={`text-sm rounded border px-2 py-2 ${
-                dark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-              }`}
+              className={inputClass}
             >
               <option value="">All statuses</option>
               <option value="escrowed">Escrowed</option>
