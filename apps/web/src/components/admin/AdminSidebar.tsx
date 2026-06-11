@@ -26,6 +26,7 @@ import {
   Handshake,
   Landmark,
   Mail,
+  Music,
   X,
 } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -46,6 +47,7 @@ const NAV_ITEMS = [
   { href: '/admin/bank-verifications', label: 'Verified Banks', icon: Landmark },
   { href: '/admin/user-subscriptions', label: 'Subscriptions', icon: CircleDollarSign },
   { href: '/admin/platform-revenue', label: 'Revenue', icon: TrendingUp },
+  { href: '/admin/music-tips', label: 'Music & Tips', icon: Music },
   { href: '/admin/events', label: 'Events', icon: Calendar },
   { href: '/admin/partners', label: 'Partners', icon: Handshake },
   { href: '/admin/institutional-access', label: 'Institutional Access', icon: Building2 },
