@@ -27,6 +27,7 @@ import {
   Landmark,
   Mail,
   Music,
+  Briefcase,
   X,
 } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
@@ -42,7 +43,8 @@ const NAV_ITEMS = [
   { href: '/admin/ratings', label: 'Ratings', icon: Star },
   { href: '/admin/cookie-consents', label: 'Cookie Consents', icon: Cookie },
   { href: '/admin/copyright', label: 'Copyright', icon: Copyright },
-  { href: '/admin/gig-payments', label: 'Gig Payments', icon: CreditCard },
+  { href: '/admin/gigs-opportunities', label: 'Gigs & Opportunities', icon: Briefcase },
+  { href: '/admin/gig-payments', label: 'Gig Escrow Ops', icon: CreditCard },
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
   { href: '/admin/bank-verifications', label: 'Verified Banks', icon: Landmark },
   { href: '/admin/user-subscriptions', label: 'Subscriptions', icon: CircleDollarSign },
