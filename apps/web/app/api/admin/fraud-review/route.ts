@@ -1,19 +1,23 @@
 /**
- * GET /api/admin/fraud-review — summary, flagged, monitor lists
- * GET /api/admin/fraud-review?id=uuid — play detail panel
- * POST /api/admin/fraud-review — approve | withhold | ban
+ * GET /api/admin/fraud-review — summary, flagged, monitor, suspicious tracks
+ * GET /api/admin/fraud-review?id=uuid — play detail
+ * GET /api/admin/fraud-review?emailDraft=1&analysisId=uuid — email composer draft
+ * POST /api/admin/fraud-review — approve | withhold | ban | send_warning_email
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
+import { getSuspiciousTrackCreators } from '@/src/lib/fraud-detection-query';
 import {
   getPlayDetailForAnalysis,
   runManualHighPlayAnalysis,
   runPlaycountFraudAnalysisJob,
 } from '@/src/lib/playcount-fraud-analysis-job';
 import {
+  fraudEmailTemplateForStatus,
+  sendCustomFraudReviewEmail,
   sendFraudAccountBannedEmail,
-  sendFraudPayoutWithheldEmail,
 } from '@/src/lib/fraud-review-emails';
 
 const CORS = {
@@ -29,6 +33,15 @@ function startOfMonthIso(): string {
   return d.toISOString();
 }
 
+async function loadAnalysisRow(service: SupabaseClient, analysisId: string) {
+  const { data: row, error } = await service
+    .from('creator_fraud_analysis')
+    .select('*, profiles:creator_id(username, display_name), audio_tracks:track_id(title, play_count)')
+    .eq('id', analysisId)
+    .single();
+  return { row, error };
+}
+
 export async function GET(request: NextRequest) {
   const admin = await requireAdmin(request);
   if (isAdminAccessDenied(admin)) {
@@ -40,6 +53,72 @@ export async function GET(request: NextRequest) {
   const detailId = searchParams.get('id');
   const runAnalysis = searchParams.get('run') === '1';
   const manualTop = searchParams.get('manualTop');
+  const emailDraft = searchParams.get('emailDraft') === '1';
+  const analysisId = searchParams.get('analysisId');
+  const trackId = searchParams.get('trackId');
+  const creatorId = searchParams.get('creatorId');
+
+  if (emailDraft && (analysisId || (trackId && creatorId))) {
+    let fraudStatus: string | null = null;
+    let creatorName = 'Creator';
+    let trackTitle = 'your track';
+    let playCount = 0;
+    let toEmail: string | null = null;
+    let resolvedAnalysisId: string | null = analysisId;
+
+    if (analysisId) {
+      const { row, error } = await loadAnalysisRow(service, analysisId);
+      if (error || !row) {
+        return NextResponse.json({ error: 'Analysis row not found' }, { status: 404, headers: CORS });
+      }
+      fraudStatus = row.fraud_status;
+      const profile = row.profiles as { username?: string; display_name?: string } | null;
+      const track = row.audio_tracks as { title?: string; play_count?: number } | null;
+      creatorName = profile?.display_name || profile?.username || creatorName;
+      trackTitle = track?.title ?? trackTitle;
+      playCount = Number(track?.play_count ?? row.total_plays ?? 0);
+      const { data: authUser } = await service.auth.admin.getUserById(row.creator_id);
+      toEmail = authUser?.user?.email ?? null;
+    } else if (trackId && creatorId) {
+      const [{ data: profile }, { data: track }, { data: authUser }, { data: analysis }] = await Promise.all([
+        service.from('profiles').select('username, display_name').eq('id', creatorId).maybeSingle(),
+        service.from('audio_tracks').select('title, play_count').eq('id', trackId).maybeSingle(),
+        service.auth.admin.getUserById(creatorId),
+        service
+          .from('creator_fraud_analysis')
+          .select('id, fraud_status')
+          .eq('track_id', trackId)
+          .order('analysis_date', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      creatorName = profile?.display_name || profile?.username || creatorName;
+      trackTitle = track?.title ?? trackTitle;
+      playCount = Number(track?.play_count ?? 0);
+      toEmail = authUser?.user?.email ?? null;
+      fraudStatus = analysis?.fraud_status ?? (playCount >= 500 ? 'hold' : 'flagged');
+      resolvedAnalysisId = analysis?.id ?? null;
+    }
+
+    const template = fraudEmailTemplateForStatus(fraudStatus, {
+      creatorName,
+      trackTitle,
+      playCount,
+    });
+
+    return NextResponse.json(
+      {
+        analysisId: resolvedAnalysisId,
+        to: toEmail,
+        creatorName,
+        trackTitle,
+        playCount,
+        fraudStatus,
+        ...template,
+      },
+      { headers: CORS },
+    );
+  }
 
   if (detailId) {
     const detail = await getPlayDetailForAnalysis(service, detailId);
@@ -65,11 +144,12 @@ export async function GET(request: NextRequest) {
     holdRes,
     suspiciousMonthRes,
     manualSnapshot,
+    suspiciousTracks,
   ] = await Promise.all([
     service
       .from('creator_fraud_analysis')
       .select(
-        'id, creator_id, track_id, analysis_date, total_plays, unique_listeners, play_to_listener_ratio, platform_ratio, fraud_score, fraud_status, payout_held, reviewed_by_admin, admin_decision, created_at, profiles:creator_id(username, display_name), audio_tracks:track_id(title)',
+        'id, creator_id, track_id, analysis_date, total_plays, unique_listeners, play_to_listener_ratio, platform_ratio, fraud_score, fraud_status, payout_held, reviewed_by_admin, admin_decision, warning_email_sent, warning_email_sent_at, created_at, profiles:creator_id(username, display_name), audio_tracks:track_id(title, play_count)',
       )
       .in('fraud_status', ['flagged', 'hold'])
       .order('fraud_score', { ascending: false })
@@ -77,7 +157,7 @@ export async function GET(request: NextRequest) {
     service
       .from('creator_fraud_analysis')
       .select(
-        'id, creator_id, track_id, analysis_date, total_plays, unique_listeners, play_to_listener_ratio, platform_ratio, fraud_score, fraud_status, created_at, profiles:creator_id(username, display_name), audio_tracks:track_id(title)',
+        'id, creator_id, track_id, analysis_date, total_plays, unique_listeners, play_to_listener_ratio, platform_ratio, fraud_score, fraud_status, warning_email_sent, warning_email_sent_at, created_at, profiles:creator_id(username, display_name), audio_tracks:track_id(title, play_count)',
       )
       .eq('fraud_status', 'monitor')
       .order('fraud_score', { ascending: false })
@@ -98,6 +178,7 @@ export async function GET(request: NextRequest) {
       .eq('is_suspicious', true)
       .gte('played_at', startOfMonthIso()),
     runManualHighPlayAnalysis(service, 10),
+    getSuspiciousTrackCreators(service),
   ]);
 
   return NextResponse.json(
@@ -110,6 +191,7 @@ export async function GET(request: NextRequest) {
       flagged: flaggedRes.data ?? [],
       monitor: monitorRes.data ?? [],
       high_play_manual_analysis: manualSnapshot,
+      suspicious_tracks: suspiciousTracks,
     },
     { headers: CORS },
   );
@@ -123,15 +205,69 @@ export async function POST(request: NextRequest) {
 
   const service = admin.serviceClient;
   const body = await request.json().catch(() => ({}));
-  const { analysisId, action } = body as { analysisId?: string; action?: string };
+  const { analysisId, action, to, subject, text, trackId, creatorId } = body as {
+    analysisId?: string;
+    action?: string;
+    to?: string;
+    subject?: string;
+    text?: string;
+    trackId?: string;
+    creatorId?: string;
+  };
 
-  if (!analysisId || !action) {
-    return NextResponse.json({ error: 'analysisId and action required' }, { status: 400, headers: CORS });
+  if (!action) {
+    return NextResponse.json({ error: 'action required' }, { status: 400, headers: CORS });
+  }
+
+  if (action === 'send_warning_email') {
+    if (!to?.trim() || !subject?.trim() || !text?.trim()) {
+      return NextResponse.json({ error: 'to, subject, and text are required' }, { status: 400, headers: CORS });
+    }
+
+    const sent = await sendCustomFraudReviewEmail({
+      to: to.trim(),
+      subject: subject.trim(),
+      text: text.trim(),
+    });
+
+    if (!sent) {
+      return NextResponse.json({ error: 'Failed to send email (check SendGrid config)' }, { status: 500, headers: CORS });
+    }
+
+    const now = new Date().toISOString();
+    let targetAnalysisId = analysisId ?? null;
+
+    if (!targetAnalysisId && trackId) {
+      const { data: existing } = await service
+        .from('creator_fraud_analysis')
+        .select('id')
+        .eq('track_id', trackId)
+        .order('analysis_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      targetAnalysisId = existing?.id ?? null;
+    }
+
+    if (targetAnalysisId) {
+      await service
+        .from('creator_fraud_analysis')
+        .update({
+          warning_email_sent: true,
+          warning_email_sent_at: now,
+        })
+        .eq('id', targetAnalysisId);
+    }
+
+    return NextResponse.json({ success: true, action: 'send_warning_email', emailSent: true, analysisId: targetAnalysisId }, { headers: CORS });
+  }
+
+  if (!analysisId) {
+    return NextResponse.json({ error: 'analysisId required' }, { status: 400, headers: CORS });
   }
 
   const { data: row, error: fetchError } = await service
     .from('creator_fraud_analysis')
-    .select('*, profiles:creator_id(username, display_name)')
+    .select('*, profiles:creator_id(username, display_name), audio_tracks:track_id(title, play_count)')
     .eq('id', analysisId)
     .single();
 
@@ -139,11 +275,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Analysis row not found' }, { status: 404, headers: CORS });
   }
 
-  const creatorId = row.creator_id as string;
+  const creatorIdFromRow = row.creator_id as string;
   const profile = row.profiles as { username?: string; display_name?: string } | null;
   const creatorName = profile?.display_name || profile?.username || 'Creator';
 
-  const { data: authUser } = await service.auth.admin.getUserById(creatorId);
+  const { data: authUser } = await service.auth.admin.getUserById(creatorIdFromRow);
   const creatorEmail = authUser?.user?.email;
 
   const now = new Date().toISOString();
@@ -168,6 +304,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === 'withhold') {
+    const track = row.audio_tracks as { title?: string; play_count?: number } | null;
     const { error } = await service
       .from('creator_fraud_analysis')
       .update({
@@ -183,7 +320,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (creatorEmail) {
-      await sendFraudPayoutWithheldEmail(creatorEmail, creatorName);
+      const template = fraudEmailTemplateForStatus('hold', {
+        creatorName,
+        trackTitle: track?.title ?? 'your track',
+        playCount: Number(track?.play_count ?? row.total_plays ?? 0),
+      });
+      await sendCustomFraudReviewEmail({ to: creatorEmail, subject: template.subject, text: template.text });
+      await service
+        .from('creator_fraud_analysis')
+        .update({ warning_email_sent: true, warning_email_sent_at: now })
+        .eq('id', analysisId);
     }
 
     return NextResponse.json({ success: true, action: 'withheld', emailSent: Boolean(creatorEmail) }, { headers: CORS });
@@ -213,7 +359,7 @@ export async function POST(request: NextRequest) {
         ban_reason: 'Play count integrity violation',
         is_active: false,
       })
-      .eq('id', creatorId);
+      .eq('id', creatorIdFromRow);
 
     if (creatorEmail) {
       await sendFraudAccountBannedEmail(creatorEmail, creatorName);

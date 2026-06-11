@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Ban,
   PauseCircle,
+  Mail,
 } from 'lucide-react';
 
 type Summary = {
@@ -31,6 +32,8 @@ type FraudRow = {
   fraud_score: number;
   fraud_status: string;
   payout_held?: boolean;
+  warning_email_sent?: boolean;
+  warning_email_sent_at?: string | null;
   created_at: string;
   fraud_signals?: Record<string, unknown>;
   profiles?: { username?: string; display_name?: string } | null;
@@ -49,6 +52,33 @@ type ManualRow = {
   session_coverage?: number;
   inflation_ratio?: number;
   likely_inflated?: boolean;
+};
+
+type SuspiciousTrackRow = {
+  track_id: string;
+  creator_id: string;
+  creator_email: string | null;
+  creator_name: string;
+  track_title: string;
+  total_play_count: number;
+  unique_listener_count: number;
+  unique_ip_count: number;
+  play_to_listener_ratio: number;
+  analysis_id: string | null;
+  fraud_status: string | null;
+  warning_email_sent: boolean;
+};
+
+type EmailDraft = {
+  analysisId: string | null;
+  trackId?: string;
+  creatorId?: string;
+  to: string;
+  subject: string;
+  text: string;
+  templateType?: string;
+  creatorName?: string;
+  trackTitle?: string;
 };
 
 type Detail = {
@@ -76,12 +106,16 @@ export default function AdminFraudReviewPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [flagged, setFlagged] = useState<FraudRow[]>([]);
   const [monitor, setMonitor] = useState<FraudRow[]>([]);
+  const [suspicious, setSuspicious] = useState<SuspiciousTrackRow[]>([]);
   const [manual, setManual] = useState<ManualRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState<EmailDraft | null>(null);
+  const [emailDraftLoading, setEmailDraftLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -96,6 +130,7 @@ export default function AdminFraudReviewPage() {
       setSummary(data.summary ?? null);
       setFlagged(data.flagged ?? []);
       setMonitor(data.monitor ?? []);
+      setSuspicious(data.suspicious_tracks ?? []);
       setManual(data.high_play_manual_analysis ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
@@ -128,6 +163,75 @@ export default function AdminFraudReviewPage() {
     }
   };
 
+  const openEmailComposer = async (opts: {
+    analysisId?: string | null;
+    trackId?: string;
+    creatorId?: string;
+    fraudStatus?: string | null;
+  }) => {
+    try {
+      setEmailDraftLoading(true);
+      setError(null);
+      const params = new URLSearchParams({ emailDraft: '1' });
+      if (opts.analysisId) params.set('analysisId', opts.analysisId);
+      if (opts.trackId) params.set('trackId', opts.trackId);
+      if (opts.creatorId) params.set('creatorId', opts.creatorId);
+
+      const res = await fetchWithSupabaseAuth(`/api/admin/fraud-review?${params.toString()}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to load email template');
+      }
+      const data = await res.json();
+      setEmailDraft({
+        analysisId: data.analysisId ?? opts.analysisId ?? null,
+        trackId: opts.trackId,
+        creatorId: opts.creatorId,
+        to: data.to ?? '',
+        subject: data.subject ?? '',
+        text: data.text ?? '',
+        templateType: data.templateType,
+        creatorName: data.creatorName,
+        trackTitle: data.trackTitle,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Email template failed');
+    } finally {
+      setEmailDraftLoading(false);
+    }
+  };
+
+  const sendWarningEmail = async () => {
+    if (!emailDraft) return;
+    try {
+      setEmailSending(true);
+      setError(null);
+      const res = await fetchWithSupabaseAuth('/api/admin/fraud-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_warning_email',
+          analysisId: emailDraft.analysisId,
+          trackId: emailDraft.trackId,
+          creatorId: emailDraft.creatorId,
+          to: emailDraft.to,
+          subject: emailDraft.subject,
+          text: emailDraft.text,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Send failed');
+      }
+      setEmailDraft(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Send failed');
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const runAction = async (analysisId: string, action: 'approve' | 'withhold' | 'ban') => {
     try {
       setActionBusy(`${analysisId}:${action}`);
@@ -157,7 +261,7 @@ export default function AdminFraudReviewPage() {
   const creatorLabel = (row: FraudRow) =>
     row.profiles?.display_name || row.profiles?.username || row.creator_id.slice(0, 8);
 
-  const renderTable = (rows: FraudRow[], showActions: boolean) => (
+  const renderTable = (rows: FraudRow[], options: { payoutActions?: boolean; emailAction?: boolean }) => (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead className={dark ? 'bg-gray-900/50' : 'bg-gray-50'}>
@@ -170,7 +274,9 @@ export default function AdminFraudReviewPage() {
             <th className={`text-right px-4 py-3 font-medium ${mutedClass}`}>Score</th>
             <th className={`text-left px-4 py-3 font-medium ${mutedClass}`}>Status</th>
             <th className={`text-left px-4 py-3 font-medium ${mutedClass}`}>Date</th>
-            {showActions && <th className={`text-right px-4 py-3 font-medium ${mutedClass}`}>Actions</th>}
+            {(options.payoutActions || options.emailAction) && (
+              <th className={`text-right px-4 py-3 font-medium ${mutedClass}`}>Actions</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -191,37 +297,59 @@ export default function AdminFraudReviewPage() {
                   {row.fraud_status}
                 </span>
               </td>
-              <td className={`px-4 py-3 whitespace-nowrap ${mutedClass}`}>{row.analysis_date}</td>
-              {showActions && (
+              <td className={`px-4 py-3 whitespace-nowrap ${mutedClass}`}>
+                {row.analysis_date}
+                {row.warning_email_sent && (
+                  <span className="block text-xs text-green-500">Email sent</span>
+                )}
+              </td>
+              {(options.payoutActions || options.emailAction) && (
                 <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
-                    <button
-                      type="button"
-                      title="Approve payout"
-                      disabled={Boolean(actionBusy)}
-                      onClick={() => runAction(row.id, 'approve')}
-                      className="p-1.5 rounded text-green-500 hover:bg-green-500/10 disabled:opacity-40"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Withhold payout"
-                      disabled={Boolean(actionBusy)}
-                      onClick={() => runAction(row.id, 'withhold')}
-                      className="p-1.5 rounded text-amber-500 hover:bg-amber-500/10 disabled:opacity-40"
-                    >
-                      <PauseCircle className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Ban account"
-                      disabled={Boolean(actionBusy)}
-                      onClick={() => runAction(row.id, 'ban')}
-                      className="p-1.5 rounded text-red-500 hover:bg-red-500/10 disabled:opacity-40"
-                    >
-                      <Ban className="h-4 w-4" />
-                    </button>
+                    {options.emailAction && (
+                      <button
+                        type="button"
+                        title="Send warning email"
+                        disabled={Boolean(actionBusy) || emailDraftLoading}
+                        onClick={() =>
+                          openEmailComposer({ analysisId: row.id, fraudStatus: row.fraud_status })
+                        }
+                        className="p-1.5 rounded text-blue-500 hover:bg-blue-500/10 disabled:opacity-40"
+                      >
+                        <Mail className="h-4 w-4" />
+                      </button>
+                    )}
+                    {options.payoutActions && (
+                      <>
+                        <button
+                          type="button"
+                          title="Approve payout"
+                          disabled={Boolean(actionBusy)}
+                          onClick={() => runAction(row.id, 'approve')}
+                          className="p-1.5 rounded text-green-500 hover:bg-green-500/10 disabled:opacity-40"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Withhold payout"
+                          disabled={Boolean(actionBusy)}
+                          onClick={() => runAction(row.id, 'withhold')}
+                          className="p-1.5 rounded text-amber-500 hover:bg-amber-500/10 disabled:opacity-40"
+                        >
+                          <PauseCircle className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Ban account"
+                          disabled={Boolean(actionBusy)}
+                          onClick={() => runAction(row.id, 'ban')}
+                          className="p-1.5 rounded text-red-500 hover:bg-red-500/10 disabled:opacity-40"
+                        >
+                          <Ban className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               )}
@@ -293,6 +421,65 @@ export default function AdminFraudReviewPage() {
         </div>
       )}
 
+      {suspicious.length > 0 && (
+        <div className={`rounded-lg border mb-6 ${cardClass}`}>
+          <div className={`p-4 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h2 className={`font-medium ${textClass}`}>Suspicious tracks (SQL query)</h2>
+            <p className={`text-xs mt-1 ${mutedClass}`}>
+              play_count &gt; 100 and (unique listeners ≤ 3 or ratio &gt; 50) — creator emails included
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className={dark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                <tr>
+                  <th className={`text-left px-4 py-3 ${mutedClass}`}>Creator</th>
+                  <th className={`text-left px-4 py-3 ${mutedClass}`}>Email</th>
+                  <th className={`text-left px-4 py-3 ${mutedClass}`}>Track</th>
+                  <th className={`text-right px-4 py-3 ${mutedClass}`}>Plays</th>
+                  <th className={`text-right px-4 py-3 ${mutedClass}`}>Listeners</th>
+                  <th className={`text-right px-4 py-3 ${mutedClass}`}>IPs</th>
+                  <th className={`text-right px-4 py-3 ${mutedClass}`}>Ratio</th>
+                  <th className={`text-right px-4 py-3 ${mutedClass}`}>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suspicious.map((s) => (
+                  <tr key={s.track_id} className={`border-t ${dark ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <td className={`px-4 py-3 ${textClass}`}>{s.creator_name}</td>
+                    <td className={`px-4 py-3 ${mutedClass} text-xs`}>{s.creator_email ?? '—'}</td>
+                    <td className={`px-4 py-3 ${textClass}`}>{s.track_title}</td>
+                    <td className={`px-4 py-3 text-right ${textClass}`}>{s.total_play_count.toLocaleString()}</td>
+                    <td className={`px-4 py-3 text-right ${textClass}`}>{s.unique_listener_count}</td>
+                    <td className={`px-4 py-3 text-right ${textClass}`}>{s.unique_ip_count}</td>
+                    <td className={`px-4 py-3 text-right ${textClass}`}>{s.play_to_listener_ratio.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        disabled={!s.creator_email || emailDraftLoading}
+                        title={s.warning_email_sent ? 'Resend warning email' : 'Send warning email'}
+                        onClick={() =>
+                          openEmailComposer({
+                            analysisId: s.analysis_id,
+                            trackId: s.track_id,
+                            creatorId: s.creator_id,
+                            fraudStatus: s.fraud_status ?? (s.total_play_count >= 500 ? 'hold' : 'flagged'),
+                          })
+                        }
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs text-blue-500 hover:bg-blue-500/10 disabled:opacity-40"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        {s.warning_email_sent ? 'Sent' : 'Send'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {manual.length > 0 && (
         <div className={`rounded-lg border mb-6 ${cardClass}`}>
           <div className={`p-4 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -349,7 +536,7 @@ export default function AdminFraudReviewPage() {
         ) : flagged.length === 0 ? (
           <div className={`p-8 text-center text-sm ${mutedClass}`}>No flagged accounts. Run analysis after migration.</div>
         ) : (
-          renderTable(flagged, true)
+          renderTable(flagged, { payoutActions: true, emailAction: true })
         )}
       </div>
 
@@ -361,9 +548,72 @@ export default function AdminFraudReviewPage() {
         {monitor.length === 0 ? (
           <div className={`p-8 text-center text-sm ${mutedClass}`}>No accounts in monitor status.</div>
         ) : (
-          renderTable(monitor, false)
+          renderTable(monitor, { emailAction: true })
         )}
       </div>
+
+      {(emailDraft || emailDraftLoading) && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+          <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border ${cardClass}`}>
+            <div className={`flex items-center justify-between p-4 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`font-medium ${textClass}`}>Send fraud notice email</h3>
+              <button type="button" onClick={() => setEmailDraft(null)} className={`text-sm ${mutedClass}`}>
+                Close
+              </button>
+            </div>
+            {emailDraftLoading ? (
+              <div className={`p-8 text-center text-sm ${mutedClass}`}>Loading template…</div>
+            ) : emailDraft ? (
+              <div className="p-4 space-y-3">
+                <label className={`block text-xs ${mutedClass}`}>
+                  To
+                  <input
+                    type="email"
+                    value={emailDraft.to}
+                    onChange={(e) => setEmailDraft({ ...emailDraft, to: e.target.value })}
+                    className={`mt-1 w-full rounded border px-3 py-2 text-sm ${dark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
+                </label>
+                <label className={`block text-xs ${mutedClass}`}>
+                  Subject
+                  <input
+                    type="text"
+                    value={emailDraft.subject}
+                    onChange={(e) => setEmailDraft({ ...emailDraft, subject: e.target.value })}
+                    className={`mt-1 w-full rounded border px-3 py-2 text-sm ${dark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
+                </label>
+                <label className={`block text-xs ${mutedClass}`}>
+                  Message
+                  <textarea
+                    rows={16}
+                    value={emailDraft.text}
+                    onChange={(e) => setEmailDraft({ ...emailDraft, text: e.target.value })}
+                    className={`mt-1 w-full rounded border px-3 py-2 text-sm font-mono ${dark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
+                </label>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEmailDraft(null)}
+                    className={`px-3 py-2 rounded text-sm ${dark ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={emailSending || !emailDraft.to.trim()}
+                    onClick={sendWarningEmail}
+                    className="px-3 py-2 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                  >
+                    {emailSending ? 'Sending…' : 'Send email'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {(detail || detailLoading) && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
