@@ -46,6 +46,9 @@ type ManualRow = {
   unique_user_ids: number;
   unique_ip_addresses: number;
   avg_play_duration_seconds: number;
+  session_coverage?: number;
+  inflation_ratio?: number;
+  likely_inflated?: boolean;
 };
 
 type Detail = {
@@ -308,17 +311,26 @@ export default function AdminFraudReviewPage() {
                   <th className={`text-right px-4 py-3 ${mutedClass}`}>Unique users</th>
                   <th className={`text-right px-4 py-3 ${mutedClass}`}>Unique IPs</th>
                   <th className={`text-right px-4 py-3 ${mutedClass}`}>Avg duration (s)</th>
+                  <th className={`text-left px-4 py-3 ${mutedClass}`}>Inflated?</th>
                 </tr>
               </thead>
               <tbody>
                 {manual.map((m) => (
-                  <tr key={m.track_id} className={`border-t ${dark ? 'border-gray-700' : 'border-gray-100'}`}>
+                  <tr
+                    key={m.track_id}
+                    className={`border-t ${dark ? 'border-gray-700' : 'border-gray-100'} ${m.likely_inflated ? (dark ? 'bg-red-900/20' : 'bg-red-50') : ''}`}
+                  >
                     <td className={`px-4 py-3 ${textClass}`}>{m.track_title}</td>
                     <td className={`px-4 py-3 text-right ${textClass}`}>{m.play_count.toLocaleString()}</td>
                     <td className={`px-4 py-3 text-right ${mutedClass}`}>{m.session_rows.toLocaleString()}</td>
                     <td className={`px-4 py-3 text-right ${textClass}`}>{m.unique_user_ids.toLocaleString()}</td>
                     <td className={`px-4 py-3 text-right ${textClass}`}>{m.unique_ip_addresses.toLocaleString()}</td>
                     <td className={`px-4 py-3 text-right ${textClass}`}>{m.avg_play_duration_seconds}</td>
+                    <td className={`px-4 py-3 ${m.likely_inflated ? 'text-red-500 font-medium' : mutedClass}`}>
+                      {m.likely_inflated
+                        ? `Yes (${m.inflation_ratio?.toLocaleString() ?? '?'}×)`
+                        : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

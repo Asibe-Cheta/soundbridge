@@ -4,7 +4,11 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const FRAUD_JOB_VERSION = '2026-06-12-v1';
+export const FRAUD_JOB_VERSION = '2026-06-12-v2';
+
+/** Displayed play_count vs recorded play_sessions — catches legacy client-side inflation. */
+const MIN_PLAY_COUNT_FOR_INFLATION = 100;
+const SESSION_COVERAGE_THRESHOLD = 0.1;
 
 type PlayRow = {
   user_id: string | null;
@@ -26,7 +30,30 @@ export type FraudSignalDetail = {
   platform_ratio?: { value: number; triggered: boolean; threshold: number };
   ip_concentration?: { value: number; triggered: boolean; unique_ips: number };
   time_clustering?: { value: number; triggered: boolean; window_hours: number };
+  play_count_inflation?: {
+    value: number;
+    coverage: number;
+    triggered: boolean;
+    display_play_count: number;
+    all_time_sessions: number;
+  };
 };
+
+export function detectPlayCountInflation(displayPlayCount: number, allTimeSessionCount: number) {
+  const playCount = Math.max(0, Number(displayPlayCount) || 0);
+  const sessions = Math.max(0, allTimeSessionCount);
+  const coverage = playCount > 0 ? sessions / playCount : 1;
+  const inflationRatio = playCount / Math.max(sessions, 1);
+  const triggered = playCount >= MIN_PLAY_COUNT_FOR_INFLATION && coverage < SESSION_COVERAGE_THRESHOLD;
+
+  return {
+    value: Math.round(inflationRatio * 100) / 100,
+    coverage: Math.round(coverage * 10000) / 10000,
+    triggered,
+    display_play_count: playCount,
+    all_time_sessions: sessions,
+  };
+}
 
 export function scoreFromSignals(signals: FraudSignalDetail): {
   fraudScore: number;
@@ -47,6 +74,15 @@ export function scoreFromSignals(signals: FraudSignalDetail): {
   if (signals.ip_concentration?.triggered) score += 22;
   if (signals.time_clustering?.triggered) score += 18;
 
+  const inflation = signals.play_count_inflation;
+  if (inflation?.triggered) {
+    const pc = inflation.display_play_count ?? 0;
+    if (pc >= 5000 || inflation.value >= 100) score += 80;
+    else if (pc >= 1000) score += 65;
+    else if (pc >= 500) score += 50;
+    else score += 35;
+  }
+
   score = Math.min(100, score);
 
   let fraudStatus: 'clean' | 'monitor' | 'flagged' | 'hold' = 'clean';
@@ -54,7 +90,14 @@ export function scoreFromSignals(signals: FraudSignalDetail): {
   else if (score >= 51) fraudStatus = 'flagged';
   else if (score >= 26) fraudStatus = 'monitor';
 
-  const payoutHeld = fraudStatus === 'hold' || (fraudStatus === 'flagged' && (ratio?.value ?? 0) > 10);
+  const inflationHold =
+    Boolean(inflation?.triggered) &&
+    ((inflation?.display_play_count ?? 0) >= 500 || (inflation?.value ?? 0) >= 50);
+
+  const payoutHeld =
+    fraudStatus === 'hold' ||
+    inflationHold ||
+    (fraudStatus === 'flagged' && (ratio?.value ?? 0) > 10);
 
   return { fraudScore: score, fraudStatus, payoutHeld };
 }
@@ -62,6 +105,7 @@ export function scoreFromSignals(signals: FraudSignalDetail): {
 export function analyzeTrackPlays(
   plays: PlayRow[],
   platformUserCount: number,
+  options?: { displayPlayCount?: number; allTimeSessionCount?: number },
 ): {
   totalPlays: number;
   uniqueListeners: number;
@@ -108,6 +152,11 @@ export function analyzeTrackPlays(
     timeClusteringScore = bestCluster / eligible.length;
   }
 
+  const playCountInflation = detectPlayCountInflation(
+    options?.displayPlayCount ?? totalPlays,
+    options?.allTimeSessionCount ?? totalPlays,
+  );
+
   const signals: FraudSignalDetail = {
     play_to_listener_ratio: {
       value: Math.round(playToListenerRatio * 100) / 100,
@@ -136,6 +185,7 @@ export function analyzeTrackPlays(
       triggered: timeClusteringScore > 0.8,
       window_hours: 6,
     },
+    play_count_inflation: playCountInflation,
   };
 
   return {
@@ -196,6 +246,18 @@ export async function runPlaycountFraudAnalysisJob(
   let hold = 0;
 
   for (const track of tracks ?? []) {
+    const playCount = Number(track.play_count ?? 0);
+
+    const { count: allTimeSessions, error: sessionCountError } = await service
+      .from('play_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('track_id', track.id);
+
+    if (sessionCountError) {
+      errors.push(`session count ${track.id}: ${sessionCountError.message}`);
+      continue;
+    }
+
     const { data: plays, error: playsError } = await service
       .from('play_sessions')
       .select('user_id, ip_address, played_at, is_suspicious, is_rejected, is_valid')
@@ -207,10 +269,23 @@ export async function runPlaycountFraudAnalysisJob(
       continue;
     }
 
-    if (!plays?.length) continue;
+    const inflationOnly =
+      playCount >= MIN_PLAY_COUNT_FOR_INFLATION &&
+      detectPlayCountInflation(playCount, allTimeSessions ?? 0).triggered;
 
-    const metrics = analyzeTrackPlays(plays as PlayRow[], platformUsers);
-    const { fraudScore, fraudStatus, payoutHeld } = scoreFromSignals(metrics.signals);
+    if (!plays?.length && !inflationOnly) continue;
+
+    const metrics = analyzeTrackPlays((plays ?? []) as PlayRow[], platformUsers, {
+      displayPlayCount: playCount,
+      allTimeSessionCount: allTimeSessions ?? 0,
+    });
+    let { fraudScore, fraudStatus, payoutHeld } = scoreFromSignals(metrics.signals);
+
+    if (inflationOnly && fraudStatus === 'clean') {
+      fraudStatus = 'hold';
+      fraudScore = Math.max(fraudScore, 80);
+      payoutHeld = true;
+    }
 
     if (fraudStatus === 'flagged') flagged++;
     if (fraudStatus === 'hold') hold++;
@@ -220,7 +295,7 @@ export async function runPlaycountFraudAnalysisJob(
         creator_id: track.creator_id,
         track_id: track.id,
         analysis_date: analysisDate,
-        total_plays: metrics.totalPlays,
+        total_plays: metrics.totalPlays || allTimeSessions || 0,
         unique_listeners: metrics.uniqueListeners,
         play_to_listener_ratio: metrics.playToListenerRatio,
         platform_ratio: metrics.platformRatio,
@@ -326,11 +401,17 @@ export async function runManualHighPlayAnalysis(service: SupabaseClient, limit =
     const since = new Date();
     since.setDate(since.getDate() - 90);
 
-    const { data: plays } = await service
-      .from('play_sessions')
-      .select('user_id, ip_address, played_at, play_duration_seconds, is_suspicious, is_rejected')
-      .eq('track_id', track.id)
-      .gte('played_at', since.toISOString());
+    const [{ count: allTimeSessions }, { data: plays }] = await Promise.all([
+      service
+        .from('play_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('track_id', track.id),
+      service
+        .from('play_sessions')
+        .select('user_id, ip_address, played_at, play_duration_seconds, is_suspicious, is_rejected')
+        .eq('track_id', track.id)
+        .gte('played_at', since.toISOString()),
+    ]);
 
     const uniqueUsers = new Set((plays ?? []).map((p) => p.user_id).filter(Boolean)).size;
     const uniqueIps = new Set((plays ?? []).map((p) => p.ip_address).filter(Boolean)).size;
@@ -338,15 +419,21 @@ export async function runManualHighPlayAnalysis(service: SupabaseClient, limit =
     const avgDuration =
       durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
 
+    const sessionCount = allTimeSessions ?? 0;
+    const inflation = detectPlayCountInflation(Number(track.play_count ?? 0), sessionCount);
+
     results.push({
       track_id: track.id,
       track_title: track.title,
       creator_id: track.creator_id,
       play_count: track.play_count,
-      session_rows: plays?.length ?? 0,
+      session_rows: sessionCount,
       unique_user_ids: uniqueUsers,
       unique_ip_addresses: uniqueIps,
       avg_play_duration_seconds: avgDuration,
+      session_coverage: inflation.coverage,
+      inflation_ratio: inflation.value,
+      likely_inflated: inflation.triggered,
     });
   }
 
