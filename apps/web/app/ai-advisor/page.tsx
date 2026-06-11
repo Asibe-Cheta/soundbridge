@@ -1,5 +1,9 @@
 import React from 'react';
-import { Sparkles, MapPin, Music2, Clock3, Target, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, MapPin, Music2, Clock3, Target, TrendingUp, ArrowRight } from 'lucide-react';
+
+/** Flip to false when AI Career Advisor is ready to launch. */
+const AI_ADVISOR_COMING_SOON = true;
 
 function ProgressRing({ value }: { value: number }) {
   const radius = 52;
@@ -90,7 +94,7 @@ export default function AiAdvisorPage() {
     },
   };
 
-  return (
+  const mockContent = (
     <div className="min-h-screen bg-gradient-to-b from-[#2B0B5B] via-[#2C0B57] to-black text-white">
       <div className="max-w-5xl mx-auto px-4 py-10">
         {/* Header */}
@@ -310,5 +314,38 @@ export default function AiAdvisorPage() {
       </div>
     </div>
   );
+
+  if (AI_ADVISOR_COMING_SOON) {
+    return (
+      <div className="relative min-h-screen">
+        <div aria-hidden className="invisible absolute inset-0 overflow-hidden pointer-events-none select-none">
+          {mockContent}
+        </div>
+
+        <div className="relative min-h-screen bg-gradient-to-b from-[#2B0B5B] via-[#2C0B57] to-black text-white flex items-center justify-center px-4 py-16">
+          <div className="max-w-lg w-full text-center rounded-3xl bg-white/5 border border-white/10 backdrop-blur-lg p-8 sm:p-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 border border-white/10 mb-6">
+              <Sparkles className="w-8 h-8 text-accent-pink" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-3">Your AI Career Advisor</h1>
+            <p className="text-white/70 text-lg mb-2">Coming soon</p>
+            <p className="text-white/60 text-sm leading-relaxed mb-8">
+              We&apos;re building personalised career guidance for independent audio creators — location
+              insights, release strategy, and daily direction tailored to your profile. Check back soon.
+            </p>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#EC4899] to-[#DC2626] hover:brightness-110 transition font-semibold"
+            >
+              Back to dashboard
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return mockContent;
 }
 
