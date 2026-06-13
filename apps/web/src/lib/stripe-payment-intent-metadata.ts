@@ -8,7 +8,7 @@
 
 import type Stripe from 'stripe';
 
-export type ChargeType = 'gig_payment' | 'tip' | 'event_ticket' | 'audio_sale' | 'subscription';
+export type ChargeType = 'gig_payment' | 'tip' | 'event_ticket' | 'audio_sale' | 'subscription' | 'distribution';
 
 export interface StandardPaymentIntentMetadata {
   charge_type: ChargeType;

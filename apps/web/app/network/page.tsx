@@ -655,7 +655,7 @@ export default function NetworkPage() {
                 <HeartHandshake className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-300 mb-2">You have not joined any communities yet.</p>
                 <p className="text-gray-500 text-sm mb-6">
-                  Discover creators and follow them to join their community.
+                  Visit a creator&apos;s profile and tap Join Community to become part of their world.
                 </p>
                 <Link
                   href="/creators"

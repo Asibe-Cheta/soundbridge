@@ -127,6 +127,9 @@ export function CommunityDetailClient({ initial }: { initial: CommunityDetailDat
           <p className="mt-3 text-sm text-gray-400">
             {member_count.toLocaleString()} {member_count === 1 ? 'member' : 'members'} in this community
           </p>
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-200">
+            Community Member
+          </span>
           <div className="mt-5">
             <TipCreator creatorId={creator.id} creatorName={displayName} />
           </div>

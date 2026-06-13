@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/src/lib/supabase';
 
+export type CommunityJoinSource = 'manual' | 'post_tip_prompt';
+
 export type CommunityCreatorProfile = {
   id: string;
   username: string | null;
@@ -12,9 +14,8 @@ export type CommunityCreatorProfile = {
 
 export type CommunityListItem = CommunityCreatorProfile & {
   member_count: number;
-  has_tipped: boolean;
-  followed_at: string | null;
-  last_tip_at: string | null;
+  joined_at: string;
+  join_source: CommunityJoinSource;
 };
 
 export type CommunityTrack = {
@@ -131,53 +132,39 @@ export async function getTippedCreatorIdsForUser(
   return byCreator;
 }
 
+export async function getCommunityMemberCount(
+  supabase: SupabaseClient,
+  creatorId: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('community_memberships')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', creatorId);
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export async function getCommunityMemberCounts(
   supabase: SupabaseClient,
   creatorIds: string[],
 ): Promise<Map<string, number>> {
-  const counts = new Map<string, Set<string>>();
-  for (const id of creatorIds) counts.set(id, new Set());
-
-  if (creatorIds.length === 0) return new Map();
-
-  const { data: followRows } = await supabase
-    .from('follows')
-    .select('following_id, follower_id')
-    .in('following_id', creatorIds);
-
-  for (const row of followRows ?? []) {
-    const set = counts.get(row.following_id as string);
-    if (set && row.follower_id) set.add(row.follower_id as string);
-  }
-
-  const { data: tipRows } = await supabase
-    .from('tips')
-    .select('recipient_id, sender_id')
-    .in('recipient_id', creatorIds)
-    .eq('status', 'completed');
-
-  for (const row of tipRows ?? []) {
-    const set = counts.get(row.recipient_id as string);
-    if (set && row.sender_id) set.add(row.sender_id as string);
-  }
-
-  try {
-    const { data: liveRows } = await supabase
-      .from('live_session_tips')
-      .select('creator_id, tipper_id')
-      .in('creator_id', creatorIds)
-      .eq('status', 'completed');
-
-    for (const row of liveRows ?? []) {
-      const set = counts.get(row.creator_id as string);
-      if (set && row.tipper_id) set.add(row.tipper_id as string);
-    }
-  } catch {
-    /* optional table */
-  }
-
   const result = new Map<string, number>();
-  for (const [id, set] of counts) result.set(id, set.size);
+  for (const id of creatorIds) result.set(id, 0);
+  if (creatorIds.length === 0) return result;
+
+  const { data, error } = await supabase
+    .from('community_memberships')
+    .select('creator_id')
+    .in('creator_id', creatorIds);
+
+  if (error) return result;
+
+  for (const row of data ?? []) {
+    const cid = row.creator_id as string;
+    result.set(cid, (result.get(cid) ?? 0) + 1);
+  }
+
   return result;
 }
 
@@ -188,16 +175,87 @@ export async function userIsCommunityMember(
 ): Promise<boolean> {
   if (userId === creatorId) return true;
 
-  const { data: follow } = await supabase
-    .from('follows')
-    .select('follower_id')
-    .eq('follower_id', userId)
-    .eq('following_id', creatorId)
+  const { data } = await supabase
+    .from('community_memberships')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('creator_id', creatorId)
     .maybeSingle();
-  if (follow) return true;
 
-  const tipped = await getTippedCreatorIdsForUser(supabase, userId);
-  return tipped.has(creatorId);
+  return Boolean(data);
+}
+
+export async function joinCommunity(
+  supabase: SupabaseClient,
+  userId: string,
+  creatorId: string,
+  joinSource: CommunityJoinSource = 'manual',
+): Promise<{ ok: boolean; error?: string }> {
+  if (userId === creatorId) {
+    return { ok: false, error: 'Cannot join your own community' };
+  }
+
+  const { error } = await supabase.from('community_memberships').insert({
+    user_id: userId,
+    creator_id: creatorId,
+    join_source: joinSource,
+  });
+
+  if (error) {
+    if (error.code === '23505') {
+      return { ok: true };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
+
+export async function leaveCommunity(
+  supabase: SupabaseClient,
+  userId: string,
+  creatorId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('community_memberships')
+    .delete()
+    .eq('user_id', userId)
+    .eq('creator_id', creatorId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function countCompletedTipsToCreator(
+  supabase: SupabaseClient,
+  userId: string,
+  creatorId: string,
+): Promise<number> {
+  let count = 0;
+
+  const { count: tipCount } = await supabase
+    .from('tips')
+    .select('*', { count: 'exact', head: true })
+    .eq('sender_id', userId)
+    .eq('recipient_id', creatorId)
+    .eq('status', 'completed');
+
+  count += tipCount ?? 0;
+
+  try {
+    const { count: liveCount } = await supabase
+      .from('live_session_tips')
+      .select('*', { count: 'exact', head: true })
+      .eq('tipper_id', userId)
+      .eq('creator_id', creatorId)
+      .eq('status', 'completed');
+
+    count += liveCount ?? 0;
+  } catch {
+    /* optional table */
+  }
+
+  return count;
 }
 
 export async function getMyTippedCreators(
@@ -236,65 +294,42 @@ export async function getCommunitiesForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<CommunityListItem[]> {
-  const tippedMap = await getTippedCreatorIdsForUser(supabase, userId);
-
-  const { data: followingRows } = await supabase
-    .from('follows')
+  const { data: membershipRows, error } = await supabase
+    .from('community_memberships')
     .select(
       `
-      following_id,
-      created_at,
-      following:profiles!follows_following_id_fkey (
+      joined_at,
+      join_source,
+      creator:profiles!community_memberships_creator_id_fkey (
         id, username, display_name, avatar_url, bio, professional_headline, role
       )
     `,
     )
-    .eq('follower_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('user_id', userId)
+    .order('joined_at', { ascending: false });
 
-  const merged = new Map<
-    string,
-    {
-      profile: CommunityCreatorProfile;
-      has_tipped: boolean;
-      followed_at: string | null;
-      last_tip_at: string | null;
-    }
-  >();
+  if (error || !membershipRows?.length) {
+    return [];
+  }
 
-  for (const row of followingRows ?? []) {
-    const following = row.following as Record<string, unknown> | null;
-    if (!following?.id) continue;
-    const id = String(following.id);
-    if (String(following.role ?? '').toLowerCase() !== 'creator') continue;
-    merged.set(id, {
-      profile: mapProfile(following),
-      has_tipped: tippedMap.has(id),
-      followed_at: row.created_at as string,
-      last_tip_at: tippedMap.get(id) ?? null,
+  const items: Array<{
+    profile: CommunityCreatorProfile;
+    joined_at: string;
+    join_source: CommunityJoinSource;
+  }> = [];
+
+  for (const row of membershipRows) {
+    const creator = row.creator as Record<string, unknown> | null;
+    if (!creator?.id) continue;
+    if (String(creator.role ?? '').toLowerCase() !== 'creator') continue;
+    items.push({
+      profile: mapProfile(creator),
+      joined_at: String(row.joined_at),
+      join_source: (row.join_source as CommunityJoinSource) ?? 'manual',
     });
   }
 
-  const tippedOnlyIds = [...tippedMap.keys()].filter((id) => !merged.has(id));
-  if (tippedOnlyIds.length > 0) {
-    const { data: tippedProfiles } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url, bio, professional_headline, role')
-      .in('id', tippedOnlyIds);
-
-    for (const p of tippedProfiles ?? []) {
-      const id = String(p.id);
-      if (String(p.role ?? '').toLowerCase() !== 'creator') continue;
-      merged.set(id, {
-        profile: mapProfile(p as Record<string, unknown>),
-        has_tipped: true,
-        followed_at: null,
-        last_tip_at: tippedMap.get(id) ?? null,
-      });
-    }
-  }
-
-  const creatorIds = [...merged.keys()];
+  const creatorIds = items.map((i) => i.profile.id);
   const memberCounts = await getCommunityMemberCounts(createServiceClient(), creatorIds);
 
   const { data: genreRows } = await supabase
@@ -310,28 +345,16 @@ export async function getCommunitiesForUser(
     if (!genreByCreator.has(cid) && t.genre) genreByCreator.set(cid, String(t.genre));
   }
 
-  const items: CommunityListItem[] = creatorIds.map((id) => {
-    const entry = merged.get(id)!;
-    const genre = genreByCreator.get(id);
+  return items.map(({ profile, joined_at, join_source }) => {
+    const genre = genreByCreator.get(profile.id);
     return {
-      ...entry.profile,
-      genre_tag: entry.profile.genre_tag || genre || null,
-      member_count: memberCounts.get(id) ?? 0,
-      has_tipped: entry.has_tipped,
-      followed_at: entry.followed_at,
-      last_tip_at: entry.last_tip_at,
+      ...profile,
+      genre_tag: profile.genre_tag || genre || null,
+      member_count: memberCounts.get(profile.id) ?? 0,
+      joined_at,
+      join_source,
     };
   });
-
-  items.sort((a, b) => {
-    if (a.has_tipped !== b.has_tipped) return a.has_tipped ? -1 : 1;
-    if (a.has_tipped && b.has_tipped) {
-      return String(b.last_tip_at || '').localeCompare(String(a.last_tip_at || ''));
-    }
-    return String(b.followed_at || '').localeCompare(String(a.followed_at || ''));
-  });
-
-  return items;
 }
 
 async function getMemberPreview(
@@ -339,45 +362,18 @@ async function getMemberPreview(
   creatorId: string,
   excludeUserId: string,
 ): Promise<{ avatars: CommunityMemberAvatar[]; others_count: number }> {
-  const members = new Set<string>();
+  const { data: membershipRows } = await supabase
+    .from('community_memberships')
+    .select('user_id')
+    .eq('creator_id', creatorId)
+    .neq('user_id', excludeUserId)
+    .order('joined_at', { ascending: false })
+    .limit(50);
 
-  const { data: followers } = await supabase
-    .from('follows')
-    .select('follower_id')
-    .eq('following_id', creatorId)
-    .limit(200);
+  const memberIds = (membershipRows ?? [])
+    .map((r) => r.user_id as string)
+    .filter(Boolean);
 
-  for (const r of followers ?? []) {
-    if (r.follower_id && r.follower_id !== excludeUserId) members.add(r.follower_id as string);
-  }
-
-  const { data: tippers } = await supabase
-    .from('tips')
-    .select('sender_id')
-    .eq('recipient_id', creatorId)
-    .eq('status', 'completed')
-    .limit(200);
-
-  for (const r of tippers ?? []) {
-    if (r.sender_id && r.sender_id !== excludeUserId) members.add(r.sender_id as string);
-  }
-
-  try {
-    const { data: liveTippers } = await supabase
-      .from('live_session_tips')
-      .select('tipper_id')
-      .eq('creator_id', creatorId)
-      .eq('status', 'completed')
-      .limit(200);
-
-    for (const r of liveTippers ?? []) {
-      if (r.tipper_id && r.tipper_id !== excludeUserId) members.add(r.tipper_id as string);
-    }
-  } catch {
-    /* optional */
-  }
-
-  const memberIds = [...members];
   const others_count = Math.max(0, memberIds.length - 5);
   const previewIds = memberIds.slice(0, 5);
 
@@ -422,9 +418,7 @@ export async function getCommunityDetail(
     return { ok: false as const, reason: 'not_found' as const };
   }
 
-  const memberCounts = await getCommunityMemberCounts(service, [creatorId]);
-  const member_count = memberCounts.get(creatorId) ?? 0;
-
+  const member_count = await getCommunityMemberCount(service, creatorId);
   const nowIso = new Date().toISOString();
 
   const [{ data: tracksRaw }, { data: eventsRaw }, { data: postsRaw }, memberPreview, { data: genreRow }] =
@@ -486,7 +480,7 @@ export async function getCommunityDetail(
   }));
 
   const postIds = (postsRaw ?? []).map((p) => p.id as string);
-  let attachmentsMap = new Map<string, Array<Record<string, unknown>>>();
+  const attachmentsMap = new Map<string, Array<Record<string, unknown>>>();
   if (postIds.length > 0) {
     const { data: attachments } = await service
       .from('post_attachments')

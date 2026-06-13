@@ -29,6 +29,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { notifyCommunityMembersOfPost } from '@/src/lib/community-notifications';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -152,6 +153,10 @@ export async function POST(request: NextRequest) {
     const postTypeKey = String(rawPostType).toLowerCase();
     const event_id = body.event_id ?? body.eventId;
     const imageUrls = body.image_urls ?? body.imageUrls;
+    const isCommunityUpdate =
+      body.is_community_update === true ||
+      body.isCommunityUpdate === true ||
+      body.community_update === true;
 
     const post_type =
       POST_TYPE_ALIASES[postTypeKey] ??
@@ -217,6 +222,9 @@ export async function POST(request: NextRequest) {
     if (mentionsParsed && mentionsParsed.length > 0) {
       insertPayload.mentions = mentionsParsed;
     }
+    if (isCommunityUpdate) {
+      insertPayload.is_community_update = true;
+    }
 
     // Create post
     const { data: post, error: postError } = await supabase
@@ -247,6 +255,12 @@ export async function POST(request: NextRequest) {
       .eq('post_id', post.id);
 
     console.log('[posts] Post created successfully:', post.id);
+
+    if (isCommunityUpdate && visibility === 'public') {
+      notifyCommunityMembersOfPost(user.id, String(post.id), trimmed).catch((err) => {
+        console.error('[posts] community update notification failed:', err);
+      });
+    }
 
     return NextResponse.json(
       {

@@ -13,7 +13,7 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-/** All creator communities for the current user (follows ∪ tips). */
+/** Creator communities the user has deliberately joined (community_memberships). */
 export async function GET(request: NextRequest) {
   try {
     const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);

@@ -8,10 +8,11 @@ export const PRO_RESOURCES_IMAGES = {
   fund: '/images/pro-resources/fund.jpg',
   mix: '/images/pro-resources/mix.jpg',
   t2dLogo: '/images/pro-resources/T2Dhome.png',
+  mbgLogo: '/images/pro-resources/mbg.png',
   lockup: '/images/logos/logo-trans-lockup.png',
 } as const;
 
-export type ProResourcesTabId = 'sound-academy' | 'talk2dan' | 'herts';
+export type ProResourcesTabId = 'sound-academy' | 'talk2dan' | 'herts' | 'mbg-sonics';
 
 export type CourseUnit = {
   number: number;
@@ -53,6 +54,7 @@ export const PRO_RESOURCES_TABS: { id: ProResourcesTabId; label: string }[] = [
   { id: 'sound-academy', label: 'Sound Academy' },
   { id: 'talk2dan', label: 'Talk 2 Dan' },
   { id: 'herts', label: 'Herts Uni' },
+  { id: 'mbg-sonics', label: 'MBG Sonics' },
 ];
 
 export const SOUND_ACADEMY_STATS = [

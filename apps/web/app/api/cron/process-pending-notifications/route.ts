@@ -63,6 +63,11 @@ function buildEventReminderContent(notificationType: string, event: any, creator
         title: `Reminder: ${safeCreator}'s ${event?.category || 'event'} is tomorrow!`,
         body: `${safeTitle} at ${venueOrCity}. ${cta}`,
       };
+    case '48_hours':
+      return {
+        title: `${safeCreator}'s ${event?.category || 'event'} is in 2 days`,
+        body: `${safeTitle} at ${venueOrCity}. ${cta}`,
+      };
     case 'event_day':
       return {
         title: `${safeTitle} starts today!`,

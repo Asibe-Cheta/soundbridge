@@ -17,12 +17,28 @@ import { revenueService } from '../../lib/revenue-service';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import type { TipFormData } from '../../lib/types/revenue';
 import { Gift, Heart, Send, DollarSign, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, X, CreditCard, Smartphone, Shield } from 'lucide-react';
+import { PostTipCommunityPrompt } from '@/src/components/community/PostTipCommunityPrompt';
+import { isCommunityTipPromptDismissed } from '@/src/lib/community-join-prompt-storage';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 interface TipCreatorProps {
   creatorId: string;
   creatorName: string;
   onTipSent?: (amount: number) => void;
-   userTier?: 'free' | 'pro' | 'enterprise';
+  userTier?: 'free' | 'pro' | 'enterprise';
+}
+
+function buildTipSuccessReturnUrl(creatorId: string, creatorName: string): string {
+  const params = new URLSearchParams({
+    creator_id: creatorId,
+    creator_name: creatorName,
+  });
+  return `/tip-success?${params.toString()}`;
+}
+
+function buildPaymentUrl(paymentIntentId: string, clientSecret: string, creatorId: string, creatorName: string): string {
+  const returnUrl = encodeURIComponent(buildTipSuccessReturnUrl(creatorId, creatorName));
+  return `${window.location.origin}/payment?payment_intent=${paymentIntentId}&client_secret=${clientSecret}&return_url=${returnUrl}`;
 }
 
 const SUGGESTED_AMOUNTS = [5, 10, 25, 50, 100];
@@ -66,6 +82,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTipPrompt, setShowTipPrompt] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('card');
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethod[]>(['card']);
   
@@ -168,12 +185,12 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           if (typeof window !== 'undefined' && window.ApplePaySession && window.ApplePaySession.canMakePayments()) {
             // For Apple Pay, redirect to Stripe Checkout which handles Apple Pay sessions properly
             console.log('Apple Pay available, redirecting to Stripe Checkout...');
-            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            window.location.href = buildPaymentUrl(result.paymentIntentId, result.clientSecret, creatorId, creatorName);
             return;
           } else {
             // Fallback for non-Apple Pay devices - redirect to payment page
             console.log('Apple Pay not available, redirecting to payment page...');
-            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            window.location.href = buildPaymentUrl(result.paymentIntentId, result.clientSecret, creatorId, creatorName);
             return;
           }
         } catch (applePayError) {
@@ -187,12 +204,12 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           // Check if Google Pay is available
           if (typeof window !== 'undefined' && window.google && window.google.payments && window.google.payments.api) {
             console.log('Google Pay available, redirecting to Stripe Checkout...');
-            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            window.location.href = buildPaymentUrl(result.paymentIntentId, result.clientSecret, creatorId, creatorName);
             return;
           } else {
             // Fallback for non-Google Pay devices - redirect to payment page
             console.log('Google Pay not available, redirecting to payment page...');
-            window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+            window.location.href = buildPaymentUrl(result.paymentIntentId, result.clientSecret, creatorId, creatorName);
             return;
           }
         } catch (googlePayError) {
@@ -206,7 +223,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         
         // For now, we'll redirect to a payment page that can handle the payment intent
         // In a full implementation, you'd want to use Stripe Elements or redirect to checkout
-        window.location.href = `${window.location.origin}/payment?payment_intent=${result.paymentIntentId}&client_secret=${result.clientSecret}`;
+        window.location.href = buildPaymentUrl(result.paymentIntentId, result.clientSecret, creatorId, creatorName);
         return;
       }
 
@@ -229,19 +246,33 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         if (onTipSent) {
           onTipSent(tipData.amount);
         }
-        
-        // Reset form
+
+        let shouldShowPrompt = false;
+        if (!isCommunityTipPromptDismissed(creatorId)) {
+          try {
+            const eligibleRes = await fetchWithSupabaseAuth(
+              `/api/community/tip-prompt-eligible?creator_id=${encodeURIComponent(creatorId)}`,
+            );
+            const eligibleJson = await eligibleRes.json();
+            shouldShowPrompt = Boolean(eligibleJson?.eligible);
+            setShowTipPrompt(shouldShowPrompt);
+          } catch {
+            setShowTipPrompt(false);
+          }
+        }
+
         setTipData({
           amount: 10,
           message: '',
           is_anonymous: false
         });
-        
-        // Close modal after a delay
-        setTimeout(() => {
-          setIsOpen(false);
-          setSuccess(null);
-        }, 2000);
+
+        if (!shouldShowPrompt) {
+          setTimeout(() => {
+            setIsOpen(false);
+            setSuccess(null);
+          }, 2000);
+        }
       } else {
         setError(confirmResult.error || 'Failed to confirm tip');
       }
@@ -307,8 +338,27 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
             <p className="text-green-400 text-sm">{success}</p>
           </div>
         )}
+        {showTipPrompt ? (
+          <PostTipCommunityPrompt
+            creatorId={creatorId}
+            creatorName={creatorName}
+            onDismiss={() => {
+              setShowTipPrompt(false);
+              setIsOpen(false);
+              setSuccess(null);
+            }}
+            onJoined={() => {
+              setShowTipPrompt(false);
+              setTimeout(() => {
+                setIsOpen(false);
+                setSuccess(null);
+              }, 2500);
+            }}
+          />
+        ) : null}
 
-        {/* Tip Amount */}
+        {!showTipPrompt ? (
+        <>
         <div className="mb-6">
           <label className="block text-gray-400 text-sm mb-3">Tip Amount</label>
           
@@ -522,6 +572,8 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
             )}
           </button>
         </div>
+        </>
+        ) : null}
       </div>
     </div>
   );

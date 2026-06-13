@@ -213,7 +213,7 @@ export async function sendPushNotification(
     );
     
     // Increment notification count (if applicable)
-    const unlimitedTypes = ['tip', 'collaboration', 'wallet', 'event_reminder', 'track_approved', 'creator_post'];
+    const unlimitedTypes = ['tip', 'collaboration', 'wallet', 'event_reminder', 'track_approved', 'creator_post', 'creator_goal'];
     if (!unlimitedTypes.includes(payload.data?.type)) {
       await incrementNotificationCount(payload.userId);
     }

@@ -6,6 +6,7 @@ import { Footer } from '@/src/components/layout/Footer';
 import { trackProResource } from '@/src/lib/pro-resource-analytics';
 import {
   HertsUniTab,
+  MBGSonicsTab,
   ProResourcesBackButton,
   ProResourcesTabBar,
   SoundAcademyTab,
@@ -56,6 +57,7 @@ export default function ProResourcesPage() {
         {activeTab === 'sound-academy' && <SoundAcademyTab />}
         {activeTab === 'talk2dan' && <Talk2DanTab />}
         {activeTab === 'herts' && <HertsUniTab />}
+        {activeTab === 'mbg-sonics' && <MBGSonicsTab />}
       </div>
 
       <Footer />

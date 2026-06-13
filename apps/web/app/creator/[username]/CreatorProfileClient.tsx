@@ -12,6 +12,7 @@ import { useOnlinePresence } from '../../../src/contexts/OnlinePresenceContext';
 import { useAudioPlayer } from '../../../src/contexts/AudioPlayerContext';
 import { CustomBranding } from '../../../src/components/branding/CustomBranding';
 import { TipCreator } from '../../../src/components/revenue/TipCreator';
+import { JoinCommunityButton } from '../../../src/components/community/JoinCommunityButton';
 import { useAvailability } from '../../../src/hooks/useAvailability';
 import {
   getCreatorEvents,
@@ -83,6 +84,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
   const [topEvents, setTopEvents] = useState<Event[]>([]);
   const [isLoadingTopContent, setIsLoadingTopContent] = useState(false);
   const [isLoadingFollow, setIsLoadingFollow] = useState(false);
+  const [communityMemberCount, setCommunityMemberCount] = useState<number | null>(null);
   const [isLoadingMessage, setIsLoadingMessage] = useState(false);
   const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([]);
   const [creatorAlbums, setCreatorAlbums] = useState<CreatorAlbumCard[]>([]);
@@ -177,6 +179,18 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
         } else if (user && creator.id === user.id) {
           // User viewing their own profile, don't show follow option
           setIsFollowing(false);
+        }
+
+        try {
+          const memberRes = await fetch(
+            `/api/community/membership?creator_id=${encodeURIComponent(creator.id)}`,
+          );
+          if (memberRes.ok) {
+            const memberData = await memberRes.json();
+            setCommunityMemberCount(Number(memberData.member_count ?? 0));
+          }
+        } catch (memberErr) {
+          console.error('Error loading community member count:', memberErr);
         }
 
         // Load messages if user is logged in
@@ -588,6 +602,18 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                       </span>
                     </div>
                   )}
+                  {(creator.followers_count != null || communityMemberCount != null) && (
+                    <p className={`mb-2 text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                      {(creator.followers_count ?? 0).toLocaleString()} followers
+                      {communityMemberCount != null ? (
+                        <>
+                          {' '}
+                          · {communityMemberCount.toLocaleString()} community{' '}
+                          {communityMemberCount === 1 ? 'member' : 'members'}
+                        </>
+                      ) : null}
+                    </p>
+                  )}
                   {creator.location && (
                     <div className="flex items-center mb-2 text-gray-300">
                       <MapPin className="h-4 w-4 mr-1" />
@@ -638,31 +664,45 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                 <div className="flex flex-col space-y-2">
                   {/* Only show Follow button if viewing someone else's profile */}
                   {user && creator.id !== user.id && (
-                    <button
-                      onClick={handleFollowToggle}
-                      disabled={isLoadingFollow}
-                      className={`flex items-center justify-center rounded-lg font-medium transition-all duration-200 ${
-                        isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-2'
-                      } ${
-                        isFollowing 
-                          ? 'bg-gray-600 text-white border border-gray-500 hover:bg-gray-500' 
-                          : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
-                      }`}
-                    >
-                      {isLoadingFollow ? (
-                        <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                      ) : isFollowing ? (
-                        <>
-                          <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
-                          Following
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
-                          Follow
-                        </>
-                      )}
-                    </button>
+                    <>
+                      <button
+                        onClick={handleFollowToggle}
+                        disabled={isLoadingFollow}
+                        className={`flex items-center justify-center rounded-lg font-medium transition-all duration-200 ${
+                          isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-2'
+                        } ${
+                          isFollowing
+                            ? 'bg-gray-600 text-white border border-gray-500 hover:bg-gray-500'
+                            : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
+                        }`}
+                      >
+                        {isLoadingFollow ? (
+                          <Loader2 className={`animate-spin ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                        ) : isFollowing ? (
+                          <>
+                            <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+                            Follow
+                          </>
+                        )}
+                      </button>
+                      <JoinCommunityButton
+                        creatorId={creator.id}
+                        creatorName={creator.display_name || creator.username}
+                        onMembershipChange={() => {
+                          fetch(
+                            `/api/community/membership?creator_id=${encodeURIComponent(creator.id)}`,
+                          )
+                            .then((r) => r.json())
+                            .then((d) => setCommunityMemberCount(Number(d.member_count ?? 0)))
+                            .catch(() => undefined);
+                        }}
+                      />
+                    </>
                   )}
                   
                   {/* Tip Creator Button */}

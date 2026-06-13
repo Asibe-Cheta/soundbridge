@@ -485,3 +485,84 @@ export function HertsUniTab() {
     </>
   );
 }
+
+export function MBGSonicsTab() {
+  const { theme } = useTheme();
+  return (
+    <>
+      <PartnerBadge
+        dotColor="#F472B6"
+        badgeBg="rgba(236,72,153,0.12)"
+        badgeBorder="rgba(236,72,153,0.35)"
+        textColor="#FBCFE8"
+        label="DISTRIBUTION PARTNER"
+      >
+        <Image
+          src={PRO_RESOURCES_IMAGES.mbgLogo}
+          alt="MBG Sonics"
+          width={40}
+          height={40}
+          className="rounded-[10px] object-cover bg-[#111]"
+        />
+      </PartnerBadge>
+
+      <div className="px-6 mt-7 mb-4">
+        <h4 className={`mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>MBG Sonics</h4>
+        <p className={textSecondary(theme)}>
+          Distribute your music to Spotify, Apple Music, Tidal and major streaming platforms worldwide
+          through our official distribution partner MBG Sonics.
+        </p>
+        <p className={`text-sm mt-3 ${textSecondary(theme)}`}>
+          This covers distribution to Spotify, Apple Music, Tidal, Amazon Music, YouTube Music and
+          150+ platforms worldwide.
+        </p>
+      </div>
+
+      <div className="px-6">
+        <div
+          className={`relative w-[280px] h-[380px] rounded-3xl overflow-hidden mx-auto border ${cardBorder(theme)}`}
+          style={{
+            background: 'linear-gradient(135deg, #1F2937, #831843)',
+          }}
+        >
+          <div
+            className="absolute inset-x-0 bottom-0 h-[60%]"
+            style={{
+              background:
+                'linear-gradient(to bottom, transparent, rgba(0,0,0,0.35), rgba(0,0,0,0.82))',
+            }}
+          />
+          <div className="absolute left-1/2 -translate-x-1/2 top-[22%]">
+            <Image
+              src={PRO_RESOURCES_IMAGES.mbgLogo}
+              alt=""
+              width={72}
+              height={72}
+              className="rounded-2xl object-cover"
+            />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <h3 className="text-2xl font-bold text-white tracking-[-0.5px] mb-2">MBG Sonics</h3>
+            <p className="text-sm text-white/70 line-clamp-4 mb-3">
+              Get your tracks on major streaming platforms with SoundBridge&apos;s distribution
+              partner.
+            </p>
+            <p className="text-xs text-white/55">Distribution fee from £75 →</p>
+          </div>
+        </div>
+      </div>
+
+      <Link
+        href="/distribution/mbg-sonics"
+        onClick={() => {
+          void trackProResource('resource_tap', 'mbg_distribute');
+        }}
+        className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
+        style={{ background: 'linear-gradient(to right, #DC2626, #EC4899)' }}
+      >
+        <ExternalLink size={18} className="text-white" />
+        Distribute My Music
+      </Link>
+    </>
+  );
+}

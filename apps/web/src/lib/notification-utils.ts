@@ -71,6 +71,7 @@ export type NotificationType =
   | 'event_reminder'
   | 'track_approved'
   | 'creator_post'
+  | 'creator_goal'
   | 'collaboration_request'
   | 'collaboration_accepted'
   | 'collaboration_declined';

@@ -11,7 +11,8 @@ export type ProResourceKey =
   | 't2d_t2d-3'
   | 't2d_t2d-4'
   | 't2d_website'
-  | 'herts_website';
+  | 'herts_website'
+  | 'mbg_distribute';
 
 export const PRO_RESOURCE_LABELS: Record<string, string> = {
   screen_view: 'Screen views',
@@ -25,6 +26,7 @@ export const PRO_RESOURCE_LABELS: Record<string, string> = {
   't2d_t2d-4': 'Talk 2 Dan — Recruitment',
   t2d_website: 'Talk 2 Dan website',
   herts_website: 'University of Hertfordshire',
+  mbg_distribute: 'MBG Sonics — Distribute My Music',
 };
 
 export function soundAcademyModuleResource(moduleId: string): ProResourceKey {
