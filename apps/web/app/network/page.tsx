@@ -8,11 +8,12 @@ import { NetworkSidebar } from '@/src/components/network/NetworkSidebar';
 import { Post } from '@/src/lib/types/post';
 import {
   Users2, UserPlus, Loader2, AlertCircle, Check, X, Search,
-  MapPin, Briefcase, ArrowRight, User
+  MapPin, Briefcase, ArrowRight, User, HeartHandshake, ChevronRight
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getCreatorProfilePath } from '@/src/lib/profile-links';
+import type { CommunityListItem } from '@/src/lib/community-service';
 
 interface ConnectionRequest {
   id: string;
@@ -55,7 +56,7 @@ interface Connection {
 export default function NetworkPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'requests' | 'suggestions' | 'opportunities' | 'connections'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'suggestions' | 'opportunities' | 'connections' | 'communities'>('requests');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Handle URL query parameters for tab navigation
@@ -63,8 +64,8 @@ export default function NetworkPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab');
-      if (tab && ['requests', 'suggestions', 'opportunities', 'connections'].includes(tab)) {
-        setActiveTab(tab as 'requests' | 'suggestions' | 'opportunities' | 'connections');
+      if (tab && ['requests', 'suggestions', 'opportunities', 'connections', 'communities'].includes(tab)) {
+        setActiveTab(tab as 'requests' | 'suggestions' | 'opportunities' | 'connections' | 'communities');
       }
     }
   }, []);
@@ -85,6 +86,9 @@ export default function NetworkPage() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [connectionCount, setConnectionCount] = useState(0);
+
+  const [communities, setCommunities] = useState<CommunityListItem[]>([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
 
   const fetchJsonWithTimeout = async (url: string, timeoutMs = 12000) => {
     const controller = new AbortController();
@@ -138,6 +142,30 @@ export default function NetworkPage() {
       fetchConnections();
     }
   }, [user, activeTab, searchQuery]);
+
+  // Fetch communities
+  useEffect(() => {
+    if (user && activeTab === 'communities') {
+      fetchCommunities();
+    }
+  }, [user, activeTab]);
+
+  const fetchCommunities = async () => {
+    if (!user?.id) return;
+    try {
+      setLoadingCommunities(true);
+      const { ok, json } = await fetchJsonWithTimeout('/api/community');
+      if (ok && json?.communities) {
+        setCommunities(json.communities as CommunityListItem[]);
+      } else {
+        setCommunities([]);
+      }
+    } catch {
+      setCommunities([]);
+    } finally {
+      setLoadingCommunities(false);
+    }
+  };
 
   const fetchConnectionRequests = async () => {
     if (!user?.id) return;
@@ -415,6 +443,19 @@ export default function NetworkPage() {
           </button>
           <button
             onClick={() => {
+              setActiveTab('communities');
+              router.push('/network?tab=communities', { scroll: false });
+            }}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'communities'
+                ? 'text-red-400 border-red-400'
+                : 'text-gray-400 border-transparent hover:text-gray-300'
+            }`}
+          >
+            Communities
+          </button>
+          <button
+            onClick={() => {
               setActiveTab('connections');
               router.push('/network?tab=connections', { scroll: false });
             }}
@@ -597,6 +638,68 @@ export default function NetworkPage() {
                 {opportunities.map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Communities Tab */}
+        {activeTab === 'communities' && (
+          <div>
+            {loadingCommunities ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+              </div>
+            ) : communities.length === 0 ? (
+              <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-8 text-center">
+                <HeartHandshake className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-300 mb-2">You have not joined any communities yet.</p>
+                <p className="text-gray-500 text-sm mb-6">
+                  Discover creators and follow them to join their community.
+                </p>
+                <Link
+                  href="/creators"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg hover:from-red-700 hover:to-pink-600 transition-colors font-medium"
+                >
+                  Discover Creators
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {communities.map((community) => {
+                  const name = community.display_name || community.username || 'Creator';
+                  const href = community.username
+                    ? `/community/${encodeURIComponent(community.username)}`
+                    : getCreatorProfilePath({ username: community.username, id: community.id });
+                  return (
+                    <Link
+                      key={community.id}
+                      href={href}
+                      className="flex items-center gap-4 bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 hover:border-white/20 transition-colors"
+                    >
+                      <div className="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-red-600 to-pink-500 flex-shrink-0">
+                        {community.avatar_url ? (
+                          <Image src={community.avatar_url} alt={name} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white font-semibold">
+                            {name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-white font-semibold truncate">{name}</h3>
+                        {community.genre_tag ? (
+                          <p className="text-gray-500 text-xs truncate">{community.genre_tag}</p>
+                        ) : null}
+                        <p className="text-gray-400 text-sm mt-0.5">
+                          {community.member_count.toLocaleString()}{' '}
+                          {community.member_count === 1 ? 'member' : 'members'}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
