@@ -13,6 +13,17 @@ function tipperThankYouName(params: {
   return 'friend';
 }
 
+/** Post-tip thank-you body shared by confirm-tip flow and live_session_tips trigger SQL. */
+export function buildTipThankYouMessageContent(
+  tipperName: string,
+  creatorUsername: string | null | undefined,
+): string {
+  const base = `Thank you so much ${tipperName}, you are amazing!`;
+  const username = creatorUsername?.trim().replace(/^@/, '');
+  if (!username) return base;
+  return `${base}\n\nYou are now part of my SoundBridge community. Stay connected and listen to my music here:\nsoundbridge.live/${username}/home`;
+}
+
 /**
  * Auto thank-you DM from creator → tipper after tip settles.
  * Never throws; does not block tip confirmation.
@@ -43,18 +54,21 @@ export async function sendTipThankYouDm(
       }
     }
 
-    const { data: tipperProfile } = await supabase
-      .from('profiles')
-      .select('display_name, email')
-      .eq('id', params.tipperId)
-      .maybeSingle();
+    const [{ data: tipperProfile }, { data: creatorProfile }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('display_name, email')
+        .eq('id', params.tipperId)
+        .maybeSingle(),
+      supabase.from('profiles').select('username').eq('id', params.creatorId).maybeSingle(),
+    ]);
 
     const name = tipperThankYouName({
       isAnonymous: params.isAnonymous,
       displayName: tipperProfile?.display_name,
       email: tipperProfile?.email,
     });
-    const content = `Thank you so much ${name}, you are amazing!`;
+    const content = buildTipThankYouMessageContent(name, creatorProfile?.username);
 
     const { data: message, error: insertErr } = await supabase
       .from('messages')
