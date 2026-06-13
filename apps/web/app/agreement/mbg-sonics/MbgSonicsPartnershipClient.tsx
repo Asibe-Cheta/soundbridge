@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { MBG_SONICS_PARTNERSHIP_BODY } from './mbgSonicsPartnershipLegalText';
@@ -17,6 +16,9 @@ const PARTNER_DEFAULTS = {
   representativeName: 'Adedamola Favour Isreal',
 } as const;
 
+const SAVE_TOKEN_KEY = 'mbg-sonics-agreement-save-token';
+const PAGE_URL = 'https://www.soundbridge.live/agreement/mbg-sonics';
+
 type DraftPayload = {
   sbCompany: string;
   sbRep: string;
@@ -28,11 +30,6 @@ type DraftPayload = {
   creatorDate: string;
   sbSignaturePng: string | null;
   creatorSignaturePng: string | null;
-};
-
-type MbgSonicsPartnershipClientProps = {
-  initialDraftId?: string;
-  initialEditToken?: string;
 };
 
 function slugify(s: string) {
@@ -48,8 +45,15 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function saveTokenStorageKey(draftId: string) {
-  return `mbg-sonics-agreement-save-token-${draftId}`;
+function formatSavedAt(iso: string) {
+  try {
+    return new Date(iso).toLocaleString('en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  } catch {
+    return iso;
+  }
 }
 
 async function fetchLogoDataUrl(): Promise<string | null> {
@@ -78,20 +82,17 @@ function applySignatureToCanvas(ref: React.RefObject<SignatureCanvas | null>, da
   }
 }
 
-export function MbgSonicsPartnershipClient({
-  initialDraftId,
-  initialEditToken,
-}: MbgSonicsPartnershipClientProps) {
-  const router = useRouter();
+export function MbgSonicsPartnershipClient() {
   const sbSigRef = useRef<SignatureCanvas>(null);
   const partnerSigRef = useRef<SignatureCanvas>(null);
 
   const [padWidth, setPadWidth] = useState(320);
-  const [draftId, setDraftId] = useState<string | null>(initialDraftId ?? null);
   const [saveToken, setSaveToken] = useState<string | null>(null);
-  const [loadingDraft, setLoadingDraft] = useState(!!initialDraftId);
+  const [loadingDraft, setLoadingDraft] = useState(true);
+  const [hasSavedOnce, setHasSavedOnce] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const [sbCompany, setSbCompany] = useState(SB_DEFAULTS.companyName);
   const [sbRep, setSbRep] = useState(SB_DEFAULTS.representativeName);
@@ -112,7 +113,7 @@ export function MbgSonicsPartnershipClient({
   const [generating, setGenerating] = useState(false);
 
   const canEditSoundBridge = !sbSignatureStored || !!saveToken;
-  const isCounterpartyView = !!draftId && !!sbSignatureStored && !saveToken;
+  const isCounterpartyView = !!sbSignatureStored && !saveToken;
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -123,6 +124,11 @@ export function MbgSonicsPartnershipClient({
   useEffect(() => {
     const w = Math.min(520, Math.max(260, window.innerWidth - 48));
     setPadWidth(w);
+  }, []);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem(SAVE_TOKEN_KEY);
+    if (token) setSaveToken(token);
   }, []);
 
   const applyPayload = useCallback((p: DraftPayload) => {
@@ -137,40 +143,24 @@ export function MbgSonicsPartnershipClient({
     setSbSignatureStored(p.sbSignaturePng);
     setPartnerSignatureStored(p.creatorSignaturePng);
     setSignaturesApplied(false);
+    setHasSavedOnce(true);
   }, []);
 
   useEffect(() => {
-    if (!initialDraftId) {
-      setLoadingDraft(false);
-      return;
-    }
-
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/agreement/drafts/${initialDraftId}`);
+        const res = await fetch('/api/agreement/mbg-sonics');
         const data = await res.json();
         if (!res.ok) {
-          setError(data.error || 'Could not load saved agreement');
+          if (!cancelled) setError(data.error || 'Could not load saved agreement');
           return;
         }
         if (cancelled) return;
-        setDraftId(data.id);
-        applyPayload(data.payload as DraftPayload);
-
-        const tokenFromUrl = initialEditToken?.trim();
-        const tokenFromStorage =
-          typeof window !== 'undefined'
-            ? sessionStorage.getItem(saveTokenStorageKey(data.id))
-            : null;
-        const token = tokenFromUrl || tokenFromStorage;
-        if (token) {
-          setSaveToken(token);
-          sessionStorage.setItem(saveTokenStorageKey(data.id), token);
-          if (tokenFromUrl) {
-            router.replace(`/agreement/mbg-sonics?draft=${data.id}`, { scroll: false });
-          }
+        if (data.payload) {
+          applyPayload(data.payload as DraftPayload);
         }
+        if (data.updatedAt) setLastSavedAt(data.updatedAt);
       } catch {
         if (!cancelled) setError('Could not load saved agreement');
       } finally {
@@ -181,7 +171,7 @@ export function MbgSonicsPartnershipClient({
     return () => {
       cancelled = true;
     };
-  }, [initialDraftId, initialEditToken, applyPayload, router]);
+  }, [applyPayload]);
 
   useEffect(() => {
     if (signaturesApplied || loadingDraft) return;
@@ -227,47 +217,21 @@ export function MbgSonicsPartnershipClient({
     partnerSignatureStored,
   ]);
 
-  const shareUrl =
-    typeof window !== 'undefined' && draftId
-      ? `${window.location.origin}/agreement/mbg-sonics?draft=${draftId}`
-      : '';
-
   const handleSave = useCallback(async () => {
     setError(null);
     setSuccess(null);
-    setShareCopied(false);
+    setLinkCopied(false);
 
     const payload = buildPayload();
-    if (!payload.sbSignaturePng) {
-      setError('Add your SoundBridge signature before saving to share.');
+    if (!payload.sbSignaturePng && !hasSavedOnce) {
+      setError('Add your SoundBridge signature before saving.');
       return;
     }
 
     setSaving(true);
     try {
-      if (!draftId) {
-        const res = await fetch('/api/agreement/drafts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payload }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || 'Could not save');
-          return;
-        }
-        setDraftId(data.id);
-        setSaveToken(data.saveToken);
-        sessionStorage.setItem(saveTokenStorageKey(data.id), data.saveToken);
-        setSbSignatureStored(payload.sbSignaturePng);
-        setPartnerSignatureStored(payload.creatorSignaturePng);
-        router.replace(`/agreement/mbg-sonics?draft=${data.id}`, { scroll: false });
-        setSuccess('Saved. Copy the share link below and send it to MBG Sonics to sign.');
-        return;
-      }
-
-      const res = await fetch(`/api/agreement/drafts/${draftId}`, {
-        method: 'PATCH',
+      const res = await fetch('/api/agreement/mbg-sonics', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           saveToken: saveToken ?? undefined,
@@ -279,26 +243,38 @@ export function MbgSonicsPartnershipClient({
         setError(data.error || 'Could not save');
         return;
       }
+
+      if (data.saveToken) {
+        setSaveToken(data.saveToken);
+        sessionStorage.setItem(SAVE_TOKEN_KEY, data.saveToken);
+      }
+
       setSbSignatureStored(payload.sbSignaturePng);
       setPartnerSignatureStored(payload.creatorSignaturePng);
-      setSuccess('Saved. The share link includes your latest signature and details.');
+      setHasSavedOnce(true);
+      if (data.updatedAt) setLastSavedAt(data.updatedAt);
+
+      setSuccess(
+        saveToken || data.saveToken
+          ? 'Saved. Send MBG Sonics this page — it always shows the latest version.'
+          : 'Saved. Download the PDF once both parties have signed.',
+      );
     } catch {
       setError('Could not save. Check your connection and try again.');
     } finally {
       setSaving(false);
     }
-  }, [buildPayload, draftId, saveToken, router]);
+  }, [buildPayload, saveToken, hasSavedOnce]);
 
-  const copyShareLink = useCallback(async () => {
-    if (!shareUrl) return;
+  const copyPageLink = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareCopied(true);
-      window.setTimeout(() => setShareCopied(false), 2500);
+      await navigator.clipboard.writeText(PAGE_URL);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2500);
     } catch {
-      setError('Could not copy link. Select and copy the URL from your browser bar.');
+      setError('Could not copy link. Copy the URL from your browser bar.');
     }
-  }, [shareUrl]);
+  }, []);
 
   const clearSb = useCallback(() => {
     if (!canEditSoundBridge) return;
@@ -498,7 +474,7 @@ export function MbgSonicsPartnershipClient({
   if (loadingDraft) {
     return (
       <article className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-        Loading saved agreement…
+        Loading agreement…
       </article>
     );
   }
@@ -524,21 +500,26 @@ export function MbgSonicsPartnershipClient({
         </h1>
         <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
           {isCounterpartyView
-            ? 'SoundBridge has signed. Complete MBG Sonics details and signature below, then download the PDF.'
-            : 'Complete the fields, sign, save to share a link with MBG Sonics, then download the signed PDF.'}
+            ? 'SoundBridge has signed. Complete your details and signature below, then save and download the PDF.'
+            : 'Complete the fields, sign, and save. MBG Sonics uses this same page to sign — it always shows the latest version.'}
         </p>
+        {lastSavedAt ? (
+          <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
+            Last saved {formatSavedAt(lastSavedAt)}
+          </p>
+        ) : null}
       </header>
 
-      {draftId && shareUrl ? (
+      {hasSavedOnce && sbSignatureStored ? (
         <div className="mb-6 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.35)] p-4 text-sm">
-          <p className="font-medium text-[hsl(var(--foreground))]">Share link</p>
-          <p className="mt-1 break-all text-xs text-[hsl(var(--muted-foreground))]">{shareUrl}</p>
+          <p className="font-medium text-[hsl(var(--foreground))]">Page for MBG Sonics</p>
+          <p className="mt-1 break-all text-xs text-[hsl(var(--muted-foreground))]">{PAGE_URL}</p>
           <button
             type="button"
-            onClick={copyShareLink}
+            onClick={copyPageLink}
             className="mt-3 rounded-lg border border-[hsl(var(--border))] px-3 py-1.5 text-xs font-medium hover:bg-[hsl(var(--muted))]"
           >
-            {shareCopied ? 'Copied' : 'Copy share link'}
+            {linkCopied ? 'Copied' : 'Copy page link'}
           </button>
         </div>
       ) : null}
@@ -670,7 +651,7 @@ export function MbgSonicsPartnershipClient({
                 Clear
               </button>
             ) : (
-              <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">Saved with this link</p>
+              <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">Saved on this page</p>
             )}
           </div>
           <div>
@@ -716,7 +697,7 @@ export function MbgSonicsPartnershipClient({
           disabled={saving}
           className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm font-semibold transition hover:bg-[hsl(var(--muted))] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? 'Saving…' : draftId ? 'Save changes' : 'Save & get share link'}
+          {saving ? 'Saving…' : 'Save'}
         </button>
 
         <button

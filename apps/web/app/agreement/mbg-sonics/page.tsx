@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { MbgSonicsPartnershipClient } from './MbgSonicsPartnershipClient';
 
@@ -15,7 +16,10 @@ type PageProps = {
 };
 
 export default async function MbgSonicsPartnershipPage({ searchParams }: PageProps) {
-  const { draft, edit } = await searchParams;
+  const { draft } = await searchParams;
+  if (draft) {
+    redirect('/agreement/mbg-sonics');
+  }
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
@@ -27,7 +31,7 @@ export default async function MbgSonicsPartnershipPage({ searchParams }: PagePro
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to home
         </Link>
-        <MbgSonicsPartnershipClient initialDraftId={draft} initialEditToken={edit} />
+        <MbgSonicsPartnershipClient />
       </div>
     </div>
   );
