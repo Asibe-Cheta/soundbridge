@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       `
       *,
       creator:profiles!distribution_requests_creator_id_fkey (
-        id, username, display_name, email
+        id, username, display_name
       )
     `,
     )

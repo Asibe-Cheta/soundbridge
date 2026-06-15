@@ -31,7 +31,7 @@ export async function POST(
       `
       *,
       creator:profiles!distribution_requests_creator_id_fkey (
-        id, display_name, username, email, expo_push_token
+        id, display_name, username, expo_push_token
       )
     `,
     )
@@ -60,13 +60,12 @@ export async function POST(
     id?: string;
     display_name?: string | null;
     username?: string | null;
-    email?: string | null;
   } | null;
 
   const creatorName = creator?.display_name || creator?.username || 'Creator';
   const trackTitle = row.track_title as string;
   const creatorId = row.creator_id as string;
-  const creatorEmail = (row.creator_email as string) || creator?.email || null;
+  const creatorEmail = (row.creator_email as string) || null;
 
   const pushTitle = 'Your track is live';
   const pushBody = `${trackTitle} is now available on Spotify, Apple Music and major streaming platforms.`;
