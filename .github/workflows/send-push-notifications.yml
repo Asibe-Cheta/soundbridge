@@ -2,8 +2,8 @@ name: Send Queued Push Notifications
 
 # Backup only: Vercel cron GET /api/cron/send-event-push-queue every minute; POST /api/notifications/send-queued mirrors it (event + track queues).
 # Credentials must match Vercel Production env: CRON_SECRET and/or SUPABASE_SERVICE_ROLE_KEY.
-# This job uses GitHub Environment "Production" — update secrets there (Settings → Environments → Production),
-# not only repository-level secrets.
+# This job uses GitHub Environment "Production". If both a secret AND a variable named CRON_SECRET exist,
+# both are tried — a stale environment secret often causes 401 while the variable matches Vercel.
 on:
   schedule:
     - cron: '*/30 * * * *'
@@ -23,8 +23,6 @@ jobs:
           SRK_FROM_VAR: ${{ vars.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           trim() { printf '%s' "$1" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
-          CRON_SECRET="$(trim "${CRON_FROM_SECRET:-${CRON_FROM_VAR}}")"
-          SUPABASE_SERVICE_ROLE_KEY="$(trim "${SRK_FROM_SECRET:-${SRK_FROM_VAR}}")"
 
           post_with_token() {
             local label="$1"
@@ -45,26 +43,40 @@ jobs:
             [ "${HTTP_CODE}" = "200" ] || [ "${HTTP_CODE}" = "201" ]
           }
 
-          if [ -z "${CRON_SECRET}" ] && [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+          # Collect unique non-empty tokens (secret vs variable often diverge on GitHub Environments).
+          declare -a LABELS=()
+          declare -a TOKENS=()
+          add_token() {
+            local label="$1"
+            local token="$(trim "$2")"
+            [ -z "${token}" ] && return 0
+            for existing in "${TOKENS[@]:-}"; do
+              [ "${existing}" = "${token}" ] && return 0
+            done
+            LABELS+=("${label}")
+            TOKENS+=("${token}")
+          }
+
+          add_token "CRON_SECRET (environment secret)" "${CRON_FROM_SECRET}"
+          add_token "CRON_SECRET (environment variable)" "${CRON_FROM_VAR}"
+          add_token "SUPABASE_SERVICE_ROLE_KEY (environment secret)" "${SRK_FROM_SECRET}"
+          add_token "SUPABASE_SERVICE_ROLE_KEY (environment variable)" "${SRK_FROM_VAR}"
+
+          if [ "${#TOKENS[@]}" -eq 0 ]; then
             echo "Missing credentials: add CRON_SECRET and/or SUPABASE_SERVICE_ROLE_KEY to"
-            echo "  • GitHub → Settings → Environments → Production → Secrets"
+            echo "  • GitHub → Settings → Environments → Production → Secrets or Variables"
             echo "  • Vercel → Project → Settings → Environment Variables → Production"
-            echo "Values must match between GitHub and Vercel."
             exit 1
           fi
 
-          if post_with_token "CRON_SECRET" "${CRON_SECRET}"; then
-            exit 0
-          fi
-
-          if [ -n "${SUPABASE_SERVICE_ROLE_KEY}" ] && [ "${SUPABASE_SERVICE_ROLE_KEY}" != "${CRON_SECRET}" ]; then
-            echo "CRON_SECRET rejected (401). Retrying with SUPABASE_SERVICE_ROLE_KEY..."
-            if post_with_token "SUPABASE_SERVICE_ROLE_KEY" "${SUPABASE_SERVICE_ROLE_KEY}"; then
+          for i in "${!TOKENS[@]}"; do
+            if post_with_token "${LABELS[$i]}" "${TOKENS[$i]}"; then
+              echo "Success with ${LABELS[$i]}"
               exit 0
             fi
-          fi
+          done
 
-          echo "All auth attempts failed. Ensure GitHub Production secrets match Vercel Production env."
+          echo "All auth attempts failed. Delete or update stale GitHub Production secrets so they match Vercel."
           exit 22
 
       - name: Log result
