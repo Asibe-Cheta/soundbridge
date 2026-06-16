@@ -4,17 +4,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { eventNotificationService } from '@/src/services/EventNotificationService';
+import { isCronOrServiceRoleAuthorized } from '@/src/lib/cron-auth';
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    console.error('[send-event-push-queue] CRON_SECRET not set');
-    return NextResponse.json({ error: 'Cron job not configured' }, { status: 500 });
-  }
-
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  if (!isCronOrServiceRoleAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
