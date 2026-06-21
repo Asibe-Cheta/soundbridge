@@ -1,4 +1,5 @@
 import type { MatchReasons } from '@/src/lib/event-match-scoring';
+import { GEMINI_DEFAULT_FLASH_MODEL } from '@/src/lib/gemini-model';
 
 const SYSTEM_PROMPT =
   'You write short, warm, human personalised event recommendations in one or two sentences maximum. Never use em dashes. Never sound like an AI. Sound like a friend who knows the person well.';
@@ -53,7 +54,7 @@ export async function generatePersonalisedEventReason(
     return null;
   }
 
-  const model = process.env.GEMINI_EVENT_MATCH_MODEL?.trim() || 'gemini-2.0-flash';
+  const model = process.env.GEMINI_EVENT_MATCH_MODEL?.trim() || GEMINI_DEFAULT_FLASH_MODEL;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const res = await fetch(url, {

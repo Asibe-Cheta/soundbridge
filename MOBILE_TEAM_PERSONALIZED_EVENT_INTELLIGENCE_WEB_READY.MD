@@ -79,7 +79,7 @@ Calendar: FreeBusy checked for top preliminary matches (max 25/user/run) when `c
 ## Gemini
 
 **Env (Vercel):** `GEMINI_API_KEY` or `GOOGLE_GEMINI_API_KEY`  
-**Optional:** `GEMINI_EVENT_MATCH_MODEL` (default `gemini-2.0-flash`)
+**Optional:** `GEMINI_EVENT_MATCH_MODEL` (default `gemini-2.5-flash`)
 
 Without API key, scores still populate; `personalised_reason` stays null.
 

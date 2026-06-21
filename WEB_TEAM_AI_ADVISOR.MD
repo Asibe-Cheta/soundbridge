@@ -7,6 +7,7 @@ Mobile app side is fully built and live. This document covers what the web backe
 ## What's Already Done (Mobile)
 
 - Real Gemini Flash calls (analysis + chat) — made directly from the mobile app, no backend proxy needed
+- **Model:** use `gemini-2.5-flash` (`gemini-2.0-flash` was retired)
 - Supabase tables created via migration `20260621000000_ai_adviser_tables.sql`
 - Tier enforcement (Free / Premium / Unlimited) enforced on mobile
 - Usage tracked in `ai_adviser_usage` table
