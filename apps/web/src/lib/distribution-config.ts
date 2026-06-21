@@ -4,7 +4,7 @@ export const DISTRIBUTION_FEE_MINOR = 1579;
 export const DISTRIBUTION_CURRENCY = 'gbp';
 
 export const MBG_PARTNER_EMAIL =
-  process.env.MBG_PARTNER_EMAIL?.trim() || 'distributions@mbgsonics.com';
+  process.env.MBG_PARTNER_EMAIL?.trim() || 'israeldmy@gmail.com';
 
 export const DISTRIBUTION_SIGNED_URL_EXPIRY_SECONDS = 604800; // 7 days
 

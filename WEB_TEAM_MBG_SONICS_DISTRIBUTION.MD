@@ -23,7 +23,7 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 supabase functions deploy send-distribution-email
 supabase functions deploy send-distribution-creator-live-email
 supabase secrets set RESEND_API_KEY=<key>
-supabase secrets set MBG_PARTNER_EMAIL=distributions@mbgsonics.com
+supabase secrets set MBG_PARTNER_EMAIL=israeldmy@gmail.com
 # Optional — for 7-day R2 audio download links in partner email:
 supabase secrets set CLOUDFLARE_ACCOUNT_ID=<id>
 supabase secrets set CLOUDFLARE_ACCESS_KEY_ID=<key>

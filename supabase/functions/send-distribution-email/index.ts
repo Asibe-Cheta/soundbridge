@@ -7,7 +7,7 @@ import {
   sendResendEmail,
 } from './_lib/distribution-urls.ts';
 
-const PARTNER_EMAIL = Deno.env.get('MBG_PARTNER_EMAIL')?.trim() || 'distributions@mbgsonics.com';
+const PARTNER_EMAIL = Deno.env.get('MBG_PARTNER_EMAIL')?.trim() || 'israeldmy@gmail.com';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
