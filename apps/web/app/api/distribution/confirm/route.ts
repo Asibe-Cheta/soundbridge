@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/src/lib/stripe';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { sendPartnerDistributionEmailForRequest } from '@/src/lib/distribution-email-service';
+import { validateDistributionCoverArtUrl } from '@/src/lib/distribution-cover-validation';
 import {
   DISTRIBUTION_FEE_GBP,
   DISTRIBUTION_MIN_RELEASE_DAYS,
@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const coverValidation = await validateDistributionCoverArtUrl(
+      distributionCoverArtUrl ? String(distributionCoverArtUrl) : null,
+    );
+    if (!coverValidation.ok) {
+      return NextResponse.json({ error: coverValidation.error }, { status: 400, headers: corsHeaders });
+    }
+
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     if (paymentIntent.status !== 'succeeded') {
       return NextResponse.json(
@@ -113,18 +120,16 @@ export async function POST(request: NextRequest) {
 
     const { data: existing } = await service
       .from('distribution_requests')
-      .select('id, requested_release_date, email_sent_to_partner')
+      .select('id, requested_release_date, partner_email_status')
       .eq('stripe_payment_id', paymentIntentId)
       .maybeSingle();
 
     if (existing) {
-      if (!existing.email_sent_to_partner) {
-        await sendPartnerDistributionEmailForRequest(service, existing.id);
-      }
       return NextResponse.json(
         {
           requestId: existing.id,
           releaseDate: existing.requested_release_date,
+          partnerEmailStatus: existing.partner_email_status ?? 'pending_review',
         },
         { headers: corsHeaders },
       );
@@ -159,8 +164,9 @@ export async function POST(request: NextRequest) {
         amount_paid: DISTRIBUTION_FEE_GBP,
         payment_status: 'paid',
         track_status: 'submitted',
+        partner_email_status: 'pending_review',
       })
-      .select('id, requested_release_date')
+      .select('id, requested_release_date, partner_email_status')
       .single();
 
     if (insertErr || !inserted) {
@@ -168,15 +174,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create distribution request' }, { status: 500, headers: corsHeaders });
     }
 
-    const emailSent = await sendPartnerDistributionEmailForRequest(service, inserted.id);
-    if (!emailSent) {
-      console.error('[distribution/confirm] partner email failed for request', inserted.id);
-    }
-
     return NextResponse.json(
       {
         requestId: inserted.id,
         releaseDate: inserted.requested_release_date,
+        partnerEmailStatus: inserted.partner_email_status ?? 'pending_review',
       },
       { headers: corsHeaders },
     );

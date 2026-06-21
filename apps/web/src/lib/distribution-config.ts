@@ -10,6 +10,13 @@ export const DISTRIBUTION_SIGNED_URL_EXPIRY_SECONDS = 604800; // 7 days
 
 export const DISTRIBUTION_MIN_RELEASE_DAYS = 14;
 
+/** Apple Music minimum — strictest major platform requirement. */
+export const DISTRIBUTION_COVER_ART_MIN_PX = 1400;
+
+export const DISTRIBUTION_COVER_ART_RECOMMENDED_PX = 3000;
+
+export type PartnerEmailStatus = 'pending_review' | 'sent' | 'rejected';
+
 export const SOUNDBRIDGE_DISTRIBUTION_FROM_EMAIL =
   process.env.SENDGRID_FROM_EMAIL?.trim() ||
   process.env.RESEND_FROM_EMAIL?.trim() ||

@@ -86,11 +86,33 @@ Call after `presentPaymentSheet()` succeeds.
 ```json
 {
   "requestId": "uuid",
-  "releaseDate": "2026-08-01"
+  "releaseDate": "2026-08-01",
+  "partnerEmailStatus": "pending_review"
 }
 ```
 
-**Side effect:** SendGrid email to **`israeldmy@gmail.com`** with track + cover download links (7-day signed URLs).
+**Cover art validation (server-side):** minimum **1400×1400** square JPEG/PNG (Apple Music standard). 2048×2048 and above pass. Returns `400` with message if below minimum or not square.
+
+**Side effect:** Row inserted with `partner_email_status = 'pending_review'`. **No partner email on confirm** — admin must approve first (see below).
+
+### Admin review gate (web admin panel + mobile admin)
+
+New column: **`partner_email_status`**
+
+| Value | Meaning |
+|-------|---------|
+| `pending_review` | Paid; awaiting admin visual cover check |
+| `sent` | Admin approved; email sent to `israeldmy@gmail.com` |
+| `rejected` | Cover failed review; creator refunded |
+
+**Web admin actions** (also available at `www.soundbridge.live/admin/distribution-requests`):
+
+- `POST /api/admin/distribution-requests/:id/approve` — sends partner email, sets `partner_email_status = 'sent'`
+- `POST /api/admin/distribution-requests/:id/reject` — body `{ "reason": "..." }`, Stripe refund, `track_status = 'failed'`, creator email
+
+Mobile admin screen: update display to use **`partner_email_status`** instead of `email_sent_to_partner` boolean. Column name confirmed: **`partner_email_status`**.
+
+Migration: `supabase/migrations/20260622120000_distribution_partner_review.sql`
 
 ### 3. Mark as live — no web endpoint needed
 
@@ -112,7 +134,8 @@ Migration applied: `supabase/migrations/20260621000002_distribution_requests.sql
 
 | Event | Recipient | Subject (approx) |
 |-------|-----------|------------------|
-| Payment confirmed | `israeldmy@gmail.com` | New Distribution Request from SoundBridge — [Track] by [Artist] |
+| Admin approves request | `israeldmy@gmail.com` | New Distribution Request from SoundBridge — [Track] by [Artist] |
+| Admin rejects request | Creator email on request | Your distribution request could not be processed |
 | Admin marks live | Creator email on request | Your track is live on streaming platforms |
 
 Push notification on mark-live is still **mobile-owned** (unchanged).
@@ -132,16 +155,14 @@ Push notification on mark-live is still **mobile-owned** (unchanged).
 ## Test plan for mobile
 
 1. Pro Resources → MBG Sonics → full flow → pay £15.79  
-2. Confirm `requestId` + `releaseDate` returned  
-3. Check `israeldmy@gmail.com` for partner email with download links  
+2. Confirm `requestId` + `releaseDate` + `partnerEmailStatus: "pending_review"` returned  
+3. Admin → review cover art → **Approve & Send to MBG Sonics** → check `israeldmy@gmail.com` for partner email  
 4. Admin → Mark as Live → creator gets push (mobile) + email (SendGrid via web trigger)
 
-If payment step errors, confirm production Vercel deploy includes commit `be4bde16` or later.
+Reject flow: admin rejects with reason → creator gets refund email → `partner_email_status = 'rejected'`, `track_status = 'failed'`.
 
----
+If payment step errors, confirm production Vercel deploy includes the partner review gate migration and code.
 
-## Questions?
-
-Ping web if confirm returns 500 on email — row is still inserted; email can be retried. Idempotent on duplicate `paymentIntentId`.
+Ping web if approve returns 500 on email — row stays `pending_review`; approve can be retried.
 
 Web reference doc (internal): `WEB_TEAM_MBG_SONICS_DISTRIBUTION.MD`

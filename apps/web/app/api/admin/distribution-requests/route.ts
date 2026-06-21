@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
       *,
       creator:profiles!distribution_requests_creator_id_fkey (
         id, username, display_name
+      ),
+      track:audio_tracks!distribution_requests_track_id_fkey (
+        id, cover_art_url
       )
     `,
     )
@@ -43,13 +46,10 @@ export async function GET(request: NextRequest) {
   const summary = {
     distributions_this_month: thisMonth.length,
     total_revenue: requests.reduce((sum, r) => sum + Number(r.amount_paid || 0), 0),
-    total_owed_to_partner: requests
-      .filter((r) => r.track_status !== 'failed' && r.track_status !== 'pending')
-      .reduce((sum, r) => sum + Number(r.amount_owed_to_partner || 0), 0),
-    total_paid_to_partner: requests
-      .filter((r) => r.payment_to_partner_status === 'paid')
-      .reduce((sum, r) => sum + Number(r.amount_owed_to_partner || 0), 0),
     revenue_this_month: thisMonth.reduce((sum, r) => sum + Number(r.amount_paid || 0), 0),
+    pending_review: requests.filter((r) => r.partner_email_status === 'pending_review').length,
+    partner_emails_sent: requests.filter((r) => r.partner_email_status === 'sent').length,
+    rejected: requests.filter((r) => r.partner_email_status === 'rejected').length,
   };
 
   return NextResponse.json({ success: true, summary, requests }, { headers: CORS });

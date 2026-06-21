@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   sendCreatorTrackLiveEmail,
   sendPartnerDistributionEmail,
+  sendCreatorDistributionRejectedEmail as sendCreatorRejectedEmail,
 } from '@/src/lib/distribution-emails';
 import {
   createDistributionAudioSignedUrl,
@@ -12,6 +13,7 @@ import { DISTRIBUTION_FEE_GBP } from '@/src/lib/distribution-config';
 export async function sendPartnerDistributionEmailForRequest(
   service: SupabaseClient,
   requestId: string,
+  reviewedBy?: string,
 ): Promise<boolean> {
   const { data: row, error } = await service
     .from('distribution_requests')
@@ -24,8 +26,13 @@ export async function sendPartnerDistributionEmailForRequest(
     return false;
   }
 
-  if (row.email_sent_to_partner) {
+  if (row.partner_email_status === 'sent' || row.email_sent_to_partner) {
     return true;
+  }
+
+  if (row.partner_email_status === 'rejected') {
+    console.error('[distribution-email] request rejected, not sending:', requestId);
+    return false;
   }
 
   const { data: track } = await service
@@ -61,16 +68,55 @@ export async function sendPartnerDistributionEmailForRequest(
   });
 
   if (sent) {
+    const now = new Date().toISOString();
     await service
       .from('distribution_requests')
       .update({
         email_sent_to_partner: true,
-        email_sent_at: new Date().toISOString(),
+        email_sent_at: now,
+        partner_email_status: 'sent',
+        reviewed_at: now,
+        ...(reviewedBy ? { reviewed_by: reviewedBy } : {}),
       })
       .eq('id', requestId);
   }
 
   return sent;
+}
+
+export async function sendCreatorDistributionRejectedEmailForRequest(
+  service: SupabaseClient,
+  requestId: string,
+  reason: string,
+): Promise<boolean> {
+  const { data: row, error } = await service
+    .from('distribution_requests')
+    .select('id, track_title, creator_email, creator_id')
+    .eq('id', requestId)
+    .maybeSingle();
+
+  if (error || !row) {
+    console.error('[distribution-email] reject request not found:', requestId, error?.message);
+    return false;
+  }
+
+  const { data: profile } = await service
+    .from('profiles')
+    .select('display_name, username')
+    .eq('id', row.creator_id)
+    .maybeSingle();
+
+  const creatorName =
+    (profile?.display_name as string | null)?.trim() ||
+    (profile?.username as string | null)?.trim() ||
+    'Creator';
+
+  return sendCreatorRejectedEmail(
+    String(row.creator_email),
+    creatorName,
+    String(row.track_title),
+    reason,
+  );
 }
 
 export async function sendCreatorLiveEmailForRequest(

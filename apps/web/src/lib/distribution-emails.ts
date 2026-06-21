@@ -99,3 +99,25 @@ export async function sendCreatorTrackLiveEmail(
     fromName: 'SoundBridge',
   });
 }
+
+export async function sendCreatorDistributionRejectedEmail(
+  to: string,
+  creatorName: string,
+  trackTitle: string,
+  reason: string,
+): Promise<boolean> {
+  const subject = 'Your distribution request could not be processed';
+  const html = `
+<p>Hi ${escapeHtml(creatorName)},</p>
+<p>Your distribution request for <strong>${escapeHtml(trackTitle)}</strong> could not be processed.</p>
+<p>Your cover art did not meet platform requirements — ${escapeHtml(reason)}.</p>
+<p>Please resubmit with compliant artwork. Your payment will be refunded within 5–10 business days.</p>
+<p>If you have questions, reply to this email or contact support@soundbridge.live.</p>
+<p>SoundBridge Live Ltd</p>
+`.trim();
+
+  return SendGridService.sendHtmlEmail(to, subject, html, {
+    from: SOUNDBRIDGE_DISTRIBUTION_FROM_EMAIL,
+    fromName: 'SoundBridge Distribution',
+  });
+}
